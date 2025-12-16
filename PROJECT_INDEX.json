@@ -1,0 +1,117 @@
+{
+  "project": {
+    "name": "ACGS-2",
+    "full_name": "Autonomous Constitutional Governance System",
+    "version": "2.0.0",
+    "constitutional_hash": "cdd01ef066bc6cf2",
+    "last_updated": "2025-12-06"
+  },
+  "stats": {
+    "python_files": 26,
+    "directories": 615,
+    "total_size_mb": 21,
+    "functions_methods": 312
+  },
+  "modules": {
+    "enhanced_agent_bus": {
+      "path": "/enhanced_agent_bus/",
+      "description": "High-performance multi-tenant agent communication",
+      "exports": [
+        "EnhancedAgentBus",
+        "MessageProcessor",
+        "AgentMessage",
+        "MessageType",
+        "MessagePriority",
+        "MessageStatus",
+        "ValidationResult",
+        "IntegratedValidationSystem"
+      ],
+      "files": {
+        "core.py": {"functions": 16, "type": "implementation"},
+        "models.py": {"functions": 11, "type": "models"},
+        "validators.py": {"functions": 6, "type": "validation"}
+      }
+    },
+    "monitoring": {
+      "path": "/monitoring/",
+      "description": "Production monitoring with metrics and alerting",
+      "features": ["psutil_metrics", "redis_pipeline", "pagerduty_alerts"],
+      "files": {
+        "__init__.py": {"functions": 39, "type": "main"},
+        "alerting.py": {"functions": 7, "type": "alerts"}
+      }
+    },
+    "search_platform": {
+      "path": "/services/integration/search_platform/",
+      "description": "Universal Search Platform integration",
+      "exports": [
+        "SearchPlatformClient",
+        "SearchPlatformConfig",
+        "ConstitutionalCodeSearchService",
+        "AuditTrailSearchService",
+        "SearchRequest",
+        "SearchResponse",
+        "SearchMatch"
+      ],
+      "files": {
+        "client.py": {"functions": 28, "type": "client"},
+        "constitutional_search.py": {"functions": 20, "type": "service"},
+        "audit_search.py": {"functions": 30, "type": "service"},
+        "models.py": {"functions": 25, "type": "models"}
+      }
+    },
+    "tools": {
+      "path": "/tools/",
+      "description": "Syntax repair and code maintenance utilities",
+      "files": [
+        "comprehensive_syntax_repair.py",
+        "advanced_syntax_repair.py",
+        "fix_corrupted_syntax.py",
+        "fix_kwarg_type_hints.py"
+      ]
+    }
+  },
+  "directories": {
+    "core": [
+      "enhanced_agent_bus",
+      "monitoring",
+      "blockchain",
+      "orchestrators",
+      "runtime"
+    ],
+    "services": [
+      "services/integration",
+      "services/core",
+      "services/constitutional_ai",
+      "services/governance",
+      "services/security"
+    ],
+    "infrastructure": [
+      "infrastructure/api-gateway",
+      "infrastructure/security",
+      "infrastructure/health",
+      "infrastructure/database"
+    ],
+    "support": [
+      "tools",
+      "tests",
+      "scripts"
+    ]
+  },
+  "performance_targets": {
+    "p99_latency_ms": 5,
+    "throughput_rps": 100,
+    "cache_hit_rate_percent": 85,
+    "constitutional_compliance_percent": 100
+  },
+  "entry_points": {
+    "agent_bus": "acgs2.enhanced_agent_bus.EnhancedAgentBus",
+    "code_search": "acgs2.services.integration.search_platform.ConstitutionalCodeSearchService",
+    "monitoring": "acgs2.monitoring.ProductionMonitor"
+  },
+  "testing": {
+    "framework": "pytest",
+    "markers": ["constitutional", "performance", "integration", "unit"],
+    "command": "pytest tests/ --tb=short"
+  }
+}
