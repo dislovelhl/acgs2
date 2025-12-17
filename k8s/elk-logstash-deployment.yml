@@ -1,0 +1,233 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: logstash-config
+  namespace: acgs2-monitoring
+  labels:
+    app: logstash
+data:
+  logstash.yml: |
+    http.host: "0.0.0.0"
+    path.config: /usr/share/logstash/pipeline
+    path.logs: /var/log/logstash
+    xpack.monitoring.enabled: true
+    xpack.monitoring.elasticsearch.hosts: ["http://elasticsearch:9200"]
+  logstash.conf: |
+    # ACGS-2 Logstash Pipeline Configuration
+    # Constitutional Hash: cdd01ef066bc6cf2
+
+    input {
+      # Beats input for Filebeat
+      beats {
+        port => 5044
+      }
+
+      # TCP input for direct log shipping
+      tcp {
+        port => 5000
+        codec => json_lines
+      }
+
+      # HTTP input for application metrics
+      http {
+        port => 8080
+        codec => json
+      }
+
+      # Collect system logs
+      file {
+        path => "/var/log/syslog"
+        start_position => "beginning"
+        type => "syslog"
+      }
+
+      # Collect application logs from mounted volumes
+      file {
+        path => "/var/log/acgs2/*.log"
+        start_position => "beginning"
+        type => "application"
+      }
+    }
+
+    filter {
+      # Parse JSON logs
+      if [type] == "application" {
+        json {
+          source => "message"
+        }
+      }
+
+      # Parse syslog
+      if [type] == "syslog" {
+        grok {
+          match => { "message" => "%{SYSLOGTIMESTAMP:syslog_timestamp} %{SYSLOGHOST:syslog_hostname} %{DATA:syslog_program}(?:\[%{POSINT:syslog_pid}\])?: %{GREEDYDATA:syslog_message}" }
+        }
+        date {
+          match => [ "syslog_timestamp", "MMM  d HH:mm:ss", "MMM dd HH:mm:ss" ]
+        }
+      }
+
+      # Add timestamp if missing
+      if ![timestamp] {
+        date {
+          match => [ "timestamp", "ISO8601" ]
+          target => "@timestamp"
+        }
+      }
+
+      # Add service identification
+      if [kubernetes] {
+        mutate {
+          add_field => { "service" => "%{[kubernetes][labels][app]}" }
+          add_field => { "namespace" => "%{[kubernetes][namespace]}" }
+          add_field => { "pod" => "%{[kubernetes][pod][name]}" }
+        }
+      }
+
+      # Extract metrics from log messages
+      if [message] =~ /metrics/ {
+        grok {
+          match => { "message" => "metrics: %{DATA:metrics_json}" }
+        }
+        json {
+          source => "metrics_json"
+        }
+      }
+
+      # Add constitutional hash for compliance
+      mutate {
+        add_field => { "constitutional_hash" => "cdd01ef066bc6cf2" }
+      }
+
+      # GeoIP enrichment for IP addresses
+      if [client_ip] {
+        geoip {
+          source => "client_ip"
+          target => "geoip"
+        }
+      }
+
+      # User agent parsing
+      if [user_agent] {
+        useragent {
+          source => "user_agent"
+          target => "useragent"
+        }
+      }
+    }
+
+    output {
+      # Main output to Elasticsearch
+      elasticsearch {
+        hosts => ["http://elasticsearch:9200"]
+        index => "acgs2-%{+YYYY.MM.dd}"
+        user => "elastic"
+        password => "changeme"
+      }
+
+      # Debug output to console
+      if [type] == "debug" {
+        stdout { codec => rubydebug }
+      }
+    }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: logstash
+  namespace: acgs2-monitoring
+  labels:
+    app: logstash
+spec:
+  selector:
+    app: logstash
+  ports:
+  - name: beats
+    port: 5044
+    targetPort: 5044
+  - name: tcp
+    port: 5000
+    targetPort: 5000
+  - name: http
+    port: 8080
+    targetPort: 8080
+  - name: monitoring
+    port: 9600
+    targetPort: 9600
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: logstash
+  namespace: acgs2-monitoring
+  labels:
+    app: logstash
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: logstash
+  template:
+    metadata:
+      labels:
+        app: logstash
+    spec:
+      containers:
+      - name: logstash
+        image: docker.elastic.co/logstash/logstash:8.11.0
+        ports:
+        - containerPort: 5044
+          name: beats
+        - containerPort: 5000
+          name: tcp
+        - containerPort: 8080
+          name: http
+        - containerPort: 9600
+          name: monitoring
+        env:
+        - name: ELASTIC_PASSWORD
+          value: "changeme"
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        volumeMounts:
+        - name: config
+          mountPath: /usr/share/logstash/config/logstash.yml
+          subPath: logstash.yml
+        - name: pipeline
+          mountPath: /usr/share/logstash/pipeline/logstash.conf
+          subPath: logstash.conf
+        - name: logs
+          mountPath: /var/log/acgs2
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 9600
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 9600
+          initialDelaySeconds: 5
+          periodSeconds: 5
+      volumes:
+      - name: config
+        configMap:
+          name: logstash-config
+          items:
+          - key: logstash.yml
+            path: logstash.yml
+      - name: pipeline
+        configMap:
+          name: logstash-config
+          items:
+          - key: logstash.conf
+            path: logstash.conf
+      - name: logs
+        emptyDir: {}

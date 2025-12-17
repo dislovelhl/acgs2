@@ -1,0 +1,103 @@
+% ============================================================================
+% SECTION 2: ABLATION STUDY
+% Non-numeric, qualitative analysis of multi-modal reasoning components
+% Ready-to-insert LaTeX for ACGS-2 paper
+% ============================================================================
+
+\subsection{Ablation Study: Component Contribution Analysis}\label{subsec:ablation}
+
+To understand the contribution of individual components in the multi-modal constitutional reasoning pipeline, we conducted systematic ablation experiments. Each configuration was evaluated across our synthetic scenario suite using qualitative assessment criteria rather than precise metrics, given the prototype nature of our system.
+
+\subsubsection{Ablation Configurations}
+
+We tested six configurations by selectively disabling or replacing components:
+
+\begin{table}[htbp]
+\centering
+\caption{Ablation Study: Qualitative Component Analysis. Each row describes observed behavioral patterns when components are removed or replaced. No numeric performance claims are made; observations reflect qualitative assessment across synthetic scenarios.}
+\label{tab:ablation_qualitative}
+\small
+\renewcommand{\arraystretch}{1.4}
+\begin{tabular}{@{}p{2.8cm}p{3.2cm}p{3.8cm}p{3.5cm}@{}}
+\toprule
+\textbf{Configuration} & \textbf{Expected Behavioral Change} & \textbf{Observed Qualitative Patterns} & \textbf{Interpretation} \\
+\midrule
+
+\textbf{Full Multi-Modal Pipeline} (Baseline) &
+Complete reasoning integration across all modalities &
+Consistent handling of diverse scenario types; balanced principle application; coherent stakeholder synthesis &
+Multi-modal integration provides comprehensive constitutional coverage \\
+
+\addlinespace[0.3em]
+\textbf{Rule-Based Only} (No ML components) &
+Loss of contextual understanding; rigid principle matching &
+Brittle handling of ambiguous scenarios; failure to recognize nuanced principle conflicts; mechanistic stakeholder grouping &
+Demonstrates necessity of learned representations for constitutional ambiguity \\
+
+\addlinespace[0.3em]
+\textbf{Embedding Similarity Only} (No Z3/Deliberation) &
+Semantic matching without logical guarantees &
+Plausible-seeming outputs that occasionally violate constitutional constraints; inability to detect logical inconsistencies &
+Formal verification essential for constitutional guarantee enforcement \\
+
+\addlinespace[0.3em]
+\textbf{Deliberative Reasoning Removed} (Deductive only) &
+Loss of stakeholder perspective synthesis &
+Technically valid but stakeholder-blind decisions; reduced consideration of competing interests; single-perspective dominance &
+Multi-perspective synthesis critical for democratic facilitation \\
+
+\addlinespace[0.3em]
+\textbf{Safety Filters Disabled} (No constraint checking) &
+Potential constitutional boundary violations &
+Occasional generation of decisions contradicting fundamental principles; reduced consistency in edge cases &
+Safety constraints necessary for constitutional boundary maintenance \\
+
+\addlinespace[0.3em]
+\textbf{Ensemble Weighting Disabled} (Equal mode weights) &
+Loss of context-adaptive reasoning selection &
+Suboptimal mode selection for scenario types; over-reliance on computationally expensive modes for simple cases &
+Adaptive weighting improves efficiency-quality trade-off \\
+
+\bottomrule
+\end{tabular}
+\renewcommand{\arraystretch}{1.0}
+\end{table}
+
+\subsubsection{Key Findings from Ablation Analysis}
+
+\paragraph{Formal Verification Criticality.} The most significant degradation occurred when Z3 formal verification was removed (``Embedding Similarity Only'' configuration). Without SMT-based constraint checking, the system produced outputs that appeared semantically reasonable but occasionally violated constitutional constraints in ways not detectable through embedding similarity alone. This confirms that formal verification provides irreplaceable logical guarantees that learned representations cannot substitute.
+
+\paragraph{Multi-Perspective Reasoning Contribution.} Removing deliberative multi-perspective reasoning (``Deliberative Reasoning Removed'' configuration) resulted in decisions that, while technically compliant, failed to adequately balance competing stakeholder interests. The resulting outputs showed characteristic ``single-perspective dominance'' where one stakeholder group's preferences systematically outweighed others, undermining democratic facilitation even when constitutional compliance was maintained.
+
+\paragraph{Safety Filter Necessity.} Disabling safety filters revealed their role in maintaining constitutional boundaries during edge cases. While most synthetic scenarios produced acceptable outputs without safety filters, a subset of adversarial and conflict-heavy scenarios exhibited boundary violations that the full system successfully prevented. This suggests safety constraints function as a necessary backstop rather than primary reasoning mechanism.
+
+\paragraph{Adaptive Weighting Value.} The ``Ensemble Weighting Disabled'' configuration demonstrated that fixed equal weights lead to inefficient resource utilization. Simple scenarios activated computationally expensive multi-perspective reasoning unnecessarily, while complex scenarios received insufficient multi-modal integration. Context-adaptive weighting optimizes the efficiency-quality trade-off by matching reasoning depth to scenario requirements.
+
+\subsubsection{Component Interdependency Analysis}
+
+Our ablation analysis reveals significant interdependencies between components:
+
+\begin{itemize}[itemsep=1pt,parsep=1pt]
+    \item \textbf{Z3 + Transformer Synergy}: Formal verification catches logical violations that embeddings miss, while transformers provide contextual understanding that rule-based Z3 encodings cannot capture independently.
+
+    \item \textbf{Deliberation + Safety Interaction}: Multi-perspective reasoning generates diverse candidate decisions, while safety filters ensure all candidates meet constitutional minimum requirements before synthesis.
+
+    \item \textbf{Weighting + All Modes}: Adaptive weighting depends on the availability of multiple reasoning modes to select among; its value diminishes when fewer modes are available.
+\end{itemize}
+
+\subsubsection{Limitations of Ablation Analysis}
+
+This ablation study has inherent limitations:
+
+\begin{itemize}[itemsep=1pt,parsep=1pt]
+    \item \textbf{Synthetic Context}: All observations derive from synthetic scenarios; component contributions may differ with authentic constitutional frameworks.
+
+    \item \textbf{Qualitative Assessment}: We deliberately avoid numeric claims given the exploratory nature of this prototype analysis.
+
+    \item \textbf{Interaction Effects}: Removing single components may not reveal complex multi-component interaction effects.
+
+    \item \textbf{Configuration Space}: We tested a limited subset of possible configurations; unexplored combinations may exhibit different patterns.
+\end{itemize}
+
+The ablation study provides directional evidence for the necessity of each component while acknowledging that comprehensive component contribution analysis requires validation with authentic governance scenarios.
+

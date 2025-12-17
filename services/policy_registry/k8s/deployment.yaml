@@ -1,0 +1,78 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: policy-registry
+  labels:
+    app: policy-registry
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: policy-registry
+  template:
+    metadata:
+      labels:
+        app: policy-registry
+    spec:
+      containers:
+      - name: policy-registry
+        image: policy-registry:latest
+        ports:
+        - containerPort: 8000
+        env:
+        - name: POLICY_REGISTRY_REDIS_URL
+          value: "redis://redis-service:6379"
+        - name: POLICY_REGISTRY_KAFKA_BOOTSTRAP_SERVERS
+          value: "kafka-service:9092"
+        livenessProbe:
+          httpGet:
+            path: /health/live
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health/ready
+            port: 8000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: policy-registry-service
+  labels:
+    app: policy-registry
+spec:
+  selector:
+    app: policy-registry
+  ports:
+  - port: 8000
+    targetPort: 8000
+  type: ClusterIP
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: policy-registry-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  rules:
+  - host: policy-registry.local
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: policy-registry-service
+            port:
+              number: 8000

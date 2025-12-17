@@ -1,0 +1,460 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+  namespace: acgs2-monitoring
+  labels:
+    app: prometheus
+data:
+  prometheus.yml: |
+    # ACGS-2 Prometheus Configuration
+    # Constitutional Hash: cdd01ef066bc6cf2
+
+    global:
+      scrape_interval: 15s
+      evaluation_interval: 15s
+      scrape_timeout: 10s
+
+    rule_files:
+      - "/etc/prometheus/alert_rules.yml"
+
+    alerting:
+      alertmanagers:
+        - static_configs:
+            - targets:
+              - alertmanager:9093
+
+    scrape_configs:
+      # The job name is added as a label `job=<job_name>` to any timeseries scraped from this config.
+      - job_name: 'prometheus'
+        static_configs:
+          - targets: ['localhost:9090']
+
+      # ACGS-2 Services Monitoring
+      - job_name: 'acgs2-enhanced-agent-bus'
+        static_configs:
+          - targets: ['enhanced-agent-bus.acgs2.svc.cluster.local:8000']
+        scrape_interval: 10s
+        metrics_path: '/metrics'
+
+      - job_name: 'acgs2-core-services'
+        static_configs:
+          - targets:
+            - 'constraint-generation-system.acgs2.svc.cluster.local:8001'
+            - 'search-platform.acgs2.svc.cluster.local:8002'
+            - 'audit-service.acgs2.svc.cluster.local:8003'
+        scrape_interval: 15s
+        metrics_path: '/metrics'
+
+      - job_name: 'acgs2-deliberation-layer'
+        static_configs:
+          - targets: ['deliberation-layer.acgs2.svc.cluster.local:8004']
+        scrape_interval: 10s
+        metrics_path: '/metrics'
+
+      # Kubernetes metrics
+      - job_name: 'kubernetes-apiservers'
+        kubernetes_sd_configs:
+          - role: endpoints
+        scheme: https
+        tls_config:
+          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+          insecure_skip_verify: true
+        bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+        relabel_configs:
+        - source_labels: [__meta_kubernetes_namespace, __meta_kubernetes_service_name, __meta_kubernetes_endpoint_port_name]
+          action: keep
+          regex: default;kubernetes;https
+
+      - job_name: 'kubernetes-nodes'
+        kubernetes_sd_configs:
+          - role: node
+        scheme: https
+        tls_config:
+          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+          insecure_skip_verify: true
+        bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+        relabel_configs:
+        - action: labelmap
+          regex: __meta_kubernetes_node_label_(.+)
+        - target_label: __address__
+          replacement: kubernetes.default.svc:443
+        - source_labels: [__meta_kubernetes_node_name]
+          regex: (.+)
+          target_label: __metrics_path__
+          replacement: /api/v1/nodes/${1}/proxy/metrics
+
+      - job_name: 'kubernetes-pods'
+        kubernetes_sd_configs:
+          - role: pod
+        relabel_configs:
+        - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+          action: keep
+          regex: true
+        - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+          action: replace
+          target_label: __metrics_path__
+          regex: (.+)
+        - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+          action: replace
+          regex: ([^:]+)(?::\d+)?;(\d+)
+          replacement: $1:$2
+          target_label: __address__
+        - action: labelmap
+          regex: __meta_kubernetes_pod_label_(.+)
+        - source_labels: [__meta_kubernetes_namespace]
+          action: replace
+          target_label: kubernetes_namespace
+        - source_labels: [__meta_kubernetes_pod_name]
+          action: replace
+          target_label: kubernetes_pod_name
+
+      - job_name: 'kubernetes-cadvisor'
+        kubernetes_sd_configs:
+          - role: node
+        scheme: https
+        tls_config:
+          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+          insecure_skip_verify: true
+        bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+        relabel_configs:
+        - action: labelmap
+          regex: __meta_kubernetes_node_label_(.+)
+        - target_label: __address__
+          replacement: kubernetes.default.svc:443
+        - source_labels: [__meta_kubernetes_node_name]
+          regex: (.+)
+          target_label: __metrics_path__
+          replacement: /api/v1/nodes/${1}/proxy/metrics/cadvisor
+
+      # ELK Stack Monitoring
+      - job_name: 'elasticsearch'
+        static_configs:
+          - targets: ['elasticsearch.acgs2-monitoring.svc.cluster.local:9200']
+        scrape_interval: 30s
+        metrics_path: '/_prometheus/metrics'
+
+      - job_name: 'logstash'
+        static_configs:
+          - targets: ['logstash.acgs2-monitoring.svc.cluster.local:9600']
+        scrape_interval: 30s
+        metrics_path: '/_node/stats'
+
+      - job_name: 'kibana'
+        static_configs:
+          - targets: ['kibana.acgs2-monitoring.svc.cluster.local:5601']
+        scrape_interval: 30s
+        metrics_path: '/api/status'
+
+      # Node Exporter for system metrics
+      - job_name: 'node-exporter'
+        static_configs:
+          - targets: ['node-exporter.acgs2-monitoring.svc.cluster.local:9100']
+        scrape_interval: 15s
+
+      # Redis Exporter
+      - job_name: 'redis-exporter'
+        static_configs:
+          - targets: ['redis-exporter.acgs2-monitoring.svc.cluster.local:9121']
+        scrape_interval: 30s
+
+  alert_rules.yml: |
+    # ACGS-2 Alert Rules
+    # Constitutional Hash: cdd01ef066bc6cf2
+
+    groups:
+      - name: acgs2.alerts
+        rules:
+          # System Resource Alerts
+          - alert: HighCPUUsage
+            expr: 100 - (avg by(instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+            for: 5m
+            labels:
+              severity: warning
+              service: system
+            annotations:
+              summary: "High CPU usage detected"
+              description: "CPU usage is {{ $value }}% on {{ $labels.instance }}"
+
+          - alert: CriticalCPUUsage
+            expr: 100 - (avg by(instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 90
+            for: 2m
+            labels:
+              severity: critical
+              service: system
+            annotations:
+              summary: "Critical CPU usage detected"
+              description: "CPU usage is {{ $value }}% on {{ $labels.instance }}"
+
+          - alert: HighMemoryUsage
+            expr: (1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) * 100 > 80
+            for: 5m
+            labels:
+              severity: warning
+              service: system
+            annotations:
+              summary: "High memory usage detected"
+              description: "Memory usage is {{ $value }}% on {{ $labels.instance }}"
+
+          - alert: CriticalMemoryUsage
+            expr: (1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) * 100 > 95
+            for: 2m
+            labels:
+              severity: critical
+              service: system
+            annotations:
+              summary: "Critical memory usage detected"
+              description: "Memory usage is {{ $value }}% on {{ $labels.instance }}"
+
+          - alert: HighDiskUsage
+            expr: (node_filesystem_size_bytes - node_filesystem_free_bytes) / node_filesystem_size_bytes * 100 > 80
+            for: 5m
+            labels:
+              severity: warning
+              service: system
+            annotations:
+              summary: "High disk usage detected"
+              description: "Disk usage is {{ $value }}% on {{ $labels.instance }}"
+
+          - alert: CriticalDiskUsage
+            expr: (node_filesystem_size_bytes - node_filesystem_free_bytes) / node_filesystem_size_bytes * 100 > 95
+            for: 2m
+            labels:
+              severity: critical
+              service: system
+            annotations:
+              summary: "Critical disk usage detected"
+              description: "Disk usage is {{ $value }}% on {{ $labels.instance }}"
+
+          # Service Health Alerts
+          - alert: ServiceDown
+            expr: up == 0
+            for: 1m
+            labels:
+              severity: critical
+              service: "{{ $labels.job }}"
+            annotations:
+              summary: "Service {{ $labels.job }} is down"
+              description: "Service {{ $labels.job }} has been down for more than 1 minute"
+
+          - alert: ServiceRestart
+            expr: increase(process_start_time_seconds[5m]) > 0
+            for: 0m
+            labels:
+              severity: warning
+              service: "{{ $labels.job }}"
+            annotations:
+              summary: "Service {{ $labels.job }} restarted"
+              description: "Service {{ $labels.job }} has restarted"
+
+          # ACGS-2 Specific Alerts
+          - alert: LowRedisHitRate
+            expr: redis_keyspace_hits_total / (redis_keyspace_hits_total + redis_keyspace_misses_total) * 100 < 85
+            for: 5m
+            labels:
+              severity: critical
+              service: redis
+            annotations:
+              summary: "Low Redis cache hit rate"
+              description: "Redis hit rate is {{ $value }}% (below constitutional requirement of 85%)"
+
+          - alert: HighRedisMemoryUsage
+            expr: redis_memory_used_bytes / redis_memory_max_bytes * 100 > 80
+            for: 5m
+            labels:
+              severity: warning
+              service: redis
+            annotations:
+              summary: "High Redis memory usage"
+              description: "Redis memory usage is {{ $value }}%"
+
+          - alert: ElasticsearchClusterHealth
+            expr: elasticsearch_cluster_health_status{cluster="acgs2-cluster"} != 0
+            for: 1m
+            labels:
+              severity: critical
+              service: elasticsearch
+            annotations:
+              summary: "Elasticsearch cluster health degraded"
+              description: "Elasticsearch cluster status is {{ $value }} (0=green, 1=yellow, 2=red)"
+
+          - alert: LogstashPipelineError
+            expr: rate(logstash_pipeline_events_out_total{pipeline="main"}[5m]) == 0
+            for: 2m
+            labels:
+              severity: warning
+              service: logstash
+            annotations:
+              summary: "Logstash pipeline not processing events"
+              description: "Logstash is not processing events in the main pipeline"
+
+          # Kubernetes Alerts
+          - alert: KubernetesPodCrashLooping
+            expr: increase(kube_pod_container_status_restarts_total[10m]) > 0
+            for: 2m
+            labels:
+              severity: warning
+              service: kubernetes
+            annotations:
+              summary: "Pod crash looping"
+              description: "Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} is crash looping"
+
+          - alert: KubernetesNodeNotReady
+            expr: kube_node_status_condition{condition="Ready",status="true"} == 0
+            for: 5m
+            labels:
+              severity: critical
+              service: kubernetes
+            annotations:
+              summary: "Kubernetes node not ready"
+              description: "Node {{ $labels.node }} is not ready"
+
+          # Network Alerts
+          - alert: HighNetworkErrors
+            expr: rate(node_network_receive_errs_total[5m]) > 10
+            for: 2m
+            labels:
+              severity: warning
+              service: network
+            annotations:
+              summary: "High network receive errors"
+              description: "Network interface {{ $labels.device }} has {{ $value }} receive errors per second"
+
+          # Application Performance Alerts
+          - alert: HighResponseTime
+            expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 1
+            for: 5m
+            labels:
+              severity: warning
+              service: application
+            annotations:
+              summary: "High response time (95th percentile)"
+              description: "95th percentile response time is {{ $value }}s for {{ $labels.service }}"
+
+          - alert: HighErrorRate
+            expr: rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m]) * 100 > 5
+            for: 2m
+            labels:
+              severity: critical
+              service: application
+            annotations:
+              summary: "High error rate"
+              description: "Error rate is {{ $value }}% for {{ $labels.service }}"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus
+  namespace: acgs2-monitoring
+  labels:
+    app: prometheus
+spec:
+  selector:
+    app: prometheus
+  ports:
+  - name: http
+    port: 9090
+    targetPort: 9090
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prometheus
+  namespace: acgs2-monitoring
+  labels:
+    app: prometheus
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: prometheus
+  template:
+    metadata:
+      labels:
+        app: prometheus
+    spec:
+      serviceAccountName: prometheus
+      containers:
+      - name: prometheus
+        image: prom/prometheus:v2.45.0
+        ports:
+        - containerPort: 9090
+          name: http
+        args:
+        - "--config.file=/etc/prometheus/prometheus.yml"
+        - "--storage.tsdb.path=/prometheus"
+        - "--web.console.libraries=/etc/prometheus/console_libraries"
+        - "--web.console.templates=/etc/prometheus/consoles"
+        - "--storage.tsdb.retention.time=200h"
+        - "--web.enable-lifecycle"
+        resources:
+          requests:
+            memory: "400Mi"
+            cpu: "200m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        volumeMounts:
+        - name: config
+          mountPath: /etc/prometheus
+        - name: prometheus-storage
+          mountPath: /prometheus
+        livenessProbe:
+          httpGet:
+            path: /-/healthy
+            port: 9090
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /-/ready
+            port: 9090
+          initialDelaySeconds: 5
+          periodSeconds: 5
+      volumes:
+      - name: config
+        configMap:
+          name: prometheus-config
+      - name: prometheus-storage
+        emptyDir: {}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: prometheus
+  namespace: acgs2-monitoring
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: prometheus
+rules:
+- apiGroups: [""]
+  resources:
+  - nodes
+  - nodes/proxy
+  - services
+  - endpoints
+  - pods
+  verbs: ["get", "list", "watch"]
+- apiGroups:
+  - extensions
+  resources:
+  - ingresses
+  verbs: ["get", "list", "watch"]
+- nonResourceURLs: ["/metrics"]
+  verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: prometheus
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: prometheus
+subjects:
+- kind: ServiceAccount
+  name: prometheus
+  namespace: acgs2-monitoring

@@ -117,6 +117,9 @@ class AgentMessage:
     updated_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     expires_at: Optional[datetime] = None
 
+    # Impact assessment for deliberation layer
+    impact_score: Optional[float] = None
+
     # Performance tracking
     performance_metrics: Dict[str, Any] = field(default_factory=dict)
 

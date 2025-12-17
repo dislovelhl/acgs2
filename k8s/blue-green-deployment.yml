@@ -1,0 +1,89 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: adaptive-governance-blue
+  namespace: acgs2
+  labels:
+    app: adaptive-governance
+    version: blue
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: adaptive-governance
+      version: blue
+  template:
+    metadata:
+      labels:
+        app: adaptive-governance
+        version: blue
+    spec:
+      containers:
+      - name: adaptive-governance
+        image: acgs2/adaptive-governance:latest
+        ports:
+        - containerPort: 8000
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 30
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: adaptive-governance-green
+  namespace: acgs2
+  labels:
+    app: adaptive-governance
+    version: green
+spec:
+  replicas: 0  # Initially 0 replicas
+  selector:
+    matchLabels:
+      app: adaptive-governance
+      version: green
+  template:
+    metadata:
+      labels:
+        app: adaptive-governance
+        version: green
+    spec:
+      containers:
+      - name: adaptive-governance
+        image: acgs2/adaptive-governance:canary  # New version image
+        ports:
+        - containerPort: 8000
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 30
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"

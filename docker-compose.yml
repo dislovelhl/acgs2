@@ -1,0 +1,74 @@
+version: '3.8'
+
+services:
+  rust-message-bus:
+    build:
+      context: ./enhanced_agent_bus/rust
+    ports:
+      - "8080:8080"
+    networks:
+      - acgs2-network
+    restart: unless-stopped
+
+  deliberation-layer:
+    build:
+      context: ./enhanced_agent_bus/deliberation_layer
+    ports:
+      - "8081:8081"
+    depends_on:
+      - rust-message-bus
+    networks:
+      - acgs2-network
+    restart: unless-stopped
+
+  constraint-generation:
+    build:
+      context: ./services/core/constraint_generation_system
+    ports:
+      - "8082:8082"
+    depends_on:
+      - deliberation-layer
+    networks:
+      - acgs2-network
+    restart: unless-stopped
+
+  vector-search:
+    build:
+      context: ./services/integration/search_platform
+    ports:
+      - "8083:8083"
+    depends_on:
+      - constraint-generation
+    networks:
+      - acgs2-network
+    restart: unless-stopped
+
+  audit-ledger:
+    build:
+      context: ./services/audit_service
+    ports:
+      - "8084:8084"
+    depends_on:
+      - vector-search
+    networks:
+      - acgs2-network
+    restart: unless-stopped
+
+  adaptive-governance:
+    build:
+      context: ./services/policy_registry
+    ports:
+      - "8000:8000"
+    depends_on:
+      - audit-ledger
+    networks:
+      - acgs2-network
+    restart: unless-stopped
+
+networks:
+  acgs2-network:
+    driver: bridge
+
+volumes:
+  acgs2-data:
+    driver: local

@@ -1,0 +1,222 @@
+stages:
+  - build
+  - test
+  - deploy
+  - rollback
+
+variables:
+  DOCKER_REGISTRY: "your-registry.com"
+  DOCKER_TLS_CERTDIR: "/certs"
+  KUBECONFIG: "/etc/deploy/config"
+
+# 构建阶段
+build:rust:
+  stage: build
+  image: rust:latest
+  script:
+    - cd enhanced_agent_bus/rust
+    - cargo build --release
+    - cargo test
+  artifacts:
+    paths:
+      - enhanced_agent_bus/rust/target/release/
+    expire_in: 1 hour
+  only:
+    - merge_requests
+    - main
+    - develop
+
+build:docker:
+  stage: build
+  image: docker:latest
+  services:
+    - docker:dind
+  script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - |
+      SERVICES=(
+        "rust-message-bus:enhanced_agent_bus/rust"
+        "deliberation-layer:enhanced_agent_bus/deliberation_layer"
+        "constraint-generation:services/core/constraint_generation_system"
+        "vector-search:services/integration/search_platform"
+        "audit-ledger:services/audit_service"
+        "adaptive-governance:services/policy_registry"
+      )
+    - |
+      for service in "${SERVICES[@]}"; do
+        name=$(echo $service | cut -d: -f1)
+        context=$(echo $service | cut -d: -f2)
+        docker build -t $CI_REGISTRY/acgs2/$name:$CI_COMMIT_SHA $context
+        docker push $CI_REGISTRY/acgs2/$name:$CI_COMMIT_SHA
+      done
+  dependencies:
+    - build:rust
+  only:
+    - merge_requests
+    - main
+    - develop
+
+# 测试阶段
+test:unit:
+  stage: test
+  image: python:3.9
+  script:
+    - pip install -r requirements.txt
+    - python -m pytest tests/unit/ -v --junitxml=unit-tests.xml
+  artifacts:
+    reports:
+      junit: unit-tests.xml
+  coverage: '/TOTAL.*\s+(\d+%)$/'
+  only:
+    - merge_requests
+    - main
+    - develop
+
+test:integration:
+  stage: test
+  image: python:3.9
+  services:
+    - docker:dind
+  script:
+    - docker-compose up -d
+    - sleep 30
+    - python enhanced_agent_bus/deliberation_layer/test_deliberation.py
+    - python -m pytest tests/integration/ -v --junitxml=integration-tests.xml
+    - docker-compose down
+  artifacts:
+    reports:
+      junit: integration-tests.xml
+  dependencies:
+    - build:docker
+  only:
+    - merge_requests
+    - main
+    - develop
+
+# 部署阶段
+deploy:dev:
+  stage: deploy
+  image: google/cloud-sdk:alpine
+  environment:
+    name: development
+    url: https://dev.acgs2.example.com
+  script:
+    - gcloud auth activate-service-account --key-file $GCLOUD_SERVICE_KEY
+    - gcloud container clusters get-credentials $DEV_CLUSTER --zone $DEV_ZONE --project $DEV_PROJECT
+    - sed -i "s|image: acgs2/.*:latest|image: $CI_REGISTRY/acgs2/\\1:$CI_COMMIT_SHA|g" k8s/deployment.yml
+    - kubectl apply -f k8s/
+    - kubectl rollout status deployment -n acgs2 --timeout=600s
+    - ./scripts/health_check.py
+  dependencies:
+    - test:integration
+  only:
+    - develop
+  when: manual
+
+deploy:staging:
+  stage: deploy
+  image: google/cloud-sdk:alpine
+  environment:
+    name: staging
+    url: https://staging.acgs2.example.com
+  script:
+    - gcloud auth activate-service-account --key-file $GCLOUD_SERVICE_KEY
+    - gcloud container clusters get-credentials $STAGING_CLUSTER --zone $STAGING_ZONE --project $STAGING_PROJECT
+    - sed -i "s|image: acgs2/.*:latest|image: $CI_REGISTRY/acgs2/\\1:$CI_COMMIT_SHA|g" k8s/deployment.yml
+    - kubectl apply -f k8s/
+    - kubectl rollout status deployment -n acgs2 --timeout=600s
+    - ./scripts/health_check.py
+    - ./scripts/performance_test.py
+  dependencies:
+    - test:integration
+  only:
+    - main
+  when: manual
+
+deploy:prod:
+  stage: deploy
+  image: google/cloud-sdk:alpine
+  environment:
+    name: production
+    url: https://acgs2.example.com
+  script:
+    - gcloud auth activate-service-account --key-file $GCLOUD_SERVICE_KEY
+    - gcloud container clusters get-credentials $PROD_CLUSTER --zone $PROD_ZONE --project $PROD_PROJECT
+    - sed -i "s|image: acgs2/.*:latest|image: $CI_REGISTRY/acgs2/\\1:$CI_COMMIT_SHA|g" k8s/deployment.yml
+    - kubectl apply -f k8s/
+    - kubectl rollout status deployment -n acgs2 --timeout=600s
+    - ./scripts/health_check.py
+    - ./scripts/smoke_test.py
+    - ./scripts/load_test.py
+  dependencies:
+    - test:integration
+  only:
+    - tags
+  when: manual
+
+# 回滚阶段
+rollback:dev:
+  stage: rollback
+  image: google/cloud-sdk:alpine
+  script:
+    - gcloud auth activate-service-account --key-file $GCLOUD_SERVICE_KEY
+    - gcloud container clusters get-credentials $DEV_CLUSTER --zone $DEV_ZONE --project $DEV_PROJECT
+    - kubectl rollout undo deployment -n acgs2
+    - kubectl rollout status deployment -n acgs2
+  environment:
+    name: development
+    action: stop
+  only:
+    - develop
+  when: manual
+
+rollback:staging:
+  stage: rollback
+  image: google/cloud-sdk:alpine
+  script:
+    - gcloud auth activate-service-account --key-file $GCLOUD_SERVICE_KEY
+    - gcloud container clusters get-credentials $STAGING_CLUSTER --zone $STAGING_ZONE --project $STAGING_PROJECT
+    - kubectl rollout undo deployment -n acgs2
+    - kubectl rollout status deployment -n acgs2
+  environment:
+    name: staging
+    action: stop
+  only:
+    - main
+  when: manual
+
+rollback:prod:
+  stage: rollback
+  image: google/cloud-sdk:alpine
+  script:
+    - gcloud auth activate-service-account --key-file $GCLOUD_SERVICE_KEY
+    - gcloud container clusters get-credentials $PROD_CLUSTER --zone $PROD_ZONE --project $PROD_PROJECT
+    - kubectl rollout undo deployment -n acgs2
+    - kubectl rollout status deployment -n acgs2
+  environment:
+    name: production
+    action: stop
+  only:
+    - tags
+  when: manual
+
+# 通知
+notify:success:
+  stage: .post
+  script:
+    - curl -X POST -H 'Content-type: application/json' --data "{\"text\":\"✅ ACGS-2 部署成功 - $CI_ENVIRONMENT_NAME ($CI_COMMIT_SHORT_SHA)\"}" $SLACK_WEBHOOK
+  only:
+    - develop
+    - main
+    - tags
+  when: on_success
+
+notify:failure:
+  stage: .post
+  script:
+    - curl -X POST -H 'Content-type: application/json' --data "{\"text\":\"❌ ACGS-2 部署失败 - $CI_ENVIRONMENT_NAME ($CI_COMMIT_SHORT_SHA)\"}" $SLACK_WEBHOOK
+  only:
+    - develop
+    - main
+    - tags
+  when: on_failure

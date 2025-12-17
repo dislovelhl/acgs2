@@ -1,0 +1,154 @@
+"""
+Policy Registry Service - Main FastAPI Application
+"""
+
+import logging
+from contextlib import asynccontextmanager
+from typing import Dict, Any
+
+from fastapi import FastAPI, HTTPException, Depends
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+
+from .services import CryptoService, CacheService, NotificationService, PolicyService
+from .api.v1 import router as v1_router
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Global service instances
+crypto_service = CryptoService()
+cache_service = CacheService()
+notification_service = NotificationService()
+policy_service = PolicyService(crypto_service, cache_service, notification_service)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Application lifespan manager"""
+    # Startup
+    logger.info("Starting Policy Registry Service")
+    
+    await cache_service.initialize()
+    await notification_service.initialize()
+    
+    logger.info("Policy Registry Service started")
+    
+    yield
+    
+    # Shutdown
+    logger.info("Shutting down Policy Registry Service")
+    
+    await notification_service.shutdown()
+    await cache_service.close()
+    
+    logger.info("Policy Registry Service stopped")
+
+
+# Create FastAPI app
+app = FastAPI(
+    title="Policy Registry Service",
+    description="Dynamic Constitution Policy Management with Ed25519 Signatures",
+    version="1.0.0",
+    lifespan=lifespan
+)
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Configure appropriately for production
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+# Dependency injection
+def get_policy_service() -> PolicyService:
+    """Get policy service instance"""
+    return policy_service
+
+
+def get_crypto_service() -> CryptoService:
+    """Get crypto service instance"""
+    return crypto_service
+
+
+def get_cache_service() -> CacheService:
+    """Get cache service instance"""
+    return cache_service
+
+
+def get_notification_service() -> NotificationService:
+    """Get notification service instance"""
+    return notification_service
+
+
+# Include API routers
+app.include_router(v1_router, prefix="/api/v1")
+
+
+# Health check endpoints
+@app.get("/health/live", response_model=Dict[str, Any])
+async def liveness_check():
+    """Kubernetes liveness probe"""
+    return {"status": "alive", "service": "policy-registry"}
+
+
+@app.get("/health/ready", response_model=Dict[str, Any])
+async def readiness_check(
+    cache_svc: CacheService = Depends(get_cache_service),
+    notification_svc: NotificationService = Depends(get_notification_service)
+):
+    """Kubernetes readiness probe"""
+    cache_stats = await cache_svc.get_cache_stats()
+    connection_stats = await notification_svc.get_connection_count()
+    
+    return {
+        "status": "ready",
+        "service": "policy-registry",
+        "cache": cache_stats,
+        "connections": connection_stats
+    }
+
+
+@app.get("/health/details", response_model=Dict[str, Any])
+async def detailed_health_check(
+    policy_svc: PolicyService = Depends(get_policy_service),
+    cache_svc: CacheService = Depends(get_cache_service),
+    notification_svc: NotificationService = Depends(get_notification_service)
+):
+    """Detailed health check for monitoring"""
+    policies = await policy_svc.list_policies()
+    
+    return {
+        "status": "healthy",
+        "service": "policy-registry",
+        "policies_count": len(policies),
+        "cache_stats": await cache_svc.get_cache_stats(),
+        "connection_stats": await notification_svc.get_connection_count()
+    }
+
+
+# Global exception handler
+@app.exception_handler(Exception)
+async def global_exception_handler(request, exc):
+    """Global exception handler"""
+    logger.error(f"Unhandled exception: {exc}", exc_info=True)
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal server error"}
+    )
+
+
+if __name__ == "__main__":
+    import uvicorn
+    
+    uvicorn.run(
+        "main:app",
+        host="0.0.0.0",
+        port=8000,
+        reload=True,
+        log_level="info"
+    )

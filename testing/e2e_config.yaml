@@ -1,0 +1,52 @@
+services:
+  rust_message_bus:
+    url: "http://rust-message-bus:8080"
+    timeout: 5
+  deliberation_layer:
+    url: "http://deliberation-layer:8081"
+    timeout: 10
+  constraint_generation:
+    url: "http://constraint-generation:8082"
+    timeout: 5
+  vector_search:
+    url: "http://vector-search:8083"
+    timeout: 5
+  audit_ledger:
+    url: "http://audit-ledger:8084"
+    timeout: 5
+  adaptive_governance:
+    url: "http://adaptive-governance:8000"
+    timeout: 5
+
+test_parameters:
+  end_to_end_latency_threshold_ms: 5000  # 5 seconds max
+  performance_test_iterations: 100
+  load_test_concurrent_users: 50
+  load_test_duration_seconds: 300
+  fault_recovery_timeout_seconds: 30
+
+message_templates:
+  governance_request:
+    message_type: "governance_request"
+    content: "Request for policy approval on data access"
+    priority: "high"
+    tenant_id: "test_tenant"
+  constraint_violation:
+    message_type: "constraint_check"
+    content: "Check constraints for user action"
+    priority: "medium"
+    tenant_id: "test_tenant"
+  audit_query:
+    message_type: "audit_query"
+    content: "Query recent governance decisions"
+    priority: "low"
+    tenant_id: "test_tenant"
+
+expected_responses:
+  governance_decision:
+    decision_types: ["approved", "rejected", "escalated"]
+    required_fields: ["decision", "confidence", "reasoning", "timestamp"]
+  constraint_result:
+    required_fields: ["constraints", "violations", "recommendations"]
+  audit_result:
+    required_fields: ["events", "total_count", "time_range"]
