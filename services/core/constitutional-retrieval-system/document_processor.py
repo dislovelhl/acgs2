@@ -9,7 +9,7 @@ import logging
 from typing import List, Dict, Any, Optional, Tuple
 import re
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timezone
 
 try:
     from transformers import AutoTokenizer, AutoModel
@@ -72,7 +72,7 @@ class DocumentProcessor:
                 "chunk_index": i,
                 "total_chunks": len(chunks),
                 "content_length": len(chunk),
-                "processed_at": datetime.utcnow().isoformat()
+                "processed_at": datetime.now(timezone.utc).isoformat()
             })
 
             chunk_objects.append({
@@ -115,7 +115,7 @@ class DocumentProcessor:
                     "chunk_index": i,
                     "total_chunks": len(chunks),
                     "content_length": len(chunk),
-                    "processed_at": datetime.utcnow().isoformat()
+                    "processed_at": datetime.now(timezone.utc).isoformat()
                 })
 
                 chunk_objects.append({
@@ -307,7 +307,7 @@ class DocumentProcessor:
             "filename": file_path.name,
             "file_type": file_path.suffix,
             "doc_id": file_path.stem,
-            "processed_at": datetime.utcnow().isoformat()
+            "processed_at": datetime.now(timezone.utc).isoformat()
         }
 
         # Try to extract date from filename

@@ -9,7 +9,7 @@ import logging
 import time
 from typing import Dict, Any, List, Optional, Callable
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from enum import Enum
 import uuid
 
@@ -42,7 +42,7 @@ class AgentVote:
     agent_id: str
     vote: VoteType
     reasoning: str
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=datetime.now(timezone.utc))
     confidence_score: float = 1.0
 
 
@@ -52,8 +52,8 @@ class DeliberationItem:
     item_id: str = field(default_factory=lambda: str(uuid.uuid4()))
     message: AgentMessage = None
     status: DeliberationStatus = DeliberationStatus.PENDING
-    created_at: datetime = field(default_factory=datetime.utcnow)
-    updated_at: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=datetime.now(timezone.utc))
+    updated_at: datetime = field(default_factory=datetime.now(timezone.utc))
 
     # Human review
     human_reviewer: Optional[str] = None
@@ -193,7 +193,7 @@ class DeliberationQueue:
             # Check voting consensus
             if self._check_consensus(item):
                 item.status = DeliberationStatus.CONSENSUS_REACHED
-                item.updated_at = datetime.utcnow()
+                item.updated_at = datetime.now(timezone.utc)()
                 break
 
             await asyncio.sleep(1)  # Check every second
@@ -201,7 +201,7 @@ class DeliberationQueue:
         # Timeout handling
         if item and item.status in [DeliberationStatus.PENDING, DeliberationStatus.UNDER_REVIEW]:
             item.status = DeliberationStatus.TIMED_OUT
-            item.updated_at = datetime.utcnow()
+            item.updated_at = datetime.now(timezone.utc)()
 
     def _check_consensus(self, item: DeliberationItem) -> bool:
         """Check if consensus has been reached in voting."""
@@ -231,9 +231,9 @@ class DeliberationQueue:
         item.human_reviewer = reviewer
         item.human_decision = decision
         item.human_reasoning = reasoning
-        item.human_review_timestamp = datetime.utcnow()
+        item.human_review_timestamp = datetime.now(timezone.utc)()
         item.status = decision
-        item.updated_at = datetime.utcnow()
+        item.updated_at = datetime.now(timezone.utc)()
 
         logger.info(f"Human decision submitted for item {item_id}: {decision.value} by {reviewer}")
 
@@ -262,7 +262,7 @@ class DeliberationQueue:
             existing_vote.vote = vote
             existing_vote.reasoning = reasoning
             existing_vote.confidence_score = confidence
-            existing_vote.timestamp = datetime.utcnow()
+            existing_vote.timestamp = datetime.now(timezone.utc)()
         else:
             # Add new vote
             agent_vote = AgentVote(
@@ -273,7 +273,7 @@ class DeliberationQueue:
             )
             item.current_votes.append(agent_vote)
 
-        item.updated_at = datetime.utcnow()
+        item.updated_at = datetime.now(timezone.utc)()
 
         logger.info(f"Agent {agent_id} voted {vote.value} on item {item_id}")
 
@@ -284,7 +284,7 @@ class DeliberationQueue:
         item.message.status = MessageStatus.DELIVERED
         self.stats['approved'] += 1
 
-        processing_time = (datetime.utcnow() - item.created_at).total_seconds()
+        processing_time = (datetime.now(timezone.utc)() - item.created_at).total_seconds()
         self.stats['avg_processing_time'] = (
             (self.stats['avg_processing_time'] * (self.stats['approved'] + self.stats['rejected'] - 1)) +
             processing_time

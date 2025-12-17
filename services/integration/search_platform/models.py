@@ -8,7 +8,7 @@ Constitutional Hash: cdd01ef066bc6cf2
 """
 
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Dict, List, Optional
 from uuid import UUID, uuid4
@@ -208,7 +208,7 @@ class SearchEvent:
     """Streaming search event for real-time results."""
     event_type: SearchEventType
     data: Dict[str, Any]
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
 
     @classmethod
     def from_sse(cls, event_type: str, data: Dict[str, Any]) -> "SearchEvent":

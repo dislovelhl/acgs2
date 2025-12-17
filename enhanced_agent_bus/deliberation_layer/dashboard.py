@@ -6,7 +6,7 @@ Streamlit-based UI for human-in-the-loop approval of high-risk decisions.
 import streamlit as st
 import pandas as pd
 import json
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Dict, Any, List, Optional
 
 # Import deliberation components
@@ -91,7 +91,7 @@ def show_item_details(item: Dict[str, Any], llm_assistant):
         st.metric("Status", item_details['status'].replace('_', ' ').title())
     with info_cols[2]:
         created = datetime.fromisoformat(item_details['created_at'])
-        st.metric("Age", f"{(datetime.utcnow() - created).seconds}s ago")
+        st.metric("Age", f"{(datetime.now(timezone.utc) - created).seconds}s ago")
 
     # Message content
     st.subheader("Message Content")

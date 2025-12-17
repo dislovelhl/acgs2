@@ -10,7 +10,7 @@ Constitutional Hash: cdd01ef066bc6cf2
 import asyncio
 import logging
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -122,7 +122,7 @@ class AuditEvent:
                     except ValueError:
                         continue
 
-        return datetime.utcnow()
+        return datetime.now(timezone.utc)
 
     @staticmethod
     def _extract_event_type(content: str) -> AuditEventType:
@@ -312,7 +312,7 @@ class AuditTrailSearchService:
         Returns:
             AuditSearchResult with parsed events
         """
-        start_time = datetime.utcnow()
+        start_time = datetime.now(timezone.utc)
 
         search_paths = paths or self.log_paths
 
@@ -346,7 +346,7 @@ class AuditTrailSearchService:
         # Sort by timestamp
         events.sort(key=lambda e: e.timestamp, reverse=True)
 
-        duration = int((datetime.utcnow() - start_time).total_seconds() * 1000)
+        duration = int((datetime.now(timezone.utc) - start_time).total_seconds() * 1000)
 
         return AuditSearchResult(
             query=pattern,
@@ -556,7 +556,7 @@ class AuditTrailSearchService:
         Returns:
             AuditSearchResult with critical events
         """
-        end_time = datetime.utcnow()
+        end_time = datetime.now(timezone.utc)
         start_time = end_time - timedelta(hours=hours)
 
         pattern = r"critical|fatal|emergency|alert"

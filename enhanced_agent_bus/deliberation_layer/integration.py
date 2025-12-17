@@ -6,7 +6,7 @@ Main integration point for the deliberation layer components.
 import asyncio
 import logging
 from typing import Dict, Any, Optional, Callable
-from datetime import datetime
+from datetime import datetime, timezone
 
 from ..models import AgentMessage, MessageStatus
 from .impact_scorer import get_impact_scorer, calculate_message_impact
@@ -75,7 +75,7 @@ class DeliberationLayer:
         Returns:
             Processing result with routing decision
         """
-        start_time = datetime.utcnow()
+        start_time = datetime.now(timezone.utc)
 
         try:
             # Step 1: Calculate impact score if not present
@@ -93,7 +93,7 @@ class DeliberationLayer:
                 result = await self._process_deliberation(message, routing_decision)
 
             # Step 4: Record performance feedback
-            processing_time = (datetime.utcnow() - start_time).total_seconds()
+            processing_time = (datetime.now(timezone.utc) - start_time).total_seconds()
             await self._record_performance_feedback(message, result, processing_time)
 
             result['processing_time'] = processing_time
@@ -108,7 +108,7 @@ class DeliberationLayer:
             return {
                 'success': False,
                 'error': str(e),
-                'processing_time': (datetime.utcnow() - start_time).total_seconds()
+                'processing_time': (datetime.now(timezone.utc) - start_time).total_seconds()
             }
 
     async def _process_fast_lane(self, message: AgentMessage, routing_decision: Dict[str, Any]) -> Dict[str, Any]:

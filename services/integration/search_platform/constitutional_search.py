@@ -12,7 +12,7 @@ import ast
 import logging
 import re
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Dict, List, Optional, Set
 
@@ -48,7 +48,7 @@ class ConstitutionalViolation:
     severity: str  # "critical", "high", "medium", "low"
     match_content: str
     remediation: Optional[str] = None
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -226,7 +226,7 @@ class ConstitutionalCodeSearchService:
         Returns:
             ConstitutionalSearchResult with matches and any violations
         """
-        start_time = datetime.utcnow()
+        start_time = datetime.now(timezone.utc)
 
         # Execute the search
         response = await self.client.search_code(
@@ -250,7 +250,7 @@ class ConstitutionalCodeSearchService:
         else:
             compliant_matches = response.results
 
-        duration = int((datetime.utcnow() - start_time).total_seconds() * 1000)
+        duration = int((datetime.now(timezone.utc) - start_time).total_seconds() * 1000)
 
         return ConstitutionalSearchResult(
             query=pattern,
@@ -278,7 +278,7 @@ class ConstitutionalCodeSearchService:
         Returns:
             ConstitutionalSearchResult with all found violations
         """
-        start_time = datetime.utcnow()
+        start_time = datetime.now(timezone.utc)
         all_violations: List[ConstitutionalViolation] = []
         files_searched: Set[str] = set()
 
@@ -322,7 +322,7 @@ class ConstitutionalCodeSearchService:
             except Exception as e:
                 logger.warning(f"Error scanning with pattern '{vp.name}': {e}")
 
-        duration = int((datetime.utcnow() - start_time).total_seconds() * 1000)
+        duration = int((datetime.now(timezone.utc) - start_time).total_seconds() * 1000)
 
         return ConstitutionalSearchResult(
             query="constitutional_violation_scan",
@@ -346,7 +346,7 @@ class ConstitutionalCodeSearchService:
         Returns:
             ConstitutionalSearchResult with hash violations
         """
-        start_time = datetime.utcnow()
+        start_time = datetime.now(timezone.utc)
         violations: List[ConstitutionalViolation] = []
         compliant_files: List[SearchMatch] = []
 
@@ -390,7 +390,7 @@ class ConstitutionalCodeSearchService:
         for match in correct_hash_response.results:
             compliant_files.append(match)
 
-        duration = int((datetime.utcnow() - start_time).total_seconds() * 1000)
+        duration = int((datetime.now(timezone.utc) - start_time).total_seconds() * 1000)
 
         return ConstitutionalSearchResult(
             query="constitutional_hash_verification",
@@ -974,7 +974,7 @@ class TrivyContainerScanner:
             
             self.scan_results[image_name] = {
                 "violations_count": len(violations),
-                "scan_time": datetime.utcnow().isoformat(),
+                "scan_time": datetime.now(timezone.utc).isoformat(),
                 "success": True
             }
             
@@ -982,7 +982,7 @@ class TrivyContainerScanner:
             logger.warning(f"Trivy scan failed for {image_name}: {e}")
             self.scan_results[image_name] = {
                 "error": str(e),
-                "scan_time": datetime.utcnow().isoformat(),
+                "scan_time": datetime.now(timezone.utc).isoformat(),
                 "success": False
             }
         
@@ -1076,7 +1076,7 @@ class TrivyContainerScanner:
         Returns:
             ConstitutionalSearchResult with container security violations
         """
-        start_time = datetime.utcnow()
+        start_time = datetime.now(timezone.utc)
         all_violations: List[ConstitutionalViolation] = []
         
         # Find Dockerfiles
@@ -1105,7 +1105,7 @@ class TrivyContainerScanner:
             except Exception as e:
                 logger.debug(f"Could not scan image {image_name}: {e}")
         
-        duration = int((datetime.utcnow() - start_time).total_seconds() * 1000)
+        duration = int((datetime.now(timezone.utc) - start_time).total_seconds() * 1000)
         
         return ConstitutionalSearchResult(
             query="container_security_scan",

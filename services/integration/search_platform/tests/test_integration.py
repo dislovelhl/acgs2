@@ -10,7 +10,7 @@ Constitutional Hash: cdd01ef066bc6cf2
 import asyncio
 import os
 import pytest
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List
 
 # Skip all tests if Search Platform is not available
@@ -238,7 +238,7 @@ class TestAuditTrailSearch:
 
     async def test_search_with_time_range(self, audit_service):
         """Test search with time range."""
-        end_time = datetime.utcnow()
+        end_time = datetime.now(timezone.utc)
         start_time = end_time - timedelta(hours=24)
 
         result = await audit_service.search(
@@ -265,7 +265,7 @@ class TestAuditTrailSearch:
 
     async def test_generate_audit_summary(self, audit_service):
         """Test generating audit summary."""
-        end_time = datetime.utcnow()
+        end_time = datetime.now(timezone.utc)
         start_time = end_time - timedelta(hours=1)
 
         summary = await audit_service.generate_audit_summary(

@@ -14,6 +14,13 @@ import uuid
 
 from .alerting import Alert, AlertSeverity, AlertStatus
 
+# Import centralized Redis config with fallback
+try:
+    from shared.redis_config import get_redis_url
+    DEFAULT_REDIS_URL = get_redis_url()
+except ImportError:
+    DEFAULT_REDIS_URL = "redis://localhost:6379"
+
 # Constitutional compliance hash
 CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
 
@@ -144,7 +151,7 @@ class SystemMetricsCollector:
 class RedisMetricsCollector:
     """Collects Redis metrics."""
 
-    def __init__(self, redis_url: str = "redis://localhost:6379"):
+    def __init__(self, redis_url: str = DEFAULT_REDIS_URL):
         self.constitutional_hash = CONSTITUTIONAL_HASH
         self.redis_url = redis_url
         self._redis_client = None

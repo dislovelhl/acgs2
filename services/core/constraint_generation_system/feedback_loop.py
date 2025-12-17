@@ -5,7 +5,7 @@ ACGS-2 Feedback Loop
 
 import logging
 from typing import Dict, Any, List, Optional
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import json
 import statistics
 
@@ -58,7 +58,7 @@ class FeedbackLoop:
             反馈数据
         """
         feedback_entry = {
-            'timestamp': datetime.utcnow(),
+            'timestamp': datetime.now(timezone.utc),
             'request': request,
             'result': {
                 'syntax_valid': result.syntax_valid,
@@ -91,7 +91,7 @@ class FeedbackLoop:
             feedback: 手动反馈数据
         """
         feedback_entry = {
-            'timestamp': datetime.utcnow(),
+            'timestamp': datetime.now(timezone.utc),
             'feedback_type': 'manual',
             **feedback
         }
@@ -103,7 +103,7 @@ class FeedbackLoop:
 
     def _cleanup_old_feedback(self):
         """清理过期反馈"""
-        cutoff_time = datetime.utcnow() - self.feedback_window
+        cutoff_time = datetime.now(timezone.utc) - self.feedback_window
         self.feedback_data = [
             entry for entry in self.feedback_data
             if entry['timestamp'] > cutoff_time
@@ -391,10 +391,10 @@ class FeedbackLoop:
         Args:
             days: 保留天数
         """
-        cutoff_time = datetime.utcnow() - timedelta(days=days)
+        cutoff_time = datetime.now(timezone.utc) - timedelta(days=days)
         self.improvement_suggestions = [
             s for s in self.improvement_suggestions
-            if s.get('timestamp', datetime.utcnow()) > cutoff_time
+            if s.get('timestamp', datetime.now(timezone.utc)) > cutoff_time
         ]
 
     def get_performance_trends(self) -> Dict[str, Any]:

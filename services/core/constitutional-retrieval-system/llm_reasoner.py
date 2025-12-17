@@ -7,7 +7,7 @@ to provide enhanced decision support for fuzzy legal scenarios.
 
 import logging
 from typing import List, Dict, Any, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 
 try:
     from langchain_openai import ChatOpenAI
@@ -128,7 +128,7 @@ class LLMReasoner:
                 'reasoned_by': 'llm_reasoner',
                 'model': self.model_name,
                 'context_documents_used': len(context_documents),
-                'timestamp': datetime.utcnow().isoformat(),
+                'timestamp': datetime.now(timezone.utc).isoformat(),
                 'query': query
             })
 
@@ -202,7 +202,7 @@ class LLMReasoner:
             analysis.update({
                 'analyzed_by': 'llm_reasoner',
                 'precedents_analyzed': len(conflicting_precedents),
-                'timestamp': datetime.utcnow().isoformat()
+                'timestamp': datetime.now(timezone.utc).isoformat()
             })
 
             return analysis
@@ -403,7 +403,7 @@ class LLMReasoner:
             'counterarguments': ['Limited analysis without LLM'],
             'reasoning_trace': 'Rule-based fallback reasoning',
             'reasoned_by': 'fallback_reasoner',
-            'timestamp': datetime.utcnow().isoformat()
+            'timestamp': datetime.now(timezone.utc).isoformat()
         }
 
     def _fallback_conflict_analysis(self, case_description: str,

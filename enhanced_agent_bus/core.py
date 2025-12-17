@@ -28,6 +28,13 @@ from models import (
 )
 from validators import ValidationResult
 
+# Import centralized Redis config with fallback
+try:
+    from shared.redis_config import get_redis_url
+    DEFAULT_REDIS_URL = get_redis_url()
+except ImportError:
+    DEFAULT_REDIS_URL = "redis://localhost:6379"
+
 logger = logging.getLogger(__name__)
 
 
@@ -200,7 +207,7 @@ class MessageProcessor:
 class EnhancedAgentBus:
     """Enhanced agent communication bus with constitutional compliance."""
 
-    def __init__(self, redis_url: str = "redis://localhost:6379"):
+    def __init__(self, redis_url: str = DEFAULT_REDIS_URL):
         self.constitutional_hash = CONSTITUTIONAL_HASH
         self.redis_url = redis_url
         self._agents: Dict[str, Dict[str, Any]] = {}

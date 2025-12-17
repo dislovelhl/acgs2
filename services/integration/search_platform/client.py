@@ -10,7 +10,7 @@ Constitutional Hash: cdd01ef066bc6cf2
 import asyncio
 import logging
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from enum import Enum
 from typing import Any, AsyncIterator, Callable, Dict, List, Optional
 
@@ -56,7 +56,7 @@ class CircuitBreaker:
     def state(self) -> CircuitState:
         if self._state == CircuitState.OPEN:
             if self._last_failure_time and (
-                datetime.utcnow() - self._last_failure_time
+                datetime.now(timezone.utc) - self._last_failure_time
             ) > timedelta(seconds=self.recovery_timeout):
                 self._state = CircuitState.HALF_OPEN
                 self._half_open_calls = 0
@@ -75,7 +75,7 @@ class CircuitBreaker:
     def record_failure(self) -> None:
         """Record a failed call."""
         self._failure_count += 1
-        self._last_failure_time = datetime.utcnow()
+        self._last_failure_time = datetime.now(timezone.utc)
 
         if self._state == CircuitState.HALF_OPEN:
             self._state = CircuitState.OPEN

@@ -5,7 +5,7 @@ ACGS-2 Dynamic Constraint Updater
 
 import logging
 from typing import Dict, Any, List, Optional
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from collections import defaultdict
 import json
 
@@ -55,7 +55,7 @@ class DynamicConstraintUpdater:
             result: 生成结果
         """
         language = request.language.lower()
-        timestamp = datetime.utcnow()
+        timestamp = datetime.now(timezone.utc)
 
         # 记录反馈
         feedback_entry = {
@@ -97,7 +97,7 @@ class DynamicConstraintUpdater:
             feedback: 反馈数据
         """
         language = feedback.get('language', 'unknown').lower()
-        timestamp = datetime.utcnow()
+        timestamp = datetime.now(timezone.utc)
 
         feedback_entry = {
             'timestamp': timestamp,
@@ -113,7 +113,7 @@ class DynamicConstraintUpdater:
 
     def _cleanup_old_feedback(self, language: str):
         """清理过期反馈"""
-        cutoff_time = datetime.utcnow() - self.feedback_window
+        cutoff_time = datetime.now(timezone.utc) - self.feedback_window
         self.feedback_history[language] = [
             entry for entry in self.feedback_history[language]
             if entry['timestamp'] > cutoff_time
@@ -321,7 +321,7 @@ class DynamicConstraintUpdater:
         feedback = self.feedback_history.get(language.lower(), [])
         data = {
             'language': language,
-            'export_time': datetime.utcnow().isoformat(),
+            'export_time': datetime.now(timezone.utc).isoformat(),
             'feedback_count': len(feedback),
             'feedback': feedback,
             'dynamic_constraints': self.dynamic_constraints.get(language.lower(), {}),

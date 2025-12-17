@@ -6,7 +6,7 @@ Routes messages based on impact scores to appropriate processing lanes.
 import asyncio
 import logging
 from typing import Dict, Any, Optional, Callable
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from ..models import AgentMessage, MessageStatus
 from .impact_scorer import calculate_message_impact
@@ -81,13 +81,13 @@ class AdaptiveRouter:
 
         # Mark as processed
         message.status = MessageStatus.DELIVERED
-        message.updated_at = datetime.utcnow()
+        message.updated_at = datetime.now(timezone.utc)
 
         # Record routing decision
         routing_decision = {
             'lane': 'fast',
             'impact_score': message.impact_score,
-            'decision_timestamp': datetime.utcnow(),
+            'decision_timestamp': datetime.now(timezone.utc),
             'processing_time': 0.0,
             'requires_deliberation': False
         }
@@ -116,7 +116,7 @@ class AdaptiveRouter:
             'lane': 'deliberation',
             'item_id': item_id,
             'impact_score': message.impact_score,
-            'decision_timestamp': datetime.utcnow(),
+            'decision_timestamp': datetime.now(timezone.utc),
             'requires_deliberation': True,
             'estimated_wait_time': self.deliberation_timeout
         }
@@ -137,7 +137,7 @@ class AdaptiveRouter:
             'message_id': message.message_id,
             'impact_score': message.impact_score,
             'routing_decision': routing_decision,
-            'timestamp': datetime.utcnow(),
+            'timestamp': datetime.now(timezone.utc),
             'message_type': message.message_type.value,
             'priority': message.priority.value if hasattr(message.priority, 'value') else str(message.priority)
         }

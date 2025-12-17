@@ -7,7 +7,7 @@ import logging
 import json
 from typing import Dict, Any, Optional, List, Union
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 
 # 尝试导入约束库，如果不可用则使用fallback
 try:
@@ -113,7 +113,7 @@ class ConstraintGenerator:
         Returns:
             生成结果
         """
-        start_time = datetime.utcnow()
+        start_time = datetime.now(timezone.utc)
 
         try:
             # 获取语言特定的约束
@@ -136,7 +136,7 @@ class ConstraintGenerator:
                 quality_score = await self.quality_scorer.score_code(code, request.language)
 
             # 计算生成时间
-            generation_time = (datetime.utcnow() - start_time).total_seconds()
+            generation_time = (datetime.now(timezone.utc) - start_time).total_seconds()
 
             # 创建结果
             result = GenerationResult(
@@ -166,7 +166,7 @@ class ConstraintGenerator:
 
         except Exception as e:
             logger.error(f"Code generation failed: {e}")
-            generation_time = (datetime.utcnow() - start_time).total_seconds()
+            generation_time = (datetime.now(timezone.utc) - start_time).total_seconds()
 
             return GenerationResult(
                 code="",

@@ -5,7 +5,7 @@ Uses LangChain and GPT-4 to provide decision reasoning and analysis.
 
 import logging
 from typing import Dict, Any, List, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 
 try:
     from langchain_openai import ChatOpenAI
@@ -114,7 +114,7 @@ class LLMAssistant:
             analysis.update({
                 'analyzed_by': 'llm_assistant',
                 'model': self.model_name,
-                'timestamp': datetime.utcnow().isoformat(),
+                'timestamp': datetime.now(timezone.utc).isoformat(),
                 'message_id': message.message_id
             })
 
@@ -190,7 +190,7 @@ class LLMAssistant:
 
             reasoning.update({
                 'generated_by': 'llm_assistant',
-                'timestamp': datetime.utcnow().isoformat()
+                'timestamp': datetime.now(timezone.utc).isoformat()
             })
 
             return reasoning
@@ -269,7 +269,7 @@ class LLMAssistant:
             'reasoning': ['Rule-based analysis (LLM unavailable)'],
             'impact_areas': ['governance'],
             'analyzed_by': 'fallback_analyzer',
-            'timestamp': datetime.utcnow().isoformat()
+            'timestamp': datetime.now(timezone.utc).isoformat()
         }
 
     def _fallback_reasoning(self,
@@ -295,7 +295,7 @@ class LLMAssistant:
             'concerns': [],
             'follow_up_actions': ['Monitor execution'],
             'generated_by': 'fallback_reasoner',
-            'timestamp': datetime.utcnow().isoformat()
+            'timestamp': datetime.now(timezone.utc).isoformat()
         }
 
     async def analyze_deliberation_trends(self,

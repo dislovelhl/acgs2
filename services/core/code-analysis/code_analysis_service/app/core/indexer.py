@@ -6,7 +6,7 @@ Constitutional Hash: cdd01ef066bc6cf2
 """
 
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -33,7 +33,7 @@ class CodeSymbol:
         self.line_number = line_number
         self.content = content
         self.docstring = docstring
-        self.created_at = datetime.utcnow()
+        self.created_at = datetime.now(timezone.utc)
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary."""
@@ -78,7 +78,7 @@ class CodeIndexer:
             return []
 
         symbols = self._extract_symbols(content, str(file_path))
-        self.indexed_files[str(file_path)] = datetime.utcnow()
+        self.indexed_files[str(file_path)] = datetime.now(timezone.utc)
 
         logger.info(
             f"Indexed {len(symbols)} symbols from {file_path}",

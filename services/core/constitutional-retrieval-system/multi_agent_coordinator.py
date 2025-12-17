@@ -7,7 +7,7 @@ a common vector knowledge base of constitutional documents and precedents.
 
 import logging
 from typing import List, Dict, Any, Optional, Set
-from datetime import datetime
+from datetime import datetime, timezone
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
 import json
@@ -86,8 +86,8 @@ class MultiAgentCoordinator:
             # Register agent
             registration = {
                 "agent_id": agent_id,
-                "registered_at": datetime.utcnow().isoformat(),
-                "last_active": datetime.utcnow().isoformat(),
+                "registered_at": datetime.now(timezone.utc).isoformat(),
+                "last_active": datetime.now(timezone.utc).isoformat(),
                 "status": "active",
                 **agent_info
             }
@@ -130,20 +130,20 @@ class MultiAgentCoordinator:
                 logger.warning(f"Agent {agent_id} has too many active sessions")
                 return None
 
-            session_id = f"session_{agent_id}_{datetime.utcnow().timestamp()}"
+            session_id = f"session_{agent_id}_{datetime.now(timezone.utc).timestamp()}"
 
             session = {
                 "session_id": session_id,
                 "agent_id": agent_id,
                 "purpose": session_purpose,
-                "started_at": datetime.utcnow().isoformat(),
+                "started_at": datetime.now(timezone.utc).isoformat(),
                 "status": "active",
                 "queries_made": 0,
                 "knowledge_accessed": []
             }
 
             self.active_sessions[session_id] = session
-            self.registered_agents[agent_id]["last_active"] = datetime.utcnow().isoformat()
+            self.registered_agents[agent_id]["last_active"] = datetime.now(timezone.utc).isoformat()
 
             self.collaboration_metrics["active_sessions"] += 1
 
@@ -201,7 +201,7 @@ class MultiAgentCoordinator:
                 "collaboration_info": {
                     "shared_knowledge_used": True,
                     "results_count": len(retrieved_docs),
-                    "query_timestamp": datetime.utcnow().isoformat()
+                    "query_timestamp": datetime.now(timezone.utc).isoformat()
                 }
             }
 
@@ -245,7 +245,7 @@ class MultiAgentCoordinator:
                 doc["metadata"].update({
                     "contributed_by": agent_id,
                     "contribution_session": session_id,
-                    "contributed_at": datetime.utcnow().isoformat(),
+                    "contributed_at": datetime.now(timezone.utc).isoformat(),
                     **contribution_metadata
                 })
 
@@ -337,11 +337,11 @@ class MultiAgentCoordinator:
 
             session = self.active_sessions[session_id]
             session["status"] = "ended"
-            session["ended_at"] = datetime.utcnow().isoformat()
+            session["ended_at"] = datetime.now(timezone.utc).isoformat()
 
             # Calculate session duration
             start_time = datetime.fromisoformat(session["started_at"])
-            end_time = datetime.utcnow()
+            end_time = datetime.now(timezone.utc)
             duration_minutes = (end_time - start_time).total_seconds() / 60
             session["duration_minutes"] = duration_minutes
 
@@ -363,7 +363,7 @@ class MultiAgentCoordinator:
         metrics.update({
             "registered_agents": len(self.registered_agents),
             "active_sessions": len(self.active_sessions),
-            "current_time": datetime.utcnow().isoformat()
+            "current_time": datetime.now(timezone.utc).isoformat()
         })
 
         return metrics
@@ -375,7 +375,7 @@ class MultiAgentCoordinator:
         Returns:
             Number of sessions cleaned up
         """
-        current_time = datetime.utcnow()
+        current_time = datetime.now(timezone.utc)
         expired_sessions = []
 
         for session_id, session in self.active_sessions.items():
@@ -451,7 +451,7 @@ class MultiAgentCoordinator:
             "analysis": f"Peer analysis of: {query[:100]}...",
             "confidence": 0.8,
             "recommendations": ["Consider additional constitutional provisions"],
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat()
         }
 
         return simulated_response

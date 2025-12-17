@@ -7,7 +7,7 @@ constitutional precedents and documents to enhance decision making.
 
 import logging
 from typing import List, Dict, Any, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 
 from .vector_database import VectorDatabaseManager
 from .document_processor import DocumentProcessor
@@ -278,7 +278,7 @@ class RetrievalEngine:
 
         try:
             doc_date = datetime.fromisoformat(date_str.replace('Z', '+00:00'))
-            current_date = datetime.utcnow()
+            current_date = datetime.now(timezone.utc)
             days_diff = (current_date - doc_date).days
 
             # More recent documents get higher boost

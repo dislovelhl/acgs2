@@ -7,7 +7,7 @@ based on decision outcomes, user feedback, and performance metrics.
 
 import logging
 from typing import List, Dict, Any, Optional
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from collections import defaultdict
 import asyncio
 
@@ -43,7 +43,7 @@ class FeedbackLoop:
         # Update thresholds
         self.min_feedback_threshold = 5  # Minimum feedback items before update
         self.update_interval_days = 7  # Update every 7 days
-        self.last_update = datetime.utcnow()
+        self.last_update = datetime.now(timezone.utc)
 
     async def collect_decision_feedback(self, query: str,
                                       retrieved_documents: List[Dict[str, Any]],
@@ -61,11 +61,11 @@ class FeedbackLoop:
         Returns:
             Feedback ID for tracking
         """
-        feedback_id = f"feedback_{datetime.utcnow().timestamp()}"
+        feedback_id = f"feedback_{datetime.now(timezone.utc).timestamp()}"
 
         feedback_entry = {
             "feedback_id": feedback_id,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "query": query,
             "documents_retrieved": len(retrieved_documents),
             "decision": decision,
@@ -114,7 +114,7 @@ class FeedbackLoop:
             # Reset feedback history but keep recent entries for analysis
             self.feedback_history = self.feedback_history[-50:]  # Keep last 50
 
-            self.last_update = datetime.utcnow()
+            self.last_update = datetime.now(timezone.utc)
 
             logger.info(f"Index update completed: {update_results}")
             return {
@@ -147,8 +147,8 @@ class FeedbackLoop:
             if success:
                 # Record the addition for feedback tracking
                 feedback_entry = {
-                    "feedback_id": f"knowledge_add_{datetime.utcnow().timestamp()}",
-                    "timestamp": datetime.utcnow().isoformat(),
+                    "feedback_id": f"knowledge_add_{datetime.now(timezone.utc).timestamp()}",
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
                     "type": "knowledge_addition",
                     "documents_added": len(documents),
                     "source": source,
@@ -176,7 +176,7 @@ class FeedbackLoop:
             "processed_feedback": processed_feedback,
             "pending_feedback": total_feedback - processed_feedback,
             "last_update": self.last_update.isoformat(),
-            "days_since_update": (datetime.utcnow() - self.last_update).days
+            "days_since_update": (datetime.now(timezone.utc) - self.last_update).days
         })
 
         return metrics
@@ -362,7 +362,7 @@ class FeedbackLoop:
 
     async def _check_and_trigger_update(self) -> None:
         """Check if update should be triggered and execute if needed."""
-        days_since_update = (datetime.utcnow() - self.last_update).days
+        days_since_update = (datetime.now(timezone.utc) - self.last_update).days
 
         if (len(self.feedback_history) >= self.min_feedback_threshold or
             days_since_update >= self.update_interval_days):
