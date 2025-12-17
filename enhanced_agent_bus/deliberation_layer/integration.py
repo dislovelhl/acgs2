@@ -1,18 +1,19 @@
 """
 ACGS-2 Deliberation Layer - Integration
 Main integration point for the deliberation layer components.
+Constitutional Hash: cdd01ef066bc6cf2
 """
 
 import asyncio
 import logging
-from typing import Dict, Any, Optional, Callable
+from typing import Dict, Any, Optional, Callable, List
 from datetime import datetime, timezone
 
 try:
-    from ..models import AgentMessage, MessageStatus
+    from ..models import AgentMessage, MessageStatus, CONSTITUTIONAL_HASH
 except ImportError:
     # Fallback for direct execution or testing
-    from models import AgentMessage, MessageStatus  # type: ignore
+    from models import AgentMessage, MessageStatus, CONSTITUTIONAL_HASH  # type: ignore
 
 try:
     from .impact_scorer import get_impact_scorer, calculate_message_impact
@@ -23,6 +24,10 @@ try:
     from .llm_assistant import get_llm_assistant
     from .redis_integration import (
         get_redis_deliberation_queue, get_redis_voting_system
+    )
+    from .opa_guard import (
+        OPAGuard, get_opa_guard, GuardResult, GuardDecision,
+        SignatureResult, ReviewResult
     )
 except ImportError:
     # Fallback for direct execution or testing
@@ -37,20 +42,35 @@ except ImportError:
     from redis_integration import (  # type: ignore
         get_redis_deliberation_queue, get_redis_voting_system
     )
+    from opa_guard import (  # type: ignore
+        OPAGuard, get_opa_guard, GuardResult, GuardDecision,
+        SignatureResult, ReviewResult
+    )
 
 
 logger = logging.getLogger(__name__)
 
 
 class DeliberationLayer:
-    """Main integration class for the deliberation layer."""
+    """
+    Main integration class for the deliberation layer.
 
-    def __init__(self,
-                 impact_threshold: float = 0.8,
-                 deliberation_timeout: int = 300,
-                 enable_redis: bool = False,
-                 enable_learning: bool = True,
-                 enable_llm: bool = True):
+    Integrates OPA policy guard for VERIFY-BEFORE-ACT pattern,
+    multi-signature collection, and critic agent reviews.
+    Constitutional Hash: cdd01ef066bc6cf2
+    """
+
+    def __init__(
+        self,
+        impact_threshold: float = 0.8,
+        deliberation_timeout: int = 300,
+        enable_redis: bool = False,
+        enable_learning: bool = True,
+        enable_llm: bool = True,
+        enable_opa_guard: bool = True,
+        high_risk_threshold: float = 0.8,
+        critical_risk_threshold: float = 0.95,
+    ):
         """
         Initialize the deliberation layer.
 
@@ -60,12 +80,18 @@ class DeliberationLayer:
             enable_redis: Whether to use Redis for persistence
             enable_learning: Whether to enable adaptive learning
             enable_llm: Whether to enable LLM assistance
+            enable_opa_guard: Whether to enable OPA policy guard
+            high_risk_threshold: Threshold for requiring signatures
+            critical_risk_threshold: Threshold for requiring full review
         """
         self.impact_threshold = impact_threshold
         self.deliberation_timeout = deliberation_timeout
         self.enable_redis = enable_redis
         self.enable_learning = enable_learning
         self.enable_llm = enable_llm
+        self.enable_opa_guard = enable_opa_guard
+        self.high_risk_threshold = high_risk_threshold
+        self.critical_risk_threshold = critical_risk_threshold
 
         # Initialize components
         self.impact_scorer = get_impact_scorer()
@@ -73,15 +99,35 @@ class DeliberationLayer:
         self.deliberation_queue = get_deliberation_queue()
         self.llm_assistant = get_llm_assistant() if enable_llm else None
 
+        # OPA Guard for policy-based verification
+        self.opa_guard: Optional[OPAGuard] = None
+        if enable_opa_guard:
+            self.opa_guard = OPAGuard(
+                enable_signatures=True,
+                enable_critic_review=True,
+                signature_timeout=deliberation_timeout,
+                review_timeout=deliberation_timeout,
+                high_risk_threshold=high_risk_threshold,
+                critical_risk_threshold=critical_risk_threshold,
+            )
+
         # Redis components (if enabled)
-        self.redis_queue = get_redis_deliberation_queue() if enable_redis else None
-        self.redis_voting = get_redis_voting_system() if enable_redis else None
+        self.redis_queue = (
+            get_redis_deliberation_queue() if enable_redis else None
+        )
+        self.redis_voting = (
+            get_redis_voting_system() if enable_redis else None
+        )
 
         # Processing callbacks
         self.fast_lane_callback: Optional[Callable] = None
         self.deliberation_callback: Optional[Callable] = None
+        self.guard_callback: Optional[Callable] = None
 
-        logger.info("Initialized ACGS-2 Deliberation Layer")
+        logger.info(
+            "Initialized ACGS-2 Deliberation Layer with OPA Guard: "
+            f"{enable_opa_guard}"
+        )
 
     async def initialize(self):
         """Initialize async components."""
@@ -91,12 +137,19 @@ class DeliberationLayer:
             if self.redis_voting:
                 await self.redis_voting.connect()
 
+        # Initialize OPA Guard
+        if self.opa_guard:
+            await self.opa_guard.initialize()
+            logger.info("OPA Guard initialized")
+
     async def process_message(self, message: AgentMessage) -> Dict[str, Any]:
         """
         Process a message through the deliberation layer.
 
+        Implements VERIFY-BEFORE-ACT pattern with OPA guard integration.
+
         Returns:
-            Processing result with routing decision
+            Processing result with routing decision and guard result
         """
         start_time = datetime.now(timezone.utc)
 
@@ -104,51 +157,283 @@ class DeliberationLayer:
             # Step 1: Calculate impact score if not present
             if message.impact_score is None:
                 message.impact_score = calculate_message_impact(message.content)
-                logger.debug(f"Calculated impact score {message.impact_score:.3f} for message {message.message_id}")
+                logger.debug(
+                    f"Calculated impact score {message.impact_score:.3f} "
+                    f"for message {message.message_id}"
+                )
 
-            # Step 2: Route the message
+            # Step 2: OPA Guard pre-action verification (VERIFY-BEFORE-ACT)
+            guard_result = None
+            if self.opa_guard:
+                guard_result = await self._verify_with_opa_guard(message)
+
+                # If guard denies, return immediately
+                if guard_result and not guard_result.is_allowed:
+                    if guard_result.decision == GuardDecision.DENY:
+                        return await self._handle_guard_denial(
+                            message, guard_result, start_time
+                        )
+                    elif guard_result.decision == GuardDecision.REQUIRE_SIGNATURES:
+                        return await self._handle_signature_requirement(
+                            message, guard_result, start_time
+                        )
+                    elif guard_result.decision == GuardDecision.REQUIRE_REVIEW:
+                        return await self._handle_review_requirement(
+                            message, guard_result, start_time
+                        )
+
+            # Step 3: Route the message
             routing_decision = await self.adaptive_router.route_message(message)
 
-            # Step 3: Execute routing
+            # Step 4: Execute routing
             if routing_decision.get('lane') == 'fast':
-                result = await self._process_fast_lane(message, routing_decision)
+                result = await self._process_fast_lane(
+                    message, routing_decision
+                )
             else:
-                result = await self._process_deliberation(message, routing_decision)
+                result = await self._process_deliberation(
+                    message, routing_decision
+                )
 
-            # Step 4: Record performance feedback
-            processing_time = (datetime.now(timezone.utc) - start_time).total_seconds()
-            await self._record_performance_feedback(message, result, processing_time)
+            # Step 5: Record performance feedback
+            elapsed = datetime.now(timezone.utc) - start_time
+            processing_time = elapsed.total_seconds()
+            await self._record_performance_feedback(
+                message, result, processing_time
+            )
 
             result['processing_time'] = processing_time
             result['success'] = True
 
-            logger.info(f"Processed message {message.message_id} in {processing_time:.2f}s: {result.get('lane')}")
+            # Include guard result if available
+            if guard_result:
+                result['guard_result'] = guard_result.to_dict()
+
+            logger.info(
+                f"Processed message {message.message_id} in "
+                f"{processing_time:.2f}s: {result.get('lane')}"
+            )
 
             return result
 
         except asyncio.CancelledError:
-            logger.info(f"Message processing cancelled for {message.message_id}")
+            logger.info(
+                f"Message processing cancelled for {message.message_id}"
+            )
             raise
         except asyncio.TimeoutError as e:
-            logger.error(f"Timeout processing message {message.message_id}: {e}")
+            logger.error(
+                f"Timeout processing message {message.message_id}: {e}"
+            )
+            elapsed = datetime.now(timezone.utc) - start_time
             return {
                 'success': False,
                 'error': f'Timeout: {e}',
-                'processing_time': (datetime.now(timezone.utc) - start_time).total_seconds()
+                'processing_time': elapsed.total_seconds()
             }
         except (ValueError, KeyError, TypeError) as e:
-            logger.error(f"Data error processing message {message.message_id}: {type(e).__name__}: {e}")
+            logger.error(
+                f"Data error processing message {message.message_id}: "
+                f"{type(e).__name__}: {e}"
+            )
+            elapsed = datetime.now(timezone.utc) - start_time
             return {
                 'success': False,
                 'error': f'{type(e).__name__}: {e}',
-                'processing_time': (datetime.now(timezone.utc) - start_time).total_seconds()
+                'processing_time': elapsed.total_seconds()
             }
         except (AttributeError, RuntimeError) as e:
-            logger.error(f"Runtime error processing message {message.message_id}: {type(e).__name__}: {e}")
+            logger.error(
+                f"Runtime error processing message {message.message_id}: "
+                f"{type(e).__name__}: {e}"
+            )
+            elapsed = datetime.now(timezone.utc) - start_time
             return {
                 'success': False,
                 'error': f'{type(e).__name__}: {e}',
-                'processing_time': (datetime.now(timezone.utc) - start_time).total_seconds()
+                'processing_time': elapsed.total_seconds()
+            }
+
+    async def _verify_with_opa_guard(
+        self,
+        message: AgentMessage
+    ) -> Optional[GuardResult]:
+        """
+        Verify message with OPA Guard before processing.
+
+        Args:
+            message: Message to verify
+
+        Returns:
+            GuardResult with verification outcome
+        """
+        if not self.opa_guard:
+            return None
+
+        try:
+            action = {
+                "type": message.message_type.value,
+                "content": message.content,
+                "impact_score": message.impact_score,
+                "constitutional_hash": message.constitutional_hash,
+            }
+
+            context = {
+                "from_agent": message.from_agent,
+                "to_agent": message.to_agent,
+                "tenant_id": message.tenant_id,
+                "priority": (
+                    message.priority.value
+                    if hasattr(message.priority, 'value')
+                    else str(message.priority)
+                ),
+            }
+
+            guard_result = await self.opa_guard.verify_action(
+                agent_id=message.from_agent or message.sender_id,
+                action=action,
+                context=context,
+            )
+
+            # Execute guard callback if provided
+            if self.guard_callback:
+                await self.guard_callback(message, guard_result)
+
+            return guard_result
+
+        except Exception as e:
+            logger.error(f"OPA Guard verification error: {e}")
+            # Return permissive result on error to avoid blocking
+            return GuardResult(
+                decision=GuardDecision.ALLOW,
+                is_allowed=True,
+                validation_warnings=[f"Guard error: {str(e)}"],
+            )
+
+    async def _handle_guard_denial(
+        self,
+        message: AgentMessage,
+        guard_result: GuardResult,
+        start_time: datetime
+    ) -> Dict[str, Any]:
+        """Handle guard denial of action."""
+        message.status = MessageStatus.FAILED
+
+        elapsed = datetime.now(timezone.utc) - start_time
+        processing_time = elapsed.total_seconds()
+
+        logger.warning(
+            f"Message {message.message_id} denied by OPA Guard: "
+            f"{guard_result.validation_errors}"
+        )
+
+        return {
+            'success': False,
+            'lane': 'denied',
+            'status': 'denied_by_guard',
+            'guard_result': guard_result.to_dict(),
+            'errors': guard_result.validation_errors,
+            'processing_time': processing_time,
+        }
+
+    async def _handle_signature_requirement(
+        self,
+        message: AgentMessage,
+        guard_result: GuardResult,
+        start_time: datetime
+    ) -> Dict[str, Any]:
+        """Handle requirement for multi-signature collection."""
+        # Create signature request
+        decision_id = f"sig_{message.message_id}"
+
+        signature_result = await self.opa_guard.collect_signatures(
+            decision_id=decision_id,
+            required_signers=guard_result.required_signers,
+            threshold=1.0,
+            timeout=self.deliberation_timeout,
+        )
+
+        elapsed = datetime.now(timezone.utc) - start_time
+        processing_time = elapsed.total_seconds()
+
+        if signature_result.is_valid:
+            # Signatures collected, proceed with processing
+            logger.info(
+                f"Signatures collected for message {message.message_id}"
+            )
+            # Re-process without guard (already verified)
+            routing = await self.adaptive_router.route_message(message)
+            if routing.get('lane') == 'fast':
+                result = await self._process_fast_lane(message, routing)
+            else:
+                result = await self._process_deliberation(message, routing)
+            result['signature_result'] = signature_result.to_dict()
+            result['processing_time'] = processing_time
+            return result
+        else:
+            message.status = MessageStatus.FAILED
+            logger.warning(
+                f"Signature collection failed for message "
+                f"{message.message_id}: {signature_result.status.value}"
+            )
+            return {
+                'success': False,
+                'lane': 'signature_required',
+                'status': 'signature_collection_failed',
+                'guard_result': guard_result.to_dict(),
+                'signature_result': signature_result.to_dict(),
+                'processing_time': processing_time,
+            }
+
+    async def _handle_review_requirement(
+        self,
+        message: AgentMessage,
+        guard_result: GuardResult,
+        start_time: datetime
+    ) -> Dict[str, Any]:
+        """Handle requirement for critic agent review."""
+        decision = {
+            "id": f"review_{message.message_id}",
+            "message": message.to_dict(),
+            "guard_result": guard_result.to_dict(),
+        }
+
+        review_result = await self.opa_guard.submit_for_review(
+            decision=decision,
+            critic_agents=guard_result.required_reviewers,
+            review_types=["safety", "ethics", "compliance"],
+            timeout=self.deliberation_timeout,
+        )
+
+        elapsed = datetime.now(timezone.utc) - start_time
+        processing_time = elapsed.total_seconds()
+
+        if review_result.consensus_verdict == "approve":
+            # Review approved, proceed with processing
+            logger.info(
+                f"Review approved for message {message.message_id}"
+            )
+            routing = await self.adaptive_router.route_message(message)
+            if routing.get('lane') == 'fast':
+                result = await self._process_fast_lane(message, routing)
+            else:
+                result = await self._process_deliberation(message, routing)
+            result['review_result'] = review_result.to_dict()
+            result['processing_time'] = processing_time
+            return result
+        else:
+            message.status = MessageStatus.FAILED
+            logger.warning(
+                f"Review rejected for message {message.message_id}: "
+                f"{review_result.consensus_verdict}"
+            )
+            return {
+                'success': False,
+                'lane': 'review_required',
+                'status': f'review_{review_result.consensus_verdict}',
+                'guard_result': guard_result.to_dict(),
+                'review_result': review_result.to_dict(),
+                'processing_time': processing_time,
             }
 
     async def _process_fast_lane(self, message: AgentMessage, routing_decision: Dict[str, Any]) -> Dict[str, Any]:
@@ -389,7 +674,8 @@ class DeliberationLayer:
                 'features': {
                     'redis_enabled': self.enable_redis,
                     'learning_enabled': self.enable_learning,
-                    'llm_enabled': self.enable_llm
+                    'llm_enabled': self.enable_llm,
+                    'opa_guard_enabled': self.enable_opa_guard,
                 },
                 'router_stats': router_stats,
                 'queue_stats': queue_stats['stats'],
@@ -397,13 +683,25 @@ class DeliberationLayer:
                 'processing_count': queue_stats['processing_count']
             }
 
+            # Include OPA Guard stats if enabled
+            if self.opa_guard:
+                stats['opa_guard_stats'] = self.opa_guard.get_stats()
+
             if self.redis_queue:
-                stats['redis_info'] = asyncio.run(self.redis_queue.get_stream_info())
+                try:
+                    stats['redis_info'] = asyncio.run(
+                        self.redis_queue.get_stream_info()
+                    )
+                except RuntimeError:
+                    # Already in async context
+                    stats['redis_info'] = None
 
             return stats
 
         except (ValueError, KeyError, AttributeError) as e:
-            logger.error(f"Failed to get layer stats: {type(e).__name__}: {e}")
+            logger.error(
+                f"Failed to get layer stats: {type(e).__name__}: {e}"
+            )
             return {'error': f'{type(e).__name__}: {e}'}
         except RuntimeError as e:
             logger.error(f"Runtime error getting layer stats: {e}")
@@ -416,6 +714,231 @@ class DeliberationLayer:
     def set_deliberation_callback(self, callback: Callable):
         """Set callback for deliberation processing."""
         self.deliberation_callback = callback
+
+    def set_guard_callback(self, callback: Callable):
+        """Set callback for OPA guard verification events."""
+        self.guard_callback = callback
+
+    # OPA Guard integration methods
+
+    async def verify_action(
+        self,
+        agent_id: str,
+        action: Dict[str, Any],
+        context: Optional[Dict[str, Any]] = None
+    ) -> Optional[GuardResult]:
+        """
+        Verify an action using OPA Guard (VERIFY-BEFORE-ACT pattern).
+
+        Args:
+            agent_id: ID of the agent performing the action
+            action: Action details
+            context: Additional context
+
+        Returns:
+            GuardResult with verification outcome, or None if guard disabled
+        """
+        if not self.opa_guard:
+            return None
+
+        return await self.opa_guard.verify_action(
+            agent_id=agent_id,
+            action=action,
+            context=context or {},
+        )
+
+    async def collect_signatures(
+        self,
+        decision_id: str,
+        required_signers: List[str],
+        threshold: float = 1.0,
+        timeout: Optional[int] = None
+    ) -> Optional[SignatureResult]:
+        """
+        Collect multi-signatures for a decision.
+
+        Args:
+            decision_id: Unique ID for the decision
+            required_signers: List of required signer IDs
+            threshold: Percentage of signatures required
+            timeout: Timeout in seconds
+
+        Returns:
+            SignatureResult, or None if guard disabled
+        """
+        if not self.opa_guard:
+            return None
+
+        return await self.opa_guard.collect_signatures(
+            decision_id=decision_id,
+            required_signers=required_signers,
+            threshold=threshold,
+            timeout=timeout or self.deliberation_timeout,
+        )
+
+    async def submit_signature(
+        self,
+        decision_id: str,
+        signer_id: str,
+        reasoning: str = "",
+        confidence: float = 1.0
+    ) -> bool:
+        """
+        Submit a signature for a pending decision.
+
+        Args:
+            decision_id: Decision ID to sign
+            signer_id: ID of the signer
+            reasoning: Reason for signing
+            confidence: Confidence level
+
+        Returns:
+            True if signature was accepted
+        """
+        if not self.opa_guard:
+            return False
+
+        return await self.opa_guard.submit_signature(
+            decision_id=decision_id,
+            signer_id=signer_id,
+            reasoning=reasoning,
+            confidence=confidence,
+        )
+
+    async def submit_for_review(
+        self,
+        decision: Dict[str, Any],
+        critic_agents: List[str],
+        review_types: Optional[List[str]] = None,
+        timeout: Optional[int] = None
+    ) -> Optional[ReviewResult]:
+        """
+        Submit a decision for critic agent review.
+
+        Args:
+            decision: Decision details to review
+            critic_agents: List of critic agent IDs
+            review_types: Types of review to request
+            timeout: Timeout in seconds
+
+        Returns:
+            ReviewResult, or None if guard disabled
+        """
+        if not self.opa_guard:
+            return None
+
+        return await self.opa_guard.submit_for_review(
+            decision=decision,
+            critic_agents=critic_agents,
+            review_types=review_types,
+            timeout=timeout or self.deliberation_timeout,
+        )
+
+    async def submit_critic_review(
+        self,
+        decision_id: str,
+        critic_id: str,
+        verdict: str,
+        reasoning: str = "",
+        concerns: Optional[List[str]] = None,
+        recommendations: Optional[List[str]] = None,
+        confidence: float = 1.0
+    ) -> bool:
+        """
+        Submit a critic review for a pending decision.
+
+        Args:
+            decision_id: Decision ID being reviewed
+            critic_id: ID of the critic agent
+            verdict: Review verdict (approve/reject/escalate)
+            reasoning: Reason for verdict
+            concerns: List of concerns raised
+            recommendations: List of recommendations
+            confidence: Confidence level
+
+        Returns:
+            True if review was accepted
+        """
+        if not self.opa_guard:
+            return False
+
+        return await self.opa_guard.submit_review(
+            decision_id=decision_id,
+            critic_id=critic_id,
+            verdict=verdict,
+            reasoning=reasoning,
+            concerns=concerns,
+            recommendations=recommendations,
+            confidence=confidence,
+        )
+
+    def register_critic_agent(
+        self,
+        critic_id: str,
+        review_types: List[str],
+        callback: Optional[Callable] = None,
+        metadata: Optional[Dict[str, Any]] = None
+    ):
+        """
+        Register a critic agent for reviews.
+
+        Args:
+            critic_id: Unique ID for the critic agent
+            review_types: Types of reviews this critic can perform
+            callback: Async callback function for review requests
+            metadata: Additional metadata about the critic
+        """
+        if self.opa_guard:
+            self.opa_guard.register_critic_agent(
+                critic_id=critic_id,
+                review_types=review_types,
+                callback=callback,
+                metadata=metadata,
+            )
+
+    def unregister_critic_agent(self, critic_id: str):
+        """Unregister a critic agent."""
+        if self.opa_guard:
+            self.opa_guard.unregister_critic_agent(critic_id)
+
+    def get_guard_audit_log(
+        self,
+        limit: int = 100,
+        offset: int = 0,
+        agent_id: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
+        """
+        Get OPA guard audit log entries.
+
+        Args:
+            limit: Maximum entries to return
+            offset: Offset for pagination
+            agent_id: Filter by agent ID
+
+        Returns:
+            List of audit log entries
+        """
+        if not self.opa_guard:
+            return []
+
+        return self.opa_guard.get_audit_log(
+            limit=limit,
+            offset=offset,
+            agent_id=agent_id,
+        )
+
+    async def close(self):
+        """Close the deliberation layer and cleanup resources."""
+        if self.opa_guard:
+            await self.opa_guard.close()
+
+        if self.redis_queue:
+            await self.redis_queue.close()
+
+        if self.redis_voting:
+            await self.redis_voting.close()
+
+        logger.info("Deliberation layer closed")
 
     async def analyze_trends(self) -> Dict[str, Any]:
         """Analyze deliberation trends for optimization."""

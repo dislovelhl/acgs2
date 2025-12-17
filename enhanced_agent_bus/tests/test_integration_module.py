@@ -175,7 +175,8 @@ class TestMessageProcessing:
             impact_threshold=0.5,
             deliberation_timeout=10,
             enable_learning=False,
-            enable_llm=False
+            enable_llm=False,
+            enable_opa_guard=False
         )
 
     @pytest.fixture
@@ -251,7 +252,8 @@ class TestCallbacks:
         return DeliberationLayer(
             impact_threshold=0.5,
             enable_learning=False,
-            enable_llm=False
+            enable_llm=False,
+            enable_opa_guard=False
         )
 
     @pytest.fixture
@@ -313,7 +315,8 @@ class TestHumanDecision:
         """Create a deliberation layer."""
         return DeliberationLayer(
             enable_learning=False,
-            enable_llm=False
+            enable_llm=False,
+            enable_opa_guard=False
         )
 
     @pytest.fixture
@@ -387,7 +390,8 @@ class TestAgentVote:
         return DeliberationLayer(
             enable_learning=False,
             enable_llm=False,
-            enable_redis=False
+            enable_redis=False,
+            enable_opa_guard=False
         )
 
     @pytest.fixture
@@ -458,7 +462,8 @@ class TestLayerStats:
             deliberation_timeout=60,
             enable_redis=False,
             enable_learning=True,
-            enable_llm=True
+            enable_llm=True,
+            enable_opa_guard=False
         )
 
     def test_get_layer_stats_structure(self, layer):
@@ -497,7 +502,8 @@ class TestForceDeliberation:
         return DeliberationLayer(
             impact_threshold=0.9,  # High threshold
             enable_learning=False,
-            enable_llm=False
+            enable_llm=False,
+            enable_opa_guard=False
         )
 
     @pytest.fixture
@@ -584,7 +590,8 @@ class TestErrorHandling:
         """Create a deliberation layer."""
         return DeliberationLayer(
             enable_learning=False,
-            enable_llm=False
+            enable_llm=False,
+            enable_opa_guard=False
         )
 
     @pytest.mark.asyncio

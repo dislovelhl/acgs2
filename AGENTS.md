@@ -58,6 +58,10 @@ python testing/e2e_test.py
 - `comprehensive_syntax_repair.py`: Multi-file syntax correction
 - `fix_kwarg_type_hints.py`: Type hint corrections for function parameters
 
+### Exception Handling (`enhanced_agent_bus/exceptions.py`)
+- **Custom Exceptions**: 22 specialized exception types for granular error handling (ConstitutionalError, MessageError, AgentError, etc.)
+- **Usage**: Always use specific exceptions instead of generic ones.
+
 ### Deployment Scripts (`scripts/`)
 - `blue-green-deploy.sh`: Zero-downtime deployment
 - `blue-green-rollback.sh`: Instant rollback capability

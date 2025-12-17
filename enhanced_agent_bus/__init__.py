@@ -31,9 +31,47 @@ from .validators import (
 from .validation_integration_example import (
     IntegratedValidationSystem,
 )
+from .exceptions import (
+    # Base
+    AgentBusError,
+    # Constitutional
+    ConstitutionalError,
+    ConstitutionalHashMismatchError,
+    ConstitutionalValidationError,
+    # Message
+    MessageError,
+    MessageValidationError,
+    MessageDeliveryError,
+    MessageTimeoutError,
+    MessageRoutingError,
+    # Agent
+    AgentError,
+    AgentNotRegisteredError,
+    AgentAlreadyRegisteredError,
+    AgentCapabilityError,
+    # Policy/OPA
+    PolicyError,
+    PolicyEvaluationError,
+    PolicyNotFoundError,
+    OPAConnectionError,
+    OPANotInitializedError,
+    # Deliberation
+    DeliberationError,
+    DeliberationTimeoutError,
+    SignatureCollectionError,
+    ReviewConsensusError,
+    # Bus Operations
+    BusOperationError,
+    BusNotStartedError,
+    BusAlreadyStartedError,
+    HandlerExecutionError,
+    # Configuration
+    ConfigurationError,
+)
 
 __all__ = [
     "CONSTITUTIONAL_HASH",
+    # Models
     "AgentMessage",
     "MessageType",
     "MessagePriority",
@@ -41,8 +79,44 @@ __all__ = [
     "Priority",
     "ValidationStatus",
     "RoutingContext",
+    # Core
     "EnhancedAgentBus",
     "MessageProcessor",
     "ValidationResult",
     "IntegratedValidationSystem",
+    # Exceptions - Base
+    "AgentBusError",
+    # Exceptions - Constitutional
+    "ConstitutionalError",
+    "ConstitutionalHashMismatchError",
+    "ConstitutionalValidationError",
+    # Exceptions - Message
+    "MessageError",
+    "MessageValidationError",
+    "MessageDeliveryError",
+    "MessageTimeoutError",
+    "MessageRoutingError",
+    # Exceptions - Agent
+    "AgentError",
+    "AgentNotRegisteredError",
+    "AgentAlreadyRegisteredError",
+    "AgentCapabilityError",
+    # Exceptions - Policy/OPA
+    "PolicyError",
+    "PolicyEvaluationError",
+    "PolicyNotFoundError",
+    "OPAConnectionError",
+    "OPANotInitializedError",
+    # Exceptions - Deliberation
+    "DeliberationError",
+    "DeliberationTimeoutError",
+    "SignatureCollectionError",
+    "ReviewConsensusError",
+    # Exceptions - Bus Operations
+    "BusOperationError",
+    "BusNotStartedError",
+    "BusAlreadyStartedError",
+    "HandlerExecutionError",
+    # Exceptions - Configuration
+    "ConfigurationError",
 ]

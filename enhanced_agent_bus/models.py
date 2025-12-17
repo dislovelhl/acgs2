@@ -11,6 +11,11 @@ from enum import Enum
 from typing import Any, Dict, List, Optional
 import uuid
 
+try:
+    from .exceptions import MessageValidationError
+except ImportError:
+    from exceptions import MessageValidationError  # type: ignore
+
 CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
 
 

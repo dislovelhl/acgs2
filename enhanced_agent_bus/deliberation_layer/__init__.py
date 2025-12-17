@@ -3,7 +3,8 @@ ACGS-2 Deliberation Layer
 Constitutional Hash: cdd01ef066bc6cf2
 
 Configurable deliberation layer for high-risk decision governance.
-Provides impact scoring, adaptive routing, and human-in-the-loop approval.
+Provides impact scoring, adaptive routing, human-in-the-loop approval,
+and OPA policy guard integration for VERIFY-BEFORE-ACT pattern.
 """
 
 from .impact_scorer import ImpactScorer, calculate_message_impact, get_impact_scorer
@@ -23,6 +24,21 @@ from .redis_integration import (
     RedisVotingSystem,
     get_redis_deliberation_queue,
     get_redis_voting_system,
+)
+from .opa_guard import (
+    OPAGuard,
+    GuardDecision,
+    GuardResult,
+    SignatureStatus,
+    Signature,
+    SignatureResult,
+    ReviewStatus,
+    CriticReview,
+    ReviewResult,
+    get_opa_guard,
+    initialize_opa_guard,
+    close_opa_guard,
+    GUARD_CONSTITUTIONAL_HASH,
 )
 
 __all__ = [
@@ -51,4 +67,18 @@ __all__ = [
     "RedisVotingSystem",
     "get_redis_deliberation_queue",
     "get_redis_voting_system",
+    # OPA Guard
+    "OPAGuard",
+    "GuardDecision",
+    "GuardResult",
+    "SignatureStatus",
+    "Signature",
+    "SignatureResult",
+    "ReviewStatus",
+    "CriticReview",
+    "ReviewResult",
+    "get_opa_guard",
+    "initialize_opa_guard",
+    "close_opa_guard",
+    "GUARD_CONSTITUTIONAL_HASH",
 ]

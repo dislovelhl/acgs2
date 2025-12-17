@@ -2,9 +2,9 @@
   "project": {
     "name": "ACGS-2",
     "full_name": "Autonomous Constitutional Governance System",
-    "version": "2.0.0",
+    "version": "2.1.0",
     "constitutional_hash": "cdd01ef066bc6cf2",
-    "last_updated": "2025-12-06"
+    "last_updated": "2025-12-17"
   },
   "stats": {
     "python_files": 26,

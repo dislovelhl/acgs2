@@ -1,4 +1,10 @@
+# ACGS-2 CI/CD Pipeline with Security Scanning
+# Constitutional Hash: cdd01ef066bc6cf2
+# Version: 2.0.0
+
 stages:
+  - validate
+  - security
   - build
   - test
   - deploy
@@ -8,8 +14,224 @@ variables:
   DOCKER_REGISTRY: "your-registry.com"
   DOCKER_TLS_CERTDIR: "/certs"
   KUBECONFIG: "/etc/deploy/config"
+  CONSTITUTIONAL_HASH: "cdd01ef066bc6cf2"
+  PYTHON_VERSION: "3.12"
+  OPA_VERSION: "0.60.0"
 
-# 构建阶段
+# =============================================================================
+# VALIDATION STAGE - Constitutional and Syntax Checks
+# =============================================================================
+
+validate:constitutional:
+  stage: validate
+  image: python:${PYTHON_VERSION}
+  script:
+    - echo "🔐 Validating Constitutional Hash..."
+    - |
+      HASH_COUNT=$(grep -r "cdd01ef066bc6cf2" --include="*.py" --include="*.rego" | wc -l)
+      if [ "$HASH_COUNT" -lt 10 ]; then
+        echo "❌ Constitutional hash not found in sufficient files"
+        exit 1
+      fi
+      echo "✅ Constitutional hash found in $HASH_COUNT files"
+    - echo "🔍 Checking for invalid hash values..."
+    - |
+      INVALID=$(grep -rE "constitutional.*hash.*=.*['\"][a-f0-9]{16}['\"]" --include="*.py" | grep -v "cdd01ef066bc6cf2" || true)
+      if [ -n "$INVALID" ]; then
+        echo "❌ Invalid constitutional hash found:"
+        echo "$INVALID"
+        exit 1
+      fi
+      echo "✅ No invalid constitutional hashes"
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH == "main"'
+    - if: '$CI_COMMIT_BRANCH == "develop"'
+
+validate:python-syntax:
+  stage: validate
+  image: python:${PYTHON_VERSION}
+  script:
+    - echo "🐍 Validating Python syntax..."
+    - |
+      find . -name "*.py" -type f | while read file; do
+        python3 -m py_compile "$file" 2>&1 || exit 1
+      done
+    - echo "✅ All Python files have valid syntax"
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH == "main"'
+    - if: '$CI_COMMIT_BRANCH == "develop"'
+
+validate:opa-policies:
+  stage: validate
+  image: openpolicyagent/opa:${OPA_VERSION}
+  script:
+    - echo "📜 Validating OPA/Rego policies..."
+    - opa check policies/rego/
+    - opa test policies/rego/ -v
+    - echo "✅ All Rego policies are valid"
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH == "main"'
+    - if: '$CI_COMMIT_BRANCH == "develop"'
+  allow_failure: false
+
+# =============================================================================
+# SECURITY STAGE - Comprehensive Security Scanning
+# =============================================================================
+
+security:semgrep:
+  stage: security
+  image: returntocorp/semgrep:latest
+  script:
+    - echo "🔍 Running Semgrep security scan..."
+    - semgrep --config .semgrep/.semgrep.yml --json -o semgrep-results.json || true
+    - semgrep --config .semgrep/.semgrep.yml --sarif -o semgrep-results.sarif || true
+    - |
+      # Check for critical findings
+      CRITICAL=$(cat semgrep-results.json | python3 -c "import sys,json; d=json.load(sys.stdin); print(len([r for r in d.get('results',[]) if r.get('extra',{}).get('severity')=='ERROR']))")
+      echo "Found $CRITICAL critical issues"
+      if [ "$CRITICAL" -gt 0 ]; then
+        echo "❌ Critical security issues found!"
+        semgrep --config .semgrep/.semgrep.yml --severity ERROR
+        exit 1
+      fi
+    - echo "✅ Semgrep scan passed"
+  artifacts:
+    paths:
+      - semgrep-results.json
+      - semgrep-results.sarif
+    reports:
+      sast: semgrep-results.sarif
+    expire_in: 30 days
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH == "main"'
+    - if: '$CI_COMMIT_BRANCH == "develop"'
+
+security:snyk-deps:
+  stage: security
+  image: snyk/snyk:python-3.12
+  script:
+    - echo "📦 Scanning dependencies with Snyk..."
+    - snyk auth $SNYK_TOKEN || true
+    - snyk test --severity-threshold=high --json > snyk-results.json || true
+    - |
+      if snyk test --severity-threshold=critical; then
+        echo "✅ No critical vulnerabilities found"
+      else
+        echo "❌ Critical vulnerabilities detected!"
+        cat snyk-results.json | python3 -c "import sys,json; d=json.load(sys.stdin); [print(f'  - {v[\"title\"]} ({v[\"severity\"]})') for v in d.get('vulnerabilities',[])]"
+        exit 1
+      fi
+  artifacts:
+    paths:
+      - snyk-results.json
+    expire_in: 30 days
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH == "main"'
+  allow_failure: true  # Allow failure if SNYK_TOKEN not configured
+
+security:trivy-container:
+  stage: security
+  image: aquasec/trivy:latest
+  services:
+    - docker:dind
+  variables:
+    DOCKER_HOST: tcp://docker:2375
+  script:
+    - echo "🐳 Scanning container images with Trivy..."
+    - trivy fs --severity HIGH,CRITICAL --format json -o trivy-fs-results.json .
+    - |
+      CRITICAL=$(cat trivy-fs-results.json | grep -c '"Severity": "CRITICAL"' || echo "0")
+      if [ "$CRITICAL" -gt 0 ]; then
+        echo "❌ Critical vulnerabilities found in filesystem"
+        trivy fs --severity CRITICAL .
+        exit 1
+      fi
+    - echo "✅ Trivy scan passed"
+  artifacts:
+    paths:
+      - trivy-fs-results.json
+    expire_in: 30 days
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH == "main"'
+    - if: '$CI_COMMIT_BRANCH == "develop"'
+
+security:codeql:
+  stage: security
+  image: mcr.microsoft.com/cstsectools/codeql-container:latest
+  script:
+    - echo "🔬 Running CodeQL analysis..."
+    - codeql database create codeql-db --language=python --source-root=.
+    - codeql database analyze codeql-db --format=sarif-latest --output=codeql-results.sarif python-security-and-quality.qls
+    - |
+      # Check for high/critical issues
+      HIGH_CRITICAL=$(grep -c '"level": "error"\|"level": "warning"' codeql-results.sarif || echo "0")
+      echo "Found $HIGH_CRITICAL potential issues"
+  artifacts:
+    paths:
+      - codeql-results.sarif
+    reports:
+      sast: codeql-results.sarif
+    expire_in: 30 days
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+    - if: '$CI_COMMIT_TAG'
+  allow_failure: true  # CodeQL can be slow, don't block pipeline
+
+security:secrets-scan:
+  stage: security
+  image: trufflesecurity/trufflehog:latest
+  script:
+    - echo "🔑 Scanning for secrets..."
+    - trufflehog filesystem . --json > secrets-scan.json 2>&1 || true
+    - |
+      SECRETS_FOUND=$(cat secrets-scan.json | wc -l)
+      if [ "$SECRETS_FOUND" -gt 0 ]; then
+        echo "❌ Potential secrets found!"
+        cat secrets-scan.json
+        exit 1
+      fi
+    - echo "✅ No secrets detected"
+  artifacts:
+    paths:
+      - secrets-scan.json
+    expire_in: 7 days
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH == "main"'
+
+security:license-check:
+  stage: security
+  image: python:${PYTHON_VERSION}
+  script:
+    - echo "📄 Checking licenses..."
+    - pip install pip-licenses
+    - pip-licenses --format=json > licenses.json
+    - |
+      # Check for GPL licenses (may be incompatible)
+      GPL_COUNT=$(cat licenses.json | python3 -c "import sys,json; d=json.load(sys.stdin); print(len([p for p in d if 'GPL' in p.get('License','')]))")
+      if [ "$GPL_COUNT" -gt 0 ]; then
+        echo "⚠️ Warning: $GPL_COUNT packages with GPL licenses found"
+        pip-licenses --format=markdown | grep -i gpl || true
+      fi
+    - echo "✅ License check completed"
+  artifacts:
+    paths:
+      - licenses.json
+    expire_in: 30 days
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+  allow_failure: true
+
+# =============================================================================
+# BUILD STAGE
+# =============================================================================
+
 build:rust:
   stage: build
   image: rust:latest
@@ -21,10 +243,13 @@ build:rust:
     paths:
       - enhanced_agent_bus/rust/target/release/
     expire_in: 1 hour
-  only:
-    - merge_requests
-    - main
-    - develop
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH == "main"'
+    - if: '$CI_COMMIT_BRANCH == "develop"'
+  needs:
+    - validate:constitutional
+    - validate:python-syntax
 
 build:docker:
   stage: build
@@ -49,32 +274,85 @@ build:docker:
         docker build -t $CI_REGISTRY/acgs2/$name:$CI_COMMIT_SHA $context
         docker push $CI_REGISTRY/acgs2/$name:$CI_COMMIT_SHA
       done
-  dependencies:
+  needs:
     - build:rust
-  only:
-    - merge_requests
-    - main
-    - develop
+    - security:semgrep
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH == "main"'
+    - if: '$CI_COMMIT_BRANCH == "develop"'
 
-# 测试阶段
+# =============================================================================
+# TEST STAGE
+# =============================================================================
+
 test:unit:
   stage: test
-  image: python:3.9
+  image: python:${PYTHON_VERSION}
   script:
-    - pip install -r requirements.txt
-    - python -m pytest tests/unit/ -v --junitxml=unit-tests.xml
+    - pip install -r requirements.txt pytest pytest-cov pytest-asyncio
+    - echo "🧪 Running unit tests..."
+    - python -m pytest tests/unit/ -v --junitxml=unit-tests.xml --cov=enhanced_agent_bus --cov-report=xml
+    - echo "✅ Unit tests passed"
   artifacts:
     reports:
       junit: unit-tests.xml
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage.xml
   coverage: '/TOTAL.*\s+(\d+%)$/'
-  only:
-    - merge_requests
-    - main
-    - develop
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH == "main"'
+    - if: '$CI_COMMIT_BRANCH == "develop"'
+
+test:enhanced-agent-bus:
+  stage: test
+  image: python:${PYTHON_VERSION}
+  services:
+    - redis:7
+  variables:
+    REDIS_URL: "redis://redis:6379"
+  script:
+    - pip install -r requirements.txt pytest pytest-asyncio
+    - echo "🚌 Testing Enhanced Agent Bus..."
+    - cd enhanced_agent_bus
+    - python -m pytest tests/ -v --tb=short --junitxml=agent-bus-tests.xml
+    - echo "✅ Agent Bus tests passed"
+  artifacts:
+    reports:
+      junit: enhanced_agent_bus/agent-bus-tests.xml
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH == "main"'
+    - if: '$CI_COMMIT_BRANCH == "develop"'
+
+test:opa-integration:
+  stage: test
+  image: python:${PYTHON_VERSION}
+  services:
+    - name: openpolicyagent/opa:${OPA_VERSION}
+      alias: opa
+      command: ["run", "--server", "--addr", "0.0.0.0:8181"]
+  variables:
+    OPA_URL: "http://opa:8181"
+  script:
+    - pip install -r requirements.txt pytest pytest-asyncio httpx
+    - echo "📜 Testing OPA integration..."
+    - |
+      # Load policies into OPA
+      curl -X PUT "${OPA_URL}/v1/policies/constitutional" \
+        -H "Content-Type: text/plain" \
+        --data-binary @policies/rego/constitutional/main.rego
+    - python -m pytest enhanced_agent_bus/tests/test_opa_client.py -v --tb=short
+    - echo "✅ OPA integration tests passed"
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH == "main"'
 
 test:integration:
   stage: test
-  image: python:3.9
+  image: python:${PYTHON_VERSION}
   services:
     - docker:dind
   script:
@@ -86,14 +364,40 @@ test:integration:
   artifacts:
     reports:
       junit: integration-tests.xml
-  dependencies:
+  needs:
     - build:docker
-  only:
-    - merge_requests
-    - main
-    - develop
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH == "main"'
+    - if: '$CI_COMMIT_BRANCH == "develop"'
 
-# 部署阶段
+test:performance:
+  stage: test
+  image: python:${PYTHON_VERSION}
+  script:
+    - pip install -r requirements.txt
+    - echo "⚡ Running performance tests..."
+    - python testing/performance_test.py --output performance-results.json
+    - |
+      # Check P99 latency target (<5ms)
+      P99=$(cat performance-results.json | python3 -c "import sys,json; print(json.load(sys.stdin).get('p99_latency_ms', 999))")
+      if [ $(echo "$P99 > 5" | bc -l) -eq 1 ]; then
+        echo "❌ P99 latency $P99 ms exceeds target of 5ms"
+        exit 1
+      fi
+      echo "✅ P99 latency: ${P99}ms (target: <5ms)"
+  artifacts:
+    paths:
+      - performance-results.json
+    expire_in: 30 days
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+  allow_failure: true
+
+# =============================================================================
+# DEPLOY STAGE
+# =============================================================================
+
 deploy:dev:
   stage: deploy
   image: google/cloud-sdk:alpine
@@ -107,10 +411,11 @@ deploy:dev:
     - kubectl apply -f k8s/
     - kubectl rollout status deployment -n acgs2 --timeout=600s
     - ./scripts/health_check.py
-  dependencies:
+  needs:
     - test:integration
-  only:
-    - develop
+    - security:semgrep
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "develop"'
   when: manual
 
 deploy:staging:
@@ -127,10 +432,12 @@ deploy:staging:
     - kubectl rollout status deployment -n acgs2 --timeout=600s
     - ./scripts/health_check.py
     - ./scripts/performance_test.py
-  dependencies:
+  needs:
     - test:integration
-  only:
-    - main
+    - security:semgrep
+    - security:snyk-deps
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
   when: manual
 
 deploy:prod:
@@ -148,13 +455,19 @@ deploy:prod:
     - ./scripts/health_check.py
     - ./scripts/smoke_test.py
     - ./scripts/load_test.py
-  dependencies:
+  needs:
     - test:integration
-  only:
-    - tags
+    - security:semgrep
+    - security:snyk-deps
+    - security:trivy-container
+  rules:
+    - if: '$CI_COMMIT_TAG'
   when: manual
 
-# 回滚阶段
+# =============================================================================
+# ROLLBACK STAGE
+# =============================================================================
+
 rollback:dev:
   stage: rollback
   image: google/cloud-sdk:alpine
@@ -166,8 +479,8 @@ rollback:dev:
   environment:
     name: development
     action: stop
-  only:
-    - develop
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "develop"'
   when: manual
 
 rollback:staging:
@@ -181,8 +494,8 @@ rollback:staging:
   environment:
     name: staging
     action: stop
-  only:
-    - main
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
   when: manual
 
 rollback:prod:
@@ -196,27 +509,76 @@ rollback:prod:
   environment:
     name: production
     action: stop
-  only:
-    - tags
+  rules:
+    - if: '$CI_COMMIT_TAG'
   when: manual
 
-# 通知
+# =============================================================================
+# NOTIFICATIONS
+# =============================================================================
+
 notify:success:
   stage: .post
   script:
-    - curl -X POST -H 'Content-type: application/json' --data "{\"text\":\"✅ ACGS-2 部署成功 - $CI_ENVIRONMENT_NAME ($CI_COMMIT_SHORT_SHA)\"}" $SLACK_WEBHOOK
-  only:
-    - develop
-    - main
-    - tags
+    - |
+      curl -X POST -H 'Content-type: application/json' --data "{
+        \"text\": \"✅ ACGS-2 Pipeline Success\",
+        \"blocks\": [
+          {\"type\": \"section\", \"text\": {\"type\": \"mrkdwn\", \"text\": \"*ACGS-2 Pipeline Completed Successfully*\"}},
+          {\"type\": \"section\", \"fields\": [
+            {\"type\": \"mrkdwn\", \"text\": \"*Environment:*\n$CI_ENVIRONMENT_NAME\"},
+            {\"type\": \"mrkdwn\", \"text\": \"*Commit:*\n$CI_COMMIT_SHORT_SHA\"},
+            {\"type\": \"mrkdwn\", \"text\": \"*Constitutional Hash:*\n\`cdd01ef066bc6cf2\`\"},
+            {\"type\": \"mrkdwn\", \"text\": \"*Security Scans:*\n✅ Passed\"}
+          ]}
+        ]
+      }" $SLACK_WEBHOOK
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "develop"'
+    - if: '$CI_COMMIT_BRANCH == "main"'
+    - if: '$CI_COMMIT_TAG'
   when: on_success
 
 notify:failure:
   stage: .post
   script:
-    - curl -X POST -H 'Content-type: application/json' --data "{\"text\":\"❌ ACGS-2 部署失败 - $CI_ENVIRONMENT_NAME ($CI_COMMIT_SHORT_SHA)\"}" $SLACK_WEBHOOK
-  only:
-    - develop
-    - main
-    - tags
+    - |
+      curl -X POST -H 'Content-type: application/json' --data "{
+        \"text\": \"❌ ACGS-2 Pipeline Failed\",
+        \"blocks\": [
+          {\"type\": \"section\", \"text\": {\"type\": \"mrkdwn\", \"text\": \"*ACGS-2 Pipeline Failed*\"}},
+          {\"type\": \"section\", \"fields\": [
+            {\"type\": \"mrkdwn\", \"text\": \"*Environment:*\n$CI_ENVIRONMENT_NAME\"},
+            {\"type\": \"mrkdwn\", \"text\": \"*Commit:*\n$CI_COMMIT_SHORT_SHA\"},
+            {\"type\": \"mrkdwn\", \"text\": \"*Failed Job:*\n$CI_JOB_NAME\"},
+            {\"type\": \"mrkdwn\", \"text\": \"*Pipeline URL:*\n$CI_PIPELINE_URL\"}
+          ]}
+        ]
+      }" $SLACK_WEBHOOK
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "develop"'
+    - if: '$CI_COMMIT_BRANCH == "main"'
+    - if: '$CI_COMMIT_TAG'
   when: on_failure
+
+notify:security-alert:
+  stage: .post
+  script:
+    - |
+      curl -X POST -H 'Content-type: application/json' --data "{
+        \"text\": \"🔒 ACGS-2 Security Alert\",
+        \"blocks\": [
+          {\"type\": \"section\", \"text\": {\"type\": \"mrkdwn\", \"text\": \"*Security vulnerabilities detected in ACGS-2*\"}},
+          {\"type\": \"section\", \"text\": {\"type\": \"mrkdwn\", \"text\": \"Please review the security scan results immediately.\"}},
+          {\"type\": \"section\", \"fields\": [
+            {\"type\": \"mrkdwn\", \"text\": \"*Commit:*\n$CI_COMMIT_SHORT_SHA\"},
+            {\"type\": \"mrkdwn\", \"text\": \"*Pipeline:*\n$CI_PIPELINE_URL\"}
+          ]}
+        ]
+      }" $SECURITY_SLACK_WEBHOOK
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+  when: on_failure
+  needs:
+    - security:semgrep
+    - security:snyk-deps

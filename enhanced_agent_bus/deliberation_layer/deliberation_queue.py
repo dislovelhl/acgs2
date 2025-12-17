@@ -4,9 +4,7 @@ Manages human-in-the-loop approval and multi-agent consensus for high-risk decis
 """
 
 import asyncio
-import json
 import logging
-import time
 from typing import Dict, Any, List, Optional, Callable
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
@@ -74,6 +72,11 @@ class DeliberationItem:
     # Timeout and fallback
     timeout_seconds: int = 300  # 5 minutes default
     fallback_action: Optional[Callable] = None
+
+    # V-04 FIX: Event-driven resolution notification
+    # Replaces inefficient polling with asyncio.Event for immediate notification
+    resolved_event: asyncio.Event = field(default_factory=asyncio.Event)
+    result: Optional[DeliberationStatus] = None
 
     def __post_init__(self):
         if self.voting_deadline is None:
@@ -189,35 +192,40 @@ class DeliberationQueue:
             self.processing_tasks.pop(item_id, None)
 
     async def _wait_for_resolution(self, item_id: str):
-        """Wait for deliberation resolution or timeout."""
+        """
+        Wait for deliberation resolution or timeout.
+
+        V-04 FIX: Uses event-driven notification instead of polling.
+        The resolved_event is set when:
+        - Human decision is submitted
+        - Consensus is reached through agent voting
+        This eliminates the inefficient asyncio.sleep(1) polling loop.
+        """
         item = self.queue.get(item_id)
         if not item:
             return
 
         timeout = item.timeout_seconds
-        start_time = time.time()
 
-        while time.time() - start_time < timeout:
-            item = self.queue.get(item_id)
-            if not item:
-                break
+        try:
+            # EVENT-DRIVEN WAIT: Wait for resolution event with timeout
+            # This replaces the inefficient polling loop
+            await asyncio.wait_for(
+                item.resolved_event.wait(),
+                timeout=timeout
+            )
 
-            # Check if resolved
-            if item.status not in [DeliberationStatus.PENDING, DeliberationStatus.UNDER_REVIEW]:
-                break
-
-            # Check voting consensus
-            if self._check_consensus(item):
-                item.status = DeliberationStatus.CONSENSUS_REACHED
+            # Event was set - check the result
+            if item.result:
+                item.status = item.result
                 item.updated_at = datetime.now(timezone.utc)
-                break
 
-            await asyncio.sleep(1)  # Check every second
-
-        # Timeout handling
-        if item and item.status in [DeliberationStatus.PENDING, DeliberationStatus.UNDER_REVIEW]:
-            item.status = DeliberationStatus.TIMED_OUT
-            item.updated_at = datetime.now(timezone.utc)
+        except asyncio.TimeoutError:
+            # Timeout handling - no resolution within deadline
+            if item.status in [DeliberationStatus.PENDING, DeliberationStatus.UNDER_REVIEW]:
+                item.status = DeliberationStatus.TIMED_OUT
+                item.updated_at = datetime.now(timezone.utc)
+                logger.warning(f"Deliberation item {item_id} timed out after {timeout}s")
 
     def _check_consensus(self, item: DeliberationItem) -> bool:
         """Check if consensus has been reached in voting."""
@@ -240,6 +248,8 @@ class DeliberationQueue:
         """
         Submit human review decision.
 
+        V-04 FIX: Sets resolved_event to immediately notify waiting task.
+
         Returns:
             True if decision was accepted
         """
@@ -254,18 +264,26 @@ class DeliberationQueue:
         item.status = decision
         item.updated_at = datetime.now(timezone.utc)
 
+        # V-04 FIX: Signal event to immediately notify waiting task
+        item.result = decision
+        item.resolved_event.set()
+
         logger.info(f"Human decision submitted for item {item_id}: {decision.value} by {reviewer}")
 
         return True
 
-    async def submit_agent_vote(self,
-                              item_id: str,
-                              agent_id: str,
-                              vote: VoteType,
-                              reasoning: str,
-                              confidence: float = 1.0) -> bool:
+    async def submit_agent_vote(
+        self,
+        item_id: str,
+        agent_id: str,
+        vote: VoteType,
+        reasoning: str,
+        confidence: float = 1.0,
+    ) -> bool:
         """
         Submit vote from an agent.
+
+        V-04 FIX: Sets resolved_event when consensus is reached.
 
         Returns:
             True if vote was accepted
@@ -275,13 +293,15 @@ class DeliberationQueue:
             return False
 
         # Check if agent already voted
-        existing_vote = next((v for v in item.current_votes if v.agent_id == agent_id), None)
-        if existing_vote:
+        existing = next(
+            (v for v in item.current_votes if v.agent_id == agent_id), None
+        )
+        if existing:
             # Update existing vote
-            existing_vote.vote = vote
-            existing_vote.reasoning = reasoning
-            existing_vote.confidence_score = confidence
-            existing_vote.timestamp = datetime.now(timezone.utc)
+            existing.vote = vote
+            existing.reasoning = reasoning
+            existing.confidence_score = confidence
+            existing.timestamp = datetime.now(timezone.utc)
         else:
             # Add new vote
             agent_vote = AgentVote(
@@ -295,6 +315,12 @@ class DeliberationQueue:
         item.updated_at = datetime.now(timezone.utc)
 
         logger.info(f"Agent {agent_id} voted {vote.value} on item {item_id}")
+
+        # V-04 FIX: Check consensus and signal event if reached
+        if self._check_consensus(item):
+            item.result = DeliberationStatus.CONSENSUS_REACHED
+            item.resolved_event.set()
+            logger.info(f"Consensus reached for item {item_id}")
 
         return True
 

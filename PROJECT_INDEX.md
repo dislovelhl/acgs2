@@ -1,172 +1,88 @@
 # ACGS-2 Project Index
-**Constitutional Hash**: `cdd01ef066bc6cf2`
-**Version**: 2.0.0
-**Last Updated**: 2025-12-06
 
-## Overview
-ACGS-2 (Autonomous Constitutional Governance System) is a production-ready enterprise platform implementing constitutional AI governance with formal verification, multi-agent coordination, and real-time performance optimization.
+> Constitutional Hash: `cdd01ef066bc6cf2`
+> Version: 2.1.0
+> Last Updated: 2025-12-17
+> Purpose: Efficient context loading for AI assistants
 
-## Repository Statistics
-| Metric | Value |
-|--------|-------|
-| Python Files | 26 |
-| Directories | 615 |
-| Total Size | 21MB |
-| Functions/Methods | 312 |
+## Quick Reference
 
-## Core Modules
+**Test Command**: `cd enhanced_agent_bus && python3 -m pytest tests/ -v`
+**Syntax Check**: `for f in enhanced_agent_bus/*.py; do python3 -m py_compile "$f"; done`
+**Docker**: `docker-compose up -d`
 
-### `/enhanced_agent_bus/`
-High-performance, multi-tenant agent communication infrastructure.
-
-**Key Exports**:
-- `EnhancedAgentBus` - Main message bus implementation
-- `MessageProcessor` - Async message processing
-- `AgentMessage`, `MessageType`, `MessagePriority` - Message models
-- `ValidationResult` - Validation outcomes
-- `IntegratedValidationSystem` - Full validation pipeline
-
-**Files**:
-- `core.py` - Bus implementation (16 functions/classes)
-- `models.py` - Data models (11 functions/classes)
-- `validators.py` - Validation logic (6 functions/classes)
-
-### `/monitoring/`
-Production monitoring with metrics collection and alerting.
-
-**Key Exports**:
-- Production metrics collection (psutil integration)
-- Redis metrics pipeline
-- PagerDuty alerting integration
-- Health check endpoints
-
-**Files**:
-- `__init__.py` - Main monitoring module (39 functions/classes)
-- `alerting.py` - Alert management (7 functions/classes)
-
-### `/services/integration/search_platform/`
-Universal Search Platform integration for code search and audit trails.
-
-**Key Exports**:
-- `SearchPlatformClient` - API client
-- `ConstitutionalCodeSearchService` - Compliance-aware search
-- `AuditTrailSearchService` - Audit log searching
-- `SearchRequest`, `SearchResponse`, `SearchMatch` - Models
-
-**Files**:
-- `client.py` - Platform client (28 functions/classes)
-- `constitutional_search.py` - Compliance search (20 functions/classes)
-- `audit_search.py` - Audit trail search (30 functions/classes)
-- `models.py` - Data models (25 functions/classes)
-
-### `/tools/`
-Syntax repair and code maintenance utilities.
-
-**Files**:
-- `comprehensive_syntax_repair.py` - Main repair tool
-- `advanced_syntax_repair.py` - Advanced fixes
-- `fix_corrupted_syntax.py` - Corruption repair
-- `fix_kwarg_type_hints.py` - Type hint fixes
-
-## Directory Structure
+## Architecture Overview
 
 ```
-acgs2/
-├── __init__.py                 # Package entry (v2.0.0)
-├── enhanced_agent_bus/         # Agent communication
-│   ├── core.py                 # Bus implementation
-│   ├── models.py               # Message models
-│   ├── validators.py           # Validation
-│   └── validation_integration_example.py
-├── monitoring/                 # Production monitoring
-│   ├── __init__.py             # Metrics & health
-│   └── alerting.py             # PagerDuty alerts
-├── services/
-│   ├── integration/
-│   │   └── search_platform/    # Code search
-│   │       ├── client.py       # API client
-│   │       ├── constitutional_search.py
-│   │       ├── audit_search.py
-│   │       └── models.py
-│   └── core/
-│       └── code-analysis/      # Analysis tools
-├── tools/                      # Maintenance tools
-│   ├── comprehensive_syntax_repair.py
-│   └── fix_*.py
-├── blockchain/                 # Blockchain integration
-├── orchestrators/              # Agent orchestration
-├── runtime/                    # Runtime components
-├── infrastructure/             # Infrastructure
-└── tests/                      # Test suite
+ACGS-2/
+├── enhanced_agent_bus/     # Core message bus (Python + optional Rust)
+│   ├── core.py            # EnhancedAgentBus, MessageProcessor
+│   ├── models.py          # AgentMessage, MessageType, Priority enums
+│   ├── exceptions.py      # 22 custom exception types
+│   ├── validators.py      # ValidationResult, hash validation
+│   ├── opa_client.py      # OPA policy client
+│   └── deliberation_layer/
+│       ├── integration.py # DeliberationLayer class (29 methods)
+│       ├── opa_guard.py   # OPAGuard with VERIFY-BEFORE-ACT
+│       ├── opa_guard_models.py # Guard data models
+│       ├── adaptive_router.py
+│       ├── deliberation_queue.py
+│       ├── impact_scorer.py (BERT-based)
+│       └── llm_assistant.py
+├── services/               # 47 microservices
+│   ├── policy_registry/   # Port 8000 - Dynamic policy
+│   ├── core/              # Constraint generation (8082), Retrieval (8083)
+│   ├── audit_service/     # Port 8084
+│   └── integration/search_platform/
+├── policies/               # OPA Rego policies
+│   └── rego/
+├── .semgrep/              # Security rules
+├── monitoring/            # Production monitoring
+└── shared/                # Common utilities
 ```
 
-## Performance Targets
-| Metric | Target | Status |
-|--------|--------|--------|
-| P99 Latency | <5ms | Active |
-| Throughput | >100 RPS | Active |
-| Cache Hit Rate | >85% | Active |
-| Constitutional Compliance | 100% | Required |
+## Core Components
 
-## Key Entry Points
+### EnhancedAgentBus (`enhanced_agent_bus/core.py`)
+Main message bus supporting 3 backends (auto-selected):
+- **Rust**: Highest performance (when available)
+- **Dynamic Policy**: Uses policy registry (`use_dynamic_policy=True`)
+- **Static Hash**: Python fallback
 
-### Agent Bus
-```python
-from acgs2.enhanced_agent_bus import EnhancedAgentBus, AgentMessage
-bus = EnhancedAgentBus()
-await bus.publish(message)
-```
+### DeliberationLayer (`enhanced_agent_bus/deliberation_layer/integration.py`)
+AI-powered review for high-risk decisions.
+- `impact_score >= 0.8` → deliberation queue
+- `impact_score < 0.8` → fast lane
 
-### Code Search
-```python
-from acgs2.services.integration.search_platform import (
-    SearchPlatformClient,
-    ConstitutionalCodeSearchService
-)
-async with ConstitutionalCodeSearchService() as search:
-    results = await search.scan_for_violations(paths=["."])
-```
+### Exception Hierarchy (`enhanced_agent_bus/exceptions.py`)
+- 22 specialized exception types including `ConstitutionalError`, `MessageError`, `AgentError`, `PolicyError`, etc.
 
-### Monitoring
-```python
-from acgs2.monitoring import ProductionMonitor
-monitor = ProductionMonitor()
-metrics = await monitor.collect_metrics()
-```
+## Services
 
-## Constitutional Compliance
-
-All modules must include the constitutional hash: `cdd01ef066bc6cf2`
-
-Pattern in file headers:
-```python
-"""
-Module description
-Constitutional Hash: cdd01ef066bc6cf2
-"""
-```
+| Service | Port | Description |
+|---------|------|-------------|
+| rust-message-bus | 8080 | High-perf Rust backend |
+| deliberation-layer | 8081 | AI review system |
+| constraint-generation | 8082 | Core constraints |
+| constitutional-retrieval| 8083 | RAG-based retrieval |
+| audit-ledger | 8084 | Compliance logging |
+| policy-registry | 8000 | Dynamic policy |
 
 ## Testing
 
+**Run Tests:**
 ```bash
-# Run all tests
-pytest tests/ --tb=short
-
-# By category
-pytest -m constitutional  # Compliance tests
-pytest -m performance     # Performance tests
-pytest -m integration     # Integration tests
-pytest -m unit           # Unit tests
+cd enhanced_agent_bus
+python3 -m pytest tests/ -v
 ```
 
-## Dependencies
+## Recent Changes (2025-12-17)
 
-Core dependencies (see requirements.txt in parent):
-- FastAPI, Pydantic v2
-- SQLAlchemy 2.0, asyncpg
-- Redis, aioredis
-- psutil (monitoring)
-- httpx (async HTTP)
+- `README.md` - NEW: Project overview and quick start.
+- `AGENTS.md` - Updated: Added exception handling details.
+- `CLAUDE.md` - Updated: Latest commands and structure.
+- `enhanced_agent_bus/exceptions.py` - NEW: 22 exception types.
+- `enhanced_agent_bus/deliberation_layer/opa_guard_models.py` - NEW: Data models.
 
 ---
-*Index generated for token-efficient context loading*
+*Index generated for token-efficient context loading.*

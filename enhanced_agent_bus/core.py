@@ -21,6 +21,13 @@ try:
         CONSTITUTIONAL_HASH,
     )
     from .validators import ValidationResult
+    from .exceptions import (
+        AgentNotRegisteredError,
+        AgentAlreadyRegisteredError,
+        BusNotStartedError,
+        ConstitutionalHashMismatchError,
+        MessageDeliveryError,
+    )
 except ImportError:
     # Fallback for direct execution or testing
     from models import (  # type: ignore
@@ -31,6 +38,13 @@ except ImportError:
         CONSTITUTIONAL_HASH,
     )
     from validators import ValidationResult  # type: ignore
+    from exceptions import (  # type: ignore
+        AgentNotRegisteredError,
+        AgentAlreadyRegisteredError,
+        BusNotStartedError,
+        ConstitutionalHashMismatchError,
+        MessageDeliveryError,
+    )
 
 # Import centralized Redis config with fallback
 try:
@@ -377,6 +391,7 @@ class EnhancedAgentBus:
         agent_id: str,
         agent_type: str = "default",
         capabilities: Optional[List[str]] = None,
+        tenant_id: Optional[str] = None,
     ) -> bool:
         """
         Register an agent with the bus.
@@ -385,6 +400,7 @@ class EnhancedAgentBus:
             agent_id: Unique identifier for the agent
             agent_type: Type/category of the agent
             capabilities: List of agent capabilities
+            tenant_id: Tenant identifier for multi-tenant isolation
 
         Returns:
             True if registration successful
@@ -402,11 +418,12 @@ class EnhancedAgentBus:
             "agent_id": agent_id,
             "agent_type": agent_type,
             "capabilities": capabilities or [],
+            "tenant_id": tenant_id,  # Store tenant_id for multi-tenant isolation
             "registered_at": datetime.now(timezone.utc),
             "constitutional_hash": constitutional_key,
             "status": "active",
         }
-        logger.info(f"Agent registered: {agent_id} (type: {agent_type})")
+        logger.info(f"Agent registered: {agent_id} (type: {agent_type}, tenant: {tenant_id})")
         return True
 
     async def unregister_agent(self, agent_id: str) -> bool:
@@ -487,17 +504,47 @@ class EnhancedAgentBus:
 
     async def broadcast_message(self, message: AgentMessage) -> Dict[str, ValidationResult]:
         """
-        Broadcast a message to all registered agents.
+        Broadcast a message to all registered agents within the same tenant.
+
+        SECURITY: Enforces strict multi-tenant isolation.
+        - Messages with tenant_id only reach agents in the same tenant
+        - Messages without tenant_id only reach agents without tenant_id
+        - Cross-tenant broadcast is explicitly denied
 
         Returns:
             Dict mapping agent_id to validation result
         """
         results = {}
         original_to_agent = message.to_agent
+        skipped_agents = []
 
-        for agent_id in self._agents:
+        for agent_id, info in self._agents.items():
+            agent_tenant = info.get("tenant_id")
+
+            # STRICT MULTI-TENANT ISOLATION:
+            # 1. If message has tenant_id, only send to agents with SAME tenant_id
+            # 2. If message has no tenant_id, only send to agents with no tenant_id
+            # This prevents any cross-tenant data leakage
+            if message.tenant_id:
+                # Message is tenant-scoped - only same-tenant agents
+                if agent_tenant != message.tenant_id:
+                    skipped_agents.append(agent_id)
+                    continue
+            else:
+                # Message has no tenant - only non-tenant agents receive it
+                if agent_tenant:
+                    skipped_agents.append(agent_id)
+                    continue
+
             message.to_agent = agent_id
             results[agent_id] = await self.send_message(message)
+
+        # Log isolation enforcement for audit
+        if skipped_agents:
+            logger.debug(
+                f"Multi-tenant isolation: skipped {len(skipped_agents)} agents "
+                f"for message tenant_id={message.tenant_id}"
+            )
 
         message.to_agent = original_to_agent
         return results

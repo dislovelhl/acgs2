@@ -14,6 +14,9 @@ echo "Starting rollback to blue environment..."
 echo "Namespace: $NAMESPACE"
 
 # Immediately switch all traffic back to blue
+echo "Running health check on blue environment before rollback..."
+./scripts/health-check.sh
+
 echo "Switching all traffic back to blue environment..."
 kubectl annotate ingress $GREEN_INGRESS nginx.ingress.kubernetes.io/canary-weight="0" -n $NAMESPACE --overwrite
 

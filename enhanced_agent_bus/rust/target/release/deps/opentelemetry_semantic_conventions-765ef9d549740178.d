@@ -1,9 +1,0 @@
-/home/dislove/document/acgs2/enhanced_agent_bus/rust/target/release/deps/opentelemetry_semantic_conventions-765ef9d549740178.d: /home/dislove/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/opentelemetry-semantic-conventions-0.11.0/src/lib.rs /home/dislove/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/opentelemetry-semantic-conventions-0.11.0/src/resource.rs /home/dislove/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/opentelemetry-semantic-conventions-0.11.0/src/trace.rs
-
-/home/dislove/document/acgs2/enhanced_agent_bus/rust/target/release/deps/libopentelemetry_semantic_conventions-765ef9d549740178.rlib: /home/dislove/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/opentelemetry-semantic-conventions-0.11.0/src/lib.rs /home/dislove/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/opentelemetry-semantic-conventions-0.11.0/src/resource.rs /home/dislove/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/opentelemetry-semantic-conventions-0.11.0/src/trace.rs
-
-/home/dislove/document/acgs2/enhanced_agent_bus/rust/target/release/deps/libopentelemetry_semantic_conventions-765ef9d549740178.rmeta: /home/dislove/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/opentelemetry-semantic-conventions-0.11.0/src/lib.rs /home/dislove/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/opentelemetry-semantic-conventions-0.11.0/src/resource.rs /home/dislove/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/opentelemetry-semantic-conventions-0.11.0/src/trace.rs
-
-/home/dislove/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/opentelemetry-semantic-conventions-0.11.0/src/lib.rs:
-/home/dislove/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/opentelemetry-semantic-conventions-0.11.0/src/resource.rs:
-/home/dislove/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/opentelemetry-semantic-conventions-0.11.0/src/trace.rs:

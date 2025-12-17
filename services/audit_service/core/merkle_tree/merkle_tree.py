@@ -97,9 +97,57 @@ class MerkleTree:
         return current_hash == root_hash
 
     def add_leaf(self, data: bytes) -> None:
-        """添加新的叶子节点（需要重建树）"""
+        """增量添加新的叶子节点，避免全量重建"""
         self._original_data.append(data)
-        self._rebuild_from_data()
+        new_leaf_hash = hashlib.sha256(data).hexdigest()
+        self.leaves.append(new_leaf_hash)
+        
+        if not self.tree:
+            self.tree = [[new_leaf_hash]]
+            self.root = new_leaf_hash
+            return
+
+        # 更新树结构
+        self.tree[0] = self.leaves[:]
+        current_hash = new_leaf_hash
+        
+        for i in range(len(self.tree) - 1):
+            level = self.tree[i]
+            next_level = self.tree[i+1]
+            
+            # 计算父节点索引
+            parent_idx = (len(level) - 1) // 2
+            
+            if len(level) % 2 == 0:
+                # 如果当前层是偶数个节点，说明新加入的是右子节点
+                left = level[len(level) - 2]
+                right = current_hash
+            else:
+                # 如果当前层是奇数个节点，说明新加入的是左子节点（或者是唯一的节点）
+                left = current_hash
+                right = current_hash # 复制自己
+            
+            combined = left + right
+            parent_hash = hashlib.sha256(combined.encode()).hexdigest()
+            
+            if parent_idx < len(next_level):
+                next_level[parent_idx] = parent_hash
+            else:
+                next_level.append(parent_hash)
+            
+            current_hash = parent_hash
+            
+        # 如果根层节点数增加，需要增加一层
+        if len(self.tree[-1]) > 1:
+            last_level = self.tree[-1]
+            left = last_level[0]
+            right = last_level[1] if len(last_level) > 1 else left
+            combined = left + right
+            new_root = hashlib.sha256(combined.encode()).hexdigest()
+            self.tree.append([new_root])
+            self.root = new_root
+        else:
+            self.root = self.tree[-1][0]
 
     def _rebuild_from_data(self) -> None:
         """从原始数据重建树"""
