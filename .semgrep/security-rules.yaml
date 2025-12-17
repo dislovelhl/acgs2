@@ -1,0 +1,448 @@
+# Security Rules for ACGS-2
+# Constitutional Hash: cdd01ef066bc6cf2
+# OWASP Top 10 and security best practices enforcement
+
+rules:
+  - id: sql-injection-risk
+    message: |
+      Potential SQL injection vulnerability detected.
+      Use parameterized queries or ORM methods instead of string formatting.
+    severity: ERROR
+    languages: [python]
+    patterns:
+      - pattern-either:
+          - pattern: |
+              $CURSOR.execute("..." + $VAR + "...")
+          - pattern: |
+              $CURSOR.execute(f"... {$VAR} ...")
+          - pattern: |
+              $CURSOR.execute("..." % $VAR)
+          - pattern: |
+              $CURSOR.execute("...".format($VAR))
+          - pattern: |
+              $SESSION.execute("..." + $VAR + "...")
+          - pattern: |
+              $SESSION.execute(f"... {$VAR} ...")
+    fix: Use parameterized queries - execute("SELECT * FROM table WHERE id = %s", (id,))
+    metadata:
+      category: security
+      cwe: "CWE-89: SQL Injection"
+      owasp: "A03:2021 - Injection"
+      confidence: HIGH
+      likelihood: HIGH
+      impact: CRITICAL
+      subcategory: [vuln]
+      references:
+        - https://owasp.org/www-community/attacks/SQL_Injection
+      test_cases:
+        - pattern_match: |
+            cursor.execute(f"SELECT * FROM users WHERE id = {user_id}")
+        - pattern_no_match: |
+            cursor.execute("SELECT * FROM users WHERE id = %s", (user_id,))
+
+  - id: command-injection-risk
+    message: |
+      Potential command injection vulnerability.
+      Avoid using shell=True with subprocess or os.system with user input.
+    severity: ERROR
+    languages: [python]
+    patterns:
+      - pattern-either:
+          - pattern: |
+              subprocess.$METHOD($CMD, shell=True)
+          - pattern: |
+              os.system($CMD)
+          - pattern: |
+              os.popen($CMD)
+          - pattern: |
+              subprocess.$METHOD($CMD + $VAR, ...)
+          - pattern: |
+              subprocess.$METHOD(f"... {$VAR} ...", ...)
+    metadata:
+      category: security
+      cwe: "CWE-78: OS Command Injection"
+      owasp: "A03:2021 - Injection"
+      confidence: HIGH
+      likelihood: HIGH
+      impact: CRITICAL
+      subcategory: [vuln]
+      references:
+        - https://owasp.org/www-community/attacks/Command_Injection
+      test_cases:
+        - pattern_match: |
+            subprocess.run(f"ls {user_input}", shell=True)
+        - pattern_no_match: |
+            subprocess.run(["ls", user_input])
+
+  - id: unsafe-deserialization-pickle
+    message: |
+      Unsafe deserialization using pickle detected.
+      pickle.loads() can execute arbitrary code. Use JSON or secure alternatives.
+    severity: ERROR
+    languages: [python]
+    patterns:
+      - pattern-either:
+          - pattern: pickle.loads($DATA)
+          - pattern: pickle.load($FILE)
+          - pattern: pickle.Unpickler($FILE).load()
+      - pattern-not-inside: |
+          # Trusted source only
+          ...
+    metadata:
+      category: security
+      cwe: "CWE-502: Deserialization of Untrusted Data"
+      owasp: "A08:2021 - Software and Data Integrity Failures"
+      confidence: HIGH
+      likelihood: MEDIUM
+      impact: CRITICAL
+      subcategory: [vuln]
+      references:
+        - https://owasp.org/www-community/vulnerabilities/Deserialization_of_untrusted_data
+      test_cases:
+        - pattern_match: |
+            data = pickle.loads(user_data)
+        - pattern_no_match: |
+            data = json.loads(user_data)
+
+  - id: unsafe-yaml-load
+    message: |
+      Unsafe YAML deserialization detected.
+      yaml.load() can execute arbitrary Python code. Use yaml.safe_load() instead.
+    severity: ERROR
+    languages: [python]
+    patterns:
+      - pattern-either:
+          - pattern: yaml.load($DATA)
+          - pattern: yaml.load($DATA, Loader=yaml.Loader)
+          - pattern: yaml.load($DATA, Loader=yaml.FullLoader)
+      - pattern-not: yaml.load($DATA, Loader=yaml.SafeLoader)
+    fix: yaml.safe_load($DATA)
+    metadata:
+      category: security
+      cwe: "CWE-502: Deserialization of Untrusted Data"
+      owasp: "A08:2021 - Software and Data Integrity Failures"
+      confidence: HIGH
+      likelihood: HIGH
+      impact: CRITICAL
+      subcategory: [vuln]
+      references:
+        - https://github.com/yaml/pyyaml/wiki/PyYAML-yaml.load(input)-Deprecation
+      test_cases:
+        - pattern_match: |
+            config = yaml.load(file)
+        - pattern_no_match: |
+            config = yaml.safe_load(file)
+
+  - id: missing-input-validation-fastapi
+    message: |
+      FastAPI endpoint missing input validation.
+      Use Pydantic models or validators for all user inputs.
+    severity: WARNING
+    languages: [python]
+    patterns:
+      - pattern-either:
+          - pattern: |
+              @$APP.$METHOD($PATH)
+              async def $FUNC($PARAM: str, ...):
+                  ...
+                  return $RESULT
+          - pattern: |
+              @$APP.$METHOD($PATH)
+              def $FUNC($PARAM: str, ...):
+                  ...
+                  return $RESULT
+      - pattern-not-inside: |
+          @$APP.$METHOD($PATH)
+          async def $FUNC($PARAM: $MODEL, ...):
+              ...
+      - metavariable-pattern:
+          metavariable: $METHOD
+          patterns:
+            - pattern-either:
+                - pattern: post
+                - pattern: put
+                - pattern: patch
+    metadata:
+      category: security
+      cwe: "CWE-20: Improper Input Validation"
+      owasp: "A03:2021 - Injection"
+      confidence: MEDIUM
+      likelihood: MEDIUM
+      impact: HIGH
+      subcategory: [vuln]
+      test_cases:
+        - pattern_match: |
+            @app.post("/users")
+            async def create_user(name: str, email: str):
+                return {"name": name}
+        - pattern_no_match: |
+            @app.post("/users")
+            async def create_user(user: UserModel):
+                return user
+
+  - id: jwt-without-verification
+    message: |
+      JWT token decoded without signature verification.
+      Always verify JWT signatures to prevent token tampering.
+    severity: ERROR
+    languages: [python]
+    patterns:
+      - pattern-either:
+          - pattern: 'jwt.decode($TOKEN, options={"verify_signature": False})'
+          - pattern: jwt.decode($TOKEN, verify=False)
+          - pattern: jwt.decode($TOKEN, ..., verify_signature=False, ...)
+    metadata:
+      category: security
+      cwe: "CWE-347: Improper Verification of Cryptographic Signature"
+      owasp: "A02:2021 - Cryptographic Failures"
+      confidence: HIGH
+      likelihood: HIGH
+      impact: CRITICAL
+      subcategory: [vuln]
+      references:
+        - https://owasp.org/www-project-web-security-testing-guide/latest/4-Web_Application_Security_Testing/06-Session_Management_Testing/10-Testing_JSON_Web_Tokens
+      test_cases:
+        - pattern_match: |
+            payload = jwt.decode(token, options={"verify_signature": False})
+        - pattern_no_match: |
+            payload = jwt.decode(token, secret_key, algorithms=["HS256"])
+
+  - id: weak-cryptographic-hash
+    message: |
+      Weak cryptographic hash function detected.
+      MD5 and SHA1 are cryptographically broken. Use SHA256 or stronger.
+    severity: ERROR
+    languages: [python]
+    patterns:
+      - pattern-either:
+          - pattern: hashlib.md5($DATA)
+          - pattern: hashlib.sha1($DATA)
+      - pattern-not-inside: |
+          # Non-security use case (e.g., checksums)
+          ...
+    fix: Use hashlib.sha256($DATA) or hashlib.sha3_256($DATA)
+    metadata:
+      category: security
+      cwe: "CWE-327: Use of a Broken or Risky Cryptographic Algorithm"
+      owasp: "A02:2021 - Cryptographic Failures"
+      confidence: HIGH
+      likelihood: MEDIUM
+      impact: HIGH
+      subcategory: [vuln]
+      references:
+        - https://owasp.org/www-project-web-security-testing-guide/latest/4-Web_Application_Security_Testing/09-Testing_for_Weak_Cryptography/
+      test_cases:
+        - pattern_match: |
+            hash_value = hashlib.md5(data).hexdigest()
+        - pattern_no_match: |
+            hash_value = hashlib.sha256(data).hexdigest()
+
+  - id: insecure-random-for-security
+    message: |
+      Insecure random number generator for security-sensitive operations.
+      Use secrets module instead of random for tokens, passwords, etc.
+    severity: ERROR
+    languages: [python]
+    patterns:
+      - pattern-either:
+          - pattern: random.random()
+          - pattern: random.randint(...)
+          - pattern: random.choice(...)
+      - pattern-inside: |
+          def ...$TOKEN...(...):
+              ...
+      - pattern-not-inside: |
+          # Non-security context
+          ...
+    fix: Use secrets.token_hex(), secrets.token_urlsafe(), or secrets.SystemRandom()
+    metadata:
+      category: security
+      cwe: "CWE-338: Use of Cryptographically Weak PRNG"
+      owasp: "A02:2021 - Cryptographic Failures"
+      confidence: MEDIUM
+      likelihood: MEDIUM
+      impact: HIGH
+      subcategory: [vuln]
+      references:
+        - https://docs.python.org/3/library/secrets.html
+      test_cases:
+        - pattern_match: |
+            def generate_token():
+                return random.randint(1000, 9999)
+        - pattern_no_match: |
+            def generate_token():
+                return secrets.token_hex(16)
+
+  - id: eval-usage-security-risk
+    message: |
+      Use of eval() detected - potential code injection vulnerability.
+      eval() executes arbitrary code and should be avoided.
+    severity: ERROR
+    languages: [python]
+    patterns:
+      - pattern-either:
+          - pattern: eval($CODE)
+          - pattern: exec($CODE)
+          - pattern: compile($CODE, ...)
+      - pattern-not-inside: |
+          # Controlled environment only
+          ...
+    metadata:
+      category: security
+      cwe: "CWE-95: Improper Neutralization of Directives in Dynamically Evaluated Code"
+      owasp: "A03:2021 - Injection"
+      confidence: HIGH
+      likelihood: HIGH
+      impact: CRITICAL
+      subcategory: [vuln]
+      references:
+        - https://owasp.org/www-community/attacks/Code_Injection
+      test_cases:
+        - pattern_match: |
+            result = eval(user_input)
+        - pattern_no_match: |
+            result = json.loads(user_input)
+
+  - id: path-traversal-risk
+    message: |
+      Potential path traversal vulnerability.
+      Validate and sanitize file paths from user input to prevent directory traversal.
+    severity: ERROR
+    languages: [python]
+    patterns:
+      - pattern-either:
+          - pattern: open($PATH, ...)
+          - pattern: Path($PATH)
+          - pattern: os.path.join($BASE, $PATH)
+      - pattern-not-inside: |
+          if is_safe_path($PATH):
+              ...
+      - pattern-not-inside: |
+          $SAFE_PATH = sanitize_path($PATH)
+          ...
+    metadata:
+      category: security
+      cwe: "CWE-22: Path Traversal"
+      owasp: "A01:2021 - Broken Access Control"
+      confidence: MEDIUM
+      likelihood: MEDIUM
+      impact: HIGH
+      subcategory: [vuln]
+      references:
+        - https://owasp.org/www-community/attacks/Path_Traversal
+      test_cases:
+        - pattern_match: |
+            file = open(user_provided_path, 'r')
+        - pattern_no_match: |
+            if is_safe_path(user_provided_path):
+                file = open(user_provided_path, 'r')
+
+  - id: missing-rate-limiting
+    message: |
+      FastAPI endpoint missing rate limiting.
+      Add rate limiting to prevent abuse and DoS attacks.
+    severity: WARNING
+    languages: [python]
+    patterns:
+      - pattern: |
+          @$APP.$METHOD($PATH)
+          async def $FUNC(...):
+              ...
+      - pattern-not-inside: |
+          @limiter.limit(...)
+          ...
+      - pattern-not-inside: |
+          @rate_limit(...)
+          ...
+      - metavariable-pattern:
+          metavariable: $METHOD
+          patterns:
+            - pattern-either:
+                - pattern: post
+                - pattern: put
+                - pattern: delete
+    metadata:
+      category: security
+      cwe: "CWE-770: Allocation of Resources Without Limits or Throttling"
+      owasp: "A04:2021 - Insecure Design"
+      confidence: LOW
+      likelihood: LOW
+      impact: MEDIUM
+      subcategory: [vuln]
+      test_cases:
+        - pattern_match: |
+            @app.post("/api/users")
+            async def create_user(user: UserModel):
+                return user
+        - pattern_no_match: |
+            @limiter.limit("10/minute")
+            @app.post("/api/users")
+            async def create_user(user: UserModel):
+                return user
+
+  - id: exception-leaking-sensitive-info
+    message: |
+      Exception handler may leak sensitive information.
+      Avoid exposing internal error details to users in production.
+    severity: WARNING
+    languages: [python]
+    patterns:
+      - pattern-either:
+          - pattern: |
+              except $EXC as $E:
+                  ...
+                  return ..., str($E), ...
+          - pattern: |
+              except $EXC as $E:
+                  ...
+                  raise HTTPException(..., detail=str($E))
+    metadata:
+      category: security
+      cwe: "CWE-209: Information Exposure Through an Error Message"
+      owasp: "A05:2021 - Security Misconfiguration"
+      confidence: MEDIUM
+      likelihood: MEDIUM
+      impact: LOW
+      subcategory: [vuln]
+      test_cases:
+        - pattern_match: |
+            except Exception as e:
+                return {"error": str(e)}
+        - pattern_no_match: |
+            except Exception as e:
+                logger.error(str(e))
+                return {"error": "Internal server error"}
+
+  - id: unencrypted-sensitive-data-logging
+    message: |
+      Potential logging of sensitive data detected.
+      Avoid logging passwords, tokens, or PII in plain text.
+    severity: WARNING
+    languages: [python]
+    patterns:
+      - pattern-either:
+          - pattern: |
+              $LOGGER.$METHOD(..., $VAR, ...)
+          - pattern: |
+              print(..., $VAR, ...)
+      - metavariable-pattern:
+          metavariable: $VAR
+          patterns:
+            - pattern-either:
+                - pattern-regex: ".*password.*"
+                - pattern-regex: ".*token.*"
+                - pattern-regex: ".*secret.*"
+                - pattern-regex: ".*api_key.*"
+    metadata:
+      category: security
+      cwe: "CWE-532: Information Exposure Through Log Files"
+      owasp: "A09:2021 - Security Logging and Monitoring Failures"
+      confidence: LOW
+      likelihood: LOW
+      impact: MEDIUM
+      subcategory: [vuln]
+      test_cases:
+        - pattern_match: |
+            logger.info(f"User logged in with password: {password}")
+        - pattern_no_match: |
+            logger.info(f"User logged in with password: ***")

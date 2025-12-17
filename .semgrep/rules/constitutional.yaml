@@ -1,0 +1,426 @@
+# Constitutional Compliance Rules for ACGS-2
+# Constitutional Hash: cdd01ef066bc6cf2
+# These rules enforce constitutional AI governance compliance
+#
+# Severity Levels:
+# - ERROR: Constitutional violations that must be fixed
+# - WARNING: Potential compliance issues to review
+# - INFO: Best practice recommendations
+
+rules:
+  # =============================================================================
+  # Hash Validation Rules
+  # =============================================================================
+
+  - id: acgs-missing-constitutional-hash-docstring
+    message: |
+      Module docstring should include constitutional hash 'cdd01ef066bc6cf2'.
+      All ACGS-2 modules require constitutional hash for audit compliance.
+      
+      Add to module docstring:
+        Constitutional Hash: cdd01ef066bc6cf2
+    severity: WARNING
+    languages: [python]
+    patterns:
+      - pattern-regex: '"""[^"]*"""'
+      - pattern-not-regex: 'cdd01ef066bc6cf2'
+    paths:
+      include:
+        - "enhanced_agent_bus/**/*.py"
+        - "services/**/*.py"
+        - "shared/**/*.py"
+      exclude:
+        - "**/*test*.py"
+        - "**/conftest.py"
+        - "**/__init__.py"
+    metadata:
+      category: constitutional-compliance
+      cwe: "CWE-710: Improper Adherence to Coding Standards"
+      confidence: MEDIUM
+      likelihood: HIGH
+      impact: MEDIUM
+      subcategory:
+        - audit
+      technology:
+        - python
+      acgs-rule-type: hash-validation
+      references:
+        - https://gitlab.com/soln.ai/ACGS/-/blob/main/CLAUDE.md
+
+  - id: acgs-hardcoded-constitutional-hash-wrong-value
+    message: |
+      Constitutional hash value does not match expected 'cdd01ef066bc6cf2'.
+
+      The ACGS-2 system requires the exact constitutional hash for governance
+      validation. Using incorrect hash values will cause validation failures.
+
+      Fix: Use CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
+    severity: ERROR
+    languages: [python]
+    patterns:
+      - pattern-either:
+          - pattern: CONSTITUTIONAL_HASH = "$WRONG_HASH"
+          - pattern: constitutional_hash = "$WRONG_HASH"
+          - pattern: '"constitutional_hash": "$WRONG_HASH"'
+      - metavariable-comparison:
+          comparison: str($WRONG_HASH) != "cdd01ef066bc6cf2"
+          metavariable: $WRONG_HASH
+    metadata:
+      category: constitutional-compliance
+      cwe: "CWE-710: Improper Adherence to Coding Standards"
+      confidence: HIGH
+      likelihood: HIGH
+      impact: CRITICAL
+      subcategory:
+        - vuln
+      technology:
+        - python
+      acgs-rule-type: hash-validation
+
+  - id: acgs-constitutional-hash-format-invalid
+    message: |
+      Constitutional hash appears to have invalid format.
+
+      The hash should be a 16-character hexadecimal string: cdd01ef066bc6cf2
+
+      Valid format: [0-9a-f]{16}
+    severity: ERROR
+    languages: [python]
+    patterns:
+      - pattern-either:
+          - pattern: CONSTITUTIONAL_HASH = "$HASH"
+          - pattern: constitutional_hash = "$HASH"
+      - metavariable-regex:
+          metavariable: $HASH
+          regex: "^(?![0-9a-f]{16}$).*$"
+    metadata:
+      category: constitutional-compliance
+      cwe: "CWE-20: Improper Input Validation"
+      confidence: HIGH
+      likelihood: MEDIUM
+      impact: HIGH
+      subcategory:
+        - correctness
+      technology:
+        - python
+      acgs-rule-type: hash-validation
+
+  - id: acgs-use-constant-not-literal-hash
+    message: |
+      Use CONSTITUTIONAL_HASH constant instead of hardcoded literal.
+      
+      Import from models.py:
+        from enhanced_agent_bus.models import CONSTITUTIONAL_HASH
+      
+      Or from validators.py:
+        from enhanced_agent_bus.validators import CONSTITUTIONAL_HASH
+    severity: WARNING
+    languages: [python]
+    patterns:
+      - pattern-either:
+          - pattern: constitutional_hash="cdd01ef066bc6cf2"
+          - pattern: constitutional_hash = "cdd01ef066bc6cf2"
+          - pattern: '"constitutional_hash": "cdd01ef066bc6cf2"'
+      - pattern-not-inside: |
+          CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
+    paths:
+      exclude:
+        - "**/models.py"
+        - "**/validators.py"
+        - "**/*test*.py"
+    metadata:
+      category: constitutional-compliance
+      confidence: MEDIUM
+      likelihood: MEDIUM
+      impact: LOW
+      subcategory:
+        - maintainability
+      technology:
+        - python
+      acgs-rule-type: hash-validation
+
+  # =============================================================================
+  # Constitutional Validation Bypass Rules
+  # =============================================================================
+
+  - id: acgs-bypass-constitutional-validation
+    message: |
+      Potential bypass of constitutional validation detected.
+      
+      Do not disable or skip constitutional checks in production code.
+      This is a critical security violation.
+    severity: ERROR
+    languages: [python]
+    pattern-either:
+      - pattern: validate_constitution=False
+      - pattern: skip_validation=True
+      - pattern: bypass_constitution=True
+      - pattern: disable_constitutional_check=True
+      - pattern: skip_constitutional_hash=True
+      - pattern: constitutional_validated=False
+    paths:
+      exclude:
+        - "**/*test*.py"
+        - "**/conftest.py"
+    metadata:
+      category: constitutional-compliance
+      cwe: "CWE-602: Client-Side Enforcement of Server-Side Security"
+      confidence: HIGH
+      likelihood: MEDIUM
+      impact: CRITICAL
+      subcategory:
+        - vuln
+      technology:
+        - python
+      acgs-rule-type: validation-bypass
+
+  - id: acgs-conditional-validation-skip
+    message: |
+      Conditional skipping of constitutional validation detected.
+      
+      Avoid patterns that conditionally disable validation based on config.
+      Constitutional validation must always be enforced.
+    severity: ERROR
+    languages: [python]
+    pattern-either:
+      - pattern: |
+          if not $CONFIG.get("validate_constitution", ...):
+              ...
+      - pattern: |
+          if $CONFIG.get("skip_validation", ...):
+              ...
+      - pattern: |
+          if os.getenv("SKIP_CONSTITUTIONAL_CHECK", ...):
+              ...
+    paths:
+      exclude:
+        - "**/*test*.py"
+    metadata:
+      category: constitutional-compliance
+      cwe: "CWE-602: Client-Side Enforcement of Server-Side Security"
+      confidence: HIGH
+      likelihood: MEDIUM
+      impact: CRITICAL
+      subcategory:
+        - vuln
+      technology:
+        - python
+      acgs-rule-type: validation-bypass
+
+  # =============================================================================
+  # Policy Management Rules
+  # =============================================================================
+
+  - id: acgs-unvalidated-policy-update
+    message: |
+      Policy update without constitutional validation.
+      
+      All policy changes must be validated against constitutional constraints
+      before being applied to prevent governance violations.
+      
+      Add validation:
+        if validate_constitutional_compliance(policy):
+            client.update_policy(policy)
+    severity: ERROR
+    languages: [python]
+    patterns:
+      - pattern-either:
+          - pattern: $CLIENT.update_policy($POLICY)
+          - pattern: $REGISTRY.register_policy($POLICY)
+          - pattern: $MANAGER.set_policy($POLICY)
+          - pattern: await $CLIENT.update_policy($POLICY)
+      - pattern-not-inside: |
+          if validate_constitutional_compliance($POLICY):
+              ...
+      - pattern-not-inside: |
+          $RESULT = validate_policy($POLICY)
+          if $RESULT.is_valid:
+              ...
+    paths:
+      exclude:
+        - "**/*test*.py"
+    metadata:
+      category: constitutional-compliance
+      cwe: "CWE-862: Missing Authorization"
+      confidence: HIGH
+      likelihood: HIGH
+      impact: HIGH
+      subcategory:
+        - audit
+      technology:
+        - python
+      acgs-rule-type: policy-governance
+
+  - id: acgs-direct-policy-modification
+    message: |
+      Direct policy modification without governance approval.
+      
+      Policy changes should go through the PolicyRegistryClient
+      with proper signature validation and audit logging.
+    severity: WARNING
+    languages: [python]
+    patterns:
+      - pattern-either:
+          - pattern: $POLICY["rules"] = ...
+          - pattern: $POLICY.rules = ...
+          - pattern: $POLICY["content"] = ...
+      - pattern-not-inside: |
+          class PolicyService:
+              ...
+    paths:
+      exclude:
+        - "**/*test*.py"
+    metadata:
+      category: constitutional-compliance
+      confidence: MEDIUM
+      likelihood: MEDIUM
+      impact: HIGH
+      subcategory:
+        - audit
+      technology:
+        - python
+      acgs-rule-type: policy-governance
+
+  # =============================================================================
+  # Database Compliance Rules
+  # =============================================================================
+
+  - id: acgs-database-operation-without-validation
+    message: |
+      Database operation without constitutional validation context.
+      
+      All database operations that modify governance data must be
+      validated against constitutional constraints.
+    severity: WARNING
+    languages: [python]
+    patterns:
+      - pattern-either:
+          - pattern: $CONN.execute($QUERY, ...)
+          - pattern: $CURSOR.execute($QUERY, ...)
+          - pattern: await $SESSION.execute($QUERY, ...)
+      - pattern-not-inside: |
+          def validate_constitutional_compliance(...):
+              ...
+      - pattern-not-inside: |
+          if validate_constitutional_constraints(...):
+              ...
+      - pattern-not-inside: |
+          with constitutional_context(...):
+              ...
+    paths:
+      include:
+        - "services/**/*.py"
+      exclude:
+        - "**/*test*.py"
+        - "**/migrations/**"
+    metadata:
+      category: constitutional-compliance
+      cwe: "CWE-862: Missing Authorization"
+      confidence: MEDIUM
+      likelihood: MEDIUM
+      impact: HIGH
+      subcategory:
+        - audit
+      technology:
+        - python
+      acgs-rule-type: database-compliance
+
+  # =============================================================================
+  # Python 3.12+ Compatibility Rules
+  # =============================================================================
+
+  - id: acgs-deprecated-datetime-utcnow
+    message: |
+      datetime.utcnow() is deprecated in Python 3.12+.
+      
+      Use datetime.now(timezone.utc) for timezone-aware timestamps.
+      
+      Required import:
+        from datetime import datetime, timezone
+      
+      Fix:
+        datetime.now(timezone.utc)
+    severity: ERROR
+    languages: [python]
+    pattern-either:
+      - pattern: datetime.utcnow()
+      - pattern: datetime.datetime.utcnow()
+    fix: datetime.now(timezone.utc)
+    metadata:
+      category: constitutional-compliance
+      cwe: "CWE-477: Use of Obsolete Function"
+      confidence: HIGH
+      likelihood: HIGH
+      impact: MEDIUM
+      subcategory:
+        - audit
+      technology:
+        - python
+      acgs-rule-type: compatibility
+      references:
+        - https://docs.python.org/3/library/datetime.html#datetime.datetime.utcnow
+
+  - id: acgs-deprecated-utcfromtimestamp
+    message: |
+      datetime.utcfromtimestamp() is deprecated in Python 3.12+.
+      
+      Use datetime.fromtimestamp(ts, tz=timezone.utc) instead.
+    severity: ERROR
+    languages: [python]
+    pattern-either:
+      - pattern: datetime.utcfromtimestamp(...)
+      - pattern: datetime.datetime.utcfromtimestamp(...)
+    fix: datetime.fromtimestamp($X, tz=timezone.utc)
+    metadata:
+      category: constitutional-compliance
+      cwe: "CWE-477: Use of Obsolete Function"
+      confidence: HIGH
+      likelihood: HIGH
+      impact: MEDIUM
+      subcategory:
+        - audit
+      technology:
+        - python
+      acgs-rule-type: compatibility
+
+  # =============================================================================
+  # Audit Trail Rules
+  # =============================================================================
+
+  - id: acgs-missing-audit-log-governance-action
+    message: |
+      Governance action without audit logging.
+
+      All governance decisions must be logged for compliance and
+      transparency requirements.
+    severity: WARNING
+    languages: [python]
+    patterns:
+      - pattern: |
+          async def $FUNC(...):
+              ...
+              await $SERVICE.approve(...)
+              ...
+      - pattern-not-inside: |
+          ...
+          $LOGGER.info(...)
+          ...
+      - pattern-not-inside: |
+          ...
+          await audit_log(...)
+          ...
+    paths:
+      include:
+        - "services/**/*.py"
+      exclude:
+        - "**/*test*.py"
+    metadata:
+      category: constitutional-compliance
+      confidence: LOW
+      likelihood: MEDIUM
+      impact: HIGH
+      subcategory:
+        - audit
+      technology:
+        - python
+      acgs-rule-type: audit-trail

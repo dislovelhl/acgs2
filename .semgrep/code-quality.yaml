@@ -1,0 +1,470 @@
+# Code Quality Rules for ACGS-2
+# Constitutional Hash: cdd01ef066bc6cf2
+# Python best practices and code quality enforcement
+
+rules:
+  - id: async-function-missing-await
+    message: |
+      Async function does not use await - consider making it synchronous.
+      Async functions should use await, otherwise they add unnecessary overhead.
+    severity: WARNING
+    languages: [python]
+    patterns:
+      - pattern: |
+          async def $FUNC(...):
+              ...
+      - pattern-not-inside: |
+          async def $FUNC(...):
+              ...
+              await ...
+              ...
+      - pattern-not-inside: |
+          async def $FUNC(...):
+              ...
+              async for ...
+              ...
+      - pattern-not-inside: |
+          async def $FUNC(...):
+              ...
+              async with ...
+              ...
+    metadata:
+      category: code-quality
+      confidence: MEDIUM
+      likelihood: MEDIUM
+      impact: LOW
+      subcategory: [maintainability]
+      test_cases:
+        - pattern_match: |
+            async def process_data(data):
+                return data.upper()
+        - pattern_no_match: |
+            async def process_data(data):
+                result = await fetch_data()
+                return result
+
+  - id: missing-error-handling-await
+    message: |
+      Async operation without error handling.
+      Wrap await calls in try-except to handle potential failures gracefully.
+    severity: WARNING
+    languages: [python]
+    patterns:
+      - pattern: |
+          await $FUNC(...)
+      - pattern-not-inside: |
+          try:
+              ...
+              await $FUNC(...)
+              ...
+          except ...:
+              ...
+      - pattern-not-inside: |
+          def test_...(...):
+              ...
+    metadata:
+      category: code-quality
+      confidence: LOW
+      likelihood: LOW
+      impact: MEDIUM
+      subcategory: [maintainability]
+      test_cases:
+        - pattern_match: |
+            result = await client.fetch_data()
+        - pattern_no_match: |
+            try:
+                result = await client.fetch_data()
+            except Exception as e:
+                logger.error(e)
+
+  - id: deprecated-api-utcnow
+    message: |
+      Using deprecated datetime.utcnow() API.
+      This function is deprecated in Python 3.12+. Use datetime.now(timezone.utc).
+    severity: ERROR
+    languages: [python]
+    patterns:
+      - pattern-either:
+          - pattern: datetime.utcnow()
+          - pattern: datetime.datetime.utcnow()
+    fix: datetime.now(timezone.utc)
+    metadata:
+      category: code-quality
+      cwe: "CWE-477: Use of Obsolete Function"
+      confidence: HIGH
+      likelihood: HIGH
+      impact: MEDIUM
+      subcategory: [maintainability]
+      references:
+        - https://docs.python.org/3.12/library/datetime.html#datetime.datetime.utcnow
+      test_cases:
+        - pattern_match: |
+            timestamp = datetime.utcnow()
+        - pattern_no_match: |
+            timestamp = datetime.now(timezone.utc)
+
+  - id: bare-except-clause
+    message: |
+      Bare except clause catches all exceptions including system exits.
+      Use specific exception types or 'except Exception' at minimum.
+    severity: WARNING
+    languages: [python]
+    patterns:
+      - pattern: |
+          try:
+              ...
+          except:
+              ...
+    fix: Use 'except Exception as e:' instead of bare 'except:'
+    metadata:
+      category: code-quality
+      cwe: "CWE-396: Declaration of Catch for Generic Exception"
+      confidence: HIGH
+      likelihood: HIGH
+      impact: MEDIUM
+      subcategory: [maintainability]
+      test_cases:
+        - pattern_match: |
+            try:
+                process()
+            except:
+                pass
+        - pattern_no_match: |
+            try:
+                process()
+            except Exception as e:
+                logger.error(e)
+
+  - id: missing-type-hints-public-function
+    message: |
+      Public function missing type hints.
+      Add type hints for better code documentation and IDE support.
+    severity: INFO
+    languages: [python]
+    patterns:
+      - pattern: |
+          def $FUNC($ARG, ...):
+              ...
+      - pattern-not: |
+          def $FUNC($ARG: $TYPE, ...) -> $RETURN:
+              ...
+      - pattern-not: |
+          def _$FUNC(...):
+              ...
+      - pattern-not: |
+          def __$FUNC__(...):
+              ...
+    metadata:
+      category: code-quality
+      confidence: LOW
+      likelihood: LOW
+      impact: LOW
+      subcategory: [maintainability]
+      test_cases:
+        - pattern_match: |
+            def calculate_total(items):
+                return sum(items)
+        - pattern_no_match: |
+            def calculate_total(items: List[int]) -> int:
+                return sum(items)
+
+  - id: unused-async-result
+    message: |
+      Async function called without awaiting result.
+      This creates a coroutine that is never executed. Add 'await' keyword.
+    severity: ERROR
+    languages: [python]
+    patterns:
+      - pattern-either:
+          - pattern: |
+              $FUNC(...)
+          - pattern: |
+              $OBJ.$METHOD(...)
+      - pattern-not: |
+          await $FUNC(...)
+      - pattern-not: |
+          await $OBJ.$METHOD(...)
+      - pattern-not: |
+          $VAR = $FUNC(...)
+      - metavariable-pattern:
+          metavariable: $FUNC
+          patterns:
+            - pattern-regex: ".*_async$"
+    metadata:
+      category: code-quality
+      confidence: MEDIUM
+      likelihood: MEDIUM
+      impact: HIGH
+      subcategory: [correctness]
+      test_cases:
+        - pattern_match: |
+            send_message_async(msg)
+        - pattern_no_match: |
+            await send_message_async(msg)
+
+  - id: mutable-default-argument
+    message: |
+      Mutable default argument detected.
+      Default arguments are evaluated once at function definition, leading to bugs.
+    severity: WARNING
+    languages: [python]
+    patterns:
+      - pattern-either:
+          - pattern: |
+              def $FUNC(..., $ARG=[], ...):
+                  ...
+          - pattern: |
+              def $FUNC(..., $ARG={}, ...):
+                  ...
+          - pattern: |
+              async def $FUNC(..., $ARG=[], ...):
+                  ...
+          - pattern: |
+              async def $FUNC(..., $ARG={}, ...):
+                  ...
+    fix: Use None as default and initialize inside function
+    metadata:
+      category: code-quality
+      cwe: "CWE-1177: Use of Default Constructor Without Proper Initialization"
+      confidence: HIGH
+      likelihood: HIGH
+      impact: MEDIUM
+      subcategory: [correctness]
+      references:
+        - https://docs.python-guide.org/writing/gotchas/#mutable-default-arguments
+      test_cases:
+        - pattern_match: |
+            def add_item(item, items=[]):
+                items.append(item)
+                return items
+        - pattern_no_match: |
+            def add_item(item, items=None):
+                if items is None:
+                    items = []
+                items.append(item)
+                return items
+
+  - id: string-formatting-in-logging
+    message: |
+      String formatting in logging call.
+      Use lazy logging with placeholders for better performance.
+    severity: INFO
+    languages: [python]
+    patterns:
+      - pattern-either:
+          - pattern: |
+              $LOGGER.$METHOD(f"...")
+          - pattern: |
+              $LOGGER.$METHOD("...".format(...))
+          - pattern: |
+              $LOGGER.$METHOD("..." % ...)
+    fix: Use $LOGGER.$METHOD("...", arg1, arg2) with placeholders
+    metadata:
+      category: code-quality
+      confidence: MEDIUM
+      likelihood: LOW
+      impact: LOW
+      subcategory: [performance]
+      test_cases:
+        - pattern_match: |
+            logger.info(f"Processing {count} items")
+        - pattern_no_match: |
+            logger.info("Processing %s items", count)
+
+  - id: inefficient-list-comprehension
+    message: |
+      Inefficient list comprehension with filter.
+      Consider using generator expression or direct filtering.
+    severity: INFO
+    languages: [python]
+    patterns:
+      - pattern: |
+          [$ITEM for $ITEM in $LIST if $COND]
+      - metavariable-pattern:
+          metavariable: $LIST
+          patterns:
+            - pattern-either:
+                - pattern: range(...)
+                - pattern-regex: ".*large.*"
+    metadata:
+      category: code-quality
+      confidence: LOW
+      likelihood: LOW
+      impact: LOW
+      subcategory: [performance]
+      test_cases:
+        - pattern_match: |
+            result = [x for x in range(1000000) if x % 2 == 0]
+        - pattern_no_match: |
+            result = (x for x in range(1000000) if x % 2 == 0)
+
+  - id: synchronous-sleep-in-async
+    message: |
+      Using synchronous time.sleep() in async function.
+      Use asyncio.sleep() instead to avoid blocking the event loop.
+    severity: ERROR
+    languages: [python]
+    patterns:
+      - pattern: |
+          async def $FUNC(...):
+              ...
+              time.sleep($DURATION)
+              ...
+    fix: Use asyncio.sleep($DURATION) instead of time.sleep($DURATION)
+    metadata:
+      category: code-quality
+      confidence: HIGH
+      likelihood: HIGH
+      impact: HIGH
+      subcategory: [correctness]
+      test_cases:
+        - pattern_match: |
+            async def process():
+                time.sleep(1)
+        - pattern_no_match: |
+            async def process():
+                await asyncio.sleep(1)
+
+  - id: missing-docstring-public-api
+    message: |
+      Public API function missing docstring.
+      Add docstring to document purpose, parameters, and return value.
+    severity: INFO
+    languages: [python]
+    patterns:
+      - pattern: |
+          def $FUNC(...):
+              $STMT
+              ...
+      - pattern-not: |
+          def $FUNC(...):
+              """..."""
+              ...
+      - pattern-not: |
+          def _$FUNC(...):
+              ...
+      - metavariable-pattern:
+          metavariable: $STMT
+          patterns:
+            - pattern-not-regex: "^\"\"\".*"
+    metadata:
+      category: code-quality
+      confidence: LOW
+      likelihood: LOW
+      impact: LOW
+      subcategory: [maintainability]
+      test_cases:
+        - pattern_match: |
+            def calculate_score(data):
+                return sum(data)
+        - pattern_no_match: |
+            def calculate_score(data):
+                """Calculate total score from data."""
+                return sum(data)
+
+  - id: deprecated-typing-imports
+    message: |
+      Using deprecated typing imports.
+      Python 3.9+ allows using built-in types for type hints (list, dict, etc).
+    severity: INFO
+    languages: [python]
+    patterns:
+      - pattern-either:
+          - pattern: from typing import List
+          - pattern: from typing import Dict
+          - pattern: from typing import Set
+          - pattern: from typing import Tuple
+    fix: Use built-in types (list, dict, set, tuple) for Python 3.9+
+    metadata:
+      category: code-quality
+      confidence: MEDIUM
+      likelihood: LOW
+      impact: LOW
+      subcategory: [maintainability]
+      references:
+        - https://docs.python.org/3/library/typing.html#deprecated-aliases
+      test_cases:
+        - pattern_match: |
+            from typing import List, Dict
+        - pattern_no_match: |
+            from collections.abc import Sequence
+
+  - id: complex-boolean-expression
+    message: |
+      Complex boolean expression detected.
+      Consider extracting to a named variable or function for clarity.
+    severity: INFO
+    languages: [python]
+    patterns:
+      - pattern: |
+          if $COND1 and $COND2 and $COND3 and ...:
+              ...
+    metadata:
+      category: code-quality
+      confidence: LOW
+      likelihood: LOW
+      impact: LOW
+      subcategory: [maintainability]
+      test_cases:
+        - pattern_match: |
+            if x > 0 and y < 100 and z == 50 and name == "test":
+                process()
+        - pattern_no_match: |
+            is_valid = x > 0 and y < 100
+            if is_valid:
+                process()
+
+  - id: missing-return-type-annotation
+    message: |
+      Async function missing return type annotation.
+      Add -> ReturnType annotation for better type checking.
+    severity: INFO
+    languages: [python]
+    patterns:
+      - pattern: |
+          async def $FUNC(...):
+              ...
+      - pattern-not: |
+          async def $FUNC(...) -> $TYPE:
+              ...
+      - pattern-not: |
+          async def _$FUNC(...):
+              ...
+    metadata:
+      category: code-quality
+      confidence: LOW
+      likelihood: LOW
+      impact: LOW
+      subcategory: [maintainability]
+      test_cases:
+        - pattern_match: |
+            async def fetch_data(url):
+                return await client.get(url)
+        - pattern_no_match: |
+            async def fetch_data(url: str) -> dict:
+                return await client.get(url)
+
+  - id: redundant-comprehension
+    message: |
+      Redundant list comprehension detected.
+      Direct list() conversion or other method may be more efficient.
+    severity: INFO
+    languages: [python]
+    patterns:
+      - pattern-either:
+          - pattern: |
+              [$ITEM for $ITEM in $LIST]
+          - pattern: |
+              {$KEY: $VAL for $KEY, $VAL in $DICT.items()}
+    fix: Use list($LIST) or dict.copy() for simple conversions
+    metadata:
+      category: code-quality
+      confidence: MEDIUM
+      likelihood: LOW
+      impact: LOW
+      subcategory: [performance]
+      test_cases:
+        - pattern_match: |
+            result = [x for x in items]
+        - pattern_no_match: |
+            result = list(items)

@@ -1,0 +1,542 @@
+# Agent Bus Patterns Rules for ACGS-2
+# Constitutional Hash: cdd01ef066bc6cf2
+# ACGS-specific architectural patterns and best practices
+
+rules:
+  - id: message-missing-constitutional-hash
+    message: |
+      AgentMessage created without constitutional_hash field.
+      All messages must include constitutional_hash='cdd01ef066bc6cf2'.
+    severity: ERROR
+    languages: [python]
+    patterns:
+      - pattern: |
+          AgentMessage(
+              ...,
+              from_agent=$FROM,
+              to_agent=$TO,
+              ...,
+          )
+      - pattern-not: |
+          AgentMessage(
+              ...,
+              constitutional_hash=$HASH,
+              ...,
+          )
+      - pattern-not-inside: |
+          # constitutional_hash automatically set by model
+          ...
+    metadata:
+      category: acgs-patterns
+      confidence: MEDIUM
+      likelihood: MEDIUM
+      impact: HIGH
+      subcategory: [audit]
+      test_cases:
+        - pattern_match: |
+            msg = AgentMessage(
+                from_agent="agent1",
+                to_agent="agent2",
+                message_type=MessageType.COMMAND,
+                content={}
+            )
+        - pattern_no_match: |
+            msg = AgentMessage(
+                from_agent="agent1",
+                to_agent="agent2",
+                constitutional_hash="cdd01ef066bc6cf2",
+                content={}
+            )
+
+  - id: direct-agent-communication-bypass
+    message: |
+      Direct agent communication detected, bypassing EnhancedAgentBus.
+      All inter-agent communication must go through the agent bus.
+    severity: ERROR
+    languages: [python]
+    patterns:
+      - pattern-either:
+          - pattern: |
+              $AGENT1.$METHOD($AGENT2, ...)
+          - pattern: |
+              $AGENT1.send_to($AGENT2, ...)
+          - pattern: |
+              $AGENT1.communicate($AGENT2, ...)
+      - pattern-not-inside: |
+          class EnhancedAgentBus:
+              ...
+      - pattern-not-inside: |
+          async def send_message(...):
+              ...
+    metadata:
+      category: acgs-patterns
+      confidence: MEDIUM
+      likelihood: MEDIUM
+      impact: HIGH
+      subcategory: [audit]
+      test_cases:
+        - pattern_match: |
+            agent1.send_to(agent2, message)
+        - pattern_no_match: |
+            await bus.send_message(message)
+
+  - id: missing-message-validation
+    message: |
+      Message handler missing validation logic.
+      All message handlers must validate constitutional compliance.
+    severity: WARNING
+    languages: [python]
+    patterns:
+      - pattern: |
+          async def $HANDLER($MSG: AgentMessage, ...):
+              ...
+              return $RESULT
+      - pattern-not-inside: |
+          async def $HANDLER($MSG: AgentMessage, ...):
+              ...
+              validate_message($MSG)
+              ...
+      - pattern-not-inside: |
+          async def $HANDLER($MSG: AgentMessage, ...):
+              ...
+              if not $MSG.constitutional_hash:
+                  ...
+              ...
+    metadata:
+      category: acgs-patterns
+      confidence: LOW
+      likelihood: LOW
+      impact: MEDIUM
+      subcategory: [audit]
+      test_cases:
+        - pattern_match: |
+            async def handle_command(msg: AgentMessage):
+                return process(msg.content)
+        - pattern_no_match: |
+            async def handle_command(msg: AgentMessage):
+                validate_message(msg)
+                return process(msg.content)
+
+  - id: agent-bus-not-started
+    message: |
+      EnhancedAgentBus used without calling start() method.
+      Always call await bus.start() before sending messages.
+    severity: WARNING
+    languages: [python]
+    patterns:
+      - pattern: |
+          $BUS = EnhancedAgentBus(...)
+          ...
+          await $BUS.send_message(...)
+      - pattern-not-inside: |
+          $BUS = EnhancedAgentBus(...)
+          ...
+          await $BUS.start()
+          ...
+          await $BUS.send_message(...)
+    metadata:
+      category: acgs-patterns
+      confidence: MEDIUM
+      likelihood: MEDIUM
+      impact: MEDIUM
+      subcategory: [correctness]
+      test_cases:
+        - pattern_match: |
+            bus = EnhancedAgentBus()
+            await bus.send_message(msg)
+        - pattern_no_match: |
+            bus = EnhancedAgentBus()
+            await bus.start()
+            await bus.send_message(msg)
+
+  - id: message-priority-not-set
+    message: |
+      Message created without explicit priority.
+      Set MessagePriority to control routing and processing order.
+    severity: INFO
+    languages: [python]
+    patterns:
+      - pattern: |
+          AgentMessage(
+              ...,
+              message_type=MessageType.COMMAND,
+              ...,
+          )
+      - pattern-not: |
+          AgentMessage(
+              ...,
+              priority=$PRIORITY,
+              ...,
+          )
+    metadata:
+      category: acgs-patterns
+      confidence: LOW
+      likelihood: LOW
+      impact: LOW
+      subcategory: [audit]
+      test_cases:
+        - pattern_match: |
+            msg = AgentMessage(
+                from_agent="a",
+                to_agent="b",
+                message_type=MessageType.COMMAND,
+                content={}
+            )
+        - pattern_no_match: |
+            msg = AgentMessage(
+                from_agent="a",
+                to_agent="b",
+                priority=MessagePriority.HIGH,
+                content={}
+            )
+
+  - id: deliberation-layer-bypass
+    message: |
+      High-impact operation without deliberation layer review.
+      Operations with significant impact should use deliberation layer.
+    severity: WARNING
+    languages: [python]
+    patterns:
+      - pattern-either:
+          - pattern: |
+              async def $FUNC(...):
+                  ...
+                  $DB.delete(...)
+                  ...
+          - pattern: |
+              async def $FUNC(...):
+                  ...
+                  $DB.drop_table(...)
+                  ...
+          - pattern: |
+              async def $FUNC(...):
+                  ...
+                  $POLICY.update(...)
+                  ...
+      - pattern-not-inside: |
+          $LAYER = DeliberationLayer(...)
+          ...
+          await $LAYER.process_message(...)
+          ...
+    metadata:
+      category: acgs-patterns
+      confidence: LOW
+      likelihood: LOW
+      impact: HIGH
+      subcategory: [audit]
+      test_cases:
+        - pattern_match: |
+            async def delete_all_users():
+                db.delete("users")
+        - pattern_no_match: |
+            async def delete_all_users():
+                layer = DeliberationLayer()
+                await layer.process_message(msg)
+
+  - id: missing-agent-registration
+    message: |
+      Agent sending messages without registration.
+      Call bus.register_agent() before sending messages.
+    severity: ERROR
+    languages: [python]
+    patterns:
+      - pattern: |
+          await $BUS.send_message($MSG)
+      - pattern-not-inside: |
+          await $BUS.register_agent($AGENT_ID, ...)
+          ...
+          await $BUS.send_message($MSG)
+      - pattern-not-inside: |
+          def test_...(...):
+              ...
+    metadata:
+      category: acgs-patterns
+      confidence: MEDIUM
+      likelihood: MEDIUM
+      impact: MEDIUM
+      subcategory: [correctness]
+      test_cases:
+        - pattern_match: |
+            await bus.send_message(msg)
+        - pattern_no_match: |
+            await bus.register_agent("my_agent")
+            await bus.send_message(msg)
+
+  - id: message-status-not-checked
+    message: |
+      Message sent without checking send result status.
+      Always check the MessageSendResult status for delivery confirmation.
+    severity: WARNING
+    languages: [python]
+    patterns:
+      - pattern: |
+          await $BUS.send_message($MSG)
+      - pattern-not: |
+          $RESULT = await $BUS.send_message($MSG)
+      - pattern-not-inside: |
+          def test_...(...):
+              ...
+    metadata:
+      category: acgs-patterns
+      confidence: LOW
+      likelihood: LOW
+      impact: MEDIUM
+      subcategory: [correctness]
+      test_cases:
+        - pattern_match: |
+            await bus.send_message(msg)
+        - pattern_no_match: |
+            result = await bus.send_message(msg)
+            if result.status == MessageStatus.DELIVERED:
+                process()
+
+  - id: policy-client-not-initialized
+    message: |
+      PolicyClient used without proper initialization.
+      Initialize with constitutional_hash and verify connection.
+    severity: WARNING
+    languages: [python]
+    patterns:
+      - pattern: |
+          $CLIENT = PolicyClient()
+          ...
+          $CLIENT.$METHOD(...)
+      - pattern-not: |
+          $CLIENT = PolicyClient(constitutional_hash=$HASH)
+          ...
+    metadata:
+      category: acgs-patterns
+      confidence: MEDIUM
+      likelihood: LOW
+      impact: MEDIUM
+      subcategory: [correctness]
+      test_cases:
+        - pattern_match: |
+            client = PolicyClient()
+            client.get_policy("test")
+        - pattern_no_match: |
+            client = PolicyClient(constitutional_hash="cdd01ef066bc6cf2")
+            client.get_policy("test")
+
+  - id: redis-client-not-closed
+    message: |
+      Redis client created without proper cleanup.
+      Use async context manager or ensure close() is called.
+    severity: WARNING
+    languages: [python]
+    patterns:
+      - pattern: |
+          $CLIENT = redis.from_url(...)
+          ...
+      - pattern-not-inside: |
+          async with redis.from_url(...) as $CLIENT:
+              ...
+      - pattern-not-inside: |
+          try:
+              $CLIENT = redis.from_url(...)
+              ...
+          finally:
+              await $CLIENT.close()
+    metadata:
+      category: acgs-patterns
+      confidence: MEDIUM
+      likelihood: MEDIUM
+      impact: LOW
+      subcategory: [resource-leak]
+      test_cases:
+        - pattern_match: |
+            client = redis.from_url(url)
+            await client.set("key", "value")
+        - pattern_no_match: |
+            async with redis.from_url(url) as client:
+                await client.set("key", "value")
+
+  - id: impact-scorer-heavy-import
+    message: |
+      ImpactScorer imported without checking availability.
+      ImpactScorer has heavy ML dependencies - use try/except for import.
+    severity: INFO
+    languages: [python]
+    patterns:
+      - pattern: |
+          from ...impact_scorer import ImpactScorer
+      - pattern-not-inside: |
+          try:
+              from ...impact_scorer import ImpactScorer
+          except ImportError:
+              ...
+    metadata:
+      category: acgs-patterns
+      confidence: MEDIUM
+      likelihood: LOW
+      impact: LOW
+      subcategory: [maintainability]
+      test_cases:
+        - pattern_match: |
+            from deliberation_layer.impact_scorer import ImpactScorer
+        - pattern_no_match: |
+            try:
+                from deliberation_layer.impact_scorer import ImpactScorer
+            except ImportError:
+                ImpactScorer = None
+
+  - id: fallback-import-pattern-missing
+    message: |
+      Module import missing fallback pattern.
+      Use try/except for relative imports to support both package and direct execution.
+    severity: INFO
+    languages: [python]
+    patterns:
+      - pattern: |
+          from .$MODULE import $NAMES
+      - pattern-not-inside: |
+          try:
+              from .$MODULE import $NAMES
+          except ImportError:
+              from $MODULE import $NAMES
+    metadata:
+      category: acgs-patterns
+      confidence: LOW
+      likelihood: LOW
+      impact: LOW
+      subcategory: [maintainability]
+      test_cases:
+        - pattern_match: |
+            from .models import AgentMessage
+        - pattern_no_match: |
+            try:
+                from .models import AgentMessage
+            except ImportError:
+                from models import AgentMessage
+
+  - id: message-type-not-specified
+    message: |
+      AgentMessage created without message_type.
+      Specify MessageType (COMMAND, QUERY, EVENT, etc.) for proper routing.
+    severity: WARNING
+    languages: [python]
+    patterns:
+      - pattern: |
+          AgentMessage(
+              ...,
+          )
+      - pattern-not: |
+          AgentMessage(
+              ...,
+              message_type=$TYPE,
+              ...,
+          )
+    metadata:
+      category: acgs-patterns
+      confidence: MEDIUM
+      likelihood: MEDIUM
+      impact: MEDIUM
+      subcategory: [correctness]
+      test_cases:
+        - pattern_match: |
+            msg = AgentMessage(from_agent="a", to_agent="b", content={})
+        - pattern_no_match: |
+            msg = AgentMessage(
+                from_agent="a",
+                to_agent="b",
+                message_type=MessageType.COMMAND,
+                content={}
+            )
+
+  - id: deprecated-core-import
+    message: |
+      Importing from deprecated core module.
+      Use 'from enhanced_agent_bus.core import' instead of core_rust/core_updated.
+    severity: ERROR
+    languages: [python]
+    patterns:
+      - pattern-either:
+          - pattern: |
+              from ...core_rust import $NAMES
+          - pattern: |
+              from ...core_updated import $NAMES
+          - pattern: |
+              from ...core_legacy import $NAMES
+          - pattern: |
+              import ...core_rust
+          - pattern: |
+              import ...core_updated
+    fix: Use 'from enhanced_agent_bus.core import EnhancedAgentBus'
+    metadata:
+      category: acgs-patterns
+      confidence: HIGH
+      likelihood: MEDIUM
+      impact: MEDIUM
+      subcategory: [maintainability]
+      references:
+        - /home/dislove/document/acgs2/CLAUDE.md
+      test_cases:
+        - pattern_match: |
+            from enhanced_agent_bus.core_rust import EnhancedAgentBus
+        - pattern_no_match: |
+            from enhanced_agent_bus.core import EnhancedAgentBus
+
+  - id: shared-redis-config-not-used
+    message: |
+      Creating Redis connection without using shared configuration.
+      Import get_redis_url() from shared.redis_config for consistency.
+    severity: WARNING
+    languages: [python]
+    patterns:
+      - pattern-either:
+          - pattern: |
+              redis.from_url("redis://...")
+          - pattern: |
+              redis.Redis(host=..., port=...)
+      - pattern-not-inside: |
+          from shared.redis_config import get_redis_url
+          ...
+          redis.from_url(get_redis_url())
+    fix: Use get_redis_url() from shared.redis_config
+    metadata:
+      category: acgs-patterns
+      confidence: MEDIUM
+      likelihood: MEDIUM
+      impact: LOW
+      subcategory: [maintainability]
+      test_cases:
+        - pattern_match: |
+            client = redis.from_url("redis://localhost:6379")
+        - pattern_no_match: |
+            from shared.redis_config import get_redis_url
+            client = redis.from_url(get_redis_url())
+
+  - id: validation-result-not-checked
+    message: |
+      ValidationResult not checked after validation.
+      Always check ValidationResult.is_valid before proceeding.
+    severity: ERROR
+    languages: [python]
+    patterns:
+      - pattern: |
+          $RESULT = validate_$FUNC(...)
+          ...
+      - pattern-not-inside: |
+          $RESULT = validate_$FUNC(...)
+          ...
+          if $RESULT.is_valid:
+              ...
+      - pattern-not-inside: |
+          $RESULT = validate_$FUNC(...)
+          ...
+          if not $RESULT.is_valid:
+              ...
+    metadata:
+      category: acgs-patterns
+      confidence: MEDIUM
+      likelihood: MEDIUM
+      impact: HIGH
+      subcategory: [correctness]
+      test_cases:
+        - pattern_match: |
+            result = validate_message(msg)
+            process(msg)
+        - pattern_no_match: |
+            result = validate_message(msg)
+            if result.is_valid:
+                process(msg)

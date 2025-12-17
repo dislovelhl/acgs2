@@ -1,0 +1,309 @@
+# Constitutional Compliance Rules for ACGS-2
+# Constitutional Hash: cdd01ef066bc6cf2
+# These rules enforce constitutional AI governance compliance
+
+rules:
+  - id: missing-constitutional-hash-in-docstring
+    message: |
+      Module docstring must include constitutional hash 'cdd01ef066bc6cf2'.
+      All ACGS-2 modules require constitutional hash validation.
+    severity: ERROR
+    languages: [python]
+    patterns:
+      - pattern: |
+          """
+          $DOC
+          """
+      - pattern-not: |
+          """
+          ...
+          cdd01ef066bc6cf2
+          ...
+          """
+      - pattern-inside: |
+          $MODULE
+    metadata:
+      category: constitutional-compliance
+      cwe: "CWE-710: Improper Adherence to Coding Standards"
+      confidence: HIGH
+      likelihood: HIGH
+      impact: HIGH
+      subcategory: [audit]
+      references:
+        - https://gitlab.com/soln.ai/ACGS/-/blob/main/CLAUDE.md
+      test_cases:
+        - pattern_match: |
+            """
+            This is a module without constitutional hash
+            """
+        - pattern_no_match: |
+            """
+            Module with Constitutional Hash: cdd01ef066bc6cf2
+            """
+
+  - id: hardcoded-credentials
+    message: |
+      Potential hardcoded credentials detected. Use environment variables or secure vault.
+      Constitutional requirement: All credentials must be externalized.
+    severity: ERROR
+    languages: [python]
+    patterns:
+      - pattern-either:
+          - pattern: $VAR = "password:..."
+          - pattern: $VAR = "api_key:..."
+          - pattern: $VAR = "secret:..."
+          - pattern: $VAR = "token:..."
+          - pattern: $VAR = "Bearer ..."
+          - pattern: |
+              $DICT = {..., "password": "...", ...}
+          - pattern: |
+              $DICT = {..., "api_key": "...", ...}
+          - pattern: |
+              $DICT = {..., "secret": "...", ...}
+      - pattern-not: $VAR = "password:***"
+      - pattern-not: $VAR = "api_key:***"
+      - pattern-not: $VAR = ""
+      - pattern-not: $VAR = "placeholder"
+      - pattern-not: $VAR = "test_password"
+    fix: Use os.getenv('$VAR_NAME') or config management
+    metadata:
+      category: security
+      cwe: "CWE-798: Use of Hard-coded Credentials"
+      owasp: "A07:2021 - Identification and Authentication Failures"
+      confidence: HIGH
+      likelihood: HIGH
+      impact: CRITICAL
+      subcategory: [vuln]
+      test_cases:
+        - pattern_match: |
+            API_KEY = "sk-1234567890abcdef"
+        - pattern_no_match: |
+            API_KEY = os.getenv("API_KEY")
+
+  - id: direct-database-access-without-validation
+    message: |
+      Direct database query without constitutional validation detected.
+      All database operations must validate against constitutional constraints.
+    severity: WARNING
+    languages: [python]
+    patterns:
+      - pattern-either:
+          - pattern: |
+              $CONN.execute($QUERY, ...)
+          - pattern: |
+              $CURSOR.execute($QUERY, ...)
+          - pattern: |
+              $SESSION.execute($QUERY, ...)
+      - pattern-not-inside: |
+          def validate_constitutional_compliance(...):
+              ...
+      - pattern-not-inside: |
+          if validate_constitutional_constraints(...):
+              ...
+      - pattern-not-inside: |
+          async def validate_constitutional_compliance(...):
+              ...
+    metadata:
+      category: constitutional-compliance
+      cwe: "CWE-862: Missing Authorization"
+      confidence: MEDIUM
+      likelihood: MEDIUM
+      impact: HIGH
+      subcategory: [audit]
+      test_cases:
+        - pattern_match: |
+            cursor.execute("SELECT * FROM users WHERE id = %s", (user_id,))
+        - pattern_no_match: |
+            if validate_constitutional_constraints(query):
+                cursor.execute(query)
+
+  - id: missing-constitutional-hash-in-message
+    message: |
+      AgentMessage created without explicit constitutional_hash field.
+      Ensure constitutional_hash='cdd01ef066bc6cf2' is set.
+    severity: WARNING
+    languages: [python]
+    patterns:
+      - pattern: |
+          AgentMessage(...)
+      - pattern-not: |
+          AgentMessage(..., constitutional_hash=$HASH, ...)
+      - pattern-not-inside: |
+          # constitutional_hash automatically set
+          ...
+    metadata:
+      category: constitutional-compliance
+      confidence: MEDIUM
+      likelihood: MEDIUM
+      impact: MEDIUM
+      subcategory: [audit]
+      test_cases:
+        - pattern_match: |
+            msg = AgentMessage(from_agent="a", to_agent="b", content={})
+        - pattern_no_match: |
+            msg = AgentMessage(from_agent="a", to_agent="b", constitutional_hash="cdd01ef066bc6cf2", content={})
+
+  - id: constitutional-hash-mismatch
+    message: |
+      Constitutional hash does not match expected value 'cdd01ef066bc6cf2'.
+      Using incorrect or outdated constitutional hash.
+    severity: ERROR
+    languages: [python]
+    patterns:
+      - pattern-either:
+          - pattern: |
+              CONSTITUTIONAL_HASH = "$HASH"
+          - pattern: |
+              constitutional_hash = "$HASH"
+          - pattern: |
+              constitutional_hash="$HASH"
+      - metavariable-pattern:
+          metavariable: $HASH
+          patterns:
+            - pattern-not: "cdd01ef066bc6cf2"
+            - pattern-not-regex: "^\\$.*"
+            - pattern-not-regex: "^os\\.getenv.*"
+    metadata:
+      category: constitutional-compliance
+      cwe: "CWE-710: Improper Adherence to Coding Standards"
+      confidence: HIGH
+      likelihood: HIGH
+      impact: CRITICAL
+      subcategory: [audit]
+      test_cases:
+        - pattern_match: |
+            CONSTITUTIONAL_HASH = "abc123"
+        - pattern_no_match: |
+            CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
+
+  - id: bypass-constitutional-validation
+    message: |
+      Potential bypass of constitutional validation detected.
+      Do not skip or disable constitutional checks in production code.
+    severity: ERROR
+    languages: [python]
+    patterns:
+      - pattern-either:
+          - pattern: |
+              validate_constitution=False
+          - pattern: |
+              skip_validation=True
+          - pattern: |
+              bypass_constitution=True
+          - pattern: |
+              disable_constitutional_check=True
+          - pattern: |
+              if not $CONFIG.get("validate_constitution", False):
+                  ...
+      - pattern-not-inside: |
+          # Testing or development only
+          ...
+      - pattern-not-inside: |
+          def test_...(...):
+              ...
+    metadata:
+      category: constitutional-compliance
+      cwe: "CWE-602: Client-Side Enforcement of Server-Side Security"
+      confidence: HIGH
+      likelihood: MEDIUM
+      impact: CRITICAL
+      subcategory: [vuln]
+      test_cases:
+        - pattern_match: |
+            bus = EnhancedAgentBus(validate_constitution=False)
+        - pattern_no_match: |
+            def test_without_validation():
+                bus = EnhancedAgentBus(validate_constitution=False)
+
+  - id: unvalidated-policy-update
+    message: |
+      Policy update without constitutional validation.
+      All policy changes must be validated against constitutional constraints.
+    severity: ERROR
+    languages: [python]
+    patterns:
+      - pattern-either:
+          - pattern: |
+              $CLIENT.update_policy($POLICY)
+          - pattern: |
+              $REGISTRY.register_policy($POLICY)
+          - pattern: |
+              $MANAGER.set_policy($POLICY)
+      - pattern-not-inside: |
+          if validate_constitutional_compliance($POLICY):
+              ...
+      - pattern-not-inside: |
+          $RESULT = validate_policy($POLICY)
+          if $RESULT:
+              ...
+    metadata:
+      category: constitutional-compliance
+      confidence: HIGH
+      likelihood: HIGH
+      impact: HIGH
+      subcategory: [audit]
+      test_cases:
+        - pattern_match: |
+            client.update_policy(new_policy)
+        - pattern_no_match: |
+            if validate_constitutional_compliance(new_policy):
+                client.update_policy(new_policy)
+
+  - id: redis-connection-without-config
+    message: |
+      Redis connection created without using shared configuration.
+      Use get_redis_url() from shared.redis_config for consistency.
+    severity: WARNING
+    languages: [python]
+    patterns:
+      - pattern-either:
+          - pattern: |
+              redis.Redis(host=$HOST, ...)
+          - pattern: |
+              redis.from_url("redis://...")
+          - pattern: |
+              aioredis.from_url("redis://...")
+      - pattern-not-inside: |
+          from shared.redis_config import get_redis_url
+          ...
+      - pattern-not-inside: |
+          redis_url = get_redis_url()
+          ...
+    metadata:
+      category: constitutional-compliance
+      confidence: MEDIUM
+      likelihood: MEDIUM
+      impact: LOW
+      subcategory: [audit]
+      test_cases:
+        - pattern_match: |
+            r = redis.Redis(host="localhost", port=6379)
+        - pattern_no_match: |
+            from shared.redis_config import get_redis_url
+            r = redis.from_url(get_redis_url())
+
+  - id: deprecated-datetime-utcnow
+    message: |
+      datetime.utcnow() is deprecated in Python 3.12+.
+      Use datetime.now(timezone.utc) for timezone-aware timestamps.
+    severity: ERROR
+    languages: [python]
+    patterns:
+      - pattern-either:
+          - pattern: datetime.utcnow()
+          - pattern: datetime.datetime.utcnow()
+    fix: datetime.now(timezone.utc)
+    metadata:
+      category: constitutional-compliance
+      cwe: "CWE-477: Use of Obsolete Function"
+      confidence: HIGH
+      likelihood: HIGH
+      impact: MEDIUM
+      subcategory: [audit]
+      references:
+        - https://docs.python.org/3/library/datetime.html#datetime.datetime.utcnow
+      test_cases:
+        - pattern_match: |
+            timestamp = datetime.utcnow()
+        - pattern_no_match: |
+            timestamp = datetime.now(timezone.utc)

@@ -1,0 +1,493 @@
+# Cryptography Rules for ACGS-2
+# Constitutional Hash: cdd01ef066bc6cf2
+# Rules for Ed25519 signature verification and secure key handling
+#
+# ACGS-2 uses Ed25519 for policy signing and verification.
+# These rules enforce proper cryptographic practices.
+
+rules:
+  # =============================================================================
+  # Ed25519 Usage Rules
+  # =============================================================================
+
+  - id: acgs-prefer-ed25519-over-rsa
+    message: |
+      RSA key detected. ACGS-2 uses Ed25519 for signatures.
+
+      Ed25519 provides better security and performance for signing operations.
+
+      Use:
+        from cryptography.hazmat.primitives.asymmetric import ed25519
+        private_key = ed25519.Ed25519PrivateKey.generate()
+    severity: WARNING
+    languages: [python]
+    pattern-either:
+      - pattern: rsa.generate_private_key(...)
+      - pattern: RSA.generate(...)
+      - pattern: from cryptography.hazmat.primitives.asymmetric.rsa import $NAME
+    paths:
+      exclude:
+        - "**/*test*.py"
+    metadata:
+      category: cryptography
+      cwe: "CWE-327: Use of a Broken or Risky Cryptographic Algorithm"
+      confidence: MEDIUM
+      likelihood: LOW
+      impact: MEDIUM
+      subcategory:
+        - audit
+      technology:
+        - python
+      acgs-rule-type: crypto-algorithm
+      references:
+        - https://ed25519.cr.yp.to/
+
+  - id: acgs-prefer-ed25519-over-ecdsa
+    message: |
+      ECDSA key detected. ACGS-2 prefers Ed25519 for signatures.
+
+      Ed25519 is deterministic and has better resistance to
+      side-channel attacks compared to ECDSA.
+
+      Use:
+        from cryptography.hazmat.primitives.asymmetric import ed25519
+        private_key = ed25519.Ed25519PrivateKey.generate()
+    severity: INFO
+    languages: [python]
+    pattern-either:
+      - pattern: ec.generate_private_key(...)
+      - pattern: ECDSA(...)
+      - pattern: from cryptography.hazmat.primitives.asymmetric.ec import $NAME
+    paths:
+      exclude:
+        - "**/*test*.py"
+    metadata:
+      category: cryptography
+      confidence: LOW
+      likelihood: LOW
+      impact: LOW
+      subcategory:
+        - audit
+      technology:
+        - python
+      acgs-rule-type: crypto-algorithm
+
+  - id: acgs-weak-dsa-detected
+    message: |
+      DSA key detected. DSA is deprecated.
+
+      Use Ed25519 for digital signatures in ACGS-2.
+
+      Fix: Use ed25519.Ed25519PrivateKey.generate()
+    severity: ERROR
+    languages: [python]
+    pattern-either:
+      - pattern: dsa.generate_private_key(...)
+      - pattern: DSA.generate(...)
+      - pattern: from cryptography.hazmat.primitives.asymmetric.dsa import $NAME
+    metadata:
+      category: cryptography
+      cwe: "CWE-327: Use of a Broken or Risky Cryptographic Algorithm"
+      confidence: HIGH
+      likelihood: MEDIUM
+      impact: HIGH
+      subcategory:
+        - vuln
+      technology:
+        - python
+      acgs-rule-type: crypto-algorithm
+
+  # =============================================================================
+  # Key Handling Rules
+  # =============================================================================
+
+  - id: acgs-hardcoded-private-key
+    message: |
+      Potential hardcoded private key detected.
+
+      Private keys must never be hardcoded in source code.
+      Use secure key storage or environment variables.
+
+      Secure alternatives:
+        - Load from encrypted file
+        - Use secrets management service
+        - Environment variables (for development only)
+    severity: ERROR
+    languages: [python]
+    patterns:
+      - pattern-either:
+          - pattern: private_key = "..."
+          - pattern: PRIVATE_KEY = "..."
+          - pattern: private_key_b64 = "..."
+          - pattern: |
+              {..., "private_key": "...", ...}
+      - pattern-not: private_key = os.getenv(...)
+      - pattern-not: private_key = ""
+    paths:
+      exclude:
+        - "**/*test*.py"
+        - "**/conftest.py"
+    metadata:
+      category: cryptography
+      cwe: "CWE-321: Use of Hard-coded Cryptographic Key"
+      confidence: MEDIUM
+      likelihood: HIGH
+      impact: CRITICAL
+      subcategory:
+        - vuln
+      technology:
+        - python
+      acgs-rule-type: key-handling
+
+  - id: acgs-hardcoded-secret-key
+    message: |
+      Potential hardcoded secret key detected.
+
+      Secret keys must be loaded from secure storage.
+    severity: ERROR
+    languages: [python]
+    patterns:
+      - pattern-either:
+          - pattern: secret_key = "..."
+          - pattern: SECRET_KEY = "..."
+          - pattern: signing_key = "..."
+      - pattern-not: secret_key = os.getenv(...)
+      - pattern-not: SECRET_KEY = os.getenv(...)
+      - pattern-not: secret_key = ""
+    paths:
+      exclude:
+        - "**/*test*.py"
+        - "**/conftest.py"
+    metadata:
+      category: cryptography
+      cwe: "CWE-321: Use of Hard-coded Cryptographic Key"
+      confidence: MEDIUM
+      likelihood: HIGH
+      impact: CRITICAL
+      subcategory:
+        - vuln
+      technology:
+        - python
+      acgs-rule-type: key-handling
+
+  - id: acgs-private-key-logged
+    message: |
+      Private key potentially logged.
+
+      Never log cryptographic keys. This is a critical security violation.
+    severity: ERROR
+    languages: [python]
+    pattern-regex: '(logger|logging)\.\w+\([^)]*(?:private_key|secret_key|signing_key)[^)]*\)'
+    metadata:
+      category: cryptography
+      cwe: "CWE-532: Information Exposure Through Log Files"
+      confidence: MEDIUM
+      likelihood: MEDIUM
+      impact: CRITICAL
+      subcategory:
+        - vuln
+      technology:
+        - python
+      acgs-rule-type: key-handling
+
+  - id: acgs-key-in-source-control
+    message: |
+      Potential cryptographic key file reference in code.
+      
+      Ensure key files are in .gitignore and not committed to source control.
+      Use environment variables or secret management for key paths.
+    severity: WARNING
+    languages: [python]
+    pattern-regex: '["''].*\.(pem|key|p12|pfx)["'']'
+    metadata:
+      category: cryptography
+      cwe: "CWE-312: Cleartext Storage of Sensitive Information"
+      confidence: LOW
+      likelihood: MEDIUM
+      impact: HIGH
+      subcategory:
+        - audit
+      technology:
+        - python
+      acgs-rule-type: key-handling
+
+  # =============================================================================
+  # Signature Verification Rules
+  # =============================================================================
+
+  - id: acgs-signature-not-verified
+    message: |
+      Signature verification may be missing.
+      
+      Always verify signatures before trusting signed data.
+      
+      Pattern:
+        try:
+            public_key.verify(signature, message)
+        except InvalidSignature:
+            raise SecurityError("Invalid signature")
+    severity: ERROR
+    languages: [python]
+    patterns:
+      - pattern: |
+          $SIGNATURE = $KEY.sign($DATA)
+          ...
+      - pattern-not-inside: |
+          ...
+          $KEY.verify($SIGNATURE, ...)
+          ...
+    paths:
+      exclude:
+        - "**/*test*.py"
+    metadata:
+      category: cryptography
+      cwe: "CWE-347: Improper Verification of Cryptographic Signature"
+      confidence: LOW
+      likelihood: MEDIUM
+      impact: HIGH
+      subcategory:
+        - vuln
+      technology:
+        - python
+      acgs-rule-type: signature-verification
+
+  - id: acgs-signature-verification-exception-not-handled
+    message: |
+      Signature verification without exception handling.
+      
+      Ed25519 verify() raises InvalidSignature on failure.
+      Always handle this exception.
+      
+      Pattern:
+        from cryptography.exceptions import InvalidSignature
+        
+        try:
+            public_key.verify(signature_bytes, content_bytes)
+            return True
+        except InvalidSignature:
+            return False
+    severity: WARNING
+    languages: [python]
+    patterns:
+      - pattern: $KEY.verify($SIG, $DATA)
+      - pattern-not-inside: |
+          try:
+              ...
+              $KEY.verify($SIG, $DATA)
+              ...
+          except InvalidSignature:
+              ...
+      - pattern-not-inside: |
+          try:
+              ...
+              $KEY.verify($SIG, $DATA)
+              ...
+          except (..., InvalidSignature, ...):
+              ...
+    metadata:
+      category: cryptography
+      cwe: "CWE-754: Improper Check for Unusual or Exceptional Conditions"
+      confidence: MEDIUM
+      likelihood: MEDIUM
+      impact: MEDIUM
+      subcategory:
+        - correctness
+      technology:
+        - python
+      acgs-rule-type: signature-verification
+
+  - id: acgs-policy-signature-not-validated
+    message: |
+      Policy loaded without signature validation.
+      
+      All policy content must be signature-validated before use.
+      
+      Use:
+        from services.policy_registry.app.services.crypto_service import CryptoService
+        
+        if not CryptoService.verify_policy_signature(content, signature, public_key):
+            raise SecurityError("Policy signature invalid")
+    severity: ERROR
+    languages: [python]
+    patterns:
+      - pattern-either:
+          - pattern: $SERVICE.get_policy($ID)
+          - pattern: await $CLIENT.get_policy_content($ID)
+      - pattern-not-inside: |
+          ...
+          verify_policy_signature(...)
+          ...
+      - pattern-not-inside: |
+          ...
+          $CRYPTO.verify_policy_signature(...)
+          ...
+    paths:
+      exclude:
+        - "**/*test*.py"
+        - "**/policy_client.py"
+    metadata:
+      category: cryptography
+      cwe: "CWE-347: Improper Verification of Cryptographic Signature"
+      confidence: MEDIUM
+      likelihood: MEDIUM
+      impact: HIGH
+      subcategory:
+        - vuln
+      technology:
+        - python
+      acgs-rule-type: signature-verification
+
+  # =============================================================================
+  # Key Generation Rules
+  # =============================================================================
+
+  - id: acgs-ed25519-key-generation
+    message: |
+      Ed25519 key generation detected - ensure proper storage.
+      
+      Generated keys should be:
+        - Stored securely (encrypted at rest)
+        - Never logged or printed
+        - Protected with appropriate permissions
+      
+      Pattern:
+        private_key = ed25519.Ed25519PrivateKey.generate()
+        # Store securely, never log
+    severity: INFO
+    languages: [python]
+    pattern: ed25519.Ed25519PrivateKey.generate()
+    metadata:
+      category: cryptography
+      confidence: HIGH
+      likelihood: LOW
+      impact: LOW
+      subcategory:
+        - audit
+      technology:
+        - python
+      acgs-rule-type: key-generation
+
+  - id: acgs-key-size-too-small
+    message: |
+      Potential weak key size detected.
+      
+      Ensure cryptographic keys meet minimum security requirements:
+        - RSA: >= 2048 bits (prefer Ed25519 instead)
+        - AES: >= 256 bits
+    severity: WARNING
+    languages: [python]
+    patterns:
+      - pattern-either:
+          - pattern: rsa.generate_private_key(..., key_size=1024, ...)
+          - pattern: rsa.generate_private_key(..., key_size=512, ...)
+          - pattern: AES.new($KEY, ...) 
+      - metavariable-comparison:
+          comparison: len($KEY) < 32
+          metavariable: $KEY
+    metadata:
+      category: cryptography
+      cwe: "CWE-326: Inadequate Encryption Strength"
+      confidence: MEDIUM
+      likelihood: MEDIUM
+      impact: HIGH
+      subcategory:
+        - vuln
+      technology:
+        - python
+      acgs-rule-type: key-generation
+
+  # =============================================================================
+  # Base64 Encoding Rules
+  # =============================================================================
+
+  - id: acgs-base64-key-decode-unvalidated
+    message: |
+      Base64-decoded key without validation.
+      
+      Validate base64 input before decoding to prevent errors
+      and potential attacks.
+      
+      Pattern:
+        import base64
+        
+        try:
+            key_bytes = base64.b64decode(key_b64)
+            if len(key_bytes) != 32:  # Ed25519 key size
+                raise ValueError("Invalid key length")
+        except (ValueError, binascii.Error) as e:
+            raise SecurityError(f"Invalid key encoding: {e}")
+    severity: WARNING
+    languages: [python]
+    patterns:
+      - pattern: base64.b64decode($KEY)
+      - pattern-not-inside: |
+          try:
+              ...
+              base64.b64decode($KEY)
+              ...
+          except ...:
+              ...
+    metadata:
+      category: cryptography
+      cwe: "CWE-20: Improper Input Validation"
+      confidence: LOW
+      likelihood: LOW
+      impact: MEDIUM
+      subcategory:
+        - correctness
+      technology:
+        - python
+      acgs-rule-type: encoding
+
+  # =============================================================================
+  # TLS/SSL Rules
+  # =============================================================================
+
+  - id: acgs-ssl-verify-disabled
+    message: |
+      SSL certificate verification disabled.
+      
+      Disabling SSL verification allows man-in-the-middle attacks.
+      
+      Fix: Remove verify=False or set to True
+    severity: ERROR
+    languages: [python]
+    pattern-either:
+      - pattern: requests.$METHOD(..., verify=False, ...)
+      - pattern: httpx.$METHOD(..., verify=False, ...)
+      - pattern: aiohttp.ClientSession(..., connector=...(ssl=False), ...)
+    metadata:
+      category: cryptography
+      cwe: "CWE-295: Improper Certificate Validation"
+      confidence: HIGH
+      likelihood: HIGH
+      impact: HIGH
+      subcategory:
+        - vuln
+      technology:
+        - python
+      acgs-rule-type: tls-security
+
+  - id: acgs-insecure-ssl-context
+    message: |
+      Insecure SSL context configuration detected.
+      
+      Do not disable hostname checking or certificate verification.
+    severity: ERROR
+    languages: [python]
+    pattern-either:
+      - pattern: ssl.create_default_context().check_hostname = False
+      - pattern: ssl.create_default_context().verify_mode = ssl.CERT_NONE
+      - pattern: $CTX.check_hostname = False
+      - pattern: $CTX.verify_mode = ssl.CERT_NONE
+    metadata:
+      category: cryptography
+      cwe: "CWE-295: Improper Certificate Validation"
+      confidence: HIGH
+      likelihood: MEDIUM
+      impact: HIGH
+      subcategory:
+        - vuln
+      technology:
+        - python
+      acgs-rule-type: tls-security

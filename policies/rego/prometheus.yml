@@ -1,0 +1,47 @@
+# ACGS-2 OPA Prometheus Configuration
+# Constitutional Hash: cdd01ef066bc6cf2
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'acgs2'
+    constitutional_hash: 'cdd01ef066bc6cf2'
+
+scrape_configs:
+  # OPA Primary Instance
+  - job_name: 'opa-primary'
+    static_configs:
+      - targets: ['opa-primary:8181']
+        labels:
+          instance: 'primary'
+          service: 'opa'
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+
+  # OPA Secondary Instance
+  - job_name: 'opa-secondary'
+    static_configs:
+      - targets: ['opa-secondary:8181']
+        labels:
+          instance: 'secondary'
+          service: 'opa'
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+
+  # Nginx Load Balancer
+  - job_name: 'nginx-lb'
+    static_configs:
+      - targets: ['opa-loadbalancer:80']
+        labels:
+          service: 'loadbalancer'
+
+# Alerting rules
+rule_files:
+  - '/etc/prometheus/alerts/*.yml'
+
+# Alert manager configuration (optional)
+# alerting:
+#   alertmanagers:
+#     - static_configs:
+#         - targets: ['alertmanager:9093']

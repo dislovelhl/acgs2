@@ -1,0 +1,718 @@
+# Agent Bus Specific Rules for ACGS-2
+# Constitutional Hash: cdd01ef066bc6cf2
+# Rules for Enhanced Agent Bus patterns and best practices
+#
+# These rules enforce proper usage of the ACGS-2 agent bus system
+# including message handling, constitutional compliance, and async patterns.
+
+rules:
+  # =============================================================================
+  # Message Constitutional Compliance
+  # =============================================================================
+
+  - id: acgs-message-missing-hash
+    message: |
+      AgentMessage created without explicit constitutional_hash.
+      
+      While the model has a default, explicit hash setting ensures
+      constitutional compliance is intentional and auditable.
+      
+      Add: constitutional_hash=CONSTITUTIONAL_HASH
+      
+      Import: from enhanced_agent_bus.models import CONSTITUTIONAL_HASH
+    severity: INFO
+    languages: [python]
+    patterns:
+      - pattern: |
+          AgentMessage(
+              ...,
+          )
+      - pattern-not: |
+          AgentMessage(
+              ...,
+              constitutional_hash=$HASH,
+              ...,
+          )
+    paths:
+      exclude:
+        - "**/*test*.py"
+        - "**/conftest.py"
+    metadata:
+      category: acgs-patterns
+      confidence: MEDIUM
+      likelihood: MEDIUM
+      impact: MEDIUM
+      subcategory:
+        - audit
+      technology:
+        - python
+      acgs-rule-type: message-compliance
+
+  - id: acgs-message-wrong-hash
+    message: |
+      AgentMessage created with non-standard constitutional hash.
+      
+      The hash must be 'cdd01ef066bc6cf2' or imported from
+      CONSTITUTIONAL_HASH constant.
+    severity: ERROR
+    languages: [python]
+    patterns:
+      - pattern: |
+          AgentMessage(
+              ...,
+              constitutional_hash="$HASH",
+              ...,
+          )
+      - metavariable-comparison:
+          comparison: str($HASH) != "cdd01ef066bc6cf2"
+          metavariable: $HASH
+    paths:
+      exclude:
+        - "**/*test*.py"
+    metadata:
+      category: acgs-patterns
+      confidence: HIGH
+      likelihood: HIGH
+      impact: CRITICAL
+      subcategory:
+        - vuln
+      technology:
+        - python
+      acgs-rule-type: message-compliance
+
+  - id: acgs-message-type-not-specified
+    message: |
+      AgentMessage created without message_type.
+      
+      Specify MessageType (COMMAND, QUERY, EVENT, etc.) for proper
+      routing and handling.
+      
+      Import: from enhanced_agent_bus.models import MessageType
+      Add: message_type=MessageType.COMMAND
+    severity: WARNING
+    languages: [python]
+    patterns:
+      - pattern: |
+          AgentMessage(
+              ...,
+          )
+      - pattern-not: |
+          AgentMessage(
+              ...,
+              message_type=$TYPE,
+              ...,
+          )
+    paths:
+      exclude:
+        - "**/*test*.py"
+    metadata:
+      category: acgs-patterns
+      confidence: MEDIUM
+      likelihood: MEDIUM
+      impact: MEDIUM
+      subcategory:
+        - correctness
+      technology:
+        - python
+      acgs-rule-type: message-compliance
+
+  # =============================================================================
+  # Async/Await Patterns
+  # =============================================================================
+
+  - id: acgs-bus-missing-await-start
+    message: |
+      EnhancedAgentBus.start() called without await.
+
+      start() is an async method and must be awaited.
+
+      Fix: await bus.start()
+    severity: ERROR
+    languages: [python]
+    patterns:
+      - pattern: $BUS.start()
+      - pattern-not: await $BUS.start()
+    metadata:
+      category: acgs-patterns
+      confidence: HIGH
+      likelihood: HIGH
+      impact: HIGH
+      subcategory:
+        - correctness
+      technology:
+        - python
+      acgs-rule-type: async-patterns
+
+  - id: acgs-bus-missing-await-send
+    message: |
+      EnhancedAgentBus.send_message() called without await.
+
+      send_message() is an async method and must be awaited.
+
+      Fix: result = await bus.send_message(message)
+    severity: ERROR
+    languages: [python]
+    patterns:
+      - pattern: $BUS.send_message($MSG)
+      - pattern-not: await $BUS.send_message($MSG)
+      - pattern-not: $VAR = await $BUS.send_message($MSG)
+    metadata:
+      category: acgs-patterns
+      confidence: HIGH
+      likelihood: HIGH
+      impact: HIGH
+      subcategory:
+        - correctness
+      technology:
+        - python
+      acgs-rule-type: async-patterns
+
+  - id: acgs-bus-missing-await-stop
+    message: |
+      EnhancedAgentBus.stop() called without await.
+
+      stop() is an async method and must be awaited for proper cleanup.
+
+      Fix: await bus.stop()
+    severity: ERROR
+    languages: [python]
+    patterns:
+      - pattern: $BUS.stop()
+      - pattern-not: await $BUS.stop()
+    metadata:
+      category: acgs-patterns
+      confidence: HIGH
+      likelihood: HIGH
+      impact: MEDIUM
+      subcategory:
+        - correctness
+      technology:
+        - python
+      acgs-rule-type: async-patterns
+
+  - id: acgs-bus-missing-await-register
+    message: |
+      EnhancedAgentBus.register_agent() called without await.
+
+      register_agent() is an async method and must be awaited.
+
+      Fix: await bus.register_agent(agent_id, agent_type="worker")
+    severity: ERROR
+    languages: [python]
+    patterns:
+      - pattern: $BUS.register_agent(...)
+      - pattern-not: await $BUS.register_agent(...)
+    metadata:
+      category: acgs-patterns
+      confidence: HIGH
+      likelihood: HIGH
+      impact: HIGH
+      subcategory:
+        - correctness
+      technology:
+        - python
+      acgs-rule-type: async-patterns
+
+  - id: acgs-processor-missing-await
+    message: |
+      MessageProcessor.process() called without await.
+
+      process() is an async method and must be awaited.
+
+      Fix: result = await processor.process(message)
+    severity: ERROR
+    languages: [python]
+    patterns:
+      - pattern: $PROCESSOR.process($MSG)
+      - pattern-not: await $PROCESSOR.process($MSG)
+      - pattern-not: $VAR = await $PROCESSOR.process($MSG)
+    metadata:
+      category: acgs-patterns
+      confidence: HIGH
+      likelihood: HIGH
+      impact: HIGH
+      subcategory:
+        - correctness
+      technology:
+        - python
+      acgs-rule-type: async-patterns
+
+  # =============================================================================
+  # Bus Lifecycle Management
+  # =============================================================================
+
+  - id: acgs-bus-not-started-before-use
+    message: |
+      EnhancedAgentBus used without calling start().
+      
+      Always call await bus.start() before sending messages.
+      
+      Correct pattern:
+        bus = EnhancedAgentBus()
+        await bus.start()
+        result = await bus.send_message(message)
+    severity: WARNING
+    languages: [python]
+    patterns:
+      - pattern: |
+          $BUS = EnhancedAgentBus(...)
+          ...
+          await $BUS.send_message(...)
+      - pattern-not-inside: |
+          $BUS = EnhancedAgentBus(...)
+          ...
+          await $BUS.start()
+          ...
+    metadata:
+      category: acgs-patterns
+      confidence: MEDIUM
+      likelihood: MEDIUM
+      impact: MEDIUM
+      subcategory:
+        - correctness
+      technology:
+        - python
+      acgs-rule-type: lifecycle
+
+  - id: acgs-bus-not-stopped
+    message: |
+      EnhancedAgentBus created without corresponding stop() call.
+      
+      Always stop the bus for proper resource cleanup.
+      
+      Use try/finally or async context manager pattern:
+        try:
+            await bus.start()
+            # ... use bus ...
+        finally:
+            await bus.stop()
+    severity: WARNING
+    languages: [python]
+    patterns:
+      - pattern: |
+          $BUS = EnhancedAgentBus(...)
+          ...
+          await $BUS.start()
+          ...
+      - pattern-not-inside: |
+          try:
+              ...
+          finally:
+              await $BUS.stop()
+      - pattern-not-inside: |
+          async with ...:
+              ...
+    paths:
+      exclude:
+        - "**/*test*.py"
+    metadata:
+      category: acgs-patterns
+      confidence: LOW
+      likelihood: MEDIUM
+      impact: LOW
+      subcategory:
+        - resource-leak
+      technology:
+        - python
+      acgs-rule-type: lifecycle
+
+  - id: acgs-agent-not-registered
+    message: |
+      Message sent without agent registration.
+
+      Register agents before sending messages for proper routing
+      and constitutional tracking.
+
+      Add: await bus.register_agent(agent_id, agent_type="worker")
+    severity: WARNING
+    languages: [python]
+    patterns:
+      - pattern: await $BUS.send_message($MSG)
+      - pattern-not-inside: |
+          await $BUS.register_agent(...)
+          ...
+    paths:
+      exclude:
+        - "**/*test*.py"
+    metadata:
+      category: acgs-patterns
+      confidence: MEDIUM
+      likelihood: MEDIUM
+      impact: MEDIUM
+      subcategory:
+        - correctness
+      technology:
+        - python
+      acgs-rule-type: lifecycle
+
+  # =============================================================================
+  # Redis Connection Handling
+  # =============================================================================
+
+  - id: acgs-redis-hardcoded-url
+    message: |
+      Hardcoded Redis URL detected.
+      
+      Use get_redis_url() from shared.redis_config for centralized
+      configuration and environment-based settings.
+      
+      Import: from shared.redis_config import get_redis_url
+      Use: redis_url = get_redis_url()
+    severity: WARNING
+    languages: [python]
+    pattern-either:
+      - pattern: redis.from_url("redis://...")
+      - pattern: aioredis.from_url("redis://...")
+      - pattern: Redis(host="...", port=...)
+    paths:
+      exclude:
+        - "**/redis_config.py"
+        - "**/*test*.py"
+    metadata:
+      category: acgs-patterns
+      confidence: MEDIUM
+      likelihood: MEDIUM
+      impact: LOW
+      subcategory:
+        - maintainability
+      technology:
+        - python
+      acgs-rule-type: redis-handling
+      fix: |
+        from shared.redis_config import get_redis_url
+        redis.from_url(get_redis_url())
+
+  - id: acgs-redis-client-not-closed
+    message: |
+      Redis client created without proper cleanup.
+      
+      Use async context manager or ensure close() is called
+      to prevent connection leaks.
+      
+      Pattern 1 - Context manager:
+        async with redis.from_url(url) as client:
+            await client.set("key", "value")
+      
+      Pattern 2 - Try/finally:
+        client = redis.from_url(url)
+        try:
+            await client.set("key", "value")
+        finally:
+            await client.close()
+    severity: WARNING
+    languages: [python]
+    patterns:
+      - pattern: |
+          $CLIENT = $REDIS.from_url(...)
+          ...
+      - pattern-not-inside: |
+          async with $REDIS.from_url(...) as $CLIENT:
+              ...
+      - pattern-not-inside: |
+          try:
+              $CLIENT = $REDIS.from_url(...)
+              ...
+          finally:
+              await $CLIENT.close()
+    paths:
+      exclude:
+        - "**/*test*.py"
+    metadata:
+      category: acgs-patterns
+      confidence: MEDIUM
+      likelihood: MEDIUM
+      impact: LOW
+      subcategory:
+        - resource-leak
+      technology:
+        - python
+      acgs-rule-type: redis-handling
+
+  - id: acgs-redis-missing-error-handling
+    message: |
+      Redis operation without error handling.
+      
+      Redis connections can fail. Always handle ConnectionError
+      and TimeoutError.
+      
+      Pattern:
+        try:
+            await client.set("key", "value")
+        except (ConnectionError, TimeoutError) as e:
+            logger.error(f"Redis error: {e}")
+    severity: WARNING
+    languages: [python]
+    patterns:
+      - pattern: |
+          await $CLIENT.$METHOD(...)
+      - pattern-not-inside: |
+          try:
+              ...
+          except (ConnectionError, ...):
+              ...
+      - metavariable-regex:
+          metavariable: $METHOD
+          regex: "(set|get|hset|hget|xadd|xread|lpush|rpop)"
+    paths:
+      exclude:
+        - "**/*test*.py"
+    metadata:
+      category: acgs-patterns
+      confidence: LOW
+      likelihood: MEDIUM
+      impact: MEDIUM
+      subcategory:
+        - correctness
+      technology:
+        - python
+      acgs-rule-type: redis-handling
+
+  # =============================================================================
+  # Handler Error Handling
+  # =============================================================================
+
+  - id: acgs-handler-missing-error-handling
+    message: |
+      Message handler missing error handling.
+      
+      Handler exceptions should be caught to prevent message loss
+      and enable proper error reporting.
+      
+      Pattern:
+        async def handle_message(msg: AgentMessage) -> ValidationResult:
+            try:
+                # Process message
+                return ValidationResult(is_valid=True)
+            except Exception as e:
+                logger.error(f"Handler error: {e}")
+                return ValidationResult(is_valid=False, errors=[str(e)])
+    severity: WARNING
+    languages: [python]
+    patterns:
+      - pattern: |
+          async def $HANDLER($MSG: AgentMessage, ...):
+              ...
+      - pattern-not-inside: |
+          async def $HANDLER($MSG: AgentMessage, ...):
+              try:
+                  ...
+              except ...:
+                  ...
+    paths:
+      exclude:
+        - "**/*test*.py"
+    metadata:
+      category: acgs-patterns
+      confidence: LOW
+      likelihood: MEDIUM
+      impact: MEDIUM
+      subcategory:
+        - correctness
+      technology:
+        - python
+      acgs-rule-type: error-handling
+
+  - id: acgs-validation-result-not-checked
+    message: |
+      ValidationResult not checked after validation.
+      
+      Always check ValidationResult.is_valid before proceeding
+      with message processing.
+      
+      Pattern:
+        result = await processor.process(message)
+        if not result.is_valid:
+            logger.error(f"Validation failed: {result.errors}")
+            return
+    severity: ERROR
+    languages: [python]
+    patterns:
+      - pattern: |
+          $RESULT = await $PROCESSOR.process($MSG)
+          ...
+      - pattern-not-inside: |
+          $RESULT = await $PROCESSOR.process($MSG)
+          ...
+          if $RESULT.is_valid:
+              ...
+      - pattern-not-inside: |
+          $RESULT = await $PROCESSOR.process($MSG)
+          ...
+          if not $RESULT.is_valid:
+              ...
+    paths:
+      exclude:
+        - "**/*test*.py"
+    metadata:
+      category: acgs-patterns
+      confidence: MEDIUM
+      likelihood: MEDIUM
+      impact: HIGH
+      subcategory:
+        - correctness
+      technology:
+        - python
+      acgs-rule-type: error-handling
+
+  # =============================================================================
+  # Deprecated Module Usage
+  # =============================================================================
+
+  - id: acgs-deprecated-core-import
+    message: |
+      Import from deprecated core module detected.
+
+      Use 'enhanced_agent_bus.core' instead of deprecated modules:
+        - core_rust.py (deprecated)
+        - core_updated.py (deprecated)
+        - core_legacy.py (deprecated)
+
+      Fix: from enhanced_agent_bus.core import EnhancedAgentBus
+    severity: ERROR
+    languages: [python]
+    pattern-either:
+      - pattern: from enhanced_agent_bus.core_rust import $NAME
+      - pattern: from enhanced_agent_bus.core_updated import $NAME
+      - pattern: from enhanced_agent_bus.core_legacy import $NAME
+      - pattern: import enhanced_agent_bus.core_rust
+      - pattern: import enhanced_agent_bus.core_updated
+    fix: from enhanced_agent_bus.core import EnhancedAgentBus
+    metadata:
+      category: acgs-patterns
+      confidence: HIGH
+      likelihood: MEDIUM
+      impact: MEDIUM
+      subcategory:
+        - maintainability
+      technology:
+        - python
+      acgs-rule-type: deprecated
+      references:
+        - /home/dislove/document/acgs2/CLAUDE.md
+
+  # =============================================================================
+  # Import Patterns
+  # =============================================================================
+
+  - id: acgs-relative-import-missing-fallback
+    message: |
+      Relative import missing fallback pattern.
+      
+      Use try/except for relative imports to support both
+      package and direct execution modes.
+      
+      Pattern:
+        try:
+            from .models import AgentMessage
+        except ImportError:
+            from models import AgentMessage  # type: ignore
+    severity: INFO
+    languages: [python]
+    patterns:
+      - pattern: from .$MODULE import $NAMES
+      - pattern-not-inside: |
+          try:
+              from .$MODULE import $NAMES
+          except ImportError:
+              ...
+    paths:
+      include:
+        - "enhanced_agent_bus/**/*.py"
+      exclude:
+        - "**/__init__.py"
+        - "**/*test*.py"
+    metadata:
+      category: acgs-patterns
+      confidence: LOW
+      likelihood: LOW
+      impact: LOW
+      subcategory:
+        - maintainability
+      technology:
+        - python
+      acgs-rule-type: import-patterns
+
+  - id: acgs-heavy-import-without-try
+    message: |
+      ImpactScorer imported without availability check.
+      
+      ImpactScorer has heavy ML dependencies (transformers, torch).
+      Use try/except to handle cases where dependencies are unavailable.
+      
+      Pattern:
+        try:
+            from deliberation_layer.impact_scorer import ImpactScorer
+            IMPACT_SCORER_AVAILABLE = True
+        except ImportError:
+            ImpactScorer = None
+            IMPACT_SCORER_AVAILABLE = False
+    severity: INFO
+    languages: [python]
+    patterns:
+      - pattern-either:
+          - pattern: from ...impact_scorer import ImpactScorer
+          - pattern: from deliberation_layer.impact_scorer import ImpactScorer
+      - pattern-not-inside: |
+          try:
+              ...
+          except ImportError:
+              ...
+    metadata:
+      category: acgs-patterns
+      confidence: MEDIUM
+      likelihood: LOW
+      impact: LOW
+      subcategory:
+        - maintainability
+      technology:
+        - python
+      acgs-rule-type: import-patterns
+
+  # =============================================================================
+  # Deliberation Layer
+  # =============================================================================
+
+  - id: acgs-high-impact-without-deliberation
+    message: |
+      High-impact operation without deliberation layer review.
+      
+      Operations like policy changes, deletions, and governance updates
+      should be routed through the deliberation layer for multi-agent
+      consensus.
+      
+      Pattern:
+        layer = DeliberationLayer(impact_threshold=0.8)
+        result = await layer.process_message(message)
+        if result['lane'] == 'deliberation':
+            # Wait for consensus
+    severity: WARNING
+    languages: [python]
+    patterns:
+      - pattern-either:
+          - pattern: |
+              async def $FUNC(...):
+                  ...
+                  $DB.delete(...)
+                  ...
+          - pattern: |
+              async def $FUNC(...):
+                  ...
+                  await $POLICY.update(...)
+                  ...
+      - pattern-not-inside: |
+          $LAYER = DeliberationLayer(...)
+          ...
+          await $LAYER.process_message(...)
+    paths:
+      exclude:
+        - "**/*test*.py"
+    metadata:
+      category: acgs-patterns
+      confidence: LOW
+      likelihood: LOW
+      impact: HIGH
+      subcategory:
+        - audit
+      technology:
+        - python
+      acgs-rule-type: deliberation

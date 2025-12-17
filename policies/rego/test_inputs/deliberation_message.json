@@ -1,0 +1,33 @@
+{
+  "message": {
+    "message_id": "msg-high-impact-001",
+    "conversation_id": "conv-deliberation-001",
+    "from_agent": "governance-agent-1",
+    "to_agent": "system",
+    "sender_id": "governance-agent-1",
+    "message_type": "governance_request",
+    "content": {
+      "action": "policy_change",
+      "policy_type": "constitutional",
+      "changes": {
+        "add_constraint": "require_multi_agent_approval",
+        "justification": "Enhance governance oversight"
+      },
+      "risk_level": "high"
+    },
+    "tenant_id": "tenant-alpha",
+    "priority": 1,
+    "status": "pending",
+    "constitutional_hash": "cdd01ef066bc6cf2",
+    "constitutional_validated": false,
+    "created_at": "2025-12-17T10:30:00.000000Z",
+    "updated_at": "2025-12-17T10:30:00.000000Z",
+    "impact_score": 0.92
+  },
+  "context": {
+    "agent_role": "governance_agent",
+    "tenant_id": "tenant-alpha",
+    "multi_tenant_enabled": true,
+    "force_deliberation": false
+  }
+}

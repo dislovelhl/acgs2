@@ -1,0 +1,586 @@
+# Security Rules for ACGS-2
+# Constitutional Hash: cdd01ef066bc6cf2
+# OWASP Top 10 and security best practices enforcement
+#
+# These rules detect common security vulnerabilities and enforce
+# secure coding practices across the ACGS-2 codebase.
+
+rules:
+  # =============================================================================
+  # Injection Vulnerabilities (OWASP A03:2021)
+  # =============================================================================
+
+  - id: acgs-sql-injection-string-format
+    message: |
+      Potential SQL injection vulnerability detected.
+      
+      String formatting in SQL queries allows attackers to inject malicious SQL.
+      Use parameterized queries instead.
+      
+      Bad:
+        cursor.execute(f"SELECT * FROM users WHERE id = {user_id}")
+      
+      Good:
+        cursor.execute("SELECT * FROM users WHERE id = %s", (user_id,))
+    severity: ERROR
+    languages: [python]
+    pattern-either:
+      - pattern: $CURSOR.execute("..." + $VAR + "...")
+      - pattern: $CURSOR.execute(f"...{$VAR}...")
+      - pattern: $CURSOR.execute("..." % $VAR)
+      - pattern: $CURSOR.execute("...".format($VAR))
+      - pattern: $SESSION.execute("..." + $VAR + "...")
+      - pattern: $SESSION.execute(f"...{$VAR}...")
+      - pattern: $CONN.execute(f"...{$VAR}...")
+    metadata:
+      category: security
+      cwe: "CWE-89: SQL Injection"
+      owasp: "A03:2021 - Injection"
+      confidence: HIGH
+      likelihood: HIGH
+      impact: CRITICAL
+      subcategory:
+        - vuln
+      technology:
+        - python
+      references:
+        - https://owasp.org/www-community/attacks/SQL_Injection
+
+  - id: acgs-command-injection-subprocess
+    message: |
+      Potential command injection vulnerability.
+      
+      Using shell=True with subprocess or string concatenation in commands
+      allows attackers to inject malicious commands.
+      
+      Bad:
+        subprocess.run(f"ls {user_input}", shell=True)
+      
+      Good:
+        subprocess.run(["ls", user_input])
+    severity: ERROR
+    languages: [python]
+    pattern-either:
+      - pattern: subprocess.$METHOD($CMD, shell=True, ...)
+      - pattern: subprocess.$METHOD($CMD + $VAR, ...)
+      - pattern: subprocess.$METHOD(f"...{$VAR}...", ...)
+      - pattern: os.system($CMD)
+      - pattern: os.popen($CMD)
+    metadata:
+      category: security
+      cwe: "CWE-78: OS Command Injection"
+      owasp: "A03:2021 - Injection"
+      confidence: HIGH
+      likelihood: HIGH
+      impact: CRITICAL
+      subcategory:
+        - vuln
+      technology:
+        - python
+      references:
+        - https://owasp.org/www-community/attacks/Command_Injection
+
+  - id: acgs-code-injection-eval
+    message: |
+      Use of eval() detected - potential code injection vulnerability.
+      
+      eval() and exec() execute arbitrary code and should never be used
+      with untrusted input.
+      
+      Alternatives:
+        - Use json.loads() for JSON data
+        - Use ast.literal_eval() for simple Python literals
+        - Implement specific parsing logic
+    severity: ERROR
+    languages: [python]
+    pattern-either:
+      - pattern: eval($CODE)
+      - pattern: exec($CODE)
+      - pattern: compile($CODE, ..., "exec")
+    paths:
+      exclude:
+        - "**/*test*.py"
+        - "**/conftest.py"
+    metadata:
+      category: security
+      cwe: "CWE-95: Improper Neutralization of Directives in Dynamically Evaluated Code"
+      owasp: "A03:2021 - Injection"
+      confidence: HIGH
+      likelihood: HIGH
+      impact: CRITICAL
+      subcategory:
+        - vuln
+      technology:
+        - python
+
+  # =============================================================================
+  # Hardcoded Secrets (OWASP A07:2021)
+  # =============================================================================
+
+  - id: acgs-hardcoded-password
+    message: |
+      Potential hardcoded password detected.
+
+      Never hardcode passwords in source code. Use environment variables
+      or secure vault services.
+
+      Fix: Use os.getenv("PASSWORD") or secret management service
+    severity: ERROR
+    languages: [python]
+    patterns:
+      - pattern-either:
+          - pattern: password = "..."
+          - pattern: PASSWORD = "..."
+          - pattern: passwd = "..."
+      - pattern-not: password = ""
+      - pattern-not: password = os.getenv(...)
+      - pattern-not: PASSWORD = os.getenv(...)
+    paths:
+      exclude:
+        - "**/*test*.py"
+        - "**/conftest.py"
+    metadata:
+      category: security
+      cwe: "CWE-798: Use of Hard-coded Credentials"
+      owasp: "A07:2021 - Identification and Authentication Failures"
+      confidence: MEDIUM
+      likelihood: HIGH
+      impact: CRITICAL
+      subcategory:
+        - vuln
+      technology:
+        - python
+
+  - id: acgs-hardcoded-api-key
+    message: |
+      Potential hardcoded API key detected.
+
+      API keys and tokens should never be hardcoded in source code.
+      Use environment variables or secure configuration.
+
+      Fix: Use os.getenv("API_KEY") or config management
+    severity: ERROR
+    languages: [python]
+    patterns:
+      - pattern-either:
+          - pattern: api_key = "..."
+          - pattern: API_KEY = "..."
+          - pattern: token = "..."
+          - pattern: TOKEN = "..."
+          - pattern: secret = "..."
+          - pattern: SECRET = "..."
+      - pattern-not: api_key = ""
+      - pattern-not: api_key = os.getenv(...)
+      - pattern-not: token = os.getenv(...)
+    paths:
+      exclude:
+        - "**/*test*.py"
+        - "**/conftest.py"
+    metadata:
+      category: security
+      cwe: "CWE-798: Use of Hard-coded Credentials"
+      owasp: "A07:2021 - Identification and Authentication Failures"
+      confidence: MEDIUM
+      likelihood: HIGH
+      impact: CRITICAL
+      subcategory:
+        - vuln
+      technology:
+        - python
+
+  - id: acgs-hardcoded-bearer-token
+    message: |
+      Hardcoded Bearer token detected.
+      
+      Authentication tokens must never be hardcoded.
+    severity: ERROR
+    languages: [python]
+    pattern-regex: 'Bearer\s+[A-Za-z0-9\-_\.]+'
+    paths:
+      exclude:
+        - "**/*test*.py"
+    metadata:
+      category: security
+      cwe: "CWE-798: Use of Hard-coded Credentials"
+      owasp: "A07:2021 - Identification and Authentication Failures"
+      confidence: HIGH
+      likelihood: HIGH
+      impact: CRITICAL
+      subcategory:
+        - vuln
+      technology:
+        - python
+
+  # =============================================================================
+  # Deserialization (OWASP A08:2021)
+  # =============================================================================
+
+  - id: acgs-unsafe-pickle-load
+    message: |
+      Unsafe deserialization using pickle detected.
+      
+      pickle.loads() can execute arbitrary code during deserialization.
+      Never use pickle with untrusted data.
+      
+      Alternatives:
+        - Use json.loads() for JSON data
+        - Use Protocol Buffers or MessagePack
+    severity: ERROR
+    languages: [python]
+    pattern-either:
+      - pattern: pickle.loads($DATA)
+      - pattern: pickle.load($FILE)
+      - pattern: pickle.Unpickler($FILE).load()
+      - pattern: cPickle.loads($DATA)
+      - pattern: cPickle.load($FILE)
+    metadata:
+      category: security
+      cwe: "CWE-502: Deserialization of Untrusted Data"
+      owasp: "A08:2021 - Software and Data Integrity Failures"
+      confidence: HIGH
+      likelihood: MEDIUM
+      impact: CRITICAL
+      subcategory:
+        - vuln
+      technology:
+        - python
+      references:
+        - https://owasp.org/www-community/vulnerabilities/Deserialization_of_untrusted_data
+
+  - id: acgs-unsafe-yaml-load
+    message: |
+      Unsafe YAML deserialization detected.
+      
+      yaml.load() without SafeLoader can execute arbitrary Python code.
+      
+      Fix: Use yaml.safe_load() instead
+    severity: ERROR
+    languages: [python]
+    pattern-either:
+      - pattern: yaml.load($DATA)
+      - pattern: yaml.load($DATA, Loader=yaml.Loader)
+      - pattern: yaml.load($DATA, Loader=yaml.FullLoader)
+      - pattern: yaml.load($DATA, Loader=yaml.UnsafeLoader)
+    fix: yaml.safe_load($DATA)
+    metadata:
+      category: security
+      cwe: "CWE-502: Deserialization of Untrusted Data"
+      owasp: "A08:2021 - Software and Data Integrity Failures"
+      confidence: HIGH
+      likelihood: HIGH
+      impact: CRITICAL
+      subcategory:
+        - vuln
+      technology:
+        - python
+
+  # =============================================================================
+  # Cryptographic Failures (OWASP A02:2021)
+  # =============================================================================
+
+  - id: acgs-weak-hash-md5
+    message: |
+      MD5 hash algorithm detected.
+      
+      MD5 is cryptographically broken and unsuitable for security purposes.
+      Use SHA-256 or SHA-3 for cryptographic hashing.
+      
+      Fix: Use hashlib.sha256() or hashlib.sha3_256()
+    severity: ERROR
+    languages: [python]
+    pattern-either:
+      - pattern: hashlib.md5(...)
+      - pattern: MD5.new(...)
+    paths:
+      exclude:
+        - "**/*test*.py"
+    metadata:
+      category: security
+      cwe: "CWE-327: Use of a Broken or Risky Cryptographic Algorithm"
+      owasp: "A02:2021 - Cryptographic Failures"
+      confidence: HIGH
+      likelihood: MEDIUM
+      impact: HIGH
+      subcategory:
+        - vuln
+      technology:
+        - python
+
+  - id: acgs-weak-hash-sha1
+    message: |
+      SHA-1 hash algorithm detected.
+      
+      SHA-1 is cryptographically weak and should not be used for security.
+      Use SHA-256 or SHA-3 for cryptographic hashing.
+      
+      Fix: Use hashlib.sha256() or hashlib.sha3_256()
+    severity: ERROR
+    languages: [python]
+    pattern-either:
+      - pattern: hashlib.sha1(...)
+      - pattern: SHA.new(...)
+      - pattern: SHA1.new(...)
+    paths:
+      exclude:
+        - "**/*test*.py"
+    metadata:
+      category: security
+      cwe: "CWE-327: Use of a Broken or Risky Cryptographic Algorithm"
+      owasp: "A02:2021 - Cryptographic Failures"
+      confidence: HIGH
+      likelihood: MEDIUM
+      impact: HIGH
+      subcategory:
+        - vuln
+      technology:
+        - python
+
+  - id: acgs-insecure-random
+    message: |
+      Insecure random number generator for security-sensitive operation.
+
+      The random module is not cryptographically secure.
+      Use the secrets module for security-sensitive operations.
+
+      Fix:
+        - secrets.token_hex(16) for random tokens
+        - secrets.token_urlsafe(16) for URL-safe tokens
+        - secrets.SystemRandom() for random numbers
+    severity: ERROR
+    languages: [python]
+    patterns:
+      - pattern-either:
+          - pattern: random.random()
+          - pattern: random.randint(...)
+          - pattern: random.choice(...)
+          - pattern: random.randrange(...)
+      - pattern-inside: |
+          def $FUNC(...):
+              ...
+      - metavariable-regex:
+          metavariable: $FUNC
+          regex: ".*(token|secret|key|password|auth|session|nonce).*"
+    metadata:
+      category: security
+      cwe: "CWE-338: Use of Cryptographically Weak PRNG"
+      owasp: "A02:2021 - Cryptographic Failures"
+      confidence: MEDIUM
+      likelihood: MEDIUM
+      impact: HIGH
+      subcategory:
+        - vuln
+      technology:
+        - python
+
+  - id: acgs-jwt-no-verification
+    message: |
+      JWT decoded without signature verification.
+      
+      Disabling signature verification allows attackers to forge tokens.
+      Always verify JWT signatures.
+      
+      Fix: jwt.decode(token, key, algorithms=["HS256"])
+    severity: ERROR
+    languages: [python]
+    pattern-either:
+      - pattern: 'jwt.decode($TOKEN, options={"verify_signature": False})'
+      - pattern: jwt.decode($TOKEN, verify=False)
+      - pattern: jwt.decode($TOKEN, ..., verify=False, ...)
+    metadata:
+      category: security
+      cwe: "CWE-347: Improper Verification of Cryptographic Signature"
+      owasp: "A02:2021 - Cryptographic Failures"
+      confidence: HIGH
+      likelihood: HIGH
+      impact: CRITICAL
+      subcategory:
+        - vuln
+      technology:
+        - python
+
+  # =============================================================================
+  # Path Traversal (OWASP A01:2021)
+  # =============================================================================
+
+  - id: acgs-path-traversal-risk
+    message: |
+      Potential path traversal vulnerability.
+      
+      User-controlled file paths can be manipulated to access
+      unauthorized files using ../ sequences.
+      
+      Mitigations:
+        - Validate paths against an allowed list
+        - Use os.path.realpath() and check prefix
+        - Use pathlib with strict path validation
+    severity: ERROR
+    languages: [python]
+    patterns:
+      - pattern-either:
+          - pattern: open($PATH, ...)
+          - pattern: Path($PATH).read_text()
+          - pattern: Path($PATH).read_bytes()
+      - pattern-not-inside: |
+          if is_safe_path($PATH):
+              ...
+      - pattern-not-inside: |
+          $SAFE = sanitize_path($PATH)
+          ...
+      - pattern-not-inside: |
+          $SAFE = os.path.realpath($PATH)
+          if $SAFE.startswith($ALLOWED):
+              ...
+    metadata:
+      category: security
+      cwe: "CWE-22: Path Traversal"
+      owasp: "A01:2021 - Broken Access Control"
+      confidence: MEDIUM
+      likelihood: MEDIUM
+      impact: HIGH
+      subcategory:
+        - vuln
+      technology:
+        - python
+
+  # =============================================================================
+  # Input Validation (OWASP A03:2021)
+  # =============================================================================
+
+  - id: acgs-fastapi-missing-pydantic-validation
+    message: |
+      FastAPI POST/PUT endpoint accepting raw string input.
+      
+      Use Pydantic models for input validation to prevent injection
+      and ensure data integrity.
+      
+      Fix: Define a Pydantic model and use it as the parameter type
+    severity: WARNING
+    languages: [python]
+    patterns:
+      - pattern-either:
+          - pattern: |
+              @$APP.post($PATH)
+              async def $FUNC(..., $PARAM: str, ...):
+                  ...
+          - pattern: |
+              @$APP.put($PATH)
+              async def $FUNC(..., $PARAM: str, ...):
+                  ...
+          - pattern: |
+              @$APP.patch($PATH)
+              async def $FUNC(..., $PARAM: str, ...):
+                  ...
+    paths:
+      exclude:
+        - "**/*test*.py"
+    metadata:
+      category: security
+      cwe: "CWE-20: Improper Input Validation"
+      owasp: "A03:2021 - Injection"
+      confidence: MEDIUM
+      likelihood: MEDIUM
+      impact: HIGH
+      subcategory:
+        - vuln
+      technology:
+        - python
+
+  # =============================================================================
+  # Information Disclosure (OWASP A05:2021)
+  # =============================================================================
+
+  - id: acgs-exception-info-leak
+    message: |
+      Exception details exposed to users.
+
+      Internal exception details can reveal sensitive information.
+      Log the full exception internally but return generic messages.
+
+      Bad:
+        return {"error": str(e)}
+
+      Good:
+        logger.error(f"Error: {e}")
+        return {"error": "An internal error occurred"}
+    severity: WARNING
+    languages: [python]
+    pattern-regex: 'return\s*\{\s*"error"\s*:\s*str\s*\(\s*\w+\s*\)'
+    metadata:
+      category: security
+      cwe: "CWE-209: Information Exposure Through an Error Message"
+      owasp: "A05:2021 - Security Misconfiguration"
+      confidence: MEDIUM
+      likelihood: MEDIUM
+      impact: MEDIUM
+      subcategory:
+        - vuln
+      technology:
+        - python
+
+  - id: acgs-sensitive-data-logging
+    message: |
+      Potential logging of sensitive data detected.
+      
+      Avoid logging passwords, tokens, API keys, or PII.
+      Redact sensitive information before logging.
+    severity: WARNING
+    languages: [python]
+    pattern-regex: "(logger|logging)\\.\\w+\\([^)]*password[^)]*\\)"
+    metadata:
+      category: security
+      cwe: "CWE-532: Information Exposure Through Log Files"
+      owasp: "A09:2021 - Security Logging and Monitoring Failures"
+      confidence: MEDIUM
+      likelihood: MEDIUM
+      impact: MEDIUM
+      subcategory:
+        - vuln
+      technology:
+        - python
+
+  # =============================================================================
+  # Resource Management
+  # =============================================================================
+
+  - id: acgs-missing-rate-limiting
+    message: |
+      FastAPI endpoint missing rate limiting.
+
+      Add rate limiting to prevent abuse and DoS attacks.
+
+      Example with slowapi:
+        @limiter.limit("10/minute")
+        @app.post("/api/resource")
+        async def create_resource(...):
+            ...
+    severity: WARNING
+    languages: [python]
+    patterns:
+      - pattern: |
+          @$APP.post($PATH)
+          async def $FUNC(...):
+              ...
+      - pattern-not: |
+          @limiter.limit(...)
+          @$APP.post($PATH)
+          async def $FUNC(...):
+              ...
+      - pattern-not: |
+          @rate_limit(...)
+          @$APP.post($PATH)
+          async def $FUNC(...):
+              ...
+    paths:
+      exclude:
+        - "**/*test*.py"
+    metadata:
+      category: security
+      cwe: "CWE-770: Allocation of Resources Without Limits or Throttling"
+      owasp: "A04:2021 - Insecure Design"
+      confidence: LOW
+      likelihood: LOW
+      impact: MEDIUM
+      subcategory:
+        - vuln
+      technology:
+        - python

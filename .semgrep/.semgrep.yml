@@ -1,0 +1,82 @@
+# ACGS-2 Semgrep Configuration
+# Constitutional Hash: cdd01ef066bc6cf2
+#
+# This is the main Semgrep configuration file for ACGS-2.
+# It includes all rule sets for constitutional compliance, security,
+# agent bus patterns, and cryptography.
+#
+# Usage:
+#   semgrep --config .semgrep/.semgrep.yml
+#
+# Or scan specific directories:
+#   semgrep --config .semgrep/.semgrep.yml enhanced_agent_bus/
+#   semgrep --config .semgrep/.semgrep.yml services/
+
+# Include all ACGS-2 rule sets
+rules:
+  # Constitutional Compliance Rules
+  # - Hash validation and format checking
+  # - Validation bypass detection
+  # - Policy governance rules
+  # - Python 3.12+ compatibility
+  - include: rules/constitutional.yaml
+
+  # Security Rules (OWASP Top 10)
+  # - Injection vulnerabilities (SQL, Command, Code)
+  # - Hardcoded credentials detection
+  # - Deserialization vulnerabilities
+  # - Cryptographic failures
+  # - Path traversal
+  - include: rules/security.yaml
+
+  # Agent Bus Patterns
+  # - Message constitutional compliance
+  # - Async/await patterns
+  # - Bus lifecycle management
+  # - Redis connection handling
+  # - Error handling
+  - include: rules/agent-bus.yaml
+
+  # Cryptography Rules
+  # - Ed25519 enforcement
+  # - Key handling security
+  # - Signature verification
+  # - TLS/SSL security
+  - include: rules/crypto.yaml
+
+# Paths configuration
+paths:
+  include:
+    - enhanced_agent_bus/
+    - services/
+    - shared/
+    - testing/
+  exclude:
+    - "**/__pycache__/**"
+    - "**/.git/**"
+    - "**/node_modules/**"
+    - "**/venv/**"
+    - "**/.venv/**"
+    - "**/dist/**"
+    - "**/build/**"
+    - "**/*.egg-info/**"
+    - "**/migrations/**"
+    - "**/.pytest_cache/**"
+    - "**/htmlcov/**"
+    - "**/.mypy_cache/**"
+
+# Output configuration
+output:
+  # Output format: text, json, sarif, junit-xml
+  format: text
+
+# Performance settings
+options:
+  # Maximum memory usage (MB)
+  max-memory: 4096
+  
+  # Timeout per file (seconds)
+  timeout: 30
+  
+  # Number of parallel jobs
+  jobs: 4
