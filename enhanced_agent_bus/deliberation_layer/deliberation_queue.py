@@ -13,7 +13,11 @@ from datetime import datetime, timedelta, timezone
 from enum import Enum
 import uuid
 
-from ..models import AgentMessage, MessageStatus
+try:
+    from ..models import AgentMessage, MessageStatus
+except ImportError:
+    # Fallback for direct execution or testing
+    from models import AgentMessage, MessageStatus  # type: ignore
 
 
 logger = logging.getLogger(__name__)
@@ -42,7 +46,7 @@ class AgentVote:
     agent_id: str
     vote: VoteType
     reasoning: str
-    timestamp: datetime = field(default_factory=datetime.now(timezone.utc))
+    timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     confidence_score: float = 1.0
 
 
@@ -52,8 +56,8 @@ class DeliberationItem:
     item_id: str = field(default_factory=lambda: str(uuid.uuid4()))
     message: AgentMessage = None
     status: DeliberationStatus = DeliberationStatus.PENDING
-    created_at: datetime = field(default_factory=datetime.now(timezone.utc))
-    updated_at: datetime = field(default_factory=datetime.now(timezone.utc))
+    created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
 
     # Human review
     human_reviewer: Optional[str] = None
@@ -164,8 +168,20 @@ class DeliberationQueue:
             elif item.status == DeliberationStatus.TIMED_OUT:
                 await self._handle_timeout(item)
 
-        except Exception as e:
-            logger.error(f"Error processing deliberation item {item_id}: {e}")
+        except asyncio.CancelledError:
+            # Re-raise cancellation - should not be caught
+            logger.info(f"Deliberation item {item_id} processing was cancelled")
+            raise
+        except asyncio.TimeoutError as e:
+            logger.error(f"Timeout processing deliberation item {item_id}: {e}")
+            item.status = DeliberationStatus.TIMED_OUT
+            await self._handle_timeout(item)
+        except (ValueError, KeyError, TypeError) as e:
+            logger.error(f"Data error processing deliberation item {item_id}: {type(e).__name__}: {e}")
+            item.status = DeliberationStatus.REJECTED
+            await self._reject_message(item)
+        except RuntimeError as e:
+            logger.error(f"Runtime error processing deliberation item {item_id}: {e}")
             item.status = DeliberationStatus.REJECTED
             await self._reject_message(item)
         finally:
@@ -193,7 +209,7 @@ class DeliberationQueue:
             # Check voting consensus
             if self._check_consensus(item):
                 item.status = DeliberationStatus.CONSENSUS_REACHED
-                item.updated_at = datetime.now(timezone.utc)()
+                item.updated_at = datetime.now(timezone.utc)
                 break
 
             await asyncio.sleep(1)  # Check every second
@@ -201,10 +217,13 @@ class DeliberationQueue:
         # Timeout handling
         if item and item.status in [DeliberationStatus.PENDING, DeliberationStatus.UNDER_REVIEW]:
             item.status = DeliberationStatus.TIMED_OUT
-            item.updated_at = datetime.now(timezone.utc)()
+            item.updated_at = datetime.now(timezone.utc)
 
     def _check_consensus(self, item: DeliberationItem) -> bool:
         """Check if consensus has been reached in voting."""
+        # Need at least 1 vote and meet required votes threshold
+        if len(item.current_votes) == 0:
+            return False
         if len(item.current_votes) < item.required_votes:
             return False
 
@@ -231,9 +250,9 @@ class DeliberationQueue:
         item.human_reviewer = reviewer
         item.human_decision = decision
         item.human_reasoning = reasoning
-        item.human_review_timestamp = datetime.now(timezone.utc)()
+        item.human_review_timestamp = datetime.now(timezone.utc)
         item.status = decision
-        item.updated_at = datetime.now(timezone.utc)()
+        item.updated_at = datetime.now(timezone.utc)
 
         logger.info(f"Human decision submitted for item {item_id}: {decision.value} by {reviewer}")
 
@@ -262,7 +281,7 @@ class DeliberationQueue:
             existing_vote.vote = vote
             existing_vote.reasoning = reasoning
             existing_vote.confidence_score = confidence
-            existing_vote.timestamp = datetime.now(timezone.utc)()
+            existing_vote.timestamp = datetime.now(timezone.utc)
         else:
             # Add new vote
             agent_vote = AgentVote(
@@ -273,7 +292,7 @@ class DeliberationQueue:
             )
             item.current_votes.append(agent_vote)
 
-        item.updated_at = datetime.now(timezone.utc)()
+        item.updated_at = datetime.now(timezone.utc)
 
         logger.info(f"Agent {agent_id} voted {vote.value} on item {item_id}")
 
@@ -284,7 +303,7 @@ class DeliberationQueue:
         item.message.status = MessageStatus.DELIVERED
         self.stats['approved'] += 1
 
-        processing_time = (datetime.now(timezone.utc)() - item.created_at).total_seconds()
+        processing_time = (datetime.now(timezone.utc) - item.created_at).total_seconds()
         self.stats['avg_processing_time'] = (
             (self.stats['avg_processing_time'] * (self.stats['approved'] + self.stats['rejected'] - 1)) +
             processing_time
@@ -306,8 +325,14 @@ class DeliberationQueue:
             try:
                 await item.fallback_action(item.message)
                 logger.info(f"Fallback action executed for timed out item {item.item_id}")
-            except Exception as e:
-                logger.error(f"Fallback action failed for item {item.item_id}: {e}")
+            except asyncio.CancelledError:
+                logger.info(f"Fallback action cancelled for item {item.item_id}")
+                raise
+            except (TypeError, ValueError, AttributeError) as e:
+                logger.error(f"Fallback action failed for item {item.item_id} due to {type(e).__name__}: {e}")
+                item.message.status = MessageStatus.FAILED
+            except RuntimeError as e:
+                logger.error(f"Fallback action runtime error for item {item.item_id}: {e}")
                 item.message.status = MessageStatus.FAILED
         else:
             item.message.status = MessageStatus.EXPIRED

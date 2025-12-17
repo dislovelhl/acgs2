@@ -17,7 +17,11 @@ except ImportError:
     ChatPromptTemplate = None
     JsonOutputParser = None
 
-from ..models import AgentMessage
+try:
+    from ..models import AgentMessage
+except ImportError:
+    # Fallback for direct execution or testing
+    from models import AgentMessage  # type: ignore
 
 
 logger = logging.getLogger(__name__)
@@ -45,8 +49,12 @@ class LLMAssistant:
                     openai_api_key=openai_api_key
                 )
                 logger.info(f"Initialized LLM assistant with {model_name}")
-            except Exception as e:
-                logger.warning(f"Failed to initialize LLM assistant: {e}")
+            except (ValueError, TypeError) as e:
+                logger.warning(f"Failed to initialize LLM assistant due to configuration error: {e}")
+            except (ImportError, ModuleNotFoundError) as e:
+                logger.warning(f"Failed to initialize LLM assistant due to missing dependency: {e}")
+            except OSError as e:
+                logger.warning(f"Failed to initialize LLM assistant due to environment error: {e}")
         else:
             logger.warning("LangChain not available, LLM features disabled")
 
@@ -123,8 +131,14 @@ class LLMAssistant:
 
             return analysis
 
-        except Exception as e:
-            logger.error(f"LLM analysis failed for message {message.message_id}: {e}")
+        except (ValueError, KeyError, TypeError) as e:
+            logger.error(f"LLM analysis failed for message {message.message_id} due to data error: {type(e).__name__}: {e}")
+            return self._fallback_analysis(message)
+        except (AttributeError, RuntimeError) as e:
+            logger.error(f"LLM analysis failed for message {message.message_id} due to runtime error: {e}")
+            return self._fallback_analysis(message)
+        except OSError as e:
+            logger.error(f"LLM analysis failed for message {message.message_id} due to I/O error: {e}")
             return self._fallback_analysis(message)
 
     async def generate_decision_reasoning(self,
@@ -195,8 +209,14 @@ class LLMAssistant:
 
             return reasoning
 
-        except Exception as e:
-            logger.error(f"LLM reasoning generation failed: {e}")
+        except (ValueError, KeyError, TypeError) as e:
+            logger.error(f"LLM reasoning generation failed due to data error: {type(e).__name__}: {e}")
+            return self._fallback_reasoning(message, votes, human_decision)
+        except (AttributeError, RuntimeError) as e:
+            logger.error(f"LLM reasoning generation failed due to runtime error: {e}")
+            return self._fallback_reasoning(message, votes, human_decision)
+        except OSError as e:
+            logger.error(f"LLM reasoning generation failed due to I/O error: {e}")
             return self._fallback_reasoning(message, votes, human_decision)
 
     def _extract_message_summary(self, message: AgentMessage) -> str:
@@ -344,8 +364,14 @@ class LLMAssistant:
 
             return analysis
 
-        except Exception as e:
-            logger.error(f"Trend analysis failed: {e}")
+        except (ValueError, KeyError, TypeError) as e:
+            logger.error(f"Trend analysis failed due to data error: {type(e).__name__}: {e}")
+            return self._fallback_trend_analysis(deliberation_history)
+        except (AttributeError, RuntimeError) as e:
+            logger.error(f"Trend analysis failed due to runtime error: {e}")
+            return self._fallback_trend_analysis(deliberation_history)
+        except OSError as e:
+            logger.error(f"Trend analysis failed due to I/O error: {e}")
             return self._fallback_trend_analysis(deliberation_history)
 
     def _summarize_deliberation_history(self, history: List[Dict[str, Any]]) -> str:

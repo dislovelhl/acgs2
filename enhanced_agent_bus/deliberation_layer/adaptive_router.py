@@ -8,9 +8,19 @@ import logging
 from typing import Dict, Any, Optional, Callable
 from datetime import datetime, timedelta, timezone
 
-from ..models import AgentMessage, MessageStatus
-from .impact_scorer import calculate_message_impact
-from .deliberation_queue import get_deliberation_queue, DeliberationStatus
+try:
+    from ..models import AgentMessage, MessageStatus
+except ImportError:
+    # Fallback for direct execution or testing
+    from models import AgentMessage, MessageStatus  # type: ignore
+
+try:
+    from .impact_scorer import calculate_message_impact
+    from .deliberation_queue import get_deliberation_queue, DeliberationStatus
+except ImportError:
+    # Fallback for direct execution or testing
+    from impact_scorer import calculate_message_impact  # type: ignore
+    from deliberation_queue import get_deliberation_queue, DeliberationStatus  # type: ignore
 
 
 logger = logging.getLogger(__name__)

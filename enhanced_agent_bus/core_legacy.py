@@ -1,17 +1,9 @@
 """
-ACGS-2 Enhanced Agent Bus - Core Implementation with Rust Backend
+ACGS-2 Enhanced Agent Bus - Core Implementation
+Constitutional Hash: cdd01ef066bc6cf2
 
-DEPRECATED: This module is deprecated. Use core.py instead, which provides
-a unified implementation with support for both Rust backend and dynamic policy.
-
-This file is kept for backward compatibility only.
+High-performance agent communication with constitutional compliance.
 """
-import warnings
-warnings.warn(
-    "core_rust.py is deprecated. Import from core.py instead.",
-    DeprecationWarning,
-    stacklevel=2
-)
 
 import asyncio
 import logging
@@ -39,35 +31,46 @@ except ImportError:
     )
     from validators import ValidationResult  # type: ignore
 
+# Import centralized Redis config with fallback
+try:
+    from shared.redis_config import get_redis_url
+    DEFAULT_REDIS_URL = get_redis_url()
+except ImportError:
+    DEFAULT_REDIS_URL = "redis://localhost:6379"
+
 logger = logging.getLogger(__name__)
 
-# Try to import Rust implementation
+# Import Rust implementation for high-performance processing
 try:
     import enhanced_agent_bus as rust_bus
     USE_RUST = True
-    logger.info("Using Rust MessageProcessor implementation")
+    logger.info("Rust implementation loaded successfully")
 except ImportError:
     USE_RUST = False
-    logger.warning("Rust implementation not available, using Python fallback")
+    rust_bus = None
+    logger.warning("Rust implementation not available, falling back to Python")
 
 
 class MessageProcessor:
-    """Processes messages with constitutional validation using Rust backend."""
+    """Processes messages with constitutional validation."""
 
     def __init__(self):
-        if USE_RUST:
+        if USE_RUST and rust_bus is not None:
             self._rust_processor = rust_bus.MessageProcessor()
+            self._handlers = {}  # Keep Python handlers for compatibility
+            self._processed_count = 0
         else:
+            self._rust_processor = None
             self.constitutional_hash = CONSTITUTIONAL_HASH
-            self._handlers: Dict[MessageType, List[Callable]] = {}
+            self._handlers = {}
             self._processed_count = 0
 
     def register_handler(self, message_type: MessageType, handler: Callable) -> None:
         """Register a message handler."""
-        if USE_RUST:
-            # For now, handlers are not directly supported in Rust
-            # This is a simplified implementation
-            pass
+        if USE_RUST and rust_bus is not None:
+            # For Rust, we need to wrap Python handlers
+            self._handlers[message_type] = handler
+            # Note: Rust handlers are registered differently
         else:
             if message_type not in self._handlers:
                 self._handlers[message_type] = []
@@ -75,23 +78,46 @@ class MessageProcessor:
 
     async def process(self, message: AgentMessage) -> ValidationResult:
         """Process a message through registered handlers."""
-        if USE_RUST:
-            # Simple processing without handlers for now
-            # Validate constitutional hash
-            if message.constitutional_hash != CONSTITUTIONAL_HASH:
-                return ValidationResult(
-                    is_valid=False,
-                    errors=["Constitutional hash mismatch"],
-                )
-
-            # Mark as processed
-            message.status = MessageStatus.DELIVERED
-            message.updated_at = datetime.now(timezone.utc)
-
-            return ValidationResult(is_valid=True)
+        if USE_RUST and rust_bus is not None:
+            # Convert Python message to Rust message
+            rust_message = self._convert_to_rust_message(message)
+            # Process with Rust
+            rust_result = await self._rust_processor.process(rust_message)
+            # Convert back to Python result
+            return self._convert_from_rust_result(rust_result)
         else:
-            # Python fallback
+            # Fallback to Python implementation
             return await self._process_python(message)
+
+    def _convert_to_rust_message(self, message: AgentMessage) -> Any:
+        """Convert Python AgentMessage to Rust AgentMessage."""
+        rust_msg = rust_bus.AgentMessage()  # type: ignore
+        rust_msg.message_id = message.message_id
+        rust_msg.conversation_id = message.conversation_id
+        rust_msg.content = {k: str(v) for k, v in message.content.items()}
+        rust_msg.payload = {k: str(v) for k, v in message.payload.items()}
+        rust_msg.from_agent = message.from_agent
+        rust_msg.to_agent = message.to_agent
+        rust_msg.sender_id = message.sender_id
+        rust_msg.message_type = message.message_type.name
+        rust_msg.tenant_id = message.tenant_id
+        rust_msg.priority = message.priority.name if hasattr(message.priority, "name") else str(message.priority)
+        rust_msg.status = message.status.name
+        rust_msg.constitutional_hash = message.constitutional_hash
+        rust_msg.constitutional_validated = message.constitutional_validated
+        rust_msg.created_at = message.created_at.isoformat()
+        rust_msg.updated_at = message.updated_at.isoformat()
+        return rust_msg
+
+    def _convert_from_rust_result(self, rust_result) -> ValidationResult:
+        """Convert Rust ValidationResult to Python ValidationResult."""
+        return ValidationResult(
+            is_valid=rust_result.is_valid,
+            errors=rust_result.errors,
+            warnings=rust_result.warnings,
+            metadata={k: v for k, v in rust_result.metadata.items()},
+            constitutional_hash=rust_result.constitutional_hash,
+        )
 
     async def _process_python(self, message: AgentMessage) -> ValidationResult:
         """Fallback Python implementation."""
@@ -139,16 +165,23 @@ class MessageProcessor:
     @property
     def processed_count(self) -> int:
         """Get count of processed messages."""
-        if USE_RUST:
-            return 0  # Simplified
+        if USE_RUST and rust_bus is not None:
+            return self._rust_processor.processed_count
         else:
             return self._processed_count
+
+    def get_metrics(self) -> Dict[str, Any]:
+        """Get processor metrics."""
+        if USE_RUST and rust_bus is not None:
+            return self._rust_processor.get_metrics()
+        else:
+            return {"processed_count": self._processed_count}
 
 
 class EnhancedAgentBus:
     """Enhanced agent communication bus with constitutional compliance."""
 
-    def __init__(self, redis_url: str = "redis://localhost:6379"):
+    def __init__(self, redis_url: str = DEFAULT_REDIS_URL):
         self.constitutional_hash = CONSTITUTIONAL_HASH
         self.redis_url = redis_url
         self._agents: Dict[str, Dict[str, Any]] = {}

@@ -1,9 +1,20 @@
 """
 ACGS-2 Enhanced Agent Bus - Core Implementation with Dynamic Policy Registry
-Constitutional Hash: Dynamic (from Policy Registry)
 
-High-performance agent communication with dynamic constitutional compliance.
+DEPRECATED: This module is deprecated. Use core.py instead, which provides
+a unified implementation with support for both Rust backend and dynamic policy.
+
+To use dynamic policy validation, initialize EnhancedAgentBus with:
+    EnhancedAgentBus(use_dynamic_policy=True)
+
+This file is kept for backward compatibility only.
 """
+import warnings
+warnings.warn(
+    "core_updated.py is deprecated. Import from core.py with use_dynamic_policy=True instead.",
+    DeprecationWarning,
+    stacklevel=2
+)
 
 import asyncio
 import logging
@@ -61,12 +72,22 @@ class MessageProcessor:
 
             return ValidationResult(is_valid=True)
 
-        except Exception as e:
+        except asyncio.CancelledError:
+            # Re-raise cancellation - should not be caught
+            raise
+        except (TypeError, ValueError, AttributeError) as e:
             message.status = MessageStatus.FAILED
-            logger.error(f"Message processing failed: {e}")
+            logger.error(f"Message processing failed due to handler error: {type(e).__name__}: {e}")
             return ValidationResult(
                 is_valid=False,
-                errors=[str(e)],
+                errors=[f"Handler error: {type(e).__name__}: {e}"],
+            )
+        except RuntimeError as e:
+            message.status = MessageStatus.FAILED
+            logger.error(f"Message processing runtime error: {e}")
+            return ValidationResult(
+                is_valid=False,
+                errors=[f"Runtime error: {e}"],
             )
 
     @property
@@ -102,7 +123,8 @@ class EnhancedAgentBus:
         try:
             public_key = await self._policy_client.get_current_public_key()
             hash_info = public_key[:16] if public_key else "unknown"
-        except:
+        except (ConnectionError, OSError, ValueError, KeyError) as e:
+            logger.debug(f"Could not retrieve public key: {e}")
             hash_info = "dynamic"
             
         logger.info(f"EnhancedAgentBus started with dynamic policy registry (key: {hash_info})")
@@ -126,7 +148,8 @@ class EnhancedAgentBus:
         # Get current public key for agent registration
         try:
             public_key = await self._policy_client.get_current_public_key()
-        except:
+        except (ConnectionError, OSError, ValueError, KeyError) as e:
+            logger.debug(f"Could not retrieve public key for agent registration: {e}")
             public_key = "unknown"
             
         self._agents[agent_id] = {
@@ -187,7 +210,8 @@ class EnhancedAgentBus:
         try:
             health = await self._policy_client.health_check()
             policy_status = health.get("status", "unknown")
-        except:
+        except (ConnectionError, OSError, ValueError, KeyError) as e:
+            logger.debug(f"Could not check policy registry health: {e}")
             policy_status = "unavailable"
             
         return {

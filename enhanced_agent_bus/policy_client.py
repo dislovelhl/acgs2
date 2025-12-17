@@ -101,8 +101,14 @@ class PolicyRegistryClient:
             else:
                 logger.error(f"HTTP error fetching policy {policy_id}: {e}")
                 raise
-        except Exception as e:
-            logger.error(f"Error fetching policy {policy_id}: {e}")
+        except httpx.TimeoutException as e:
+            logger.error(f"Timeout fetching policy {policy_id}: {e}")
+            raise
+        except httpx.ConnectError as e:
+            logger.error(f"Connection error fetching policy {policy_id}: {e}")
+            raise
+        except (ValueError, KeyError) as e:
+            logger.error(f"Data parsing error for policy {policy_id}: {e}")
             raise
 
     async def validate_message_signature(
@@ -158,12 +164,18 @@ class PolicyRegistryClient:
                 warnings=warnings
             )
             
-        except Exception as e:
-            logger.error(f"Error validating message: {e}")
+        except (httpx.TimeoutException, httpx.ConnectError) as e:
+            logger.error(f"Network error validating message: {e}")
             # Fallback to allow message through with warning
             return ValidationResult(
                 is_valid=True,
-                warnings=[f"Policy validation failed: {str(e)}"]
+                warnings=[f"Policy validation network error: {str(e)}"]
+            )
+        except (ValueError, KeyError, TypeError) as e:
+            logger.error(f"Data error validating message: {e}")
+            return ValidationResult(
+                is_valid=True,
+                warnings=[f"Policy validation data error: {str(e)}"]
             )
 
     async def get_current_public_key(self) -> Optional[str]:
@@ -175,8 +187,14 @@ class PolicyRegistryClient:
             response.raise_for_status()
             data = response.json()
             return data.get("current_public_key")
-        except Exception as e:
-            logger.error(f"Error fetching public key: {e}")
+        except httpx.HTTPStatusError as e:
+            logger.error(f"HTTP error fetching public key: {e}")
+            return None
+        except (httpx.TimeoutException, httpx.ConnectError) as e:
+            logger.error(f"Network error fetching public key: {e}")
+            return None
+        except (ValueError, KeyError) as e:
+            logger.error(f"Data error parsing public key response: {e}")
             return None
 
     async def health_check(self) -> Dict[str, Any]:
@@ -187,10 +205,20 @@ class PolicyRegistryClient:
             )
             response.raise_for_status()
             return response.json()
-        except Exception as e:
+        except httpx.HTTPStatusError as e:
             return {
                 "status": "unhealthy",
-                "error": str(e)
+                "error": f"HTTP error: {e.response.status_code}"
+            }
+        except (httpx.TimeoutException, httpx.ConnectError) as e:
+            return {
+                "status": "unhealthy",
+                "error": f"Network error: {type(e).__name__}"
+            }
+        except ValueError as e:
+            return {
+                "status": "unhealthy",
+                "error": f"Response parsing error: {e}"
             }
 
 

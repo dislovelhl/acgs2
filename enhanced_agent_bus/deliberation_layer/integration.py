@@ -8,12 +8,35 @@ import logging
 from typing import Dict, Any, Optional, Callable
 from datetime import datetime, timezone
 
-from ..models import AgentMessage, MessageStatus
-from .impact_scorer import get_impact_scorer, calculate_message_impact
-from .adaptive_router import get_adaptive_router
-from .deliberation_queue import get_deliberation_queue
-from .llm_assistant import get_llm_assistant
-from .redis_integration import get_redis_deliberation_queue, get_redis_voting_system
+try:
+    from ..models import AgentMessage, MessageStatus
+except ImportError:
+    # Fallback for direct execution or testing
+    from models import AgentMessage, MessageStatus  # type: ignore
+
+try:
+    from .impact_scorer import get_impact_scorer, calculate_message_impact
+    from .adaptive_router import get_adaptive_router
+    from .deliberation_queue import (
+        get_deliberation_queue, DeliberationStatus, VoteType
+    )
+    from .llm_assistant import get_llm_assistant
+    from .redis_integration import (
+        get_redis_deliberation_queue, get_redis_voting_system
+    )
+except ImportError:
+    # Fallback for direct execution or testing
+    from impact_scorer import (  # type: ignore
+        get_impact_scorer, calculate_message_impact
+    )
+    from adaptive_router import get_adaptive_router  # type: ignore
+    from deliberation_queue import (  # type: ignore
+        get_deliberation_queue, DeliberationStatus, VoteType
+    )
+    from llm_assistant import get_llm_assistant  # type: ignore
+    from redis_integration import (  # type: ignore
+        get_redis_deliberation_queue, get_redis_voting_system
+    )
 
 
 logger = logging.getLogger(__name__)
@@ -103,11 +126,28 @@ class DeliberationLayer:
 
             return result
 
-        except Exception as e:
-            logger.error(f"Error processing message {message.message_id}: {e}")
+        except asyncio.CancelledError:
+            logger.info(f"Message processing cancelled for {message.message_id}")
+            raise
+        except asyncio.TimeoutError as e:
+            logger.error(f"Timeout processing message {message.message_id}: {e}")
             return {
                 'success': False,
-                'error': str(e),
+                'error': f'Timeout: {e}',
+                'processing_time': (datetime.now(timezone.utc) - start_time).total_seconds()
+            }
+        except (ValueError, KeyError, TypeError) as e:
+            logger.error(f"Data error processing message {message.message_id}: {type(e).__name__}: {e}")
+            return {
+                'success': False,
+                'error': f'{type(e).__name__}: {e}',
+                'processing_time': (datetime.now(timezone.utc) - start_time).total_seconds()
+            }
+        except (AttributeError, RuntimeError) as e:
+            logger.error(f"Runtime error processing message {message.message_id}: {type(e).__name__}: {e}")
+            return {
+                'success': False,
+                'error': f'{type(e).__name__}: {e}',
                 'processing_time': (datetime.now(timezone.utc) - start_time).total_seconds()
             }
 
@@ -183,8 +223,10 @@ class DeliberationLayer:
                 feedback_score=feedback_score
             )
 
-        except Exception as e:
-            logger.error(f"Failed to record performance feedback: {e}")
+        except asyncio.CancelledError:
+            raise
+        except (ValueError, KeyError, AttributeError) as e:
+            logger.error(f"Failed to record performance feedback: {type(e).__name__}: {e}")
 
     async def submit_human_decision(self,
                                   item_id: str,
@@ -204,14 +246,16 @@ class DeliberationLayer:
             True if decision submitted successfully
         """
         try:
-            # Map decision to deliberation status
+            # Map decision string to DeliberationStatus enum
             decision_map = {
-                'approved': 'approved',
-                'rejected': 'rejected',
-                'escalated': 'escalate'
+                'approved': DeliberationStatus.APPROVED,
+                'rejected': DeliberationStatus.REJECTED,
+                'escalated': DeliberationStatus.UNDER_REVIEW
             }
 
-            deliberation_decision = decision_map.get(decision, 'rejected')
+            deliberation_decision = decision_map.get(
+                decision, DeliberationStatus.REJECTED
+            )
 
             success = await self.deliberation_queue.submit_human_decision(
                 item_id=item_id,
@@ -228,8 +272,13 @@ class DeliberationLayer:
 
             return success
 
-        except Exception as e:
-            logger.error(f"Failed to submit human decision for item {item_id}: {e}")
+        except asyncio.CancelledError:
+            raise
+        except (ValueError, KeyError, TypeError) as e:
+            logger.error(f"Failed to submit human decision for item {item_id}: {type(e).__name__}: {e}")
+            return False
+        except (AttributeError, RuntimeError) as e:
+            logger.error(f"Runtime error submitting human decision for item {item_id}: {e}")
             return False
 
     async def submit_agent_vote(self,
@@ -245,12 +294,20 @@ class DeliberationLayer:
             True if vote submitted successfully
         """
         try:
+            # Map vote string to VoteType enum
+            vote_map = {
+                'approve': VoteType.APPROVE,
+                'reject': VoteType.REJECT,
+                'abstain': VoteType.ABSTAIN
+            }
+            vote_enum = vote_map.get(vote.lower(), VoteType.ABSTAIN)
+
             success = await self.deliberation_queue.submit_agent_vote(
                 item_id=item_id,
                 agent_id=agent_id,
-                vote=vote,
+                vote=vote_enum,
                 reasoning=reasoning,
-                confidence_score=confidence
+                confidence=confidence
             )
 
             if success:
@@ -268,8 +325,13 @@ class DeliberationLayer:
 
             return success
 
-        except Exception as e:
-            logger.error(f"Failed to submit agent vote for item {item_id}: {e}")
+        except asyncio.CancelledError:
+            raise
+        except (ValueError, KeyError, TypeError) as e:
+            logger.error(f"Failed to submit agent vote for item {item_id}: {type(e).__name__}: {e}")
+            return False
+        except (AttributeError, RuntimeError) as e:
+            logger.error(f"Runtime error submitting agent vote for item {item_id}: {e}")
             return False
 
     async def _update_deliberation_outcome(self,
@@ -309,8 +371,10 @@ class DeliberationLayer:
                 feedback_score=feedback_score
             )
 
-        except Exception as e:
-            logger.error(f"Failed to update deliberation outcome: {e}")
+        except asyncio.CancelledError:
+            raise
+        except (ValueError, KeyError, AttributeError) as e:
+            logger.error(f"Failed to update deliberation outcome: {type(e).__name__}: {e}")
 
     def get_layer_stats(self) -> Dict[str, Any]:
         """Get comprehensive statistics for the deliberation layer."""
@@ -338,9 +402,12 @@ class DeliberationLayer:
 
             return stats
 
-        except Exception as e:
-            logger.error(f"Failed to get layer stats: {e}")
-            return {'error': str(e)}
+        except (ValueError, KeyError, AttributeError) as e:
+            logger.error(f"Failed to get layer stats: {type(e).__name__}: {e}")
+            return {'error': f'{type(e).__name__}: {e}'}
+        except RuntimeError as e:
+            logger.error(f"Runtime error getting layer stats: {e}")
+            return {'error': f'RuntimeError: {e}'}
 
     def set_fast_lane_callback(self, callback: Callable):
         """Set callback for fast lane processing."""
@@ -362,9 +429,14 @@ class DeliberationLayer:
             analysis = await self.llm_assistant.analyze_deliberation_trends(history)
             return analysis
 
-        except Exception as e:
-            logger.error(f"Failed to analyze trends: {e}")
-            return {'error': str(e)}
+        except asyncio.CancelledError:
+            raise
+        except (ValueError, KeyError, AttributeError) as e:
+            logger.error(f"Failed to analyze trends: {type(e).__name__}: {e}")
+            return {'error': f'{type(e).__name__}: {e}'}
+        except RuntimeError as e:
+            logger.error(f"Runtime error analyzing trends: {e}")
+            return {'error': f'RuntimeError: {e}'}
 
     async def force_deliberation(self, message: AgentMessage, reason: str = "manual_override") -> Dict[str, Any]:
         """Force a message into deliberation regardless of impact score."""
