@@ -30,6 +30,18 @@ dev = [
     "fakeredis>=2.18.0",
 ]
 
+[tool.setuptools]
+packages = [
+    "enhanced_agent_bus",
+    "enhanced_agent_bus.deliberation_layer",
+]
+
+[tool.setuptools.package-dir]
+enhanced_agent_bus = "."
+
+[tool.setuptools.package-data]
+enhanced_agent_bus = ["policies/*.rego"]
+
 [tool.pytest.ini_options]
 minversion = "7.0"
 testpaths = ["tests"]
