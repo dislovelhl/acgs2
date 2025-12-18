@@ -1,0 +1,38 @@
+# Coverage configuration for ACGS-2
+# Constitutional Hash: cdd01ef066bc6cf2
+
+[run]
+source =
+    enhanced_agent_bus
+    monitoring
+    services
+branch = True
+parallel = True
+omit =
+    */tests/*
+    */__pycache__/*
+    */venv/*
+    */.venv/*
+    */migrations/*
+    */conftest.py
+
+[report]
+exclude_lines =
+    pragma: no cover
+    def __repr__
+    raise AssertionError
+    raise NotImplementedError
+    if __name__ == .__main__.:
+    if TYPE_CHECKING:
+    @abstractmethod
+
+show_missing = True
+precision = 2
+fail_under = 40
+
+[html]
+directory = coverage_html_report
+title = ACGS-2 Test Coverage Report
+
+[xml]
+output = coverage.xml

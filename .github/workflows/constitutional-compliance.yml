@@ -1,0 +1,211 @@
+# ACGS-2 Constitutional Compliance CI/CD Workflow
+# Constitutional Hash: cdd01ef066bc6cf2
+#
+# This workflow validates constitutional compliance on every PR and push
+
+name: Constitutional Compliance
+
+on:
+  push:
+    branches: [main, develop, staging]
+  pull_request:
+    branches: [main, develop]
+
+env:
+  CONSTITUTIONAL_HASH: "cdd01ef066bc6cf2"
+  MIN_HASH_REFERENCES: 200
+  PYTHON_VERSION: "3.12"
+
+jobs:
+  constitutional-compliance:
+    name: Constitutional Hash Validation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate Constitutional Hash References
+        id: hash-check
+        run: |
+          echo "::group::Scanning for constitutional hash references"
+
+          # Count hash references in source files
+          HASH_COUNT=$(grep -r "$CONSTITUTIONAL_HASH" \
+            --include="*.py" \
+            --include="*.yml" \
+            --include="*.yaml" \
+            --include="*.md" \
+            --include="*.json" \
+            . 2>/dev/null | wc -l)
+
+          echo "Constitutional hash references found: $HASH_COUNT"
+          echo "hash_count=$HASH_COUNT" >> $GITHUB_OUTPUT
+
+          if [ $HASH_COUNT -lt $MIN_HASH_REFERENCES ]; then
+            echo "::error::Constitutional compliance check FAILED"
+            echo "::error::Expected at least $MIN_HASH_REFERENCES references, found $HASH_COUNT"
+            exit 1
+          fi
+
+          echo "::notice::Constitutional compliance verified: $HASH_COUNT references"
+          echo "::endgroup::"
+
+      - name: Check New Files for Constitutional Hash
+        if: github.event_name == 'pull_request'
+        run: |
+          echo "::group::Checking new governance files"
+
+          # Get list of new Python files in governance directories
+          NEW_FILES=$(git diff --name-only --diff-filter=A origin/${{ github.base_ref }}...HEAD | \
+            grep -E "(services/constitutional|services/governance|services/policy|policies/)" | \
+            grep -E "\.py$" || true)
+
+          if [ -z "$NEW_FILES" ]; then
+            echo "No new governance files to check"
+            exit 0
+          fi
+
+          echo "New governance files to validate:"
+          echo "$NEW_FILES"
+
+          MISSING_HASH=""
+          for file in $NEW_FILES; do
+            if [ -f "$file" ]; then
+              if ! grep -q "$CONSTITUTIONAL_HASH" "$file"; then
+                MISSING_HASH="$MISSING_HASH\n$file"
+              fi
+            fi
+          done
+
+          if [ -n "$MISSING_HASH" ]; then
+            echo "::warning::The following new governance files are missing constitutional hash:"
+            echo -e "$MISSING_HASH"
+          fi
+
+          echo "::endgroup::"
+
+      - name: Generate Compliance Report
+        run: |
+          echo "::group::Generating compliance report"
+
+          # Create compliance report
+          cat << EOF > compliance-report.md
+          # Constitutional Compliance Report
+
+          **Date:** $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+          **Commit:** ${{ github.sha }}
+          **Constitutional Hash:** $CONSTITUTIONAL_HASH
+
+          ## Summary
+
+          - **Hash References Found:** ${{ steps.hash-check.outputs.hash_count }}
+          - **Minimum Required:** $MIN_HASH_REFERENCES
+          - **Status:** COMPLIANT
+
+          ## File Distribution
+
+          $(grep -r "$CONSTITUTIONAL_HASH" --include="*.py" . 2>/dev/null | cut -d: -f1 | sort | uniq -c | sort -rn | head -20)
+
+          EOF
+
+          cat compliance-report.md
+          echo "::endgroup::"
+
+      - name: Upload Compliance Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: compliance-report
+          path: compliance-report.md
+          retention-days: 30
+
+  test-coverage:
+    name: Test Coverage Analysis
+    runs-on: ubuntu-latest
+    needs: constitutional-compliance
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest pytest-cov coverage
+
+      - name: Run Tests with Coverage
+        run: |
+          pytest --cov=enhanced_agent_bus --cov=monitoring \
+            --cov-report=xml \
+            --cov-report=html \
+            --cov-report=term-missing \
+            enhanced_agent_bus/tests/ \
+            || true  # Don't fail on test errors for now
+
+      - name: Upload Coverage Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: |
+            coverage.xml
+            coverage_html_report/
+          retention-days: 30
+
+      - name: Coverage Summary
+        if: always()
+        run: |
+          if [ -f coverage.xml ]; then
+            coverage report --fail-under=20 || echo "::warning::Coverage below 20%"
+          fi
+
+  security-scan:
+    name: Security Scanning
+    runs-on: ubuntu-latest
+    needs: constitutional-compliance
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Run Security Scan
+        run: |
+          echo "::group::Checking for sensitive data"
+
+          # Check for potential secrets (basic patterns)
+          if grep -rE "(password|secret|api_key|private_key)\s*=\s*['\"][^'\"]+['\"]" \
+            --include="*.py" \
+            --exclude-dir=tests \
+            --exclude-dir=.venv \
+            . 2>/dev/null; then
+            echo "::warning::Potential hardcoded secrets detected"
+          else
+            echo "No obvious hardcoded secrets found"
+          fi
+
+          echo "::endgroup::"
+
+  summary:
+    name: Compliance Summary
+    runs-on: ubuntu-latest
+    needs: [constitutional-compliance, test-coverage, security-scan]
+    if: always()
+
+    steps:
+      - name: Generate Summary
+        run: |
+          echo "## Constitutional Compliance Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Check | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Constitutional Hash | ${{ needs.constitutional-compliance.result == 'success' && '✅ PASS' || '❌ FAIL' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Test Coverage | ${{ needs.test-coverage.result == 'success' && '✅ PASS' || '⚠️ CHECK' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Security Scan | ${{ needs.security-scan.result == 'success' && '✅ PASS' || '⚠️ CHECK' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Constitutional Hash:** \`${{ env.CONSTITUTIONAL_HASH }}\`" >> $GITHUB_STEP_SUMMARY

@@ -1,0 +1,112 @@
+# ACGS-2 Pre-commit Configuration
+# Constitutional Hash: cdd01ef066bc6cf2
+#
+# Install: pip install pre-commit && pre-commit install
+
+repos:
+  # Standard pre-commit hooks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-json
+      - id: check-added-large-files
+        args: ['--maxkb=1000']
+      - id: check-merge-conflict
+      - id: detect-private-key
+
+  # Python code formatting
+  - repo: https://github.com/psf/black
+    rev: 24.3.0
+    hooks:
+      - id: black
+        language_version: python3.12
+
+  # Python import sorting
+  - repo: https://github.com/pycqa/isort
+    rev: 5.13.2
+    hooks:
+      - id: isort
+        args: ["--profile", "black"]
+
+  # Python linting
+  - repo: https://github.com/pycqa/flake8
+    rev: 7.0.0
+    hooks:
+      - id: flake8
+        args: ['--max-line-length=100', '--ignore=E501,W503']
+
+  # Local hooks for ACGS-2 specific checks
+  - repo: local
+    hooks:
+      # Constitutional hash check for governance files
+      - id: constitutional-hash-check
+        name: Constitutional Hash Validation
+        entry: bash -c '
+          HASH="cdd01ef066bc6cf2"
+          GOVERNANCE_PATTERNS="services/constitutional|services/governance|services/policy|policies/"
+
+          for file in "$@"; do
+            if echo "$file" | grep -qE "$GOVERNANCE_PATTERNS"; then
+              if [ -f "$file" ] && ! grep -q "$HASH" "$file"; then
+                echo "WARNING: Governance file missing constitutional hash: $file"
+              fi
+            fi
+          done
+        '
+        language: system
+        types: [python]
+        pass_filenames: true
+
+      # Python syntax check
+      - id: python-syntax-check
+        name: Python Syntax Validation
+        entry: python3 -m py_compile
+        language: system
+        types: [python]
+
+      # Constitutional compliance counter
+      - id: constitutional-compliance-count
+        name: Constitutional Compliance Count
+        entry: bash -c '
+          COUNT=$(grep -r "cdd01ef066bc6cf2" --include="*.py" --include="*.yml" --include="*.md" . 2>/dev/null | wc -l)
+          echo "Constitutional hash references: $COUNT"
+          if [ $COUNT -lt 200 ]; then
+            echo "WARNING: Hash reference count ($COUNT) below recommended minimum (200)"
+          fi
+        '
+        language: system
+        pass_filenames: false
+        stages: [commit]
+
+      # Check for large files in commits
+      - id: check-file-size
+        name: Check File Size
+        entry: bash -c '
+          for file in "$@"; do
+            if [ -f "$file" ]; then
+              SIZE=$(wc -l < "$file")
+              if [ $SIZE -gt 1000 ]; then
+                echo "WARNING: Large file detected ($SIZE lines): $file"
+              fi
+            fi
+          done
+        '
+        language: system
+        types: [python]
+        pass_filenames: true
+
+# CI configuration
+ci:
+  autofix_commit_msg: |
+    [pre-commit.ci] auto fixes from pre-commit hooks
+
+    Constitutional Hash: cdd01ef066bc6cf2
+  autofix_prs: true
+  autoupdate_branch: ''
+  autoupdate_commit_msg: '[pre-commit.ci] pre-commit autoupdate'
+  autoupdate_schedule: weekly
+  skip: []
+  submodules: false

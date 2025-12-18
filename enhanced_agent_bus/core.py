@@ -4,13 +4,43 @@ Constitutional Hash: cdd01ef066bc6cf2
 
 High-performance agent communication with constitutional compliance.
 Supports both Rust backend and dynamic policy registry.
+Instrumented with Prometheus metrics for observability.
 """
 
 import asyncio
 import logging
+import time
 from datetime import datetime, timezone
 from typing import Any, Callable, Dict, List, Optional, Union
 import uuid
+
+# Import Prometheus metrics with fallback
+try:
+    from shared.metrics import (
+        MESSAGE_PROCESSING_DURATION,
+        MESSAGES_TOTAL,
+        MESSAGE_QUEUE_DEPTH,
+        CONSTITUTIONAL_VALIDATIONS_TOTAL,
+        CONSTITUTIONAL_VIOLATIONS_TOTAL,
+        CONSTITUTIONAL_VALIDATION_DURATION,
+        set_service_info,
+    )
+    METRICS_ENABLED = True
+except ImportError:
+    METRICS_ENABLED = False
+
+# Import circuit breaker with fallback
+try:
+    from shared.circuit_breaker import (
+        get_circuit_breaker,
+        with_circuit_breaker,
+        circuit_breaker_health_check,
+        initialize_core_circuit_breakers,
+        CircuitBreakerConfig,
+    )
+    CIRCUIT_BREAKER_ENABLED = True
+except ImportError:
+    CIRCUIT_BREAKER_ENABLED = False
 
 try:
     from .models import (
@@ -204,14 +234,40 @@ class MessageProcessor:
 
     async def _process_python(self, message: AgentMessage) -> ValidationResult:
         """Standard Python implementation with static hash validation."""
+        validation_start = time.perf_counter()
+
         # Validate constitutional hash
         if message.constitutional_hash != CONSTITUTIONAL_HASH:
             message.status = MessageStatus.FAILED
             self._failed_count += 1
+
+            # Record metrics
+            if METRICS_ENABLED:
+                validation_duration = time.perf_counter() - validation_start
+                CONSTITUTIONAL_VALIDATION_DURATION.labels(
+                    service='enhanced_agent_bus'
+                ).observe(validation_duration)
+                CONSTITUTIONAL_VALIDATIONS_TOTAL.labels(
+                    service='enhanced_agent_bus', result='failure'
+                ).inc()
+                CONSTITUTIONAL_VIOLATIONS_TOTAL.labels(
+                    service='enhanced_agent_bus', violation_type='hash_mismatch'
+                ).inc()
+
             return ValidationResult(
                 is_valid=False,
                 errors=["Constitutional hash mismatch"],
             )
+
+        # Record successful validation
+        if METRICS_ENABLED:
+            validation_duration = time.perf_counter() - validation_start
+            CONSTITUTIONAL_VALIDATION_DURATION.labels(
+                service='enhanced_agent_bus'
+            ).observe(validation_duration)
+            CONSTITUTIONAL_VALIDATIONS_TOTAL.labels(
+                service='enhanced_agent_bus', result='success'
+            ).inc()
 
         return await self._execute_handlers(message)
 
@@ -219,6 +275,11 @@ class MessageProcessor:
         """Execute registered handlers for the message."""
         message.status = MessageStatus.PROCESSING
         message.updated_at = datetime.now(timezone.utc)
+        processing_start = time.perf_counter()
+
+        # Get message type and priority for metrics
+        msg_type = message.message_type.value if hasattr(message.message_type, 'value') else str(message.message_type)
+        priority = message.priority.value if hasattr(message.priority, 'value') else str(message.priority)
 
         try:
             await self._run_handlers(message)
@@ -226,6 +287,16 @@ class MessageProcessor:
             message.status = MessageStatus.DELIVERED
             message.updated_at = datetime.now(timezone.utc)
             self._processed_count += 1
+
+            # Record success metrics
+            if METRICS_ENABLED:
+                processing_duration = time.perf_counter() - processing_start
+                MESSAGE_PROCESSING_DURATION.labels(
+                    message_type=msg_type, priority=priority
+                ).observe(processing_duration)
+                MESSAGES_TOTAL.labels(
+                    message_type=msg_type, priority=priority, status='success'
+                ).inc()
 
             return ValidationResult(is_valid=True)
 
@@ -236,6 +307,17 @@ class MessageProcessor:
             message.status = MessageStatus.FAILED
             self._failed_count += 1
             logger.error(f"Handler error: {type(e).__name__}: {e}")
+
+            # Record error metrics
+            if METRICS_ENABLED:
+                processing_duration = time.perf_counter() - processing_start
+                MESSAGE_PROCESSING_DURATION.labels(
+                    message_type=msg_type, priority=priority
+                ).observe(processing_duration)
+                MESSAGES_TOTAL.labels(
+                    message_type=msg_type, priority=priority, status='error'
+                ).inc()
+
             return ValidationResult(
                 is_valid=False,
                 errors=[f"Handler error: {type(e).__name__}: {e}"],
@@ -244,6 +326,17 @@ class MessageProcessor:
             message.status = MessageStatus.FAILED
             self._failed_count += 1
             logger.error(f"Runtime error in handler: {e}")
+
+            # Record error metrics
+            if METRICS_ENABLED:
+                processing_duration = time.perf_counter() - processing_start
+                MESSAGE_PROCESSING_DURATION.labels(
+                    message_type=msg_type, priority=priority
+                ).observe(processing_duration)
+                MESSAGES_TOTAL.labels(
+                    message_type=msg_type, priority=priority, status='error'
+                ).inc()
+
             return ValidationResult(
                 is_valid=False,
                 errors=[f"Runtime error: {e}"],
@@ -348,6 +441,14 @@ class EnhancedAgentBus:
         else:
             self._policy_client = None
 
+        # Initialize circuit breaker for policy client calls
+        self._policy_circuit_breaker = None
+        if CIRCUIT_BREAKER_ENABLED and self._use_dynamic_policy:
+            self._policy_circuit_breaker = get_circuit_breaker(
+                'policy_registry',
+                CircuitBreakerConfig(fail_max=3, reset_timeout=15)
+            )
+
         self._metrics = {
             "messages_sent": 0,
             "messages_received": 0,
@@ -359,6 +460,19 @@ class EnhancedAgentBus:
         """Start the agent bus."""
         self._running = True
         self._metrics["started_at"] = datetime.now(timezone.utc).isoformat()
+
+        # Initialize Prometheus service info
+        if METRICS_ENABLED:
+            set_service_info(
+                service_name='enhanced_agent_bus',
+                version='2.0.0',
+                constitutional_hash=CONSTITUTIONAL_HASH
+            )
+
+        # Initialize core circuit breakers
+        if CIRCUIT_BREAKER_ENABLED:
+            initialize_core_circuit_breakers()
+            logger.info("Circuit breakers initialized for core services")
 
         # Initialize policy client if using dynamic validation
         if self._policy_client is not None:
@@ -573,15 +687,24 @@ class EnhancedAgentBus:
 
         For metrics including dynamic policy status, use get_metrics_async().
         """
+        queue_size = self._message_queue.qsize()
+
+        # Update Prometheus queue depth gauge
+        if METRICS_ENABLED:
+            MESSAGE_QUEUE_DEPTH.labels(
+                queue_name='main', priority='all'
+            ).set(queue_size)
+
         return {
             **self._metrics,
             "registered_agents": len(self._agents),
-            "queue_size": self._message_queue.qsize(),
+            "queue_size": queue_size,
             "is_running": self._running,
             "constitutional_hash": CONSTITUTIONAL_HASH,
             "rust_enabled": USE_RUST,
             "dynamic_policy_enabled": self._use_dynamic_policy,
             "processor_metrics": self._processor.get_metrics(),
+            "metrics_enabled": METRICS_ENABLED,
         }
 
     async def get_metrics_async(self) -> Dict[str, Any]:
@@ -599,6 +722,12 @@ class EnhancedAgentBus:
                 metrics["policy_registry_status"] = health.get("status", "unknown")
             except Exception:
                 metrics["policy_registry_status"] = "unavailable"
+
+        # Add circuit breaker health
+        if CIRCUIT_BREAKER_ENABLED:
+            metrics["circuit_breaker_health"] = circuit_breaker_health_check()
+        else:
+            metrics["circuit_breaker_health"] = {"status": "disabled"}
 
         return metrics
 
@@ -648,6 +777,8 @@ __all__ = [
     "CONSTITUTIONAL_HASH",
     "USE_RUST",
     "DEFAULT_REDIS_URL",
+    "METRICS_ENABLED",
+    "CIRCUIT_BREAKER_ENABLED",
     # Classes
     "MessageProcessor",
     "EnhancedAgentBus",
