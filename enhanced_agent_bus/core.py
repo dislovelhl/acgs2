@@ -8,11 +8,11 @@ Instrumented with Prometheus metrics for observability.
 """
 
 import asyncio
+import json
 import logging
 import time
 from datetime import datetime, timezone
-from typing import Any, Callable, Dict, List, Optional, Union
-import uuid
+from typing import Any, Callable, Dict, List, Optional
 
 # Import Prometheus metrics with fallback
 try:
@@ -28,6 +28,25 @@ try:
     METRICS_ENABLED = True
 except ImportError:
     METRICS_ENABLED = False
+
+# Import OpenTelemetry with fallback
+try:
+    from opentelemetry import trace, metrics
+    from opentelemetry.trace import Status, StatusCode
+    OTEL_ENABLED = True
+    tracer = trace.get_tracer(__name__)
+    meter = metrics.get_meter(__name__)
+    
+    # Define OTel metrics
+    DECISION_COUNTER = meter.create_counter(
+        "acgs2.decisions.total",
+        description="Total number of agent decisions",
+        unit="1"
+    )
+except ImportError:
+    OTEL_ENABLED = False
+    tracer = None
+    meter = None
 
 # Import circuit breaker with fallback
 try:
@@ -49,6 +68,7 @@ try:
         MessagePriority,
         MessageStatus,
         CONSTITUTIONAL_HASH,
+        DecisionLog,
     )
     from .validators import ValidationResult
     from .exceptions import (
@@ -108,22 +128,25 @@ except ImportError:
 
 
 class MessageProcessor:
-    """
-    Processes messages with constitutional validation.
+    """Processes messages with constitutional validation.
 
-    Supports three modes:
-    1. Rust backend (highest performance) - when rust_bus is available
-    2. Dynamic policy validation - when policy_client is configured
-    3. Static hash validation (default) - Python fallback
+    This class handles the validation and processing of agent messages, supporting
+    multiple execution modes including a high-performance Rust backend, dynamic
+    policy validation via a policy registry, and a standard Python fallback with
+    static hash validation.
+
+    Attributes:
+        constitutional_hash (str): The expected constitutional hash for validation.
+        processed_count (int): Total number of successfully processed messages.
+        failed_count (int): Total number of failed processing attempts.
     """
 
     def __init__(self, use_dynamic_policy: bool = False):
-        """
-        Initialize the message processor.
+        """Initializes the message processor.
 
         Args:
-            use_dynamic_policy: If True, use dynamic policy registry for validation
-                               instead of static constitutional hash.
+            use_dynamic_policy (bool): If True, use dynamic policy registry for validation
+                instead of static constitutional hash. Defaults to False.
         """
         self._use_dynamic_policy = use_dynamic_policy and POLICY_CLIENT_AVAILABLE
         self._handlers: Dict[MessageType, List[Callable]] = {}
@@ -172,6 +195,35 @@ class MessageProcessor:
         2. Execute registered handlers for the message type
         3. Update message status and metrics
         """
+        if OTEL_ENABLED and tracer:
+            with tracer.start_as_current_span("process_message") as span:
+                span.set_attribute("agent.id", message.from_agent)
+                span.set_attribute("tenant.id", message.tenant_id)
+                span.set_attribute("message.type", message.message_type.value)
+                span.set_attribute("constitutional.hash", message.constitutional_hash)
+
+                result = await self._do_process(message)
+
+                span.set_attribute("decision.valid", result.is_valid)
+                if not result.is_valid:
+                    span.set_status(Status(StatusCode.ERROR, ", ".join(result.errors)))
+                
+                # Record decision metric
+                DECISION_COUNTER.add(1, {
+                    "tenant_id": message.tenant_id,
+                    "decision": "ALLOW" if result.is_valid else "DENY",
+                    "message_type": message.message_type.value
+                })
+
+                # Create structured decision log
+                self._log_decision(message, result, span)
+                
+                return result
+        else:
+            return await self._do_process(message)
+
+    async def _do_process(self, message: AgentMessage) -> ValidationResult:
+        """Internal processing logic."""
         # Route to appropriate implementation
         if self._rust_processor is not None and not self._use_dynamic_policy:
             return await self._process_rust(message)
@@ -179,6 +231,38 @@ class MessageProcessor:
             return await self._process_with_policy(message)
         else:
             return await self._process_python(message)
+
+    def _log_decision(self, message: AgentMessage, result: ValidationResult, span: Any) -> None:
+        """Log structured decision for compliance."""
+        span_context = span.get_span_context()
+        trace_id = format(span_context.trace_id, '032x') if span_context else "unknown"
+        span_id = format(span_context.span_id, '016x') if span_context else "unknown"
+
+        decision_log = DecisionLog(
+            trace_id=trace_id,
+            span_id=span_id,
+            agent_id=message.from_agent,
+            tenant_id=message.tenant_id,
+            policy_version=message.security_context.get("policy_version", "v1.0.0"),
+            risk_score=message.impact_score or 0.0,
+            decision="ALLOW" if result.is_valid else "DENY",
+            compliance_tags=self._get_compliance_tags(message, result)
+        )
+        
+        # In a real implementation, this would go to an OTel Logger or a specialized audit service
+        logger.info(f"DECISION_LOG: {json.dumps(decision_log.to_dict())}")
+
+    def _get_compliance_tags(self, message: AgentMessage, result: ValidationResult) -> List[str]:
+        """Map decision to compliance tags (EU AI Act, NIST RMF)."""
+        tags = []
+        if message.impact_score and message.impact_score >= 0.8:
+            tags.append("eu-ai-act-high-risk")
+            tags.append("nist-rmf-high-impact")
+        
+        if not result.is_valid:
+            tags.append("constitutional-violation")
+        
+        return tags
 
     async def _process_rust(self, message: AgentMessage) -> ValidationResult:
         """Process using Rust backend for maximum performance."""
@@ -278,8 +362,16 @@ class MessageProcessor:
         processing_start = time.perf_counter()
 
         # Get message type and priority for metrics
-        msg_type = message.message_type.value if hasattr(message.message_type, 'value') else str(message.message_type)
-        priority = message.priority.value if hasattr(message.priority, 'value') else str(message.priority)
+        msg_type = (
+            message.message_type.value
+            if hasattr(message.message_type, 'value')
+            else str(message.message_type)
+        )
+        priority = (
+            message.priority.value
+            if hasattr(message.priority, 'value')
+            else str(message.priority)
+        )
 
         try:
             await self._run_handlers(message)
@@ -418,6 +510,8 @@ class EnhancedAgentBus:
         self,
         redis_url: str = DEFAULT_REDIS_URL,
         use_dynamic_policy: bool = False,
+        use_kafka: bool = False,
+        kafka_bootstrap_servers: str = "localhost:9092"
     ):
         """
         Initialize the Enhanced Agent Bus.
@@ -425,15 +519,25 @@ class EnhancedAgentBus:
         Args:
             redis_url: Redis connection URL for message queuing
             use_dynamic_policy: Use dynamic policy registry instead of static hash
+            use_kafka: Use Kafka as the event bus instead of Redis/Local queue
+            kafka_bootstrap_servers: Kafka bootstrap servers
         """
         self.constitutional_hash = CONSTITUTIONAL_HASH
         self.redis_url = redis_url
         self._use_dynamic_policy = use_dynamic_policy and POLICY_CLIENT_AVAILABLE
+        self._use_kafka = use_kafka
 
         self._agents: Dict[str, Dict[str, Any]] = {}
         self._message_queue: asyncio.Queue = asyncio.Queue()
         self._processor = MessageProcessor(use_dynamic_policy=use_dynamic_policy)
         self._running = False
+
+        # Initialize Kafka bus if enabled
+        if self._use_kafka:
+            from .kafka_bus import KafkaEventBus
+            self._kafka_bus = KafkaEventBus(bootstrap_servers=kafka_bootstrap_servers)
+        else:
+            self._kafka_bus = None
 
         # Initialize policy client if using dynamic validation
         if self._use_dynamic_policy:
@@ -460,6 +564,10 @@ class EnhancedAgentBus:
         """Start the agent bus."""
         self._running = True
         self._metrics["started_at"] = datetime.now(timezone.utc).isoformat()
+
+        # Start Kafka bus if enabled
+        if self._kafka_bus:
+            await self._kafka_bus.start()
 
         # Initialize Prometheus service info
         if METRICS_ENABLED:
@@ -519,6 +627,9 @@ class EnhancedAgentBus:
         Returns:
             True if registration successful
         """
+        # SECURITY: In production, this would verify the agent's JWT/SVID
+        # and extract the tenant_id from the token claims.
+
         constitutional_key = CONSTITUTIONAL_HASH
 
         # Get dynamic key if using policy registry

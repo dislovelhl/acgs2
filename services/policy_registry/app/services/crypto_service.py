@@ -5,14 +5,16 @@ Cryptographic service for Ed25519 signing and verification
 import base64
 import hashlib
 import json
-from typing import Dict, Any, Tuple, Optional
+from typing import Dict, Any, Tuple, List
 import logging
+from datetime import datetime, timedelta, timezone
 
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import ed25519
 from cryptography.exceptions import InvalidSignature
+import jwt
 
-from ..models import PolicySignature, KeyPair
+from ..models import PolicySignature
 
 logger = logging.getLogger(__name__)
 

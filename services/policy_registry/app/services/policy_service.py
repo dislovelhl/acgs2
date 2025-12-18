@@ -6,8 +6,6 @@ import hashlib
 import json
 import logging
 from typing import Dict, Any, List, Optional
-from datetime import datetime, timezone
-
 from ..models import (
     Policy, PolicyStatus, PolicyVersion, VersionStatus, 
     PolicySignature, ABTestGroup
@@ -30,6 +28,7 @@ class PolicyService:
     async def create_policy(
         self,
         name: str,
+        tenant_id: str,
         content: Dict[str, Any],
         format: str = "json",
         description: Optional[str] = None
@@ -39,6 +38,7 @@ class PolicyService:
         
         Args:
             name: Policy name
+            tenant_id: Tenant identifier
             content: Policy content
             format: Content format (json/yaml)
             description: Policy description
@@ -48,6 +48,7 @@ class PolicyService:
         """
         policy = Policy(
             name=name,
+            tenant_id=tenant_id,
             description=description,
             format=format
         )

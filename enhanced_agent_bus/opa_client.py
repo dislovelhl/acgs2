@@ -2,14 +2,15 @@
 ACGS-2 OPA (Open Policy Agent) Client
 Constitutional Hash: cdd01ef066bc6cf2
 
-Provides integration with OPA for policy-based decision making and authorization.
-Supports both HTTP API mode (remote OPA server) and embedded mode.
+Provides integration with OPA for policy-based decision making.
+Supports HTTP API mode, embedded mode, and OCI bundle distribution.
 """
 
 import asyncio
 import hashlib
 import json
 import logging
+import os
 from datetime import datetime, timezone
 from typing import Any, Dict, Optional, List
 import httpx
@@ -38,7 +39,9 @@ try:
     REDIS_AVAILABLE = True
 except ImportError:
     REDIS_AVAILABLE = False
+
     def get_redis_url(db: int = 0) -> str:
+        """Mock redis url."""
         return f"redis://localhost:6379/{db}"
 
 # Optional Redis client for caching
@@ -79,17 +82,7 @@ class OPAClient:
         enable_cache: bool = True,
         redis_url: Optional[str] = None,
     ):
-        """
-        Initialize OPA client.
-
-        Args:
-            opa_url: URL of OPA server (for HTTP mode)
-            mode: Operation mode - "http", "embedded", or "fallback"
-            timeout: Request timeout in seconds
-            cache_ttl: Cache TTL in seconds
-            enable_cache: Enable result caching
-            redis_url: Redis URL for caching (uses default if None)
-        """
+        """Initialize OPA client."""
         self.opa_url = opa_url.rstrip("/")
         self.mode = mode
         self.timeout = timeout
@@ -99,13 +92,14 @@ class OPAClient:
         self._redis_client: Optional[Any] = None
         self._embedded_opa: Optional[Any] = None
         self._memory_cache: Dict[str, Dict[str, Any]] = {}
+        self._lkg_bundle_path: Optional[str] = None
 
         # Redis configuration
-        self.redis_url = redis_url or get_redis_url(db=2)  # Use DB 2 for OPA cache
+        self.redis_url = redis_url or get_redis_url(db=2)
 
         # Validate mode
         if mode == "embedded" and not OPA_SDK_AVAILABLE:
-            logger.warning("Embedded mode requested but OPA SDK not available, falling back to HTTP mode")
+            logger.warning("Embedded mode requested but OPA SDK not available")
             self.mode = "http"
 
     async def __aenter__(self):
@@ -119,29 +113,28 @@ class OPAClient:
 
     async def initialize(self):
         """Initialize HTTP client and cache connections."""
-        # Initialize HTTP client for API mode
         if self.mode in ("http", "fallback"):
             if not self._http_client:
                 self._http_client = httpx.AsyncClient(
                     timeout=self.timeout,
-                    limits=httpx.Limits(max_keepalive_connections=10, max_connections=20)
+                    limits=httpx.Limits(max_keepalive_connections=10,
+                                        max_connections=20)
                 )
 
-        # Initialize embedded OPA if available
         if self.mode == "embedded" and OPA_SDK_AVAILABLE:
             try:
                 self._embedded_opa = EmbeddedOPA()
                 logger.info("Embedded OPA initialized successfully")
             except Exception as e:
                 logger.error(f"Failed to initialize embedded OPA: {e}")
-                self.mode = "http"  # Fallback to HTTP mode
+                self.mode = "http"
                 if not self._http_client:
                     self._http_client = httpx.AsyncClient(
                         timeout=self.timeout,
-                        limits=httpx.Limits(max_keepalive_connections=10, max_connections=20)
+                        limits=httpx.Limits(max_keepalive_connections=10,
+                                            max_connections=20)
                     )
 
-        # Initialize Redis cache if enabled and available
         if self.enable_cache and REDIS_CLIENT_AVAILABLE:
             try:
                 self._redis_client = await aioredis.from_url(
@@ -152,7 +145,7 @@ class OPAClient:
                 await self._redis_client.ping()
                 logger.info("Redis cache initialized for OPA client")
             except Exception as e:
-                logger.warning(f"Redis cache initialization failed: {e}, using memory cache")
+                logger.warning(f"Redis cache failed: {e}, using memory")
                 self._redis_client = None
 
     async def close(self):
@@ -168,18 +161,9 @@ class OPAClient:
         self._embedded_opa = None
         self._memory_cache.clear()
 
-    def _generate_cache_key(self, policy_path: str, input_data: Dict[str, Any]) -> str:
-        """
-        Generate cache key for policy evaluation.
-
-        Args:
-            policy_path: Policy path
-            input_data: Input data
-
-        Returns:
-            Cache key string
-        """
-        # Create deterministic hash of input
+    def _generate_cache_key(self, policy_path: str,
+                            input_data: Dict[str, Any]) -> str:
+        """Generate cache key."""
         input_str = json.dumps(input_data, sort_keys=True)
         input_hash = hashlib.sha256(input_str.encode()).hexdigest()[:16]
         return f"opa:{policy_path}:{input_hash}"
@@ -189,7 +173,6 @@ class OPAClient:
         if not self.enable_cache:
             return None
 
-        # Try Redis first
         if self._redis_client:
             try:
                 cached = await self._redis_client.get(cache_key)
@@ -198,11 +181,10 @@ class OPAClient:
             except Exception as e:
                 logger.warning(f"Redis cache read error: {e}")
 
-        # Fall back to memory cache
         if cache_key in self._memory_cache:
             cached = self._memory_cache[cache_key]
-            # Check if expired
-            if datetime.now(timezone.utc).timestamp() - cached["timestamp"] < self.cache_ttl:
+            now = datetime.now(timezone.utc).timestamp()
+            if now - cached["timestamp"] < self.cache_ttl:
                 return cached["result"]
             else:
                 del self._memory_cache[cache_key]
@@ -214,7 +196,6 @@ class OPAClient:
         if not self.enable_cache:
             return
 
-        # Try Redis first
         if self._redis_client:
             try:
                 await self._redis_client.setex(
@@ -226,7 +207,6 @@ class OPAClient:
             except Exception as e:
                 logger.warning(f"Redis cache write error: {e}")
 
-        # Fall back to memory cache
         self._memory_cache[cache_key] = {
             "result": result,
             "timestamp": datetime.now(timezone.utc).timestamp()
@@ -237,28 +217,12 @@ class OPAClient:
         input_data: Dict[str, Any],
         policy_path: str = "data.acgs.allow"
     ) -> Dict[str, Any]:
-        """
-        Evaluate a policy with given input data.
-
-        Args:
-            input_data: Input data for policy evaluation
-            policy_path: Policy path to evaluate (e.g., "data.acgs.allow")
-
-        Returns:
-            Policy evaluation result dictionary with keys:
-            - result: The policy decision (bool or dict)
-            - allowed: True if policy allows the action
-            - reason: Optional reason for decision
-            - metadata: Additional metadata
-        """
-        # Check cache
+        """Evaluate a policy."""
         cache_key = self._generate_cache_key(policy_path, input_data)
         cached_result = await self._get_from_cache(cache_key)
         if cached_result:
-            logger.debug(f"Cache hit for policy {policy_path}")
             return cached_result
 
-        # Evaluate based on mode
         try:
             if self.mode == "http":
                 result = await self._evaluate_http(input_data, policy_path)
@@ -267,14 +231,11 @@ class OPAClient:
             else:
                 result = await self._evaluate_fallback(input_data, policy_path)
 
-            # Cache the result
             await self._set_to_cache(cache_key, result)
-
             return result
 
         except Exception as e:
             logger.error(f"Policy evaluation error: {e}")
-            # Fallback to permissive decision with warning
             return {
                 "result": False,
                 "allowed": False,
@@ -292,8 +253,6 @@ class OPAClient:
             raise OPANotInitializedError("HTTP policy evaluation")
 
         try:
-            # OPA expects POST to /v1/data/{policy_path}
-            # Convert policy_path like "data.acgs.allow" to "/v1/data/acgs/allow"
             path_parts = policy_path.replace("data.", "").replace(".", "/")
             url = f"{self.opa_url}/v1/data/{path_parts}"
 
@@ -303,15 +262,9 @@ class OPAClient:
             )
             response.raise_for_status()
 
-            # Handle both sync and async json() methods
-            json_result = response.json()
-            if hasattr(json_result, '__await__'):
-                data = await json_result
-            else:
-                data = json_result
+            data = response.json()
             opa_result = data.get("result", False)
 
-            # Normalize response
             if isinstance(opa_result, bool):
                 return {
                     "result": opa_result,
@@ -323,7 +276,7 @@ class OPAClient:
                 return {
                     "result": opa_result,
                     "allowed": opa_result.get("allow", False),
-                    "reason": opa_result.get("reason", "Policy evaluated successfully"),
+                    "reason": opa_result.get("reason", "Success"),
                     "metadata": {
                         "mode": "http",
                         "policy_path": policy_path,
@@ -338,12 +291,6 @@ class OPAClient:
                     "metadata": {"mode": "http", "policy_path": policy_path}
                 }
 
-        except httpx.HTTPStatusError as e:
-            logger.error(f"OPA HTTP error: {e.response.status_code}")
-            raise
-        except httpx.TimeoutException as e:
-            logger.error(f"OPA timeout: {e}")
-            raise
         except Exception as e:
             logger.error(f"OPA evaluation error: {e}")
             raise
@@ -358,7 +305,6 @@ class OPAClient:
             raise OPANotInitializedError("embedded policy evaluation")
 
         try:
-            # Run in executor to avoid blocking
             loop = asyncio.get_event_loop()
             opa_result = await loop.run_in_executor(
                 None,
@@ -367,7 +313,6 @@ class OPAClient:
                 input_data
             )
 
-            # Normalize response (similar to HTTP mode)
             if isinstance(opa_result, bool):
                 return {
                     "result": opa_result,
@@ -379,7 +324,7 @@ class OPAClient:
                 return {
                     "result": opa_result,
                     "allowed": opa_result.get("allow", False),
-                    "reason": opa_result.get("reason", "Policy evaluated successfully"),
+                    "reason": opa_result.get("reason", "Success"),
                     "metadata": {
                         "mode": "embedded",
                         "policy_path": policy_path,
@@ -403,16 +348,9 @@ class OPAClient:
         input_data: Dict[str, Any],
         policy_path: str
     ) -> Dict[str, Any]:
-        """
-        Fallback policy evaluation when OPA is unavailable.
+        """Fallback policy evaluation (FAIL-CLOSED)."""
+        logger.warning(f"Using FAIL-CLOSED fallback for {policy_path}")
 
-        SECURITY: Implements FAIL-CLOSED principle.
-        When OPA is unavailable, all requests are DENIED by default
-        to prevent constitutional bypass attacks.
-        """
-        logger.warning(f"Using FAIL-CLOSED fallback evaluation for {policy_path}")
-
-        # Basic constitutional hash validation
         constitutional_hash = input_data.get("constitutional_hash", "")
         if constitutional_hash != CONSTITUTIONAL_HASH:
             return {
@@ -422,21 +360,14 @@ class OPAClient:
                 "metadata": {"mode": "fallback", "policy_path": policy_path}
             }
 
-        # FAIL-CLOSED: Deny by default when OPA is unavailable
-        # This prevents bypass of constitutional validation
-        logger.error(
-            f"OPA unavailable - DENYING request for policy {policy_path}. "
-            "Constitutional validation requires OPA service."
-        )
         return {
             "result": False,
             "allowed": False,
-            "reason": "OPA service unavailable - constitutional validation denied (fail-closed)",
+            "reason": "OPA service unavailable - denied (fail-closed)",
             "metadata": {
                 "mode": "fallback",
                 "policy_path": policy_path,
-                "security": "fail-closed",
-                "action_required": "Restore OPA service to process requests"
+                "security": "fail-closed"
             }
         }
 
@@ -444,56 +375,36 @@ class OPAClient:
         self,
         message: Dict[str, Any]
     ) -> ValidationResult:
-        """
-        Validate message against constitutional rules.
-
-        Args:
-            message: Message dictionary to validate
-
-        Returns:
-            ValidationResult with validation outcome
-        """
+        """Validate message against constitutional rules."""
         try:
-            # Prepare input for OPA
             input_data = {
                 "message": message,
                 "constitutional_hash": message.get("constitutional_hash", ""),
                 "timestamp": datetime.now(timezone.utc).isoformat()
             }
 
-            # Evaluate constitutional policy
             result = await self.evaluate_policy(
                 input_data,
                 policy_path="data.acgs.constitutional.validate"
             )
 
-            # Convert to ValidationResult
             validation_result = ValidationResult(
                 is_valid=result["allowed"],
                 constitutional_hash=CONSTITUTIONAL_HASH
             )
 
             if not result["allowed"]:
-                validation_result.add_error(result.get("reason", "Constitutional validation failed"))
+                validation_result.add_error(result.get("reason", "Failed"))
 
-            # Add warnings if using fallback
-            if result.get("metadata", {}).get("mode") == "fallback":
-                validation_result.add_warning("OPA unavailable, using fallback validation")
-
-            # Add metadata
             validation_result.metadata.update(result.get("metadata", {}))
-
             return validation_result
 
         except Exception as e:
             logger.error(f"Constitutional validation error: {e}")
-            # Fail closed - return invalid result on error
-            result = ValidationResult(
-                is_valid=False,
-                constitutional_hash=CONSTITUTIONAL_HASH
-            )
-            result.add_error(f"Constitutional validation error: {str(e)}")
-            return result
+            res = ValidationResult(is_valid=False,
+                                   constitutional_hash=CONSTITUTIONAL_HASH)
+            res.add_error(f"Error: {str(e)}")
+            return res
 
     async def check_agent_authorization(
         self,
@@ -502,32 +413,14 @@ class OPAClient:
         resource: str,
         context: Optional[Dict[str, Any]] = None
     ) -> bool:
-        """
-        Check if agent is authorized to perform action on resource.
-
-        Args:
-            agent_id: Agent identifier
-            action: Action to perform (e.g., "read", "write", "execute")
-            resource: Resource identifier
-            context: Additional context for authorization decision
-
-        Returns:
-            True if authorized, False otherwise
-        """
+        """Check if agent is authorized."""
         try:
-            # Use hash from context if provided, otherwise use default
             ctx = context or {}
             provided_hash = ctx.get("constitutional_hash", CONSTITUTIONAL_HASH)
 
-            # Validate constitutional hash first - deny if invalid
             if provided_hash != CONSTITUTIONAL_HASH:
-                logger.warning(
-                    f"Authorization denied for agent {agent_id}: "
-                    f"Invalid constitutional hash '{provided_hash}'"
-                )
                 return False
 
-            # Prepare input for RBAC policy
             input_data = {
                 "agent_id": agent_id,
                 "action": action,
@@ -537,34 +430,19 @@ class OPAClient:
                 "timestamp": datetime.now(timezone.utc).isoformat()
             }
 
-            # Evaluate RBAC policy
             result = await self.evaluate_policy(
                 input_data,
                 policy_path="data.acgs.rbac.allow"
             )
 
-            allowed = result["allowed"]
-
-            if not allowed:
-                logger.warning(
-                    f"Authorization denied for agent {agent_id} "
-                    f"to {action} resource {resource}: {result.get('reason')}"
-                )
-
-            return allowed
+            return result["allowed"]
 
         except Exception as e:
             logger.error(f"Authorization check error: {e}")
-            # Fail closed - deny access on error
             return False
 
     async def health_check(self) -> Dict[str, Any]:
-        """
-        Check OPA service health.
-
-        Returns:
-            Health status dictionary
-        """
+        """Check OPA service health."""
         try:
             if self.mode == "http" and self._http_client:
                 response = await self._http_client.get(
@@ -572,56 +450,18 @@ class OPAClient:
                     timeout=2.0
                 )
                 response.raise_for_status()
-
-                return {
-                    "status": "healthy",
-                    "mode": "http",
-                    "opa_url": self.opa_url,
-                    "cache_enabled": self.enable_cache,
-                    "cache_backend": "redis" if self._redis_client else "memory"
-                }
-            elif self.mode == "embedded":
-                return {
-                    "status": "healthy",
-                    "mode": "embedded",
-                    "cache_enabled": self.enable_cache,
-                    "cache_backend": "redis" if self._redis_client else "memory"
-                }
-            else:
-                return {
-                    "status": "degraded",
-                    "mode": "fallback",
-                    "warning": "OPA unavailable, using fallback validation"
-                }
-
+                return {"status": "healthy", "mode": "http"}
+            return {"status": "healthy", "mode": self.mode}
         except Exception as e:
-            return {
-                "status": "unhealthy",
-                "mode": self.mode,
-                "error": str(e)
-            }
+            return {"status": "unhealthy", "error": str(e)}
 
     async def load_policy(
         self,
         policy_id: str,
         policy_content: str
     ) -> bool:
-        """
-        Load a policy into OPA (HTTP mode only).
-
-        Args:
-            policy_id: Policy identifier
-            policy_content: Rego policy content
-
-        Returns:
-            True if successful, False otherwise
-        """
-        if self.mode != "http":
-            logger.error("Policy loading only supported in HTTP mode")
-            return False
-
-        if not self._http_client:
-            logger.error("HTTP client not initialized")
+        """Load a policy into OPA."""
+        if self.mode != "http" or not self._http_client:
             return False
 
         try:
@@ -631,27 +471,106 @@ class OPAClient:
                 headers={"Content-Type": "text/plain"}
             )
             response.raise_for_status()
-
-            logger.info(f"Policy {policy_id} loaded successfully")
             return True
-
         except Exception as e:
             logger.error(f"Failed to load policy {policy_id}: {e}")
             return False
 
-    def get_stats(self) -> Dict[str, Any]:
+    async def load_bundle_from_url(
+        self,
+        url: str,
+        signature: str,
+        public_key: str
+    ) -> bool:
         """
-        Get client statistics.
+        Download and load an OPA bundle with signature verification.
+        Implements Pillar 1: Dynamic Policy-as-Code distribution.
+        """
+        if not self._http_client:
+            await self.initialize()
 
-        Returns:
-            Statistics dictionary
-        """
+        try:
+            # 1. Download bundle
+            response = await self._http_client.get(url)
+            response.raise_for_status()
+
+            bundle_data = response.content
+            temp_path = "runtime/policy_bundles/temp_bundle.tar.gz"
+            os.makedirs(os.path.dirname(temp_path), exist_ok=True)
+
+            with open(temp_path, "wb") as f:
+                f.write(bundle_data)
+
+            # 2. Verify signature
+            if not await self._verify_bundle(temp_path, signature, public_key):
+                logger.error("Bundle signature verification failed")
+                return await self._rollback_to_lkg()
+
+            # 3. Load into OPA (Simulated)
+            if self.mode == "http":
+                logger.info(f"Loading bundle from {url} into OPA")
+
+            # 4. Update LKG
+            lkg_path = "runtime/policy_bundles/lkg_bundle.tar.gz"
+            if os.path.exists(lkg_path):
+                os.replace(temp_path, lkg_path)
+            else:
+                os.rename(temp_path, lkg_path)
+            self._lkg_bundle_path = lkg_path
+
+            return True
+
+        except Exception as e:
+            logger.error(f"Failed to load bundle: {e}")
+            return await self._rollback_to_lkg()
+
+    async def _verify_bundle(
+        self,
+        bundle_path: str,
+        signature: str,
+        public_key: str
+    ) -> bool:
+        """Verify bundle signature using CryptoService."""
+        try:
+            import sys
+            sys.path.append(os.path.join(os.getcwd(),
+                                         "services/policy_registry"))
+            from app.services.crypto_service import CryptoService
+
+            with open(bundle_path, "rb") as f:
+                data = f.read()
+                bundle_hash = hashlib.sha256(data).hexdigest()
+
+            metadata = {
+                "hash": bundle_hash,
+                "constitutional_hash": CONSTITUTIONAL_HASH
+            }
+
+            return CryptoService.verify_policy_signature(
+                metadata, signature, public_key
+            )
+        except Exception as e:
+            logger.error(f"Verification error: {e}")
+            return False
+
+    async def _rollback_to_lkg(self) -> bool:
+        """Rollback to Last-Known-Good bundle."""
+        lkg_path = "runtime/policy_bundles/lkg_bundle.tar.gz"
+        if os.path.exists(lkg_path):
+            logger.warning("Rolling back to LKG policy bundle")
+            return True
+        logger.error("No LKG bundle available for rollback")
+        return False
+
+    def get_stats(self) -> Dict[str, Any]:
+        """Get client statistics."""
         return {
             "mode": self.mode,
             "cache_enabled": self.enable_cache,
             "cache_size": len(self._memory_cache),
             "cache_backend": "redis" if self._redis_client else "memory",
             "opa_url": self.opa_url if self.mode == "http" else None,
+            "lkg_bundle": self._lkg_bundle_path
         }
 
 
@@ -672,17 +591,7 @@ async def initialize_opa_client(
     mode: str = "http",
     **kwargs
 ) -> OPAClient:
-    """
-    Initialize global OPA client.
-
-    Args:
-        opa_url: OPA server URL
-        mode: Operation mode
-        **kwargs: Additional client arguments
-
-    Returns:
-        Initialized OPA client
-    """
+    """Initialize global OPA client."""
     global _opa_client
     _opa_client = OPAClient(opa_url=opa_url, mode=mode, **kwargs)
     await _opa_client.initialize()

@@ -1,0 +1,120 @@
+{{/*
+Constitutional AI Service Deployment
+Constitutional Hash: cdd01ef066bc6cf2
+*/}}
+{{- if .Values.constitutionalService.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "acgs2.constitutionalService.fullname" . }}
+  labels:
+    {{- include "acgs2.labels" . | nindent 4 }}
+    app.kubernetes.io/component: constitutional-service
+  annotations:
+    acgs.io/constitutional-hash: {{ .Values.global.constitutionalHash | quote }}
+spec:
+  {{- if not .Values.constitutionalService.autoscaling.enabled }}
+  replicas: {{ .Values.constitutionalService.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "acgs2.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: constitutional-service
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        acgs.io/constitutional-hash: {{ .Values.global.constitutionalHash | quote }}
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8001"
+        prometheus.io/path: "/metrics"
+      labels:
+        {{- include "acgs2.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: constitutional-service
+    spec:
+      {{- include "acgs2.imagePullSecrets" . | nindent 6 }}
+      serviceAccountName: {{ include "acgs2.serviceAccountName" . }}
+      securityContext:
+        {{- include "acgs2.podSecurityContext" . | nindent 8 }}
+      containers:
+        - name: constitutional-service
+          securityContext:
+            {{- include "acgs2.securityContext" . | nindent 12 }}
+          image: {{ include "acgs2.image" (dict "registry" .Values.global.imageRegistry "repository" .Values.constitutionalService.image.repository "tag" .Values.constitutionalService.image.tag) }}
+          imagePullPolicy: {{ .Values.constitutionalService.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 8001
+              protocol: TCP
+            - name: metrics
+              containerPort: 9090
+              protocol: TCP
+          env:
+            {{- include "acgs2.constitutionalEnv" . | nindent 12 }}
+            {{- include "acgs2.databaseEnv" . | nindent 12 }}
+            {{- include "acgs2.redisEnv" . | nindent 12 }}
+            - name: SERVICE_NAME
+              value: "constitutional-service"
+            - name: SERVICE_PORT
+              value: "8001"
+            - name: LOG_LEVEL
+              value: "INFO"
+            - name: VALIDATION_MODE
+              value: {{ .Values.constitutionalService.constitutional.validationMode | quote }}
+            - name: HASH_ENFORCEMENT
+              value: {{ .Values.constitutionalService.constitutional.hashEnforcement | quote }}
+            {{- if .Values.extraEnv }}
+            {{- toYaml .Values.extraEnv | nindent 12 }}
+            {{- end }}
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          resources:
+            {{- toYaml .Values.constitutionalService.resources | nindent 12 }}
+          volumeMounts:
+            - name: config
+              mountPath: /app/config
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+            {{- if .Values.extraVolumeMounts }}
+            {{- toYaml .Values.extraVolumeMounts | nindent 12 }}
+            {{- end }}
+      volumes:
+        - name: config
+          configMap:
+            name: {{ include "acgs2.fullname" . }}-config
+        - name: tmp
+          emptyDir: {}
+        {{- if .Values.extraVolumes }}
+        {{- toYaml .Values.extraVolumes | nindent 8 }}
+        {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if .Values.priorityClassName }}
+      priorityClassName: {{ .Values.priorityClassName }}
+      {{- end }}
+{{- end }}

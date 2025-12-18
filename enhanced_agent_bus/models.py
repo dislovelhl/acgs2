@@ -153,6 +153,19 @@ class AgentMessage:
             "updated_at": self.updated_at.isoformat(),
         }
 
+    def to_dict_raw(self) -> Dict[str, Any]:
+        """Convert message to dictionary with all fields for serialization."""
+        data = self.to_dict()
+        data.update({
+            "payload": self.payload,
+            "sender_id": self.sender_id,
+            "security_context": self.security_context,
+            "expires_at": self.expires_at.isoformat() if self.expires_at else None,
+            "impact_score": self.impact_score,
+            "performance_metrics": self.performance_metrics
+        })
+        return data
+
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "AgentMessage":
         """Create message from dictionary."""
@@ -169,6 +182,38 @@ class AgentMessage:
         )
 
 
+@dataclass
+class DecisionLog:
+    """Structured decision log for compliance and observability."""
+    trace_id: str
+    span_id: str
+    agent_id: str
+    tenant_id: str
+    policy_version: str
+    risk_score: float
+    decision: str
+    constitutional_hash: str = CONSTITUTIONAL_HASH
+    timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    compliance_tags: List[str] = field(default_factory=list)
+    metadata: Dict[str, Any] = field(default_factory=dict)
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert log to dictionary."""
+        return {
+            "trace_id": self.trace_id,
+            "span_id": self.span_id,
+            "agent_id": self.agent_id,
+            "tenant_id": self.tenant_id,
+            "policy_version": self.policy_version,
+            "risk_score": self.risk_score,
+            "decision": self.decision,
+            "constitutional_hash": self.constitutional_hash,
+            "timestamp": self.timestamp.isoformat(),
+            "compliance_tags": self.compliance_tags,
+            "metadata": self.metadata
+        }
+
+
 __all__ = [
     "CONSTITUTIONAL_HASH",
     "MessageType",
@@ -178,4 +223,5 @@ __all__ = [
     "MessageStatus",
     "RoutingContext",
     "AgentMessage",
+    "DecisionLog",
 ]

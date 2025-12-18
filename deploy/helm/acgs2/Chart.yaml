@@ -1,0 +1,45 @@
+apiVersion: v2
+name: acgs2
+description: |
+  ACGS-2 (Advanced Constitutional Governance System 2) - Enterprise AI Governance Platform
+  Constitutional Hash: cdd01ef066bc6cf2
+
+type: application
+version: 1.0.0
+appVersion: "2.0.0"
+
+keywords:
+  - ai-governance
+  - constitutional-ai
+  - policy-management
+  - multi-agent
+  - compliance
+
+home: https://github.com/acgs/acgs2
+sources:
+  - https://github.com/acgs/acgs2
+
+maintainers:
+  - name: ACGS Team
+    email: team@acgs.io
+
+dependencies:
+  - name: postgresql
+    version: "14.0.0"
+    repository: "https://charts.bitnami.com/bitnami"
+    condition: postgresql.enabled
+  - name: redis
+    version: "18.0.0"
+    repository: "https://charts.bitnami.com/bitnami"
+    condition: redis.enabled
+  - name: kafka
+    version: "26.0.0"
+    repository: "https://charts.bitnami.com/bitnami"
+    condition: kafka.enabled
+
+annotations:
+  artifacthub.io/license: Apache-2.0
+  artifacthub.io/category: ai-machine-learning
+  artifacthub.io/signKey: |
+    fingerprint: cdd01ef066bc6cf2
+    url: https://acgs.io/pgp-key.asc

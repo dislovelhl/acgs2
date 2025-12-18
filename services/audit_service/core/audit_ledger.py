@@ -22,7 +22,15 @@ from .merkle_tree.merkle_tree import MerkleTree
 
 @dataclass
 class ValidationResult:
-    """验证结果数据类（与validators.py兼容）"""
+    """Data class for validation results, compatible with validators.py.
+
+    Attributes:
+        is_valid (bool): Whether the validation passed. Defaults to True.
+        errors (List[str]): A list of error messages if validation failed.
+        warnings (List[str]): A list of warning messages.
+        metadata (Dict[str, Any]): Additional metadata associated with the validation.
+        constitutional_hash (str): The constitutional hash `cdd01ef066bc6cf2`.
+    """
     is_valid: bool = True
     errors: List[str] = field(default_factory=list)
     warnings: List[str] = field(default_factory=list)
@@ -30,7 +38,11 @@ class ValidationResult:
     constitutional_hash: str = "cdd01ef066bc6cf2"
 
     def to_dict(self) -> Dict[str, Any]:
-        """转换为字典格式用于序列化"""
+        """Converts the validation result to a dictionary for serialization.
+
+        Returns:
+            Dict[str, Any]: A dictionary representation of the validation result.
+        """
         return {
             "is_valid": self.is_valid,
             "errors": self.errors,
@@ -43,7 +55,16 @@ class ValidationResult:
 
 @dataclass
 class AuditEntry:
-    """审计条目"""
+    """Represents a single entry in the audit ledger.
+
+    Attributes:
+        validation_result (ValidationResult): The result of the validation.
+        hash (str): The SHA-256 hash of the validation result.
+        timestamp (float): The Unix timestamp when the entry was created.
+        batch_id (Optional[str]): The ID of the batch this entry belongs to.
+        merkle_proof (Optional[List[Tuple[str, bool]]]): The Merkle proof for
+            this entry within its batch.
+    """
     validation_result: ValidationResult
     hash: str
     timestamp: float
@@ -51,7 +72,11 @@ class AuditEntry:
     merkle_proof: Optional[List[Tuple[str, bool]]] = None
 
     def to_dict(self) -> Dict[str, Any]:
-        """转换为字典格式"""
+        """Converts the audit entry to a dictionary.
+
+        Returns:
+            Dict[str, Any]: A dictionary representation of the audit entry.
+        """
         return {
             "validation_result": self.validation_result.to_dict(),
             "hash": self.hash,
@@ -62,9 +87,23 @@ class AuditEntry:
 
 
 class AuditLedger:
-    """不可变审计账本"""
+    """An immutable audit ledger for recording validation results.
+
+    This class manages the storage of validation results, batching them into
+    Merkle Trees for efficient verification and blockchain integration.
+
+    Attributes:
+        entries (List[AuditEntry]): All audit entries in the ledger.
+        batch_size (int): The number of entries per batch.
+    """
 
     def __init__(self, batch_size: int = 100):
+        """Initializes the AuditLedger.
+
+        Args:
+            batch_size (int): The number of entries to include in each batch.
+                Defaults to 100.
+        """
         self.entries: List[AuditEntry] = []
         self.current_batch: List[ValidationResult] = []
         self.batch_size = batch_size

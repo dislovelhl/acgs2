@@ -22,6 +22,7 @@ class Policy(BaseModel):
     """Constitutional policy model"""
 
     policy_id: str = Field(default_factory=lambda: str(uuid4()))
+    tenant_id: str = Field(..., min_length=1, max_length=255)
     name: str = Field(..., min_length=1, max_length=255)
     description: Optional[str] = Field(None, max_length=1000)
     format: str = Field(default="json", pattern="^(json|yaml)$")

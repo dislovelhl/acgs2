@@ -1,0 +1,165 @@
+"""
+ACGS-2 Kafka Event Bus Implementation
+Constitutional Hash: cdd01ef066bc6cf2
+Provides high-throughput, multi-tenant isolated messaging.
+"""
+
+import asyncio
+import json
+import logging
+from typing import Dict, Any, Optional, List, Callable
+from datetime import datetime, timezone
+
+try:
+    from aiokafka import AIOKafkaProducer, AIOKafkaConsumer
+    KAFKA_AVAILABLE = True
+except ImportError:
+    KAFKA_AVAILABLE = False
+
+from .models import AgentMessage, MessageStatus, MessageType
+from .exceptions import MessageDeliveryError
+
+logger = logging.getLogger(__name__)
+
+class KafkaEventBus:
+    """
+    Kafka-based event bus for high-performance multi-agent orchestration.
+    Supports topic-level multi-tenant isolation.
+    """
+
+    def __init__(self, bootstrap_servers: str = "localhost:9092", client_id: str = "acgs2-bus"):
+        self.bootstrap_servers = bootstrap_servers
+        self.client_id = client_id
+        self.producer: Optional[AIOKafkaProducer] = None
+        self._consumers: Dict[str, AIOKafkaConsumer] = {}
+        self._running = False
+
+    async def start(self):
+        """Start the Kafka producer."""
+        if not KAFKA_AVAILABLE:
+            logger.error("aiokafka not installed. KafkaEventBus unavailable.")
+            return
+
+        self.producer = AIOKafkaProducer(
+            bootstrap_servers=self.bootstrap_servers,
+            client_id=self.client_id,
+            value_serializer=lambda v: json.dumps(v).encode('utf-8')
+        )
+        await self.producer.start()
+        self._running = True
+        logger.info(f"KafkaEventBus started on {self.bootstrap_servers}")
+
+    async def stop(self):
+        """Stop the Kafka producer and all consumers."""
+        self._running = False
+        if self.producer:
+            await self.producer.stop()
+        for consumer in self._consumers.values():
+            await consumer.stop()
+        logger.info("KafkaEventBus stopped")
+
+    def _get_topic_name(self, tenant_id: str, message_type: str) -> str:
+        """
+        Generate a multi-tenant isolated topic name.
+        Format: acgs.tenant.{tenant_id}.{message_type}
+        """
+        safe_tenant = tenant_id.replace(".", "_") if tenant_id else "default"
+        return f"acgs.tenant.{safe_tenant}.{message_type.lower()}"
+
+    async def send_message(self, message: AgentMessage) -> bool:
+        """Send a message to the appropriate Kafka topic."""
+        if not self.producer or not self._running:
+            raise MessageDeliveryError("Kafka producer not started")
+
+        topic = self._get_topic_name(message.tenant_id, message.message_type.name)
+        
+        # Use conversation_id as partition key to ensure ordering within a session
+        key = message.conversation_id.encode('utf-8') if message.conversation_id else None
+        
+        try:
+            await self.producer.send_and_wait(
+                topic,
+                value=message.to_dict_raw(), # Assuming to_dict_raw exists or using to_dict
+                key=key
+            )
+            logger.debug(f"Message {message.message_id} sent to topic {topic}")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to send message to Kafka: {e}")
+            return False
+
+    async def subscribe(self, tenant_id: str, message_types: List[MessageType], handler: Callable):
+        """Subscribe to topics and process messages."""
+        if not KAFKA_AVAILABLE:
+            return
+
+        topics = [self._get_topic_name(tenant_id, mt.name) for mt in message_types]
+        consumer_id = f"{tenant_id}-{''.join([mt.name for mt in message_types])}"
+        
+        consumer = AIOKafkaConsumer(
+            *topics,
+            bootstrap_servers=self.bootstrap_servers,
+            group_id=f"{self.client_id}-group-{tenant_id}",
+            value_deserializer=lambda v: json.loads(v.decode('utf-8'))
+        )
+        
+        self._consumers[consumer_id] = consumer
+        await consumer.start()
+        
+        async def consume_loop():
+            try:
+                async for msg in consumer:
+                    if not self._running:
+                        break
+                    try:
+                        # Reconstruct AgentMessage
+                        message_data = msg.value
+                        # In a real implementation, we'd have a from_dict method
+                        # For now, we'll assume the handler can take the dict or we wrap it
+                        await handler(message_data)
+                    except Exception as e:
+                        logger.error(f"Error in Kafka message handler: {e}")
+            finally:
+                await consumer.stop()
+
+        asyncio.create_task(consume_loop())
+        logger.info(f"Subscribed to topics: {topics}")
+
+class Orchestrator:
+    """
+    Base class for Orchestrator-Worker pattern.
+    """
+    def __init__(self, bus: KafkaEventBus, tenant_id: str):
+        self.bus = bus
+        self.tenant_id = tenant_id
+
+    async def dispatch_task(self, task_data: Dict[str, Any], worker_type: str):
+        """Dispatch a task to a specific worker type."""
+        message = AgentMessage(
+            message_type=MessageType.TASK_REQUEST,
+            content=task_data,
+            tenant_id=self.tenant_id,
+            to_agent=f"worker-{worker_type}"
+        )
+        await self.bus.send_message(message)
+
+class Blackboard:
+    """
+    Implementation of the Blackboard pattern using Kafka Compacted Topics.
+    """
+    def __init__(self, bus: KafkaEventBus, tenant_id: str, board_name: str):
+        self.bus = bus
+        self.tenant_id = tenant_id
+        self.topic = f"acgs.blackboard.{tenant_id}.{board_name}"
+        self.state: Dict[str, Any] = {}
+
+    async def update(self, key: str, value: Any):
+        """Update a value on the blackboard."""
+        message = AgentMessage(
+            message_type=MessageType.EVENT,
+            content={"key": key, "value": value},
+            tenant_id=self.tenant_id,
+            payload={"blackboard_update": True}
+        )
+        # In a real implementation, we'd use a specific Kafka key for compaction
+        await self.bus.send_message(message)

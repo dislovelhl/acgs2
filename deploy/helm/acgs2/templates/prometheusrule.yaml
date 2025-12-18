@@ -1,0 +1,162 @@
+{{/*
+ACGS-2 PrometheusRule for alerting
+Constitutional Hash: cdd01ef066bc6cf2
+*/}}
+{{- if and .Values.monitoring.enabled .Values.monitoring.prometheus.rules.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ include "acgs2.fullname" . }}
+  labels:
+    {{- include "acgs2.labels" . | nindent 4 }}
+spec:
+  groups:
+    - name: acgs2.constitutional
+      rules:
+        - alert: ConstitutionalHashMismatch
+          expr: acgs_constitutional_hash_valid == 0
+          for: 1m
+          labels:
+            severity: critical
+            constitutional_hash: {{ .Values.global.constitutionalHash | quote }}
+          annotations:
+            summary: "Constitutional hash validation failed"
+            description: "Constitutional hash validation failed on {{ "{{" }} $labels.pod {{ "}}" }} in {{ "{{" }} $labels.namespace {{ "}}" }}"
+            runbook_url: "https://acgs.io/runbooks/constitutional-hash-mismatch"
+
+        - alert: ConstitutionalComplianceDropped
+          expr: acgs_constitutional_compliance_rate < 0.95
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Constitutional compliance rate dropped below 95%"
+            description: "Compliance rate is {{ "{{" }} $value | humanizePercentage {{ "}}" }} on {{ "{{" }} $labels.pod {{ "}}" }}"
+
+    - name: acgs2.performance
+      rules:
+        - alert: P99LatencyHigh
+          expr: histogram_quantile(0.99, rate(acgs_request_duration_seconds_bucket[5m])) > {{ div .Values.constitutionalService.performance.p99LatencyMs 1000.0 }}
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "P99 latency exceeds target"
+            description: "P99 latency is {{ "{{" }} $value | humanizeDuration {{ "}}" }} (target: {{ .Values.constitutionalService.performance.p99LatencyMs }}ms)"
+
+        - alert: ThroughputLow
+          expr: rate(acgs_requests_total[5m]) < {{ .Values.constitutionalService.performance.minThroughputRps }}
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Throughput below target"
+            description: "Current throughput is {{ "{{" }} $value {{ "}}" }} RPS (target: {{ .Values.constitutionalService.performance.minThroughputRps }} RPS)"
+
+        - alert: CacheHitRateLow
+          expr: rate(acgs_cache_hits_total[5m]) / rate(acgs_cache_requests_total[5m]) < {{ div .Values.constitutionalService.performance.cacheHitRatePercent 100.0 }}
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Cache hit rate below target"
+            description: "Cache hit rate is {{ "{{" }} $value | humanizePercentage {{ "}}" }} (target: {{ .Values.constitutionalService.performance.cacheHitRatePercent }}%)"
+
+    - name: acgs2.availability
+      rules:
+        - alert: ServiceDown
+          expr: up{job=~"{{ include "acgs2.fullname" . }}.*"} == 0
+          for: 2m
+          labels:
+            severity: critical
+          annotations:
+            summary: "ACGS-2 service is down"
+            description: "Service {{ "{{" }} $labels.job {{ "}}" }} has been down for more than 2 minutes"
+
+        - alert: HighErrorRate
+          expr: rate(acgs_requests_total{status=~"5.."}[5m]) / rate(acgs_requests_total[5m]) > 0.01
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "High error rate detected"
+            description: "Error rate is {{ "{{" }} $value | humanizePercentage {{ "}}" }} on {{ "{{" }} $labels.pod {{ "}}" }}"
+
+        - alert: PodRestartLoop
+          expr: increase(kube_pod_container_status_restarts_total{namespace="{{ .Release.Namespace }}", pod=~"{{ include "acgs2.fullname" . }}.*"}[1h]) > 3
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Pod restart loop detected"
+            description: "Pod {{ "{{" }} $labels.pod {{ "}}" }} has restarted {{ "{{" }} $value {{ "}}" }} times in the last hour"
+
+    - name: acgs2.governance
+      rules:
+        - alert: PolicyValidationFailures
+          expr: rate(acgs_policy_validation_failures_total[5m]) > 0
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Policy validation failures detected"
+            description: "{{ "{{" }} $value {{ "}}" }} policy validation failures per second on {{ "{{" }} $labels.pod {{ "}}" }}"
+
+        - alert: ApprovalRequestBacklog
+          expr: acgs_pending_approval_requests > 100
+          for: 30m
+          labels:
+            severity: warning
+          annotations:
+            summary: "High approval request backlog"
+            description: "{{ "{{" }} $value {{ "}}" }} pending approval requests"
+
+        - alert: EscalationTimeout
+          expr: increase(acgs_escalation_timeouts_total[1h]) > 5
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Approval escalation timeouts increasing"
+            description: "{{ "{{" }} $value {{ "}}" }} escalation timeouts in the last hour"
+
+    - name: acgs2.audit
+      rules:
+        - alert: AuditLogIngestionLag
+          expr: acgs_audit_log_lag_seconds > 60
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Audit log ingestion lag detected"
+            description: "Audit logs are {{ "{{" }} $value | humanizeDuration {{ "}}" }} behind"
+
+        - alert: AuditStorageFull
+          expr: acgs_audit_storage_used_percent > 85
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Audit storage approaching capacity"
+            description: "Audit storage is {{ "{{" }} $value {{ "}}" }}% full"
+
+    - name: acgs2.kafka
+      rules:
+        - alert: KafkaConsumerLag
+          expr: acgs_kafka_consumer_lag > 10000
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "High Kafka consumer lag"
+            description: "Consumer lag is {{ "{{" }} $value {{ "}}" }} messages on {{ "{{" }} $labels.topic {{ "}}" }}"
+
+        - alert: DeadLetterQueueGrowing
+          expr: increase(acgs_dlq_messages_total[1h]) > 100
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Dead letter queue growing"
+            description: "{{ "{{" }} $value {{ "}}" }} messages added to DLQ in the last hour"
+{{- end }}
