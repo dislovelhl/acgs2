@@ -141,7 +141,8 @@ class AuditLedger:
         # 清空当前批次
         self.current_batch = []
 
-        return root_hash or ""
+        # Return batch_id (not root_hash) so callers can use get_entries_by_batch()
+        return batch_id
 
     def get_batch_root_hash(self, batch_id: str) -> Optional[str]:
         """获取批次的根哈希"""
@@ -165,9 +166,15 @@ class AuditLedger:
         if not entry:
             return False
 
-        # 使用Merkle证明验证
-        entry_data = json.dumps(entry.validation_result.to_dict(),
-                               sort_keys=True).encode()
+        # 使用Merkle证明验证 - 使用与_hash_validation_result相同的数据格式
+        hash_data = {
+            'is_valid': entry.validation_result.is_valid,
+            'errors': entry.validation_result.errors,
+            'warnings': entry.validation_result.warnings,
+            'metadata': entry.validation_result.metadata,
+            'constitutional_hash': entry.validation_result.constitutional_hash
+        }
+        entry_data = json.dumps(hash_data, sort_keys=True).encode()
         return self.merkle_tree.verify_proof(entry_data, merkle_proof, root_hash) \
                if self.merkle_tree else False
 

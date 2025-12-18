@@ -10,13 +10,13 @@ import logging
 from typing import Dict, Any
 import json
 
-# Import system components
-from .vector_database import create_vector_db_manager
-from .document_processor import DocumentProcessor
-from .retrieval_engine import RetrievalEngine
-from .llm_reasoner import LLMReasoner
-from .feedback_loop import FeedbackLoop
-from .multi_agent_coordinator import MultiAgentCoordinator
+# Import system components (absolute imports for pytest compatibility)
+from vector_database import create_vector_db_manager
+from document_processor import DocumentProcessor
+from retrieval_engine import RetrievalEngine
+from llm_reasoner import LLMReasoner
+from feedback_loop import FeedbackLoop
+from multi_agent_coordinator import MultiAgentCoordinator
 
 logger = logging.getLogger(__name__)
 

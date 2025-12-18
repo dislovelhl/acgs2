@@ -29,7 +29,7 @@ class PolicyVersion(BaseModel):
 
     version_id: str = Field(default_factory=lambda: str(uuid4()))
     policy_id: str = Field(...)
-    version: str = Field(..., regex=r"^\d+\.\d+\.\d+$")  # Semantic versioning
+    version: str = Field(..., pattern=r"^\d+\.\d+\.\d+$")  # Semantic versioning
     content: Dict[str, Any] = Field(...)  # JSON/YAML policy content
     content_hash: str = Field(...)  # SHA256 hash of content
     predecessor_version: Optional[str] = Field(None)

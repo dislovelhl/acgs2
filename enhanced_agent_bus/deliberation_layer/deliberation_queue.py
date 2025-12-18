@@ -410,6 +410,41 @@ class DeliberationQueue:
             'consensus_reached': self._check_consensus(item)
         }
 
+    async def stop(self):
+        """
+        Stop the deliberation queue and cancel all pending tasks.
+
+        This should be called during shutdown to prevent 'Task was destroyed
+        but it is pending!' warnings.
+        """
+        # Cancel all processing tasks
+        for item_id, task in list(self.processing_tasks.items()):
+            if not task.done():
+                task.cancel()
+                try:
+                    await task
+                except asyncio.CancelledError:
+                    pass
+
+        self.processing_tasks.clear()
+
+        # Set resolved events to unblock any waiting coroutines
+        for item in self.queue.values():
+            if not item.resolved_event.is_set():
+                item.result = DeliberationStatus.TIMED_OUT
+                item.resolved_event.set()
+
+        logger.info("Deliberation queue stopped, all pending tasks cancelled")
+
+    async def __aenter__(self):
+        """Async context manager entry."""
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        """Async context manager exit - ensures cleanup."""
+        await self.stop()
+        return False
+
 
 # Global queue instance
 _deliberation_queue = None

@@ -4,12 +4,13 @@ ACGS-2 Dynamic Constraint Updater
 """
 
 import logging
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional, TYPE_CHECKING
 from datetime import datetime, timedelta, timezone
 from collections import defaultdict
 import json
 
-from .constraint_generator import GenerationRequest, GenerationResult
+if TYPE_CHECKING:
+    from .constraint_generator import GenerationRequest, GenerationResult
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +47,7 @@ class DynamicConstraintUpdater:
 
         logger.info("DynamicConstraintUpdater initialized")
 
-    async def update_constraints(self, request: GenerationRequest, result: GenerationResult):
+    async def update_constraints(self, request: "GenerationRequest", result: "GenerationResult"):
         """
         基于生成结果更新约束
 

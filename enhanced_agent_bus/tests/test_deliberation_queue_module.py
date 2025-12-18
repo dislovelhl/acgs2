@@ -67,9 +67,12 @@ class TestDeliberationQueueClass:
     """Tests for the DeliberationQueue class."""
 
     @pytest.fixture
-    def queue(self):
-        """Create a fresh deliberation queue."""
-        return DeliberationQueue(consensus_threshold=0.66, default_timeout=5)
+    async def queue(self):
+        """Create a fresh deliberation queue with proper cleanup."""
+        q = DeliberationQueue(consensus_threshold=0.66, default_timeout=5)
+        yield q
+        # Cleanup: Cancel all pending tasks to prevent warnings
+        await q.stop()
 
     @pytest.fixture
     def test_message(self):

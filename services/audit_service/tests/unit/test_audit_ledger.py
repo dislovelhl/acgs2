@@ -44,13 +44,14 @@ class TestAuditLedger(unittest.TestCase):
         # 添加条目并提交批次
         vr = ValidationResult(is_valid=True, metadata={"test": "verification"})
         entry_hash = self.ledger.add_validation_result(vr)
-        root_hash = self.ledger.force_commit_batch()
+        batch_id = self.ledger.force_commit_batch()
 
         # 获取条目和证明
         entry = self.ledger.entries[0]
         proof = entry.merkle_proof
 
-        # 对于单节点树，证明是空列表
+        # 获取实际的merkle root hash用于验证
+        root_hash = self.ledger.get_batch_root_hash(batch_id)
         self.assertIsNotNone(root_hash)
 
         # 验证条目
@@ -63,9 +64,10 @@ class TestAuditLedger(unittest.TestCase):
         # 添加条目
         vr = ValidationResult(is_valid=True, metadata={"test": "invalid"})
         self.ledger.add_validation_result(vr)
-        root_hash = self.ledger.force_commit_batch()
+        batch_id = self.ledger.force_commit_batch()
 
         entry = self.ledger.entries[0]
+        root_hash = self.ledger.get_batch_root_hash(batch_id)
 
         # 使用错误的哈希验证
         wrong_hash = "wrong_hash"
