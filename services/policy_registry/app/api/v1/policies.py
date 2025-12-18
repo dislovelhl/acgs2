@@ -7,6 +7,7 @@ from fastapi import APIRouter, HTTPException, Depends, Query
 
 from ...models import Policy, PolicyVersion, PolicyStatus
 from ...services import PolicyService, CryptoService
+from .auth import get_current_user, check_role
 
 router = APIRouter()
 
@@ -14,10 +15,12 @@ router = APIRouter()
 @router.get("/", response_model=List[Dict[str, Any]])
 async def list_policies(
     status: Optional[PolicyStatus] = Query(None, description="Filter by policy status"),
-    policy_service: PolicyService = Depends()
+    policy_service: PolicyService = Depends(),
+    current_user: Dict[str, Any] = Depends(get_current_user)
 ):
-    """List all policies"""
-    policies = await policy_service.list_policies(status)
+    """List all policies (tenant-scoped)"""
+    tenant_id = current_user.get("tenant_id")
+    policies = await policy_service.list_policies(status, tenant_id=tenant_id)
     return [policy.dict() for policy in policies]
 
 
@@ -27,12 +30,15 @@ async def create_policy(
     content: Dict[str, Any],
     format: str = "json",
     description: Optional[str] = None,
-    policy_service: PolicyService = Depends()
+    policy_service: PolicyService = Depends(),
+    current_user: Dict[str, Any] = Depends(check_role(["tenant_admin", "system_admin"]))
 ):
-    """Create a new policy"""
+    """Create a new policy (tenant-scoped)"""
+    tenant_id = current_user.get("tenant_id")
     try:
         policy = await policy_service.create_policy(
             name=name,
+            tenant_id=tenant_id,
             content=content,
             format=format,
             description=description

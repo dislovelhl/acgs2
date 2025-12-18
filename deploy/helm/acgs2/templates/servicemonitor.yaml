@@ -1,0 +1,35 @@
+{{/*
+ACGS-2 ServiceMonitor for Prometheus
+Constitutional Hash: cdd01ef066bc6cf2
+*/}}
+{{- if and .Values.monitoring.enabled .Values.monitoring.prometheus.serviceMonitor.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "acgs2.fullname" . }}
+  labels:
+    {{- include "acgs2.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "acgs2.selectorLabels" . | nindent 6 }}
+  namespaceSelector:
+    matchNames:
+      - {{ .Release.Namespace }}
+  endpoints:
+    - port: metrics
+      interval: {{ .Values.monitoring.prometheus.serviceMonitor.interval }}
+      path: /metrics
+      scheme: http
+      relabelings:
+        - sourceLabels: [__meta_kubernetes_pod_label_app_kubernetes_io_component]
+          targetLabel: component
+        - sourceLabels: [__meta_kubernetes_namespace]
+          targetLabel: namespace
+        - sourceLabels: [__meta_kubernetes_pod_name]
+          targetLabel: pod
+      metricRelabelings:
+        - sourceLabels: [__name__]
+          regex: 'acgs_.*'
+          action: keep
+{{- end }}

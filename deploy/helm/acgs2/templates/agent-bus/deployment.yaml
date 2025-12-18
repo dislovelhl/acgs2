@@ -1,0 +1,130 @@
+{{/*
+Enhanced Agent Bus Deployment
+Constitutional Hash: cdd01ef066bc6cf2
+*/}}
+{{- if .Values.agentBus.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "acgs2.agentBus.fullname" . }}
+  labels:
+    {{- include "acgs2.labels" . | nindent 4 }}
+    app.kubernetes.io/component: agent-bus
+  annotations:
+    acgs.io/constitutional-hash: {{ .Values.global.constitutionalHash | quote }}
+spec:
+  replicas: {{ .Values.agentBus.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "acgs2.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: agent-bus
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        acgs.io/constitutional-hash: {{ .Values.global.constitutionalHash | quote }}
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8000"
+        prometheus.io/path: "/metrics"
+      labels:
+        {{- include "acgs2.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: agent-bus
+    spec:
+      {{- include "acgs2.imagePullSecrets" . | nindent 6 }}
+      serviceAccountName: {{ include "acgs2.serviceAccountName" . }}
+      securityContext:
+        {{- include "acgs2.podSecurityContext" . | nindent 8 }}
+      containers:
+        - name: agent-bus
+          securityContext:
+            {{- include "acgs2.securityContext" . | nindent 12 }}
+          image: {{ include "acgs2.image" (dict "registry" .Values.global.imageRegistry "repository" .Values.agentBus.image.repository "tag" .Values.agentBus.image.tag) }}
+          imagePullPolicy: {{ .Values.agentBus.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 8000
+              protocol: TCP
+            - name: metrics
+              containerPort: 9090
+              protocol: TCP
+          env:
+            {{- include "acgs2.constitutionalEnv" . | nindent 12 }}
+            {{- include "acgs2.databaseEnv" . | nindent 12 }}
+            {{- include "acgs2.redisEnv" . | nindent 12 }}
+            {{- if .Values.agentBus.kafka.enabled }}
+            {{- include "acgs2.kafkaEnv" . | nindent 12 }}
+            - name: KAFKA_MESSAGES_TOPIC
+              value: {{ .Values.agentBus.kafka.topics.messages | quote }}
+            - name: KAFKA_EVENTS_TOPIC
+              value: {{ .Values.agentBus.kafka.topics.events | quote }}
+            - name: KAFKA_DLQ_TOPIC
+              value: {{ .Values.agentBus.kafka.topics.deadLetter | quote }}
+            {{- end }}
+            - name: SERVICE_NAME
+              value: "agent-bus"
+            - name: SERVICE_PORT
+              value: "8000"
+            - name: LOG_LEVEL
+              value: "INFO"
+            - name: DELIBERATION_ENABLED
+              value: {{ .Values.agentBus.deliberation.enabled | quote }}
+            - name: IMPACT_SCORING_ENABLED
+              value: {{ .Values.agentBus.deliberation.impactScoring | quote }}
+            - name: HITL_ENABLED
+              value: {{ .Values.agentBus.deliberation.humanInTheLoop | quote }}
+            - name: MULTI_APPROVER_ENABLED
+              value: {{ .Values.agentBus.deliberation.multiApprover | quote }}
+            - name: ESCALATION_TIMEOUT
+              value: {{ .Values.agentBus.deliberation.escalationTimeout | quote }}
+            {{- if .Values.extraEnv }}
+            {{- toYaml .Values.extraEnv | nindent 12 }}
+            {{- end }}
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          resources:
+            {{- toYaml .Values.agentBus.resources | nindent 12 }}
+          volumeMounts:
+            - name: config
+              mountPath: /app/config
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+            {{- if .Values.extraVolumeMounts }}
+            {{- toYaml .Values.extraVolumeMounts | nindent 12 }}
+            {{- end }}
+      volumes:
+        - name: config
+          configMap:
+            name: {{ include "acgs2.fullname" . }}-config
+        - name: tmp
+          emptyDir: {}
+        {{- if .Values.extraVolumes }}
+        {{- toYaml .Values.extraVolumes | nindent 8 }}
+        {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

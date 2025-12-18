@@ -154,15 +154,29 @@ class DeliberationLayer:
         start_time = datetime.now(timezone.utc)
 
         try:
-            # Step 1: Calculate impact score if not present
+            # Step 1: Prepare context for multi-dimensional analysis
+            context = {
+                "agent_id": message.from_agent or message.sender_id,
+                "tenant_id": message.tenant_id,
+                "priority": (
+                    message.priority.value
+                    if hasattr(message.priority, 'value')
+                    else str(message.priority)
+                ),
+                "constitutional_hash": message.constitutional_hash
+            }
+
+            # Step 2: Calculate impact score if not present
             if message.impact_score is None:
-                message.impact_score = calculate_message_impact(message.content)
+                message.impact_score = self.impact_scorer.calculate_impact_score(
+                    message.content, context
+                )
                 logger.debug(
                     f"Calculated impact score {message.impact_score:.3f} "
                     f"for message {message.message_id}"
                 )
 
-            # Step 2: OPA Guard pre-action verification (VERIFY-BEFORE-ACT)
+            # Step 3: OPA Guard pre-action verification (VERIFY-BEFORE-ACT)
             guard_result = None
             if self.opa_guard:
                 guard_result = await self._verify_with_opa_guard(message)
@@ -182,8 +196,8 @@ class DeliberationLayer:
                             message, guard_result, start_time
                         )
 
-            # Step 3: Route the message
-            routing_decision = await self.adaptive_router.route_message(message)
+            # Step 4: Route the message (Dual-path Routing)
+            routing_decision = await self.adaptive_router.route_message(message, context)
 
             # Step 4: Execute routing
             if routing_decision.get('lane') == 'fast':

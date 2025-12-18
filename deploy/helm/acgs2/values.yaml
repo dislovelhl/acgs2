@@ -1,0 +1,474 @@
+# ACGS-2 Helm Chart Values
+# Constitutional Hash: cdd01ef066bc6cf2
+
+# Global configuration
+global:
+  constitutionalHash: "cdd01ef066bc6cf2"
+  imageRegistry: ""
+  imagePullSecrets: []
+  storageClass: ""
+
+  # Multi-tenancy
+  multiTenancy:
+    enabled: true
+    isolationLevel: "namespace"  # namespace, network, or full
+
+  # Security
+  security:
+    podSecurityPolicy:
+      enabled: false
+    networkPolicy:
+      enabled: true
+    tls:
+      enabled: true
+      certManager: true
+
+# Constitutional AI Service
+constitutionalService:
+  enabled: true
+  replicaCount: 3
+
+  image:
+    repository: acgs/constitutional-service
+    tag: "2.0.0"
+    pullPolicy: IfNotPresent
+
+  service:
+    type: ClusterIP
+    port: 8001
+    annotations: {}
+
+  resources:
+    requests:
+      cpu: 500m
+      memory: 512Mi
+    limits:
+      cpu: 2000m
+      memory: 2Gi
+
+  autoscaling:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 20
+    targetCPUUtilization: 70
+    targetMemoryUtilization: 80
+
+  # Performance targets
+  performance:
+    p99LatencyMs: 5
+    minThroughputRps: 100
+    cacheHitRatePercent: 85
+
+  # Constitutional validation
+  constitutional:
+    hashEnforcement: strict
+    validationMode: realtime
+    auditLevel: comprehensive
+
+# Policy Registry Service
+policyRegistry:
+  enabled: true
+  replicaCount: 2
+
+  image:
+    repository: acgs/policy-registry
+    tag: "2.0.0"
+    pullPolicy: IfNotPresent
+
+  service:
+    type: ClusterIP
+    port: 8003
+
+  resources:
+    requests:
+      cpu: 250m
+      memory: 256Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+
+  # OCI Registry for bundle distribution
+  bundleRegistry:
+    enabled: true
+    type: "harbor"  # harbor, ecr, gcr, acr
+    endpoint: ""
+    repository: "acgs/policy-bundles"
+    credentials:
+      secretName: "bundle-registry-credentials"
+
+  # Policy lifecycle
+  lifecycle:
+    approvalWorkflow: true
+    shadowModeEnabled: true
+    shadowModeDuration: "7d"
+    rollbackEnabled: true
+    maxRollbackVersions: 10
+
+# Enhanced Agent Bus
+agentBus:
+  enabled: true
+  replicaCount: 3
+
+  image:
+    repository: acgs/agent-bus
+    tag: "2.0.0"
+    pullPolicy: IfNotPresent
+
+  service:
+    type: ClusterIP
+    port: 8000
+
+  resources:
+    requests:
+      cpu: 500m
+      memory: 512Mi
+    limits:
+      cpu: 2000m
+      memory: 2Gi
+
+  # Kafka integration
+  kafka:
+    enabled: true
+    bootstrapServers: ""  # Auto-configured if kafka.enabled
+    topics:
+      messages: "acgs.agent.messages"
+      events: "acgs.agent.events"
+      deadLetter: "acgs.agent.dlq"
+    consumer:
+      groupId: "acgs-agent-bus"
+      autoOffsetReset: "earliest"
+    producer:
+      acks: "all"
+      retries: 3
+
+  # Deliberation layer
+  deliberation:
+    enabled: true
+    impactScoring: true
+    humanInTheLoop: true
+    multiApprover: true
+    escalationTimeout: "4h"
+
+# API Gateway
+apiGateway:
+  enabled: true
+  replicaCount: 2
+
+  image:
+    repository: acgs/api-gateway
+    tag: "2.0.0"
+    pullPolicy: IfNotPresent
+
+  service:
+    type: LoadBalancer
+    port: 8080
+    annotations:
+      service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+
+  ingress:
+    enabled: true
+    className: "nginx"
+    annotations:
+      nginx.ingress.kubernetes.io/rate-limit: "100"
+      nginx.ingress.kubernetes.io/rate-limit-window: "1m"
+      cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    hosts:
+      - host: api.acgs.example.com
+        paths:
+          - path: /
+            pathType: Prefix
+    tls:
+      - secretName: acgs-api-tls
+        hosts:
+          - api.acgs.example.com
+
+  # Rate limiting
+  rateLimit:
+    enabled: true
+    requestsPerMinute: 1000
+    burstSize: 100
+
+  # CORS
+  cors:
+    enabled: true
+    allowOrigins:
+      - "https://*.acgs.example.com"
+    allowMethods:
+      - GET
+      - POST
+      - PUT
+      - DELETE
+    allowHeaders:
+      - Authorization
+      - Content-Type
+      - X-Tenant-ID
+      - X-Constitutional-Hash
+
+# Audit Service
+auditService:
+  enabled: true
+  replicaCount: 2
+
+  image:
+    repository: acgs/audit-service
+    tag: "2.0.0"
+    pullPolicy: IfNotPresent
+
+  service:
+    type: ClusterIP
+    port: 8002
+
+  resources:
+    requests:
+      cpu: 250m
+      memory: 256Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+
+  # Audit storage
+  storage:
+    type: "elasticsearch"  # elasticsearch, s3, gcs
+    retentionDays: 365
+    immutable: true
+
+  # Compliance reporting
+  compliance:
+    euAiAct:
+      enabled: true
+      reportingFrequency: "daily"
+    nistRmf:
+      enabled: true
+      controlFamily: "AU"
+    hipaa:
+      enabled: false
+    socType2:
+      enabled: false
+
+# Monitoring Stack
+monitoring:
+  enabled: true
+
+  prometheus:
+    enabled: true
+    serviceMonitor:
+      enabled: true
+      interval: 15s
+    rules:
+      enabled: true
+
+  grafana:
+    enabled: true
+    adminPassword: ""  # Set via secret
+    dashboards:
+      enabled: true
+      label: grafana_dashboard
+
+  # SIEM Integration
+  siem:
+    enabled: true
+    exporters:
+      splunk:
+        enabled: false
+        hecEndpoint: ""
+        hecToken: ""  # Via secret
+        index: "acgs_governance"
+      datadog:
+        enabled: false
+        apiKey: ""  # Via secret
+        site: "datadoghq.com"
+      elasticsearch:
+        enabled: true
+        hosts: []
+        index: "acgs-governance"
+
+  # Alerting
+  alerting:
+    pagerduty:
+      enabled: false
+      routingKey: ""
+    slack:
+      enabled: false
+      webhookUrl: ""
+    opsgenie:
+      enabled: false
+      apiKey: ""
+
+# Identity Provider Integration
+identity:
+  enabled: true
+
+  # JWT Configuration
+  jwt:
+    issuer: "https://auth.acgs.example.com"
+    audience: "acgs-api"
+    algorithm: "RS256"
+    publicKeyUrl: ""
+
+  # OIDC Providers
+  oidc:
+    okta:
+      enabled: false
+      domain: ""
+      clientId: ""
+      clientSecret: ""  # Via secret
+    azureAd:
+      enabled: false
+      tenantId: ""
+      clientId: ""
+      clientSecret: ""  # Via secret
+    keycloak:
+      enabled: false
+      serverUrl: ""
+      realm: ""
+      clientId: ""
+
+  # RBAC
+  rbac:
+    enabled: true
+    defaultRole: "viewer"
+    roles:
+      - system_admin
+      - tenant_admin
+      - agent_operator
+      - policy_author
+      - auditor
+      - viewer
+
+# PostgreSQL (Bitnami subchart)
+postgresql:
+  enabled: true
+  auth:
+    postgresPassword: ""  # Via secret
+    username: acgs
+    password: ""  # Via secret
+    database: acgs
+  primary:
+    persistence:
+      enabled: true
+      size: 100Gi
+    resources:
+      requests:
+        cpu: 500m
+        memory: 1Gi
+      limits:
+        cpu: 2000m
+        memory: 4Gi
+  readReplicas:
+    replicaCount: 2
+    persistence:
+      enabled: true
+      size: 100Gi
+
+# Redis (Bitnami subchart)
+redis:
+  enabled: true
+  auth:
+    enabled: true
+    password: ""  # Via secret
+  master:
+    persistence:
+      enabled: true
+      size: 20Gi
+    resources:
+      requests:
+        cpu: 250m
+        memory: 256Mi
+      limits:
+        cpu: 1000m
+        memory: 1Gi
+  replica:
+    replicaCount: 2
+    persistence:
+      enabled: true
+      size: 20Gi
+  sentinel:
+    enabled: true
+
+# Kafka (Bitnami subchart)
+kafka:
+  enabled: true
+  replicaCount: 3
+  persistence:
+    enabled: true
+    size: 100Gi
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      cpu: 2000m
+      memory: 4Gi
+  zookeeper:
+    enabled: true
+    replicaCount: 3
+    persistence:
+      enabled: true
+      size: 20Gi
+
+# OPA (Open Policy Agent)
+opa:
+  enabled: true
+  replicaCount: 2
+
+  image:
+    repository: openpolicyagent/opa
+    tag: "0.60.0"
+    pullPolicy: IfNotPresent
+
+  service:
+    type: ClusterIP
+    port: 8181
+
+  resources:
+    requests:
+      cpu: 250m
+      memory: 256Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+
+  # Bundle configuration
+  bundles:
+    enabled: true
+    pollInterval: "60s"
+    service: "bundle-service"
+
+# Service Accounts
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+# Pod Security
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop:
+      - ALL
+
+# Node Affinity
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+# Priority Class
+priorityClassName: ""
+
+# Extra environment variables
+extraEnv: []
+
+# Extra volumes
+extraVolumes: []
+
+# Extra volume mounts
+extraVolumeMounts: []

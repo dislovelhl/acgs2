@@ -1,0 +1,59 @@
+{{/*
+ACGS-2 ConfigMap
+Constitutional Hash: cdd01ef066bc6cf2
+*/}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "acgs2.fullname" . }}-config
+  labels:
+    {{- include "acgs2.labels" . | nindent 4 }}
+data:
+  # Constitutional Configuration
+  constitutional-hash: {{ .Values.global.constitutionalHash | quote }}
+
+  # Service URLs
+  constitutional-service-url: "http://{{ include "acgs2.constitutionalService.fullname" . }}:{{ .Values.constitutionalService.service.port }}"
+  policy-registry-url: "http://{{ include "acgs2.policyRegistry.fullname" . }}:{{ .Values.policyRegistry.service.port }}"
+  agent-bus-url: "http://{{ include "acgs2.agentBus.fullname" . }}:{{ .Values.agentBus.service.port }}"
+  audit-service-url: "http://{{ include "acgs2.auditService.fullname" . }}:{{ .Values.auditService.service.port }}"
+  opa-url: "http://{{ include "acgs2.opa.fullname" . }}:{{ .Values.opa.service.port }}"
+
+  # Database Configuration
+  database-host: {{ include "acgs2.postgresql.host" . | quote }}
+  database-port: "5432"
+  database-name: {{ .Values.postgresql.auth.database | quote }}
+
+  # Redis Configuration
+  redis-host: {{ include "acgs2.redis.host" . | quote }}
+  redis-port: "6379"
+
+  {{- if .Values.agentBus.kafka.enabled }}
+  # Kafka Configuration
+  kafka-bootstrap-servers: {{ include "acgs2.kafka.bootstrapServers" . | quote }}
+  kafka-messages-topic: {{ .Values.agentBus.kafka.topics.messages | quote }}
+  kafka-events-topic: {{ .Values.agentBus.kafka.topics.events | quote }}
+  kafka-dlq-topic: {{ .Values.agentBus.kafka.topics.deadLetter | quote }}
+  {{- end }}
+
+  # Performance Configuration
+  p99-latency-target-ms: {{ .Values.constitutionalService.performance.p99LatencyMs | quote }}
+  min-throughput-rps: {{ .Values.constitutionalService.performance.minThroughputRps | quote }}
+  cache-hit-rate-target: {{ .Values.constitutionalService.performance.cacheHitRatePercent | quote }}
+
+  {{- if .Values.identity.enabled }}
+  # Identity Configuration
+  jwt-issuer: {{ .Values.identity.jwt.issuer | quote }}
+  jwt-audience: {{ .Values.identity.jwt.audience | quote }}
+  jwt-algorithm: {{ .Values.identity.jwt.algorithm | quote }}
+  {{- end }}
+
+  # Compliance Configuration
+  {{- if .Values.auditService.compliance.euAiAct.enabled }}
+  eu-ai-act-enabled: "true"
+  eu-ai-act-reporting-frequency: {{ .Values.auditService.compliance.euAiAct.reportingFrequency | quote }}
+  {{- end }}
+  {{- if .Values.auditService.compliance.nistRmf.enabled }}
+  nist-rmf-enabled: "true"
+  nist-rmf-control-family: {{ .Values.auditService.compliance.nistRmf.controlFamily | quote }}
+  {{- end }}

@@ -1,0 +1,96 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "acgs2-nemo-integration"
+version = "2.0.0"
+description = "ACGS-2 integration with NVIDIA NeMo-Agent-Toolkit for constitutional AI governance"
+readme = "README.md"
+license = "Apache-2.0"
+requires-python = ">=3.11"
+authors = [
+    { name = "ACGS-2 Team", email = "team@acgs.io" }
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Typing :: Typed",
+]
+keywords = [
+    "acgs2",
+    "constitutional-ai",
+    "nemo",
+    "nvidia",
+    "agent-toolkit",
+    "governance",
+    "compliance",
+    "guardrails",
+    "mcp",
+]
+dependencies = [
+    "acgs2-sdk>=2.0.0",
+]
+
+[project.optional-dependencies]
+langchain = [
+    "langchain>=0.1.0",
+    "langchain-core>=0.1.0",
+]
+llamaindex = [
+    "llama-index>=0.10.0",
+]
+crewai = [
+    "crewai>=0.30.0",
+]
+nemo = [
+    "nvidia-nemo-agent>=0.1.0",
+]
+all = [
+    "acgs2-nemo-integration[langchain]",
+    "acgs2-nemo-integration[llamaindex]",
+    "acgs2-nemo-integration[crewai]",
+    "acgs2-nemo-integration[nemo]",
+]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-asyncio>=0.21.0",
+    "pytest-cov>=4.1.0",
+    "mypy>=1.7.0",
+    "ruff>=0.1.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/acgs/acgs2"
+Documentation = "https://docs.acgs.io/integrations/nemo"
+Repository = "https://github.com/acgs/acgs2"
+Issues = "https://github.com/acgs/acgs2/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["."]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_return_any = true
+warn_unused_configs = true
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "B", "Q"]
+ignore = ["E501"]

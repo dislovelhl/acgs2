@@ -1,0 +1,31 @@
+{{/*
+Constitutional AI Service - Kubernetes Service
+Constitutional Hash: cdd01ef066bc6cf2
+*/}}
+{{- if .Values.constitutionalService.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "acgs2.constitutionalService.fullname" . }}
+  labels:
+    {{- include "acgs2.labels" . | nindent 4 }}
+    app.kubernetes.io/component: constitutional-service
+  {{- with .Values.constitutionalService.service.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ .Values.constitutionalService.service.type }}
+  ports:
+    - port: {{ .Values.constitutionalService.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+    - port: 9090
+      targetPort: metrics
+      protocol: TCP
+      name: metrics
+  selector:
+    {{- include "acgs2.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: constitutional-service
+{{- end }}

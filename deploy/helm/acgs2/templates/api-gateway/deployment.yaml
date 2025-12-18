@@ -1,0 +1,137 @@
+{{/*
+API Gateway Deployment
+Constitutional Hash: cdd01ef066bc6cf2
+*/}}
+{{- if .Values.apiGateway.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "acgs2.apiGateway.fullname" . }}
+  labels:
+    {{- include "acgs2.labels" . | nindent 4 }}
+    app.kubernetes.io/component: api-gateway
+  annotations:
+    acgs.io/constitutional-hash: {{ .Values.global.constitutionalHash | quote }}
+spec:
+  replicas: {{ .Values.apiGateway.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "acgs2.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: api-gateway
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        acgs.io/constitutional-hash: {{ .Values.global.constitutionalHash | quote }}
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/metrics"
+      labels:
+        {{- include "acgs2.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: api-gateway
+    spec:
+      {{- include "acgs2.imagePullSecrets" . | nindent 6 }}
+      serviceAccountName: {{ include "acgs2.serviceAccountName" . }}
+      securityContext:
+        {{- include "acgs2.podSecurityContext" . | nindent 8 }}
+      containers:
+        - name: api-gateway
+          securityContext:
+            {{- include "acgs2.securityContext" . | nindent 12 }}
+          image: {{ include "acgs2.image" (dict "registry" .Values.global.imageRegistry "repository" .Values.apiGateway.image.repository "tag" .Values.apiGateway.image.tag) }}
+          imagePullPolicy: {{ .Values.apiGateway.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+            - name: metrics
+              containerPort: 9090
+              protocol: TCP
+          env:
+            {{- include "acgs2.constitutionalEnv" . | nindent 12 }}
+            {{- include "acgs2.redisEnv" . | nindent 12 }}
+            - name: SERVICE_NAME
+              value: "api-gateway"
+            - name: SERVICE_PORT
+              value: "8080"
+            - name: LOG_LEVEL
+              value: "INFO"
+            - name: CONSTITUTIONAL_SERVICE_URL
+              value: "http://{{ include "acgs2.constitutionalService.fullname" . }}:{{ .Values.constitutionalService.service.port }}"
+            - name: POLICY_REGISTRY_URL
+              value: "http://{{ include "acgs2.policyRegistry.fullname" . }}:{{ .Values.policyRegistry.service.port }}"
+            - name: AGENT_BUS_URL
+              value: "http://{{ include "acgs2.agentBus.fullname" . }}:{{ .Values.agentBus.service.port }}"
+            - name: AUDIT_SERVICE_URL
+              value: "http://{{ include "acgs2.auditService.fullname" . }}:{{ .Values.auditService.service.port }}"
+            - name: RATE_LIMIT_ENABLED
+              value: {{ .Values.apiGateway.rateLimit.enabled | quote }}
+            - name: RATE_LIMIT_RPM
+              value: {{ .Values.apiGateway.rateLimit.requestsPerMinute | quote }}
+            - name: RATE_LIMIT_BURST
+              value: {{ .Values.apiGateway.rateLimit.burstSize | quote }}
+            - name: CORS_ENABLED
+              value: {{ .Values.apiGateway.cors.enabled | quote }}
+            {{- if .Values.identity.enabled }}
+            - name: JWT_ISSUER
+              value: {{ .Values.identity.jwt.issuer | quote }}
+            - name: JWT_AUDIENCE
+              value: {{ .Values.identity.jwt.audience | quote }}
+            - name: JWT_ALGORITHM
+              value: {{ .Values.identity.jwt.algorithm | quote }}
+            {{- if .Values.identity.jwt.publicKeyUrl }}
+            - name: JWT_PUBLIC_KEY_URL
+              value: {{ .Values.identity.jwt.publicKeyUrl | quote }}
+            {{- end }}
+            {{- end }}
+            {{- if .Values.extraEnv }}
+            {{- toYaml .Values.extraEnv | nindent 12 }}
+            {{- end }}
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 250m
+              memory: 256Mi
+            limits:
+              cpu: 1000m
+              memory: 1Gi
+          volumeMounts:
+            - name: config
+              mountPath: /app/config
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: config
+          configMap:
+            name: {{ include "acgs2.fullname" . }}-config
+        - name: tmp
+          emptyDir: {}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

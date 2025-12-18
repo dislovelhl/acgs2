@@ -1,0 +1,338 @@
+# ACGS-2 Terraform Validation Workflow
+# Constitutional Hash: cdd01ef066bc6cf2
+
+name: Terraform - Validate & Plan
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'deploy/terraform/**'
+      - '.github/workflows/terraform-validate.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'deploy/terraform/**'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to plan'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+      cloud:
+        description: 'Cloud provider'
+        required: true
+        default: 'aws'
+        type: choice
+        options:
+          - aws
+          - gcp
+          - all
+
+env:
+  CONSTITUTIONAL_HASH: cdd01ef066bc6cf2
+  TF_VERSION: '1.6.0'
+  TF_IN_AUTOMATION: true
+
+jobs:
+  detect-changes:
+    name: Detect Changes
+    runs-on: ubuntu-latest
+    outputs:
+      aws_changed: ${{ steps.changes.outputs.aws }}
+      gcp_changed: ${{ steps.changes.outputs.gcp }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Detect changed paths
+        uses: dorny/paths-filter@v2
+        id: changes
+        with:
+          filters: |
+            aws:
+              - 'deploy/terraform/aws/**'
+            gcp:
+              - 'deploy/terraform/gcp/**'
+
+  validate-aws:
+    name: Validate AWS Terraform
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.aws_changed == 'true' || github.event.inputs.cloud == 'aws' || github.event.inputs.cloud == 'all'
+    defaults:
+      run:
+        working-directory: deploy/terraform/aws
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Validate Constitutional Hash in files
+        run: |
+          echo "Validating constitutional hash in Terraform files..."
+          FOUND_HASH=$(grep -r "constitutional_hash\|Constitutional Hash" . --include="*.tf" | head -1 || echo "")
+          if [[ "$FOUND_HASH" == *"${{ env.CONSTITUTIONAL_HASH }}"* ]]; then
+            echo "✅ Constitutional hash validated"
+          else
+            echo "⚠️ Constitutional hash reference not found in Terraform files"
+          fi
+
+      - name: Terraform Format Check
+        id: fmt
+        run: terraform fmt -check -recursive
+        continue-on-error: true
+
+      - name: Terraform Init
+        id: init
+        run: |
+          terraform init -backend=false
+
+      - name: Terraform Validate
+        id: validate
+        run: terraform validate -no-color
+
+      - name: Run tfsec security scan
+        uses: aquasecurity/tfsec-action@v1.0.3
+        with:
+          working_directory: deploy/terraform/aws
+          soft_fail: true
+
+      - name: Run checkov security scan
+        uses: bridgecrewio/checkov-action@v12
+        with:
+          directory: deploy/terraform/aws
+          framework: terraform
+          soft_fail: true
+          output_format: cli
+          output_file_path: console
+
+      - name: Comment on PR (AWS)
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const output = `### AWS Terraform Validation 🏗️
+
+            | Step | Status |
+            |------|--------|
+            | Format | ${{ steps.fmt.outcome == 'success' && '✅ Pass' || '⚠️ Needs formatting' }} |
+            | Init | ${{ steps.init.outcome == 'success' && '✅ Pass' || '❌ Fail' }} |
+            | Validate | ${{ steps.validate.outcome == 'success' && '✅ Pass' || '❌ Fail' }} |
+
+            **Constitutional Hash:** \`${{ env.CONSTITUTIONAL_HASH }}\`
+
+            *Pushed by: @${{ github.actor }}*`;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: output
+            });
+
+  validate-gcp:
+    name: Validate GCP Terraform
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.gcp_changed == 'true' || github.event.inputs.cloud == 'gcp' || github.event.inputs.cloud == 'all'
+    defaults:
+      run:
+        working-directory: deploy/terraform/gcp
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Validate Constitutional Hash in files
+        run: |
+          echo "Validating constitutional hash in Terraform files..."
+          FOUND_HASH=$(grep -r "constitutional_hash\|Constitutional Hash" . --include="*.tf" | head -1 || echo "")
+          if [[ "$FOUND_HASH" == *"${{ env.CONSTITUTIONAL_HASH }}"* ]]; then
+            echo "✅ Constitutional hash validated"
+          else
+            echo "⚠️ Constitutional hash reference not found in Terraform files"
+          fi
+
+      - name: Terraform Format Check
+        id: fmt
+        run: terraform fmt -check -recursive
+        continue-on-error: true
+
+      - name: Terraform Init
+        id: init
+        run: terraform init -backend=false
+
+      - name: Terraform Validate
+        id: validate
+        run: terraform validate -no-color
+
+      - name: Run tfsec security scan
+        uses: aquasecurity/tfsec-action@v1.0.3
+        with:
+          working_directory: deploy/terraform/gcp
+          soft_fail: true
+
+      - name: Run checkov security scan
+        uses: bridgecrewio/checkov-action@v12
+        with:
+          directory: deploy/terraform/gcp
+          framework: terraform
+          soft_fail: true
+          output_format: cli
+          output_file_path: console
+
+      - name: Comment on PR (GCP)
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const output = `### GCP Terraform Validation 🏗️
+
+            | Step | Status |
+            |------|--------|
+            | Format | ${{ steps.fmt.outcome == 'success' && '✅ Pass' || '⚠️ Needs formatting' }} |
+            | Init | ${{ steps.init.outcome == 'success' && '✅ Pass' || '❌ Fail' }} |
+            | Validate | ${{ steps.validate.outcome == 'success' && '✅ Pass' || '❌ Fail' }} |
+
+            **Constitutional Hash:** \`${{ env.CONSTITUTIONAL_HASH }}\`
+
+            *Pushed by: @${{ github.actor }}*`;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: output
+            });
+
+  plan-aws:
+    name: Plan AWS Infrastructure
+    runs-on: ubuntu-latest
+    needs: validate-aws
+    if: github.event_name == 'workflow_dispatch' && (github.event.inputs.cloud == 'aws' || github.event.inputs.cloud == 'all')
+    environment: ${{ github.event.inputs.environment }}
+    defaults:
+      run:
+        working-directory: deploy/terraform/aws
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ vars.AWS_REGION || 'us-east-1' }}
+
+      - name: Terraform Init
+        run: |
+          terraform init \
+            -backend-config="bucket=${{ secrets.TF_STATE_BUCKET }}" \
+            -backend-config="key=acgs2/${{ github.event.inputs.environment }}/terraform.tfstate" \
+            -backend-config="region=${{ vars.AWS_REGION || 'us-east-1' }}"
+
+      - name: Terraform Plan
+        id: plan
+        run: |
+          terraform plan \
+            -var-file="environments/${{ github.event.inputs.environment }}.tfvars" \
+            -out=tfplan \
+            -no-color
+        continue-on-error: true
+
+      - name: Upload Plan
+        uses: actions/upload-artifact@v4
+        with:
+          name: aws-tfplan-${{ github.event.inputs.environment }}
+          path: deploy/terraform/aws/tfplan
+          retention-days: 7
+
+  plan-gcp:
+    name: Plan GCP Infrastructure
+    runs-on: ubuntu-latest
+    needs: validate-gcp
+    if: github.event_name == 'workflow_dispatch' && (github.event.inputs.cloud == 'gcp' || github.event.inputs.cloud == 'all')
+    environment: ${{ github.event.inputs.environment }}
+    defaults:
+      run:
+        working-directory: deploy/terraform/gcp
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Setup gcloud CLI
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Terraform Init
+        run: |
+          terraform init \
+            -backend-config="bucket=${{ secrets.GCP_TF_STATE_BUCKET }}" \
+            -backend-config="prefix=acgs2/${{ github.event.inputs.environment }}"
+
+      - name: Terraform Plan
+        id: plan
+        run: |
+          terraform plan \
+            -var-file="environments/${{ github.event.inputs.environment }}.tfvars" \
+            -out=tfplan \
+            -no-color
+        continue-on-error: true
+
+      - name: Upload Plan
+        uses: actions/upload-artifact@v4
+        with:
+          name: gcp-tfplan-${{ github.event.inputs.environment }}
+          path: deploy/terraform/gcp/tfplan
+          retention-days: 7
+
+  summary:
+    name: Validation Summary
+    runs-on: ubuntu-latest
+    needs: [validate-aws, validate-gcp]
+    if: always()
+
+    steps:
+      - name: Summary
+        run: |
+          echo "## Terraform Validation Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Cloud | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| AWS | ${{ needs.validate-aws.result == 'success' && '✅ Pass' || needs.validate-aws.result == 'skipped' && '⏭️ Skipped' || '❌ Fail' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| GCP | ${{ needs.validate-gcp.result == 'success' && '✅ Pass' || needs.validate-gcp.result == 'skipped' && '⏭️ Skipped' || '❌ Fail' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Constitutional Hash:** \`${{ env.CONSTITUTIONAL_HASH }}\`" >> $GITHUB_STEP_SUMMARY
