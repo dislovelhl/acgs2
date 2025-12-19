@@ -6,5 +6,21 @@
     "duration": 6.32812899999999,
     "timestamp": 1765979668739,
     "metadata": {}
+  },
+  {
+    "id": "cmd-agent-1766116047663",
+    "type": "agent",
+    "success": true,
+    "duration": 4159.143156,
+    "timestamp": 1766116051822,
+    "metadata": {}
+  },
+  {
+    "id": "cmd-agent-1766116057591",
+    "type": "agent",
+    "success": true,
+    "duration": 4313.82964,
+    "timestamp": 1766116061905,
+    "metadata": {}
   }
 ]
