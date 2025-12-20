@@ -80,6 +80,7 @@ class OPAGuard:
     def __init__(
         self,
         opa_client: Optional[OPAClient] = None,
+        fail_closed: bool = True,
         enable_signatures: bool = True,
         enable_critic_review: bool = True,
         signature_timeout: int = 300,
@@ -92,6 +93,7 @@ class OPAGuard:
 
         Args:
             opa_client: OPA client for policy evaluation (uses global if None)
+            fail_closed: Deny actions when OPA evaluation fails
             enable_signatures: Enable multi-signature collection
             enable_critic_review: Enable critic agent reviews
             signature_timeout: Timeout for signature collection in seconds
@@ -100,6 +102,7 @@ class OPAGuard:
             critical_risk_threshold: Risk score threshold for requiring full review
         """
         self.opa_client = opa_client
+        self.fail_closed = fail_closed
         self.enable_signatures = enable_signatures
         self.enable_critic_review = enable_critic_review
         self.signature_timeout = signature_timeout
@@ -138,7 +141,9 @@ class OPAGuard:
     async def initialize(self):
         """Initialize the guard and its dependencies."""
         if self.opa_client is None:
-            self.opa_client = get_opa_client()
+            self.opa_client = get_opa_client(fail_closed=self.fail_closed)
+        elif hasattr(self.opa_client, "fail_closed"):
+            self.opa_client.fail_closed = self.fail_closed
 
         await self.opa_client.initialize()
         logger.info("OPAGuard initialized successfully")

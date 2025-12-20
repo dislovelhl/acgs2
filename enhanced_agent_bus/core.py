@@ -134,7 +134,7 @@ except ImportError:
     POLICY_CLIENT_AVAILABLE = False
     PolicyClient = None  # type: ignore
 
-    def get_policy_client():
+    def get_policy_client(fail_closed: Optional[bool] = None):
         return None
 
 logger = logging.getLogger(__name__)
@@ -170,6 +170,7 @@ class MessageProcessor:
     def __init__(
         self,
         use_dynamic_policy: bool = False,
+        policy_fail_closed: bool = False,
         # Dependency injection parameter
         processing_strategy: Optional["ProcessingStrategy"] = None,
     ):
@@ -178,10 +179,12 @@ class MessageProcessor:
         Args:
             use_dynamic_policy (bool): If True, use dynamic policy registry for validation
                 instead of static constitutional hash. Defaults to False.
+            policy_fail_closed (bool): If True, fail closed on policy registry errors.
             processing_strategy (Optional[ProcessingStrategy]): Optional custom processing
                 strategy. If not provided, auto-selects based on configuration.
         """
         self._use_dynamic_policy = use_dynamic_policy and POLICY_CLIENT_AVAILABLE
+        self._policy_fail_closed = policy_fail_closed
         self._handlers: Dict[MessageType, List[Callable]] = {}
         self._processed_count = 0
         self._failed_count = 0
@@ -199,7 +202,7 @@ class MessageProcessor:
 
         # Initialize policy client if using dynamic validation (for backward compatibility)
         if self._use_dynamic_policy:
-            self._policy_client = get_policy_client()
+            self._policy_client = get_policy_client(fail_closed=policy_fail_closed)
         else:
             self._policy_client = None
 
@@ -626,6 +629,7 @@ class EnhancedAgentBus:
         self,
         redis_url: str = DEFAULT_REDIS_URL,
         use_dynamic_policy: bool = False,
+        policy_fail_closed: bool = False,
         use_kafka: bool = False,
         use_redis_registry: bool = False,
         kafka_bootstrap_servers: str = "localhost:9092",
@@ -641,6 +645,7 @@ class EnhancedAgentBus:
         Args:
             redis_url: Redis connection URL for message queuing
             use_dynamic_policy: Use dynamic policy registry instead of static hash
+            policy_fail_closed: Fail closed on policy registry errors
             use_kafka: Use Kafka as the event bus instead of Redis/Local queue
             use_redis_registry: Use Redis-based distributed agent registry
             kafka_bootstrap_servers: Kafka bootstrap servers
@@ -653,10 +658,11 @@ class EnhancedAgentBus:
         self.redis_url = redis_url
         self._use_dynamic_policy = use_dynamic_policy and POLICY_CLIENT_AVAILABLE
         self._use_kafka = use_kafka
+        self._policy_fail_closed = policy_fail_closed
 
         # Initialize policy client if using dynamic validation
         if self._use_dynamic_policy:
-            self._policy_client = get_policy_client()
+            self._policy_client = get_policy_client(fail_closed=policy_fail_closed)
         else:
             self._policy_client = None
 
@@ -687,6 +693,7 @@ class EnhancedAgentBus:
         self._message_queue: asyncio.Queue = asyncio.Queue()
         self._processor = processor or MessageProcessor(
             use_dynamic_policy=use_dynamic_policy,
+            policy_fail_closed=policy_fail_closed,
             processing_strategy=None # Autoselect will use logic inside
         )
         self._running = False

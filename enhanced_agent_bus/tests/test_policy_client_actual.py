@@ -68,6 +68,7 @@ class TestPolicyRegistryClientActual:
         assert client.registry_url == "http://localhost:8000"
         assert client.timeout == 5.0
         assert client.cache_ttl == 300
+        assert client.fail_closed is False
         assert client._cache == {}
         assert client._http_client is None
 
@@ -76,11 +77,13 @@ class TestPolicyRegistryClientActual:
         client = PolicyRegistryClient(
             registry_url="http://custom:9000/",
             timeout=10.0,
-            cache_ttl=600
+            cache_ttl=600,
+            fail_closed=True,
         )
         assert client.registry_url == "http://custom:9000"
         assert client.timeout == 10.0
         assert client.cache_ttl == 600
+        assert client.fail_closed is True
 
     def test_url_strips_trailing_slash(self):
         """Test URL trailing slash is stripped."""

@@ -8,10 +8,11 @@
 
 位于 [`enhanced_agent_bus/core.py`](enhanced_agent_bus/core.py)。
 
-#### `__init__(self, redis_url: str = DEFAULT_REDIS_URL, use_dynamic_policy: bool = False, use_kafka: bool = False, kafka_bootstrap_servers: str = "localhost:9092")`
+#### `__init__(self, redis_url: str = DEFAULT_REDIS_URL, use_dynamic_policy: bool = False, policy_fail_closed: bool = False, use_kafka: bool = False, kafka_bootstrap_servers: str = "localhost:9092")`
 初始化增强型代理总线。
 - `redis_url`: Redis 连接字符串。
 - `use_dynamic_policy`: 是否使用动态策略注册表。
+- `policy_fail_closed`: 动态策略注册表失败时是否执行 fail-closed。
 - `use_kafka`: 是否使用 Kafka 作为后端。
 
 #### `async start(self) -> None`
@@ -44,6 +45,30 @@
 
 #### `register_handler(self, message_type: MessageType, handler: Callable) -> None`
 为特定消息类型注册回调函数。
+
+---
+
+## OPA 客户端 (OPA Client)
+
+### `OPAClient` 类
+
+位于 [`enhanced_agent_bus/opa_client.py`](enhanced_agent_bus/opa_client.py)。
+
+#### `__init__(self, opa_url: str = "http://localhost:8181", mode: str = "http", timeout: float = 5.0, cache_ttl: int = 300, enable_cache: bool = True, redis_url: str = None, fail_closed: bool = True)`
+初始化 OPA 客户端。
+- `fail_closed`: OPA 评估错误或不可用时是否拒绝请求。`True` 表示拒绝 (fail-closed)，`False` 表示允许 (fail-open)。
+
+---
+
+## 策略注册表客户端 (Policy Registry Client)
+
+### `PolicyRegistryClient` 类
+
+位于 [`enhanced_agent_bus/policy_client.py`](enhanced_agent_bus/policy_client.py)。
+
+#### `__init__(self, registry_url: str = None, api_key: str = None, timeout: float = 5.0, cache_ttl: int = 300, fail_closed: bool = False)`
+初始化策略注册表客户端。
+- `fail_closed`: 策略注册表网络/解析错误时是否拒绝消息。`True` 表示拒绝 (fail-closed)，`False` 表示允许并记录警告。
 
 ---
 
