@@ -25,6 +25,20 @@ from .core import (
     EnhancedAgentBus,
     MessageProcessor,
 )
+from .interfaces import (
+    AgentRegistry,
+    MessageRouter,
+    ValidationStrategy,
+    MessageHandler,
+    MetricsCollector,
+)
+from .registry import (
+    InMemoryAgentRegistry,
+    DirectMessageRouter,
+    CapabilityBasedRouter,
+    ConstitutionalValidationStrategy,
+    CompositeValidationStrategy,
+)
 from .validators import (
     ValidationResult,
 )
@@ -84,6 +98,18 @@ __all__ = [
     "MessageProcessor",
     "ValidationResult",
     "IntegratedValidationSystem",
+    # Protocol Interfaces (DI)
+    "AgentRegistry",
+    "MessageRouter",
+    "ValidationStrategy",
+    "MessageHandler",
+    "MetricsCollector",
+    # Default Implementations (DI)
+    "InMemoryAgentRegistry",
+    "DirectMessageRouter",
+    "CapabilityBasedRouter",
+    "ConstitutionalValidationStrategy",
+    "CompositeValidationStrategy",
     # Exceptions - Base
     "AgentBusError",
     # Exceptions - Constitutional

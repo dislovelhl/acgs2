@@ -23,7 +23,7 @@ from core import (
     reset_agent_bus,
     CONSTITUTIONAL_HASH,
 )
-from models import AgentMessage, MessageType, MessagePriority, MessageStatus
+from models import AgentMessage, MessageType, Priority, MessageStatus
 from validators import ValidationResult
 
 
@@ -95,7 +95,7 @@ class TestMessageProcessorActual:
             content={"action": "test"},
             from_agent="sender",
             to_agent="receiver",
-            priority=MessagePriority.NORMAL,
+            priority=Priority.NORMAL,
             constitutional_hash=CONSTITUTIONAL_HASH,
         )
         result = await processor.process(message)
@@ -110,7 +110,7 @@ class TestMessageProcessorActual:
             content={"action": "test"},
             from_agent="sender",
             to_agent="receiver",
-            priority=MessagePriority.NORMAL,
+            priority=Priority.NORMAL,
             constitutional_hash="invalid_hash",
         )
         result = await processor.process(message)
@@ -134,7 +134,7 @@ class TestMessageProcessorActual:
             content={"action": "test"},
             from_agent="sender",
             to_agent="receiver",
-            priority=MessagePriority.NORMAL,
+            priority=Priority.NORMAL,
             constitutional_hash=CONSTITUTIONAL_HASH,
         )
         await processor.process(message)
@@ -156,7 +156,7 @@ class TestMessageProcessorActual:
             content={"action": "test"},
             from_agent="sender",
             to_agent="receiver",
-            priority=MessagePriority.NORMAL,
+            priority=Priority.NORMAL,
             constitutional_hash=CONSTITUTIONAL_HASH,
         )
         await processor.process(message)
@@ -315,7 +315,7 @@ class TestEnhancedAgentBusActual:
             content={"action": "test"},
             from_agent="sender",
             to_agent="receiver",
-            priority=MessagePriority.NORMAL,
+            priority=Priority.NORMAL,
             constitutional_hash=CONSTITUTIONAL_HASH,
         )
 
@@ -357,7 +357,7 @@ class TestEnhancedAgentBusActual:
             content={"broadcast": True},
             from_agent="sender",
             to_agent="*",  # Broadcast
-            priority=MessagePriority.HIGH,
+            priority=Priority.HIGH,
             constitutional_hash=CONSTITUTIONAL_HASH,
         )
 

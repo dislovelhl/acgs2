@@ -162,7 +162,7 @@ class TestAgentMessage:
             "to_agent": "receiver",
             "message_type": "query",
             "tenant_id": "tenant-x",
-            "priority": 1,
+            "priority": 2,  # Priority.HIGH value
             "status": "processing"
         }
         msg = AgentMessage.from_dict(data)
@@ -174,7 +174,7 @@ class TestAgentMessage:
         assert msg.to_agent == "receiver"
         assert msg.message_type == MessageType.QUERY
         assert msg.tenant_id == "tenant-x"
-        assert msg.priority == MessagePriority.HIGH
+        assert msg.priority == Priority.HIGH
         assert msg.status == MessageStatus.PROCESSING
 
     def test_from_dict_defaults(self):
@@ -342,5 +342,6 @@ class TestModuleExports:
             "MessageStatus",
             "RoutingContext",
             "AgentMessage",
+            "DecisionLog",
         ]
         assert set(__all__) == set(expected)

@@ -78,6 +78,12 @@ try:
         ConstitutionalHashMismatchError,
         MessageDeliveryError,
     )
+    from .interfaces import AgentRegistry, MessageRouter, ValidationStrategy
+    from .registry import (
+        InMemoryAgentRegistry,
+        DirectMessageRouter,
+        ConstitutionalValidationStrategy,
+    )
 except ImportError:
     # Fallback for direct execution or testing
     from models import (  # type: ignore
@@ -86,6 +92,7 @@ except ImportError:
         MessagePriority,
         MessageStatus,
         CONSTITUTIONAL_HASH,
+        DecisionLog,
     )
     from validators import ValidationResult  # type: ignore
     from exceptions import (  # type: ignore
@@ -94,6 +101,12 @@ except ImportError:
         BusNotStartedError,
         ConstitutionalHashMismatchError,
         MessageDeliveryError,
+    )
+    from interfaces import AgentRegistry, MessageRouter, ValidationStrategy  # type: ignore
+    from registry import (  # type: ignore
+        InMemoryAgentRegistry,
+        DirectMessageRouter,
+        ConstitutionalValidationStrategy,
     )
 
 # Import centralized Redis config with fallback
@@ -504,6 +517,19 @@ class EnhancedAgentBus:
     - Metrics and health monitoring
     - Optional Rust backend for high performance
     - Optional dynamic policy registry integration
+    - Dependency injection support for testability
+
+    Dependency Injection:
+        The bus supports optional injection of registry, router, and validator
+        implementations. If not provided, defaults are used for backward compatibility.
+
+        Example:
+            # Using custom registry
+            custom_registry = RedisAgentRegistry(redis_url)
+            bus = EnhancedAgentBus(registry=custom_registry)
+
+            # Using all defaults (backward compatible)
+            bus = EnhancedAgentBus()
     """
 
     def __init__(
@@ -511,7 +537,12 @@ class EnhancedAgentBus:
         redis_url: str = DEFAULT_REDIS_URL,
         use_dynamic_policy: bool = False,
         use_kafka: bool = False,
-        kafka_bootstrap_servers: str = "localhost:9092"
+        kafka_bootstrap_servers: str = "localhost:9092",
+        # Dependency injection parameters
+        registry: Optional[AgentRegistry] = None,
+        router: Optional[MessageRouter] = None,
+        validator: Optional[ValidationStrategy] = None,
+        processor: Optional["MessageProcessor"] = None,
     ):
         """
         Initialize the Enhanced Agent Bus.
@@ -521,15 +552,25 @@ class EnhancedAgentBus:
             use_dynamic_policy: Use dynamic policy registry instead of static hash
             use_kafka: Use Kafka as the event bus instead of Redis/Local queue
             kafka_bootstrap_servers: Kafka bootstrap servers
+            registry: Optional custom AgentRegistry implementation
+            router: Optional custom MessageRouter implementation
+            validator: Optional custom ValidationStrategy implementation
+            processor: Optional custom MessageProcessor instance
         """
         self.constitutional_hash = CONSTITUTIONAL_HASH
         self.redis_url = redis_url
         self._use_dynamic_policy = use_dynamic_policy and POLICY_CLIENT_AVAILABLE
         self._use_kafka = use_kafka
 
+        # Dependency injection with defaults for backward compatibility
+        self._registry: AgentRegistry = registry or InMemoryAgentRegistry()
+        self._router: MessageRouter = router or DirectMessageRouter()
+        self._validator: ValidationStrategy = validator or ConstitutionalValidationStrategy()
+
+        # Legacy dict for backward compatibility (delegates to registry)
         self._agents: Dict[str, Dict[str, Any]] = {}
         self._message_queue: asyncio.Queue = asyncio.Queue()
-        self._processor = MessageProcessor(use_dynamic_policy=use_dynamic_policy)
+        self._processor = processor or MessageProcessor(use_dynamic_policy=use_dynamic_policy)
         self._running = False
 
         # Initialize Kafka bus if enabled
@@ -852,6 +893,21 @@ class EnhancedAgentBus:
         """Check if the bus is running."""
         return self._running
 
+    @property
+    def registry(self) -> AgentRegistry:
+        """Get the agent registry (DI component)."""
+        return self._registry
+
+    @property
+    def router(self) -> MessageRouter:
+        """Get the message router (DI component)."""
+        return self._router
+
+    @property
+    def validator(self) -> ValidationStrategy:
+        """Get the validation strategy (DI component)."""
+        return self._validator
+
 
 # Module-level convenience functions
 _default_bus: Optional[EnhancedAgentBus] = None
@@ -890,9 +946,17 @@ __all__ = [
     "DEFAULT_REDIS_URL",
     "METRICS_ENABLED",
     "CIRCUIT_BREAKER_ENABLED",
-    # Classes
+    # Core Classes
     "MessageProcessor",
     "EnhancedAgentBus",
+    # Protocol Interfaces (DI)
+    "AgentRegistry",
+    "MessageRouter",
+    "ValidationStrategy",
+    # Default Implementations (DI)
+    "InMemoryAgentRegistry",
+    "DirectMessageRouter",
+    "ConstitutionalValidationStrategy",
     # Functions
     "get_agent_bus",
     "reset_agent_bus",

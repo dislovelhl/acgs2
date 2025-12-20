@@ -63,7 +63,8 @@ if not _test_with_rust:
 # Re-export commonly used items
 AgentMessage = _models.AgentMessage
 MessageType = _models.MessageType
-MessagePriority = _models.MessagePriority
+Priority = _models.Priority
+MessagePriority = _models.MessagePriority  # DEPRECATED: Use Priority instead
 MessageStatus = _models.MessageStatus
 CONSTITUTIONAL_HASH = _models.CONSTITUTIONAL_HASH
 
@@ -109,7 +110,7 @@ def valid_message() -> AgentMessage:
         message_type=MessageType.COMMAND,
         content={"action": "test_action", "data": "test_data"},
         payload={"key": "value"},
-        priority=MessagePriority.NORMAL,
+        priority=Priority.NORMAL,
     )
 
 
@@ -136,7 +137,7 @@ def governance_request_message() -> AgentMessage:
         sender_id="governance_sender",
         message_type=MessageType.GOVERNANCE_REQUEST,
         content={"policy_id": "test_policy", "action": "evaluate"},
-        priority=MessagePriority.HIGH,
+        priority=Priority.HIGH,
     )
 
 
@@ -149,7 +150,7 @@ def high_priority_message() -> AgentMessage:
         sender_id="urgent_sender_id",
         message_type=MessageType.COMMAND,
         content={"action": "urgent_action"},
-        priority=MessagePriority.CRITICAL,
+        priority=Priority.CRITICAL,
     )
 
 

@@ -1,7 +1,7 @@
 
 import asyncio
 import logging
-from enhanced_agent_bus.models import AgentMessage, MessageType, MessagePriority
+from enhanced_agent_bus.models import AgentMessage, MessageType, Priority
 from enhanced_agent_bus.deliberation_layer.integration import DeliberationLayer
 
 logging.basicConfig(level=logging.INFO)
