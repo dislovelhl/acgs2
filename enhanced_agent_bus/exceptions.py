@@ -8,8 +8,12 @@ Provides specific exception classes for different error categories.
 
 from typing import Any, Dict, List, Optional
 
-
-CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
+# Import centralized constitutional hash from shared module
+try:
+    from shared.constants import CONSTITUTIONAL_HASH
+except ImportError:
+    # Fallback for standalone usage
+    CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
 
 
 class AgentBusError(Exception):

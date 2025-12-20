@@ -1,22 +1,23 @@
 # ACGS-2 架构重构计划
 
 ## 第一阶段：清理与统一 (Cleanup & Unification)
-- [ ] **清理冗余核心实现**：
-  - 分析 `core_legacy.py`, `core_rust.py`, `core_updated.py` 与 `core.py` 的差异。
-  - 将所有必要功能合并到 `core.py`。
-  - 删除冗余文件。
-- [ ] **统一数据模型**：
-  - 在 `models.py` 中合并 `Priority` 和 `MessagePriority`。
-  - 确保 `AgentMessage` 使用强类型。
-  - 将 `CONSTITUTIONAL_HASH` 移动到 `shared/constants.py`。
-- [ ] **消除跨服务模型重复**：
-  - 让 `services/audit_service/core/audit_ledger.py` 引用 `enhanced_agent_bus/models.py`。
+- [x] **清理冗余核心实现**：
+  - ~~分析 `core_legacy.py`, `core_rust.py`, `core_updated.py` 与 `core.py` 的差异。~~
+  - ~~将所有必要功能合并到 `core.py`。~~
+  - ~~删除冗余文件。~~ (已完成 - 无冗余文件存在)
+- [x] **统一数据模型**：
+  - ~~在 `models.py` 中合并 `Priority` 和 `MessagePriority`。~~ ✅
+  - ~~确保 `AgentMessage` 使用强类型。~~ ✅
+  - ~~将 `CONSTITUTIONAL_HASH` 移动到 `shared/constants.py`。~~ ✅
+- [x] **消除跨服务模型重复**：
+  - ~~让 `services/audit_service/core/audit_ledger.py` 引用 `enhanced_agent_bus/validators.py`。~~ ✅
+  - ~~统一所有模块使用 `shared/constants.py` 中的 `CONSTITUTIONAL_HASH`。~~ ✅
 
 ## 第二阶段：解耦与依赖注入 (Decoupling & DI)
-- [ ] **重构 EnhancedAgentBus**：
-  - 引入 `AgentRegistry` 接口和 `RedisAgentRegistry` 实现。
-  - 引入 `MessageRouter` 接口。
-  - 使用构造函数注入依赖项。
+- [x] **重构 EnhancedAgentBus**：
+  - ~~引入 `AgentRegistry` 接口和 `InMemoryAgentRegistry` 实现。~~ ✅
+  - ~~引入 `MessageRouter` 接口。~~ ✅
+  - ~~使用构造函数注入依赖项。~~ ✅
 - [ ] **重构 DeliberationLayer**：
   - 将 `ImpactScorer`, `AdaptiveRouter` 等作为依赖项注入。
   - 拆分 `process_message` 方法，遵循单一职责原则。

@@ -22,8 +22,17 @@ from enum import Enum
 from typing import Any, Callable, Dict, List, Optional, Set
 from uuid import uuid4
 
+# Import centralized constitutional hash from shared module
+try:
+    from shared.constants import CONSTITUTIONAL_HASH
+except ImportError:
+    try:
+        from ...shared.constants import CONSTITUTIONAL_HASH
+    except ImportError:
+        # Fallback for standalone usage
+        CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
+
 logger = logging.getLogger(__name__)
-CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
 
 
 class ApprovalStatus(Enum):

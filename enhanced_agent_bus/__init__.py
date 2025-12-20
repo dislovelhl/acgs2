@@ -9,7 +9,12 @@ constitutional governance platform.
 __version__ = "2.0.0"
 __constitutional_hash__ = "cdd01ef066bc6cf2"
 
-CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
+# Import centralized constitutional hash from shared module
+try:
+    from shared.constants import CONSTITUTIONAL_HASH
+except ImportError:
+    # Fallback for standalone usage
+    CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
 
 from .models import (
     AgentMessage,

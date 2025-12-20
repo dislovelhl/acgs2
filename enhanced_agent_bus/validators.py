@@ -6,14 +6,28 @@ Validation utilities for message and agent compliance.
 """
 
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
-CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
+# Import centralized constitutional hash from shared module
+try:
+    from shared.constants import CONSTITUTIONAL_HASH
+except ImportError:
+    # Fallback for standalone usage
+    CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
 
 
 @dataclass
 class ValidationResult:
-    """Result of a validation operation."""
+    """Result of a validation operation.
+
+    Attributes:
+        is_valid (bool): Whether the validation passed. Defaults to True.
+        errors (List[str]): A list of error messages if validation failed.
+        warnings (List[str]): A list of warning messages.
+        metadata (Dict[str, Any]): Additional metadata associated with the validation.
+        constitutional_hash (str): The constitutional hash `cdd01ef066bc6cf2`.
+    """
     is_valid: bool = True
     errors: List[str] = field(default_factory=list)
     warnings: List[str] = field(default_factory=list)
@@ -35,6 +49,21 @@ class ValidationResult:
         self.warnings.extend(other.warnings)
         if not other.is_valid:
             self.is_valid = False
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Converts the validation result to a dictionary for serialization.
+
+        Returns:
+            Dict[str, Any]: A dictionary representation of the validation result.
+        """
+        return {
+            "is_valid": self.is_valid,
+            "errors": self.errors,
+            "warnings": self.warnings,
+            "metadata": self.metadata,
+            "constitutional_hash": self.constitutional_hash,
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
 
 
 def validate_constitutional_hash(hash_value: str) -> ValidationResult:

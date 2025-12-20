@@ -13,9 +13,18 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
+# Import centralized constitutional hash from shared module
+try:
+    from shared.constants import CONSTITUTIONAL_HASH
+except ImportError:
+    try:
+        from ...shared.constants import CONSTITUTIONAL_HASH
+    except ImportError:
+        # Fallback for standalone usage
+        CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
 
-# Constitutional hash for verification
-GUARD_CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
+# Alias for backward compatibility
+GUARD_CONSTITUTIONAL_HASH = CONSTITUTIONAL_HASH
 
 
 class GuardDecision(Enum):
