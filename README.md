@@ -88,6 +88,13 @@ kubectl apply -f k8s/blue-green-deployment.yml
 
 ---
 
+## 🔐 策略故障行为
+
+- **OPA 客户端**: `fail_closed=True` 时，OPA 评估失败将拒绝请求；设置为 `False` 时可 fail-open。
+- **策略注册表**: `PolicyRegistryClient.fail_closed=False` 默认允许消息通过并记录警告；可通过 `policy_fail_closed` 在核心总线中切换为 fail-closed。
+
+---
+
 ## 📈 性能优化
 
 ACGS-2 经过深度优化以支持大规模代理协作：

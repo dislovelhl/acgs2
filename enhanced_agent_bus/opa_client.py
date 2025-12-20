@@ -81,6 +81,7 @@ class OPAClient:
         cache_ttl: int = 300,  # 5 minutes
         enable_cache: bool = True,
         redis_url: Optional[str] = None,
+        fail_closed: bool = True,
     ):
         """Initialize OPA client."""
         self.opa_url = opa_url.rstrip("/")
@@ -88,6 +89,7 @@ class OPAClient:
         self.timeout = timeout
         self.cache_ttl = cache_ttl
         self.enable_cache = enable_cache
+        self.fail_closed = fail_closed
         self._http_client: Optional[httpx.AsyncClient] = None
         self._redis_client: Optional[Any] = None
         self._embedded_opa: Optional[Any] = None
@@ -236,12 +238,32 @@ class OPAClient:
 
         except Exception as e:
             logger.error(f"Policy evaluation error: {e}")
-            return {
-                "result": False,
-                "allowed": False,
-                "reason": f"Policy evaluation failed: {str(e)}",
-                "metadata": {"error": str(e), "mode": self.mode}
+            return self._handle_evaluation_error(e, policy_path)
+
+    def _handle_evaluation_error(
+        self,
+        error: Exception,
+        policy_path: str
+    ) -> Dict[str, Any]:
+        """Build a response for OPA evaluation failures."""
+        allowed = not self.fail_closed
+        security_mode = "fail-closed" if self.fail_closed else "fail-open"
+        reason = (
+            f"Policy evaluation failed: {str(error)}"
+            if self.fail_closed
+            else f"Policy evaluation failed: {str(error)} (allowed fail-open)"
+        )
+        return {
+            "result": allowed,
+            "allowed": allowed,
+            "reason": reason,
+            "metadata": {
+                "error": str(error),
+                "mode": self.mode,
+                "policy_path": policy_path,
+                "security": security_mode,
             }
+        }
 
     async def _evaluate_http(
         self,
@@ -348,8 +370,9 @@ class OPAClient:
         input_data: Dict[str, Any],
         policy_path: str
     ) -> Dict[str, Any]:
-        """Fallback policy evaluation (FAIL-CLOSED)."""
-        logger.warning(f"Using FAIL-CLOSED fallback for {policy_path}")
+        """Fallback policy evaluation."""
+        security_mode = "fail-closed" if self.fail_closed else "fail-open"
+        logger.warning(f"Using {security_mode} fallback for {policy_path}")
 
         constitutional_hash = input_data.get("constitutional_hash", "")
         if constitutional_hash != CONSTITUTIONAL_HASH:
@@ -360,14 +383,25 @@ class OPAClient:
                 "metadata": {"mode": "fallback", "policy_path": policy_path}
             }
 
+        if self.fail_closed:
+            return {
+                "result": False,
+                "allowed": False,
+                "reason": "OPA service unavailable - denied (fail-closed)",
+                "metadata": {
+                    "mode": "fallback",
+                    "policy_path": policy_path,
+                    "security": "fail-closed"
+                }
+            }
         return {
-            "result": False,
-            "allowed": False,
-            "reason": "OPA service unavailable - denied (fail-closed)",
+            "result": True,
+            "allowed": True,
+            "reason": "OPA service unavailable - allowed (fail-open)",
             "metadata": {
                 "mode": "fallback",
                 "policy_path": policy_path,
-                "security": "fail-closed"
+                "security": "fail-open"
             }
         }
 
@@ -570,7 +604,8 @@ class OPAClient:
             "cache_size": len(self._memory_cache),
             "cache_backend": "redis" if self._redis_client else "memory",
             "opa_url": self.opa_url if self.mode == "http" else None,
-            "lkg_bundle": self._lkg_bundle_path
+            "lkg_bundle": self._lkg_bundle_path,
+            "fail_closed": self.fail_closed,
         }
 
 
@@ -578,11 +613,16 @@ class OPAClient:
 _opa_client: Optional[OPAClient] = None
 
 
-def get_opa_client() -> OPAClient:
+def get_opa_client(fail_closed: Optional[bool] = None) -> OPAClient:
     """Get global OPA client instance."""
     global _opa_client
     if _opa_client is None:
-        _opa_client = OPAClient()
+        if fail_closed is None:
+            _opa_client = OPAClient()
+        else:
+            _opa_client = OPAClient(fail_closed=fail_closed)
+    elif fail_closed is not None:
+        _opa_client.fail_closed = fail_closed
     return _opa_client
 
 

@@ -27,12 +27,14 @@ class PolicyRegistryClient:
         registry_url: Optional[str] = None,
         api_key: Optional[str] = None,
         timeout: float = 5.0,
-        cache_ttl: int = 300  # 5 minutes
+        cache_ttl: int = 300,  # 5 minutes
+        fail_closed: bool = False,
     ):
         self.registry_url = (registry_url or "http://localhost:8000").rstrip("/")
         self.api_key = api_key
         self.timeout = timeout
         self.cache_ttl = cache_ttl
+        self.fail_closed = fail_closed
         self._cache: Dict[str, Dict[str, Any]] = {}
         self._http_client = None
 
@@ -142,7 +144,11 @@ class PolicyRegistryClient:
             policy_content = await self.get_policy_content("constitutional_ai_safety")
             
             if not policy_content:
-                # Fallback to basic validation
+                if self.fail_closed:
+                    return ValidationResult(
+                        is_valid=False,
+                        errors=["Policy registry unavailable or policy not found"]
+                    )
                 return ValidationResult(
                     is_valid=True,
                     warnings=["Policy registry unavailable, using basic validation"]
@@ -179,13 +185,22 @@ class PolicyRegistryClient:
             
         except (httpx.TimeoutException, httpx.ConnectError) as e:
             logger.error(f"Network error validating message: {e}")
-            # Fallback to allow message through with warning
+            if self.fail_closed:
+                return ValidationResult(
+                    is_valid=False,
+                    errors=[f"Policy validation network error: {str(e)}"]
+                )
             return ValidationResult(
                 is_valid=True,
                 warnings=[f"Policy validation network error: {str(e)}"]
             )
         except (ValueError, KeyError, TypeError) as e:
             logger.error(f"Data error validating message: {e}")
+            if self.fail_closed:
+                return ValidationResult(
+                    is_valid=False,
+                    errors=[f"Policy validation data error: {str(e)}"]
+                )
             return ValidationResult(
                 is_valid=True,
                 warnings=[f"Policy validation data error: {str(e)}"]
@@ -239,7 +254,7 @@ class PolicyRegistryClient:
 _policy_client: Optional[PolicyRegistryClient] = None
 
 
-def get_policy_client() -> PolicyRegistryClient:
+def get_policy_client(fail_closed: Optional[bool] = None) -> PolicyRegistryClient:
     """Get global policy client instance"""
     global _policy_client
     if _policy_client is None:
@@ -247,15 +262,24 @@ def get_policy_client() -> PolicyRegistryClient:
         api_key = settings.security.api_key_internal.get_secret_value() if settings.security.api_key_internal else None
         _policy_client = PolicyRegistryClient(
             registry_url=os.getenv("POLICY_REGISTRY_URL"), # Or another fallback
-            api_key=api_key
+            api_key=api_key,
+            fail_closed=fail_closed if fail_closed is not None else False,
         )
+    elif fail_closed is not None:
+        _policy_client.fail_closed = fail_closed
     return _policy_client
 
 
-async def initialize_policy_client(registry_url: str = "http://localhost:8000"):
+async def initialize_policy_client(
+    registry_url: str = "http://localhost:8000",
+    fail_closed: bool = False
+):
     """Initialize global policy client"""
     global _policy_client
-    _policy_client = PolicyRegistryClient(registry_url=registry_url)
+    _policy_client = PolicyRegistryClient(
+        registry_url=registry_url,
+        fail_closed=fail_closed,
+    )
     await _policy_client.initialize()
 
 
