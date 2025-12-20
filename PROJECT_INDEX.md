@@ -57,16 +57,29 @@ AI-powered review for high-risk decisions.
 ### Exception Hierarchy (`enhanced_agent_bus/exceptions.py`)
 - 22 specialized exception types including `ConstitutionalError`, `MessageError`, `AgentError`, `PolicyError`, etc.
 
-## Services
+## Orchestration & Service Map
 
-| Service | Port | Description |
-|---------|------|-------------|
-| rust-message-bus | 8080 | High-perf Rust backend |
-| deliberation-layer | 8081 | AI review system |
-| constraint-generation | 8082 | Core constraints |
-| constitutional-retrieval| 8083 | RAG-based retrieval |
-| audit-ledger | 8084 | Compliance logging |
-| policy-registry | 8000 | Dynamic policy |
+ACGS-2 is organized into specialized functional domains. For a comprehensive overview, see the [Orchestration Manifesto](docs/orchestration_manifesto.md).
+
+### Core Service Domains
+
+| Domain | Key Services | Impact |
+|--------|--------------|--------|
+| **Governance** | `policy-registry`, `constraint-generation`, `constitutional-retrieval` | High-accuracy alignment |
+| **Communication** | `enhanced_agent_bus` (Rust/Python), `adaptive-router` | Low-latency messaging |
+| **Auditing** | `audit-ledger` (Merkle Tree), `solana-adapter` | Immutable proof |
+| **Intelligence** | `consensus-engine`, `search-platform`, `impact-scorer` | Decision intelligence |
+
+### Service List
+
+| Service | Port | Description | Docs |
+|---------|------|-------------|------|
+| rust-message-bus | 8080 | High-perf Rust backend | [ADR 001](docs/adr/001-hybrid-architecture.md) |
+| deliberation-layer | 8081 | AI review system | [README](services/constitutional_ai/README.md) |
+| constraint-generation | 8082 | Core constraints | [README](services/constitutional_ai/README.md) |
+| constitutional-retrieval| 8083 | RAG-based retrieval | [README](services/constitutional_ai/README.md) |
+| audit-ledger | 8084 | Compliance logging | [README](services/audit_service/README.md) |
+| policy-registry | 8000 | Dynamic policy | [API Spec](docs/api/specs/agent_bus.yaml) |
 
 ## Testing
 

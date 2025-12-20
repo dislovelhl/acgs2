@@ -23,7 +23,8 @@ Example:
         ...
 """
 
-CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
+# Import from dedicated constants module
+from .constants import CONSTITUTIONAL_HASH, DEFAULT_REDIS_URL
 
 __version__ = "2.0.0"
 __author__ = "ACGS-2 Team"

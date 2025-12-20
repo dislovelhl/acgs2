@@ -42,7 +42,8 @@ _exceptions = _load_module("_exceptions_for_core_ext", _exceptions_path)
 # Extract types
 AgentMessage = _models.AgentMessage
 MessageType = _models.MessageType
-MessagePriority = _models.MessagePriority
+Priority = _models.Priority
+MessagePriority = _models.MessagePriority  # DEPRECATED: Use Priority instead
 MessageStatus = _models.MessageStatus
 CONSTITUTIONAL_HASH = _models.CONSTITUTIONAL_HASH
 ValidationResult = _validators.ValidationResult
@@ -534,33 +535,29 @@ class TestMessageQueueOperations:
                 message_type=MessageType.COMMAND,
                 sender_id="agent1",
                 content={"priority": "low"},
-                priority=MessagePriority.LOW,
+                priority=Priority.LOW,
                 constitutional_hash=CONSTITUTIONAL_HASH
             ),
             AgentMessage(
                 message_type=MessageType.COMMAND,
                 sender_id="agent1",
                 content={"priority": "critical"},
-                priority=MessagePriority.CRITICAL,
+                priority=Priority.CRITICAL,
                 constitutional_hash=CONSTITUTIONAL_HASH
             ),
             AgentMessage(
                 message_type=MessageType.COMMAND,
                 sender_id="agent1",
                 content={"priority": "normal"},
-                priority=MessagePriority.NORMAL,
+                priority=Priority.NORMAL,
                 constitutional_hash=CONSTITUTIONAL_HASH
             ),
         ]
 
-        # Sort by priority (higher priority first)
-        priority_order = {
-            MessagePriority.CRITICAL: 0,
-            MessagePriority.HIGH: 1,
-            MessagePriority.NORMAL: 2,
-            MessagePriority.LOW: 3
-        }
-        sorted_msgs = sorted(messages, key=lambda m: priority_order.get(m.priority, 2))
+        # Sort by priority (higher priority first = higher value first)
+        # Priority uses ascending values: LOW=0, NORMAL=1, HIGH=2, CRITICAL=3
+        # So we sort in descending order of value
+        sorted_msgs = sorted(messages, key=lambda m: -m.priority.value)
 
         assert sorted_msgs[0].content["priority"] == "critical"
         assert sorted_msgs[2].content["priority"] == "low"

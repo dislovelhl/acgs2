@@ -1,0 +1,65 @@
+openapi: 3.0.0
+info:
+  title: ACGS-2 Constitutional AI API
+  description: Alignment enforcer and high-risk decision deliberation service.
+  version: 2.1.0
+servers:
+  - url: http://localhost:8001/api/v1
+paths:
+  /alignment/verify:
+    post:
+      summary: Verify message alignment with the Constitution
+      tags:
+        - Alignment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+                constitutional_hash:
+                  type: string
+      responses:
+        '200':
+          description: Alignment check result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  aligned:
+                    type: boolean
+                  reasoning:
+                    type: string
+  /deliberation/queue:
+    get:
+      summary: List pending deliberation items
+      tags:
+        - Deliberation
+      responses:
+        '200':
+          description: List of items requiring deliberation
+    post:
+      summary: Submit a deliberation decision
+      tags:
+        - Deliberation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                item_id:
+                  type: string
+                decision:
+                  type: string
+                  enum: [APPROVED, REJECTED]
+                reasoning:
+                  type: string
+      responses:
+        '200':
+          description: Decision processed

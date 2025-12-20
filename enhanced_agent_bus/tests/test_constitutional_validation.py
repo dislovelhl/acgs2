@@ -7,53 +7,12 @@ Comprehensive tests for constitutional validation paths.
 
 import asyncio
 import pytest
-import sys
-import os
 
-# Add enhanced_agent_bus directory to path for standalone execution
-enhanced_agent_bus_dir = os.path.dirname(os.path.dirname(__file__))
-if enhanced_agent_bus_dir not in sys.path:
-    sys.path.insert(0, enhanced_agent_bus_dir)
-
-# Import using direct module loading to avoid package conflicts
-import importlib.util
-
-def _load_module(name, path):
-    """Load a module directly from path."""
-    spec = importlib.util.spec_from_file_location(name, path)
-    module = importlib.util.module_from_spec(spec)
-    sys.modules[name] = module
-    spec.loader.exec_module(module)
-    return module
-
-# Load modules
-_models = _load_module("_test_models", os.path.join(enhanced_agent_bus_dir, "models.py"))
-_validators = _load_module("_test_validators", os.path.join(enhanced_agent_bus_dir, "validators.py"))
-
-# Import from loaded modules
-AgentMessage = _models.AgentMessage
-MessageType = _models.MessageType
-MessagePriority = _models.MessagePriority
-MessageStatus = _models.MessageStatus
-CONSTITUTIONAL_HASH = _models.CONSTITUTIONAL_HASH
-
-ValidationResult = _validators.ValidationResult
-validate_constitutional_hash = _validators.validate_constitutional_hash
-validate_message_content = _validators.validate_message_content
-
-# Load core with custom imports patched
-sys.modules['models'] = _models
-sys.modules['validators'] = _validators
-
-# Force Python mode by blocking Rust import
-sys.modules['enhanced_agent_bus'] = None
-_core = _load_module("_test_core", os.path.join(enhanced_agent_bus_dir, "core.py"))
-
-# Force USE_RUST to False for testing Python implementation
-_core.USE_RUST = False
-
-MessageProcessor = _core.MessageProcessor
-EnhancedAgentBus = _core.EnhancedAgentBus
+# Import from module names that conftest.py patches (models, validators, core)
+# This ensures class identity with the strategies in registry.py
+from models import AgentMessage, MessageType, MessagePriority, MessageStatus, CONSTITUTIONAL_HASH
+from validators import ValidationResult, validate_constitutional_hash, validate_message_content
+from core import MessageProcessor, EnhancedAgentBus
 
 
 class TestConstitutionalHashValidation:

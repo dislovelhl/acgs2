@@ -2,6 +2,14 @@
 ACGS-2 Deliberation Layer - Integration
 Main integration point for the deliberation layer components.
 Constitutional Hash: cdd01ef066bc6cf2
+
+Supports dependency injection for all major components:
+- ImpactScorer: Impact score calculation
+- AdaptiveRouter: Message routing decisions
+- DeliberationQueue: Deliberation processing
+- LLMAssistant: AI-powered analysis
+- OPAGuard: Policy-based verification
+- Redis components: Persistent storage
 """
 
 import asyncio
@@ -16,6 +24,15 @@ except ImportError:
     from models import AgentMessage, MessageStatus, CONSTITUTIONAL_HASH  # type: ignore
 
 try:
+    from .interfaces import (
+        ImpactScorerProtocol,
+        AdaptiveRouterProtocol,
+        DeliberationQueueProtocol,
+        LLMAssistantProtocol,
+        RedisQueueProtocol,
+        RedisVotingProtocol,
+        OPAGuardProtocol,
+    )
     from .impact_scorer import get_impact_scorer, calculate_message_impact
     from .adaptive_router import get_adaptive_router
     from .deliberation_queue import (
@@ -31,6 +48,13 @@ try:
     )
 except ImportError:
     # Fallback for direct execution or testing
+    ImpactScorerProtocol = None  # type: ignore
+    AdaptiveRouterProtocol = None  # type: ignore
+    DeliberationQueueProtocol = None  # type: ignore
+    LLMAssistantProtocol = None  # type: ignore
+    RedisQueueProtocol = None  # type: ignore
+    RedisVotingProtocol = None  # type: ignore
+    OPAGuardProtocol = None  # type: ignore
     from impact_scorer import (  # type: ignore
         get_impact_scorer, calculate_message_impact
     )
@@ -58,6 +82,9 @@ class DeliberationLayer:
     Integrates OPA policy guard for VERIFY-BEFORE-ACT pattern,
     multi-signature collection, and critic agent reviews.
     Constitutional Hash: cdd01ef066bc6cf2
+
+    Supports dependency injection for testing and customization.
+    All major components can be injected via constructor parameters.
     """
 
     def __init__(
@@ -70,6 +97,14 @@ class DeliberationLayer:
         enable_opa_guard: bool = True,
         high_risk_threshold: float = 0.8,
         critical_risk_threshold: float = 0.95,
+        # Dependency injection parameters
+        impact_scorer: Optional["ImpactScorerProtocol"] = None,
+        adaptive_router: Optional["AdaptiveRouterProtocol"] = None,
+        deliberation_queue: Optional["DeliberationQueueProtocol"] = None,
+        llm_assistant: Optional["LLMAssistantProtocol"] = None,
+        opa_guard: Optional["OPAGuardProtocol"] = None,
+        redis_queue: Optional["RedisQueueProtocol"] = None,
+        redis_voting: Optional["RedisVotingProtocol"] = None,
     ):
         """
         Initialize the deliberation layer.
@@ -83,6 +118,13 @@ class DeliberationLayer:
             enable_opa_guard: Whether to enable OPA policy guard
             high_risk_threshold: Threshold for requiring signatures
             critical_risk_threshold: Threshold for requiring full review
+            impact_scorer: Optional injected impact scorer
+            adaptive_router: Optional injected adaptive router
+            deliberation_queue: Optional injected deliberation queue
+            llm_assistant: Optional injected LLM assistant
+            opa_guard: Optional injected OPA guard
+            redis_queue: Optional injected Redis queue
+            redis_voting: Optional injected Redis voting system
         """
         self.impact_threshold = impact_threshold
         self.deliberation_timeout = deliberation_timeout
@@ -93,15 +135,25 @@ class DeliberationLayer:
         self.high_risk_threshold = high_risk_threshold
         self.critical_risk_threshold = critical_risk_threshold
 
-        # Initialize components
-        self.impact_scorer = get_impact_scorer()
-        self.adaptive_router = get_adaptive_router()
-        self.deliberation_queue = get_deliberation_queue()
-        self.llm_assistant = get_llm_assistant() if enable_llm else None
+        # Dependency injection with defaults for backward compatibility
+        # If dependencies are not provided, use default implementations
+        self.impact_scorer = impact_scorer or get_impact_scorer()
+        self.adaptive_router = adaptive_router or get_adaptive_router()
+        self.deliberation_queue = deliberation_queue or get_deliberation_queue()
+
+        # LLM assistant (only if enabled and not injected)
+        if llm_assistant is not None:
+            self.llm_assistant = llm_assistant
+        elif enable_llm:
+            self.llm_assistant = get_llm_assistant()
+        else:
+            self.llm_assistant = None
 
         # OPA Guard for policy-based verification
-        self.opa_guard: Optional[OPAGuard] = None
-        if enable_opa_guard:
+        # Use injected instance or create default
+        if opa_guard is not None:
+            self.opa_guard: Optional[OPAGuard] = opa_guard
+        elif enable_opa_guard:
             self.opa_guard = OPAGuard(
                 enable_signatures=True,
                 enable_critic_review=True,
@@ -110,14 +162,23 @@ class DeliberationLayer:
                 high_risk_threshold=high_risk_threshold,
                 critical_risk_threshold=critical_risk_threshold,
             )
+        else:
+            self.opa_guard = None
 
-        # Redis components (if enabled)
-        self.redis_queue = (
-            get_redis_deliberation_queue() if enable_redis else None
-        )
-        self.redis_voting = (
-            get_redis_voting_system() if enable_redis else None
-        )
+        # Redis components (use injected or create if enabled)
+        if redis_queue is not None:
+            self.redis_queue = redis_queue
+        elif enable_redis:
+            self.redis_queue = get_redis_deliberation_queue()
+        else:
+            self.redis_queue = None
+
+        if redis_voting is not None:
+            self.redis_voting = redis_voting
+        elif enable_redis:
+            self.redis_voting = get_redis_voting_system()
+        else:
+            self.redis_voting = None
 
         # Processing callbacks
         self.fast_lane_callback: Optional[Callable] = None
@@ -126,8 +187,25 @@ class DeliberationLayer:
 
         logger.info(
             "Initialized ACGS-2 Deliberation Layer with OPA Guard: "
-            f"{enable_opa_guard}"
+            f"{enable_opa_guard}, DI: impact_scorer={impact_scorer is not None}, "
+            f"router={adaptive_router is not None}, queue={deliberation_queue is not None}"
         )
+
+    # Property accessors for injected dependencies
+    @property
+    def injected_impact_scorer(self) -> Optional["ImpactScorerProtocol"]:
+        """Get the impact scorer (injected or default)."""
+        return self.impact_scorer
+
+    @property
+    def injected_router(self) -> Optional["AdaptiveRouterProtocol"]:
+        """Get the adaptive router (injected or default)."""
+        return self.adaptive_router
+
+    @property
+    def injected_queue(self) -> Optional["DeliberationQueueProtocol"]:
+        """Get the deliberation queue (injected or default)."""
+        return self.deliberation_queue
 
     async def initialize(self):
         """Initialize async components."""

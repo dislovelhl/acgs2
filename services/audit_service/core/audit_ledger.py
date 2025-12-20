@@ -6,51 +6,51 @@ ACGS-2 Audit Ledger Service
 - ValidationResult哈希上链
 - Merkle Tree批量验证
 - 区块链集成准备
+
+Constitutional Hash: cdd01ef066bc6cf2
 """
 
 import hashlib
-from datetime import datetime, timezone
-import datetime
 import json
 import time
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from typing import List, Optional, Dict, Any, Tuple
-from datetime import datetime
 
 from .merkle_tree.merkle_tree import MerkleTree
 
+# Import ValidationResult from the canonical source (enhanced_agent_bus)
+# This eliminates model duplication across services
+try:
+    from enhanced_agent_bus.validators import ValidationResult
+except ImportError:
+    # Fallback for standalone service usage
+    from dataclasses import dataclass, field
+    from typing import Any, Dict, List
 
-@dataclass
-class ValidationResult:
-    """Data class for validation results, compatible with validators.py.
+    try:
+        from shared.constants import CONSTITUTIONAL_HASH
+    except ImportError:
+        CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
 
-    Attributes:
-        is_valid (bool): Whether the validation passed. Defaults to True.
-        errors (List[str]): A list of error messages if validation failed.
-        warnings (List[str]): A list of warning messages.
-        metadata (Dict[str, Any]): Additional metadata associated with the validation.
-        constitutional_hash (str): The constitutional hash `cdd01ef066bc6cf2`.
-    """
-    is_valid: bool = True
-    errors: List[str] = field(default_factory=list)
-    warnings: List[str] = field(default_factory=list)
-    metadata: Dict[str, Any] = field(default_factory=dict)
-    constitutional_hash: str = "cdd01ef066bc6cf2"
+    @dataclass
+    class ValidationResult:
+        """Fallback ValidationResult for standalone usage."""
+        is_valid: bool = True
+        errors: List[str] = field(default_factory=list)
+        warnings: List[str] = field(default_factory=list)
+        metadata: Dict[str, Any] = field(default_factory=dict)
+        constitutional_hash: str = CONSTITUTIONAL_HASH
 
-    def to_dict(self) -> Dict[str, Any]:
-        """Converts the validation result to a dictionary for serialization.
-
-        Returns:
-            Dict[str, Any]: A dictionary representation of the validation result.
-        """
-        return {
-            "is_valid": self.is_valid,
-            "errors": self.errors,
-            "warnings": self.warnings,
-            "metadata": self.metadata,
-            "constitutional_hash": self.constitutional_hash,
-            "timestamp": datetime.now(timezone.utc).isoformat()
-        }
+        def to_dict(self) -> Dict[str, Any]:
+            return {
+                "is_valid": self.is_valid,
+                "errors": self.errors,
+                "warnings": self.warnings,
+                "metadata": self.metadata,
+                "constitutional_hash": self.constitutional_hash,
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            }
 
 
 @dataclass

@@ -16,7 +16,12 @@ try:
 except ImportError:
     from exceptions import MessageValidationError  # type: ignore
 
-CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
+# Import centralized constitutional hash from shared module
+try:
+    from shared.constants import CONSTITUTIONAL_HASH
+except ImportError:
+    # Fallback for standalone usage
+    CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
 
 
 class MessageType(Enum):
@@ -35,8 +40,16 @@ class MessageType(Enum):
 
 
 class Priority(Enum):
-    """Priority levels for messages."""
+    """Priority levels for messages.
+
+    Higher value = Higher priority.
+    Constitutional Hash: cdd01ef066bc6cf2
+
+    Note: NORMAL is an alias for MEDIUM for backward compatibility
+    with code that used MessagePriority.NORMAL.
+    """
     LOW = 0
+    NORMAL = 1  # Alias for MEDIUM (backward compatibility)
     MEDIUM = 1
     HIGH = 2
     CRITICAL = 3
@@ -51,7 +64,19 @@ class ValidationStatus(Enum):
 
 
 class MessagePriority(Enum):
-    """Message priority levels."""
+    """Message priority levels.
+
+    DEPRECATED: Use Priority instead. This enum will be removed in v3.0.0.
+
+    Warning: MessagePriority uses DESCENDING values (lower = higher priority)
+    which is counterintuitive. Priority uses ASCENDING values instead.
+
+    Migration guide:
+        MessagePriority.CRITICAL -> Priority.CRITICAL
+        MessagePriority.HIGH -> Priority.HIGH
+        MessagePriority.NORMAL -> Priority.NORMAL (or Priority.MEDIUM)
+        MessagePriority.LOW -> Priority.LOW
+    """
     CRITICAL = 0
     HIGH = 1
     NORMAL = 2
@@ -109,8 +134,8 @@ class AgentMessage:
     tenant_id: str = ""
     security_context: Dict[str, Any] = field(default_factory=dict)
 
-    # Priority and lifecycle (supports both Priority and MessagePriority)
-    priority: Any = Priority.MEDIUM  # Can be Priority or MessagePriority
+    # Priority and lifecycle
+    priority: Priority = Priority.MEDIUM
     status: MessageStatus = MessageStatus.PENDING
 
     # Constitutional compliance
@@ -177,7 +202,7 @@ class AgentMessage:
             to_agent=data.get("to_agent", ""),
             message_type=MessageType(data.get("message_type", "command")),
             tenant_id=data.get("tenant_id", ""),
-            priority=MessagePriority(data.get("priority", 2)),
+            priority=Priority(data.get("priority", 1)),  # Default to MEDIUM/NORMAL
             status=MessageStatus(data.get("status", "pending")),
         )
 

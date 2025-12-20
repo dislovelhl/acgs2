@@ -1,0 +1,62 @@
+openapi: 3.0.0
+info:
+  title: ACGS-2 Blockchain Audit API
+  description: Immutable logging and audit trail using Merkle trees and ZKP.
+  version: 2.1.0
+servers:
+  - url: http://localhost:8002/api/v1
+paths:
+  /audit/log:
+    post:
+      summary: Submit a message for immutable auditing
+      tags:
+        - Audit
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message_id:
+                  type: string
+                payload_hash:
+                  type: string
+                signature:
+                  type: string
+      responses:
+        '201':
+          description: Audit log created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  merkle_proof:
+                    type: string
+                  transaction_id:
+                    type: string
+  /audit/verify/{message_id}:
+    get:
+      summary: Verify the existence and integrity of an audit log
+      tags:
+        - Audit
+      parameters:
+        - name: message_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Verification result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  verified:
+                    type: boolean
+                  timestamp:
+                    type: string
+                    format: date-time

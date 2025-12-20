@@ -9,7 +9,12 @@ constitutional governance platform.
 __version__ = "2.0.0"
 __constitutional_hash__ = "cdd01ef066bc6cf2"
 
-CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
+# Import centralized constitutional hash from shared module
+try:
+    from shared.constants import CONSTITUTIONAL_HASH
+except ImportError:
+    # Fallback for standalone usage
+    CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
 
 from .models import (
     AgentMessage,
@@ -24,6 +29,20 @@ from .models import (
 from .core import (
     EnhancedAgentBus,
     MessageProcessor,
+)
+from .interfaces import (
+    AgentRegistry,
+    MessageRouter,
+    ValidationStrategy,
+    MessageHandler,
+    MetricsCollector,
+)
+from .registry import (
+    InMemoryAgentRegistry,
+    DirectMessageRouter,
+    CapabilityBasedRouter,
+    ConstitutionalValidationStrategy,
+    CompositeValidationStrategy,
 )
 from .validators import (
     ValidationResult,
@@ -84,6 +103,18 @@ __all__ = [
     "MessageProcessor",
     "ValidationResult",
     "IntegratedValidationSystem",
+    # Protocol Interfaces (DI)
+    "AgentRegistry",
+    "MessageRouter",
+    "ValidationStrategy",
+    "MessageHandler",
+    "MetricsCollector",
+    # Default Implementations (DI)
+    "InMemoryAgentRegistry",
+    "DirectMessageRouter",
+    "CapabilityBasedRouter",
+    "ConstitutionalValidationStrategy",
+    "CompositeValidationStrategy",
     # Exceptions - Base
     "AgentBusError",
     # Exceptions - Constitutional

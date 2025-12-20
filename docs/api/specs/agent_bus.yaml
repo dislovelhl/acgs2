@@ -1,0 +1,120 @@
+openapi: 3.0.0
+info:
+  title: ACGS-2 Agent Bus API
+  description: High-performance multi-tenant agent communication with constitutional governance.
+  version: 2.1.0
+  contact:
+    name: ACGS Project Team
+    url: https://github.com/ACGS-Project/ACGS-2
+servers:
+  - url: http://localhost:8000/api/v2
+    description: Local development server
+paths:
+  /agents/register:
+    post:
+      summary: Register a new agent
+      description: Registers an agent with specific capabilities and tenant isolation.
+      tags:
+        - Agents
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AgentRegistration'
+      responses:
+        '200':
+          description: Agent registered successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+        '400':
+          description: Invalid registration data
+  /messages/send:
+    post:
+      summary: Send a message through the bus
+      description: Validates constitutional compliance before routing the message.
+      tags:
+        - Messaging
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AgentMessage'
+      responses:
+        '200':
+          description: Message accepted and routed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationResult'
+        '403':
+          description: Constitutional hash mismatch or policy violation
+components:
+  schemas:
+    AgentRegistration:
+      type: object
+      required:
+        - agent_id
+        - tenant_id
+      properties:
+        agent_id:
+          type: string
+          example: "agent-001"
+        agent_type:
+          type: string
+          example: "assistant"
+        capabilities:
+          type: array
+          items:
+            type: string
+          example: ["text-processing", "search"]
+        tenant_id:
+          type: string
+          example: "tenant-alpha"
+    AgentMessage:
+      type: object
+      required:
+        - from_agent
+        - to_agent
+        - content
+        - constitutional_hash
+        - tenant_id
+      properties:
+        message_id:
+          type: string
+          format: uuid
+        from_agent:
+          type: string
+        to_agent:
+          type: string
+        content:
+          type: object
+        constitutional_hash:
+          type: string
+          example: "cdd01ef066bc6cf2"
+        tenant_id:
+          type: string
+        priority:
+          type: integer
+          enum: [0, 1, 2, 3]
+        impact_score:
+          type: number
+          minimum: 0
+          maximum: 1
+    ValidationResult:
+      type: object
+      properties:
+        is_valid:
+          type: boolean
+        errors:
+          type: array
+          items:
+            type: string
+        impact_score:
+          type: number

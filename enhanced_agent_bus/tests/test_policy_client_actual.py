@@ -16,7 +16,7 @@ _parent_dir = os.path.dirname(os.path.dirname(__file__))
 sys.path.insert(0, _parent_dir)
 
 # Import models directly first
-from models import AgentMessage, MessageType, MessagePriority
+from models import AgentMessage, MessageType, Priority
 from validators import ValidationResult
 
 # Now load policy_client with mocked relative imports
@@ -221,7 +221,7 @@ class TestValidateMessageActual:
             content={"action": "test", "topics": ["general"]},
             from_agent="sender",
             to_agent="receiver",
-            priority=MessagePriority.NORMAL,
+            priority=Priority.NORMAL,
         )
 
     @pytest.mark.asyncio

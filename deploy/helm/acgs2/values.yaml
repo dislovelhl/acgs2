@@ -464,8 +464,32 @@ affinity: {}
 # Priority Class
 priorityClassName: ""
 
+# Istio Service Mesh
+istio:
+  enabled: true
+  injection: enabled
+  gateway:
+    enabled: true
+    hosts:
+      - api.acgs2.io
+  mtls:
+    mode: STRICT
+
+# Optimization Overrides
+optimization:
+  onnx:
+    enabled: true
+    quantization: INT8
+  modelFallback:
+    enabled: true
+    baseline: "bert-base-uncased"
+
 # Extra environment variables
-extraEnv: []
+extraEnv:
+  - name: TRANSFORMERS_OFFLINE
+    value: "1"
+  - name: ONNX_RUNTIME
+    value: "1"
 
 # Extra volumes
 extraVolumes: []
