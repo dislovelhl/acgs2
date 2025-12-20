@@ -245,6 +245,21 @@ class DirectMessageRouter:
         """Initialize the direct router."""
         self._constitutional_hash = CONSTITUTIONAL_HASH
 
+    @staticmethod
+    def _normalize_tenant_id(tenant_id: Optional[str]) -> Optional[str]:
+        """Normalize tenant identifiers to a canonical optional value."""
+        return tenant_id or None
+
+    @staticmethod
+    def _extract_tenant_id(agent_info: Dict[str, Any]) -> Optional[str]:
+        """Extract tenant identifier from agent registry info."""
+        if "tenant_id" in agent_info:
+            return agent_info.get("tenant_id")
+        metadata = agent_info.get("metadata", {})
+        if isinstance(metadata, dict):
+            return metadata.get("tenant_id")
+        return None
+
     async def route(
         self,
         message: AgentMessage,
@@ -255,9 +270,25 @@ class DirectMessageRouter:
         if not target:
             return None
 
-        if await registry.exists(target):
-            return target
-        return None
+        if not await registry.exists(target):
+            return None
+
+        agent_info = await registry.get(target)
+        if agent_info is None:
+            return None
+
+        message_tenant = self._normalize_tenant_id(message.tenant_id)
+        agent_tenant = self._normalize_tenant_id(self._extract_tenant_id(agent_info))
+        if message_tenant != agent_tenant:
+            logger.warning(
+                "Tenant mismatch routing denied: message tenant_id=%s target=%s tenant_id=%s",
+                message_tenant,
+                target,
+                agent_tenant,
+            )
+            return None
+
+        return target
 
     async def broadcast(
         self,

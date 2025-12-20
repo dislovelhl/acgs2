@@ -825,6 +825,12 @@ class EnhancedAgentBus:
 
         Validates constitutional compliance before queuing.
         """
+        tenant_errors = self._validate_tenant_consistency(message)
+        if tenant_errors:
+            self._metrics["messages_failed"] += 1
+            message.status = MessageStatus.FAILED
+            return ValidationResult(is_valid=False, errors=tenant_errors)
+
         # Validate constitutional compliance using strategy
         is_valid, error = await self._validator.validate(message)
         if not is_valid:
@@ -839,6 +845,45 @@ class EnhancedAgentBus:
         await self._message_queue.put(message)
 
         return ValidationResult(is_valid=True)
+
+    @staticmethod
+    def _normalize_tenant_id(tenant_id: Optional[str]) -> Optional[str]:
+        """Normalize tenant identifiers to a canonical optional value."""
+        return tenant_id or None
+
+    @staticmethod
+    def _format_tenant_id(tenant_id: Optional[str]) -> str:
+        """Format tenant identifiers for logging and validation messages."""
+        return tenant_id if tenant_id else "none"
+
+    def _validate_tenant_consistency(self, message: AgentMessage) -> List[str]:
+        """Validate tenant_id consistency for sender/recipient before delivery."""
+        errors: List[str] = []
+        message_tenant = self._normalize_tenant_id(message.tenant_id)
+
+        if message.from_agent and message.from_agent in self._agents:
+            sender_tenant = self._normalize_tenant_id(
+                self._agents[message.from_agent].get("tenant_id")
+            )
+            if sender_tenant != message_tenant:
+                errors.append(
+                    "Tenant mismatch: message tenant_id "
+                    f"'{self._format_tenant_id(message_tenant)}' does not match "
+                    f"sender tenant_id '{self._format_tenant_id(sender_tenant)}'"
+                )
+
+        if message.to_agent and message.to_agent in self._agents:
+            recipient_tenant = self._normalize_tenant_id(
+                self._agents[message.to_agent].get("tenant_id")
+            )
+            if recipient_tenant != message_tenant:
+                errors.append(
+                    "Tenant mismatch: message tenant_id "
+                    f"'{self._format_tenant_id(message_tenant)}' does not match "
+                    f"recipient tenant_id '{self._format_tenant_id(recipient_tenant)}'"
+                )
+
+        return errors
 
     async def receive_message(self, timeout: float = 1.0) -> Optional[AgentMessage]:
         """
