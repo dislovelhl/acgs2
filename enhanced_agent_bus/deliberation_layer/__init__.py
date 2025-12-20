@@ -5,8 +5,20 @@ Constitutional Hash: cdd01ef066bc6cf2
 Configurable deliberation layer for high-risk decision governance.
 Provides impact scoring, adaptive routing, human-in-the-loop approval,
 and OPA policy guard integration for VERIFY-BEFORE-ACT pattern.
+
+Supports dependency injection via Protocol interfaces for testing
+and customization of all major components.
 """
 
+from .interfaces import (
+    ImpactScorerProtocol,
+    AdaptiveRouterProtocol,
+    DeliberationQueueProtocol,
+    LLMAssistantProtocol,
+    RedisQueueProtocol,
+    RedisVotingProtocol,
+    OPAGuardProtocol,
+)
 from .impact_scorer import ImpactScorer, calculate_message_impact, get_impact_scorer
 from .deliberation_queue import (
     DeliberationQueue,
@@ -42,6 +54,14 @@ from .opa_guard import (
 )
 
 __all__ = [
+    # DI Protocol Interfaces
+    "ImpactScorerProtocol",
+    "AdaptiveRouterProtocol",
+    "DeliberationQueueProtocol",
+    "LLMAssistantProtocol",
+    "RedisQueueProtocol",
+    "RedisVotingProtocol",
+    "OPAGuardProtocol",
     # Impact Scorer
     "ImpactScorer",
     "calculate_message_impact",

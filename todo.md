@@ -18,9 +18,11 @@
   - ~~引入 `AgentRegistry` 接口和 `InMemoryAgentRegistry` 实现。~~ ✅
   - ~~引入 `MessageRouter` 接口。~~ ✅
   - ~~使用构造函数注入依赖项。~~ ✅
-- [ ] **重构 DeliberationLayer**：
-  - 将 `ImpactScorer`, `AdaptiveRouter` 等作为依赖项注入。
-  - 拆分 `process_message` 方法，遵循单一职责原则。
+- [x] **重构 DeliberationLayer**：
+  - ~~将 `ImpactScorer`, `AdaptiveRouter` 等作为依赖项注入。~~ ✅
+  - ~~创建 Protocol 接口：`ImpactScorerProtocol`, `AdaptiveRouterProtocol`, 等。~~ ✅
+  - ~~使用构造函数注入依赖项并保持向后兼容性。~~ ✅
+  - 拆分 `process_message` 方法，遵循单一职责原则。(待完成)
 - [ ] **重构 MessageProcessor**：
   - 使用策略模式处理 Rust/Dynamic/Python 验证逻辑。
 
