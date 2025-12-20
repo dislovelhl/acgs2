@@ -228,8 +228,8 @@ class TestOPAClient:
     @pytest.mark.asyncio
     async def test_http_mode_with_mock(self, http_opa_client):
         """Test HTTP mode with mocked responses."""
-        # Mock the HTTP client
-        mock_response = AsyncMock()
+        # Mock the HTTP client - use MagicMock for response since .json() is sync
+        mock_response = MagicMock()
         mock_response.json.return_value = {
             "result": {
                 "allow": True,

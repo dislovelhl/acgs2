@@ -36,10 +36,43 @@ _source = _source.replace(
     "from validators import ValidationResult"
 )
 
-# Create module namespace
+# Remove the shared.config import block entirely and mock settings
+_source = _source.replace(
+    """try:
+    from shared.config import settings
+except ImportError:
+    from ...shared.config import settings""",
+    "# Settings mocked for testing"
+)
+
+# Create a mock settings object
+class MockSecretStr:
+    """Mock Pydantic SecretStr."""
+    def __init__(self, value: str):
+        self._value = value
+    def get_secret_value(self) -> str:
+        return self._value
+
+class MockSecuritySettings:
+    """Mock security settings."""
+    rate_limit_requests = 100
+    rate_limit_window = 60
+    api_key_internal = MockSecretStr("test-internal-api-key")
+
+class MockSettings:
+    """Mock settings for testing."""
+    POLICY_REGISTRY_URL = "http://localhost:8003"
+    POLICY_REGISTRY_API_KEY = "test-api-key"
+    POLICY_CACHE_TTL = 300
+    security = MockSecuritySettings()
+
+_mock_settings = MockSettings()
+
+# Create module namespace with mocked settings
 _policy_ns = {
     '__name__': 'policy_client',
     '__file__': _policy_client_path,
+    'settings': _mock_settings,
 }
 
 # Execute in namespace
