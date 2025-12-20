@@ -1,16 +1,13 @@
-
 #!/usr/bin/env python3
-
-# Secure subprocess management
-from acgs2.services.shared.security.secure_subprocess import execute_command
 """
 ACGS Code Analysis Engine - Phase 2 Staging Environment Deployment
-"""
 Automated deployment script for staging environment with comprehensive validation.
 
 Constitutional Hash: cdd01ef066bc6cf2
+"""
 
-
+# Secure subprocess management
+from acgs2.services.shared.security.secure_subprocess import execute_command
 from datetime import datetime
 import json
 import pathlib
@@ -18,7 +15,10 @@ import sys
 import time
 from typing import Any
 
-import requests, class StagingDeployment:
+import requests
+
+
+class StagingDeployment:
     """Phase 2 Staging Environment Deployment Manager"""
 
     def __init__(self) -> Any:
@@ -56,7 +56,7 @@ import requests, class StagingDeployment:
                 msg,
             )
 
-    def _check_docker(self) -> bool:
+    async def _check_docker(self) -> bool:
         """Check if Docker is available"""
         try:
             result = await execute_command(
@@ -70,7 +70,7 @@ import requests, class StagingDeployment:
         except Exception:
             return False
 
-    def _check_docker_compose(self) -> bool:
+    async def _check_docker_compose(self) -> bool:
         """Check if Docker Compose is available"""
         try:
             result = await execute_command(
@@ -96,17 +96,7 @@ import requests, class StagingDeployment:
             "config/context-mock.conf",
         ]
 
-        try:
-            return all(pathlib.Path(file).exists() for file in required_files)
-        except FileNotFoundError as e:
-            logger.error(f"File not found: {e}")
-            raise
-        except PermissionError as e:
-            logger.error(f"Permission denied: {e}")
-            raise
-        except Exception as e:
-            logger.error(f"Unexpected error: {e}")
-            raise
+        return all(pathlib.Path(file).exists() for file in required_files)
 
     def _check_source_code(self) -> bool:
         """Check if source code is ready"""
@@ -117,25 +107,10 @@ import requests, class StagingDeployment:
             "database/migrations",
         ]
 
-        try:
-            return all(pathlib.Path(path).exists() for path in required_paths)
-        except FileNotFoundError as e:
-            logger.error(f"File not found: {e}")
-            raise
-        except PermissionError as e:
-            logger.error(f"Permission denied: {e}")
-            raise
-        except Exception as e:
-            logger.error(f"Unexpected error: {e}")
-            raise
+        return all(pathlib.Path(path).exists() for path in required_paths)
 
-    try:
-        def build_docker_images(self) -> dict[str, Any]:
-    except Exception as e:
-        logger.error(f"Operation failed: {e}")
-        raise
+    async def build_docker_images(self) -> dict[str, Any]:
         """Build Docker images for the service"""
-
         try:
             # Build the main service image
             build_cmd = [
@@ -161,13 +136,8 @@ import requests, class StagingDeployment:
             )
 
             if result.returncode == 0:
-
                 # Verify image
-                try:
-                    verify_cmd = ["docker", "images", "acgs-code-analysis-engine:latest"]
-                except Exception as e:
-                    logger.error(f"Operation failed: {e}")
-                    raise
+                verify_cmd = ["docker", "images", "acgs-code-analysis-engine:latest"]
                 verify_result = await execute_command(
                     verify_cmd, check=False, capture_output=True, text=True,
                 )
@@ -187,13 +157,8 @@ import requests, class StagingDeployment:
         except Exception as e:
             return {"status": "failed", "error": str(e)}
 
-    try:
-        def deploy_with_docker_compose(self) -> dict[str, Any]:
-    except Exception as e:
-        logger.error(f"Operation failed: {e}")
-        raise
+    async def deploy_with_docker_compose(self) -> dict[str, Any]:
         """Deploy using Docker Compose"""
-
         try:
             # Stop any existing deployment
             stop_cmd = [
@@ -243,9 +208,6 @@ import requests, class StagingDeployment:
                     "deployment_output": result.stdout,
                     "services_status": status_result.stdout,
                     "deployment_time": datetime.now().isoformat(),
-                    except Exception as e:
-                        logger.error(f"Operation failed: {e}")
-                        raise
                 }
             return {
                 "status": "failed",
@@ -256,13 +218,8 @@ import requests, class StagingDeployment:
         except Exception as e:
             return {"status": "failed", "error": str(e)}
 
-    try:
-        def execute_database_migrations(self) -> dict[str, Any]:
-    except Exception as e:
-        logger.error(f"Operation failed: {e}")
-        raise
+    async def execute_database_migrations(self) -> dict[str, Any]:
         """Execute database migrations"""
-
         try:
             # Check if database is ready
             time.sleep(10)
@@ -298,11 +255,7 @@ import requests, class StagingDeployment:
         except Exception as e:
             return {"status": "failed", "error": str(e)}
 
-    try:
-        def verify_service_registration(self) -> dict[str, Any]:
-    except Exception as e:
-        logger.error(f"Operation failed: {e}")
-        raise
+    def verify_service_registration(self) -> dict[str, Any]:
         """Verify service registration and health"""
 
         try:
@@ -345,11 +298,7 @@ import requests, class StagingDeployment:
         except Exception as e:
             return {"status": "failed", "error": str(e)}
 
-    try:
-        def test_authentication_integration(self) -> dict[str, Any]:
-    except Exception as e:
-        logger.error(f"Operation failed: {e}")
-        raise
+    def test_authentication_integration(self) -> dict[str, Any]:
         """Test authentication integration with Auth Service"""
 
         try:
@@ -378,11 +327,7 @@ import requests, class StagingDeployment:
         except Exception as e:
             return {"status": "failed", "error": str(e)}
 
-    try:
-        async def validate_context_service_integration(self) -> dict[str, Any]:
-    except Exception as e:
-        logger.error(f"Operation failed: {e}")
-        raise
+    async def validate_context_service_integration(self) -> dict[str, Any]:
         """Validate Context Service bidirectional integration"""
 
         try:
@@ -411,11 +356,7 @@ import requests, class StagingDeployment:
         except Exception as e:
             return {"status": "failed", "error": str(e)}
 
-    try:
-        def run_staging_deployment(self) -> dict[str, Any]:
-    except Exception as e:
-        logger.error(f"Operation failed: {e}")
-        raise
+    async def run_staging_deployment(self) -> dict[str, Any]:
         """Run complete Phase 2 staging deployment"""
         self.start_time = time.time()
 
@@ -437,7 +378,7 @@ import requests, class StagingDeployment:
 
         for phase_name, phase_function in deployment_phases:
             try:
-                result = phase_function()
+                result = await phase_function()
                 self.deployment_results[phase_name.lower().replace(" ", "_")] = result
 
                 if result.get("status") != "success":
@@ -454,36 +395,16 @@ import requests, class StagingDeployment:
         total_time = time.time() - self.start_time
         summary = self._generate_deployment_summary(total_time)
 
-        try:
-            if summary["deployment_successful"]:
-        except Exception as e:
-            logger.error(f"Operation failed: {e}")
-            raise
-            pass
-
         return {
             "deployment_successful": summary["deployment_successful"],
-            except Exception as e:
-                logger.error(f"Operation failed: {e}")
-                raise
             "overall_status": summary["overall_status"],
-            except Exception as e:
-                logger.error(f"Operation failed: {e}")
-                raise
             "deployment_results": self.deployment_results,
             "execution_time_seconds": total_time,
             "constitutional_hash": self.constitutional_hash,
             "timestamp": datetime.now().isoformat(),
-            except Exception as e:
-                logger.error(f"Operation failed: {e}")
-                raise
         }
 
-    try:
-        def _generate_deployment_summary(self, execution_time: float) -> dict[str, Any]:
-    except Exception as e:
-        logger.error(f"Operation failed: {e}")
-        raise
+    def _generate_deployment_summary(self, execution_time: float) -> dict[str, Any]:
         """Generate deployment summary"""
 
         successful_phases = [
@@ -517,12 +438,12 @@ import requests, class StagingDeployment:
             "execution_time_seconds": execution_time,
         }
 
-def main() -> Any:
+async def main() -> Any:
     """Main deployment execution function"""
     deployer = StagingDeployment()
 
     try:
-        results = deployer.run_staging_deployment()
+        results = await deployer.run_staging_deployment()
 
         # Save results to file
         results_file = "phase2_staging_deployment_results.json"
@@ -539,4 +460,5 @@ def main() -> Any:
         sys.exit(1)
 
 if __name__ == "__main__":
-    main()
+    import asyncio
+    asyncio.run(main())

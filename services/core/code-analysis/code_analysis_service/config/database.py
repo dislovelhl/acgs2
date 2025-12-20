@@ -1,41 +1,32 @@
-
-import logging
-
-logger = logging.getLogger(__name__)
-
-from pathlib import Path
-from datetime import datetime
-from typing import Dict
-"""
-List, Optional, Union, Any, Tuple
-"""
-
 """
 ACGS Code Analysis Engine - Database Manager
 PostgreSQL connection management with constitutional compliance.
-"""
 
 Constitutional Hash: cdd01ef066bc6cf2
+"""
 
-
+import logging
+import os
 from contextlib import asynccontextmanager
-from typing import Any
+from typing import Any, Optional
 
 import asyncpg
-from app.utils.constitutional import (
-    CONSTITUTIONAL_HASH,
-    ensure_constitutional_compliance,
-)
-from app.utils.logging import get_logger
 from asyncpg import Pool
 
-logger = get_logger("config.database")
+logger = logging.getLogger(__name__)
+
+# Constitutional hash constant
+CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
+
+
+def ensure_constitutional_compliance(data: dict[str, Any]) -> dict[str, Any]:
+    """Ensure constitutional compliance by adding hash to data."""
+    data["constitutional_hash"] = CONSTITUTIONAL_HASH
+    return data
 
 
 class DatabaseManager:
-    
-    Database manager for ACGS Code Analysis Engine with constitutional compliance.
-    
+    """Database manager for ACGS Code Analysis Engine with constitutional compliance."""
 
     def __init__(
         self,
@@ -48,33 +39,33 @@ class DatabaseManager:
         max_connections: int = 20,
         command_timeout: float = 60.0,
     ):
-        
-        Initialize database manager.
+        """Initialize database manager.
 
         Args:
             host: Database host
             port: Database port
             database: Database name
             username: Database username
-            password: os.environ.get("DATABASE_URL", os.environ.get("DEFAULT_VALUE", "fallback"))
+            password: Database password
             min_connections: Minimum connections in pool
             max_connections: Maximum connections in pool
             command_timeout: Command timeout in seconds
-        
+        """
         self.host = host
         self.port = port
         self.database = database
         self.username = username
-        self.password = os.environ.get("DATABASE_URL", os.environ.get("DEFAULT_VALUE", "fallback"))
+        self.password = password or os.environ.get("POSTGRESQL_PASSWORD", "")
         self.min_connections = min_connections
         self.max_connections = max_connections
         self.command_timeout = command_timeout
 
         # Connection pool
-        self.pool: Pool | None = None
+        self.pool: Optional[Pool] = None
         self.is_connected = False
 
-        logger.info("Database manager initialized",
+        logger.info(
+            "Database manager initialized",
             extra={
                 "host": host,
                 "port": port,
@@ -85,12 +76,11 @@ class DatabaseManager:
         )
 
     async def connect(self) -> bool:
-        
-        Connect to PostgreSQL database.
+        """Connect to PostgreSQL database.
 
         Returns:
             bool: True if connection successful
-        
+        """
         if self.is_connected:
             return True
 
@@ -101,7 +91,7 @@ class DatabaseManager:
                 port=self.port,
                 database=self.database,
                 user=self.username,
-                password=os.getenv("POSTGRESQL_PASSWORD", "")
+                password=self.password,
                 min_size=self.min_connections,
                 max_size=self.max_connections,
                 command_timeout=self.command_timeout,
@@ -113,8 +103,9 @@ class DatabaseManager:
 
             self.is_connected = True
 
-            logger.info("Database manager connected",
-            extra={
+            logger.info(
+                "Database manager connected",
+                extra={
                     "host": self.host,
                     "port": self.port,
                     "database": self.database,
@@ -144,39 +135,26 @@ class DatabaseManager:
             self.pool = None
             self.is_connected = False
 
-            logger.info("Database manager disconnected",
-            extra={"constitutional_hash": CONSTITUTIONAL_HASH},
+            logger.info(
+                "Database manager disconnected",
+                extra={"constitutional_hash": CONSTITUTIONAL_HASH},
             )
 
     @asynccontextmanager
-    try:
-        async def get_connection(self) -> Optional[Dict[str, Any]]:
-    except Exception as e:
-        logger.error(f"Operation failed: {e}")
-        raise
-        
-        Get database connection from pool.
+    async def get_connection(self):
+        """Get database connection from pool.
 
         Yields:
             asyncpg.Connection: Database connection
-        
+        """
         if not self.is_connected:
-            try:
-                await self.connect()
-            except Exception as e:
-                logger.error(f"Operation failed: {e}")
-                raise
+            await self.connect()
 
         async with self.pool.acquire() as connection:
             yield connection
 
-    try:
-        async def execute_query(self, query: str, *args) -> list[dict[str, Any]]:
-    except Exception as e:
-        logger.error(f"Operation failed: {e}")
-        raise
-        
-        Execute SELECT query and return results.
+    async def execute_query(self, query: str, *args) -> list[dict[str, Any]]:
+        """Execute SELECT query and return results.
 
         Args:
             query: SQL query
@@ -184,7 +162,7 @@ class DatabaseManager:
 
         Returns:
             list: Query results
-        
+        """
         try:
             async with self.get_connection() as connection:
                 rows = await connection.fetch(query, *args)
@@ -199,7 +177,7 @@ class DatabaseManager:
                 logger.debug(
                     f"Query executed successfully: {len(results)} rows",
                     extra={
-                        "query": query[:100],  # Log first 100 chars
+                        "query": query[:100],
                         "rows_returned": len(results),
                         "constitutional_hash": CONSTITUTIONAL_HASH,
                     },
@@ -212,9 +190,6 @@ class DatabaseManager:
                 f"Query execution error: {e}",
                 extra={
                     "query": query[:100],
-                    except Exception as e:
-                        logger.error(f"Operation failed: {e}")
-                        raise
                     "constitutional_hash": CONSTITUTIONAL_HASH,
                 },
                 exc_info=True,
@@ -222,8 +197,7 @@ class DatabaseManager:
             raise
 
     async def execute_command(self, command: str, *args) -> str:
-        
-        Execute INSERT/UPDATE/DELETE command.
+        """Execute INSERT/UPDATE/DELETE command.
 
         Args:
             command: SQL command
@@ -231,7 +205,7 @@ class DatabaseManager:
 
         Returns:
             str: Command result
-        
+        """
         try:
             async with self.get_connection() as connection:
                 result = await connection.execute(command, *args)
@@ -258,20 +232,15 @@ class DatabaseManager:
             )
             raise
 
-    try:
-        async def execute_transaction(self, commands: list[tuple]) -> list[str]:
-    except Exception as e:
-        logger.error(f"Operation failed: {e}")
-        raise
-        
-        Execute multiple commands in a transaction.
+    async def execute_transaction(self, commands: list[tuple]) -> list[str]:
+        """Execute multiple commands in a transaction.
 
         Args:
             commands: List of (command, args) tuples
 
         Returns:
             list: Command results
-        
+        """
         try:
             async with self.get_connection() as connection:
                 async with connection.transaction():
@@ -302,17 +271,12 @@ class DatabaseManager:
             )
             raise
 
-    try:
-        async def check_health(self) -> dict[str, Any]:
-    except Exception as e:
-        logger.error(f"Operation failed: {e}")
-        raise
-        
-        Check database health.
+    async def check_health(self) -> dict[str, Any]:
+        """Check database health.
 
         Returns:
             dict: Health check results
-        
+        """
         try:
             if not self.is_connected:
                 return ensure_constitutional_compliance(
@@ -325,12 +289,12 @@ class DatabaseManager:
 
                 # Get database info
                 db_info = await connection.fetchrow(
-                    
+                    """
                     SELECT
                         current_database() as database_name,
                         current_user as current_user,
                         version() as version
-                
+                    """
                 )
 
                 # Get connection pool info
@@ -366,11 +330,7 @@ class DatabaseManager:
                 {"status": "unhealthy", "error": str(e)}
             )
 
-    try:
-        async def get_status(self) -> dict[str, Any]:
-    except Exception as e:
-        logger.error(f"Operation failed: {e}")
-        raise
+    async def get_status(self) -> dict[str, Any]:
         """Get database manager status."""
         return ensure_constitutional_compliance(
             {
@@ -386,15 +346,11 @@ class DatabaseManager:
             }
         )
 
-    async def __aenter__(self) -> Any:
+    async def __aenter__(self) -> "DatabaseManager":
         """Async context manager entry."""
-        try:
-            await self.connect()
-        except Exception as e:
-            logger.error(f"Operation failed: {e}")
-            raise
+        await self.connect()
         return self
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb) -> Any:
+    async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
         """Async context manager exit."""
         await self.disconnect()

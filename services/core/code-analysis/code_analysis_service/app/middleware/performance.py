@@ -1,103 +1,117 @@
-import logging
-
-logger = logging.getLogger(__name__)
-
-from pathlib import Path
-from datetime import datetime
-from typing import Dict
-"""
-List, Optional, Union, Any, Tuple
-"""
-
 """
 ACGS Code Analysis Engine - Performance Monitoring Middleware
 Request timing, metrics collection, and P99 latency monitoring with constitutional compliance.
-"""
 
 Constitutional Hash: cdd01ef066bc6cf2
+"""
 
-
+import logging
+import re
 import time
 import uuid
 from collections import defaultdict, deque
-from typing import Any
+from typing import Any, Callable
+
 import psutil
-from app.utils.constitutional import CONSTITUTIONAL_HASH, # Pydantic Models for Constitutional Compliance
-class ConstitutionalRequest(BaseModel):
-    constitutional_hash: str = "cdd01ef066bc6cf2"
-    
-class ConstitutionalResponse(BaseModel):
-    constitutional_hash: str = "cdd01ef066bc6cf2"
-    status: str = "success"
-
-
-from app.utils.logging import get_logger, performance_logger
-from fastapi import Request
-"""
-Response
-"""
-from acgs2.services.shared.middleware.unified_middleware import setup_unified_middleware, quick_setup_acgs_service
-
-from prometheus_client import Counter
-"""
-Gauge, Histogram
-"""
+from fastapi import Request, Response
+from prometheus_client import Counter, Gauge, Histogram
 from starlette.middleware.base import BaseHTTPMiddleware
-logger = get_logger("middleware.performance")
+
+logger = logging.getLogger(__name__)
+
+# Constitutional hash constant
+CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
 
 # Prometheus metrics
 REQUEST_COUNT = Counter(
     "acgs_code_analysis_requests_total",
     "Total number of requests",
-    try:
-        ["method", "endpoint", "status_code"],
-    except Exception as e:
-        logger.error(f"Operation failed: {e}")
-        raise
+    ["method", "endpoint", "status_code"],
 )
 
 REQUEST_DURATION = Histogram(
     "acgs_code_analysis_request_duration_seconds",
     "Request duration in seconds",
-    try:
-        ["method", "endpoint"],
-    except Exception as e:
-        logger.error(f"Operation failed: {e}")
-        raise
+    ["method", "endpoint"],
 )
 
 ACTIVE_REQUESTS = Gauge(
-    "acgs_code_analysis_active_requests", "Number of active requests"
+    "acgs_code_analysis_active_requests",
+    "Number of active requests",
 )
 
 CACHE_HITS = Counter(
-    "acgs_code_analysis_cache_hits_total", "Total number of cache hits", ["cache_type"]
-    except Exception as e:
-        logger.error(f"Operation failed: {e}")
-        raise
+    "acgs_code_analysis_cache_hits_total",
+    "Total number of cache hits",
+    ["cache_type"],
 )
 
 CACHE_MISSES = Counter(
     "acgs_code_analysis_cache_misses_total",
     "Total number of cache misses",
-    try:
-        ["cache_type"],
-    except Exception as e:
-        logger.error(f"Operation failed: {e}")
-        raise
+    ["cache_type"],
 )
 
-MEMORY_USAGE = Gauge("acgs_code_analysis_memory_usage_bytes", "Memory usage in bytes")
+MEMORY_USAGE = Gauge(
+    "acgs_code_analysis_memory_usage_bytes",
+    "Memory usage in bytes",
+)
 
-CPU_USAGE = Gauge("acgs_code_analysis_cpu_usage_percent", "CPU usage percentage")
+CPU_USAGE = Gauge(
+    "acgs_code_analysis_cpu_usage_percent",
+    "CPU usage percentage",
+)
+
+
+class PerformanceLogger:
+    """Performance logging utility."""
+
+    def start_operation(
+        self,
+        operation_id: str,
+        operation_type: str,
+        **kwargs: Any,
+    ) -> None:
+        """Start tracking an operation."""
+        logger.debug(
+            f"Starting {operation_type}: {operation_id}",
+            extra={"operation_id": operation_id, **kwargs},
+        )
+
+    def end_operation(
+        self,
+        operation_id: str,
+        success: bool,
+        **kwargs: Any,
+    ) -> None:
+        """End tracking an operation."""
+        logger.debug(
+            f"Completed operation: {operation_id} (success={success})",
+            extra={"operation_id": operation_id, "success": success, **kwargs},
+        )
+
+    def log_cache_operation(
+        self,
+        operation: str,
+        cache_hit: bool,
+        key: str,
+        request_id: str,
+    ) -> None:
+        """Log cache operation."""
+        logger.debug(
+            f"Cache {operation}: hit={cache_hit}",
+            extra={"key": key, "request_id": request_id, "cache_hit": cache_hit},
+        )
+
+
+performance_logger = PerformanceLogger()
 
 
 class PerformanceMiddleware(BaseHTTPMiddleware):
-    
-    Performance monitoring middleware for ACGS Code Analysis Engine.
+    """Performance monitoring middleware for ACGS Code Analysis Engine.
 
     Tracks request timing, resource usage, and constitutional compliance metrics.
-    
+    """
 
     def __init__(
         self,
@@ -106,36 +120,28 @@ class PerformanceMiddleware(BaseHTTPMiddleware):
         slow_request_threshold_ms: float = 100.0,
         enable_detailed_metrics: bool = True,
     ):
-        
-        Initialize performance middleware.
+        """Initialize performance middleware.
 
         Args:
             app: FastAPI application
             latency_target_ms: Target P99 latency in milliseconds
             slow_request_threshold_ms: Threshold for slow request logging
             enable_detailed_metrics: Whether to collect detailed metrics
-        
+        """
         super().__init__(app)
         self.latency_target_ms = latency_target_ms
         self.slow_request_threshold_ms = slow_request_threshold_ms
         self.enable_detailed_metrics = enable_detailed_metrics
 
         # Performance tracking
-        try:
-            self.request_times: dict[str, deque] = defaultdict(lambda: deque(maxlen=1000))
-        except Exception as e:
-            logger.error(f"Operation failed: {e}")
-            raise
-        try:
-            self.active_requests: dict[str, float] = {}
-        except Exception as e:
-            logger.error(f"Operation failed: {e}")
-            raise
+        self.request_times: dict[str, deque] = defaultdict(lambda: deque(maxlen=1000))
+        self.active_requests: dict[str, float] = {}
 
         # Resource monitoring
         self.process = psutil.Process()
 
-        logger.info("Performance middleware initialized",
+        logger.info(
+            "Performance middleware initialized",
             extra={
                 "latency_target_ms": latency_target_ms,
                 "slow_request_threshold_ms": slow_request_threshold_ms,
@@ -143,7 +149,7 @@ class PerformanceMiddleware(BaseHTTPMiddleware):
             },
         )
 
-    async def dispatch(self, request: Request, call_next) -> Response:
+    async def dispatch(self, request: Request, call_next: Callable) -> Response:
         """Process request through performance middleware."""
         # Generate request ID for tracking
         request_id = str(uuid.uuid4())
@@ -155,11 +161,7 @@ class PerformanceMiddleware(BaseHTTPMiddleware):
 
         # Track active request
         ACTIVE_REQUESTS.inc()
-        try:
-            self.active_requests[request_id] = start_time
-        except Exception as e:
-            logger.error(f"Operation failed: {e}")
-            raise
+        self.active_requests[request_id] = start_time
 
         # Get initial resource usage
         initial_memory = (
@@ -238,11 +240,7 @@ class PerformanceMiddleware(BaseHTTPMiddleware):
     ) -> None:
         """Update Prometheus metrics."""
         method = request.method
-        try:
-            endpoint = self._normalize_endpoint(request.url.path)
-        except Exception as e:
-            logger.error(f"Unexpected error: {e}")
-            raise
+        endpoint = self._normalize_endpoint(request.url.path)
         status_code = str(response.status_code)
 
         # Update counters and histograms
@@ -255,51 +253,23 @@ class PerformanceMiddleware(BaseHTTPMiddleware):
         )
 
         # Track request times for P99 calculation
-        try:
-            self.request_times[endpoint].append(duration_ms)
-        except Exception as e:
-            logger.error(f"Operation failed: {e}")
-            raise
+        self.request_times[endpoint].append(duration_ms)
 
     def _add_performance_headers(
         self, response: Response, duration_ms: float, request_id: str
     ) -> None:
         """Add performance-related headers to response."""
-        try:
-            response.headers["X-Request-ID"] = request_id
-        except Exception as e:
-            logger.error(f"Operation failed: {e}")
-            raise
-        try:
-            response.headers["X-Response-Time"] = f"{duration_ms:.3f}ms"
-        except Exception as e:
-            logger.error(f"Operation failed: {e}")
-            raise
-        try:
-            response.headers["X-Constitutional-Hash"] = CONSTITUTIONAL_HASH
-        except Exception as e:
-            logger.error(f"Operation failed: {e}")
-            raise
+        response.headers["X-Request-ID"] = request_id
+        response.headers["X-Response-Time"] = f"{duration_ms:.3f}ms"
+        response.headers["X-Constitutional-Hash"] = CONSTITUTIONAL_HASH
 
         # Add performance status
         if duration_ms <= self.latency_target_ms:
-            try:
-                response.headers["X-Performance-Status"] = "optimal"
-            except Exception as e:
-                logger.error(f"Operation failed: {e}")
-                raise
+            response.headers["X-Performance-Status"] = "optimal"
         elif duration_ms <= self.slow_request_threshold_ms:
-            try:
-                response.headers["X-Performance-Status"] = "acceptable"
-            except Exception as e:
-                logger.error(f"Operation failed: {e}")
-                raise
+            response.headers["X-Performance-Status"] = "acceptable"
         else:
-            try:
-                response.headers["X-Performance-Status"] = "slow"
-            except Exception as e:
-                logger.error(f"Operation failed: {e}")
-                raise
+            response.headers["X-Performance-Status"] = "slow"
 
     def _log_performance_data(
         self,
@@ -347,8 +317,7 @@ class PerformanceMiddleware(BaseHTTPMiddleware):
         """Check for performance target violations."""
         if duration_ms > self.latency_target_ms:
             logger.warning(
-                f"Latency target violation: {duration_ms:.2f}ms >"
-                f" {self.latency_target_ms}ms",
+                f"Latency target violation: {duration_ms:.2f}ms > {self.latency_target_ms}ms",
                 extra={
                     "method": request.method,
                     "path": request.url.path,
@@ -389,31 +358,21 @@ class PerformanceMiddleware(BaseHTTPMiddleware):
                 extra={"constitutional_hash": CONSTITUTIONAL_HASH},
             )
 
-    try:
-        def _normalize_endpoint(self, path: str) -> str:
+    def _normalize_endpoint(self, path: str) -> str:
         """Normalize endpoint path for metrics."""
-        # Replace UUIDs and IDs with placeholders
-        import re, # Replace UUIDs
+        # Replace UUIDs
         path = re.sub(
-            try:
-                r"/[0-9a-f], {8}-[0-9a-f], {4}-[0-9a-f], {4}-[0-9a-f], {4}-[0-9a-f], {12}",
-            except Exception as e:
-                logger.error(f"Operation failed: {e}")
-                raise
-            f"/{uuid}",
+            r"/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}",
+            "/{uuid}",
             path,
         )
 
         # Replace numeric IDs
         return re.sub(r"/\d+", "/{id}", path)
 
-    try:
-        async def get_performance_summary(self) -> dict[str, Any]:
-    except Exception as e:
-        logger.error(f"Operation failed: {e}")
-        raise
+    async def get_performance_summary(self) -> dict[str, Any]:
         """Get current performance summary."""
-        summary = {
+        summary: dict[str, Any] = {
             "active_requests": len(self.active_requests),
             "constitutional_hash": CONSTITUTIONAL_HASH,
             "performance_targets": {
@@ -424,35 +383,17 @@ class PerformanceMiddleware(BaseHTTPMiddleware):
 
         # Calculate P99 latencies for each endpoint
         if self.request_times:
-            p99_latencies = {}
+            p99_latencies: dict[str, float] = {}
             for endpoint, times in self.request_times.items():
                 if times:
                     sorted_times = sorted(times)
-                    try:
-                        p99_index = int(len(sorted_times) * 0.99)
-                    try:
-                        p99_latencies[endpoint] = (
-                    except Exception as e:
-                        logger.error(f"Operation failed: {e}")
-                        raise
-                        try:
-                            sorted_times[p99_index]
-                        except Exception as e:
-                            logger.error(f"Operation failed: {e}")
-                            raise
-                        if p99_index < len(sorted_times)
-                        try:
-                            else sorted_times[-1]
-                        except Exception as e:
-                            logger.error(f"Operation failed: {e}")
-                            raise
-                    )
+                    p99_index = int(len(sorted_times) * 0.99)
+                    if p99_index < len(sorted_times):
+                        p99_latencies[endpoint] = sorted_times[p99_index]
+                    else:
+                        p99_latencies[endpoint] = sorted_times[-1]
 
-            try:
-                summary["p99_latencies_ms"] = p99_latencies
-            except Exception as e:
-                logger.error(f"Operation failed: {e}")
-                raise
+            summary["p99_latencies_ms"] = p99_latencies
 
         # Add resource usage if available
         if self.enable_detailed_metrics:

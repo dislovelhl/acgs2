@@ -1,52 +1,41 @@
-
 #!/usr/bin/env python3
-
 """
 ACGS Code Analysis Engine - Deployment Readiness Validation
 Validates all success criteria for resuming deployment to Phase 2.
-"""
 
 Constitutional Hash: cdd01ef066bc6cf2
+
 Success Criteria:
 - Successful local service startup capability
 - Passing basic smoke tests
 - Confirmed integration with existing ACGS infrastructure (PostgreSQL 5439, Redis 6389)
 - Validated constitutional compliance implementation
-
+"""
 
 import json
+import logging
 import os
 import sys
 from datetime import datetime
-from typing import Any, def setup_test_environment() -> Any:
-    """Setup environment variables for testing"""
-    try:
-        os.environ["POSTGRESQL_PASSWORD"] = "test_password"
-    except Exception as e:
-        logger.error(f"Operation failed: {e}")
-        raise
-    try:
-        os.environ["os.getenv("JWT_SECRET_KEY", "secure_default")] = "test_jwt_secret_key_for_development_only
-    except Exception as e:
-        logger.error(f"Operation failed: {e}")
-        raise
-    try:
-        os.environ["REDIS_PASSWORD"] =
-    except Exception as e:
-        logger.error(f"Operation failed: {e}")
-        raise
-    try:
-        os.environ["ENVIRONMENT"] = "testing"
-    except Exception as e:
-        logger.error(f"Operation failed: {e}")
-        raise
+from typing import Any
 
-try:
-    def test_configuration_loading() -> dict[str, Any]:
-    """Test 1: Configuration Loading"""
+logger = logging.getLogger(__name__)
 
+
+def setup_test_environment() -> None:
+    """Setup environment variables for testing."""
+    os.environ["POSTGRESQL_PASSWORD"] = "test_password"
+    os.environ["JWT_SECRET_KEY"] = "test_jwt_secret_key_for_development_only"
+    os.environ["REDIS_PASSWORD"] = ""
+    os.environ["ENVIRONMENT"] = "testing"
+
+
+def test_configuration_loading() -> dict[str, Any]:
+    """Test 1: Configuration Loading."""
     try:
-        from config.settings import get_settings, settings = get_settings()
+        from config.settings import get_settings
+
+        settings = get_settings()
 
         # Validate key configuration values
         checks = {
@@ -76,19 +65,12 @@ try:
     except Exception as e:
         return {"status": "fail", "error": str(e)}
 
-try:
-    def test_service_imports() -> dict[str, Any]:
-    """Test 2: Service Import Validation"""
 
+def test_service_imports() -> dict[str, Any]:
+    """Test 2: Service Import Validation."""
     try:
-        # Test main application import
-
-        # Test middleware imports
-
-        # Test service imports
-
         # Test utility imports
-        from app.utils.constitutional import CONSTITUTIONAL_HASH, # Test core service imports
+        from app.utils.constitutional import CONSTITUTIONAL_HASH
 
         return {
             "status": "pass",
@@ -99,13 +81,12 @@ try:
     except Exception as e:
         return {"status": "fail", "error": str(e), "imports_successful": False}
 
-try:
-    def test_database_configuration() -> dict[str, Any]:
-    """Test 3: Database Configuration"""
 
+def test_database_configuration() -> dict[str, Any]:
+    """Test 3: Database Configuration."""
     try:
         from config.database import DatabaseManager
-from config.settings import get_settings
+        from config.settings import get_settings
 
         settings = get_settings()
 
@@ -129,13 +110,12 @@ from config.settings import get_settings
     except Exception as e:
         return {"status": "fail", "error": str(e)}
 
-try:
-    def test_cache_configuration() -> dict[str, Any]:
-    """Test 4: Cache Service Configuration"""
 
+def test_cache_configuration() -> dict[str, Any]:
+    """Test 4: Cache Service Configuration."""
     try:
         from app.services.cache_service import CacheService
-from config.settings import get_settings
+        from config.settings import get_settings
 
         settings = get_settings()
 
@@ -153,13 +133,12 @@ from config.settings import get_settings
     except Exception as e:
         return {"status": "fail", "error": str(e)}
 
-try:
-    def test_constitutional_compliance() -> dict[str, Any]:
-    """Test 5: Constitutional Compliance Validation"""
 
+def test_constitutional_compliance() -> dict[str, Any]:
+    """Test 5: Constitutional Compliance Validation."""
     try:
         from app.utils.constitutional import CONSTITUTIONAL_HASH
-from config.settings import get_settings
+        from config.settings import get_settings
 
         settings = get_settings()
         expected_hash = "cdd01ef066bc6cf2"
@@ -175,9 +154,6 @@ from config.settings import get_settings
 
         all_valid = settings_hash_valid and utility_hash_valid and hash_validation_works
 
-        if all_valid:
-            pass
-
         return {
             "status": "pass" if all_valid else "fail",
             "expected_hash": expected_hash,
@@ -191,12 +167,13 @@ from config.settings import get_settings
     except Exception as e:
         return {"status": "fail", "error": str(e)}
 
-try:
-    def test_acgs_infrastructure_readiness() -> dict[str, Any]:
-    """Test 6: ACGS Infrastructure Integration Readiness"""
 
+def test_acgs_infrastructure_readiness() -> dict[str, Any]:
+    """Test 6: ACGS Infrastructure Integration Readiness."""
     try:
-        from config.settings import get_settings, settings = get_settings()
+        from config.settings import get_settings
+
+        settings = get_settings()
 
         # Test service URLs and ports
         infrastructure_config = {
@@ -210,18 +187,13 @@ try:
         # Validate expected ports
         port_checks = {
             "auth_service_port": "8016" in infrastructure_config["auth_service_url"],
-            "context_service_port": (
-                "8012" in infrastructure_config["context_service_url"]
-            ),
+            "context_service_port": "8012" in infrastructure_config["context_service_url"],
             "postgresql_port": settings.postgresql_port == 5439,
             "redis_port": settings.redis_port == 6389,
             "service_port": settings.port == 8007,
         }
 
         all_ports_correct = all(port_checks.values())
-
-        if all_ports_correct:
-            pass
 
         return {
             "status": "pass" if all_ports_correct else "fail",
@@ -233,10 +205,9 @@ try:
     except Exception as e:
         return {"status": "fail", "error": str(e)}
 
-try:
-    def run_deployment_readiness_validation() -> dict[str, Any]:
-    """Run comprehensive deployment readiness validation"""
 
+def run_deployment_readiness_validation() -> dict[str, Any]:
+    """Run comprehensive deployment readiness validation."""
     # Setup test environment
     setup_test_environment()
 
@@ -262,20 +233,8 @@ try:
     passed_count = len(passed_tests)
     success_rate = (passed_count / total_tests) * 100
 
-    # Generate summary
-
-    for test_name, result in test_results.items():
-        "✓ PASS" if result.get("status") == "pass" else "✗ FAIL"
-        test_name.replace("_", " ").title()
-
     # Determine deployment readiness
     deployment_ready = passed_count == total_tests
-
-    if deployment_ready or failed_tests:
-        pass
-
-    if deployment_ready:
-        pass
 
     return {
         "deployment_ready": deployment_ready,
@@ -284,14 +243,12 @@ try:
         "failed_tests": failed_tests,
         "test_results": test_results,
         "timestamp": datetime.now().isoformat(),
-        except Exception as e:
-            logger.error(f"Operation failed: {e}")
-            raise
         "constitutional_hash": "cdd01ef066bc6cf2",
     }
 
-def main() -> Any:
-    """Main validation execution function"""
+
+def main() -> None:
+    """Main validation execution function."""
     try:
         results = run_deployment_readiness_validation()
 
@@ -309,16 +266,6 @@ def main() -> Any:
     except Exception:
         sys.exit(1)
 
+
 if __name__ == "__main__":
     main()
-
-@app.get("/constitutional-health")
-@handle_errors("core", "api_operation")
-async def constitutional_health():
-    """Async health check with constitutional validation"""
-    return {
-        "constitutional_hash": CONSTITUTIONAL_HASH,
-        "status": "healthy",
-        "async": True
-    }
-
