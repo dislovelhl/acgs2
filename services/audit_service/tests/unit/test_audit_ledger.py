@@ -32,6 +32,19 @@ class TestAsyncAuditLedger:
         assert entry.validation_result == vr
         assert entry.hash == entry_hash
 
+    async def test_add_validation_result_hash_is_deterministic(self, ledger):
+        """测试添加结果的哈希一致性"""
+        vr = ValidationResult(is_valid=False, metadata={"reason": "invalid"})
+
+        expected_hash = ledger._hash_validation_result(vr)
+        entry_hash = await ledger.add_validation_result(vr)
+
+        assert entry_hash == expected_hash
+
+        await ledger._queue.join()
+
+        assert ledger.entries[0].hash == expected_hash
+
     async def test_batch_commitment(self, ledger):
         """测试批次提交"""
         # 添加足够条目触发批次提交

@@ -7,24 +7,25 @@ The **Blockchain** domain provides immutable proof of all agent interactions and
 This domain handles the lifecycle of evidence:
 1. **Hashing**: Individual messages are hashed to create deterministic fingerprints.
 2. **Batching**: Hashes are gathered into Merkle Trees for efficient verification.
-3. **Commitment**: Merkle roots are anchored to public or private blockchains.
-4. **ZK-Proofs**: Zero-Knowledge Proofs are generated to prove compliance without leaking data.
+3. **Commitment**: Merkle roots are prepared for anchoring to public or private blockchains.
+4. **ZK-Proofs**: Zero-Knowledge Proof generation is currently mocked for compliance testing.
 
 ## Module Breakdown
 
 ### 1. Audit Ledger (`services/audit_service/core/audit_ledger.py`)
 The central orchestrator for pending audit logs.
+- **Async workflow**: Uses a background queue/worker (`start()`/`stop()`) to process `add_validation_result`.
 - **Batches**: Groups `ValidationResult` objects into manageable chunks (default 100).
 - **Integrity**: Manages a local `MerkleTree` instance to provide inclusion proofs.
 
 ### 2. Blockchain Adapters (`services/audit_service/blockchain/`)
-Pluggable clients for different ledger technologies:
-- **Solana**: High-throughput anchoring.
+Pluggable clients for different ledger technologies (currently mocked clients):
 - **Arweave**: Permanent storage for full decision logs.
 - **Ethereum L2**: General purpose secure state anchoring.
+- **Hyperledger Fabric**: Private consortium ledger anchoring.
 
 ### 3. ZKP Engine (`services/audit_service/zkp/`)
-Generates cryptographic proofs that an agent's inner state matched the constitutional requirements during a specific transaction.
+Prototype client for generating/validating ZK proofs using Circom-style circuits (mocked proof generation in the current implementation).
 
 ## Integration Flow
 
@@ -52,5 +53,13 @@ graph LR
 ```python
 from services.audit_service.core.audit_ledger import AuditLedger
 ledger = AuditLedger(batch_size=10)
-entry_hash = ledger.add_validation_result(result)
+await ledger.start()
+entry_hash = await ledger.add_validation_result(result)
+await ledger.stop()
 ```
+
+## Feature Gaps
+
+- **Blockchain anchoring**: Adapter clients are mock implementations; no live network submission is wired into `AuditLedger` yet.
+- **Per-batch root retrieval**: `get_batch_root_hash` returns the latest Merkle tree root only, not a historical lookup by batch ID.
+- **ZKP**: Proof generation/verification is simulated; integration with real proving tooling (e.g., `snarkjs`) is not implemented.
