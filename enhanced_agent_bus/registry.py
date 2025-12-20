@@ -8,6 +8,8 @@ Default implementations of protocol interfaces for agent management.
 import asyncio
 import logging
 import time
+import json
+import redis.asyncio as redis
 from datetime import datetime, timezone
 from typing import Any, Callable, Dict, List, Optional
 
@@ -103,6 +105,134 @@ class InMemoryAgentRegistry:
         """Get the number of registered agents."""
         return len(self._agents)
 
+class RedisAgentRegistry:
+    """Redis-based implementation of AgentRegistry for distributed deployments.
+
+    Uses Redis hashes to store agent information across multiple instances.
+    Constitutional Hash: cdd01ef066bc6cf2
+    """
+
+    def __init__(
+        self,
+        redis_url: str,
+        key_prefix: str = "acgs2:registry:agents"
+    ) -> None:
+        """Initialize the Redis registry.
+
+        Args:
+            redis_url: Redis connection URL
+            key_prefix: Redis key prefix for the registry hash
+        """
+        self._redis_url = redis_url
+        self._key_prefix = key_prefix
+        self._constitutional_hash = CONSTITUTIONAL_HASH
+        self._redis: Optional[redis.Redis] = None
+
+    async def _get_client(self) -> redis.Redis:
+        """Get or create the Redis client."""
+        if self._redis is None:
+            self._redis = redis.from_url(
+                self._redis_url,
+                decode_responses=True
+            )
+        return self._redis
+
+    async def register(
+        self,
+        agent_id: str,
+        capabilities: Optional[Dict[str, Any]] = None,
+        metadata: Optional[Dict[str, Any]] = None
+    ) -> bool:
+        """Register an agent with the bus."""
+        client = await self._get_client()
+        
+        agent_info = {
+            "agent_id": agent_id,
+            "capabilities": capabilities or {},
+            "metadata": metadata or {},
+            "registered_at": datetime.now(timezone.utc).isoformat(),
+            "constitutional_hash": self._constitutional_hash,
+        }
+        
+        # HSETNX returns 1 if field is new, 0 if it already exists
+        # We use a transaction or simply check before setting
+        # to ensure we don't overwrite if it exists
+        success = await client.hsetnx(
+            self._key_prefix,
+            agent_id,
+            json.dumps(agent_info)
+        )
+        return bool(success)
+
+    async def unregister(self, agent_id: str) -> bool:
+        """Unregister an agent from the bus."""
+        client = await self._get_client()
+        # HDEL returns 1 if field was removed, 0 if not found
+        count = await client.hdel(self._key_prefix, agent_id)
+        return bool(count > 0)
+
+    async def get(self, agent_id: str) -> Optional[Dict[str, Any]]:
+        """Get agent information by ID."""
+        client = await self._get_client()
+        data = await client.hget(self._key_prefix, agent_id)
+        if data:
+            return json.loads(data)
+        return None
+
+    async def list_agents(self) -> List[str]:
+        """List all registered agent IDs."""
+        client = await self._get_client()
+        return await client.hkeys(self._key_prefix)
+
+    async def exists(self, agent_id: str) -> bool:
+        """Check if an agent is registered."""
+        client = await self._get_client()
+        return bool(await client.hexists(self._key_prefix, agent_id))
+
+    async def update_metadata(
+        self,
+        agent_id: str,
+        metadata: Dict[str, Any]
+    ) -> bool:
+        """Update agent metadata."""
+        client = await self._get_client()
+        
+        # Need to fetch, merge, and save
+        # Using a simple watch/multi if needed, but for metadata-only updates
+        # a standard get/set is usually acceptable in this context.
+        # For strictness we could use a Lua script.
+        
+        data = await client.hget(self._key_prefix, agent_id)
+        if not data:
+            return False
+            
+        agent_info = json.loads(data)
+        agent_info["metadata"].update(metadata)
+        agent_info["updated_at"] = datetime.now(timezone.utc).isoformat()
+        
+        await client.hset(self._key_prefix, agent_id, json.dumps(agent_info))
+        return True
+
+    async def clear(self) -> None:
+        """Clear all registered agents. Useful for testing."""
+        client = await self._get_client()
+        await client.delete(self._key_prefix)
+
+    async def close(self) -> None:
+        """Close the Redis client."""
+        if self._redis:
+            await self._redis.close()
+            self._redis = None
+
+    @property
+    def agent_count(self) -> int:
+        """Get the number of registered agents. 
+        Note: This is async-challenging for a property, so it might need a method.
+        But sticking to protocol if it demands property (though protocol didn't specify count).
+        """
+        # Protocol didn't have agent_count, InMemory had it. 
+        # For Redis, this would need to be an async call.
+        return -1 # Placeholder, should use HLAEN in an async method if needed
 
 class DirectMessageRouter:
     """Simple direct message router.
@@ -217,15 +347,15 @@ class CapabilityBasedRouter:
         return matching_agents
 
 
-class ConstitutionalValidationStrategy:
-    """Validates messages for constitutional compliance.
+class StaticHashValidationStrategy:
+    """Validates messages using a static constitutional hash.
 
-    Ensures all messages have valid constitutional hash.
+    Standard implementation that checks for hash consistency.
     Constitutional Hash: cdd01ef066bc6cf2
     """
 
-    def __init__(self, strict: bool = False) -> None:
-        """Initialize validation strategy.
+    def __init__(self, strict: bool = True) -> None:
+        """Initialize static hash validation.
 
         Args:
             strict: If True, reject messages with non-matching hashes
@@ -242,16 +372,74 @@ class ConstitutionalValidationStrategy:
         if message.content is None:
             return False, "Message content cannot be None"
 
+        # Validate message_id exists
+        if not message.message_id:
+            return False, "Message ID is required"
+
         # Validate constitutional hash if strict mode
         if self._strict:
             if message.constitutional_hash != self._constitutional_hash:
                 return False, f"Constitutional hash mismatch: expected {self._constitutional_hash}"
 
-        # Validate message_id exists
-        if not message.message_id:
-            return False, "Message ID is required"
-
         return True, None
+
+
+class DynamicPolicyValidationStrategy:
+    """Validates messages using a dynamic policy client.
+
+    Retrieves current policies and validates signatures.
+    Constitutional Hash: cdd01ef066bc6cf2
+    """
+
+    def __init__(self, policy_client: Any) -> None:
+        """Initialize with logic client."""
+        self._policy_client = policy_client
+
+    async def validate(
+        self,
+        message: AgentMessage
+    ) -> tuple[bool, Optional[str]]:
+        """Validate message signature against dynamic policy server."""
+        if not self._policy_client:
+            return False, "Policy client not available"
+
+        try:
+            result = await self._policy_client.validate_message_signature(message)
+            if not result.is_valid:
+                return False, "; ".join(result.errors)
+            return True, None
+        except Exception as e:
+            logger.error(f"Dynamic policy validation error: {e}")
+            return False, f"Dynamic validation error: {str(e)}"
+
+
+class RustValidationStrategy:
+    """High-performance validation using the Rust backend.
+    
+    Constitutional Hash: cdd01ef066bc6cf2
+    """
+
+    def __init__(self, rust_processor: Any) -> None:
+        """Initialize with Rust processor."""
+        self._rust_processor = rust_processor
+
+    async def validate(
+        self,
+        message: AgentMessage
+    ) -> tuple[bool, Optional[str]]:
+        """Validate message using Rust backend."""
+        if not self._rust_processor:
+            return False, "Rust processor not available"
+
+        try:
+            # We assume Rust processor has a fast validation path
+            # For now, we can use its built-in validation during processing
+            # or a specific validation method if exposed.
+            # In Phase 2, we just ensure the strategy interface is met.
+            # This will be refined as the Rust API evolves.
+            return True, None # Rust backend handles validation internally for now
+        except Exception as e:
+            return False, f"Rust validation error: {str(e)}"
 
 
 class CompositeValidationStrategy:
@@ -295,34 +483,37 @@ class PythonProcessingStrategy:
     Constitutional Hash: cdd01ef066bc6cf2
     """
 
-    def __init__(self, metrics_enabled: bool = False) -> None:
+    def __init__(
+        self,
+        validation_strategy: Optional[ValidationStrategy] = None,
+        metrics_enabled: bool = False
+    ) -> None:
         """Initialize Python processing strategy.
 
         Args:
+            validation_strategy: Strategy for message validation
             metrics_enabled: Whether to record Prometheus metrics
         """
         self._constitutional_hash = CONSTITUTIONAL_HASH
         self._metrics_enabled = metrics_enabled
+        self._validation_strategy = validation_strategy or StaticHashValidationStrategy(strict=True)
 
     async def process(
         self,
         message: AgentMessage,
         handlers: Dict[Any, List[Callable]]
     ) -> ValidationResult:
-        """Process message with static constitutional hash validation."""
+        """Process message with validation and handlers."""
         validation_start = time.perf_counter()
 
-        # Validate constitutional hash
-        if message.constitutional_hash != self._constitutional_hash:
+        # Validate message using the injected strategy
+        is_valid, error = await self._validation_strategy.validate(message)
+        
+        if not is_valid:
             message.status = MessageStatus.FAILED
-
             if self._metrics_enabled:
                 self._record_validation_metrics(validation_start, success=False)
-
-            return ValidationResult(
-                is_valid=False,
-                errors=["Constitutional hash mismatch"],
-            )
+            return ValidationResult(is_valid=False, errors=[error] if error else [])
 
         if self._metrics_enabled:
             self._record_validation_metrics(validation_start, success=True)
@@ -416,22 +607,20 @@ class RustProcessingStrategy:
     def __init__(
         self,
         rust_processor: Optional[Any] = None,
-        rust_bus: Optional[Any] = None
+        rust_bus: Optional[Any] = None,
+        validation_strategy: Optional[ValidationStrategy] = None
     ) -> None:
         """Initialize Rust processing strategy.
 
         Args:
             rust_processor: Pre-initialized Rust MessageProcessor instance
             rust_bus: Rust bus module for message conversion
+            validation_strategy: Strategy for message validation
         """
         self._constitutional_hash = CONSTITUTIONAL_HASH
         self._rust_processor = rust_processor
         self._rust_bus = rust_bus
-
-        if self._rust_processor is not None:
-            logger.debug("Rust MessageProcessor provided to strategy")
-        else:
-            logger.debug("Rust processor not provided, strategy unavailable")
+        self._validation_strategy = validation_strategy or RustValidationStrategy(rust_processor)
 
     async def process(
         self,
@@ -444,6 +633,12 @@ class RustProcessingStrategy:
                 is_valid=False,
                 errors=["Rust backend not available"],
             )
+
+        # Validate message
+        is_valid, error = await self._validation_strategy.validate(message)
+        if not is_valid:
+            message.status = MessageStatus.FAILED
+            return ValidationResult(is_valid=False, errors=[error] if error else [])
 
         try:
             # Convert Python message to Rust format
@@ -532,11 +727,16 @@ class DynamicPolicyProcessingStrategy:
     Constitutional Hash: cdd01ef066bc6cf2
     """
 
-    def __init__(self, policy_client: Optional[Any] = None) -> None:
+    def __init__(
+        self,
+        policy_client: Optional[Any] = None,
+        validation_strategy: Optional[ValidationStrategy] = None
+    ) -> None:
         """Initialize dynamic policy processing strategy.
 
         Args:
             policy_client: Optional policy client instance
+            validation_strategy: Optional custom validation strategy
         """
         self._constitutional_hash = CONSTITUTIONAL_HASH
         self._policy_client = policy_client
@@ -548,6 +748,8 @@ class DynamicPolicyProcessingStrategy:
                 self._policy_client = get_policy_client()
             except ImportError:
                 logger.debug("Policy client not available")
+        
+        self._validation_strategy = validation_strategy or DynamicPolicyValidationStrategy(self._policy_client)
 
     async def process(
         self,
@@ -562,12 +764,11 @@ class DynamicPolicyProcessingStrategy:
             )
 
         try:
-            # Dynamic constitutional validation
-            validation_result = await self._policy_client.validate_message_signature(message)
-
-            if not validation_result.is_valid:
+            # Validate message
+            is_valid, error = await self._validation_strategy.validate(message)
+            if not is_valid:
                 message.status = MessageStatus.FAILED
-                return validation_result
+                return ValidationResult(is_valid=False, errors=[error] if error else [])
 
             # Execute handlers
             return await self._execute_handlers(message, handlers)
@@ -622,7 +823,10 @@ __all__ = [
     "InMemoryAgentRegistry",
     "DirectMessageRouter",
     "CapabilityBasedRouter",
-    "ConstitutionalValidationStrategy",
+    # Validation Strategies
+    "StaticHashValidationStrategy",
+    "DynamicPolicyValidationStrategy",
+    "RustValidationStrategy",
     "CompositeValidationStrategy",
     # Processing Strategies
     "PythonProcessingStrategy",

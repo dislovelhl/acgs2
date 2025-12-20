@@ -13,6 +13,13 @@ from fastapi.responses import JSONResponse
 from .services import CryptoService, CacheService, NotificationService, PolicyService
 from .api.v1 import router as v1_router
 
+# Centralized settings
+try:
+    from shared.config import settings
+except ImportError:
+    # Fallback if shared not in path
+    from ...shared.config import settings
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -57,11 +64,29 @@ app = FastAPI(
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Configure appropriately for production
+    allow_origins=settings.security.cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.middleware("http")
+async def internal_auth_middleware(request, call_next):
+    """Check for internal API key if configured"""
+    internal_key = settings.security.api_key_internal
+    if internal_key:
+        # Get key from header
+        provided_key = request.headers.get("X-Internal-API-Key")
+        if provided_key != internal_key.get_secret_value():
+            # Only restrict certain paths or all? Let's restrict /api/v1 for now
+            if request.url.path.startswith("/api/v1"):
+                return JSONResponse(
+                    status_code=401,
+                    content={"detail": "Unauthorized: Invalid internal API key"}
+                )
+    
+    return await call_next(request)
 
 
 # Dependency injection

@@ -62,7 +62,7 @@ class MockImpactScorer:
     def __init__(self, model_name: str = 'mock-model'):
         self.model_name = model_name
 
-    def calculate_impact(self, content) -> float:
+    def calculate_impact_score(self, content, context=None) -> float:
         """Return mock impact score based on content (dict or str)."""
         content_str = str(content).lower() if content else ""
         # Check for high-risk keywords
@@ -79,7 +79,7 @@ class MockImpactScorer:
 def mock_calculate_message_impact(content) -> float:
     """Mock function for calculating message impact from content dict."""
     scorer = MockImpactScorer()
-    return scorer.calculate_impact(content)
+    return scorer.calculate_impact_score(content)
 
 
 def mock_get_impact_scorer():

@@ -10,6 +10,7 @@ Ethereum Layer 2 区块链客户端
 """
 
 import json
+import asyncio
 import time
 from typing import Dict, List, Optional, Any
 import logging
@@ -21,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 
 class EthereumL2Client:
-    """Ethereum Layer 2 区块链客户端"""
+    """Ethereum Layer 2 区块链客户端 (Asynchronous Mock)"""
 
     # 支持的Layer 2网络配置
     NETWORKS = {
@@ -71,40 +72,26 @@ class EthereumL2Client:
         self.web3 = None
         self.contract = None
         self.account = None
+        self.connected = False
 
-        # 模拟初始化（实际实现需要web3.py）
+        # 模拟初始化
         self._initialize_mock()
 
     def _initialize_mock(self):
         """模拟初始化（用于开发测试）"""
-        logger.info(f"Initializing Ethereum L2 client for {self.network} (mock mode)")
-        self.connected = True
+        logger.info(f"Initializing Ethereum L2 client for {self.network} (async mock mode)")
 
-    def connect(self) -> bool:
+    async def connect(self) -> bool:
         """
-        连接到Ethereum L2网络
+        连接到Ethereum L2网络 (Async)
 
         Returns:
             bool: 连接是否成功
         """
         try:
-            # 实际实现：
-            # from web3 import Web3
-            # self.web3 = Web3(Web3.HTTPProvider(self.network_config['rpc_url']))
-            # if not self.web3.is_connected():
-            #     raise ConnectionError("Failed to connect to network")
-
-            # # 设置账户
-            # self.account = self.web3.eth.account.from_key(self.config['private_key'])
-
-            # # 加载合约
-            # with open('contracts/AuditLedger.json', 'r') as f:
-            #     contract_abi = json.load(f)['abi']
-            # self.contract = self.web3.eth.contract(
-            #     address=self.config['contract_address'],
-            #     abi=contract_abi
-            # )
-
+            # 模拟网络延迟
+            await asyncio.sleep(0.1)
+            
             logger.info(f"Connected to {self.network_config['name']} network")
             self.connected = True
             return True
@@ -114,14 +101,15 @@ class EthereumL2Client:
             self.connected = False
             return False
 
-    def disconnect(self):
-        """断开连接"""
+    async def disconnect(self):
+        """断开连接 (Async)"""
+        await asyncio.sleep(0.05)
         self.connected = False
         logger.info(f"Disconnected from {self.network} network")
 
-    def submit_audit_batch(self, batch_data: Dict[str, Any]) -> Optional[str]:
+    async def submit_audit_batch(self, batch_data: Dict[str, Any]) -> Optional[str]:
         """
-        提交审计批次到区块链
+        提交审计批次到区块链 (Async)
 
         Args:
             batch_data: 批次数据
@@ -143,27 +131,12 @@ class EthereumL2Client:
                 "entries_hashes": batch_data["entries_hashes"]
             }
 
-            # 实际实现：
-            # # 构建交易
-            # txn = self.contract.functions.submitAuditBatch(
-            #     transaction_data['batch_id'],
-            #     transaction_data['root_hash'],
-            #     transaction_data['entry_count'],
-            #     transaction_data['timestamp'],
-            #     transaction_data['entries_hashes']
-            # ).build_transaction({
-            #     'from': self.account.address,
-            #     'gas': self.config.get('gas_limit', 200000),
-            #     'gasPrice': self.web3.eth.gas_price,
-            #     'nonce': self.web3.eth.get_transaction_count(self.account.address),
-            # })
-
-            # # 签名并发送交易
-            # signed_txn = self.web3.eth.account.sign_transaction(txn, self.config['private_key'])
-            # tx_hash = self.web3.eth.send_raw_transaction(signed_txn.rawTransaction)
+            # 模拟区块链确认延迟
+            await asyncio.sleep(0.2)
 
             # 模拟交易哈希
-            tx_hash = f"0x{hash(json.dumps(transaction_data, sort_keys=True)) & 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF:064x}"
+            tx_data_str = json.dumps(transaction_data, sort_keys=True)
+            tx_hash = f"0x{hash(tx_data_str) & 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF:064x}"
             logger.info(f"Submitted audit batch {batch_data['batch_id']} to {self.network}, TX: {tx_hash}")
 
             return tx_hash
@@ -172,9 +145,9 @@ class EthereumL2Client:
             logger.error(f"Failed to submit audit batch: {e}")
             return None
 
-    def query_audit_batch(self, batch_id: str) -> Optional[Dict[str, Any]]:
+    async def query_audit_batch(self, batch_id: str) -> Optional[Dict[str, Any]]:
         """
-        查询审计批次
+        查询审计批次 (Async)
 
         Args:
             batch_id: 批次ID
@@ -187,16 +160,8 @@ class EthereumL2Client:
             return None
 
         try:
-            # 实际实现：
-            # result = self.contract.functions.getAuditBatch(batch_id).call()
-            # return {
-            #     'batch_id': result[0],
-            #     'root_hash': result[1],
-            #     'entry_count': result[2],
-            #     'timestamp': result[3],
-            #     'submitter': result[4],
-            #     'confirmed': result[5]
-            # }
+            # 模拟网络延迟
+            await asyncio.sleep(0.1)
 
             # 模拟查询结果
             mock_result = {
@@ -216,9 +181,9 @@ class EthereumL2Client:
             logger.error(f"Failed to query audit batch {batch_id}: {e}")
             return None
 
-    def verify_batch_on_chain(self, batch_id: str, expected_root_hash: str) -> bool:
+    async def verify_batch_on_chain(self, batch_id: str, expected_root_hash: str) -> bool:
         """
-        验证批次是否在链上且根哈希匹配
+        验证批次是否在链上且根哈希匹配 (Async)
 
         Args:
             batch_id: 批次ID
@@ -227,19 +192,20 @@ class EthereumL2Client:
         Returns:
             bool: 验证是否通过
         """
-        batch_data = self.query_audit_batch(batch_id)
+        batch_data = await self.query_audit_batch(batch_id)
         if not batch_data:
             return False
 
         return batch_data.get("root_hash") == expected_root_hash
 
-    def get_network_stats(self) -> Dict[str, Any]:
+    async def get_network_stats(self) -> Dict[str, Any]:
         """
-        获取网络统计信息
+        获取网络统计信息 (Async)
 
         Returns:
             Dict: 网络统计数据
         """
+        await asyncio.sleep(0.05)
         return {
             "blockchain_type": f"ethereum_l2_{self.network}",
             "network_name": self.network_config["name"],
@@ -250,9 +216,9 @@ class EthereumL2Client:
             "contract_address": self.config.get("contract_address", "unknown")
         }
 
-    def estimate_gas_cost(self, batch_data: Dict[str, Any]) -> Optional[int]:
+    async def estimate_gas_cost(self, batch_data: Dict[str, Any]) -> Optional[int]:
         """
-        估算提交批次的Gas成本
+        估算提交批次的Gas成本 (Async)
 
         Args:
             batch_data: 批次数据
@@ -263,6 +229,7 @@ class EthereumL2Client:
         if not self.connected:
             return None
 
+        await asyncio.sleep(0.05)
         # 模拟Gas估算
         base_gas = 50000  # 基础Gas
         per_entry_gas = 5000  # 每个条目的Gas
@@ -271,12 +238,12 @@ class EthereumL2Client:
         return base_gas + (per_entry_gas * entry_count)
 
     def is_connected(self) -> bool:
-        """检查连接状态"""
+        """检查连接状态 (Synchronous)"""
         return self.connected
 
-    def get_transaction_receipt(self, tx_hash: str) -> Optional[Dict[str, Any]]:
+    async def get_transaction_receipt(self, tx_hash: str) -> Optional[Dict[str, Any]]:
         """
-        获取交易收据
+        获取交易收据 (Async)
 
         Args:
             tx_hash: 交易哈希
@@ -288,10 +255,7 @@ class EthereumL2Client:
             return None
 
         try:
-            # 实际实现：
-            # receipt = self.web3.eth.get_transaction_receipt(tx_hash)
-            # return dict(receipt)
-
+            await asyncio.sleep(0.1)
             # 模拟收据
             mock_receipt = {
                 "transactionHash": tx_hash,

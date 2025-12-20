@@ -18,7 +18,7 @@ from registry import (
     InMemoryAgentRegistry,
     DirectMessageRouter,
     CapabilityBasedRouter,
-    ConstitutionalValidationStrategy,
+    StaticHashValidationStrategy,
     CompositeValidationStrategy,
 )
 from core import EnhancedAgentBus, MessageProcessor
@@ -253,21 +253,18 @@ class TestCapabilityBasedRouter:
 
 
 # ============================================================================
-# ConstitutionalValidationStrategy Tests
-# ============================================================================
-
-class TestConstitutionalValidationStrategy:
-    """Test ConstitutionalValidationStrategy implementation."""
+class TestStaticHashValidationStrategy:
+    """Test StaticHashValidationStrategy implementation."""
 
     @pytest.fixture
     def validator(self):
         """Create a fresh validator."""
-        return ConstitutionalValidationStrategy()
+        return StaticHashValidationStrategy()
 
     @pytest.fixture
     def strict_validator(self):
         """Create a strict validator."""
-        return ConstitutionalValidationStrategy(strict=True)
+        return StaticHashValidationStrategy(strict=True)
 
     @pytest.mark.asyncio
     async def test_validate_valid_message(self, validator):
@@ -312,7 +309,7 @@ class TestCompositeValidationStrategy:
     async def test_validate_all_pass(self):
         """Test composite validation with all strategies passing."""
         composite = CompositeValidationStrategy([
-            ConstitutionalValidationStrategy()
+            StaticHashValidationStrategy()
         ])
 
         message = AgentMessage(content={"action": "test"})
@@ -325,7 +322,7 @@ class TestCompositeValidationStrategy:
     async def test_add_strategy(self):
         """Test adding a strategy dynamically."""
         composite = CompositeValidationStrategy()
-        composite.add_strategy(ConstitutionalValidationStrategy())
+        composite.add_strategy(StaticHashValidationStrategy())
 
         message = AgentMessage(content={"action": "test"})
         is_valid, _ = await composite.validate(message)
@@ -347,7 +344,7 @@ class TestEnhancedAgentBusDI:
 
         assert isinstance(bus.registry, InMemoryAgentRegistry)
         assert isinstance(bus.router, DirectMessageRouter)
-        assert isinstance(bus.validator, ConstitutionalValidationStrategy)
+        assert isinstance(bus.validator, StaticHashValidationStrategy)
 
     @pytest.mark.asyncio
     async def test_custom_registry_injection(self):
@@ -372,7 +369,7 @@ class TestEnhancedAgentBusDI:
     @pytest.mark.asyncio
     async def test_custom_validator_injection(self):
         """Test injecting a custom validator."""
-        custom_validator = ConstitutionalValidationStrategy(strict=True)
+        custom_validator = StaticHashValidationStrategy(strict=True)
         bus = EnhancedAgentBus(validator=custom_validator)
 
         assert bus.validator is custom_validator
@@ -412,7 +409,7 @@ class TestEnhancedAgentBusDI:
         # Create custom implementations
         registry = InMemoryAgentRegistry()
         router = DirectMessageRouter()
-        validator = ConstitutionalValidationStrategy()
+        validator = StaticHashValidationStrategy()
 
         # Inject into bus
         bus = EnhancedAgentBus(
@@ -457,7 +454,7 @@ class TestProtocolCompliance:
 
     def test_validator_protocol_compliance(self):
         """Test validators implement ValidationStrategy protocol."""
-        const_validator = ConstitutionalValidationStrategy()
+        const_validator = StaticHashValidationStrategy()
         composite_validator = CompositeValidationStrategy()
 
         assert isinstance(const_validator, ValidationStrategy)

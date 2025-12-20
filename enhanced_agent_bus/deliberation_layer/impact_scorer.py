@@ -25,6 +25,25 @@ try:
 except ImportError:
     MLFLOW_AVAILABLE = False
 
+try:
+    from ..models import Priority, MessageType, MessagePriority
+except ImportError:
+    # Fallback if not in package context
+    import sys
+    import os
+    sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    from models import Priority, MessageType, MessagePriority # type: ignore
+
+def cosine_similarity_fallback(a, b):
+    """Fallback implementation of cosine similarity using dot product."""
+    a = np.array(a).flatten()
+    b = np.array(b).flatten()
+    norm_a = np.linalg.norm(a)
+    norm_b = np.linalg.norm(b)
+    if norm_a == 0 or norm_b == 0:
+        return 0.0
+    return np.dot(a, b) / (norm_a * norm_b)
+
 
 class ImpactScorer:
     """Calculates impact scores using multi-dimensional analysis.
@@ -77,7 +96,8 @@ class ImpactScorer:
             "critical", "emergency", "security", "breach", "violation", "danger",
             "risk", "threat", "attack", "exploit", "vulnerability", "compromise",
             "governance", "policy", "regulation", "compliance", "legal", "audit",
-            "financial", "transaction", "payment", "transfer", "blockchain", "consensus"
+            "financial", "transaction", "payment", "transfer", "blockchain", "consensus",
+            "unauthorized", "abnormal", "suspicious", "alert"
         ]
 
         # Cache for keyword embeddings
@@ -141,9 +161,18 @@ class ImpactScorer:
         text_content = self._extract_text_content(message_content)
         semantic_score = 0.0
         if text_content:
-            message_embedding = self._get_embeddings(text_content)
-            keyword_embedding = self._get_keyword_embeddings()
-            semantic_score = float(cosine_similarity(message_embedding, keyword_embedding)[0][0])
+            if self._bert_enabled or self._onnx_enabled:
+                 message_embedding = self._get_embeddings(text_content)
+                 keyword_embedding = self._get_keyword_embeddings()
+                 if TRANSFORMERS_AVAILABLE:
+                     semantic_score = float(cosine_similarity(message_embedding, keyword_embedding)[0][0])
+                 else:
+                     semantic_score = float(cosine_similarity_fallback(message_embedding, keyword_embedding))
+            else:
+                 # Fallback: simple keyword matching
+                 hits = sum(1 for kw in self.high_impact_keywords if kw in text_content.lower())
+                 # logical scoring: 1 hit = 0.3, 2 hits = 0.6, 3+ = 0.9
+                 semantic_score = min(0.9, hits * 0.3)
 
         # 2. Permission Score
         permission_score = self._calculate_permission_score(message_content)
@@ -156,21 +185,32 @@ class ImpactScorer:
         context_score = self._calculate_context_score(message_content, context)
 
         # 5. Priority & Type Factors (Legacy)
-        priority_factor = self._calculate_priority_factor(message_content)
-        type_factor = self._calculate_type_factor(message_content)
+        priority_factor = self._calculate_priority_factor(message_content, context)
+        type_factor = self._calculate_type_factor(message_content, context)
 
         # Weighted combination
         # Semantic: 30%, Permission: 30%, Volume: 15%, Context: 15%, Priority/Type: 10%
+        # Weighted combination
+        # Semantic: 35%, Permission: 20%, Volume: 10%, Context: 10%, Priority: 20%, Type: 5%
         combined_score = (
-            (semantic_score * 0.3) +
-            (permission_score * 0.3) +
-            (volume_score * 0.15) +
-            (context_score * 0.15) +
-            (priority_factor * 0.05) +
+            (semantic_score * 0.35) +
+            (permission_score * 0.20) +
+            (volume_score * 0.10) +
+            (context_score * 0.10) +
+            (priority_factor * 0.20) +
             (type_factor * 0.05)
         )
 
-        return max(0.0, min(1.0, combined_score))
+        # Non-linear boost: Critical priority or high semantic relevance should override low context scores
+        # If Priority is Critical (1.0) -> Boost to min 0.9
+        # If Semantic > 0.8 -> Boost to min 0.8
+        boosted_score = max(
+            combined_score,
+            priority_factor * 0.9,
+            semantic_score * 0.8
+        )
+
+        return max(0.0, min(1.0, boosted_score))
 
     def _calculate_permission_score(self, message_content: Dict[str, Any]) -> float:
         """Calculate score based on requested tool permissions."""
@@ -247,7 +287,7 @@ class ImpactScorer:
         text_parts = []
 
         # Extract from common fields
-        for field in ['content', 'payload', 'description', 'reason', 'details']:
+        for field in ['content', 'payload', 'description', 'reason', 'details', 'action', 'type', 'title', 'subject']:
             if field in message_content:
                 value = message_content[field]
                 if isinstance(value, str):
@@ -258,31 +298,79 @@ class ImpactScorer:
 
         return " ".join(text_parts)
 
-    def _calculate_priority_factor(self, message_content: Dict[str, Any]) -> float:
-        """Calculate priority-based factor."""
-        priority = message_content.get('priority', 'normal').lower()
+    def _calculate_priority_factor(self, message_content: Dict[str, Any], context: Optional[Dict[str, Any]] = None) -> float:
+        """Calculate priority-based factor using Priority enum."""
+        priority_val = message_content.get('priority')
+        
+        # Check context if not in content
+        if priority_val is None and context:
+            priority_val = context.get('priority')
+        
+        # Map Priority enum or its value/name to 0.0-1.0
+        if isinstance(priority_val, Priority):
+            p = priority_val
+        elif isinstance(priority_val, MessagePriority):
+            # Convert deprecated MessagePriority to Priority
+            # CRITICAL(0) -> CRITICAL(3)
+            # HIGH(1) -> HIGH(2)
+            # NORMAL(2) -> MEDIUM(1)
+            # LOW(3) -> LOW(0)
+            mapping = {
+                MessagePriority.CRITICAL: Priority.CRITICAL,
+                MessagePriority.HIGH: Priority.HIGH,
+                MessagePriority.NORMAL: Priority.MEDIUM,
+                MessagePriority.LOW: Priority.LOW
+            }
+            p = mapping.get(priority_val, Priority.MEDIUM)
+        elif isinstance(priority_val, int):
+            try:
+                p = Priority(priority_val)
+            except ValueError:
+                p = Priority.MEDIUM
+        elif isinstance(priority_val, str):
+            try:
+                p = Priority[priority_val.upper()]
+            except KeyError:
+                p = Priority.MEDIUM
+        else:
+            p = Priority.MEDIUM
 
         priority_map = {
-            'low': 0.1,
-            'normal': 0.3,
-            'medium': 0.5,
-            'high': 0.8,
-            'critical': 1.0
+            Priority.LOW: 0.1,
+            Priority.NORMAL: 0.3,
+            Priority.MEDIUM: 0.3,
+            Priority.HIGH: 0.7,
+            Priority.CRITICAL: 1.0
         }
 
-        return priority_map.get(priority, 0.3)
+        return priority_map.get(p, 0.3)
 
-    def _calculate_type_factor(self, message_content: Dict[str, Any]) -> float:
-        """Calculate message type-based factor."""
-        msg_type = message_content.get('message_type', '').lower()
+    def _calculate_type_factor(self, message_content: Dict[str, Any], context: Optional[Dict[str, Any]] = None) -> float:
+        """Calculate message type-based factor using MessageType enum."""
+        msg_type_val = message_content.get('message_type')
+
+        # Check context if not in content
+        if msg_type_val is None and context:
+            msg_type_val = context.get('message_type')
+
+        if isinstance(msg_type_val, MessageType):
+            mt = msg_type_val
+        elif isinstance(msg_type_val, str):
+            try:
+                mt = MessageType(msg_type_val.lower())
+            except ValueError:
+                mt = MessageType.COMMAND
+        else:
+            mt = MessageType.COMMAND
 
         # High-impact message types
         high_impact_types = [
-            'governance_request', 'security_alert', 'critical_command',
-            'policy_violation', 'emergency', 'blockchain_consensus'
+            MessageType.GOVERNANCE_REQUEST,
+            MessageType.CONSTITUTIONAL_VALIDATION,
+            MessageType.TASK_REQUEST # Sometimes critical
         ]
 
-        return 0.8 if msg_type in high_impact_types else 0.2
+        return 0.8 if mt in high_impact_types else 0.2
 
 
     def validate_with_baseline(self, message_content: Dict[str, Any], baseline_scorer: 'ImpactScorer') -> bool:

@@ -12,19 +12,17 @@ import asyncio
 from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
 
-# Add parent directory to path
-_parent_dir = os.path.dirname(os.path.dirname(__file__))
-sys.path.insert(0, _parent_dir)
+# Imports are handled via sys.modules patching in conftest.py
 
-from core import (
+from enhanced_agent_bus.core import (
     MessageProcessor,
     EnhancedAgentBus,
     get_agent_bus,
     reset_agent_bus,
     CONSTITUTIONAL_HASH,
 )
-from models import AgentMessage, MessageType, Priority, MessageStatus
-from validators import ValidationResult
+from enhanced_agent_bus.models import AgentMessage, MessageType, Priority, MessageStatus
+from enhanced_agent_bus.validators import ValidationResult
 
 
 # ============================================================================

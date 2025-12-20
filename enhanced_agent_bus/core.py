@@ -82,7 +82,9 @@ try:
     from .registry import (
         InMemoryAgentRegistry,
         DirectMessageRouter,
-        ConstitutionalValidationStrategy,
+        StaticHashValidationStrategy,
+        DynamicPolicyValidationStrategy,
+        RustValidationStrategy,
         PythonProcessingStrategy,
         RustProcessingStrategy,
         DynamicPolicyProcessingStrategy,
@@ -109,7 +111,9 @@ except ImportError:
     from registry import (  # type: ignore
         InMemoryAgentRegistry,
         DirectMessageRouter,
-        ConstitutionalValidationStrategy,
+        StaticHashValidationStrategy,
+        DynamicPolicyValidationStrategy,
+        RustValidationStrategy,
         PythonProcessingStrategy,
         RustProcessingStrategy,
         DynamicPolicyProcessingStrategy,
@@ -230,29 +234,48 @@ class MessageProcessor:
         3. Python strategy as default fallback
 
         Returns:
-            ProcessingStrategy: The selected strategy instance
+            ProcessingStrategy: The selected processing strategy instance
         """
         # Try Rust strategy first (highest performance)
         if self._rust_processor is not None and not self._use_dynamic_policy:
-            # Pass Rust components to avoid circular import in strategy
-            rust_strategy = RustProcessingStrategy(
+            # Create Rust validation strategy
+            val_strategy = RustValidationStrategy(rust_processor=self._rust_processor)
+            
+            # Create Rust processing strategy with injected validation
+            proc_strategy = RustProcessingStrategy(
                 rust_processor=self._rust_processor,
-                rust_bus=rust_bus
+                rust_bus=rust_bus,
+                validation_strategy=val_strategy
             )
-            if rust_strategy.is_available():
+            
+            if proc_strategy.is_available():
                 logger.debug("Auto-selected Rust processing strategy")
-                return rust_strategy
+                return proc_strategy
 
         # Try dynamic policy strategy
         if self._use_dynamic_policy and self._policy_client is not None:
-            policy_strategy = DynamicPolicyProcessingStrategy(self._policy_client)
-            if policy_strategy.is_available():
+            # Create dynamic policy validation strategy
+            val_strategy = DynamicPolicyValidationStrategy(policy_client=self._policy_client)
+            
+            # Create dynamic policy processing strategy with injected validation
+            proc_strategy = DynamicPolicyProcessingStrategy(
+                policy_client=self._policy_client,
+                validation_strategy=val_strategy
+            )
+            
+            if proc_strategy.is_available():
                 logger.debug("Auto-selected dynamic policy processing strategy")
-                return policy_strategy
+                return proc_strategy
 
         # Default to Python strategy
         logger.debug("Auto-selected Python processing strategy")
-        return PythonProcessingStrategy(metrics_enabled=METRICS_ENABLED)
+        # Create static hash validation strategy
+        val_strategy = StaticHashValidationStrategy(strict=True)
+        
+        return PythonProcessingStrategy(
+            validation_strategy=val_strategy,
+            metrics_enabled=METRICS_ENABLED
+        )
 
     async def process(self, message: AgentMessage) -> ValidationResult:
         """
@@ -604,6 +627,7 @@ class EnhancedAgentBus:
         redis_url: str = DEFAULT_REDIS_URL,
         use_dynamic_policy: bool = False,
         use_kafka: bool = False,
+        use_redis_registry: bool = False,
         kafka_bootstrap_servers: str = "localhost:9092",
         # Dependency injection parameters
         registry: Optional[AgentRegistry] = None,
@@ -618,6 +642,7 @@ class EnhancedAgentBus:
             redis_url: Redis connection URL for message queuing
             use_dynamic_policy: Use dynamic policy registry instead of static hash
             use_kafka: Use Kafka as the event bus instead of Redis/Local queue
+            use_redis_registry: Use Redis-based distributed agent registry
             kafka_bootstrap_servers: Kafka bootstrap servers
             registry: Optional custom AgentRegistry implementation
             router: Optional custom MessageRouter implementation
@@ -629,15 +654,41 @@ class EnhancedAgentBus:
         self._use_dynamic_policy = use_dynamic_policy and POLICY_CLIENT_AVAILABLE
         self._use_kafka = use_kafka
 
+        # Initialize policy client if using dynamic validation
+        if self._use_dynamic_policy:
+            self._policy_client = get_policy_client()
+        else:
+            self._policy_client = None
+
         # Dependency injection with defaults for backward compatibility
-        self._registry: AgentRegistry = registry or InMemoryAgentRegistry()
+        if registry:
+            self._registry = registry
+        elif use_redis_registry:
+            try:
+                from .registry import RedisAgentRegistry
+            except ImportError:
+                from registry import RedisAgentRegistry  # type: ignore
+            self._registry = RedisAgentRegistry(redis_url=redis_url)
+        else:
+            self._registry = InMemoryAgentRegistry()
+            
         self._router: MessageRouter = router or DirectMessageRouter()
-        self._validator: ValidationStrategy = validator or ConstitutionalValidationStrategy()
+        
+        # Set validator with preference: injected > dynamic policy > static hash
+        if validator:
+            self._validator = validator
+        elif self._use_dynamic_policy and self._policy_client:
+            self._validator = DynamicPolicyValidationStrategy(policy_client=self._policy_client)
+        else:
+            self._validator = StaticHashValidationStrategy(strict=True)
 
         # Legacy dict for backward compatibility (delegates to registry)
         self._agents: Dict[str, Dict[str, Any]] = {}
         self._message_queue: asyncio.Queue = asyncio.Queue()
-        self._processor = processor or MessageProcessor(use_dynamic_policy=use_dynamic_policy)
+        self._processor = processor or MessageProcessor(
+            use_dynamic_policy=use_dynamic_policy,
+            processing_strategy=None # Autoselect will use logic inside
+        )
         self._running = False
 
         # Initialize Kafka bus if enabled
@@ -646,15 +697,6 @@ class EnhancedAgentBus:
             self._kafka_bus = KafkaEventBus(bootstrap_servers=kafka_bootstrap_servers)
         else:
             self._kafka_bus = None
-
-        # Initialize policy client if using dynamic validation
-        if self._use_dynamic_policy:
-            self._policy_client = get_policy_client()
-        else:
-            self._policy_client = None
-
-        # Initialize circuit breaker for policy client calls
-        self._policy_circuit_breaker = None
         if CIRCUIT_BREAKER_ENABLED and self._use_dynamic_policy:
             self._policy_circuit_breaker = get_circuit_breaker(
                 'policy_registry',
@@ -783,28 +825,11 @@ class EnhancedAgentBus:
 
         Validates constitutional compliance before queuing.
         """
-        # Validate constitutional compliance
-        if self._policy_client is not None:
-            try:
-                validation_result = await self._policy_client.validate_message_signature(message)
-                if not validation_result.is_valid:
-                    self._metrics["messages_failed"] += 1
-                    return validation_result
-            except Exception as e:
-                logger.error(f"Policy validation error: {e}")
-                self._metrics["messages_failed"] += 1
-                return ValidationResult(
-                    is_valid=False,
-                    errors=[f"Policy validation error: {e}"],
-                )
-        else:
-            # Static hash validation
-            if message.constitutional_hash != CONSTITUTIONAL_HASH:
-                self._metrics["messages_failed"] += 1
-                return ValidationResult(
-                    is_valid=False,
-                    errors=["Constitutional hash validation failed"],
-                )
+        # Validate constitutional compliance using strategy
+        is_valid, error = await self._validator.validate(message)
+        if not is_valid:
+            self._metrics["messages_failed"] += 1
+            return ValidationResult(is_valid=False, errors=[error] if error else [])
 
         # Check if recipient exists (warning only)
         if message.to_agent and message.to_agent not in self._agents:

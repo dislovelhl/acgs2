@@ -5,57 +5,50 @@ Constitutional Hash: cdd01ef066bc6cf2
 Provides centralized Redis configuration for all services.
 """
 
-import os
 from dataclasses import dataclass
-from typing import Optional
-
+from shared.config import settings
 
 @dataclass
 class RedisConfig:
-    """Centralized Redis configuration."""
-
-    # Default Redis URL - can be overridden by environment variable
-    DEFAULT_URL: str = "redis://localhost:6379"
+    """Centralized Redis configuration (legacy adapter for shared.config)."""
 
     @classmethod
     def get_url(cls, db: int = 0, env_var: str = "REDIS_URL") -> str:
         """
-        Get Redis URL from environment or default.
-
-        Args:
-            db: Database number to append (e.g., /0, /1)
-            env_var: Environment variable name to check
-
-        Returns:
-            Redis URL string
+        Get Redis URL from settings or default.
         """
-        base_url = os.getenv(env_var, cls.DEFAULT_URL)
+        # If env_var is REDIS_URL, we use settings.redis.url
+        # If db is 0, we use settings.redis.db unless overridden by db param
+        base_url = settings.redis.url
+        
+        # If it's a specialty call for another env var, still support os.getenv
+        if env_var != "REDIS_URL":
+            base_url = os.getenv(env_var, settings.redis.url)
 
         # Ensure URL doesn't already have a database number
         if base_url.count('/') > 2:
             return base_url
 
-        # Append database number if specified
-        if db > 0:
+        # Use db from settings if not explicitly provided as non-zero
+        effective_db = db if db > 0 else settings.redis.db
+
+        if effective_db > 0:
             base_url = base_url.rstrip('/')
-            return f"{base_url}/{db}"
+            return f"{base_url}/{effective_db}"
 
         return base_url
 
     @classmethod
     def get_connection_params(cls) -> dict:
         """
-        Get Redis connection parameters from environment.
-
-        Returns:
-            Dictionary of connection parameters
+        Get Redis connection parameters from settings.
         """
         return {
             "url": cls.get_url(),
-            "max_connections": int(os.getenv("REDIS_MAX_CONNECTIONS", "10")),
-            "socket_timeout": float(os.getenv("REDIS_SOCKET_TIMEOUT", "5.0")),
-            "socket_connect_timeout": float(os.getenv("REDIS_CONNECT_TIMEOUT", "5.0")),
-            "retry_on_timeout": os.getenv("REDIS_RETRY_ON_TIMEOUT", "true").lower() == "true",
+            "max_connections": settings.redis.max_connections,
+            "socket_timeout": settings.redis.socket_timeout,
+            "socket_connect_timeout": settings.redis.socket_timeout,
+            "retry_on_timeout": settings.redis.retry_on_timeout,
         }
 
 

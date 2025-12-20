@@ -3,12 +3,18 @@ Policy Registry Client for dynamic constitutional validation
 """
 
 import asyncio
+import os
 import logging
 from typing import Dict, Any, Optional, List
 import httpx
 
 from .models import AgentMessage
 from .validators import ValidationResult
+
+try:
+    from shared.config import settings
+except ImportError:
+    from ...shared.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -18,11 +24,13 @@ class PolicyRegistryClient:
 
     def __init__(
         self,
-        registry_url: str = "http://localhost:8000",
+        registry_url: Optional[str] = None,
+        api_key: Optional[str] = None,
         timeout: float = 5.0,
         cache_ttl: int = 300  # 5 minutes
     ):
-        self.registry_url = registry_url.rstrip("/")
+        self.registry_url = (registry_url or "http://localhost:8000").rstrip("/")
+        self.api_key = api_key
         self.timeout = timeout
         self.cache_ttl = cache_ttl
         self._cache: Dict[str, Dict[str, Any]] = {}
@@ -40,9 +48,14 @@ class PolicyRegistryClient:
     async def initialize(self):
         """Initialize HTTP client"""
         if not self._http_client:
+            headers = {}
+            if self.api_key:
+                headers["X-Internal-API-Key"] = self.api_key
+                
             self._http_client = httpx.AsyncClient(
                 timeout=self.timeout,
-                limits=httpx.Limits(max_keepalive_connections=10, max_connections=20)
+                limits=httpx.Limits(max_keepalive_connections=10, max_connections=20),
+                headers=headers
             )
 
     async def close(self):
@@ -230,7 +243,12 @@ def get_policy_client() -> PolicyRegistryClient:
     """Get global policy client instance"""
     global _policy_client
     if _policy_client is None:
-        _policy_client = PolicyRegistryClient()
+        # Use settings for default configuration
+        api_key = settings.security.api_key_internal.get_secret_value() if settings.security.api_key_internal else None
+        _policy_client = PolicyRegistryClient(
+            registry_url=os.getenv("POLICY_REGISTRY_URL"), # Or another fallback
+            api_key=api_key
+        )
     return _policy_client
 
 

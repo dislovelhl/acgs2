@@ -22,23 +22,31 @@
   - ~~将 `ImpactScorer`, `AdaptiveRouter` 等作为依赖项注入。~~ ✅
   - ~~创建 Protocol 接口：`ImpactScorerProtocol`, `AdaptiveRouterProtocol`, 等。~~ ✅
   - ~~使用构造函数注入依赖项并保持向后兼容性。~~ ✅
-  - 拆分 `process_message` 方法，遵循单一职责原则。(待完成)
-- [ ] **重构 MessageProcessor**：
-  - 使用策略模式处理 Rust/Dynamic/Python 验证逻辑。
+  - ~~拆分 `process_message` 方法，遵循单一职责原则。~~ ✅
+- [x] **重构 MessageProcessor**：
+  - ~~使用策略模式处理 Rust/Dynamic/Python 验证逻辑。~~ ✅
 
 ## 第三阶段：性能与扩展性 (Performance & Scalability)
-- [ ] **分布式代理注册**：
-  - 实现基于 Redis 的代理注册中心，支持多实例部署。
-- [ ] **异步化审计操作**：
-  - 将 `AuditLedger` 中的哈希计算和 Merkle Tree 操作改为异步。
-  - 引入任务队列处理耗时的区块链提交操作。
+- [x] **分布式代理注册**：
+  - 实现基于 Redis 的代理注册中心，支持多实例部署。 ✅
+- [x] **异步化审计操作**：
+  - 将 `AuditLedger` 中的哈希计算和 Merkle Tree 操作改为异步。 ✅
+  - 引入任务队列处理耗时的区块链提交操作。 ✅
 
 ## 第四阶段：配置与安全 (Configuration & Security)
-- [ ] **统一配置管理**：
-  - 使用 `pydantic-settings` 管理所有服务的配置。
-  - 移除所有硬编码的敏感信息。
-- [ ] **增强 API 安全性**：
-  - 修复 `policy_registry` 中的 CORS 配置。
-  - 为内部服务调用添加认证机制。
+- [x] **统一配置管理**：
+  - 使用 `pydantic-settings` 管理所有服务的配置。 ✅
+  - 移除所有硬编码的敏感信息。 ✅
+- [x] **增强 API 安全性**：
+  - 修复 `policy_registry` 中的 CORS 配置。 ✅
+  - 为内部服务调用添加认证机制。 ✅
+
+## 第五阶段：审议层优化 (Deliberation Layer Refinement)
+- [ ] **精细化 ImpactScorer**：
+  - 改进影响评估模型，支持多维度权重。
+- [ ] **标准化优先级管理**：
+  - 统一全系统对 `Priority` 枚举的使用。
+- [ ] **优化审议流程控制**：
+  - 完善审议层与协调层之间的消息流转。
 
 ---

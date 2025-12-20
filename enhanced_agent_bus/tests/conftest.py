@@ -15,72 +15,65 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-# Add enhanced_agent_bus directory to path
+# Add enhanced_agent_bus directory to path if not already there
 enhanced_agent_bus_dir = os.path.dirname(os.path.dirname(__file__))
 if enhanced_agent_bus_dir not in sys.path:
     sys.path.insert(0, enhanced_agent_bus_dir)
 
-
-def _load_module(name: str, path: str) -> Any:
-    """Load a module directly from path to avoid package conflicts."""
-    spec = importlib.util.spec_from_file_location(name, path)
-    module = importlib.util.module_from_spec(spec)
-    sys.modules[name] = module
-    spec.loader.exec_module(module)
-    return module
-
-
-# Load core modules
-_models = _load_module("_conftest_models", os.path.join(enhanced_agent_bus_dir, "models.py"))
-_validators = _load_module("_conftest_validators", os.path.join(enhanced_agent_bus_dir, "validators.py"))
-
-# Patch sys.modules for dependent imports
-# Patch both absolute and package-relative import paths to ensure class identity
-sys.modules['models'] = _models
-sys.modules['validators'] = _validators
-sys.modules['enhanced_agent_bus.models'] = _models
-sys.modules['enhanced_agent_bus.validators'] = _validators
-
-# Load additional modules that tests might import
-_exceptions = _load_module("_conftest_exceptions", os.path.join(enhanced_agent_bus_dir, "exceptions.py"))
-_interfaces = _load_module("_conftest_interfaces", os.path.join(enhanced_agent_bus_dir, "interfaces.py"))
-_registry = _load_module("_conftest_registry", os.path.join(enhanced_agent_bus_dir, "registry.py"))
-
-# Patch all module names for consistent class identity
-sys.modules['exceptions'] = _exceptions
-sys.modules['interfaces'] = _interfaces
-sys.modules['registry'] = _registry
-sys.modules['enhanced_agent_bus.exceptions'] = _exceptions
-sys.modules['enhanced_agent_bus.interfaces'] = _interfaces
-sys.modules['enhanced_agent_bus.registry'] = _registry
+# Ensure consistent class identity by patching sys.modules
+# This maps 'models' etc. to their 'enhanced_agent_bus.models' counterparts
+try:
+    import enhanced_agent_bus.models as _models
+    import enhanced_agent_bus.validators as _validators
+    import enhanced_agent_bus.exceptions as _exceptions
+    import enhanced_agent_bus.interfaces as _interfaces
+    import enhanced_agent_bus.registry as _registry
+    import enhanced_agent_bus.core as _core
+    
+    # Patch sys.modules to point flat names to package-qualified modules
+    sys.modules['models'] = _models
+    sys.modules['validators'] = _validators
+    sys.modules['exceptions'] = _exceptions
+    sys.modules['interfaces'] = _interfaces
+    sys.modules['registry'] = _registry
+    sys.modules['core'] = _core
+except ImportError:
+    # Fallback if the package structure is not respected during execution
+    import models as _models
+    import validators as _validators
+    import exceptions as _exceptions
+    import interfaces as _interfaces
+    import registry as _registry
+    import core as _core
+    
+    # Patch package names to point to flat modules
+    sys.modules['enhanced_agent_bus.models'] = _models
+    sys.modules['enhanced_agent_bus.validators'] = _validators
+    sys.modules['enhanced_agent_bus.exceptions'] = _exceptions
+    sys.modules['enhanced_agent_bus.interfaces'] = _interfaces
+    sys.modules['enhanced_agent_bus.registry'] = _registry
+    sys.modules['enhanced_agent_bus.core'] = _core
 
 # Check if Rust implementation is available
 # Set TEST_WITH_RUST=1 environment variable to enable Rust testing
 _test_with_rust = os.environ.get("TEST_WITH_RUST", "0") == "1"
 
-try:
-    if _test_with_rust:
+if not _test_with_rust:
+    # Block Rust import for Python-only testing
+    sys.modules['enhanced_agent_bus'] = None
+    _core.USE_RUST = False
+    RUST_AVAILABLE = False
+else:
+    try:
         import enhanced_agent_bus as _rust_bus
         RUST_AVAILABLE = True
-    else:
-        # Block Rust import for Python-only testing
-        sys.modules['enhanced_agent_bus'] = None
+        _core.USE_RUST = True
+    except ImportError:
         RUST_AVAILABLE = False
-except ImportError:
-    sys.modules['enhanced_agent_bus'] = None
-    RUST_AVAILABLE = False
+        _core.USE_RUST = False
 
-_core = _load_module("_conftest_core", os.path.join(enhanced_agent_bus_dir, "core.py"))
 
-# Patch core module name for test imports
-sys.modules['core'] = _core
-sys.modules['enhanced_agent_bus.core'] = _core
-
-# Set Rust mode based on availability and configuration
-if not _test_with_rust:
-    _core.USE_RUST = False
-
-# Re-export commonly used items
+# Re-export commonly used items from the canonical modules
 AgentMessage = _models.AgentMessage
 MessageType = _models.MessageType
 Priority = _models.Priority

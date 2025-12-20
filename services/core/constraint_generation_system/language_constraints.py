@@ -188,7 +188,7 @@ class LanguageConstraints:
 
     def _get_python_grammar(self) -> str:
         """Python CFG语法"""
-        return """
+        return r"""
         start: statement+
 
         statement: simple_statement | compound_statement
@@ -249,7 +249,7 @@ class LanguageConstraints:
 
     def _get_javascript_grammar(self) -> str:
         """JavaScript CFG语法"""
-        return """
+        return r"""
         start: statement*
 
         statement: var_declaration | function_declaration | if_statement | for_statement | expression_statement | block
@@ -303,7 +303,7 @@ class LanguageConstraints:
 
     def _get_java_grammar(self) -> str:
         """Java CFG语法"""
-        return """
+        return r"""
         start: class_declaration*
 
         class_declaration: "public" "class" NAME "{" class_body "}"
@@ -362,7 +362,7 @@ class LanguageConstraints:
 
     def _get_cpp_grammar(self) -> str:
         """C++ CFG语法"""
-        return """
+        return r"""
         start: (include_directive | function_definition | class_definition)*
 
         include_directive: "#include" ("<" NAME ">" | "\"" NAME "\"")
@@ -429,7 +429,7 @@ class LanguageConstraints:
 
     def _get_go_grammar(self) -> str:
         """Go CFG语法"""
-        return """
+        return r"""
         start: package_declaration import_declaration* (function_declaration | type_declaration)*
 
         package_declaration: "package" NAME

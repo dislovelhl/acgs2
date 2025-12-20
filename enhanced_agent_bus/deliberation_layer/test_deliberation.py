@@ -7,7 +7,7 @@ import asyncio
 import logging
 from datetime import datetime
 
-import sys; sys.path.append(".."); from models import AgentMessage, MessageType, Priority
+from enhanced_agent_bus.models import AgentMessage, MessageType, Priority
 from enhanced_agent_bus.deliberation_layer.integration import DeliberationLayer
 
 
@@ -21,11 +21,12 @@ async def test_basic_functionality():
 
     # Initialize deliberation layer
     deliberation_layer = DeliberationLayer(
-        impact_threshold=0.8,
+        impact_threshold=0.7,
         deliberation_timeout=30,  # Short timeout for testing
         enable_redis=False,
         enable_learning=True,
-        enable_llm=False  # Disable LLM for testing
+        enable_llm=False,  # Disable LLM for testing
+        enable_opa_guard=False  # Disable OPA for logic testing
     )
 
     await deliberation_layer.initialize()
@@ -35,22 +36,27 @@ async def test_basic_functionality():
         {
             'name': 'Low-risk routine message',
             'content': {'action': 'status_check', 'details': 'normal operation'},
-            'expected_lane': 'fast'
+            'expected_lane': 'fast',
+            'priority': Priority.LOW
         },
         {
             'name': 'Medium-risk configuration change',
             'content': {'action': 'update_config', 'details': 'change database settings'},
-            'expected_lane': 'fast'
+            'expected_lane': 'fast',
+            'priority': Priority.MEDIUM
         },
         {
             'name': 'High-risk security alert',
             'content': {'action': 'security_breach', 'details': 'unauthorized access detected'},
-            'expected_lane': 'deliberation'
+            'expected_lane': 'deliberation',
+            'priority': Priority.HIGH
         },
         {
             'name': 'Critical governance decision',
             'content': {'action': 'policy_change', 'details': 'modify access control rules'},
-            'expected_lane': 'deliberation'
+            'expected_lane': 'deliberation',
+            'priority': Priority.CRITICAL,
+            'message_type': MessageType.GOVERNANCE_REQUEST
         }
     ]
 
@@ -62,8 +68,8 @@ async def test_basic_functionality():
         # Create message
         message = AgentMessage(
             content=test_case['content'],
-            message_type=MessageType.COMMAND,
-            priority=Priority.HIGH,
+            message_type=test_case.get('message_type', MessageType.COMMAND),
+            priority=test_case.get('priority', Priority.MEDIUM),
             from_agent="test_agent",
             to_agent="target_agent"
         )
@@ -96,7 +102,8 @@ async def test_deliberation_workflow():
         deliberation_timeout=10,
         enable_redis=False,
         enable_learning=False,
-        enable_llm=False
+        enable_llm=False,
+        enable_opa_guard=False
     )
 
     await deliberation_layer.initialize()
@@ -160,7 +167,8 @@ async def test_performance_metrics():
     deliberation_layer = DeliberationLayer(
         impact_threshold=0.7,
         enable_learning=True,
-        enable_llm=False
+        enable_llm=False,
+        enable_opa_guard=False
     )
 
     await deliberation_layer.initialize()

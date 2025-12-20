@@ -41,8 +41,11 @@ from .registry import (
     InMemoryAgentRegistry,
     DirectMessageRouter,
     CapabilityBasedRouter,
-    ConstitutionalValidationStrategy,
+    StaticHashValidationStrategy,
+    DynamicPolicyValidationStrategy,
+    RustValidationStrategy,
     CompositeValidationStrategy,
+    RedisAgentRegistry,
 )
 from .validators import (
     ValidationResult,
@@ -113,8 +116,11 @@ __all__ = [
     "InMemoryAgentRegistry",
     "DirectMessageRouter",
     "CapabilityBasedRouter",
-    "ConstitutionalValidationStrategy",
+    "StaticHashValidationStrategy",
+    "DynamicPolicyValidationStrategy",
+    "RustValidationStrategy",
     "CompositeValidationStrategy",
+    "RedisAgentRegistry",
     # Exceptions - Base
     "AgentBusError",
     # Exceptions - Constitutional

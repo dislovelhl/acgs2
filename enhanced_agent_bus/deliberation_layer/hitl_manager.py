@@ -44,7 +44,7 @@ except ImportError:
 
     class AuditLedger:  # type: ignore
         """Mock AuditLedger."""
-        def add_validation_result(self, res):
+        async def add_validation_result(self, res):
             """Mock add."""
             print(f"Audit recorded: {res.to_dict()}")
             return "mock_audit_hash"
@@ -140,7 +140,7 @@ class HITLManager:
                     "timestamp": datetime.now(timezone.utc).isoformat()
                 }
             )
-            audit_hash = self.audit_ledger.add_validation_result(audit_res)
+            audit_hash = await self.audit_ledger.add_validation_result(audit_res)
             logger.info(f"Decision for {item_id} recorded. Hash: {audit_hash}")
             return True
 

@@ -139,6 +139,9 @@ class DeliberationLayer:
         # If dependencies are not provided, use default implementations
         self.impact_scorer = impact_scorer or get_impact_scorer()
         self.adaptive_router = adaptive_router or get_adaptive_router()
+        # Sync threshold
+        if hasattr(self.adaptive_router, 'set_impact_threshold'):
+            self.adaptive_router.set_impact_threshold(self.impact_threshold)
         self.deliberation_queue = deliberation_queue or get_deliberation_queue()
 
         # LLM assistant (only if enabled and not injected)
@@ -232,81 +235,22 @@ class DeliberationLayer:
         start_time = datetime.now(timezone.utc)
 
         try:
-            # Step 1: Prepare context for multi-dimensional analysis
-            context = {
-                "agent_id": message.from_agent or message.sender_id,
-                "tenant_id": message.tenant_id,
-                "priority": (
-                    message.priority.value
-                    if hasattr(message.priority, 'value')
-                    else str(message.priority)
-                ),
-                "constitutional_hash": message.constitutional_hash
-            }
+            # 1. Prepare context for multi-dimensional analysis
+            context = self._prepare_processing_context(message)
 
-            # Step 2: Calculate impact score if not present
-            if message.impact_score is None:
-                message.impact_score = self.impact_scorer.calculate_impact_score(
-                    message.content, context
-                )
-                logger.debug(
-                    f"Calculated impact score {message.impact_score:.3f} "
-                    f"for message {message.message_id}"
-                )
+            # 2. Ensure impact score is calculated
+            self._ensure_impact_score(message, context)
 
-            # Step 3: OPA Guard pre-action verification (VERIFY-BEFORE-ACT)
-            guard_result = None
-            if self.opa_guard:
-                guard_result = await self._verify_with_opa_guard(message)
+            # 3. OPA Guard pre-action verification (VERIFY-BEFORE-ACT)
+            guard_result = await self._evaluate_opa_guard(message, start_time)
+            if guard_result and "success" in guard_result and not guard_result["success"]:
+                return guard_result
 
-                # If guard denies, return immediately
-                if guard_result and not guard_result.is_allowed:
-                    if guard_result.decision == GuardDecision.DENY:
-                        return await self._handle_guard_denial(
-                            message, guard_result, start_time
-                        )
-                    elif guard_result.decision == GuardDecision.REQUIRE_SIGNATURES:
-                        return await self._handle_signature_requirement(
-                            message, guard_result, start_time
-                        )
-                    elif guard_result.decision == GuardDecision.REQUIRE_REVIEW:
-                        return await self._handle_review_requirement(
-                            message, guard_result, start_time
-                        )
+            # 4. Route and execute (Dual-path Routing)
+            result = await self._execute_routing(message, context)
 
-            # Step 4: Route the message (Dual-path Routing)
-            routing_decision = await self.adaptive_router.route_message(message, context)
-
-            # Step 4: Execute routing
-            if routing_decision.get('lane') == 'fast':
-                result = await self._process_fast_lane(
-                    message, routing_decision
-                )
-            else:
-                result = await self._process_deliberation(
-                    message, routing_decision
-                )
-
-            # Step 5: Record performance feedback
-            elapsed = datetime.now(timezone.utc) - start_time
-            processing_time = elapsed.total_seconds()
-            await self._record_performance_feedback(
-                message, result, processing_time
-            )
-
-            result['processing_time'] = processing_time
-            result['success'] = True
-
-            # Include guard result if available
-            if guard_result:
-                result['guard_result'] = guard_result.to_dict()
-
-            logger.info(
-                f"Processed message {message.message_id} in "
-                f"{processing_time:.2f}s: {result.get('lane')}"
-            )
-
-            return result
+            # 5. Finalize and record metrics
+            return await self._finalize_processing(message, result, start_time)
 
         except asyncio.CancelledError:
             logger.info(
@@ -345,6 +289,97 @@ class DeliberationLayer:
                 'error': f'{type(e).__name__}: {e}',
                 'processing_time': elapsed.total_seconds()
             }
+
+
+    def _prepare_processing_context(self, message: AgentMessage) -> Dict[str, Any]:
+        """Prepare context for multi-dimensional analysis."""
+        return {
+            "agent_id": message.from_agent or message.sender_id,
+            "tenant_id": message.tenant_id,
+            "priority": message.priority,
+            "message_type": message.message_type,
+            "constitutional_hash": message.constitutional_hash
+        }
+
+    def _ensure_impact_score(self, message: AgentMessage, context: Dict[str, Any]):
+        """Ensure impact score is calculated if not present."""
+        if message.impact_score is None:
+            message.impact_score = self.impact_scorer.calculate_impact_score(
+                message.content, context
+            )
+            logger.debug(
+                f"Calculated impact score {message.impact_score:.3f} "
+                f"for message {message.message_id}"
+            )
+
+    async def _evaluate_opa_guard(
+        self,
+        message: AgentMessage,
+        start_time: datetime
+    ) -> Optional[Dict[str, Any]]:
+        """Evaluate message with OPA Guard and handle early returns."""
+        if not self.opa_guard:
+            return None
+
+        guard_result = await self._verify_with_opa_guard(message)
+
+        # If guard denies, return immediate rejection dictionary
+        if guard_result and not guard_result.is_allowed:
+            if guard_result.decision == GuardDecision.DENY:
+                return await self._handle_guard_denial(
+                    message, guard_result, start_time
+                )
+            elif guard_result.decision == GuardDecision.REQUIRE_SIGNATURES:
+                return await self._handle_signature_requirement(
+                    message, guard_result, start_time
+                )
+            elif guard_result.decision == GuardDecision.REQUIRE_REVIEW:
+                return await self._handle_review_requirement(
+                    message, guard_result, start_time
+                )
+
+        return {"guard_result": guard_result}
+
+    async def _execute_routing(self, message: AgentMessage, context: Dict[str, Any]) -> Dict[str, Any]:
+        """Determine route and execute lane-specific processing."""
+        routing_decision = await self.adaptive_router.route_message(message, context)
+
+        if routing_decision.get('lane') == 'fast':
+            return await self._process_fast_lane(
+                message, routing_decision
+            )
+        else:
+            return await self._process_deliberation(
+                message, routing_decision
+            )
+
+    async def _finalize_processing(
+        self,
+        message: AgentMessage,
+        result: Dict[str, Any],
+        start_time: datetime
+    ) -> Dict[str, Any]:
+        """Finalize processing, record metrics and return result."""
+        elapsed = datetime.now(timezone.utc) - start_time
+        processing_time = elapsed.total_seconds()
+
+        await self._record_performance_feedback(
+            message, result, processing_time
+        )
+
+        result['processing_time'] = processing_time
+        result['success'] = True
+
+        # Include guard result if available in result or message
+        if 'guard_result' not in result and hasattr(message, '_guard_result'):
+             result['guard_result'] = message._guard_result
+
+        logger.info(
+            f"Processed message {message.message_id} in "
+            f"{processing_time:.2f}s: {result.get('lane')}"
+        )
+
+        return result
 
     async def _verify_with_opa_guard(
         self,

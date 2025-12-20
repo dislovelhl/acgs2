@@ -1,38 +1,20 @@
-"""
-ACGS-2 Audit Ledger Service
-不可变审计账本实现
-
-核心功能：
-- ValidationResult哈希上链
-- Merkle Tree批量验证
-- 区块链集成准备
-
-Constitutional Hash: cdd01ef066bc6cf2
-"""
-
+import asyncio
 import hashlib
 import json
 import time
+import logging
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import List, Optional, Dict, Any, Tuple
 
 from .merkle_tree.merkle_tree import MerkleTree
 
+logger = logging.getLogger(__name__)
+
 # Import ValidationResult from the canonical source (enhanced_agent_bus)
-# This eliminates model duplication across services
 try:
     from enhanced_agent_bus.validators import ValidationResult
 except ImportError:
-    # Fallback for standalone service usage
-    from dataclasses import dataclass, field
-    from typing import Any, Dict, List
-
-    try:
-        from shared.constants import CONSTITUTIONAL_HASH
-    except ImportError:
-        CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
-
     @dataclass
     class ValidationResult:
         """Fallback ValidationResult for standalone usage."""
@@ -40,7 +22,7 @@ except ImportError:
         errors: List[str] = field(default_factory=list)
         warnings: List[str] = field(default_factory=list)
         metadata: Dict[str, Any] = field(default_factory=dict)
-        constitutional_hash: str = CONSTITUTIONAL_HASH
+        constitutional_hash: str = "cdd01ef066bc6cf2"
 
         def to_dict(self) -> Dict[str, Any]:
             return {
@@ -55,16 +37,7 @@ except ImportError:
 
 @dataclass
 class AuditEntry:
-    """Represents a single entry in the audit ledger.
-
-    Attributes:
-        validation_result (ValidationResult): The result of the validation.
-        hash (str): The SHA-256 hash of the validation result.
-        timestamp (float): The Unix timestamp when the entry was created.
-        batch_id (Optional[str]): The ID of the batch this entry belongs to.
-        merkle_proof (Optional[List[Tuple[str, bool]]]): The Merkle proof for
-            this entry within its batch.
-    """
+    """Represents a single entry in the audit ledger."""
     validation_result: ValidationResult
     hash: str
     timestamp: float
@@ -72,11 +45,6 @@ class AuditEntry:
     merkle_proof: Optional[List[Tuple[str, bool]]] = None
 
     def to_dict(self) -> Dict[str, Any]:
-        """Converts the audit entry to a dictionary.
-
-        Returns:
-            Dict[str, Any]: A dictionary representation of the audit entry.
-        """
         return {
             "validation_result": self.validation_result.to_dict(),
             "hash": self.hash,
@@ -87,56 +55,86 @@ class AuditEntry:
 
 
 class AuditLedger:
-    """An immutable audit ledger for recording validation results.
+    """Asynchronous immutable audit ledger for recording validation results.
 
-    This class manages the storage of validation results, batching them into
-    Merkle Trees for efficient verification and blockchain integration.
-
-    Attributes:
-        entries (List[AuditEntry]): All audit entries in the ledger.
-        batch_size (int): The number of entries per batch.
+    Constitutional Hash: cdd01ef066bc6cf2
     """
 
     def __init__(self, batch_size: int = 100):
-        """Initializes the AuditLedger.
-
-        Args:
-            batch_size (int): The number of entries to include in each batch.
-                Defaults to 100.
-        """
         self.entries: List[AuditEntry] = []
         self.current_batch: List[ValidationResult] = []
         self.batch_size = batch_size
         self.merkle_tree: Optional[MerkleTree] = None
         self.batch_counter = 0
+        
+        # Async components
+        self._queue: asyncio.Queue = asyncio.Queue()
+        self._worker_task: Optional[asyncio.Task] = None
+        self._lock = asyncio.Lock()
+        self._running = False
 
-    def add_validation_result(self, validation_result: ValidationResult) -> str:
-        """
-        添加验证结果到审计账本
-        返回：条目哈希
-        """
-        # 创建审计条目
+    async def start(self):
+        """Start the background processing worker."""
+        if not self._running:
+            self._running = True
+            self._worker_task = asyncio.create_task(self._processing_worker())
+            logger.info("AsyncAuditLedger worker started")
+
+    async def stop(self):
+        """Stop the background processing worker and flush queue."""
+        self._running = False
+        if self._queue.empty():
+            if self._worker_task:
+                self._worker_task.cancel()
+        else:
+            # Wait for queue to be empty
+            await self._queue.join()
+            if self._worker_task:
+                self._worker_task.cancel()
+        logger.info("AsyncAuditLedger worker stopped")
+
+    async def add_validation_result(self, validation_result: ValidationResult) -> str:
+        """Add a validation result to the ledger (non-blocking)."""
         entry_hash = self._hash_validation_result(validation_result)
-        timestamp = time.time()
-
-        entry = AuditEntry(
-            validation_result=validation_result,
-            hash=entry_hash,
-            timestamp=timestamp
-        )
-
-        self.entries.append(entry)
-        self.current_batch.append(validation_result)
-
-        # 检查是否需要提交批次
-        if len(self.current_batch) >= self.batch_size:
-            self._commit_batch()
-
+        
+        # We put it in the queue for the background worker to handle
+        # This decouples the caller from Merkle Tree construction/Blockchain lag
+        await self._queue.put((entry_hash, validation_result, time.time()))
         return entry_hash
 
+    async def _processing_worker(self):
+        """Background worker that builds batches and commits them."""
+        while self._running:
+            try:
+                # Get item from queue
+                entry_hash, vr, ts = await asyncio.wait_for(self._queue.get(), timeout=1.0)
+                
+                async with self._lock:
+                    entry = AuditEntry(
+                        validation_result=vr,
+                        hash=entry_hash,
+                        timestamp=ts
+                    )
+                    self.entries.append(entry)
+                    self.current_batch.append(vr)
+
+                    if len(self.current_batch) >= self.batch_size:
+                        await self._commit_batch()
+                
+                self._queue.task_done()
+            except asyncio.TimeoutError:
+                # If we've been idle and have a partial batch, commit it?
+                # For now, only commit if queue is empty or batch full
+                if self.current_batch and self._queue.empty():
+                    async with self._lock:
+                        await self._commit_batch()
+                continue
+            except asyncio.CancelledError:
+                break
+            except Exception as e:
+                logger.error(f"Error in AuditLedger worker: {e}")
+
     def _hash_validation_result(self, validation_result: ValidationResult) -> str:
-        """计算验证结果的哈希"""
-        # 创建确定性数据用于哈希（不包含时间戳）
         hash_data = {
             'is_valid': validation_result.is_valid,
             'errors': validation_result.errors,
@@ -144,20 +142,16 @@ class AuditLedger:
             'metadata': validation_result.metadata,
             'constitutional_hash': validation_result.constitutional_hash
         }
-        # 序列化为JSON字符串（确保确定性排序）
         data = json.dumps(hash_data, sort_keys=True)
         return hashlib.sha256(data.encode()).hexdigest()
 
-    def _commit_batch(self) -> str:
-        """提交当前批次到Merkle Tree"""
+    async def _commit_batch(self) -> str:
         if not self.current_batch:
             return ""
 
-        # 生成批次ID
         batch_id = f"batch_{self.batch_counter}_{int(time.time())}"
         self.batch_counter += 1
 
-        # 创建Merkle Tree（使用与哈希计算相同的数据格式）
         batch_data = []
         for vr in self.current_batch:
             hash_data = {
@@ -168,44 +162,41 @@ class AuditLedger:
                 'constitutional_hash': vr.constitutional_hash
             }
             batch_data.append(json.dumps(hash_data, sort_keys=True).encode())
+        
         self.merkle_tree = MerkleTree(batch_data)
-
-        # 更新条目中的批次信息和Merkle证明
         root_hash = self.merkle_tree.get_root_hash()
-        for i, entry in enumerate(self.entries[-len(self.current_batch):]):
+
+        # Update entries with proofs
+        batch_count = len(self.current_batch)
+        for i, entry in enumerate(self.entries[-batch_count:]):
             entry.batch_id = batch_id
             if self.merkle_tree:
                 entry.merkle_proof = self.merkle_tree.get_proof(i)
 
-        # 清空当前批次
         self.current_batch = []
-
-        # Return batch_id (not root_hash) so callers can use get_entries_by_batch()
+        logger.info(f"Committed batch {batch_id} with root {root_hash}")
+        
+        # TODO: Trigger async blockchain submission here
+        
         return batch_id
 
     def get_batch_root_hash(self, batch_id: str) -> Optional[str]:
-        """获取批次的根哈希"""
-        # 简化实现：返回最新批次的根哈希
         if self.merkle_tree:
             return self.merkle_tree.get_root_hash()
         return None
 
-    def verify_entry(self, entry_hash: str, merkle_proof: List[Tuple[str, bool]],
-                    root_hash: str) -> bool:
-        """
-        验证审计条目
-        """
-        # 找到对应的条目
+    async def verify_entry(self, entry_hash: str, merkle_proof: List[Tuple[str, bool]],
+                          root_hash: str) -> bool:
         entry = None
-        for e in self.entries:
-            if e.hash == entry_hash:
-                entry = e
-                break
+        async with self._lock:
+            for e in self.entries:
+                if e.hash == entry_hash:
+                    entry = e
+                    break
 
         if not entry:
             return False
 
-        # 使用Merkle证明验证 - 使用与_hash_validation_result相同的数据格式
         hash_data = {
             'is_valid': entry.validation_result.is_valid,
             'errors': entry.validation_result.errors,
@@ -217,31 +208,32 @@ class AuditLedger:
         return self.merkle_tree.verify_proof(entry_data, merkle_proof, root_hash) \
                if self.merkle_tree else False
 
-    def get_entries_by_batch(self, batch_id: str) -> List[AuditEntry]:
-        """获取指定批次的所有条目"""
-        return [entry for entry in self.entries if entry.batch_id == batch_id]
+    async def get_entries_by_batch(self, batch_id: str) -> List[AuditEntry]:
+        async with self._lock:
+            return [entry for entry in self.entries if entry.batch_id == batch_id]
 
-    def get_ledger_stats(self) -> Dict[str, Any]:
-        """获取账本统计信息"""
-        return {
-            "total_entries": len(self.entries),
-            "current_batch_size": len(self.current_batch),
-            "batch_size_limit": self.batch_size,
-            "batches_committed": self.batch_counter,
-            "current_root_hash": self.merkle_tree.get_root_hash() if self.merkle_tree else None
-        }
+    async def get_ledger_stats(self) -> Dict[str, Any]:
+        async with self._lock:
+            return {
+                "total_entries": len(self.entries),
+                "current_batch_size": len(self.current_batch),
+                "batch_size_limit": self.batch_size,
+                "batches_committed": self.batch_counter,
+                "current_root_hash": self.merkle_tree.get_root_hash() if self.merkle_tree else None,
+                "queue_size": self._queue.qsize()
+            }
 
-    def force_commit_batch(self) -> str:
-        """强制提交当前批次（即使未达到batch_size）"""
-        return self._commit_batch()
+    async def force_commit_batch(self) -> str:
+        async with self._lock:
+            return await self._commit_batch()
 
-    def prepare_blockchain_transaction(self, batch_id: str) -> Dict[str, Any]:
+    async def prepare_blockchain_transaction(self, batch_id: str) -> Dict[str, Any]:
         """
         准备区块链交易数据
         返回包含根哈希和批次信息的交易数据
         """
         root_hash = self.get_batch_root_hash(batch_id)
-        entries = self.get_entries_by_batch(batch_id)
+        entries = await self.get_entries_by_batch(batch_id)
 
         return {
             "batch_id": batch_id,
