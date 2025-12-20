@@ -308,9 +308,11 @@ class TestVotingSystem:
     """Tests for the voting system."""
 
     @pytest.fixture
-    def queue(self):
-        """Create a deliberation queue."""
-        return DeliberationQueue(default_timeout=60)
+    async def queue(self):
+        """Create a deliberation queue with proper cleanup."""
+        q = DeliberationQueue(default_timeout=60)
+        yield q
+        await q.stop()
 
     @pytest.fixture
     def test_message(self):
@@ -445,9 +447,11 @@ class TestHumanDecision:
     """Tests for human decision submission."""
 
     @pytest.fixture
-    def queue(self):
-        """Create a deliberation queue."""
-        return DeliberationQueue(default_timeout=60)
+    async def queue(self):
+        """Create a deliberation queue with proper cleanup."""
+        q = DeliberationQueue(default_timeout=60)
+        yield q
+        await q.stop()
 
     @pytest.fixture
     def test_message(self):
@@ -566,9 +570,11 @@ class TestStatisticsTracking:
     """Tests for statistics tracking."""
 
     @pytest.fixture
-    def queue(self):
-        """Create a deliberation queue."""
-        return DeliberationQueue(default_timeout=60)
+    async def queue(self):
+        """Create a deliberation queue with proper cleanup."""
+        q = DeliberationQueue(default_timeout=60)
+        yield q
+        await q.stop()
 
     @pytest.fixture
     def test_message(self):
