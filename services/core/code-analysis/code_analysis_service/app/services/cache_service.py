@@ -1,17 +1,8 @@
-from fastapi import FastAPI
-"""
-HTTPException, BackgroundTasks
-"""
-from pydantic import BaseModel
-"""
-Field
-"""
+from fastapi import FastAPI, HTTPException, BackgroundTasks
+from pydantic import BaseModel, Field
 import logging
 import asyncio
-from typing import Any
-"""
-Dict, Optional
-"""
+from typing import Any, Dict, Optional
 
 
 import logging
@@ -19,19 +10,14 @@ import logging
 logger = logging.getLogger(__name__)
 
 from pathlib import Path
-from typing import Dict
-"""
-List, Optional, Union, Any, Tuple
-"""
+from typing import Dict, List, Optional, Union, Any, Tuple
 
 """
 ACGS Code Analysis Engine - Cache Service
 Redis integration with constitutional compliance and performance optimization.
 """
 
-Constitutional Hash: cdd01ef066bc6cf2
-
-
+# Constitutional Hash: cdd01ef066bc6cf2
 import hashlib
 import json
 import time
@@ -49,11 +35,9 @@ logger = get_logger("services.cache")
 
 
 class CacheService:
-    
-    Cache service for ACGS Code Analysis Engine with constitutional compliance.
+    """Cache service for ACGS Code Analysis Engine with constitutional compliance.
 
-    Provides Redis-based caching with constitutional hash validation.
-    
+    Provides Redis-based caching with constitutional hash validation."""
 
     def __init__(
         self,
@@ -63,8 +47,7 @@ class CacheService:
         max_retries: int = 3,
         retry_delay: float = 1.0,
     ):
-        
-        Initialize cache service.
+        """Initialize cache service.
 
         Args:
             redis_url: Redis connection URL
@@ -72,7 +55,7 @@ class CacheService:
             default_ttl: Default TTL in seconds
             max_retries: Maximum retry attempts
             retry_delay: Delay between retries
-        
+        """
         self.redis_url = redis_url
         self.key_prefix = key_prefix
         self.default_ttl = default_ttl
@@ -98,12 +81,11 @@ class CacheService:
         )
 
     async def connect(self) -> bool:
-        
-        Connect to Redis server.
+        """Connect to Redis server.
 
         Returns:
             bool: True if connection successful
-        
+        """
         if self.is_connected:
             return True
 
@@ -152,8 +134,7 @@ class CacheService:
             )
 
     async def get(self, key: str, default: Any = None) -> Any:
-        
-        Get value from cache.
+        """Get value from cache.
 
         Args:
             key: Cache key
@@ -161,7 +142,7 @@ class CacheService:
 
         Returns:
             Cached value or default
-        
+        """
         if not self.is_connected:
             try:
                 await self.connect()
@@ -222,8 +203,7 @@ class CacheService:
             return default
 
     async def set(self, key: str, value: Any, ttl: int | None = None) -> bool:
-        
-        Set value in cache.
+        """Set value in cache.
 
         Args:
             key: Cache key
@@ -232,7 +212,7 @@ class CacheService:
 
         Returns:
             bool: True if successful
-        
+        """
         if not self.is_connected:
             try:
                 await self.connect()
@@ -288,15 +268,14 @@ class CacheService:
             return False
 
     async def delete(self, key: str) -> bool:
-        
-        Delete value from cache.
+        """Delete value from cache.
 
         Args:
             key: Cache key to delete
 
         Returns:
             bool: True if successful
-        
+        """
         if not self.is_connected:
             try:
                 await self.connect()
@@ -334,15 +313,14 @@ class CacheService:
             return False
 
     async def exists(self, key: str) -> bool:
-        
-        Check if key exists in cache.
+        """Check if key exists in cache.
 
         Args:
             key: Cache key to check
 
         Returns:
             bool: True if key exists
-        
+        """
         if not self.is_connected:
             try:
                 await self.connect()
@@ -367,15 +345,14 @@ class CacheService:
             return False
 
     async def clear_pattern(self, pattern: str) -> int:
-        
-        Clear all keys matching pattern.
+        """Clear all keys matching pattern.
 
         Args:
             pattern: Key pattern to match
 
         Returns:
             int: Number of keys deleted
-        
+        """
         if not self.is_connected:
             try:
                 await self.connect()
@@ -415,11 +392,7 @@ class CacheService:
             self.cache_errors += 1
             return 0
 
-    try:
-        async def get_cache_info(self) -> dict[str, Any]:
-    except Exception as e:
-        logger.error(f"Operation failed: {e}")
-        raise
+    async def get_cache_info(self) -> dict[str, Any]:
         """Get cache information and statistics."""
         if not self.is_connected:
             try:
@@ -486,11 +459,7 @@ class CacheService:
         """Build full cache key with prefix."""
         return f"{self.key_prefix}, {key}"
 
-    try:
-        def _validate_cached_data(self, data: dict[str, Any]) -> bool:
-    except Exception as e:
-        logger.error(f"Operation failed: {e}")
-        raise
+    def _validate_cached_data(self, data: dict[str, Any]) -> bool:
         """Validate constitutional compliance of cached data."""
         # Check for constitutional hash
         cached_hash = data.get("constitutional_hash")
@@ -498,11 +467,7 @@ class CacheService:
             return False
 
         # Check for required fields
-        try:
-            required_fields = ["value", "cached_at", "service"]
-        except Exception as e:
-            logger.error(f"Operation failed: {e}")
-            raise
+        required_fields = ["value", "cached_at", "service"]
         for field in required_fields:
             if field not in data:
                 return False
@@ -511,15 +476,14 @@ class CacheService:
         return data.get("service") == "acgs-code-analysis-engine"
 
     def generate_cache_key(self, *components: str) -> str:
-        
-        Generate cache key from components.
+        """Generate cache key from components.
 
         Args:
             components: Key components
 
         Returns:
             str: Generated cache key
-        
+        """
         # Create deterministic key from components
         key_string = ":".join(str(c) for c in components)
 
@@ -549,25 +513,3 @@ class CacheService:
     async def __aexit__(self, exc_type, exc_val, exc_tb) -> Any:
         """Async context manager exit."""
         await self.disconnect()
-
-# Constitutional Hash: cdd01ef066bc6cf2
-CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
-
-app = FastAPI(
-    title="ACGS-2 Service",
-    description="Constitutional AI Governance Service",
-    version="2.0.0"
-)
-
-logger = logging.getLogger(__name__)
-
-@app.get("/health")
-@handle_errors("core", "api_operation")
-async def health_check():
-    """Health check endpoint with constitutional validation"""
-    return {
-        "status": "healthy",
-        "constitutional_hash": CONSTITUTIONAL_HASH,
-        "service": "acgs-service"
-    }
-

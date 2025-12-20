@@ -9,7 +9,17 @@ from typing import List, Optional, Dict, Any, Tuple
 
 from .merkle_tree.merkle_tree import MerkleTree
 
+try:
+    from shared.config import settings
+    import redis
+    HAS_REDIS = True
+except ImportError:
+    HAS_REDIS = False
+    settings = None
+
 logger = logging.getLogger(__name__)
+
+from shared.constants import CONSTITUTIONAL_HASH
 
 # Import ValidationResult from the canonical source (enhanced_agent_bus)
 try:
@@ -22,7 +32,7 @@ except ImportError:
         errors: List[str] = field(default_factory=list)
         warnings: List[str] = field(default_factory=list)
         metadata: Dict[str, Any] = field(default_factory=dict)
-        constitutional_hash: str = "cdd01ef066bc6cf2"
+        constitutional_hash: str = CONSTITUTIONAL_HASH
 
         def to_dict(self) -> Dict[str, Any]:
             return {
@@ -60,13 +70,27 @@ class AuditLedger:
     Constitutional Hash: cdd01ef066bc6cf2
     """
 
-    def __init__(self, batch_size: int = 100):
+    def __init__(self, batch_size: int = 100, redis_url: Optional[str] = None):
         self.entries: List[AuditEntry] = []
         self.current_batch: List[ValidationResult] = []
         self.batch_size = batch_size
         self.merkle_tree: Optional[MerkleTree] = None
         self.batch_counter = 0
         
+        # Persistence (Redis first, then File fallback)
+        self.redis_client = None
+        self.persistence_file = "audit_ledger_storage.json"
+        
+        if HAS_REDIS:
+            url = redis_url or (settings.redis.url if settings else "redis://localhost:6379")
+            try:
+                self.redis_client = redis.from_url(url)
+                logger.info(f"AuditLedger connected to Redis at {url}")
+            except Exception as e:
+                logger.warning(f"Fallback to local file persistence: Redis connection failed: {e}")
+        else:
+            logger.info("Using local file persistence (Redis not available)")
+
         # Async components
         self._queue: asyncio.Queue = asyncio.Queue()
         self._worker_task: Optional[asyncio.Task] = None
@@ -76,6 +100,9 @@ class AuditLedger:
     async def start(self):
         """Start the background processing worker."""
         if not self._running:
+            # Try to restore state from Redis
+            await self._load_from_storage()
+            
             self._running = True
             self._worker_task = asyncio.create_task(self._processing_worker())
             logger.info("AsyncAuditLedger worker started")
@@ -176,9 +203,112 @@ class AuditLedger:
         self.current_batch = []
         logger.info(f"Committed batch {batch_id} with root {root_hash}")
         
-        # TODO: Trigger async blockchain submission here
+        # Persist to Redis
+        await self._save_to_storage(batch_id, root_hash, batch_data)
         
         return batch_id
+
+    async def _save_to_storage(self, batch_id: str, root_hash: str, batch_data: List[bytes]):
+        """Persist batch information to storage."""
+        batch_count = len(batch_data)
+        entries_data = [entry.to_dict() for entry in self.entries[-batch_count:]]
+        
+        # 1. Try Redis
+        if self.redis_client:
+            try:
+                self.redis_client.set(f"audit:batch:{batch_id}:root", root_hash)
+                self.redis_client.set(f"audit:batch:{batch_id}:entries", json.dumps(entries_data))
+                self.redis_client.set("audit:batch_counter", self.batch_counter)
+                self.redis_client.rpush("audit:batches", batch_id)
+                logger.debug(f"Persisted batch {batch_id} to Redis")
+                return
+            except Exception as e:
+                logger.error(f"Error saving to Redis: {e}")
+
+        # 2. Local File Fallback
+        try:
+            storage_data = {
+                "batch_counter": self.batch_counter,
+                "batches": {}
+            }
+            # Load existing
+            try:
+                with open(self.persistence_file, 'r') as f:
+                    storage_data = json.load(f)
+            except (FileNotFoundError, json.JSONDecodeError):
+                pass
+            
+            storage_data["batch_counter"] = self.batch_counter
+            storage_data["batches"][batch_id] = {
+                "root": root_hash,
+                "entries": entries_data
+            }
+            
+            with open(self.persistence_file, 'w') as f:
+                json.dump(storage_data, f)
+            logger.debug(f"Persisted batch {batch_id} to local file")
+        except Exception as e:
+            logger.error(f"Error saving to local file: {e}")
+
+    async def _load_from_storage(self):
+        """Restore ledger state from storage."""
+        # 1. Try Redis
+        if self.redis_client:
+            try:
+                counter = self.redis_client.get("audit:batch_counter")
+                if counter:
+                    self.batch_counter = int(counter)
+                
+                batch_ids = self.redis_client.lrange("audit:batches", 0, -1)
+                for b_id_bytes in batch_ids:
+                    b_id = b_id_bytes.decode()
+                    entries_json = self.redis_client.get(f"audit:batch:{b_id}:entries")
+                    if entries_json:
+                        self._reconstruct_entries(json.loads(entries_json))
+                
+                if batch_ids:
+                    logger.info(f"Loaded {len(self.entries)} entries from Redis")
+                    return
+            except Exception as e:
+                logger.error(f"Error loading from Redis: {e}")
+
+        # 2. Local File Fallback
+        try:
+            with open(self.persistence_file, 'r') as f:
+                storage_data = json.load(f)
+                self.batch_counter = storage_data.get("batch_counter", 0)
+                # Sort batches to maintain order if possible, though dict is insertion ordered in modern python
+                for b_id, b_data in storage_data.get("batches", {}).items():
+                    self._reconstruct_entries(b_data["entries"])
+            # Rebuild the latest Merkle Tree if we have batches
+            if self.entries:
+                self.merkle_tree = MerkleTree([e.hash.encode() for e in self.entries])
+                logger.info(f"Rebuilt Merkle Tree with {len(self.entries)} entries")
+        except FileNotFoundError:
+            pass
+        except Exception as e:
+            logger.error(f"Error loading from local file: {e}")
+
+    def _reconstruct_entries(self, entries_list: List[Dict[str, Any]]):
+        """Helper to reconstruct AuditEntry objects from dicts."""
+        for e_dict in entries_list:
+            vr_dict = e_dict['validation_result']
+            vr = ValidationResult(
+                is_valid=vr_dict['is_valid'],
+                errors=vr_dict['errors'],
+                warnings=vr_dict['warnings'],
+                metadata=vr_dict['metadata'],
+                constitutional_hash=vr_dict['constitutional_hash']
+            )
+            
+            entry = AuditEntry(
+                validation_result=vr,
+                hash=e_dict['hash'],
+                timestamp=e_dict['timestamp'],
+                batch_id=e_dict['batch_id'],
+                merkle_proof=e_dict['merkle_proof']
+            )
+            self.entries.append(entry)
 
     def get_batch_root_hash(self, batch_id: str) -> Optional[str]:
         if self.merkle_tree:

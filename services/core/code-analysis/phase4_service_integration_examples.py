@@ -1,25 +1,7 @@
 #!/usr/bin/env python3
 """
-from fastapi import FastAPI
-"""
-HTTPException, BackgroundTasks
-"""
-from pydantic import BaseModel
-"""
-Field
-"""
-import logging
-import asyncio
-from typing import Any
-"""
-Dict, Optional
-"""
-
-
-"""
 ACGS Code Analysis Engine - Phase 4 Service Integration Examples
 Comprehensive examples demonstrating integration with the ACGS Code Analysis Engine.
-"""
 
 Constitutional Hash: cdd01ef066bc6cf2
 Service URL: http://localhost:8107
@@ -28,173 +10,171 @@ Service URL: http://localhost:8107
 import asyncio
 from datetime import datetime
 import json
+import logging
 import sys
 import time
-from typing import Any
+from typing import Any, Dict, Optional
 
 import aiohttp
 import requests
 
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 class ACGSCodeAnalysisClient:
     """Client for integrating with ACGS Code Analysis Engine"""
 
-    def __init__(self, base_url: str = "http://localhost:8107") -> Any:
+    def __init__(self, base_url: str = "http://localhost:8107") -> None:
         self.base_url = base_url
         self.constitutional_hash = "cdd01ef066bc6cf2"
-        self.session = None
+        self.session: Optional[aiohttp.ClientSession] = None
 
-    async def __aenter__(self) -> Any:
+    async def __aenter__(self) -> "ACGSCodeAnalysisClient":
         """Async context manager entry"""
         self.session = aiohttp.ClientSession()
         return self
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb) -> Any:
+    async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
         """Async context manager exit"""
         if self.session:
             await self.session.close()
 
-    try:
-        def verify_constitutional_compliance(self, response_data: dict[str, Any]) -> bool:
-    except Exception as e:
-        logger.error(f"Operation failed: {e}")
-        raise
+    def verify_constitutional_compliance(self, response_data: dict[str, Any]) -> bool:
         """Verify constitutional compliance in response"""
-        return response_data.get("constitutional_hash") == self.constitutional_hash
+        try:
+            return response_data.get("constitutional_hash") == self.constitutional_hash
+        except Exception as e:
+            logger.error(f"Operation failed: {e}")
+            raise
 
-    try:
-        async def health_check(self) -> dict[str, Any]:
-    except Exception as e:
-        logger.error(f"Operation failed: {e}")
-        raise
+    async def health_check(self) -> dict[str, Any]:
         """Check service health and constitutional compliance"""
-        async with self.session.get(f"{self.base_url}/health") as response:
-            data = await response.json()
+        try:
+            if not self.session:
+                raise RuntimeError("Session not initialized. Use async context manager.")
+                
+            async with self.session.get(f"{self.base_url}/health") as response:
+                data = await response.json()
+
+                if not self.verify_constitutional_compliance(data):
+                    msg = (
+                        "Constitutional compliance violation:"
+                        f" {data.get('constitutional_hash')}"
+                    )
+                    raise ValueError(msg)
+
+                return {
+                    "status": data.get("status"),
+                    "constitutional_compliant": True,
+                    "service_version": data.get("version"),
+                    "timestamp": data.get("timestamp"),
+                }
+        except Exception as e:
+            logger.error(f"Operation failed: {e}")
+            raise
+
+    async def search_code(self, query: str, limit: int = 10) -> dict[str, Any]:
+        """Search for code patterns and symbols"""
+        try:
+            payload = {
+                "query": query,
+                "limit": limit,
+                "constitutional_hash": self.constitutional_hash,
+            }
+
+            if not self.session:
+                raise RuntimeError("Session not initialized. Use async context manager.")
+
+            async with self.session.post(
+                f"{self.base_url}/api/v1/search",
+                json=payload,
+            ) as response:
+                data = await response.json()
+
+                if not self.verify_constitutional_compliance(data):
+                    msg = "Constitutional compliance violation in search response"
+                    raise ValueError(msg)
+
+                return {
+                    "results": data.get("results", []),
+                    "total": data.get("total", 0),
+                    "query": query,
+                    "constitutional_compliant": True,
+                }
+        except Exception as e:
+            logger.error(f"Operation failed: {e}")
+            raise
+
+    async def analyze_code(
+        self,
+        code_content: str,
+        language: str = "python",
+    ) -> dict[str, Any]:
+        """Analyze code for patterns, dependencies, and metrics"""
+        try:
+            payload = {
+                "code": code_content,
+                "language": language,
+                "constitutional_hash": self.constitutional_hash,
+            }
+
+            if not self.session:
+                raise RuntimeError("Session not initialized. Use async context manager.")
+
+            async with self.session.post(
+                f"{self.base_url}/api/v1/analyze",
+                json=payload,
+            ) as response:
+                data = await response.json()
+
+                if not self.verify_constitutional_compliance(data):
+                    msg = "Constitutional compliance violation in analysis response"
+                    raise ValueError(msg)
+
+                return {
+                    "analysis": data.get("analysis", "mock_analysis"),
+                    "language": language,
+                    "constitutional_compliant": True,
+                    "timestamp": datetime.now().isoformat(),
+                }
+        except Exception as e:
+            logger.error(f"Operation failed: {e}")
+            raise
+
+    def sync_health_check(self) -> dict[str, Any]:
+        """Synchronous health check for simple integrations"""
+        try:
+            try:
+                response = requests.get(f"{self.base_url}/health", timeout=10)
+            except Exception as e:
+                logger.error(f"Unexpected error: {e}")
+                raise
+            data = response.json()
 
             if not self.verify_constitutional_compliance(data):
                 msg = (
                     "Constitutional compliance violation:"
                     f" {data.get('constitutional_hash')}"
                 )
-                raise ValueError(
-                    msg,
-                )
+                raise ValueError(msg)
 
             return {
                 "status": data.get("status"),
                 "constitutional_compliant": True,
                 "service_version": data.get("version"),
-                "timestamp": data.get("timestamp"),
+                "response_time_ms": response.elapsed.total_seconds() * 1000,
             }
-
-    try:
-        async def search_code(self, query: str, limit: int = 10) -> dict[str, Any]:
-    except Exception as e:
-        logger.error(f"Operation failed: {e}")
-        raise
-        """Search for code patterns and symbols"""
-        payload = {
-            "query": query,
-            "limit": limit,
-            "constitutional_hash": self.constitutional_hash,
-        }
-
-        async with self.session.post(
-            f"{self.base_url}/api/v1/search",
-            json=payload,
-        ) as response:
-            data = await response.json()
-
-            if not self.verify_constitutional_compliance(data):
-                msg = "Constitutional compliance violation in search response"
-                raise ValueError(
-                    msg,
-                )
-
-            return {
-                "results": data.get("results", []),
-                except Exception as e:
-                    logger.error(f"Operation failed: {e}")
-                    raise
-                "total": data.get("total", 0),
-                "query": query,
-                "constitutional_compliant": True,
-            }
-
-    async def analyze_code(
-        self,
-        code_content: str,
-        language: str = "python",
-    try:
-        ) -> dict[str, Any]:
-    except Exception as e:
-        logger.error(f"Operation failed: {e}")
-        raise
-        """Analyze code for patterns, dependencies, and metrics"""
-        payload = {
-            "code": code_content,
-            "language": language,
-            "constitutional_hash": self.constitutional_hash,
-        }
-
-        async with self.session.post(
-            f"{self.base_url}/api/v1/analyze",
-            json=payload,
-        ) as response:
-            data = await response.json()
-
-            if not self.verify_constitutional_compliance(data):
-                msg = "Constitutional compliance violation in analysis response"
-                raise ValueError(
-                    msg,
-                )
-
-            return {
-                "analysis": data.get("analysis", "mock_analysis"),
-                "language": language,
-                "constitutional_compliant": True,
-                "timestamp": datetime.now().isoformat(),
-                except Exception as e:
-                    logger.error(f"Operation failed: {e}")
-                    raise
-            }
-
-    try:
-        def sync_health_check(self) -> dict[str, Any]:
-    except Exception as e:
-        logger.error(f"Operation failed: {e}")
-        raise
-        """Synchronous health check for simple integrations"""
-        try:
-            response = requests.get(f"{self.base_url}/health", timeout=10)
         except Exception as e:
-            logger.error(f"Unexpected error: {e}")
+            logger.error(f"Operation failed: {e}")
             raise
-        data = response.json()
-
-        if not self.verify_constitutional_compliance(data):
-            msg = (
-                "Constitutional compliance violation:"
-                f" {data.get('constitutional_hash')}"
-            )
-            raise ValueError(
-                msg,
-            )
-
-        return {
-            "status": data.get("status"),
-            "constitutional_compliant": True,
-            "service_version": data.get("version"),
-            "response_time_ms": response.elapsed.total_seconds() * 1000,
-        }
 
 
 class IntegrationExamples:
     """Comprehensive integration examples for ACGS Code Analysis Engine"""
 
-    def __init__(self) -> Any:
-        self.client = ACGSCodeAnalysisClient()
-        self.results = {}
+    def __init__(self) -> None:
+        self.results: Dict[str, Any] = {}
 
     async def example_1_basic_health_monitoring(self) -> Any:
         """Example 1: Basic health monitoring integration"""
@@ -208,7 +188,7 @@ class IntegrationExamples:
                 for _i in range(5):
                     start_time = time.time()
                     await client.health_check()
-                    (time.time() - start_time) * 1000
+                    # (time.time() - start_time) * 1000  # Unused result
 
                     await asyncio.sleep(1)
 
@@ -219,11 +199,8 @@ class IntegrationExamples:
                 }
 
         except Exception as e:
-            try:
-                self.results["basic_health_monitoring"] = {
-            except Exception as e:
-                logger.error(f"Operation failed: {e}")
-                raise
+            logger.error(f"Operation failed: {e}")
+            self.results["basic_health_monitoring"] = {
                 "status": "failed",
                 "error": str(e),
             }
@@ -254,9 +231,6 @@ class IntegrationExamples:
                         {
                             "query": query,
                             "total_results": result["total"],
-                            except Exception as e:
-                                logger.error(f"Operation failed: {e}")
-                                raise
                             "search_time_ms": search_time,
                             "constitutional_compliant": result[
                                 "constitutional_compliant"
@@ -264,11 +238,7 @@ class IntegrationExamples:
                         },
                     )
 
-                try:
-                    self.results["code_search_integration"] = {
-                except Exception as e:
-                    logger.error(f"Operation failed: {e}")
-                    raise
+                self.results["code_search_integration"] = {
                     "status": "success",
                     "searches_completed": len(search_queries),
                     "search_results": search_results,
@@ -276,11 +246,8 @@ class IntegrationExamples:
                 }
 
         except Exception as e:
-            try:
-                self.results["code_search_integration"] = {
-            except Exception as e:
-                logger.error(f"Operation failed: {e}")
-                raise
+            logger.error(f"Operation failed: {e}")
+            self.results["code_search_integration"] = {
                 "status": "failed",
                 "error": str(e),
             }
@@ -307,12 +274,12 @@ def calculate_fibonacci(n) -> Any:
                         "code": """
 try:
     async def fetch_data(url) -> Optional[Dict[str, Any]]:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url) as response:
+                return await response.json()
 except Exception as e:
     logger.error(f"Unexpected error: {e}")
     raise
-    async with aiohttp.ClientSession() as session:
-        async with session.get(url) as response:
-            return await response.json()
 """,
                         "language": "python",
                     },
@@ -332,39 +299,21 @@ class DatabaseManager:
                     },
                 ]
 
-                try:
-                    analysis_results = []
-                except Exception as e:
-                    logger.error(f"Operation failed: {e}")
-                    raise
+                analysis_results = []
 
                 for example in code_examples:
 
                     start_time = time.time()
                     result = await client.analyze_code(
-                        try:
-                            example["code"],
-                        except Exception as e:
-                            logger.error(f"Operation failed: {e}")
-                            raise
-                        try:
-                            example["language"],
-                        except Exception as e:
-                            logger.error(f"Operation failed: {e}")
-                            raise
+                         example["code"],
+                         example["language"],
                     )
                     analysis_time = (time.time() - start_time) * 1000
 
                     analysis_results.append(
                         {
                             "name": example["name"],
-                            except Exception as e:
-                                logger.error(f"Operation failed: {e}")
-                                raise
                             "language": example["language"],
-                            except Exception as e:
-                                logger.error(f"Operation failed: {e}")
-                                raise
                             "analysis_time_ms": analysis_time,
                             "constitutional_compliant": result[
                                 "constitutional_compliant"
@@ -372,11 +321,7 @@ class DatabaseManager:
                         },
                     )
 
-                try:
-                    self.results["code_analysis_integration"] = {
-                except Exception as e:
-                    logger.error(f"Operation failed: {e}")
-                    raise
+                self.results["code_analysis_integration"] = {
                     "status": "success",
                     "analyses_completed": len(code_examples),
                     "analysis_results": analysis_results,
@@ -384,11 +329,8 @@ class DatabaseManager:
                 }
 
         except Exception as e:
-            try:
-                self.results["code_analysis_integration"] = {
-            except Exception as e:
-                logger.error(f"Operation failed: {e}")
-                raise
+            logger.error(f"Operation failed: {e}")
+            self.results["code_analysis_integration"] = {
                 "status": "failed",
                 "error": str(e),
             }
@@ -401,9 +343,9 @@ class DatabaseManager:
 
             # Simple synchronous health checks
             for _i in range(3):
-                start_time = time.time()
+                # start_time = time.time()
                 client.sync_health_check()
-                time.time() - start_time
+                # time.time() - start_time
 
             # Test error handling
             try:
@@ -420,16 +362,13 @@ class DatabaseManager:
             }
 
         except Exception as e:
-            try:
-                self.results["synchronous_integration"] = {
-            except Exception as e:
-                logger.error(f"Operation failed: {e}")
-                raise
+            logger.error(f"Operation failed: {e}")
+            self.results["synchronous_integration"] = {
                 "status": "failed",
                 "error": str(e),
             }
 
-    async def run_all_integration_examples(self) -> Any:
+    async def run_all_integration_examples(self) -> bool:
         """Run all integration examples"""
 
         # Run all examples
@@ -439,16 +378,11 @@ class DatabaseManager:
         self.example_4_synchronous_integration()
 
         # Generate summary
-        self.generate_integration_summary()
+        return self.generate_integration_summary()
 
-    def generate_integration_summary(self) -> Any:
+    def generate_integration_summary(self) -> bool:
         """Generate comprehensive integration summary"""
 
-        [
-            name
-            for name, result in self.results.items()
-            if result.get("status") == "success"
-        ]
         failed_examples = [
             name
             for name, result in self.results.items()
@@ -460,45 +394,30 @@ class DatabaseManager:
             for result in self.results.values()
         )
 
-        for result in self.results.values():
-            "✓" if result.get("status") == "success" else "✗"
-
         overall_success = len(failed_examples) == 0
-
-        if overall_success:
-            pass
 
         # Save results
         results_file = "phase4_integration_examples_results.json"
         try:
             with open(results_file, "w", encoding="utf-8") as f:
-        except FileNotFoundError as e:
-            logger.error(f"File not found: {e}")
-            raise
-        except PermissionError as e:
-            logger.error(f"Permission denied: {e}")
-            raise
+                json.dump(
+                    {
+                        "overall_success": overall_success,
+                        "constitutional_compliant": constitutional_compliant,
+                        "examples_results": self.results,
+                        "timestamp": datetime.now().isoformat(),
+                    },
+                    f,
+                    indent=2,
+                )
         except Exception as e:
-            logger.error(f"Unexpected error: {e}")
+            logger.error(f"Unexpected error saving results: {e}")
             raise
-            json.dump(
-                {
-                    "overall_success": overall_success,
-                    "constitutional_compliant": constitutional_compliant,
-                    "examples_results": self.results,
-                    "timestamp": datetime.now().isoformat(),
-                    except Exception as e:
-                        logger.error(f"Operation failed: {e}")
-                        raise
-                },
-                f,
-                indent=2,
-            )
 
         return overall_success
 
 
-async def main() -> Any:
+async def main() -> None:
     """Main function to run Phase 4 integration examples"""
     examples = IntegrationExamples()
 
@@ -512,25 +431,3 @@ async def main() -> Any:
 
 if __name__ == "__main__":
     asyncio.run(main())
-
-# Constitutional Hash: cdd01ef066bc6cf2
-CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
-
-app = FastAPI(
-    title="ACGS-2 Service",
-    description="Constitutional AI Governance Service",
-    version="2.0.0",
-)
-
-logger = logging.getLogger(__name__)
-
-
-@app.get("/health")
-@handle_errors("core", "api_operation")
-async def health_check():
-    """Health check endpoint with constitutional validation"""
-    return {
-        "status": "healthy",
-        "constitutional_hash": CONSTITUTIONAL_HASH,
-        "service": "acgs-service",
-    }

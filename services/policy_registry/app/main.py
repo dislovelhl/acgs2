@@ -11,6 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from .services import CryptoService, CacheService, NotificationService, PolicyService
+from shared.audit_client import AuditClient
 from .api.v1 import router as v1_router
 
 # Centralized settings
@@ -28,7 +29,13 @@ logger = logging.getLogger(__name__)
 crypto_service = CryptoService()
 cache_service = CacheService()
 notification_service = NotificationService()
-policy_service = PolicyService(crypto_service, cache_service, notification_service)
+audit_client = AuditClient(service_url=settings.audit.url)
+policy_service = PolicyService(
+    crypto_service, 
+    cache_service, 
+    notification_service,
+    audit_client=audit_client
+)
 
 
 @asynccontextmanager

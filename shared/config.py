@@ -48,6 +48,19 @@ if HAS_PYDANTIC_SETTINGS:
         api_key_internal: Optional[SecretStr] = Field(None, validation_alias="API_KEY_INTERNAL")
         cors_origins: List[str] = Field(["*"], validation_alias="CORS_ORIGINS")
         jwt_secret: Optional[SecretStr] = Field(None, validation_alias="JWT_SECRET")
+        jwt_public_key: str = Field("SYSTEM_PUBLIC_KEY_PLACEHOLDER", validation_alias="JWT_PUBLIC_KEY")
+
+
+    class OPASettings(BaseSettings):
+        """OPA (Open Policy Agent) settings."""
+        url: str = Field("http://localhost:8181", validation_alias="OPA_URL")
+        mode: str = Field("http", validation_alias="OPA_MODE")  # http, embedded, fallback
+        fail_closed: bool = Field(True, validation_alias="OPA_FAIL_CLOSED")
+
+
+    class AuditSettings(BaseSettings):
+        """Audit Service settings."""
+        url: str = Field("http://localhost:8001", validation_alias="AUDIT_SERVICE_URL")
 
 
     class Settings(BaseSettings):
@@ -65,6 +78,8 @@ if HAS_PYDANTIC_SETTINGS:
         ai: AISettings = AISettings()
         blockchain: BlockchainSettings = BlockchainSettings()
         security: SecuritySettings = SecuritySettings()
+        opa: OPASettings = OPASettings()
+        audit: AuditSettings = AuditSettings()
 else:
     # Fallback to pure os.getenv for environment mapping
     from dataclasses import dataclass, field
@@ -96,6 +111,17 @@ else:
         api_key_internal: Optional[SecretStr] = field(default_factory=lambda: SecretStr(os.getenv("API_KEY_INTERNAL", "")) if os.getenv("API_KEY_INTERNAL") else None)
         cors_origins: List[str] = field(default_factory=lambda: os.getenv("CORS_ORIGINS", "*").split(","))
         jwt_secret: Optional[SecretStr] = field(default_factory=lambda: SecretStr(os.getenv("JWT_SECRET", "")) if os.getenv("JWT_SECRET") else None)
+        jwt_public_key: str = field(default_factory=lambda: os.getenv("JWT_PUBLIC_KEY", "SYSTEM_PUBLIC_KEY_PLACEHOLDER"))
+
+    @dataclass
+    class OPASettings:
+        url: str = field(default_factory=lambda: os.getenv("OPA_URL", "http://localhost:8181"))
+        mode: str = field(default_factory=lambda: os.getenv("OPA_MODE", "http"))
+        fail_closed: bool = field(default_factory=lambda: os.getenv("OPA_FAIL_CLOSED", "true").lower() == "true")
+
+    @dataclass
+    class AuditSettings:
+        url: str = field(default_factory=lambda: os.getenv("AUDIT_SERVICE_URL", "http://localhost:8001"))
 
     @dataclass
     class Settings:
@@ -106,6 +132,8 @@ else:
         ai: AISettings = field(default_factory=AISettings)
         blockchain: BlockchainSettings = field(default_factory=BlockchainSettings)
         security: SecuritySettings = field(default_factory=SecuritySettings)
+        opa: OPASettings = field(default_factory=OPASettings)
+        audit: AuditSettings = field(default_factory=AuditSettings)
 
 
 # Global settings instance

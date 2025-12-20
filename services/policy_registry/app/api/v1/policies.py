@@ -31,7 +31,7 @@ async def create_policy(
     format: str = "json",
     description: Optional[str] = None,
     policy_service: PolicyService = Depends(),
-    current_user: Dict[str, Any] = Depends(check_role(["tenant_admin", "system_admin"]))
+    current_user: Dict[str, Any] = Depends(check_role(["tenant_admin", "system_admin"], action="create", resource="policy"))
 ):
     """Create a new policy (tenant-scoped)"""
     tenant_id = current_user.get("tenant_id")
@@ -79,7 +79,8 @@ async def create_policy_version(
     public_key_b64: str,
     ab_test_group: Optional[str] = None,
     policy_service: PolicyService = Depends(),
-    crypto_service: CryptoService = Depends()
+    crypto_service: CryptoService = Depends(),
+    current_user: Dict[str, Any] = Depends(check_role(["tenant_admin", "system_admin"], action="create_version", resource="policy"))
 ):
     """Create a new policy version with signature"""
     try:
@@ -116,7 +117,8 @@ async def get_policy_version(
 async def activate_policy_version(
     policy_id: str,
     version: str,
-    policy_service: PolicyService = Depends()
+    policy_service: PolicyService = Depends(),
+    current_user: Dict[str, Any] = Depends(check_role(["tenant_admin", "system_admin"], action="activate", resource="policy"))
 ):
     """Activate a policy version"""
     try:
@@ -130,7 +132,8 @@ async def activate_policy_version(
 async def verify_policy_signature(
     policy_id: str,
     version: str,
-    policy_service: PolicyService = Depends()
+    policy_service: PolicyService = Depends(),
+    current_user: Dict[str, Any] = Depends(check_role(["tenant_admin", "system_admin", "auditor"], action="verify", resource="policy"))
 ):
     """Verify policy signature"""
     is_valid = await policy_service.verify_policy_signature(policy_id, version)

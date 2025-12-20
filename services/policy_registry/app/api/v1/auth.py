@@ -24,9 +24,11 @@ async def get_current_user(
     # For this design, we'll assume a system-wide public key for management
     # or use the one from the policy registry's active keypair.
     try:
-        # This is a placeholder for actual public key retrieval
-        # In production, this would be the IDP's public key
-        public_key_b64 = "SYSTEM_PUBLIC_KEY_PLACEHOLDER" 
+        # Load system public key from settings or services
+        # For ACGS-2, we typically use the constitutional public key
+        from shared.config import settings
+        public_key_b64 = settings.security.jwt_public_key if hasattr(settings.security, "jwt_public_key") else "SYSTEM_PUBLIC_KEY_PLACEHOLDER"
+        
         payload = crypto_service.verify_agent_token(token, public_key_b64)
         return payload
     except Exception as e:
@@ -36,17 +38,34 @@ async def get_current_user(
         )
 
 
-def check_role(allowed_roles: List[str]):
+def check_role(allowed_roles: List[str], action: str = "manage", resource: str = "policy"):
     """
-    RBAC role check dependency
+    RBAC role check dependency using OPA for granular authorization.
     """
-    async def role_checker(user: Dict[str, Any] = Depends(get_current_user)):
+    async def role_checker(
+        user: Dict[str, Any] = Depends(get_current_user),
+        # We'll use a local import to avoid circular dependency if any
+    ):
+        from ...services import OPAService
+        opa_service = OPAService()
+        
         user_role = user.get("role", "agent")
+        
+        # Fast path check
         if user_role not in allowed_roles:
             raise HTTPException(
                 status_code=403, 
-                detail=f"Role {user_role} not authorized for this action"
+                detail=f"Basic RBAC: Role {user_role} not authorized for this action"
             )
+            
+        # Granular OPA check
+        is_authorized = await opa_service.check_authorization(user, action, resource)
+        if not is_authorized:
+            raise HTTPException(
+                status_code=403,
+                detail=f"OPA RBAC: Access denied for {action} on {resource}"
+            )
+            
         return user
     return role_checker
 

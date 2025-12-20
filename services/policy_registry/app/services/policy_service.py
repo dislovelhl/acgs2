@@ -10,6 +10,7 @@ from ..models import (
     Policy, PolicyStatus, PolicyVersion, VersionStatus, 
     PolicySignature, ABTestGroup
 )
+from shared.audit_client import AuditClient
 
 logger = logging.getLogger(__name__)
 
@@ -17,10 +18,11 @@ logger = logging.getLogger(__name__)
 class PolicyService:
     """Service for policy management operations"""
 
-    def __init__(self, crypto_service, cache_service, notification_service):
+    def __init__(self, crypto_service, cache_service, notification_service, audit_client: Optional[AuditClient] = None):
         self.crypto = crypto_service
         self.cache = cache_service
         self.notification = notification_service
+        self.audit_client = audit_client
         self._policies: Dict[str, Policy] = {}
         self._versions: Dict[str, List[PolicyVersion]] = {}
         self._signatures: Dict[str, PolicySignature] = {}
@@ -185,6 +187,19 @@ class PolicyService:
             policy_id, version, "version_activated"
         )
         
+        # Audit policy activation
+        if self.audit_client:
+            audit_record = {
+                "event": "policy_activation",
+                "policy_id": policy_id,
+                "version": version,
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "status": "success"
+            }
+            # We wrap this in a task to avoid blocking the API response
+            import asyncio
+            asyncio.create_task(self.audit_client.report_validation(audit_record))
+
         logger.info(f"Activated policy version: {policy_id}:{version}")
 
     async def verify_policy_signature(

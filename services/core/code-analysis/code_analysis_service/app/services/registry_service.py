@@ -1,17 +1,8 @@
-from fastapi import FastAPI
-"""
-HTTPException, BackgroundTasks
-"""
-from pydantic import BaseModel
-"""
-Field
-"""
+from fastapi import FastAPI, HTTPException, BackgroundTasks
+from pydantic import BaseModel, Field
 import logging
 import asyncio
-from typing import Any
-"""
-Dict, Optional
-"""
+from typing import Any, Dict, Optional
 
 
 import logging
@@ -28,19 +19,14 @@ from acgs2.services.shared.security.secure_credentials import (
 logger = logging.getLogger(__name__)
 
 from pathlib import Path
-from typing import Dict
-"""
-List, Optional, Union, Any, Tuple
-"""
+from typing import Dict, List, Optional, Union, Any, Tuple
 
 """
 ACGS Code Analysis Engine - Service Registry Client
 Integration with ACGS service registry with constitutional compliance.
 """
 
-Constitutional Hash: cdd01ef066bc6cf2
-
-
+# Constitutional Hash: cdd01ef066bc6cf2
 import asyncio
 import contextlib
 import time
@@ -58,11 +44,9 @@ logger = get_logger("services.registry")
 
 
 class ServiceRegistryClient:
-    
-    Service registry client for ACGS Code Analysis Engine.
+    """Service registry client for ACGS Code Analysis Engine.
 
-    Handles service registration, discovery, and health monitoring.
-    
+    Handles service registration, discovery, and health monitoring."""
 
     def __init__(
         self,
@@ -72,8 +56,7 @@ class ServiceRegistryClient:
         health_check_interval: int = 30,
         timeout_seconds: float = 5.0,
     ):
-        
-        Initialize service registry client.
+        """Initialize service registry client.
 
         Args:
             registry_url: URL of ACGS service registry
@@ -81,7 +64,7 @@ class ServiceRegistryClient:
             service_port: Port this service runs on
             health_check_interval: Health check interval in seconds
             timeout_seconds: Request timeout
-        
+        """
         self.registry_url = registry_url.rstrip("/")
         self.service_name = service_name
         self.service_port = service_port
@@ -110,12 +93,11 @@ class ServiceRegistryClient:
         )
 
     async def register_service(self) -> bool:
-        
-        Register this service with the service registry.
+        """Register this service with the service registry.
 
         Returns:
             bool: True if registration successful
-        
+        """
         if self.is_registered:
             logger.warning("Service is already registered", extra={"constitutional_hash": CONSTITUTIONAL_HASH})
             return True
@@ -213,9 +195,7 @@ class ServiceRegistryClient:
             return False
 
     async def deregister_service(self) -> bool:
-        
-        Deregister this service from the service registry.
-
+        """Deregister this service from the service registry."""
         Returns:
             bool: True if deregistration successful
         
@@ -266,12 +246,7 @@ class ServiceRegistryClient:
             )
             return False
 
-    try:
-        async def discover_service(self, service_name: str) -> dict[str, Any] | None:
-    except Exception as e:
-        logger.error(f"Operation failed: {e}")
-        raise
-        
+    async def discover_service(self, service_name: str) -> dict[str, Any] | None:
         Discover another service in the registry.
 
         Args:
@@ -291,10 +266,7 @@ class ServiceRegistryClient:
 
                 # Validate constitutional compliance
                 if not self._validate_service_response(service_info):
-                    logger.warning("Service discovery response failed constitutional validation:", extra={"constitutional_hash": CONSTITUTIONAL_HASH})
-                        f" {service_name}",
-                        extra={"constitutional_hash": CONSTITUTIONAL_HASH},
-                    )
+                    logger.warning(f"Service discovery response failed constitutional validation: {service_name}", extra={"constitutional_hash": CONSTITUTIONAL_HASH})
                     return None
 
                 logger.info(
@@ -344,12 +316,7 @@ class ServiceRegistryClient:
             )
             return None
 
-    try:
-        async def list_services(self) -> list[dict[str, Any]]:
-    except Exception as e:
-        logger.error(f"Operation failed: {e}")
-        raise
-        
+    async def list_services(self) -> list[dict[str, Any]]:
         List all registered services.
 
         Returns:
@@ -502,11 +469,7 @@ class ServiceRegistryClient:
                 exc_info=True,
             )
 
-    try:
-        async def _get_real_system_metrics(self) -> dict[str, Any]:
-    except Exception as e:
-        logger.error(f"Operation failed: {e}")
-        raise
+    async def _get_real_system_metrics(self) -> dict[str, Any]:
         """Get real system metrics for health reporting."""
         try:
             import os
@@ -575,11 +538,7 @@ import psutil
                 "constitutional_hash": CONSTITUTIONAL_HASH,
             }
 
-    try:
-        def _validate_service_response(self, service_data: dict[str, Any]) -> bool:
-    except Exception as e:
-        logger.error(f"Operation failed: {e}")
-        raise
+    def _validate_service_response(self, service_data: dict[str, Any]) -> bool:
         """Validate constitutional compliance of service response."""
         # Check for constitutional hash
         service_hash = service_data.get("constitutional_hash")
@@ -594,11 +553,7 @@ import psutil
             raise
         return all(field in service_data for field in required_fields)
 
-    try:
-        async def get_status(self) -> dict[str, Any]:
-    except Exception as e:
-        logger.error(f"Operation failed: {e}")
-        raise
+    async def get_status(self) -> dict[str, Any]:
         """Get service registry client status."""
         return ensure_constitutional_compliance(
             {
@@ -624,25 +579,3 @@ import psutil
         """Async context manager exit."""
         await self.deregister_service()
         await self.http_client.aclose()
-
-# Constitutional Hash: cdd01ef066bc6cf2
-CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
-
-app = FastAPI(
-    title="ACGS-2 Service",
-    description="Constitutional AI Governance Service",
-    version="2.0.0"
-)
-
-logger = logging.getLogger(__name__)
-
-@app.get("/health")
-@handle_errors("core", "api_operation")
-async def health_check():
-    """Health check endpoint with constitutional validation"""
-    return {
-        "status": "healthy",
-        "constitutional_hash": CONSTITUTIONAL_HASH,
-        "service": "acgs-service"
-    }
-

@@ -22,6 +22,14 @@ except ImportError:
     from models import AgentMessage, MessageStatus, CONSTITUTIONAL_HASH  # type: ignore
     from validators import ValidationResult  # type: ignore
 
+try:
+    from .opa_client import get_opa_client, OPAClient
+    OPA_CLIENT_AVAILABLE = True
+except ImportError:
+    OPA_CLIENT_AVAILABLE = False
+    OPAClient = None  # type: ignore
+    def get_opa_client(): return None
+
 logger = logging.getLogger(__name__)
 
 
@@ -443,6 +451,34 @@ class DynamicPolicyValidationStrategy:
             logger.error(f"Dynamic policy validation error: {e}")
             return False, f"Dynamic validation error: {str(e)}"
 
+class OPAValidationStrategy:
+    """Validates messages using OPA (Open Policy Agent).
+    
+    Constitutional Hash: cdd01ef066bc6cf2
+    """
+
+    def __init__(self, opa_client: Any) -> None:
+        """Initialize with OPA client."""
+        self._opa_client = opa_client
+
+    async def validate(
+        self,
+        message: AgentMessage
+    ) -> tuple[bool, Optional[str]]:
+        """Validate message against OPA constitutional policies."""
+        if not self._opa_client:
+            return False, "OPA client not available"
+
+        try:
+            # Evaluate constitutional policies
+            result = await self._opa_client.validate_constitutional(message.to_dict())
+            if not result.is_valid:
+                return False, "; ".join(result.errors)
+            return True, None
+        except Exception as e:
+            logger.error(f"OPA validation execution error: {e}")
+            return False, f"OPA validation error: {str(e)}"
+
 
 class RustValidationStrategy:
     """High-performance validation using the Rust backend.
@@ -849,6 +885,100 @@ class DynamicPolicyProcessingStrategy:
         """Get strategy name."""
         return "dynamic_policy"
 
+class OPAProcessingStrategy:
+    """OPA-based processing strategy.
+    
+    Uses OPA for constitutional validation.
+    Constitutional Hash: cdd01ef066bc6cf2
+    """
+
+    def __init__(
+        self,
+        opa_client: Optional[Any] = None,
+        validation_strategy: Optional[ValidationStrategy] = None
+    ) -> None:
+        """Initialize OPA processing strategy.
+
+        Args:
+            opa_client: Optional OPA client instance
+            validation_strategy: Optional custom validation strategy
+        """
+        self._constitutional_hash = CONSTITUTIONAL_HASH
+        self._opa_client = opa_client
+        
+        # Try to get OPA client if not provided
+        if self._opa_client is None:
+            self._opa_client = get_opa_client()
+        
+        self._validation_strategy = validation_strategy or OPAValidationStrategy(self._opa_client)
+
+    async def process(
+        self,
+        message: AgentMessage,
+        handlers: Dict[Any, List[Callable]]
+    ) -> ValidationResult:
+        """Process message with OPA validation."""
+        if not self.is_available():
+            return ValidationResult(
+                is_valid=False,
+                errors=["OPA client not available"],
+            )
+
+        try:
+            # Validate message
+            is_valid, error = await self._validation_strategy.validate(message)
+            if not is_valid:
+                message.status = MessageStatus.FAILED
+                return ValidationResult(is_valid=False, errors=[error] if error else [])
+
+            # Execute handlers
+            return await self._execute_handlers(message, handlers)
+
+        except Exception as e:
+            logger.error(f"OPA processing validation failed: {e}")
+            message.status = MessageStatus.FAILED
+            return ValidationResult(
+                is_valid=False,
+                errors=[f"OPA validation error: {e}"],
+            )
+
+    async def _execute_handlers(
+        self,
+        message: AgentMessage,
+        handlers: Dict[Any, List[Callable]]
+    ) -> ValidationResult:
+        """Execute registered handlers for the message."""
+        message.status = MessageStatus.PROCESSING
+        message.updated_at = datetime.now(timezone.utc)
+
+        try:
+            message_handlers = handlers.get(message.message_type, [])
+            for handler in message_handlers:
+                if asyncio.iscoroutinefunction(handler):
+                    await handler(message)
+                else:
+                    handler(message)
+
+            message.status = MessageStatus.DELIVERED
+            message.updated_at = datetime.now(timezone.utc)
+            return ValidationResult(is_valid=True)
+
+        except Exception as e:
+            message.status = MessageStatus.FAILED
+            logger.error(f"Handler error: {e}")
+            return ValidationResult(
+                is_valid=False,
+                errors=[f"Handler error: {e}"],
+            )
+
+    def is_available(self) -> bool:
+        """Check if OPA client is available."""
+        return self._opa_client is not None
+
+    def get_name(self) -> str:
+        """Get strategy name."""
+        return "opa"
+
 
 __all__ = [
     "InMemoryAgentRegistry",
@@ -863,4 +993,6 @@ __all__ = [
     "PythonProcessingStrategy",
     "RustProcessingStrategy",
     "DynamicPolicyProcessingStrategy",
+    "OPAProcessingStrategy",
+    "OPAValidationStrategy",
 ]

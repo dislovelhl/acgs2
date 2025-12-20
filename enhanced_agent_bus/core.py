@@ -88,6 +88,8 @@ try:
         PythonProcessingStrategy,
         RustProcessingStrategy,
         DynamicPolicyProcessingStrategy,
+        OPAProcessingStrategy,
+        OPAValidationStrategy,
     )
 except ImportError:
     # Fallback for direct execution or testing
@@ -117,6 +119,8 @@ except ImportError:
         PythonProcessingStrategy,
         RustProcessingStrategy,
         DynamicPolicyProcessingStrategy,
+        OPAProcessingStrategy,
+        OPAValidationStrategy,
     )
 
 # Import centralized Redis config with fallback
@@ -137,7 +141,28 @@ except ImportError:
     def get_policy_client(fail_closed: Optional[bool] = None):
         return None
 
+# Import Audit Client
+try:
+    from shared.audit_client import AuditClient
+    AUDIT_CLIENT_AVAILABLE = True
+except ImportError:
+    try:
+        from .audit_client import AuditClient
+        AUDIT_CLIENT_AVAILABLE = True
+    except ImportError:
+        AUDIT_CLIENT_AVAILABLE = False
+        AuditClient = None  # type: ignore
+
 logger = logging.getLogger(__name__)
+
+# Import OPA client for real policy evaluation
+try:
+    from .opa_client import get_opa_client, OPAClient
+    OPA_CLIENT_AVAILABLE = True
+except ImportError:
+    OPA_CLIENT_AVAILABLE = False
+    OPAClient = None  # type: ignore
+    def get_opa_client(): return None
 
 # Import Rust implementation for high-performance processing
 try:
@@ -173,6 +198,7 @@ class MessageProcessor:
         policy_fail_closed: bool = False,
         # Dependency injection parameter
         processing_strategy: Optional["ProcessingStrategy"] = None,
+        audit_client: Optional[AuditClient] = None,
     ):
         """Initializes the message processor.
 
@@ -207,6 +233,12 @@ class MessageProcessor:
             self._policy_client = None
 
         self.constitutional_hash = CONSTITUTIONAL_HASH
+
+        # Initialize OPA client
+        self._opa_client = get_opa_client()
+
+        # Persistence (Audit Client)
+        self._audit_client = audit_client
 
         # Dependency injection: use provided strategy or auto-select
         if processing_strategy is not None:
@@ -255,19 +287,23 @@ class MessageProcessor:
                 logger.debug("Auto-selected Rust processing strategy")
                 return proc_strategy
 
-        # Try dynamic policy strategy
-        if self._use_dynamic_policy and self._policy_client is not None:
-            # Create dynamic policy validation strategy
-            val_strategy = DynamicPolicyValidationStrategy(policy_client=self._policy_client)
+            if proc_strategy.is_available():
+                logger.debug("Auto-selected dynamic policy processing strategy")
+                return proc_strategy
+
+        # Try OPA processing strategy (preferred for advanced governance)
+        if self._use_dynamic_policy and self._opa_client is not None:
+            # Create OPA validation strategy
+            val_strategy = OPAValidationStrategy(opa_client=self._opa_client)
             
-            # Create dynamic policy processing strategy with injected validation
-            proc_strategy = DynamicPolicyProcessingStrategy(
-                policy_client=self._policy_client,
+            # Create OPA processing strategy
+            proc_strategy = OPAProcessingStrategy(
+                opa_client=self._opa_client,
                 validation_strategy=val_strategy
             )
             
             if proc_strategy.is_available():
-                logger.debug("Auto-selected dynamic policy processing strategy")
+                logger.debug("Auto-selected OPA processing strategy")
                 return proc_strategy
 
         # Default to Python strategy
@@ -323,6 +359,10 @@ class MessageProcessor:
         handler execution. Updates processed/failed counts based on result.
         """
         result = await self._processing_strategy.process(message, self._handlers)
+
+        # Audit reporting (asynchronous fire-and-forget)
+        if self._audit_client:
+            asyncio.create_task(self._audit_client.report_validation(result))
 
         # Update counts based on result
         if result.is_valid:
@@ -633,6 +673,7 @@ class EnhancedAgentBus:
         use_kafka: bool = False,
         use_redis_registry: bool = False,
         kafka_bootstrap_servers: str = "localhost:9092",
+        audit_service_url: str = "http://localhost:8001",
         # Dependency injection parameters
         registry: Optional[AgentRegistry] = None,
         router: Optional[MessageRouter] = None,
@@ -680,13 +721,21 @@ class EnhancedAgentBus:
             
         self._router: MessageRouter = router or DirectMessageRouter()
         
-        # Set validator with preference: injected > dynamic policy > static hash
+        # Set validator with preference: injected > OPA > dynamic policy > static hash
         if validator:
             self._validator = validator
+        elif self._use_dynamic_policy and self._opa_client:
+            self._validator = OPAValidationStrategy(opa_client=self._opa_client)
         elif self._use_dynamic_policy and self._policy_client:
             self._validator = DynamicPolicyValidationStrategy(policy_client=self._policy_client)
         else:
             self._validator = StaticHashValidationStrategy(strict=True)
+
+        # Initialize Audit Client
+        if AUDIT_CLIENT_AVAILABLE:
+            self._audit_client = AuditClient(service_url=audit_service_url)
+        else:
+            self._audit_client = None
 
         # Legacy dict for backward compatibility (delegates to registry)
         self._agents: Dict[str, Dict[str, Any]] = {}
@@ -694,8 +743,10 @@ class EnhancedAgentBus:
         self._processor = processor or MessageProcessor(
             use_dynamic_policy=use_dynamic_policy,
             policy_fail_closed=policy_fail_closed,
-            processing_strategy=None # Autoselect will use logic inside
+            processing_strategy=None, # Autoselect will use logic inside
+            audit_client=self._audit_client
         )
+        self._opa_client = self._processor._opa_client
         self._running = False
 
         # Initialize Kafka bus if enabled
@@ -840,9 +891,15 @@ class EnhancedAgentBus:
 
         # Validate constitutional compliance using strategy
         is_valid, error = await self._validator.validate(message)
+        result = ValidationResult(is_valid=is_valid, errors=[error] if error else [])
+        
+        # Audit reporting (asynchronous fire-and-forget)
+        if self._audit_client:
+            asyncio.create_task(self._audit_client.report_validation(result))
+
         if not is_valid:
             self._metrics["messages_failed"] += 1
-            return ValidationResult(is_valid=False, errors=[error] if error else [])
+            return result
 
         # Check if recipient exists (warning only)
         if message.to_agent and message.to_agent not in self._agents:
@@ -851,7 +908,7 @@ class EnhancedAgentBus:
         self._metrics["messages_sent"] += 1
         await self._message_queue.put(message)
 
-        return ValidationResult(is_valid=True)
+        return result
 
     @staticmethod
     def _normalize_tenant_id(tenant_id: Optional[str]) -> Optional[str]:
