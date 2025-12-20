@@ -6,15 +6,21 @@ Default implementations of protocol interfaces for agent management.
 """
 
 import asyncio
+import logging
+import time
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 try:
-    from .interfaces import AgentRegistry, MessageRouter, ValidationStrategy
-    from .models import AgentMessage, CONSTITUTIONAL_HASH
+    from .interfaces import AgentRegistry, MessageRouter, ValidationStrategy, ProcessingStrategy
+    from .models import AgentMessage, MessageStatus, CONSTITUTIONAL_HASH
+    from .validators import ValidationResult
 except ImportError:
-    from interfaces import AgentRegistry, MessageRouter, ValidationStrategy  # type: ignore
-    from models import AgentMessage, CONSTITUTIONAL_HASH  # type: ignore
+    from interfaces import AgentRegistry, MessageRouter, ValidationStrategy, ProcessingStrategy  # type: ignore
+    from models import AgentMessage, MessageStatus, CONSTITUTIONAL_HASH  # type: ignore
+    from validators import ValidationResult  # type: ignore
+
+logger = logging.getLogger(__name__)
 
 
 class InMemoryAgentRegistry:
@@ -282,10 +288,344 @@ class CompositeValidationStrategy:
         return True, None
 
 
+class PythonProcessingStrategy:
+    """Python-based processing strategy with static hash validation.
+
+    Standard implementation that validates constitutional hash and executes handlers.
+    Constitutional Hash: cdd01ef066bc6cf2
+    """
+
+    def __init__(self, metrics_enabled: bool = False) -> None:
+        """Initialize Python processing strategy.
+
+        Args:
+            metrics_enabled: Whether to record Prometheus metrics
+        """
+        self._constitutional_hash = CONSTITUTIONAL_HASH
+        self._metrics_enabled = metrics_enabled
+
+    async def process(
+        self,
+        message: AgentMessage,
+        handlers: Dict[Any, List[Callable]]
+    ) -> ValidationResult:
+        """Process message with static constitutional hash validation."""
+        validation_start = time.perf_counter()
+
+        # Validate constitutional hash
+        if message.constitutional_hash != self._constitutional_hash:
+            message.status = MessageStatus.FAILED
+
+            if self._metrics_enabled:
+                self._record_validation_metrics(validation_start, success=False)
+
+            return ValidationResult(
+                is_valid=False,
+                errors=["Constitutional hash mismatch"],
+            )
+
+        if self._metrics_enabled:
+            self._record_validation_metrics(validation_start, success=True)
+
+        # Execute handlers
+        return await self._execute_handlers(message, handlers)
+
+    async def _execute_handlers(
+        self,
+        message: AgentMessage,
+        handlers: Dict[Any, List[Callable]]
+    ) -> ValidationResult:
+        """Execute registered handlers for the message."""
+        message.status = MessageStatus.PROCESSING
+        message.updated_at = datetime.now(timezone.utc)
+
+        try:
+            message_handlers = handlers.get(message.message_type, [])
+            for handler in message_handlers:
+                if asyncio.iscoroutinefunction(handler):
+                    await handler(message)
+                else:
+                    handler(message)
+
+            message.status = MessageStatus.DELIVERED
+            message.updated_at = datetime.now(timezone.utc)
+            return ValidationResult(is_valid=True)
+
+        except (TypeError, ValueError, AttributeError) as e:
+            message.status = MessageStatus.FAILED
+            logger.error(f"Handler error: {type(e).__name__}: {e}")
+            return ValidationResult(
+                is_valid=False,
+                errors=[f"Handler error: {type(e).__name__}: {e}"],
+            )
+        except RuntimeError as e:
+            message.status = MessageStatus.FAILED
+            logger.error(f"Runtime error in handler: {e}")
+            return ValidationResult(
+                is_valid=False,
+                errors=[f"Runtime error: {e}"],
+            )
+
+    def _record_validation_metrics(self, start_time: float, success: bool) -> None:
+        """Record validation metrics if enabled."""
+        try:
+            from shared.metrics import (
+                CONSTITUTIONAL_VALIDATION_DURATION,
+                CONSTITUTIONAL_VALIDATIONS_TOTAL,
+                CONSTITUTIONAL_VIOLATIONS_TOTAL,
+            )
+            validation_duration = time.perf_counter() - start_time
+            CONSTITUTIONAL_VALIDATION_DURATION.labels(
+                service='enhanced_agent_bus'
+            ).observe(validation_duration)
+
+            if success:
+                CONSTITUTIONAL_VALIDATIONS_TOTAL.labels(
+                    service='enhanced_agent_bus', result='success'
+                ).inc()
+            else:
+                CONSTITUTIONAL_VALIDATIONS_TOTAL.labels(
+                    service='enhanced_agent_bus', result='failure'
+                ).inc()
+                CONSTITUTIONAL_VIOLATIONS_TOTAL.labels(
+                    service='enhanced_agent_bus', violation_type='hash_mismatch'
+                ).inc()
+        except ImportError:
+            pass  # Metrics not available
+
+    def is_available(self) -> bool:
+        """Python strategy is always available."""
+        return True
+
+    def get_name(self) -> str:
+        """Get strategy name."""
+        return "python"
+
+
+class RustProcessingStrategy:
+    """Rust-based processing strategy for high performance.
+
+    Uses Rust backend for message processing when available.
+    Constitutional Hash: cdd01ef066bc6cf2
+
+    Note: The rust_processor and rust_bus must be provided by the caller
+    (typically MessageProcessor) to avoid circular imports. The Rust module
+    is imported at the core.py level, not here.
+    """
+
+    def __init__(
+        self,
+        rust_processor: Optional[Any] = None,
+        rust_bus: Optional[Any] = None
+    ) -> None:
+        """Initialize Rust processing strategy.
+
+        Args:
+            rust_processor: Pre-initialized Rust MessageProcessor instance
+            rust_bus: Rust bus module for message conversion
+        """
+        self._constitutional_hash = CONSTITUTIONAL_HASH
+        self._rust_processor = rust_processor
+        self._rust_bus = rust_bus
+
+        if self._rust_processor is not None:
+            logger.debug("Rust MessageProcessor provided to strategy")
+        else:
+            logger.debug("Rust processor not provided, strategy unavailable")
+
+    async def process(
+        self,
+        message: AgentMessage,
+        handlers: Dict[Any, List[Callable]]
+    ) -> ValidationResult:
+        """Process message using Rust backend."""
+        if not self.is_available():
+            return ValidationResult(
+                is_valid=False,
+                errors=["Rust backend not available"],
+            )
+
+        try:
+            # Convert Python message to Rust format
+            rust_message = self._convert_to_rust_message(message)
+
+            # Process with Rust
+            rust_result = await asyncio.to_thread(
+                self._rust_processor.process, rust_message
+            )
+
+            # Convert result back to Python
+            result = self._convert_from_rust_result(rust_result)
+
+            if result.is_valid:
+                # Run Python handlers (Rust doesn't support Python callbacks)
+                await self._run_handlers(message, handlers)
+                message.status = MessageStatus.DELIVERED
+            else:
+                message.status = MessageStatus.FAILED
+
+            return result
+
+        except Exception as e:
+            logger.error(f"Rust processing failed: {e}")
+            return ValidationResult(
+                is_valid=False,
+                errors=[f"Rust processing error: {e}"],
+            )
+
+    async def _run_handlers(
+        self,
+        message: AgentMessage,
+        handlers: Dict[Any, List[Callable]]
+    ) -> None:
+        """Run all registered handlers for the message type."""
+        message_handlers = handlers.get(message.message_type, [])
+        for handler in message_handlers:
+            if asyncio.iscoroutinefunction(handler):
+                await handler(message)
+            else:
+                handler(message)
+
+    def _convert_to_rust_message(self, message: AgentMessage) -> Any:
+        """Convert Python AgentMessage to Rust AgentMessage."""
+        rust_msg = self._rust_bus.AgentMessage()
+        rust_msg.message_id = message.message_id
+        rust_msg.conversation_id = message.conversation_id
+        rust_msg.content = {k: str(v) for k, v in message.content.items()}
+        rust_msg.payload = {k: str(v) for k, v in message.payload.items()}
+        rust_msg.from_agent = message.from_agent
+        rust_msg.to_agent = message.to_agent
+        rust_msg.sender_id = message.sender_id
+        rust_msg.message_type = message.message_type.name
+        rust_msg.tenant_id = message.tenant_id
+        rust_msg.priority = message.priority.name if hasattr(message.priority, "name") else str(message.priority)
+        rust_msg.status = message.status.name
+        rust_msg.constitutional_hash = message.constitutional_hash
+        rust_msg.constitutional_validated = message.constitutional_validated
+        rust_msg.created_at = message.created_at.isoformat()
+        rust_msg.updated_at = message.updated_at.isoformat()
+        return rust_msg
+
+    def _convert_from_rust_result(self, rust_result: Any) -> ValidationResult:
+        """Convert Rust ValidationResult to Python ValidationResult."""
+        return ValidationResult(
+            is_valid=rust_result.is_valid,
+            errors=list(rust_result.errors) if hasattr(rust_result, 'errors') else [],
+            warnings=list(rust_result.warnings) if hasattr(rust_result, 'warnings') else [],
+            metadata=dict(rust_result.metadata) if hasattr(rust_result, 'metadata') else {},
+            constitutional_hash=getattr(rust_result, 'constitutional_hash', self._constitutional_hash),
+        )
+
+    def is_available(self) -> bool:
+        """Check if Rust backend is available."""
+        return self._rust_processor is not None
+
+    def get_name(self) -> str:
+        """Get strategy name."""
+        return "rust"
+
+
+class DynamicPolicyProcessingStrategy:
+    """Dynamic policy-based processing strategy.
+
+    Uses policy registry for constitutional validation.
+    Constitutional Hash: cdd01ef066bc6cf2
+    """
+
+    def __init__(self, policy_client: Optional[Any] = None) -> None:
+        """Initialize dynamic policy processing strategy.
+
+        Args:
+            policy_client: Optional policy client instance
+        """
+        self._constitutional_hash = CONSTITUTIONAL_HASH
+        self._policy_client = policy_client
+
+        # Try to get policy client if not provided
+        if self._policy_client is None:
+            try:
+                from .policy_client import get_policy_client
+                self._policy_client = get_policy_client()
+            except ImportError:
+                logger.debug("Policy client not available")
+
+    async def process(
+        self,
+        message: AgentMessage,
+        handlers: Dict[Any, List[Callable]]
+    ) -> ValidationResult:
+        """Process message with dynamic policy validation."""
+        if not self.is_available():
+            return ValidationResult(
+                is_valid=False,
+                errors=["Policy client not available"],
+            )
+
+        try:
+            # Dynamic constitutional validation
+            validation_result = await self._policy_client.validate_message_signature(message)
+
+            if not validation_result.is_valid:
+                message.status = MessageStatus.FAILED
+                return validation_result
+
+            # Execute handlers
+            return await self._execute_handlers(message, handlers)
+
+        except Exception as e:
+            logger.error(f"Policy validation failed: {e}")
+            message.status = MessageStatus.FAILED
+            return ValidationResult(
+                is_valid=False,
+                errors=[f"Policy validation error: {e}"],
+            )
+
+    async def _execute_handlers(
+        self,
+        message: AgentMessage,
+        handlers: Dict[Any, List[Callable]]
+    ) -> ValidationResult:
+        """Execute registered handlers for the message."""
+        message.status = MessageStatus.PROCESSING
+        message.updated_at = datetime.now(timezone.utc)
+
+        try:
+            message_handlers = handlers.get(message.message_type, [])
+            for handler in message_handlers:
+                if asyncio.iscoroutinefunction(handler):
+                    await handler(message)
+                else:
+                    handler(message)
+
+            message.status = MessageStatus.DELIVERED
+            message.updated_at = datetime.now(timezone.utc)
+            return ValidationResult(is_valid=True)
+
+        except Exception as e:
+            message.status = MessageStatus.FAILED
+            logger.error(f"Handler error: {e}")
+            return ValidationResult(
+                is_valid=False,
+                errors=[f"Handler error: {e}"],
+            )
+
+    def is_available(self) -> bool:
+        """Check if policy client is available."""
+        return self._policy_client is not None
+
+    def get_name(self) -> str:
+        """Get strategy name."""
+        return "dynamic_policy"
+
+
 __all__ = [
     "InMemoryAgentRegistry",
     "DirectMessageRouter",
     "CapabilityBasedRouter",
     "ConstitutionalValidationStrategy",
     "CompositeValidationStrategy",
+    # Processing Strategies
+    "PythonProcessingStrategy",
+    "RustProcessingStrategy",
+    "DynamicPolicyProcessingStrategy",
 ]

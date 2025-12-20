@@ -35,8 +35,24 @@ _models = _load_module("_conftest_models", os.path.join(enhanced_agent_bus_dir, 
 _validators = _load_module("_conftest_validators", os.path.join(enhanced_agent_bus_dir, "validators.py"))
 
 # Patch sys.modules for dependent imports
+# Patch both absolute and package-relative import paths to ensure class identity
 sys.modules['models'] = _models
 sys.modules['validators'] = _validators
+sys.modules['enhanced_agent_bus.models'] = _models
+sys.modules['enhanced_agent_bus.validators'] = _validators
+
+# Load additional modules that tests might import
+_exceptions = _load_module("_conftest_exceptions", os.path.join(enhanced_agent_bus_dir, "exceptions.py"))
+_interfaces = _load_module("_conftest_interfaces", os.path.join(enhanced_agent_bus_dir, "interfaces.py"))
+_registry = _load_module("_conftest_registry", os.path.join(enhanced_agent_bus_dir, "registry.py"))
+
+# Patch all module names for consistent class identity
+sys.modules['exceptions'] = _exceptions
+sys.modules['interfaces'] = _interfaces
+sys.modules['registry'] = _registry
+sys.modules['enhanced_agent_bus.exceptions'] = _exceptions
+sys.modules['enhanced_agent_bus.interfaces'] = _interfaces
+sys.modules['enhanced_agent_bus.registry'] = _registry
 
 # Check if Rust implementation is available
 # Set TEST_WITH_RUST=1 environment variable to enable Rust testing
@@ -55,6 +71,10 @@ except ImportError:
     RUST_AVAILABLE = False
 
 _core = _load_module("_conftest_core", os.path.join(enhanced_agent_bus_dir, "core.py"))
+
+# Patch core module name for test imports
+sys.modules['core'] = _core
+sys.modules['enhanced_agent_bus.core'] = _core
 
 # Set Rust mode based on availability and configuration
 if not _test_with_rust:

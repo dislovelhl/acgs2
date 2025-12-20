@@ -1,0 +1,44 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: acgs2-gateway
+  namespace: istio-system
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+  - port:
+      number: 80
+      name: http
+      protocol: HTTP
+    hosts:
+    - "api.acgs2.io"
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: agent-bus-service
+  namespace: acgs2
+spec:
+  hosts:
+  - "api.acgs2.io"
+  gateways:
+  - acgs2-gateway
+  http:
+  - match:
+    - uri:
+        prefix: /api/v2/bus
+    route:
+    - destination:
+        host: agent-bus-service
+        port:
+          number: 8000
+---
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: default
+  namespace: acgs2
+spec:
+  mtls:
+    mode: STRICT

@@ -78,11 +78,14 @@ try:
         ConstitutionalHashMismatchError,
         MessageDeliveryError,
     )
-    from .interfaces import AgentRegistry, MessageRouter, ValidationStrategy
+    from .interfaces import AgentRegistry, MessageRouter, ValidationStrategy, ProcessingStrategy
     from .registry import (
         InMemoryAgentRegistry,
         DirectMessageRouter,
         ConstitutionalValidationStrategy,
+        PythonProcessingStrategy,
+        RustProcessingStrategy,
+        DynamicPolicyProcessingStrategy,
     )
 except ImportError:
     # Fallback for direct execution or testing
@@ -102,11 +105,14 @@ except ImportError:
         ConstitutionalHashMismatchError,
         MessageDeliveryError,
     )
-    from interfaces import AgentRegistry, MessageRouter, ValidationStrategy  # type: ignore
+    from interfaces import AgentRegistry, MessageRouter, ValidationStrategy, ProcessingStrategy  # type: ignore
     from registry import (  # type: ignore
         InMemoryAgentRegistry,
         DirectMessageRouter,
         ConstitutionalValidationStrategy,
+        PythonProcessingStrategy,
+        RustProcessingStrategy,
+        DynamicPolicyProcessingStrategy,
     )
 
 # Import centralized Redis config with fallback
@@ -148,25 +154,35 @@ class MessageProcessor:
     policy validation via a policy registry, and a standard Python fallback with
     static hash validation.
 
+    Supports dependency injection of processing strategies for testability and
+    customization. If no strategy is provided, auto-selects based on configuration.
+
     Attributes:
         constitutional_hash (str): The expected constitutional hash for validation.
         processed_count (int): Total number of successfully processed messages.
         failed_count (int): Total number of failed processing attempts.
     """
 
-    def __init__(self, use_dynamic_policy: bool = False):
+    def __init__(
+        self,
+        use_dynamic_policy: bool = False,
+        # Dependency injection parameter
+        processing_strategy: Optional["ProcessingStrategy"] = None,
+    ):
         """Initializes the message processor.
 
         Args:
             use_dynamic_policy (bool): If True, use dynamic policy registry for validation
                 instead of static constitutional hash. Defaults to False.
+            processing_strategy (Optional[ProcessingStrategy]): Optional custom processing
+                strategy. If not provided, auto-selects based on configuration.
         """
         self._use_dynamic_policy = use_dynamic_policy and POLICY_CLIENT_AVAILABLE
         self._handlers: Dict[MessageType, List[Callable]] = {}
         self._processed_count = 0
         self._failed_count = 0
 
-        # Initialize Rust processor if available
+        # Initialize Rust processor if available (for backward compatibility)
         if USE_RUST and rust_bus is not None:
             try:
                 self._rust_processor = rust_bus.MessageProcessor()
@@ -177,13 +193,19 @@ class MessageProcessor:
         else:
             self._rust_processor = None
 
-        # Initialize policy client if using dynamic validation
+        # Initialize policy client if using dynamic validation (for backward compatibility)
         if self._use_dynamic_policy:
             self._policy_client = get_policy_client()
         else:
             self._policy_client = None
 
         self.constitutional_hash = CONSTITUTIONAL_HASH
+
+        # Dependency injection: use provided strategy or auto-select
+        if processing_strategy is not None:
+            self._processing_strategy = processing_strategy
+        else:
+            self._processing_strategy = self._auto_select_strategy()
 
     def register_handler(self, message_type: MessageType, handler: Callable) -> None:
         """Register a message handler for a specific message type."""
@@ -198,6 +220,39 @@ class MessageProcessor:
             self._handlers[message_type].remove(handler)
             return True
         return False
+
+    def _auto_select_strategy(self) -> "ProcessingStrategy":
+        """Auto-select the appropriate processing strategy based on configuration.
+
+        Selection order:
+        1. Rust strategy if Rust backend is available and not using dynamic policy
+        2. Dynamic policy strategy if using dynamic policy and policy client available
+        3. Python strategy as default fallback
+
+        Returns:
+            ProcessingStrategy: The selected strategy instance
+        """
+        # Try Rust strategy first (highest performance)
+        if self._rust_processor is not None and not self._use_dynamic_policy:
+            # Pass Rust components to avoid circular import in strategy
+            rust_strategy = RustProcessingStrategy(
+                rust_processor=self._rust_processor,
+                rust_bus=rust_bus
+            )
+            if rust_strategy.is_available():
+                logger.debug("Auto-selected Rust processing strategy")
+                return rust_strategy
+
+        # Try dynamic policy strategy
+        if self._use_dynamic_policy and self._policy_client is not None:
+            policy_strategy = DynamicPolicyProcessingStrategy(self._policy_client)
+            if policy_strategy.is_available():
+                logger.debug("Auto-selected dynamic policy processing strategy")
+                return policy_strategy
+
+        # Default to Python strategy
+        logger.debug("Auto-selected Python processing strategy")
+        return PythonProcessingStrategy(metrics_enabled=METRICS_ENABLED)
 
     async def process(self, message: AgentMessage) -> ValidationResult:
         """
@@ -236,14 +291,20 @@ class MessageProcessor:
             return await self._do_process(message)
 
     async def _do_process(self, message: AgentMessage) -> ValidationResult:
-        """Internal processing logic."""
-        # Route to appropriate implementation
-        if self._rust_processor is not None and not self._use_dynamic_policy:
-            return await self._process_rust(message)
-        elif self._use_dynamic_policy and self._policy_client is not None:
-            return await self._process_with_policy(message)
+        """Internal processing logic using strategy pattern.
+
+        Delegates to the configured processing strategy for validation and
+        handler execution. Updates processed/failed counts based on result.
+        """
+        result = await self._processing_strategy.process(message, self._handlers)
+
+        # Update counts based on result
+        if result.is_valid:
+            self._processed_count += 1
         else:
-            return await self._process_python(message)
+            self._failed_count += 1
+
+        return result
 
     def _log_decision(self, message: AgentMessage, result: ValidationResult, span: Any) -> None:
         """Log structured decision for compliance."""
@@ -504,7 +565,13 @@ class MessageProcessor:
             "handler_count": sum(len(h) for h in self._handlers.values()),
             "rust_enabled": self._rust_processor is not None,
             "dynamic_policy_enabled": self._use_dynamic_policy,
+            "processing_strategy": self._processing_strategy.get_name(),
         }
+
+    @property
+    def processing_strategy(self) -> "ProcessingStrategy":
+        """Get the processing strategy (DI component)."""
+        return self._processing_strategy
 
 
 class EnhancedAgentBus:
@@ -953,10 +1020,15 @@ __all__ = [
     "AgentRegistry",
     "MessageRouter",
     "ValidationStrategy",
+    "ProcessingStrategy",
     # Default Implementations (DI)
     "InMemoryAgentRegistry",
     "DirectMessageRouter",
     "ConstitutionalValidationStrategy",
+    # Processing Strategies (DI)
+    "PythonProcessingStrategy",
+    "RustProcessingStrategy",
+    "DynamicPolicyProcessingStrategy",
     # Functions
     "get_agent_bus",
     "reset_agent_bus",

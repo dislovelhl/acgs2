@@ -6,7 +6,7 @@ Abstract protocol definitions for dependency injection support.
 These protocols enable loose coupling and testability.
 """
 
-from typing import Any, Dict, List, Optional, Protocol, runtime_checkable
+from typing import Any, Callable, Dict, List, Optional, Protocol, runtime_checkable
 
 try:
     from .models import AgentMessage
@@ -165,6 +165,48 @@ class ValidationStrategy(Protocol):
 
 
 @runtime_checkable
+class ProcessingStrategy(Protocol):
+    """Protocol for message processing strategies.
+
+    Implementations define how messages are validated and processed.
+    Each strategy handles a different processing mode (Rust, Dynamic Policy, Python).
+    Constitutional Hash: cdd01ef066bc6cf2
+    """
+
+    async def process(
+        self,
+        message: AgentMessage,
+        handlers: Dict[Any, List[Any]]
+    ) -> Any:  # Returns ValidationResult
+        """Process a message through validation and handlers.
+
+        Args:
+            message: The message to process
+            handlers: Dict mapping message types to handler lists
+
+        Returns:
+            ValidationResult indicating success/failure with details
+        """
+        ...
+
+    def is_available(self) -> bool:
+        """Check if this strategy is available for use.
+
+        Returns:
+            True if the strategy can be used (e.g., Rust backend loaded)
+        """
+        ...
+
+    def get_name(self) -> str:
+        """Get the strategy name for logging/metrics.
+
+        Returns:
+            Strategy identifier string
+        """
+        ...
+
+
+@runtime_checkable
 class MessageHandler(Protocol):
     """Protocol for message handlers.
 
@@ -250,6 +292,7 @@ __all__ = [
     "AgentRegistry",
     "MessageRouter",
     "ValidationStrategy",
+    "ProcessingStrategy",
     "MessageHandler",
     "MetricsCollector",
 ]
