@@ -1,9 +1,10 @@
 # ACGS-2 Project Index
 
-> Constitutional Hash: `cdd01ef066bc6cf2`
-> Version: 2.1.0
-> Last Updated: 2025-12-17
-> Purpose: Efficient context loading for AI assistants
+> **Constitutional Hash**: `cdd01ef066bc6cf2`
+> **Version**: 2.1.0
+> **Purpose**: Efficient context loading for AI assistants
+> **Last Updated**: 2025-12-20
+> **Language**: EN
 
 ## Quick Reference
 
@@ -89,13 +90,13 @@ cd enhanced_agent_bus
 python3 -m pytest tests/ -v
 ```
 
-## Recent Changes (2025-12-17)
+## Recent Changes (2025-12-20)
 
-- `README.md` - NEW: Project overview and quick start.
-- `AGENTS.md` - Updated: Added exception handling details.
-- `CLAUDE.md` - Updated: Latest commands and structure.
-- `enhanced_agent_bus/exceptions.py` - NEW: 22 exception types.
-- `enhanced_agent_bus/deliberation_layer/opa_guard_models.py` - NEW: Data models.
+- `README.md` & `README.en.md`: Standardized headers and synchronized bilingual content.
+- `deployment_guide.md`: Consolidated into a unified entry point for production guides.
+- `docs/api_reference.md`: Added Audit Service and Audit Client API details.
+- `docs/DEPLOYMENT_GUIDE_CN.md`: NEW: Chinese version of the enterprise deployment guide.
+- `PROJECT_INDEX.md`: Updated with recent documentation systemic improvements.
 
 ---
 *Index generated for token-efficient context loading.*

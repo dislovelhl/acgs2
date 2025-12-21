@@ -1,9 +1,10 @@
 # ACGS-2 Architecture Audit and Analysis
 
-## 1. Project Overview
-ACGS-2 (Advanced Constitutional Governance System 2) 是一个增强型代理总线平台，具有宪法合规性、高性能消息传递、多租户隔离和 AI 驱动的高风险决策审议功能。
-
-**宪法哈希 (Constitutional Hash)**: `cdd01ef066bc6cf2`
+> **Constitutional Hash**: `cdd01ef066bc6cf2`
+> **Version**: 2.1.0
+> **Status**: Stable
+> **Last Updated**: 2025-12-20
+> **Language**: CN
 
 ## 2. Directory Structure Analysis
 项目采用模块化架构，主要组件如下：
@@ -48,10 +49,12 @@ graph TD
     Bus --> Redis[(Redis Queue)]
     Bus --> Kafka[(Kafka Bus)]
     
-    Processor --> Audit[Audit Service]
+    Processor --> AuditClient[Audit Client]
+    AuditClient --> Audit[Audit Service]
     Audit --> Blockchain[Blockchain/Merkle Tree]
     
     Processor --> Policy[Policy Registry]
+    Policy --> AuditClient
 ```
 
 ## 5. Functional Overview
@@ -64,7 +67,7 @@ graph TD
     - 如果分数 >= 0.8，进入审议队列。
     - `OPAGuard` 检查是否需要多方签名或专家审查。
     - 收集签名/审查意见。
-6. **审计记录**: 所有验证结果和决策通过 `AuditService` 记录到不可篡改的账本中。
+6. **审计记录**: 所有验证结果、决策和策略变更均通过 `AuditClient` 上报给 `AuditService`，记录到不可篡改的账本中。
 7. **消息交付**: 验证通过后，消息交付给目标代理。
 
 ## 6. Key Technologies and Frameworks
@@ -83,3 +86,10 @@ graph TD
 - **自适应学习**: 审议层能够根据历史反馈自动调整路由阈值。
 - **高性能设计**: Rust 后端在处理大规模消息时比 Python 快 10-100 倍。
 - **合规性对齐**: 系统设计参考了 EU AI Act 和 NIST RMF 标准。
+
+---
+### 🔗 Related Documentation
+- [Project Index](../PROJECT_INDEX.md)
+- [API Reference](./api_reference.md)
+- [Summary Index](./SUMMARY.md)
+- [Deployment Portal](../deployment_guide.md)

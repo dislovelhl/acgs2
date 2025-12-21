@@ -1,4 +1,10 @@
-# ![ACGS-2](docs/images/logo.png)
+# ACGS-2
+
+> **Constitutional Hash**: `cdd01ef066bc6cf2`
+> **Version**: 2.1.0
+> **Status**: Stable
+> **Last Updated**: 2025-12-20
+> **Language**: EN
 
 [![Tests](https://img.shields.io/badge/tests-passing-brightgreen?style=flat-square)](https://github.com/ACGS-Project/ACGS-2/actions/workflows/tests.yml)
 [![Coverage](https://img.shields.io/badge/coverage-80%25-brightgreen?style=flat-square)](https://github.com/ACGS-Project/ACGS-2/actions/workflows/coverage.yml)
@@ -8,8 +14,6 @@
 # ACGS-2: Advanced Constitutional Governance System
 
 ACGS-2 is a multi-agent bus platform engineered for high-security, high-compliance environments. It seamlessly fuses **Constitutional AI**, **Extreme Performance (Rust)**, and **Decentralized Auditability (Blockchain)**.
-
-**Constitutional Hash (Mandatory)**: `cdd01ef066bc6cf2`
 
 [中文文档](README.md) | [API Documentation](docs/api_reference.md) | [Architecture Guide](docs/architecture_diagram.md)
 
@@ -85,6 +89,13 @@ kubectl apply -f k8s/blue-green-deployment.yml
 - **Infrastructure**: Kubernetes (Istio Service Mesh), Redis, Kafka
 - **Security**: OPA (Open Policy Agent), ZKP (Zero Knowledge Proof)
 - **Storage**: Solana (Main Audit Chain), PostgreSQL (Metadata)
+
+---
+
+## 🔐 Policy Failure Behavior
+
+- **OPA Client**: When `fail_closed=True`, OPA evaluation failure will reject requests; set to `False` to fail-open.
+- **Policy Registry**: `PolicyRegistryClient.fail_closed=False` by default allows messages through and logs warnings; can be switched to fail-closed in the core bus via `policy_fail_closed`.
 
 ---
 

@@ -1,4 +1,10 @@
-# ![ACGS-2](docs/images/logo.png)
+# ACGS-2
+
+> **Constitutional Hash**: `cdd01ef066bc6cf2`
+> **Version**: 2.1.0
+> **Status**: Stable
+> **Last Updated**: 2025-12-20
+> **Language**: CN
 
 [![Tests](https://img.shields.io/badge/tests-passing-brightgreen?style=flat-square)](https://github.com/ACGS-Project/ACGS-2/actions/workflows/tests.yml)
 [![Coverage](https://img.shields.io/badge/coverage-80%25-brightgreen?style=flat-square)](https://github.com/ACGS-Project/ACGS-2/actions/workflows/coverage.yml)
@@ -8,8 +14,6 @@
 # ACGS-2: 高级宪法治理系统 (Autonomous Constitutional Governance System)
 
 ACGS-2 是一个专为高安全性、高合规性环境打造的多代理总线系统。它将**人工智能治理 (Constitutional AI)**、**极致性能 (Rust)** 与 **去中心化审计 (Blockchain)** 完美融合。
-
-**宪法哈希 (Mandatory)**: `cdd01ef066bc6cf2`
 
 [English README](README.en.md) | [API 文档](docs/api_reference.md) | [架构设计](docs/architecture_diagram.md)
 
@@ -118,3 +122,10 @@ ACGS-2 经过深度优化以支持大规模代理协作：
 如有问题或建议，请提交 [Issue](https://github.com/ACGS-Project/ACGS-2/issues) 或加入我们的 [Discord](https://discord.gg/acgs-governance)。
 
 **MIT License** - Copyright (c) 2025 ACGS Project
+
+---
+### 🔗 Related Documentation
+- [Project Index](PROJECT_INDEX.md)
+- [Architecture Audit](docs/architecture_audit.md)
+- [API Reference](docs/api_reference.md)
+- [Deployment Portal](deployment_guide.md)

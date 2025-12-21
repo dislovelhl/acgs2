@@ -63,6 +63,14 @@ if HAS_PYDANTIC_SETTINGS:
         url: str = Field("http://localhost:8001", validation_alias="AUDIT_SERVICE_URL")
 
 
+    class BundleSettings(BaseSettings):
+        """Policy Bundle settings."""
+        registry_url: str = Field("http://localhost:5000", validation_alias="BUNDLE_REGISTRY_URL")
+        storage_path: str = Field("./storage/bundles", validation_alias="BUNDLE_STORAGE_PATH")
+        s3_bucket: Optional[str] = Field(None, validation_alias="BUNDLE_S3_BUCKET")
+        github_webhook_secret: Optional[SecretStr] = Field(None, validation_alias="GITHUB_WEBHOOK_SECRET")
+
+
     class Settings(BaseSettings):
         """Global Application Settings."""
         model_config = SettingsConfigDict(
@@ -80,6 +88,7 @@ if HAS_PYDANTIC_SETTINGS:
         security: SecuritySettings = SecuritySettings()
         opa: OPASettings = OPASettings()
         audit: AuditSettings = AuditSettings()
+        bundle: BundleSettings = BundleSettings()
 else:
     # Fallback to pure os.getenv for environment mapping
     from dataclasses import dataclass, field
@@ -124,6 +133,13 @@ else:
         url: str = field(default_factory=lambda: os.getenv("AUDIT_SERVICE_URL", "http://localhost:8001"))
 
     @dataclass
+    class BundleSettings:
+        registry_url: str = field(default_factory=lambda: os.getenv("BUNDLE_REGISTRY_URL", "http://localhost:5000"))
+        storage_path: str = field(default_factory=lambda: os.getenv("BUNDLE_STORAGE_PATH", "./storage/bundles"))
+        s3_bucket: Optional[str] = field(default_factory=lambda: os.getenv("BUNDLE_S3_BUCKET"))
+        github_webhook_secret: Optional[SecretStr] = field(default_factory=lambda: SecretStr(os.getenv("GITHUB_WEBHOOK_SECRET", "")) if os.getenv("GITHUB_WEBHOOK_SECRET") else None)
+
+    @dataclass
     class Settings:
         env: str = field(default_factory=lambda: os.getenv("APP_ENV", "development"))
         debug: bool = field(default_factory=lambda: os.getenv("APP_DEBUG", "false").lower() == "true")
@@ -134,6 +150,7 @@ else:
         security: SecuritySettings = field(default_factory=SecuritySettings)
         opa: OPASettings = field(default_factory=OPASettings)
         audit: AuditSettings = field(default_factory=AuditSettings)
+        bundle: BundleSettings = field(default_factory=BundleSettings)
 
 
 # Global settings instance

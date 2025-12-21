@@ -1,0 +1,89 @@
+"""
+Bundles API endpoints
+"""
+
+import hashlib
+from typing import Dict, Any, List, Optional
+from fastapi import APIRouter, HTTPException, Depends, Query, UploadFile, File
+
+from ...models import Bundle, BundleStatus
+from ...services import PolicyService, StorageService
+from .auth import get_current_user, check_role
+
+router = APIRouter()
+
+def get_storage_service() -> StorageService:
+    return StorageService()
+
+@router.get("/", response_model=List[Bundle])
+async def list_bundles(
+    status: Optional[BundleStatus] = Query(None),
+    policy_service: PolicyService = Depends(),
+    storage_service: StorageService = Depends(get_storage_service)
+):
+    """List policy bundles (tenant-scoped)"""
+    # ... mock for now ...
+    return []
+
+@router.post("/", response_model=Bundle)
+async def upload_bundle(
+    file: UploadFile = File(...),
+    policy_service: PolicyService = Depends(),
+    storage_service: StorageService = Depends(get_storage_service),
+    current_user: Dict[str, Any] = Depends(check_role(["tenant_admin", "system_admin"]))
+):
+    """Upload a new policy bundle"""
+    try:
+        content = await file.read()
+        digest = f"sha256:{hashlib.sha256(content).hexdigest()}"
+        
+        # Save to storage
+        storage_path = await storage_service.save_bundle(digest, content)
+        
+        # In production, we'd also store metadata in DB
+        bundle = Bundle(
+            id=digest,
+            version="v1.0.0", 
+            revision="upload",
+            constitutional_hash="cdd01ef066bc6cf2",
+            roots=["acgs/governance"],
+            signatures=[],
+            size=len(content),
+            digest=digest,
+            metadata={"storage_path": storage_path}
+        )
+        return bundle
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@router.get("/{bundle_id}", response_model=Bundle)
+async def get_bundle(
+    bundle_id: str,
+    policy_service: PolicyService = Depends(),
+    storage_service: StorageService = Depends(get_storage_service)
+):
+    """Get bundle by ID"""
+    content = await storage_service.get_bundle(bundle_id)
+    if not content:
+        raise HTTPException(status_code=404, detail="Bundle not found")
+        
+    # Return metadata (mocked for now, in prod you'd fetch from DB)
+    return Bundle(
+        id=bundle_id,
+        version="v1.0.0",
+        revision="fetch",
+        constitutional_hash="cdd01ef066bc6cf2",
+        roots=["acgs/governance"],
+        signatures=[],
+        size=len(content),
+        digest=bundle_id
+    )
+
+@router.get("/active", response_model=Bundle)
+async def get_active_bundle(
+    tenant_id: str = Query(...),
+    policy_service: PolicyService = Depends()
+):
+    """Get the currently active bundle for a tenant"""
+    # This is crucial for EnhancedAgentBus to pull the latest policies
+    raise HTTPException(status_code=404, detail="No active bundle for tenant")

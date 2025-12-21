@@ -6,6 +6,7 @@ from .policy import Policy, PolicyStatus
 from .policy_version import PolicyVersion, VersionStatus, ABTestGroup
 from .policy_signature import PolicySignature
 from .key_pair import KeyPair
+from .bundle import Bundle, BundleStatus
 
 __all__ = [
     "Policy",
@@ -15,4 +16,6 @@ __all__ = [
     "ABTestGroup",
     "PolicySignature",
     "KeyPair",
+    "Bundle",
+    "BundleStatus",
 ]

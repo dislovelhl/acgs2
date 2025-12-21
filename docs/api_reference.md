@@ -1,12 +1,18 @@
 # ACGS-2 API Reference
 
+> **Constitutional Hash**: `cdd01ef066bc6cf2`
+> **Version**: 2.1.0
+> **Status**: Stable
+> **Last Updated**: 2025-12-20
+> **Language**: CN
+
 本文档提供了 ACGS-2 核心组件的详细 API 参考。
 
 ## 核心总线 (Enhanced Agent Bus)
 
 ### `EnhancedAgentBus` 类
 
-位于 [`enhanced_agent_bus/core.py`](enhanced_agent_bus/core.py)。
+位于 [`../enhanced_agent_bus/core.py`](../enhanced_agent_bus/core.py)。
 
 #### `__init__(self, redis_url: str = DEFAULT_REDIS_URL, use_dynamic_policy: bool = False, policy_fail_closed: bool = False, use_kafka: bool = False, kafka_bootstrap_servers: str = "localhost:9092")`
 初始化增强型代理总线。
@@ -52,7 +58,7 @@
 
 ### `OPAClient` 类
 
-位于 [`enhanced_agent_bus/opa_client.py`](enhanced_agent_bus/opa_client.py)。
+位于 [`../enhanced_agent_bus/opa_client.py`](../enhanced_agent_bus/opa_client.py)。
 
 #### `__init__(self, opa_url: str = "http://localhost:8181", mode: str = "http", timeout: float = 5.0, cache_ttl: int = 300, enable_cache: bool = True, redis_url: str = None, fail_closed: bool = True)`
 初始化 OPA 客户端。
@@ -64,7 +70,7 @@
 
 ### `PolicyRegistryClient` 类
 
-位于 [`enhanced_agent_bus/policy_client.py`](enhanced_agent_bus/policy_client.py)。
+位于 [`../enhanced_agent_bus/policy_client.py`](../enhanced_agent_bus/policy_client.py)。
 
 #### `__init__(self, registry_url: str = None, api_key: str = None, timeout: float = 5.0, cache_ttl: int = 300, fail_closed: bool = False)`
 初始化策略注册表客户端。
@@ -76,7 +82,7 @@
 
 ### `ImpactScorer` 类
 
-位于 [`enhanced_agent_bus/deliberation_layer/impact_scorer.py`](enhanced_agent_bus/deliberation_layer/impact_scorer.py)。
+位于 [`../enhanced_agent_bus/deliberation_layer/impact_scorer.py`](../enhanced_agent_bus/deliberation_layer/impact_scorer.py)。
 
 #### `calculate_impact_score(self, message_content: Dict[str, Any], context: Optional[Dict[str, Any]] = None) -> float`
 计算消息的影响分数 (0.0 - 1.0)。
@@ -84,7 +90,7 @@
 
 ### `AdaptiveRouter` 类
 
-位于 [`enhanced_agent_bus/deliberation_layer/adaptive_router.py`](enhanced_agent_bus/deliberation_layer/adaptive_router.py)。
+位于 [`../enhanced_agent_bus/deliberation_layer/adaptive_router.py`](../enhanced_agent_bus/deliberation_layer/adaptive_router.py)。
 
 #### `async route_message(self, message: AgentMessage, context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]`
 根据影响分数路由消息。
@@ -96,14 +102,38 @@
 
 ---
 
+## 审计服务 (Audit Service)
+
+### `AuditClient` 类
+
+位于 [`../enhanced_agent_bus/audit_client.py`](../enhanced_agent_bus/audit_client.py)。
+
+#### `__init__(self, audit_url: str = "http://localhost:8084", timeout: float = 2.0)`
+初始化审计客户端。
+
+#### `async log_validation(self, message_id: str, result: ValidationResult) -> bool`
+将宪法验证结果记录到不可篡改的账本中。
+
+#### `async log_policy_change(self, policy_id: str, change_type: str, details: Dict[str, Any]) -> bool`
+记录策略变更信息。
+
+---
+
 ## 数据模型 (Models)
 
 ### `AgentMessage`
 
-位于 [`enhanced_agent_bus/models.py`](enhanced_agent_bus/models.py)。
+位于 [`../enhanced_agent_bus/models.py`](../enhanced_agent_bus/models.py)。
 
 - `message_id`: 唯一标识。
 - `constitutional_hash`: 宪法哈希 (必须匹配 `cdd01ef066bc6cf2`)。
 - `tenant_id`: 租户 ID。
 - `impact_score`: 影响分数 (由系统自动填充或手动指定)。
 - `security_context`: 包含策略版本等安全元数据。
+
+---
+### 🔗 Related Documentation
+- [Project Index](../PROJECT_INDEX.md)
+- [Architecture Audit](./architecture_audit.md)
+- [Summary Index](./SUMMARY.md)
+- [Deployment Portal](../deployment_guide.md)

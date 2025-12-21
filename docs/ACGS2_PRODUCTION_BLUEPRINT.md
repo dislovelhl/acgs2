@@ -65,7 +65,7 @@ graph TD
     - **签名**: 使用 Ed25519 对策略包进行加密签名。
     - **影子模式**: 在生产环境并行运行新旧策略，对比决策差异。
 - **回滚机制**: 自动回滚至“最后已知良好版本 (LKG)”。
-- **参考文档**: [`docs/governance_lifecycle.md`](docs/governance_lifecycle.md)
+- **参考文档**: [`docs/governance_lifecycle.md`](./governance_lifecycle.md)
 
 ### Pillar 3 & 4: 自适应运行时护栏与事件驱动编排
 - **影响评分 (Impact Scoring)**: 结合语义、权限、流量和上下文四个维度进行实时评分。
@@ -74,14 +74,14 @@ graph TD
     - **审议路径**: 细粒度 OPA 检查 + HITL。
 - **Kafka 事件总线**: 采用 `acgs.tenant.{tenant_id}.{event_type}` 命名规范，确保租户隔离。
 - **编排模式**: 支持“编排者-工作者”、“分层模式”和“黑板模式”。
-- **参考文档**: [`docs/design/pillar3_pillar4_design.md`](docs/design/pillar3_pillar4_design.md)
+- **参考文档**: [`docs/design/pillar3_pillar4_design.md`](./design/pillar3_pillar4_design.md)
 
 ### Pillar 5 & 6: 企业级可观测性与多租户安全
 - **全栈可观测性**: 集成 OpenTelemetry，捕获 Traces、Metrics 和 Logs。
 - **合规报告**: 自动生成符合 EU AI Act (Art. 12) 和 NIST RMF (AU-2) 要求的结构化决策日志。
 - **联邦身份体系**: 使用 SPIFFE ID 和 JWT (SVID) 为每个智能体分配唯一身份。
 - **零信任架构**: 强制执行 RBAC（System Admin, Tenant Admin, Agent Operator）。
-- **参考文档**: [`docs/design/pillar5_pillar6_design.md`](docs/design/pillar5_pillar6_design.md)
+- **参考文档**: [`docs/design/pillar5_pillar6_design.md`](./design/pillar5_pillar6_design.md)
 
 ---
 
@@ -128,7 +128,7 @@ ACGS-2 专为 Agentic AI 设计，通过以下机制降低自主性带来的风�
 ### 6.3 生态集成
 - **DevSecOps**: 将 ACGS-2 验证集成至 GitLab/GitHub CI/CD。
 - **SIEM**: 实时将治理指标推送到企业安全运营中心。
-- **参考文档**: [`docs/GTM_STRATEGY.md`](docs/GTM_STRATEGY.md)
+- **参考文档**: [`docs/GTM_STRATEGY.md`](./GTM_STRATEGY.md)
 
 ---
 
