@@ -712,9 +712,14 @@ class RustProcessingStrategy:
             rust_message = self._convert_to_rust_message(message)
 
             # Process with Rust
-            rust_result = await asyncio.to_thread(
-                self._rust_processor.process, rust_message
-            )
+            # If the process method is async, we must await it directly.
+            # If it's sync, we use to_thread.
+            if asyncio.iscoroutinefunction(self._rust_processor.process):
+                rust_result = await self._rust_processor.process(rust_message)
+            else:
+                rust_result = await asyncio.to_thread(
+                    self._rust_processor.process, rust_message
+                )
 
             # Convert result back to Python
             result = self._convert_from_rust_result(rust_result)

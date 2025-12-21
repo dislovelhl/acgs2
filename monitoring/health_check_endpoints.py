@@ -65,7 +65,8 @@ class HealthChecker:
                             data = await response.json()
                             status = "healthy"
                             details = data
-                        except:
+                        except (ValueError, TypeError, aiohttp.ContentTypeError) as e:
+                            # JSON decode failed, but HTTP 200 means healthy
                             status = "healthy"
                             details = {"status": "ok"}
                     else:

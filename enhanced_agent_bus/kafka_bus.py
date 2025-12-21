@@ -43,7 +43,9 @@ class KafkaEventBus:
         self.producer = AIOKafkaProducer(
             bootstrap_servers=self.bootstrap_servers,
             client_id=self.client_id,
-            value_serializer=lambda v: json.dumps(v).encode('utf-8')
+            value_serializer=lambda v: json.dumps(v, default=str).encode('utf-8'),
+            acks="all", # Ensure durability for production
+            retry_backoff_ms=500
         )
         await self.producer.start()
         self._running = True
@@ -53,6 +55,7 @@ class KafkaEventBus:
         """Stop the Kafka producer and all consumers."""
         self._running = False
         if self.producer:
+            await self.producer.flush() # Ensure all messages are sent
             await self.producer.stop()
         for consumer in self._consumers.values():
             await consumer.stop()
@@ -77,15 +80,18 @@ class KafkaEventBus:
         key = message.conversation_id.encode('utf-8') if message.conversation_id else None
         
         try:
+            # Re-convert to dict ensuring all fields are present
+            msg_dict = message.to_dict_raw()
+            
             await self.producer.send_and_wait(
                 topic,
-                value=message.to_dict_raw(), # Assuming to_dict_raw exists or using to_dict
+                value=msg_dict,
                 key=key
             )
             logger.debug(f"Message {message.message_id} sent to topic {topic}")
             return True
         except Exception as e:
-            logger.error(f"Failed to send message to Kafka: {e}")
+            logger.error(f"Failed to send message to Kafka (topic={topic}): {e}")
             return False
 
     async def subscribe(self, tenant_id: str, message_types: List[MessageType], handler: Callable):

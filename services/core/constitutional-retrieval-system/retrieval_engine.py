@@ -288,7 +288,8 @@ class RetrievalEngine:
                 return 1.1
             else:
                 return 0.9
-        except:
+        except (ValueError, TypeError, AttributeError) as e:
+            # Date parsing failed, return neutral boost
             return 1.0
 
     def _calculate_authority_boost(self, payload: Dict[str, Any]) -> float:

@@ -6,6 +6,7 @@ Uses pydantic-settings for type-safe environment configuration.
 """
 
 import os
+from functools import lru_cache
 from typing import List, Optional
 from pydantic import Field, SecretStr
 
@@ -121,6 +122,7 @@ else:
         cors_origins: List[str] = field(default_factory=lambda: os.getenv("CORS_ORIGINS", "*").split(","))
         jwt_secret: Optional[SecretStr] = field(default_factory=lambda: SecretStr(os.getenv("JWT_SECRET", "")) if os.getenv("JWT_SECRET") else None)
         jwt_public_key: str = field(default_factory=lambda: os.getenv("JWT_PUBLIC_KEY", "SYSTEM_PUBLIC_KEY_PLACEHOLDER"))
+        jwt_private_key: Optional[SecretStr] = field(default_factory=lambda: SecretStr(os.getenv("JWT_PRIVATE_KEY", "")) if os.getenv("JWT_PRIVATE_KEY") else None)
 
     @dataclass
     class OPASettings:
@@ -156,6 +158,10 @@ else:
 # Global settings instance
 settings = Settings()
 
+@lru_cache()
 def get_settings() -> Settings:
-    """Returns the global settings instance."""
+    """Returns the global settings instance.
+
+    Uses lru_cache for consistency with FastAPI dependency injection patterns.
+    """
     return settings

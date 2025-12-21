@@ -75,7 +75,11 @@ _policy_ns = {
     'settings': _mock_settings,
 }
 
-# Execute in namespace
+# SECURITY: exec() used intentionally for test module loading
+# This is safe because:
+# 1. Source comes from a known file in the codebase (not user input)
+# 2. Only used in test environment
+# 3. Required for dynamic test fixture generation with mock dependencies
 exec(compile(_source, _policy_client_path, 'exec'), _policy_ns)
 
 # Extract classes/functions

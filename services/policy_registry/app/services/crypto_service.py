@@ -175,3 +175,66 @@ class CryptoService:
         # Verify fingerprint matches public key
         expected_fingerprint = CryptoService.generate_fingerprint(signature.public_key)
         return signature.key_fingerprint == expected_fingerprint
+
+    @staticmethod
+    def issue_agent_token(
+        agent_id: str,
+        tenant_id: str,
+        capabilities: List[str],
+        private_key_b64: str,
+        ttl_hours: int = 24
+    ) -> str:
+        """
+        Issue a SPIFFE-compatible SVID (JWT) for an agent using Ed25519.
+        """
+        # Load private key
+        private_bytes = base64.b64decode(private_key_b64)
+        # Handle both raw bytes and PEM if necessary, but here we assume raw from generate_keypair
+        private_key = ed25519.Ed25519PrivateKey.from_private_bytes(private_bytes)
+        
+        # SPIFFE format: spiffe://acgs2/tenant/{tenant_id}/agent/{agent_id}
+        sub = f"spiffe://acgs2/tenant/{tenant_id}/agent/{agent_id}"
+        
+        now = datetime.now(timezone.utc)
+        payload = {
+            "iss": "acgs2-identity-service",
+            "sub": sub,
+            "aud": ["acgs2-agent-bus", "acgs2-deliberation-layer"],
+            "iat": int(now.timestamp()),
+            "exp": int((now + timedelta(hours=ttl_hours)).timestamp()),
+            "agent_id": agent_id,
+            "tenant_id": tenant_id,
+            "capabilities": capabilities,
+            "constitutional_hash": "cdd01ef066bc6cf2"
+        }
+        
+        # Use EdDSA (Ed25519) algorithm
+        token = jwt.encode(payload, private_key, algorithm="EdDSA")
+        return token
+
+    @staticmethod
+    def verify_agent_token(
+        token: str,
+        public_key_b64: str
+    ) -> Dict[str, Any]:
+        """
+        Verify an agent token and return its payload.
+        """
+        # Load public key
+        public_bytes = base64.b64decode(public_key_b64)
+        public_key = ed25519.Ed25519PublicKey.from_public_bytes(public_bytes)
+        
+        try:
+            payload = jwt.decode(
+                token, 
+                public_key, 
+                algorithms=["EdDSA"],
+                audience=["acgs2-agent-bus", "acgs2-deliberation-layer"]
+            )
+            return payload
+        except jwt.ExpiredSignatureError:
+            raise ValueError("Token has expired")
+        except jwt.InvalidTokenError as e:
+            raise ValueError(f"Invalid token: {e}")
+        except Exception as e:
+            raise ValueError(f"Token verification failed: {e}")

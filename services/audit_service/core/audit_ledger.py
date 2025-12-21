@@ -8,6 +8,7 @@ from datetime import datetime, timezone
 from typing import List, Optional, Dict, Any, Tuple
 
 from .merkle_tree.merkle_tree import MerkleTree
+from .anchor_mock import BlockchainAnchor
 
 try:
     from shared.config import settings
@@ -76,6 +77,7 @@ class AuditLedger:
         self.batch_size = batch_size
         self.merkle_tree: Optional[MerkleTree] = None
         self.batch_counter = 0
+        self.anchor = BlockchainAnchor()
         
         # Persistence (Redis first, then File fallback)
         self.redis_client = None
@@ -205,6 +207,9 @@ class AuditLedger:
         
         # Persist to Redis
         await self._save_to_storage(batch_id, root_hash, batch_data)
+        
+        # Anchor to Blockchain
+        self.anchor.anchor_root(root_hash)
         
         return batch_id
 

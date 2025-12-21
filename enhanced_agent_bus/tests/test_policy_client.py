@@ -76,7 +76,11 @@ source = source.replace(
     "ValidationResult = None  # Will be patched"
 )
 
-# Execute modified source
+# SECURITY: exec() used intentionally for test module loading
+# This is safe because:
+# 1. Source comes from a known file in the codebase (not user input)
+# 2. Only used in test environment
+# 3. Required for dynamic test fixture generation
 exec(compile(source, _policy_client_path, 'exec'), globals())
 
 # Now patch the globals

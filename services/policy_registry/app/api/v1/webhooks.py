@@ -9,6 +9,7 @@ import tempfile
 import os
 import json
 from datetime import datetime, timezone
+from functools import lru_cache
 from typing import Dict, Any, Optional, List
 from fastapi import APIRouter, Request, HTTPException, Depends, Header, BackgroundTasks
 
@@ -23,10 +24,14 @@ logger = logging.getLogger(__name__)
 # In production, this must be securely loaded from Vault or KMS
 DUMMY_PRIVATE_KEY = "0" * 64 
 
+@lru_cache()
 def get_compiler_service() -> CompilerService:
+    """Get singleton CompilerService instance."""
     return CompilerService()
 
+@lru_cache()
 def get_storage_service() -> StorageService:
+    """Get singleton StorageService instance."""
     return StorageService()
 
 async def verify_github_signature(

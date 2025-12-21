@@ -107,6 +107,11 @@ class ImpactScorer:
         self._agent_request_rates: Dict[str, list] = {}
         self._rate_window_seconds = 60
 
+        # Behavioral context drift tracking
+        self._agent_impact_history: Dict[str, list] = {}
+        self._history_window = 20
+        self._drift_threshold = 0.3 # Deviation from mean to trigger anomaly
+
     def _get_embeddings(self, text: str) -> np.ndarray:
         """Retrieves embeddings for the input text.
 
@@ -184,6 +189,9 @@ class ImpactScorer:
         # 4. Context/History Score (Simplified)
         context_score = self._calculate_context_score(message_content, context)
 
+        # 4a. Behavioral Drift Score (Anomaly Detection)
+        drift_score = self._calculate_drift_score(agent_id, combined_baseline=context_score)
+
         # 5. Priority & Type Factors (Legacy)
         priority_factor = self._calculate_priority_factor(message_content, context)
         type_factor = self._calculate_type_factor(message_content, context)
@@ -193,11 +201,12 @@ class ImpactScorer:
         # Weighted combination
         # Semantic: 35%, Permission: 20%, Volume: 10%, Context: 10%, Priority: 20%, Type: 5%
         combined_score = (
-            (semantic_score * 0.35) +
+            (semantic_score * 0.30) +
             (permission_score * 0.20) +
             (volume_score * 0.10) +
             (context_score * 0.10) +
-            (priority_factor * 0.20) +
+            (drift_score * 0.15) +
+            (priority_factor * 0.10) +
             (type_factor * 0.05)
         )
 
@@ -281,6 +290,34 @@ class ImpactScorer:
             score += 0.4
             
         return min(1.0, score)
+
+    def _calculate_drift_score(self, agent_id: str, combined_baseline: float) -> float:
+        """
+        Detects behavioral drift by comparing current baseline score to historical mean.
+        Identifies deviations from established 'safety envelopes'.
+        """
+        if agent_id == 'unknown' or agent_id not in self._agent_impact_history:
+            if agent_id != 'unknown':
+                self._agent_impact_history[agent_id] = [combined_baseline]
+            return 0.0
+
+        history = self._agent_impact_history[agent_id]
+        mean_impact = sum(history) / len(history)
+
+        # Calculate deviation
+        deviation = abs(combined_baseline - mean_impact)
+
+        # Update history
+        history.append(combined_baseline)
+        if len(history) > self._history_window:
+            history.pop(0)
+
+        # Drift is high if deviation exceeds threshold
+        if deviation > self._drift_threshold:
+            logger.warning(f"Behavioral context drift detected for agent {agent_id}: deviation={deviation:.2f}")
+            return min(1.0, (deviation / self._drift_threshold) * 0.5)
+
+        return 0.0
 
     def _extract_text_content(self, message_content: Dict[str, Any]) -> str:
         """Extract textual content from message dictionary."""

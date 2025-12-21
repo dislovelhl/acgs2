@@ -376,7 +376,8 @@ if (require.main === module) {{
                     stack.pop()
 
             return len(stack) == 0
-        except:
+        except (KeyError, IndexError, TypeError) as e:
+            # Bracket matching failed
             return False
 
     def _update_stats(self, result: GenerationResult):

@@ -3,6 +3,7 @@ Bundles API endpoints
 """
 
 import hashlib
+from functools import lru_cache
 from typing import Dict, Any, List, Optional
 from fastapi import APIRouter, HTTPException, Depends, Query, UploadFile, File
 
@@ -12,7 +13,9 @@ from .auth import get_current_user, check_role
 
 router = APIRouter()
 
+@lru_cache()
 def get_storage_service() -> StorageService:
+    """Get singleton StorageService instance."""
     return StorageService()
 
 @router.get("/", response_model=List[Bundle])

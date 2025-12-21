@@ -11,8 +11,9 @@ import asyncio
 import json
 import logging
 import time
+import uuid
 from datetime import datetime, timezone
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Union
 
 # Import Prometheus metrics with fallback
 try:
@@ -41,6 +42,18 @@ try:
     DECISION_COUNTER = meter.create_counter(
         "acgs2.decisions.total",
         description="Total number of agent decisions",
+        unit="1"
+    )
+    
+    MESSAGE_LATENCY = meter.create_histogram(
+        "acgs2.message.latency",
+        description="Message processing latency",
+        unit="ms"
+    )
+    
+    QUEUE_DEPTH = meter.create_up_down_counter(
+        "acgs2.queue.depth",
+        description="Current message queue depth",
         unit="1"
     )
 except ImportError:
@@ -141,6 +154,35 @@ except ImportError:
     def get_policy_client(fail_closed: Optional[bool] = None):
         return None
 
+# Import Deliberation Layer
+try:
+    from .deliberation_layer.voting_service import VotingService, VotingStrategy
+    from .deliberation_layer.deliberation_queue import DeliberationQueue
+    DELIBERATION_AVAILABLE = True
+except ImportError:
+    DELIBERATION_AVAILABLE = False
+
+# Import Crypto Service for identity validation
+try:
+    from services.policy_registry.app.services.crypto_service import CryptoService
+    CRYPTO_AVAILABLE = True
+except ImportError:
+    try:
+        # Try relative import if in policy registry service
+        from ..services.crypto_service import CryptoService
+        CRYPTO_AVAILABLE = True
+    except ImportError:
+        CRYPTO_AVAILABLE = False
+        CryptoService = None # type: ignore
+
+# Import settings for security config
+try:
+    from shared.config import settings
+    CONFIG_AVAILABLE = True
+except ImportError:
+    CONFIG_AVAILABLE = False
+    settings = None
+
 # Import Audit Client
 try:
     from shared.audit_client import AuditClient
@@ -172,8 +214,19 @@ try:
 except ImportError:
     USE_RUST = False
     rust_bus = None
-    logger.info("Rust implementation not available, using Python implementation")
-
+try:
+    import re
+    PROMPT_INJECTION_PATTERNS = [
+        r"(?i)ignore (all )?previous instructions",
+        r"(?i)system prompt (leak|override)",
+        r"(?i)do anything now", # DAN
+        r"(?i)jailbreak",
+        r"(?i)persona (adoption|override)",
+        r"(?i)\(note to self: .*\)",
+        r"(?i)\[INST\].*\[/INST\]", # LLM instruction markers bypass
+    ]
+except ImportError:
+    PROMPT_INJECTION_PATTERNS = []
 
 class MessageProcessor:
     """Processes messages with constitutional validation.
@@ -199,6 +252,7 @@ class MessageProcessor:
         # Dependency injection parameter
         processing_strategy: Optional["ProcessingStrategy"] = None,
         audit_client: Optional[AuditClient] = None,
+        use_rust: bool = True
     ):
         """Initializes the message processor.
 
@@ -211,6 +265,7 @@ class MessageProcessor:
         """
         self._use_dynamic_policy = use_dynamic_policy and POLICY_CLIENT_AVAILABLE
         self._policy_fail_closed = policy_fail_closed
+        self._use_rust = use_rust
         self._handlers: Dict[MessageType, List[Callable]] = {}
         self._processed_count = 0
         self._failed_count = 0
@@ -272,7 +327,7 @@ class MessageProcessor:
             ProcessingStrategy: The selected processing strategy instance
         """
         # Try Rust strategy first (highest performance)
-        if self._rust_processor is not None and not self._use_dynamic_policy:
+        if self._rust_processor is not None and not self._use_dynamic_policy and getattr(self, '_use_rust', True):
             # Create Rust validation strategy
             val_strategy = RustValidationStrategy(rust_processor=self._rust_processor)
             
@@ -319,20 +374,28 @@ class MessageProcessor:
     async def process(self, message: AgentMessage) -> ValidationResult:
         """
         Process a message through validation and registered handlers.
-
-        Processing flow:
-        1. Validate constitutional compliance (static hash or dynamic policy)
-        2. Execute registered handlers for the message type
-        3. Update message status and metrics
         """
         if OTEL_ENABLED and tracer:
-            with tracer.start_as_current_span("process_message") as span:
-                span.set_attribute("agent.id", message.from_agent)
-                span.set_attribute("tenant.id", message.tenant_id)
-                span.set_attribute("message.type", message.message_type.value)
-                span.set_attribute("constitutional.hash", message.constitutional_hash)
-
+            with tracer.start_as_current_span(
+                "bus.process",
+                attributes={
+                    "agent.id": message.from_agent,
+                    "tenant.id": message.tenant_id or "default",
+                    "message.type": message.message_type.value,
+                    "message.priority": message.priority.value,
+                    "constitutional.hash": message.constitutional_hash
+                }
+            ) as span:
+                start_time = time.perf_counter()
+                
                 result = await self._do_process(message)
+                
+                # Record latency
+                latency_ms = (time.perf_counter() - start_time) * 1000
+                MESSAGE_LATENCY.record(latency_ms, {
+                    "tenant_id": message.tenant_id or "default",
+                    "message_type": message.message_type.value
+                })
 
                 span.set_attribute("decision.valid", result.is_valid)
                 if not result.is_valid:
@@ -340,7 +403,7 @@ class MessageProcessor:
                 
                 # Record decision metric
                 DECISION_COUNTER.add(1, {
-                    "tenant_id": message.tenant_id,
+                    "tenant_id": message.tenant_id or "default",
                     "decision": "ALLOW" if result.is_valid else "DENY",
                     "message_type": message.message_type.value
                 })
@@ -358,7 +421,30 @@ class MessageProcessor:
         Delegates to the configured processing strategy for validation and
         handler execution. Updates processed/failed counts based on result.
         """
+        # 1. Prompt Injection Detection (Pre-validation layer)
+        injection_result = self._detect_prompt_injection(message)
+        if injection_result:
+            logger.warning(f"Prompt injection detected for agent {message.from_agent}")
+            return injection_result
+
         result = await self._processing_strategy.process(message, self._handlers)
+
+        # 2. Impact Scoring (Phase 5: Deliberation Layer Integration)
+        if "impact_score" not in result.metadata:
+            try:
+                from .deliberation_layer.impact_scorer import get_impact_scorer
+                scorer = get_impact_scorer()
+                # Pass context for better scoring
+                context = {
+                    "agent_id": message.from_agent,
+                    "tenant_id": message.tenant_id,
+                    "priority": message.priority,
+                    "message_type": message.message_type
+                }
+                result.metadata["impact_score"] = scorer.calculate_impact_score(message.content, context)
+            except (ImportError, Exception) as e:
+                logger.warning(f"Failed to calculate impact score: {e}")
+                pass
 
         # Audit reporting (asynchronous fire-and-forget)
         if self._audit_client:
@@ -372,11 +458,25 @@ class MessageProcessor:
 
         return result
 
+    def _detect_prompt_injection(self, message: AgentMessage) -> Optional[ValidationResult]:
+        """Intercepts and neutralizes adversarial input patterns."""
+        
+        content = str(message.content) if message.content else ""
+        for pattern in PROMPT_INJECTION_PATTERNS:
+            if re.search(pattern, content):
+                return ValidationResult(
+                    is_valid=False,
+                    errors=[f"Prompt injection detected: Pattern mismatch '{pattern}'"],
+                    decision="DENY",
+                    constitutional_hash=self.constitutional_hash
+                )
+        return None
+
     def _log_decision(self, message: AgentMessage, result: ValidationResult, span: Any) -> None:
         """Log structured decision for compliance."""
-        span_context = span.get_span_context()
-        trace_id = format(span_context.trace_id, '032x') if span_context else "unknown"
-        span_id = format(span_context.span_id, '016x') if span_context else "unknown"
+        span_context = span.get_span_context() if span else None
+        trace_id = format(span_context.trace_id, '032x') if span_context and hasattr(span_context, 'trace_id') else "unknown"
+        span_id = format(span_context.span_id, '016x') if span_context and hasattr(span_context, 'span_id') else "unknown"
 
         decision_log = DecisionLog(
             trace_id=trace_id,
@@ -389,7 +489,15 @@ class MessageProcessor:
             compliance_tags=self._get_compliance_tags(message, result)
         )
         
-        # In a real implementation, this would go to an OTel Logger or a specialized audit service
+        # Log to OTel span
+        if span:
+            span.set_attribute("decision.risk_score", decision_log.risk_score)
+            span.set_attribute("decision.tags", ", ".join(decision_log.compliance_tags))
+
+        # Report to Audit Service (asynchronous fire-and-forget)
+        if self._audit_client:
+            asyncio.create_task(self._audit_client.report_decision(decision_log))
+            
         logger.info(f"DECISION_LOG: {json.dumps(decision_log.to_dict())}")
 
     def _get_compliance_tags(self, message: AgentMessage, result: ValidationResult) -> List[str]:
@@ -497,6 +605,14 @@ class MessageProcessor:
 
     async def _execute_handlers(self, message: AgentMessage) -> ValidationResult:
         """Execute registered handlers for the message."""
+        if OTEL_ENABLED and tracer:
+            with tracer.start_as_current_span("bus.execute_handlers") as span:
+                span.set_attribute("agent.id", message.from_agent)
+                return await self._do_execute_handlers(message)
+        else:
+            return await self._do_execute_handlers(message)
+
+    async def _do_execute_handlers(self, message: AgentMessage) -> ValidationResult:
         message.status = MessageStatus.PROCESSING
         message.updated_at = datetime.now(timezone.utc)
         processing_start = time.perf_counter()
@@ -533,14 +649,12 @@ class MessageProcessor:
             return ValidationResult(is_valid=True)
 
         except asyncio.CancelledError:
-            # Re-raise cancellation - must not be suppressed
             raise
-        except (TypeError, ValueError, AttributeError) as e:
+        except Exception as e:
             message.status = MessageStatus.FAILED
             self._failed_count += 1
             logger.error(f"Handler error: {type(e).__name__}: {e}")
 
-            # Record error metrics
             if METRICS_ENABLED:
                 processing_duration = time.perf_counter() - processing_start
                 MESSAGE_PROCESSING_DURATION.labels(
@@ -554,30 +668,31 @@ class MessageProcessor:
                 is_valid=False,
                 errors=[f"Handler error: {type(e).__name__}: {e}"],
             )
-        except RuntimeError as e:
-            message.status = MessageStatus.FAILED
-            self._failed_count += 1
-            logger.error(f"Runtime error in handler: {e}")
-
-            # Record error metrics
-            if METRICS_ENABLED:
-                processing_duration = time.perf_counter() - processing_start
-                MESSAGE_PROCESSING_DURATION.labels(
-                    message_type=msg_type, priority=priority
-                ).observe(processing_duration)
-                MESSAGES_TOTAL.labels(
-                    message_type=msg_type, priority=priority, status='error'
-                ).inc()
-
-            return ValidationResult(
-                is_valid=False,
-                errors=[f"Runtime error: {e}"],
-            )
 
     async def _run_handlers(self, message: AgentMessage) -> None:
         """Run all registered handlers for the message type."""
         handlers = self._handlers.get(message.message_type, [])
-        for handler in handlers:
+        if OTEL_ENABLED and tracer:
+            with tracer.start_as_current_span(
+                "bus.run_handlers",
+                attributes={"handler.count": len(handlers)}
+            ):
+                for handler in handlers:
+                    await self._invoke_handler(handler, message)
+        else:
+            for handler in handlers:
+                await self._invoke_handler(handler, message)
+
+    async def _invoke_handler(self, handler: Callable, message: AgentMessage) -> None:
+        """Invoke a single handler with OTel context."""
+        if OTEL_ENABLED and tracer:
+            handler_name = getattr(handler, "__name__", "anonymous")
+            with tracer.start_as_current_span(f"bus.handler.{handler_name}"):
+                if asyncio.iscoroutinefunction(handler):
+                    await handler(message)
+                else:
+                    handler(message)
+        else:
             if asyncio.iscoroutinefunction(handler):
                 await handler(message)
             else:
@@ -679,6 +794,7 @@ class EnhancedAgentBus:
         router: Optional[MessageRouter] = None,
         validator: Optional[ValidationStrategy] = None,
         processor: Optional["MessageProcessor"] = None,
+        use_rust: bool = True,
     ):
         """
         Initialize the Enhanced Agent Bus.
@@ -700,6 +816,7 @@ class EnhancedAgentBus:
         self._use_dynamic_policy = use_dynamic_policy and POLICY_CLIENT_AVAILABLE
         self._use_kafka = use_kafka
         self._policy_fail_closed = policy_fail_closed
+        self._use_rust = use_rust
 
         # Initialize policy client if using dynamic validation
         if self._use_dynamic_policy:
@@ -744,7 +861,8 @@ class EnhancedAgentBus:
             use_dynamic_policy=use_dynamic_policy,
             policy_fail_closed=policy_fail_closed,
             processing_strategy=None, # Autoselect will use logic inside
-            audit_client=self._audit_client
+            audit_client=self._audit_client,
+            use_rust=self._use_rust
         )
         self._opa_client = self._processor._opa_client
         self._running = False
@@ -761,12 +879,31 @@ class EnhancedAgentBus:
                 CircuitBreakerConfig(fail_max=3, reset_timeout=15)
             )
 
+        # Initialize Deliberation Layer
+        if DELIBERATION_AVAILABLE:
+            self._voting_service = VotingService()
+            self._deliberation_queue = DeliberationQueue()
+        else:
+            self._voting_service = None
+            self._deliberation_queue = None
+
+        self._kafka_consumer_task: Optional[asyncio.Task] = None
+
         self._metrics = {
             "messages_sent": 0,
             "messages_received": 0,
             "messages_failed": 0,
             "started_at": None,
         }
+
+    async def stop(self) -> None:
+        """Stop the agent bus and clean up resources."""
+        self._running = False
+        if self._kafka_bus:
+            await self._kafka_bus.stop()
+        if self._kafka_consumer_task:
+            self._kafka_consumer_task.cancel()
+        logger.info("Agent bus stopped")
 
     async def start(self) -> None:
         """Start the agent bus."""
@@ -776,6 +913,9 @@ class EnhancedAgentBus:
         # Start Kafka bus if enabled
         if self._kafka_bus:
             await self._kafka_bus.start()
+            # If this bus instance should also consume (acting as a hub/relay)
+            if self._use_kafka:
+                self._kafka_consumer_task = asyncio.create_task(self._poll_kafka_messages())
 
         # Initialize Prometheus service info
         if METRICS_ENABLED:
@@ -803,16 +943,16 @@ class EnhancedAgentBus:
         else:
             logger.info(f"EnhancedAgentBus started with hash: {self.constitutional_hash}")
 
-    async def stop(self) -> None:
-        """Stop the agent bus gracefully."""
-        self._running = False
-
-        # Close policy client if active
-        if self._policy_client is not None:
+        # Close Kafka consumer
+        if self._kafka_consumer_task:
+            self._kafka_consumer_task.cancel()
             try:
-                await self._policy_client.close()
-            except Exception as e:
-                logger.warning(f"Error closing policy client: {e}")
+                await self._kafka_consumer_task
+            except asyncio.CancelledError:
+                pass
+
+        if self._kafka_bus:
+            await self._kafka_bus.stop()
 
         logger.info("EnhancedAgentBus stopped")
 
@@ -822,6 +962,7 @@ class EnhancedAgentBus:
         agent_type: str = "default",
         capabilities: Optional[List[str]] = None,
         tenant_id: Optional[str] = None,
+        auth_token: Optional[str] = None,
     ) -> bool:
         """
         Register an agent with the bus.
@@ -835,8 +976,37 @@ class EnhancedAgentBus:
         Returns:
             True if registration successful
         """
-        # SECURITY: In production, this would verify the agent's JWT/SVID
-        # and extract the tenant_id from the token claims.
+        # SECURITY: Verify the agent's JWT/SVID identity
+        if auth_token and CRYPTO_AVAILABLE and CONFIG_AVAILABLE:
+            try:
+                public_key = settings.security.jwt_public_key if hasattr(settings.security, 'jwt_public_key') else CONSTITUTIONAL_HASH
+                payload = CryptoService.verify_agent_token(auth_token, public_key)
+                
+                # Extract and validate identity
+                token_agent_id = payload.get("agent_id")
+                token_tenant_id = payload.get("tenant_id")
+                
+                if token_agent_id != agent_id:
+                    logger.warning(f"Registration failed: agent_id mismatch ({agent_id} vs {token_agent_id})")
+                    return False
+                    
+                if tenant_id and token_tenant_id != tenant_id:
+                    logger.warning(f"Registration failed: tenant_id mismatch ({tenant_id} vs {token_tenant_id})")
+                    return False
+                
+                # Trust the token's claims
+                tenant_id = token_tenant_id
+                capabilities = payload.get("capabilities", capabilities)
+                logger.info(f"Agent identity verified via token for {agent_id}")
+            except Exception as e:
+                logger.error(f"Agent registration identity validation error: {e}")
+                return False
+        elif auth_token:
+            logger.warning("Auth token provided but CryptoService or Config not available")
+        elif self._use_dynamic_policy:
+            # Require identity in dynamic mode
+            logger.warning(f"Registration rejected: Auth token required for agent {agent_id} in dynamic mode")
+            return False
 
         constitutional_key = CONSTITUTIONAL_HASH
 
@@ -880,35 +1050,75 @@ class EnhancedAgentBus:
     async def send_message(self, message: AgentMessage) -> ValidationResult:
         """
         Send a message through the bus.
-
         Validates constitutional compliance before queuing.
         """
-        tenant_errors = self._validate_tenant_consistency(message)
-        if tenant_errors:
-            self._metrics["messages_failed"] += 1
-            message.status = MessageStatus.FAILED
-            return ValidationResult(is_valid=False, errors=tenant_errors)
+        if OTEL_ENABLED and tracer:
+            with tracer.start_as_current_span(
+                "bus.send_message",
+                attributes={
+                    "message.id": message.message_id,
+                    "agent.from": message.from_agent,
+                    "agent.to": message.to_agent,
+                    "tenant.id": message.tenant_id or "default"
+                }
+            ):
+                return await self._do_send_message(message)
+        else:
+            return await self._do_send_message(message)
 
-        # Validate constitutional compliance using strategy
-        is_valid, error = await self._validator.validate(message)
-        result = ValidationResult(is_valid=is_valid, errors=[error] if error else [])
+    async def _do_send_message(self, message: AgentMessage) -> ValidationResult:
+        if OTEL_ENABLED:
+            QUEUE_DEPTH.add(1, {"tenant_id": message.tenant_id or "default"})
         
-        # Audit reporting (asynchronous fire-and-forget)
-        if self._audit_client:
-            asyncio.create_task(self._audit_client.report_validation(result))
+        try:
+            # Multi-tenant isolation check
+            tenant_errors = self._validate_tenant_consistency(message)
+            if tenant_errors:
+                self._metrics["messages_failed"] += 1
+                message.status = MessageStatus.FAILED
+                return ValidationResult(is_valid=False, errors=tenant_errors)
 
-        if not is_valid:
-            self._metrics["messages_failed"] += 1
+            # Constitutional validation using processor
+            result = await self._processor.process(message)
+            
+            # Audit reporting (asynchronous fire-and-forget)
+            if self._audit_client:
+                asyncio.create_task(self._audit_client.report_validation(result))
+
+            # 1. Deliberation Logic (Impact Scoring)
+            # HIGH-IMPACT messages are diverted to deliberation REGARDLESS of basic validation
+            # (unless it's a catastrophic failure that shouldn't even be deliberated)
+            if self._deliberation_queue and result.metadata.get("impact_score", 0.0) >= 0.8:
+                logger.info(f"Message {message.message_id} diverted to deliberation (Score: {result.metadata['impact_score']})")
+                await self._deliberation_queue.enqueue(message, metadata={"impact_score": result.metadata["impact_score"]})
+                result.status = MessageStatus.PENDING_DELIBERATION
+                return result
+
+            if result.is_valid:
+
+                # 2. Dispatch via Kafka if enabled
+                if self._kafka_bus:
+                    success = await self._kafka_bus.send_message(message)
+                    if not success:
+                        self._metrics["messages_failed"] += 1
+                        return ValidationResult(is_valid=False, errors=["Kafka delivery failed"])
+                
+                # Still route locally for immediate handlers if needed
+                # (Optional: Or rely entirely on Kafka for decoupling)
+                await self._router.route(message, self._registry)
+                
+                # Check if recipient exists (warning only)
+                if message.to_agent and message.to_agent not in self._agents:
+                    logger.debug(f"Recipient agent not found locally: {message.to_agent}")
+                
+                self._metrics["messages_sent"] += 1
+            else:
+                self._metrics["messages_failed"] += 1
+                
             return result
-
-        # Check if recipient exists (warning only)
-        if message.to_agent and message.to_agent not in self._agents:
-            logger.warning(f"Recipient agent not found: {message.to_agent}")
-
-        self._metrics["messages_sent"] += 1
-        await self._message_queue.put(message)
-
-        return result
+        finally:
+            if OTEL_ENABLED:
+                QUEUE_DEPTH.add(-1, {"tenant_id": message.tenant_id or "default"})
 
     @staticmethod
     def _normalize_tenant_id(tenant_id: Optional[str]) -> Optional[str]:
@@ -968,6 +1178,35 @@ class EnhancedAgentBus:
             return message
         except asyncio.TimeoutError:
             return None
+
+    async def _poll_kafka_messages(self):
+        """Background task to poll messages from Kafka for registered tenants."""
+        if not self._kafka_bus:
+            return
+
+        # Simple initial implementation: subscribe to all known tenant topics
+        # In a real system, this would be more dynamic
+        logger.info("Starting Kafka message polling task")
+        
+        # Subscribe handler that puts messages in the local queue
+        async def kafka_handler(msg_data: Dict[str, Any]):
+            try:
+                message = AgentMessage.from_dict(msg_data)
+                # Avoid infinite loops if we are also the producer
+                # (Though Kafka handles this via client_id/group_id usually)
+                await self._message_queue.put(message)
+            except Exception as e:
+                logger.error(f"Failed to process message from Kafka: {e}")
+
+        # Basic multi-tenant subscription
+        # This is a bit naive; it assumes we know which tenants to listen for
+        # For now, listen for a broad set or the 'default' tenant
+        message_types = list(MessageType)
+        await self._kafka_bus.subscribe("default", message_types, kafka_handler)
+        
+        # Keep task alive
+        while self._running:
+            await asyncio.sleep(1)
 
     async def broadcast_message(self, message: AgentMessage) -> Dict[str, ValidationResult]:
         """

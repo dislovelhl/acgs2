@@ -75,19 +75,33 @@ async def issue_token(
     agent_id: str,
     tenant_id: str,
     capabilities: List[str],
-    private_key_b64: str,
-    crypto_service: CryptoService = Depends()
+    private_key_b64: Optional[str] = None,
+    crypto_service: CryptoService = Depends(),
+    # Requires admin/management identity for this endpoint
+    current_user: Dict[str, Any] = Depends(check_role(["admin", "registry-admin"], action="issue_token"))
 ):
     """
-    Issue a new SVID (JWT) for an agent
+    Issue a new SVID (JWT) for an agent.
+    If private_key_b64 is not provided, uses the system management key.
     """
     try:
+        from shared.config import settings
+        
+        signing_key = private_key_b64
+        if not signing_key:
+            if settings.security.jwt_private_key:
+                signing_key = settings.security.jwt_private_key.get_secret_value()
+            else:
+                raise HTTPException(status_code=500, detail="System private key not configured")
+                
         token = crypto_service.issue_agent_token(
             agent_id=agent_id,
             tenant_id=tenant_id,
             capabilities=capabilities,
-            private_key_b64=private_key_b64
+            private_key_b64=signing_key
         )
         return {"access_token": token, "token_type": "bearer"}
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))

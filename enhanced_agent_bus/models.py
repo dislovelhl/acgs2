@@ -90,6 +90,7 @@ class MessageStatus(Enum):
     DELIVERED = "delivered"
     FAILED = "failed"
     EXPIRED = "expired"
+    PENDING_DELIBERATION = "pending_deliberation"
 
 
 @dataclass

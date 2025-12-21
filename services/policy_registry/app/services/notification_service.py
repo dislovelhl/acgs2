@@ -58,7 +58,8 @@ class NotificationService:
         for queue in self.websocket_connections.copy():
             try:
                 queue.put_nowait({"type": "shutdown"})
-            except:
+            except (asyncio.QueueFull, RuntimeError, AttributeError):
+                # Queue full or connection already closed, skip
                 pass
         self.websocket_connections.clear()
 
