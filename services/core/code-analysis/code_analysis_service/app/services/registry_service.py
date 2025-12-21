@@ -195,10 +195,11 @@ class ServiceRegistryClient:
             return False
 
     async def deregister_service(self) -> bool:
-        """Deregister this service from the service registry."""
+        """Deregister this service from the service registry.
+
         Returns:
             bool: True if deregistration successful
-        
+        """
         if not self.is_registered or not self.registration_id:
             logger.warning("Service is not registered", extra={"constitutional_hash": CONSTITUTIONAL_HASH})
             return True
@@ -247,14 +248,14 @@ class ServiceRegistryClient:
             return False
 
     async def discover_service(self, service_name: str) -> dict[str, Any] | None:
-        Discover another service in the registry.
+        """Discover another service in the registry.
 
         Args:
             service_name: Name of the service to discover
 
         Returns:
             dict: Service information if found
-        
+        """
         try:
             response = await self.http_client.get(
                 f"{self.registry_url}/api/v1/services/{service_name}",
@@ -317,11 +318,11 @@ class ServiceRegistryClient:
             return None
 
     async def list_services(self) -> list[dict[str, Any]]:
-        List all registered services.
+        """List all registered services.
 
         Returns:
             list: List of registered services
-        
+        """
         try:
             response = await self.http_client.get(
                 f"{self.registry_url}/api/v1/services",
@@ -473,7 +474,7 @@ class ServiceRegistryClient:
         """Get real system metrics for health reporting."""
         try:
             import os
-import psutil
+            import psutil
 
             # Get current process
             process = psutil.Process(os.getpid())
