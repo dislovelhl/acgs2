@@ -14,7 +14,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ```bash
 cd enhanced_agent_bus
 
-# Run all tests (515+ tests)
+# Run all tests
 python3 -m pytest tests/ -v --tb=short
 
 # Run with coverage report
@@ -63,6 +63,9 @@ docker-compose up -d
 
 # Build Rust backend
 cd enhanced_agent_bus/rust && cargo build --release
+
+# Run Rust tests
+cd enhanced_agent_bus/rust && cargo test
 ```
 
 ## Architecture
@@ -93,15 +96,18 @@ Agent → EnhancedAgentBus → Constitutional Validation (hash: cdd01ef066bc6cf2
 - `validators.py`: Constitutional hash and message validation
 - `policy_client.py`: Policy registry client
 - `opa_client.py`: OPA (Open Policy Agent) integration
+- `registry.py`: Agent registration and bundle management
 - `deliberation_layer/`: AI-powered review for high-impact decisions
-  - `impact_scorer.py`: DistilBERT-based impact scoring
+  - `impact_scorer.py`: DistilBERT-based impact scoring (weight: semantic 0.30, permission 0.20, drift 0.15)
   - `hitl_manager.py`: Human-in-the-loop approval workflow
-  - `adaptive_router.py`: Routes messages based on impact score
+  - `adaptive_router.py`: Routes messages based on impact score threshold (default 0.8)
+  - `opa_guard.py`: OPA policy enforcement within deliberation
 
 **services/** - Microservices (47+)
 - `policy_registry/`: Policy storage and version management (Port 8000)
 - `audit_service/`: Blockchain-anchored audit trails (Port 8084)
-- Core services: constitutional AI, governance synthesis, formal verification
+- `constitutional_ai/`: Core constitutional validation service
+- `core/`: Foundational services (constraint generation, etc.)
 
 **policies/rego/** - OPA Rego policies for constitutional governance
 
@@ -113,7 +119,10 @@ Agent → EnhancedAgentBus → Constitutional Validation (hash: cdd01ef066bc6cf2
 ### Rust Backend (Optional)
 Located in `enhanced_agent_bus/rust/`, provides 10-50x speedup:
 - `lib.rs`: Python bindings via PyO3
-- `security.rs`, `audit.rs`, `opa.rs`, `deliberation.rs`: Core modules
+- `security.rs`: Security validation
+- `audit.rs`: Audit trail management
+- `opa.rs`: OPA policy evaluation
+- `deliberation.rs`: High-performance deliberation
 
 ## Key Patterns
 
@@ -135,17 +144,42 @@ if not result.is_valid:
 Use specific exceptions from the hierarchy:
 ```python
 from enhanced_agent_bus.exceptions import (
-    AgentBusError,           # Base class
+    AgentBusError,           # Base class - all exceptions inherit from this
     ConstitutionalError,     # Constitutional failures
+    ConstitutionalHashMismatchError,  # Hash validation failures
+    ConstitutionalValidationError,    # General validation failures
     MessageValidationError,  # Invalid messages
     PolicyEvaluationError,   # OPA failures
     BusNotStartedError,      # Lifecycle errors
 )
 ```
 
+All exceptions include `constitutional_hash` field and `to_dict()` for serialization.
+
+### Import Pattern with Fallback
+Standard pattern for imports that work both in package and standalone context:
+```python
+try:
+    from shared.constants import CONSTITUTIONAL_HASH
+except ImportError:
+    # Fallback for standalone usage
+    CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
+```
+
 ### Policy Fail Behavior
 - `fail_closed=True`: OPA evaluation failure rejects requests (default for high-security)
 - `fail_closed=False`: Allows pass-through with audit logging
+
+## Docker Services (docker-compose.yml)
+
+| Service | Port | Description |
+|---------|------|-------------|
+| rust-message-bus | 8080 | Rust-accelerated message bus |
+| deliberation-layer | 8081 | AI-powered decision review |
+| constraint-generation | 8082 | Constraint generation system |
+| vector-search | 8083 | Search platform |
+| audit-ledger | 8084 | Blockchain audit service |
+| adaptive-governance | 8000 | Policy registry |
 
 ## Environment Variables
 
@@ -172,3 +206,27 @@ Non-negotiable targets defined in `shared/constants.py`:
 - All exceptions include `constitutional_hash` and `to_dict()` for serialization
 - Use typed exceptions from `enhanced_agent_bus/exceptions.py`
 - Use `logging` module, never `print()` in production code
+- Include constitutional hash in file docstrings: `Constitutional Hash: cdd01ef066bc6cf2`
+- Python 3.11+ required; use `datetime.now(timezone.utc)` not deprecated `datetime.utcnow()`
+
+## Test Markers
+
+```python
+@pytest.mark.asyncio        # Async tests
+@pytest.mark.slow           # Performance tests
+@pytest.mark.integration    # External service tests
+@pytest.mark.constitutional # Governance validation tests
+```
+
+## Deployment Scripts
+
+Located in `scripts/`:
+- `blue-green-deploy.sh`: Zero-downtime deployment
+- `blue-green-rollback.sh`: Instant rollback
+- `health-check.sh`: Comprehensive health monitoring
+
+Kubernetes manifests in `k8s/`:
+```bash
+kubectl apply -f k8s/namespace.yml
+kubectl apply -f k8s/blue-green-deployment.yml
+```
