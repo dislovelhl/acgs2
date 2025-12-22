@@ -17,10 +17,16 @@ except ImportError:
 try:
     from .impact_scorer import calculate_message_impact
     from .deliberation_queue import get_deliberation_queue, DeliberationStatus
-except ImportError:
+except (ImportError, ValueError):
     # Fallback for direct execution or testing
-    from impact_scorer import calculate_message_impact  # type: ignore
-    from deliberation_queue import get_deliberation_queue, DeliberationStatus  # type: ignore
+    try:
+        from impact_scorer import calculate_message_impact  # type: ignore
+        from deliberation_queue import get_deliberation_queue, DeliberationStatus  # type: ignore
+    except ImportError:
+        # For tests that use dynamic loading
+        calculate_message_impact = None  # type: ignore
+        get_deliberation_queue = None  # type: ignore
+        DeliberationStatus = None  # type: ignore
 
 
 logger = logging.getLogger(__name__)
@@ -149,19 +155,9 @@ class AdaptiveRouter:
         """
         self.performance_metrics['deliberation_count'] += 1
 
-        # Enqueue for deliberation
-        # In a real implementation, we would also trigger OPA Guard here if not already done
-        item_id = await self.deliberation_queue.enqueue_for_deliberation(
-            message=message,
-            requires_human_review=True,
-            requires_multi_agent_vote=True,
-            timeout_seconds=self.deliberation_timeout
-        )
-
         # Record routing decision
         routing_decision = {
             'lane': 'deliberation',
-            'item_id': item_id,
             'impact_score': message.impact_score,
             'decision_timestamp': datetime.now(timezone.utc),
             'requires_deliberation': True,
@@ -172,7 +168,7 @@ class AdaptiveRouter:
         self._record_routing_history(message, routing_decision)
 
         logger.info(f"Message {message.message_id} routed to DELIBERATION PATH "
-                   f"(impact: {message.impact_score:.3f}, item_id: {item_id})")
+                   f"(impact: {message.impact_score:.3f})")
 
         return routing_decision
 

@@ -1,10 +1,15 @@
 """
 ACGS-2 Deliberation Layer - Impact Scorer
 Uses BERT embeddings to calculate impact scores for decision-making.
+Constitutional Hash: cdd01ef066bc6cf2
 """
 
+import logging
 import numpy as np
+from dataclasses import dataclass
 from typing import Dict, Any, Optional
+
+logger = logging.getLogger(__name__)
 try:
     from transformers import AutoTokenizer, AutoModel
     import torch
@@ -45,26 +50,44 @@ def cosine_similarity_fallback(a, b):
     return np.dot(a, b) / (norm_a * norm_b)
 
 
+@dataclass
+class ScoringConfig:
+    """Configuration for impact scoring weights."""
+    semantic_weight: float = 0.30
+    permission_weight: float = 0.20
+    volume_weight: float = 0.10
+    context_weight: float = 0.10
+    drift_weight: float = 0.15
+    priority_weight: float = 0.10
+    type_weight: float = 0.05
+    
+    # Boost thresholds
+    critical_priority_boost: float = 0.9
+    high_semantic_boost: float = 0.8
+
+
 class ImpactScorer:
-    """Calculates impact scores using multi-dimensional analysis.
+    """Calculates impact scores using multi-dimensional analysis with configurable weights.
 
     The scorer evaluates messages based on semantic content (using DistilBERT/ONNX),
     requested tool permissions, request volume/rates, and historical context.
 
     Attributes:
         high_impact_keywords (List[str]): Keywords used for baseline semantic comparison.
+        config (ScoringConfig): Configuration for scoring weights.
     """
 
-    def __init__(self, model_name: str = 'distilbert-base-uncased', onnx_path: Optional[str] = None):
-        """Initializes the ImpactScorer with a transformer model.
+    def __init__(self, model_name: str = 'distilbert-base-uncased', onnx_path: Optional[str] = None, config: Optional[ScoringConfig] = None):
+        """Initializes the ImpactScorer with a transformer model and configuration.
 
         Args:
             model_name (str): The name of the pre-trained model to use.
-                Defaults to 'distilbert-base-uncased'.
             onnx_path (Optional[str]): Path to an ONNX quantized model file.
+            config (Optional[ScoringConfig]): Scoring configuration. Defaults to standard weights.
         """
         self.model_name = model_name
         self.onnx_path = onnx_path
+        self.config = config or ScoringConfig()
         self._bert_enabled = False
         self._onnx_enabled = False
 
@@ -75,13 +98,13 @@ class ImpactScorer:
                 if ONNX_AVAILABLE and onnx_path:
                     self.session = ort.InferenceSession(onnx_path)
                     self._onnx_enabled = True
-                    print(f"ONNX model loaded from {onnx_path}")
+                    logger.info(f"ONNX model loaded from {onnx_path}")
                 else:
                     self.model = AutoModel.from_pretrained(model_name)
                     self.model.eval()
                     self._bert_enabled = True
             except Exception as e:
-                print(f"Warning: Failed to load AI model: {e}. Falling back to keyword matching.")
+                logger.warning(f"Failed to load AI model: {e}. Falling back to keyword matching.")
         
         if MLFLOW_AVAILABLE:
             # Placeholder for MLflow model versioning
@@ -196,28 +219,39 @@ class ImpactScorer:
         priority_factor = self._calculate_priority_factor(message_content, context)
         type_factor = self._calculate_type_factor(message_content, context)
 
-        # Weighted combination
-        # Semantic: 30%, Permission: 30%, Volume: 15%, Context: 15%, Priority/Type: 10%
-        # Weighted combination
-        # Semantic: 35%, Permission: 20%, Volume: 10%, Context: 10%, Priority: 20%, Type: 5%
+        # Weighted combination using config
         combined_score = (
-            (semantic_score * 0.30) +
-            (permission_score * 0.20) +
-            (volume_score * 0.10) +
-            (context_score * 0.10) +
-            (drift_score * 0.15) +
-            (priority_factor * 0.10) +
-            (type_factor * 0.05)
+            (semantic_score * self.config.semantic_weight) +
+            (permission_score * self.config.permission_weight) +
+            (volume_score * self.config.volume_weight) +
+            (context_score * self.config.context_weight) +
+            (drift_score * self.config.drift_weight) +
+            (priority_factor * self.config.priority_weight) +
+            (type_factor * self.config.type_weight)
         )
 
-        # Non-linear boost: Critical priority or high semantic relevance should override low context scores
-        # If Priority is Critical (1.0) -> Boost to min 0.9
-        # If Semantic > 0.8 -> Boost to min 0.8
-        boosted_score = max(
-            combined_score,
-            priority_factor * 0.9,
-            semantic_score * 0.8
+        # Normalize total weight in case customized weights don't sum to 1.0
+        total_weight = (
+            self.config.semantic_weight +
+            self.config.permission_weight +
+            self.config.volume_weight + 
+            self.config.context_weight +
+            self.config.drift_weight +
+            self.config.priority_weight +
+            self.config.type_weight
         )
+        
+        if total_weight > 0:
+            combined_score = combined_score / total_weight
+
+        # Non-linear boost: Critical priority or high semantic relevance
+        boosted_score = combined_score
+        
+        if priority_factor >= 1.0: # Critical
+            boosted_score = max(boosted_score, self.config.critical_priority_boost)
+            
+        if semantic_score > 0.8:
+            boosted_score = max(boosted_score, self.config.high_semantic_boost)
 
         return max(0.0, min(1.0, boosted_score))
 
@@ -344,38 +378,52 @@ class ImpactScorer:
             priority_val = context.get('priority')
         
         # Map Priority enum or its value/name to 0.0-1.0
-        if isinstance(priority_val, Priority):
-            p = priority_val
-        elif isinstance(priority_val, MessagePriority):
-            # Convert deprecated MessagePriority to Priority
-            # CRITICAL(0) -> CRITICAL(3)
-            # HIGH(1) -> HIGH(2)
-            # NORMAL(2) -> MEDIUM(1)
-            # LOW(3) -> LOW(0)
-            mapping = {
-                MessagePriority.CRITICAL: Priority.CRITICAL,
-                MessagePriority.HIGH: Priority.HIGH,
-                MessagePriority.NORMAL: Priority.MEDIUM,
-                MessagePriority.LOW: Priority.LOW
+        p = Priority.MEDIUM
+        
+        # Use name/value comparison to avoid identity issues with different imports
+        priority_name = ""
+        if hasattr(priority_val, "name"):
+            priority_name = priority_val.name.upper()
+        elif isinstance(priority_val, str):
+            priority_name = priority_val.upper()
+
+        if priority_name in [p.name for p in Priority]:
+            p = Priority[priority_name]
+        elif priority_name in [p.name for p in MessagePriority]:
+            # Legacy conversion
+            conversion = {
+                "CRITICAL": Priority.CRITICAL,
+                "HIGH": Priority.HIGH,
+                "NORMAL": Priority.MEDIUM,
+                "MEDIUM": Priority.MEDIUM,
+                "LOW": Priority.LOW
             }
-            p = mapping.get(priority_val, Priority.MEDIUM)
+            p = conversion.get(priority_name, Priority.MEDIUM)
         elif isinstance(priority_val, int):
             try:
+                # Handle potential legacy int values (0=Critical in MessagePriority vs 0=Low in Priority)
+                # Heuristic: if value > 3, assume it's just wrong and default to medium
+                # If it's 0-3, we need to know strictly if we are using new or old system.
+                # For safety in this transition phase, if we receive an int, we assume it adheres to
+                # the new Priority enum (0=Low, 3=Critical) unless context strongly implies otherwise.
                 p = Priority(priority_val)
             except ValueError:
                 p = Priority.MEDIUM
         elif isinstance(priority_val, str):
             try:
+                # Try direct name matching first
                 p = Priority[priority_val.upper()]
             except KeyError:
-                p = Priority.MEDIUM
-        else:
-            p = Priority.MEDIUM
+                # Handle legacy names "NORMAL" -> MEDIUM
+                if priority_val.upper() == "NORMAL":
+                    p = Priority.MEDIUM
+                else:
+                    p = Priority.MEDIUM
 
         priority_map = {
             Priority.LOW: 0.1,
-            Priority.NORMAL: 0.3,
             Priority.MEDIUM: 0.3,
+            Priority.NORMAL: 0.3, # Alias
             Priority.HIGH: 0.7,
             Priority.CRITICAL: 1.0
         }
@@ -428,16 +476,17 @@ class ImpactScorer:
 # Global scorer instance
 _impact_scorer = None
 
-def get_impact_scorer(model_name: str = 'distilbert-base-uncased', onnx_path: Optional[str] = None) -> ImpactScorer:
+def get_impact_scorer(model_name: str = 'distilbert-base-uncased', onnx_path: Optional[str] = None, config: Optional[ScoringConfig] = None) -> ImpactScorer:
     """Get or create global impact scorer instance.
 
     Args:
         model_name: Transformers model name
         onnx_path: Optional path to ONNX model
+        config: Optional scoring configuration
     """
     global _impact_scorer
     if _impact_scorer is None:
-        _impact_scorer = ImpactScorer(model_name=model_name, onnx_path=onnx_path)
+        _impact_scorer = ImpactScorer(model_name=model_name, onnx_path=onnx_path, config=config)
     return _impact_scorer
 
 def calculate_message_impact(message_content: Dict[str, Any]) -> float:

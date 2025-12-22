@@ -46,7 +46,7 @@ except ImportError:
         """Mock AuditLedger."""
         async def add_validation_result(self, res):
             """Mock add."""
-            print(f"Audit recorded: {res.to_dict()}")
+            logging.getLogger(__name__).debug(f"Mock audit recorded: {res.to_dict()}")
             return "mock_audit_hash"
 
 
@@ -152,4 +152,4 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     q = DeliberationQueue()
     mgr = HITLManager(q)
-    print("HITL Manager initialized.")
+    logger.info("HITL Manager initialized.")

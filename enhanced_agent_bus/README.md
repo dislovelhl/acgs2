@@ -2,10 +2,11 @@
 
 <!-- Constitutional Hash: cdd01ef066bc6cf2 -->
 
-> **Version:** 1.0.0
+> **Version:** 1.1.0
 > **Status:** Production Ready
 > **Test Coverage:** 63.99% (515 tests)
 > **Performance:** P99 0.023ms | 55,978 RPS
+> **Last Updated:** 2025-12-21
 
 ## Overview
 
@@ -66,7 +67,7 @@ cargo build --release
 
 ```python
 from enhanced_agent_bus.core import EnhancedAgentBus, get_agent_bus
-from enhanced_agent_bus.models import AgentMessage, MessageType, MessagePriority
+from enhanced_agent_bus.models import AgentMessage, MessageType, Priority
 
 # Get the singleton bus instance
 bus = get_agent_bus()
@@ -87,7 +88,7 @@ message = AgentMessage(
     content={"action": "validate", "data": {"policy_id": "P001"}},
     from_agent="agent-001",
     to_agent="agent-002",
-    priority=MessagePriority.HIGH
+    priority=Priority.HIGH
 )
 result = await bus.send_message(message)
 
@@ -148,7 +149,7 @@ class AgentMessage:
     from_agent: str
     to_agent: str
     message_id: str = field(default_factory=lambda: str(uuid4()))
-    priority: MessagePriority = MessagePriority.NORMAL
+    priority: Priority = Priority.NORMAL
     timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     constitutional_hash: str = CONSTITUTIONAL_HASH
     routing_context: Optional[RoutingContext] = None
@@ -170,10 +171,10 @@ class AgentMessage:
 
 | Priority | Value | Description |
 |----------|-------|-------------|
-| `CRITICAL` | 0 | Immediate processing required |
-| `HIGH` | 1 | Priority processing |
-| `NORMAL` | 2 | Standard processing |
-| `LOW` | 3 | Background processing |
+| `CRITICAL` | 3 | Immediate processing required |
+| `HIGH` | 2 | Priority processing |
+| `MEDIUM` / `NORMAL` | 1 | Standard processing |
+| `LOW` | 0 | Background processing |
 
 ## Exception Hierarchy
 
@@ -448,6 +449,27 @@ Broadcasts a message to multiple agents.
 - `message`: AgentMessage instance
 - `agent_type`: Optional filter for target agent type
 
+## Recent Updates (v1.1.0)
+
+### Code Quality Improvements (December 2025)
+
+- **Logging Migration**: Replaced all `print()` statements in production code with proper `logging` calls
+  - `impact_scorer.py`: ONNX model loading now logs via `logger.info()`
+  - `hitl_manager.py`: Mock audit and initialization use structured logging
+- **Exception Handling**: Replaced bare `except:` with specific exception types across the codebase
+- **Security Documentation**: Added security comments for `exec()` usage in test files
+
+### Performance Enhancements
+
+- **OPA Service Caching**: Added 15-minute TTL cache for RBAC authorization decisions
+- **Policy Service Caching**: Active version lookups now cached with automatic invalidation
+- **Storage Service**: Full S3/MinIO integration with fallback to local storage
+
+### Constitutional Compliance
+
+- Constitutional hash `cdd01ef066bc6cf2` consistently applied across all modules
+- All new features maintain 100% constitutional compliance
+
 ## Contributing
 
 1. Ensure all tests pass: `pytest tests/ -v`
@@ -455,6 +477,8 @@ Broadcasts a message to multiple agents.
 3. Include constitutional hash in new files
 4. Follow existing code style patterns
 5. Add tests for new functionality
+6. Use proper logging instead of print statements
+7. Use specific exception types, not bare `except:`
 
 ## License
 
@@ -463,5 +487,5 @@ MIT License - See LICENSE file for details.
 ---
 
 *Constitutional Hash: cdd01ef066bc6cf2*
-*Generated: 2025-12-17*
+*Updated: 2025-12-21*
 *ACGS-2 Enhanced Agent Bus Documentation*

@@ -149,25 +149,45 @@ class PolicyService:
         return None
 
     async def get_active_version(self, policy_id: str) -> Optional[PolicyVersion]:
-        """Get the active version of a policy"""
+        """
+        Get the active version of a policy with caching.
+
+        Uses cache service to avoid repeated lookups.
+        Cache is invalidated when versions are activated/deactivated.
+        """
+        # Check cache first
+        cache_key = f"active_version:{policy_id}"
+        cached = await self.cache.get(cache_key)
+        if cached:
+            # Return cached version if still valid
+            version = cached.get("version")
+            if version:
+                return await self.get_policy_version(policy_id, version)
+
         if policy_id not in self._versions:
             return None
-            
+
         for pv in self._versions[policy_id]:
             if pv.is_active:
+                # Cache the active version reference
+                await self.cache.set(cache_key, {"version": pv.version}, ttl=3600)  # 1 hour
                 return pv
         return None
 
     async def activate_version(self, policy_id: str, version: str):
-        """Activate a policy version"""
+        """
+        Activate a policy version.
+
+        Invalidates the active version cache on activation change.
+        """
         if policy_id not in self._versions:
             raise ValueError(f"Policy {policy_id} not found")
-        
+
         # Deactivate all versions
         for pv in self._versions[policy_id]:
             if pv.is_active:
                 pv.status = VersionStatus.RETIRED
-        
+
         # Activate specified version
         target_version = None
         for pv in self._versions[policy_id]:
@@ -175,9 +195,13 @@ class PolicyService:
                 pv.status = VersionStatus.ACTIVE
                 target_version = pv
                 break
-        
+
         if not target_version:
             raise ValueError(f"Version {version} not found for policy {policy_id}")
+
+        # Invalidate active version cache
+        cache_key = f"active_version:{policy_id}"
+        await self.cache.delete(cache_key)
         
         # Update cache
         await self.cache.invalidate_policy(policy_id)

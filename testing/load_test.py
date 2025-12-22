@@ -19,7 +19,10 @@ class E2EUser(HttpUser):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        with open("e2e_config.yaml", 'r') as f:
+        import os
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        config_path = os.path.join(base_dir, "e2e_config.yaml")
+        with open(config_path, 'r') as f:
             self.config = yaml.safe_load(f)
 
     def create_test_message(self, template_name: str = "governance_request") -> dict:

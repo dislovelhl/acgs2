@@ -103,6 +103,7 @@ try:
         DynamicPolicyProcessingStrategy,
         OPAProcessingStrategy,
         OPAValidationStrategy,
+        CompositeProcessingStrategy,
     )
 except ImportError:
     # Fallback for direct execution or testing
@@ -156,8 +157,12 @@ except ImportError:
 
 # Import Deliberation Layer
 try:
-    from .deliberation_layer.voting_service import VotingService, VotingStrategy
-    from .deliberation_layer.deliberation_queue import DeliberationQueue
+    try:
+        from .deliberation_layer.voting_service import VotingService, VotingStrategy
+        from .deliberation_layer.deliberation_queue import DeliberationQueue
+    except ImportError:
+        from deliberation_layer.voting_service import VotingService, VotingStrategy
+        from deliberation_layer.deliberation_queue import DeliberationQueue
     DELIBERATION_AVAILABLE = True
 except ImportError:
     DELIBERATION_AVAILABLE = False
@@ -208,7 +213,7 @@ except ImportError:
 
 # Import Rust implementation for high-performance processing
 try:
-    import enhanced_agent_bus as rust_bus
+    import enhanced_agent_bus_rust as rust_bus
     USE_RUST = True
     logger.info("Rust implementation loaded successfully")
 except ImportError:
@@ -326,50 +331,43 @@ class MessageProcessor:
         Returns:
             ProcessingStrategy: The selected processing strategy instance
         """
-        # Try Rust strategy first (highest performance)
-        if self._rust_processor is not None and not self._use_dynamic_policy and getattr(self, '_use_rust', True):
-            # Create Rust validation strategy
-            val_strategy = RustValidationStrategy(rust_processor=self._rust_processor)
-            
-            # Create Rust processing strategy with injected validation
-            proc_strategy = RustProcessingStrategy(
-                rust_processor=self._rust_processor,
-                rust_bus=rust_bus,
-                validation_strategy=val_strategy
-            )
-            
-            if proc_strategy.is_available():
-                logger.debug("Auto-selected Rust processing strategy")
-                return proc_strategy
-
-            if proc_strategy.is_available():
-                logger.debug("Auto-selected dynamic policy processing strategy")
-                return proc_strategy
-
-        # Try OPA processing strategy (preferred for advanced governance)
-        if self._use_dynamic_policy and self._opa_client is not None:
-            # Create OPA validation strategy
-            val_strategy = OPAValidationStrategy(opa_client=self._opa_client)
-            
-            # Create OPA processing strategy
-            proc_strategy = OPAProcessingStrategy(
-                opa_client=self._opa_client,
-                validation_strategy=val_strategy
-            )
-            
-            if proc_strategy.is_available():
-                logger.debug("Auto-selected OPA processing strategy")
-                return proc_strategy
-
-        # Default to Python strategy
-        logger.debug("Auto-selected Python processing strategy")
-        # Create static hash validation strategy
-        val_strategy = StaticHashValidationStrategy(strict=True)
-        
-        return PythonProcessingStrategy(
-            validation_strategy=val_strategy,
+        # Default Python strategy components
+        py_val_strategy = StaticHashValidationStrategy(strict=True)
+        py_proc_strategy = PythonProcessingStrategy(
+            validation_strategy=py_val_strategy,
             metrics_enabled=METRICS_ENABLED
         )
+
+        strategies: List["ProcessingStrategy"] = []
+
+        # 1. Try Rust strategy (highest performance)
+        if self._rust_processor is not None and not self._use_dynamic_policy and getattr(self, '_use_rust', True):
+            rust_val_strategy = RustValidationStrategy(rust_processor=self._rust_processor)
+            rust_proc_strategy = RustProcessingStrategy(
+                rust_processor=self._rust_processor,
+                rust_bus=rust_bus,
+                validation_strategy=rust_val_strategy
+            )
+            strategies.append(rust_proc_strategy)
+
+        # 2. Try OPA processing strategy (preferred for advanced governance)
+        if self._use_dynamic_policy and self._opa_client is not None:
+            opa_val_strategy = OPAValidationStrategy(opa_client=self._opa_client)
+            opa_proc_strategy = OPAProcessingStrategy(
+                opa_client=self._opa_client,
+                validation_strategy=opa_val_strategy
+            )
+            strategies.append(opa_proc_strategy)
+
+        # 3. Always include Python strategy as final fallback
+        strategies.append(py_proc_strategy)
+
+        # If we have multiple options, use Composite strategy
+        if len(strategies) > 1:
+            logger.debug(f"Configuring resilient CompositeProcessingStrategy with {len(strategies)} layers")
+            return CompositeProcessingStrategy(strategies=strategies)
+        
+        return strategies[0]
 
     async def process(self, message: AgentMessage) -> ValidationResult:
         """
@@ -432,7 +430,10 @@ class MessageProcessor:
         # 2. Impact Scoring (Phase 5: Deliberation Layer Integration)
         if "impact_score" not in result.metadata:
             try:
-                from .deliberation_layer.impact_scorer import get_impact_scorer
+                try:
+                    from .deliberation_layer.impact_scorer import get_impact_scorer
+                except ImportError:
+                    from deliberation_layer.impact_scorer import get_impact_scorer
                 scorer = get_impact_scorer()
                 # Pass context for better scoring
                 context = {
@@ -1106,6 +1107,10 @@ class EnhancedAgentBus:
                 # Still route locally for immediate handlers if needed
                 # (Optional: Or rely entirely on Kafka for decoupling)
                 await self._router.route(message, self._registry)
+
+                # Deliver to internal queue if Kafka is not enabled
+                if not self._use_kafka:
+                    await self._message_queue.put(message)
                 
                 # Check if recipient exists (warning only)
                 if message.to_agent and message.to_agent not in self._agents:

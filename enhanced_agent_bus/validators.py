@@ -32,6 +32,7 @@ class ValidationResult:
     errors: List[str] = field(default_factory=list)
     warnings: List[str] = field(default_factory=list)
     metadata: Dict[str, Any] = field(default_factory=dict)
+    decision: str = "ALLOW"
     constitutional_hash: str = CONSTITUTIONAL_HASH
 
     def add_error(self, error: str):
@@ -61,6 +62,7 @@ class ValidationResult:
             "errors": self.errors,
             "warnings": self.warnings,
             "metadata": self.metadata,
+            "decision": self.decision,
             "constitutional_hash": self.constitutional_hash,
             "timestamp": datetime.now(timezone.utc).isoformat()
         }

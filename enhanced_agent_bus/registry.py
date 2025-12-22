@@ -689,6 +689,15 @@ class RustProcessingStrategy:
         self._rust_bus = rust_bus
         self._validation_strategy = validation_strategy or RustValidationStrategy(rust_processor)
 
+        # Resilience state (always initialize once per instance)
+        self._failure_count = 0
+        self._last_failure_time = 0.0
+        self._consecutive_success_target = 5
+        self._consecutive_successes = 0
+        self._breaker_tripped = False
+        self._cooldown_period = 30.0 # seconds
+        self._max_threshold = 3
+
     async def process(
         self,
         message: AgentMessage,
@@ -712,33 +721,59 @@ class RustProcessingStrategy:
             rust_message = self._convert_to_rust_message(message)
 
             # Process with Rust
-            # If the process method is async, we must await it directly.
-            # If it's sync, we use to_thread.
-            if asyncio.iscoroutinefunction(self._rust_processor.process):
-                rust_result = await self._rust_processor.process(rust_message)
+            # If the process method is async, we must await its return value.
+            rust_result_raw = self._rust_processor.process(rust_message)
+            if asyncio.iscoroutine(rust_result_raw) or hasattr(rust_result_raw, "__await__"):
+                rust_result = await rust_result_raw
             else:
-                rust_result = await asyncio.to_thread(
-                    self._rust_processor.process, rust_message
-                )
+                rust_result = rust_result_raw
 
             # Convert result back to Python
             result = self._convert_from_rust_result(rust_result)
 
             if result.is_valid:
+                self._record_success()
                 # Run Python handlers (Rust doesn't support Python callbacks)
                 await self._run_handlers(message, handlers)
                 message.status = MessageStatus.DELIVERED
             else:
                 message.status = MessageStatus.FAILED
+                # We don't record business validation failures as system failures
 
             return result
 
         except Exception as e:
+            self._record_failure()
             logger.error(f"Rust processing failed: {e}")
             return ValidationResult(
                 is_valid=False,
                 errors=[f"Rust processing error: {e}"],
             )
+
+    def _record_success(self):
+        """Record a successful call to the Rust backend."""
+        if not self._breaker_tripped:
+            self._failure_count = 0
+        else:
+            self._consecutive_successes += 1
+            if self._consecutive_successes >= self._consecutive_success_target:
+                self._breaker_tripped = False
+                self._failure_count = 0
+                self._consecutive_successes = 0
+                logger.info("Rust backend circuit breaker RESET (recovered)")
+
+    def _record_failure(self):
+        """Record a failure in the Rust backend."""
+        logger.debug(f"[_record_failure] BEFORE: id(self)={id(self)}, count={self._failure_count}")
+        self._failure_count += 1
+        self._last_failure_time = time.time()
+        self._consecutive_successes = 0
+        logger.debug(f"[_record_failure] AFTER: id(self)={id(self)}, count={self._failure_count}")
+        
+        if self._failure_count >= self._max_threshold:
+            if not self._breaker_tripped:
+                logger.error(f"Rust backend circuit breaker TRIPPED after {self._failure_count} failures")
+                self._breaker_tripped = True
 
     async def _run_handlers(
         self,
@@ -763,10 +798,50 @@ class RustProcessingStrategy:
         rust_msg.from_agent = message.from_agent
         rust_msg.to_agent = message.to_agent
         rust_msg.sender_id = message.sender_id
-        rust_msg.message_type = message.message_type.name
+        # Map message type (Python UPPERCASE -> Rust PascalCase)
+        type_map = {
+            "COMMAND": "Command",
+            "QUERY": "Query",
+            "RESPONSE": "Response",
+            "EVENT": "Event",
+            "NOTIFICATION": "Notification",
+            "HEARTBEAT": "Heartbeat",
+            "GOVERNANCE_REQUEST": "GovernanceRequest",
+            "GOVERNANCE_RESPONSE": "GovernanceResponse",
+            "CONSTITUTIONAL_VALIDATION": "ConstitutionalValidation",
+            "TASK_REQUEST": "TaskRequest",
+            "TASK_RESPONSE": "TaskResponse",
+        }
+        rust_type_name = type_map.get(message.message_type.name, "Command")
+        rust_msg.message_type = getattr(self._rust_bus.MessageType, rust_type_name)
+
         rust_msg.tenant_id = message.tenant_id
-        rust_msg.priority = message.priority.name if hasattr(message.priority, "name") else str(message.priority)
-        rust_msg.status = message.status.name
+
+        # Map priority (Python Priority -> Rust MessagePriority)
+        # Note: Python Priority values: LOW=0, MEDIUM=1, HIGH=2, CRITICAL=3
+        # Rust MessagePriority values: Critical=0, High=1, Normal=2, Low=3
+        # We should map by NAME logical equivalent.
+        priority_map = {
+            "LOW": "Low",
+            "MEDIUM": "Normal",
+            "NORMAL": "Normal",
+            "HIGH": "High",
+            "CRITICAL": "Critical",
+        }
+        rust_prio_name = priority_map.get(message.priority.name, "Normal")
+        rust_msg.priority = getattr(self._rust_bus.MessagePriority, rust_prio_name)
+
+        # Map status
+        status_map = {
+            "PENDING": "Pending",
+            "PROCESSING": "Processing",
+            "DELIVERED": "Delivered",
+            "FAILED": "Failed",
+            "EXPIRED": "Expired",
+            "PENDING_DELIBERATION": "Deliberation",
+        }
+        rust_status_name = status_map.get(message.status.name, "Pending")
+        rust_msg.status = getattr(self._rust_bus.MessageStatus, rust_status_name)
         rust_msg.constitutional_hash = message.constitutional_hash
         rust_msg.constitutional_validated = message.constitutional_validated
         rust_msg.created_at = message.created_at.isoformat()
@@ -784,8 +859,20 @@ class RustProcessingStrategy:
         )
 
     def is_available(self) -> bool:
-        """Check if Rust backend is available."""
-        return self._rust_processor is not None
+        """Check if Rust backend is available and healthy."""
+        if not self._rust_processor:
+            return False
+            
+        # Circuit breaker check
+        if self._breaker_tripped:
+            logger.debug(f"Circuit breaker is TRIPPED. Failure count: {self._failure_count}")
+            # Check if cooldown period has passed to allow a probe
+            if time.time() - self._last_failure_time > self._cooldown_period:
+                logger.info("Rust circuit breaker HALF-OPEN: probing...")
+                return True
+            return False
+            
+        return True
 
     def get_name(self) -> str:
         """Get strategy name."""
@@ -1001,3 +1088,60 @@ __all__ = [
     "OPAProcessingStrategy",
     "OPAValidationStrategy",
 ]
+
+class CompositeProcessingStrategy:
+    """Composite processing strategy with transparent fallback.
+    
+    Tries strategies in order, falling back to the next one if a strategy
+    is unavailable or fails with a system error.
+    """
+
+    def __init__(
+        self,
+        strategies: List[ProcessingStrategy]
+    ) -> None:
+        self._strategies = strategies
+        self._constitutional_hash = CONSTITUTIONAL_HASH
+
+    def is_available(self) -> bool:
+        """Check if any of the underlying strategies are available."""
+        return any(s.is_available() for s in self._strategies)
+
+    async def process(
+        self,
+        message: AgentMessage,
+        handlers: Dict[Any, List[Callable]]
+    ) -> ValidationResult:
+        """Process message trying multiple strategies with fallback."""
+        last_error = None
+        
+        for strategy in self._strategies:
+            if not strategy.is_available():
+                continue
+                
+            try:
+                logger.debug(f"Trying processing strategy: {strategy.get_name()}")
+                result = await strategy.process(message, handlers)
+                
+                # If we got a result, return it (even if it's DENY/Invalid)
+                # We only fall back on system EXCEPTIONS (caught below)
+                return result
+                
+            except Exception as e:
+                # If the strategy has a record_failure method (like RustProcessingStrategy), call it
+                if hasattr(strategy, "_record_failure"):
+                    strategy._record_failure()
+                    
+                logger.warning(f"Strategy {strategy.get_name()} failed, trying fallback: {e}")
+                last_error = e
+                continue
+        
+        # If all strategies failed
+        return ValidationResult(
+            is_valid=False,
+            errors=[f"All processing strategies failed. Last error: {last_error}"],
+        )
+
+    def get_name(self) -> str:
+        """Get strategy name."""
+        return f"composite({'+'.join(s.get_name() for s in self._strategies)})"

@@ -1,3 +1,10 @@
+mod security;
+mod deliberation;
+mod opa;
+mod audit;
+#[cfg(test)]
+mod tests;
+
 use pyo3::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -6,6 +13,11 @@ use uuid::Uuid;
 use chrono::Utc;
 use dashmap::DashMap;
 use parking_lot::RwLock as ParkingRwLock;
+
+use security::detect_prompt_injection;
+use deliberation::{ImpactScorer, AdaptiveRouter};
+use opa::OpaClient;
+use audit::AuditClient;
 
 /// Constitutional hash for ACGS-2 compliance
 const CONSTITUTIONAL_HASH: &str = "cdd01ef066bc6cf2";
@@ -46,6 +58,7 @@ pub enum MessageStatus {
     Delivered,
     Failed,
     Expired,
+    Deliberation,
 }
 
 /// Routing context for message delivery
@@ -79,9 +92,9 @@ pub struct AgentMessage {
     #[pyo3(get, set)]
     pub conversation_id: String,
     #[pyo3(get, set)]
-    pub content: HashMap<String, String>, // Simplified for PyO3
+    pub content: HashMap<String, String>,
     #[pyo3(get, set)]
-    pub payload: HashMap<String, String>, // Simplified for PyO3
+    pub payload: HashMap<String, String>,
     #[pyo3(get, set)]
     pub from_agent: String,
     #[pyo3(get, set)]
@@ -97,7 +110,7 @@ pub struct AgentMessage {
     #[pyo3(get, set)]
     pub tenant_id: String,
     #[pyo3(get, set)]
-    pub security_context: HashMap<String, String>, // Simplified for PyO3
+    pub security_context: HashMap<String, String>,
     #[pyo3(get, set)]
     pub priority: MessagePriority,
     #[pyo3(get, set)]
@@ -107,13 +120,15 @@ pub struct AgentMessage {
     #[pyo3(get, set)]
     pub constitutional_validated: bool,
     #[pyo3(get, set)]
-    pub created_at: String, // Use string for PyO3
+    pub created_at: String,
     #[pyo3(get, set)]
-    pub updated_at: String, // Use string for PyO3
+    pub updated_at: String,
     #[pyo3(get, set)]
-    pub expires_at: Option<String>, // Use string for PyO3
+    pub expires_at: Option<String>,
     #[pyo3(get, set)]
-    pub performance_metrics: HashMap<String, String>, // Simplified for PyO3
+    pub impact_score: Option<f32>,
+    #[pyo3(get, set)]
+    pub performance_metrics: HashMap<String, String>,
 }
 
 #[pymethods]
@@ -141,6 +156,7 @@ impl AgentMessage {
             created_at: now.clone(),
             updated_at: now,
             expires_at: None,
+            impact_score: None,
             performance_metrics: HashMap::new(),
         }
     }
@@ -166,7 +182,9 @@ pub struct ValidationResult {
     #[pyo3(get, set)]
     pub warnings: Vec<String>,
     #[pyo3(get, set)]
-    pub metadata: HashMap<String, String>, // Simplified for PyO3
+    pub metadata: HashMap<String, String>,
+    #[pyo3(get, set)]
+    pub decision: String,
     #[pyo3(get, set)]
     pub constitutional_hash: String,
 }
@@ -180,6 +198,7 @@ impl ValidationResult {
             errors: Vec::new(),
             warnings: Vec::new(),
             metadata: HashMap::new(),
+            decision: "ALLOW".to_string(),
             constitutional_hash: CONSTITUTIONAL_HASH.to_string(),
         }
     }
@@ -187,6 +206,7 @@ impl ValidationResult {
     fn add_error(&mut self, error: String) {
         self.errors.push(error);
         self.is_valid = false;
+        self.decision = "DENY".to_string();
     }
 
     fn add_warning(&mut self, warning: String) {
@@ -198,21 +218,23 @@ impl ValidationResult {
         self.warnings.extend(other.warnings.clone());
         if !other.is_valid {
             self.is_valid = false;
+            self.decision = "DENY".to_string();
         }
     }
 }
 
-/// Handler function type for message processing
 type AsyncHandler = Arc<dyn Fn(AgentMessage) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<(), Box<dyn std::error::Error + Send + Sync>>> + Send>> + Send + Sync>;
 
-/// High-performance message processor with async support
-#[derive(Clone)]
 #[pyclass]
 pub struct MessageProcessor {
     constitutional_hash: String,
     handlers: Arc<DashMap<MessageType, Vec<AsyncHandler>>>,
     processed_count: Arc<ParkingRwLock<u64>>,
     metrics: Arc<ParkingRwLock<HashMap<String, u64>>>,
+    impact_scorer: Arc<ImpactScorer>,
+    adaptive_router: Arc<AdaptiveRouter>,
+    opa_client: Arc<ParkingRwLock<Option<OpaClient>>>,
+    audit_client: Arc<ParkingRwLock<Option<AuditClient>>>,
 }
 
 #[pymethods]
@@ -224,16 +246,19 @@ impl MessageProcessor {
             handlers: Arc::new(DashMap::new()),
             processed_count: Arc::new(ParkingRwLock::new(0)),
             metrics: Arc::new(ParkingRwLock::new(HashMap::new())),
+            impact_scorer: Arc::new(ImpactScorer::new(None, None)),
+            adaptive_router: Arc::new(AdaptiveRouter::new(0.8)),
+            opa_client: Arc::new(ParkingRwLock::new(None)),
+            audit_client: Arc::new(ParkingRwLock::new(None)),
         }
     }
 
-    /// Register a synchronous handler (wrapped for async compatibility)
     fn register_handler(&self, message_type: MessageType, handler: PyObject) -> PyResult<()> {
         let async_handler = Arc::new(move |msg: AgentMessage| {
             let handler = handler.clone();
             Box::pin(async move {
                 Python::with_gil(|py| {
-                    let result = handler.call1(py, (msg,))?;
+                    let _ = handler.call1(py, (msg,))?;
                     Ok(())
                 })
             }) as std::pin::Pin<Box<dyn std::future::Future<Output = Result<(), Box<dyn std::error::Error + Send + Sync>>> + Send>>
@@ -243,93 +268,170 @@ impl MessageProcessor {
         Ok(())
     }
 
-    /// Process a message asynchronously with parallel validation
     #[pyo3(signature = (message))]
     fn process<'py>(&self, py: Python<'py>, message: AgentMessage) -> PyResult<&'py PyAny> {
-        let processor = self.clone();
+        let processor = self.clone_internal();
         pyo3_asyncio::tokio::future_into_py(py, async move {
             processor.process_async(message).await
         })
     }
 
-    /// Get processed message count
     #[getter]
     fn processed_count(&self) -> u64 {
         *self.processed_count.read()
     }
 
-    /// Get metrics
     fn get_metrics(&self) -> HashMap<String, u64> {
         self.metrics.read().clone()
+    }
+
+    fn enable_opa<'py>(&self, py: Python<'py>, endpoint: String) -> PyResult<&'py PyAny> {
+        let opa_client = self.opa_client.clone();
+        pyo3_asyncio::tokio::future_into_py(py, async move {
+            *opa_client.write() = Some(OpaClient::new(endpoint));
+            Ok(())
+        })
+    }
+
+    fn enable_audit<'py>(&self, py: Python<'py>, service_url: String) -> PyResult<&'py PyAny> {
+        let audit_client = self.audit_client.clone();
+        pyo3_asyncio::tokio::future_into_py(py, async move {
+            *audit_client.write() = Some(AuditClient::new(service_url));
+            Ok(())
+        })
+    }
+
+    fn set_impact_threshold(&self, threshold: f32) {
+        self.adaptive_router.impact_threshold.store(threshold, std::sync::atomic::Ordering::Relaxed);
+    }
+
+    fn set_opa_fail_closed(&self, fail_closed: bool) {
+        let mut opa_lock = self.opa_client.write();
+        if let Some(opa) = opa_lock.as_ref() {
+            let new_opa = opa.clone().with_fail_closed(fail_closed);
+            *opa_lock = Some(new_opa);
+        }
+    }
+
+    fn opa_health_check<'py>(&self, py: Python<'py>) -> PyResult<&'py PyAny> {
+        let opa_client = self.opa_client.clone();
+        pyo3_asyncio::tokio::future_into_py(py, async move {
+            let opa = opa_client.read().clone();
+            if let Some(opa) = opa {
+                let health = opa.health_check().await;
+                Ok(health.to_string())
+            } else {
+                Ok("{\"status\": \"disabled\"}".to_string())
+            }
+        })
     }
 }
 
 impl MessageProcessor {
-    /// Internal async processing method
-    async fn process_async(&self, mut message: AgentMessage) -> PyResult<ValidationResult> {
-        // Parallel validation using Rayon
-        let validation_result = self.validate_message_parallel(&message).await?;
+    fn clone_internal(&self) -> Self {
+        Self {
+            constitutional_hash: self.constitutional_hash.clone(),
+            handlers: self.handlers.clone(),
+            processed_count: self.processed_count.clone(),
+            metrics: self.metrics.clone(),
+            impact_scorer: self.impact_scorer.clone(),
+            adaptive_router: self.adaptive_router.clone(),
+            opa_client: self.opa_client.clone(),
+            audit_client: self.audit_client.clone(),
+        }
+    }
 
+    async fn process_async(&self, mut message: AgentMessage) -> PyResult<ValidationResult> {
+        // 1. Prompt Injection Detection (Pre-flight)
+        for value in message.content.values() {
+            if let Some(injection_result) = detect_prompt_injection(value) {
+                let audit = self.audit_client.read().clone();
+                if let Some(audit) = audit {
+                    let _ = audit.log_decision(&message, &injection_result).await;
+                }
+                return Ok(injection_result);
+            }
+        }
+
+        // 2. Constitutional & Basic Validation
+        let mut validation_result = self.validate_message_parallel(&message).await?;
         if !validation_result.is_valid {
             return Ok(validation_result);
         }
 
-        // Update message status
+        // 3. Impact Scoring
+        let impact_score = self.impact_scorer.calculate_impact_score(&message);
+        message.impact_score = Some(impact_score);
+
+        // 4. Dual-Path Routing
+        let routing_decision = self.adaptive_router.route(&message);
+        validation_result.metadata.insert("lane".to_string(), routing_decision.lane.clone());
+        validation_result.metadata.insert("impact_score".to_string(), impact_score.to_string());
+
+        if routing_decision.requires_deliberation {
+            // Deliberation Path
+            message.status = MessageStatus::Deliberation;
+            // In a full implementation, we would enqueue message here
+        } else {
+            // Fast Path with OPA
+            let opa = self.opa_client.read().clone();
+            if let Some(opa) = opa {
+                let opa_result = opa.validate(&message).await.map_err(|e| PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(e.to_string()))?;
+                validation_result.merge(&opa_result);
+            }
+        }
+
+        if !validation_result.is_valid {
+            let audit = self.audit_client.read().clone();
+            if let Some(audit) = audit {
+                let _ = audit.log_decision(&message, &validation_result).await;
+            }
+            return Ok(validation_result);
+        }
+
+        // 5. Audit Reporting
+        let audit = self.audit_client.read().clone();
+        if let Some(audit) = audit {
+            let _ = audit.log_decision(&message, &validation_result).await;
+        }
+
+        // 6. Handler Execution
         message.status = MessageStatus::Processing;
         message.updated_at = Utc::now().to_rfc3339();
 
-        // Process handlers concurrently
         let handlers = self.handlers.get(&message.message_type);
         if let Some(handlers) = handlers {
             let handler_futures: Vec<_> = handlers.iter().map(|handler| {
                 let msg = message.clone();
-                async move {
-                    handler(msg).await
-                }
+                async move { handler(msg).await }
             }).collect();
 
-            // Execute all handlers concurrently
             let results = futures::future::join_all(handler_futures).await;
-
-            // Check for errors
             for result in results {
                 if let Err(e) = result {
                     message.status = MessageStatus::Failed;
-                    return Ok(ValidationResult {
-                        is_valid: false,
-                        errors: vec![e.to_string()],
-                        warnings: vec![],
-                        metadata: HashMap::new(),
-                        constitutional_hash: self.constitutional_hash.clone(),
-                    });
+                    let mut err_result = ValidationResult::new();
+                    err_result.add_error(e.to_string());
+                    return Ok(err_result);
                 }
             }
         }
 
-        // Success
         message.status = MessageStatus::Delivered;
         *self.processed_count.write() += 1;
-
-        // Update metrics
+        
         let mut metrics = self.metrics.write();
         *metrics.entry("messages_processed".to_string()).or_insert(0) += 1;
 
-        Ok(ValidationResult {
-            is_valid: true,
-            errors: vec![],
-            warnings: vec![],
-            metadata: HashMap::new(),
-            constitutional_hash: self.constitutional_hash.clone(),
-        })
+        Ok(validation_result)
     }
 
-    /// Parallel message validation using Rayon
     async fn validate_message_parallel(&self, message: &AgentMessage) -> PyResult<ValidationResult> {
-        let message = message.clone();
+        let msg = message.clone();
         tokio::task::spawn_blocking(move || {
             let (result1, result2) = rayon::join(
-                || Self::validate_constitutional_hash(&message),
-                || Self::validate_message_structure(&message)
+                || Self::validate_constitutional_hash(&msg),
+                || Self::validate_message_structure(&msg)
             );
 
             let mut final_result = ValidationResult::new();
@@ -339,7 +441,6 @@ impl MessageProcessor {
         }).await.map_err(|e| PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(e.to_string()))
     }
 
-    /// Validate constitutional hash
     fn validate_constitutional_hash(message: &AgentMessage) -> ValidationResult {
         let mut result = ValidationResult::new();
         if message.constitutional_hash != CONSTITUTIONAL_HASH {
@@ -348,22 +449,17 @@ impl MessageProcessor {
         result
     }
 
-    /// Validate message structure
     fn validate_message_structure(message: &AgentMessage) -> ValidationResult {
         let mut result = ValidationResult::new();
         if message.sender_id.is_empty() {
             result.add_error("Required field sender_id is empty".to_string());
         }
-        if message.routing.is_none() {
-            result.add_warning("Message lacks routing configuration".to_string());
-        }
         result
     }
 }
 
-/// Python module initialization
 #[pymodule]
-fn enhanced_agent_bus(_py: Python, m: &PyModule) -> PyResult<()> {
+fn enhanced_agent_bus_rust(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<MessageType>()?;
     m.add_class::<MessagePriority>()?;
     m.add_class::<MessageStatus>()?;
