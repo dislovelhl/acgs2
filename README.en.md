@@ -1,9 +1,9 @@
 # ACGS-2
 
 > **Constitutional Hash**: `cdd01ef066bc6cf2`
-> **Version**: 2.1.0
-> **Status**: Stable
-> **Last Updated**: 2025-12-20
+> **Version**: 2.2.0
+> **Status**: Verified
+> **Last Updated**: 2025-12-21
 > **Language**: EN
 
 [![Tests](https://img.shields.io/badge/tests-passing-brightgreen?style=flat-square)](https://github.com/ACGS-Project/ACGS-2/actions/workflows/tests.yml)

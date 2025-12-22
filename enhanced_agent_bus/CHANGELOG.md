@@ -4,6 +4,22 @@
 
 All notable changes to the Enhanced Agent Bus are documented in this file.
 
+## [2.2.0] - 2025-12-21
+
+### Added
+- **Phase 5 Completion**: Full integration of Rust-based Deliberation Layer and Security modules.
+- **Enhanced Impact Scoring**: Multi-dimensional scoring with ONNX (DistilBERT) fallback support in Rust.
+- **Prompt Injection Defense**: Pre-compiled regex-based adversarial pattern detection in Rust core.
+- **Adaptive Routing**: Real-time threshold adjustment based on feedback loops.
+
+### Changed
+- **Version Bump**: Global version update to `2.2.0` across all documentation and project configs.
+- **Doc Cleanup**: Removed outdated temporary files and local test logs.
+- **Blueprint Update**: Production blueprint updated to reflect verified status of all 5 phases.
+
+### Security
+- Synchronized prompt injection patterns between Python and Rust implementations.
+
 ## [1.1.0] - 2025-12-21
 
 ### Added
