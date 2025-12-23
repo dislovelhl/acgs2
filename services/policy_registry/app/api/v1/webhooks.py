@@ -1,5 +1,6 @@
 """
 Webhooks API endpoints
+Constitutional Hash: cdd01ef066bc6cf2
 """
 
 import hmac
@@ -13,32 +14,40 @@ from functools import lru_cache
 from typing import Dict, Any, Optional, List
 from fastapi import APIRouter, Request, HTTPException, Depends, Header, BackgroundTasks
 
-from ...services import PolicyService, CompilerService, StorageService
-from ....enhanced_agent_bus.bundle_registry import BundleManifest, OCIRegistryClient
-from shared.config import settings
+from ...services import CompilerService, StorageService
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
 # Dummy private key for demonstration (ED25519)
 # In production, this must be securely loaded from Vault or KMS
-DUMMY_PRIVATE_KEY = "0" * 64 
+DUMMY_PRIVATE_KEY = "0" * 64
+
+
+# Lazy import to avoid circular dependency issues
+def _get_settings():
+    from shared.config import settings
+    return settings
+
 
 @lru_cache()
 def get_compiler_service() -> CompilerService:
     """Get singleton CompilerService instance."""
     return CompilerService()
 
+
 @lru_cache()
 def get_storage_service() -> StorageService:
     """Get singleton StorageService instance."""
     return StorageService()
+
 
 async def verify_github_signature(
     request: Request,
     x_hub_signature_256: str = Header(None)
 ):
     """Verify GitHub webhook signature"""
+    settings = _get_settings()
     webhook_secret = settings.bundle.github_webhook_secret
     if not webhook_secret:
         logger.warning("GitHub webhook secret not configured, skipping verification")
@@ -58,12 +67,22 @@ async def verify_github_signature(
     if not hmac.compare_digest(x_hub_signature_256, expected_signature):
         raise HTTPException(status_code=401, detail="Invalid signature")
 
+
 async def process_policy_update(
     payload: Dict[str, Any],
     compiler: CompilerService,
     storage: StorageService
 ):
     """Background task to compile, sign, and store new policy bundle"""
+    # Lazy imports for bundle registry
+    try:
+        from ....enhanced_agent_bus.bundle_registry import BundleManifest, OCIRegistryClient
+    except ImportError:
+        logger.error("Bundle registry module not available")
+        return
+
+    settings = _get_settings()
+
     try:
         # 1. Identify policy directory and entrypoints
         # In a real scenario, we'd clone the repo and parse a config file
@@ -82,7 +101,7 @@ async def process_policy_update(
             output_path=bundle_path,
             run_tests=True
         )
-        
+
         if not success:
             logger.error("Policy compilation/testing failed")
             return
@@ -90,9 +109,9 @@ async def process_policy_update(
         # 3. Create Manifest and Sign
         with open(bundle_path, "rb") as f:
             content = f.read()
-        
+
         digest = f"sha256:{hashlib.sha256(content).hexdigest()}"
-        
+
         # Create manifest
         manifest = BundleManifest(
             version="v1.1.0", # Increment version for Phase 2
@@ -100,7 +119,7 @@ async def process_policy_update(
             constitutional_hash=settings.ai.constitutional_hash,
             timestamp=datetime.now(timezone.utc).isoformat()
         )
-        
+
         # 4. OCI Manifest Signing (Cosign compatible)
         # We simulate pushing to registry here
         registry_url = settings.bundle.registry_url
@@ -119,31 +138,32 @@ async def process_policy_update(
 
         # 5. Save to Storage
         storage_path = await storage.save_bundle(digest, content)
-        
+
         # Save manifest alongside
         manifest_path = storage_path + ".manifest.json"
         with open(manifest_path, "w") as f:
             json.dump(manifest.to_dict(), f)
-            
+
         logger.info(f"Successfully processed policy update: {digest} (storage: {storage_path})")
-        
+
         if os.path.exists(bundle_path):
             os.remove(bundle_path)
-            
+
     except Exception as e:
         logger.error(f"Error processing policy update: {e}")
+
 
 @router.post("/github")
 async def github_webhook(
     background_tasks: BackgroundTasks,
     payload: Dict[str, Any],
     _ = Depends(verify_github_signature),
-    compiler: CompilerService = Depends(get_compiler_service),
-    storage: StorageService = Depends(get_storage_service)
+    compiler = Depends(get_compiler_service),
+    storage = Depends(get_storage_service)
 ):
     """Handle GitHub push events to trigger policy bundle creation"""
     # Trigger background task for compilation
     background_tasks.add_task(process_policy_update, payload, compiler, storage)
-    
+
     logger.info(f"Triggered background policy update for commit: {payload.get('after')}")
     return {"status": "triggered", "message": "Policy compilation and signing started in background"}

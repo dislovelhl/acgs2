@@ -17,10 +17,17 @@ import pytest
 # Add parent directories to path for imports
 policy_registry_dir = os.path.dirname(os.path.dirname(__file__))
 services_dir = os.path.dirname(policy_registry_dir)
+project_root = os.path.dirname(services_dir)
+shared_dir = os.path.join(project_root, "shared")
+
 if policy_registry_dir not in sys.path:
     sys.path.insert(0, policy_registry_dir)
 if services_dir not in sys.path:
     sys.path.insert(0, services_dir)
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
+if shared_dir not in sys.path:
+    sys.path.insert(0, shared_dir)
 
 # Constitutional hash constant
 CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"

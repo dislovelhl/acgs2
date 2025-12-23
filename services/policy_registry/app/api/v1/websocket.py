@@ -7,7 +7,7 @@ import logging
 from typing import Dict, Any
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends
 
-from ...services import NotificationService
+from ..dependencies import get_notification_service
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -16,23 +16,23 @@ logger = logging.getLogger(__name__)
 @router.websocket("/updates")
 async def policy_updates_websocket(
     websocket: WebSocket,
-    notification_service: NotificationService = Depends()
+    notification_service = Depends(get_notification_service)
 ):
     """WebSocket endpoint for real-time policy updates"""
     await websocket.accept()
-    
+
     # Create queue for this connection
     queue = asyncio.Queue()
     notification_service.register_websocket_connection(queue)
-    
+
     try:
         while True:
             # Wait for notification
             notification = await queue.get()
-            
+
             # Send to client
             await websocket.send_json(notification)
-            
+
     except WebSocketDisconnect:
         logger.info("WebSocket client disconnected")
     except Exception as e:

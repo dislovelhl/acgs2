@@ -8,6 +8,8 @@ from .policy_service import PolicyService
 from .cache_service import CacheService
 from .notification_service import NotificationService
 from .opa_service import OPAService
+from .storage_service import StorageService
+from .compiler_service import CompilerService
 from .vault_crypto_service import (
     VaultCryptoService,
     VaultConfig,
@@ -24,6 +26,8 @@ __all__ = [
     "CacheService",
     "NotificationService",
     "OPAService",
+    "StorageService",
+    "CompilerService",
     # Vault integration
     "VaultCryptoService",
     "VaultConfig",

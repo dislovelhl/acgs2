@@ -1,12 +1,13 @@
 """
 Policies API endpoints
+Constitutional Hash: cdd01ef066bc6cf2
 """
 
 from typing import Dict, Any, List, Optional
 from fastapi import APIRouter, HTTPException, Depends, Query
 
 from ...models import Policy, PolicyVersion, PolicyStatus
-from ...services import PolicyService, CryptoService
+from ..dependencies import get_policy_service, get_crypto_service
 from .auth import get_current_user, check_role
 
 router = APIRouter()
@@ -15,7 +16,7 @@ router = APIRouter()
 @router.get("/", response_model=List[Dict[str, Any]])
 async def list_policies(
     status: Optional[PolicyStatus] = Query(None, description="Filter by policy status"),
-    policy_service: PolicyService = Depends(),
+    policy_service = Depends(get_policy_service),
     current_user: Dict[str, Any] = Depends(get_current_user)
 ):
     """List all policies (tenant-scoped)"""
@@ -30,7 +31,7 @@ async def create_policy(
     content: Dict[str, Any],
     format: str = "json",
     description: Optional[str] = None,
-    policy_service: PolicyService = Depends(),
+    policy_service = Depends(get_policy_service),
     current_user: Dict[str, Any] = Depends(check_role(["tenant_admin", "system_admin"], action="create", resource="policy"))
 ):
     """Create a new policy (tenant-scoped)"""
@@ -51,7 +52,7 @@ async def create_policy(
 @router.get("/{policy_id}", response_model=Dict[str, Any])
 async def get_policy(
     policy_id: str,
-    policy_service: PolicyService = Depends()
+    policy_service = Depends(get_policy_service)
 ):
     """Get policy by ID"""
     policy = await policy_service.get_policy(policy_id)
@@ -63,7 +64,7 @@ async def get_policy(
 @router.get("/{policy_id}/versions", response_model=List[Dict[str, Any]])
 async def list_policy_versions(
     policy_id: str,
-    policy_service: PolicyService = Depends()
+    policy_service = Depends(get_policy_service)
 ):
     """List all versions of a policy"""
     versions = await policy_service.list_policy_versions(policy_id)
@@ -78,15 +79,15 @@ async def create_policy_version(
     private_key_b64: str,
     public_key_b64: str,
     ab_test_group: Optional[str] = None,
-    policy_service: PolicyService = Depends(),
-    crypto_service: CryptoService = Depends(),
+    policy_service = Depends(get_policy_service),
+    crypto_service = Depends(get_crypto_service),
     current_user: Dict[str, Any] = Depends(check_role(["tenant_admin", "system_admin"], action="create_version", resource="policy"))
 ):
     """Create a new policy version with signature"""
     try:
         from ...models import ABTestGroup
         ab_group = ABTestGroup(ab_test_group) if ab_test_group else None
-        
+
         policy_version = await policy_service.create_policy_version(
             policy_id=policy_id,
             content=content,
@@ -104,7 +105,7 @@ async def create_policy_version(
 async def get_policy_version(
     policy_id: str,
     version: str,
-    policy_service: PolicyService = Depends()
+    policy_service = Depends(get_policy_service)
 ):
     """Get specific policy version"""
     policy_version = await policy_service.get_policy_version(policy_id, version)
@@ -117,7 +118,7 @@ async def get_policy_version(
 async def activate_policy_version(
     policy_id: str,
     version: str,
-    policy_service: PolicyService = Depends(),
+    policy_service = Depends(get_policy_service),
     current_user: Dict[str, Any] = Depends(check_role(["tenant_admin", "system_admin"], action="activate", resource="policy"))
 ):
     """Activate a policy version"""
@@ -132,7 +133,7 @@ async def activate_policy_version(
 async def verify_policy_signature(
     policy_id: str,
     version: str,
-    policy_service: PolicyService = Depends(),
+    policy_service = Depends(get_policy_service),
     current_user: Dict[str, Any] = Depends(check_role(["tenant_admin", "system_admin", "auditor"], action="verify", resource="policy"))
 ):
     """Verify policy signature"""
@@ -148,7 +149,7 @@ async def verify_policy_signature(
 async def get_policy_content(
     policy_id: str,
     client_id: Optional[str] = Query(None, description="Client ID for A/B testing"),
-    policy_service: PolicyService = Depends()
+    policy_service = Depends(get_policy_service)
 ):
     """Get policy content for client (with A/B testing)"""
     content = await policy_service.get_policy_for_client(policy_id, client_id)

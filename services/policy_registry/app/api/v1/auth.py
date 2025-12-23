@@ -1,12 +1,13 @@
 """
 Authentication and Authorization API endpoints
+Constitutional Hash: cdd01ef066bc6cf2
 """
 
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 from fastapi import APIRouter, HTTPException, Depends, Security
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
-from ...services import CryptoService
+from ..dependencies import get_crypto_service
 
 router = APIRouter()
 security = HTTPBearer()
@@ -14,7 +15,7 @@ security = HTTPBearer()
 
 async def get_current_user(
     credentials: HTTPAuthorizationCredentials = Security(security),
-    crypto_service: CryptoService = Depends()
+    crypto_service = Depends(get_crypto_service)
 ) -> Dict[str, Any]:
     """
     Validate JWT and return payload
@@ -28,7 +29,7 @@ async def get_current_user(
         # For ACGS-2, we typically use the constitutional public key
         from shared.config import settings
         public_key_b64 = settings.security.jwt_public_key if hasattr(settings.security, "jwt_public_key") else "SYSTEM_PUBLIC_KEY_PLACEHOLDER"
-        
+
         payload = crypto_service.verify_agent_token(token, public_key_b64)
         return payload
     except Exception as e:
@@ -48,16 +49,16 @@ def check_role(allowed_roles: List[str], action: str = "manage", resource: str =
     ):
         from ...services import OPAService
         opa_service = OPAService()
-        
+
         user_role = user.get("role", "agent")
-        
+
         # Fast path check
         if user_role not in allowed_roles:
             raise HTTPException(
-                status_code=403, 
+                status_code=403,
                 detail=f"Basic RBAC: Role {user_role} not authorized for this action"
             )
-            
+
         # Granular OPA check
         is_authorized = await opa_service.check_authorization(user, action, resource)
         if not is_authorized:
@@ -65,7 +66,7 @@ def check_role(allowed_roles: List[str], action: str = "manage", resource: str =
                 status_code=403,
                 detail=f"OPA RBAC: Access denied for {action} on {resource}"
             )
-            
+
         return user
     return role_checker
 
@@ -76,7 +77,7 @@ async def issue_token(
     tenant_id: str,
     capabilities: List[str],
     private_key_b64: Optional[str] = None,
-    crypto_service: CryptoService = Depends(),
+    crypto_service = Depends(get_crypto_service),
     # Requires admin/management identity for this endpoint
     current_user: Dict[str, Any] = Depends(check_role(["admin", "registry-admin"], action="issue_token"))
 ):
@@ -86,14 +87,14 @@ async def issue_token(
     """
     try:
         from shared.config import settings
-        
+
         signing_key = private_key_b64
         if not signing_key:
             if settings.security.jwt_private_key:
                 signing_key = settings.security.jwt_private_key.get_secret_value()
             else:
                 raise HTTPException(status_code=500, detail="System private key not configured")
-                
+
         token = crypto_service.issue_agent_token(
             agent_id=agent_id,
             tenant_id=tenant_id,
