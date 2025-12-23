@@ -169,6 +169,34 @@ try:
 except ImportError:
     from message_processor import MessageProcessor
 
+# Import Metering Integration
+try:
+    from .metering_integration import (
+        MeteringHooks,
+        MeteringConfig,
+        AsyncMeteringQueue,
+        get_metering_hooks,
+        get_metering_queue,
+        METERING_AVAILABLE,
+    )
+except ImportError:
+    try:
+        from metering_integration import (
+            MeteringHooks,
+            MeteringConfig,
+            AsyncMeteringQueue,
+            get_metering_hooks,
+            get_metering_queue,
+            METERING_AVAILABLE,
+        )
+    except ImportError:
+        METERING_AVAILABLE = False
+        MeteringHooks = None
+        MeteringConfig = None
+        AsyncMeteringQueue = None
+        get_metering_hooks = None
+        get_metering_queue = None
+
 logger = logging.getLogger(__name__)
 
 
@@ -210,6 +238,8 @@ class EnhancedAgentBus:
         validator: Optional[ValidationStrategy] = None,
         processor: Optional[MessageProcessor] = None,
         use_rust: bool = True,
+        enable_metering: bool = True,
+        metering_config: Optional['MeteringConfig'] = None,
     ):
         """Initialize the Enhanced Agent Bus.
 
@@ -225,6 +255,8 @@ class EnhancedAgentBus:
             validator: Optional custom ValidationStrategy implementation
             processor: Optional custom MessageProcessor instance
             use_rust: Whether to prefer Rust backend when available
+            enable_metering: Enable production billing metering
+            metering_config: Optional metering configuration
         """
         self.constitutional_hash = CONSTITUTIONAL_HASH
         self.redis_url = redis_url
@@ -275,12 +307,32 @@ class EnhancedAgentBus:
         # Legacy dict for backward compatibility (delegates to registry)
         self._agents: Dict[str, Dict[str, Any]] = {}
         self._message_queue: asyncio.Queue = asyncio.Queue()
+
+        # Initialize metering for production billing
+        self._enable_metering = enable_metering and METERING_AVAILABLE
+        self._metering_config = metering_config
+        if self._enable_metering:
+            if metering_config is not None:
+                self._metering_queue = AsyncMeteringQueue(metering_config)
+                self._metering_hooks = MeteringHooks(self._metering_queue)
+            elif get_metering_queue is not None and get_metering_hooks is not None:
+                self._metering_queue = get_metering_queue()
+                self._metering_hooks = get_metering_hooks()
+            else:
+                self._metering_queue = None
+                self._metering_hooks = None
+        else:
+            self._metering_queue = None
+            self._metering_hooks = None
+
         self._processor = processor or MessageProcessor(
             use_dynamic_policy=use_dynamic_policy,
             policy_fail_closed=policy_fail_closed,
             processing_strategy=None,
             audit_client=self._audit_client,
-            use_rust=self._use_rust
+            use_rust=self._use_rust,
+            metering_hooks=self._metering_hooks,
+            enable_metering=enable_metering,
         )
         self._running = False
 
@@ -318,6 +370,11 @@ class EnhancedAgentBus:
         """Start the agent bus."""
         self._running = True
         self._metrics["started_at"] = datetime.now(timezone.utc).isoformat()
+
+        # Start metering queue for production billing
+        if self._metering_queue is not None:
+            await self._metering_queue.start()
+            logger.info("Metering queue started for production billing")
 
         # Start Kafka bus if enabled
         if self._kafka_bus:
@@ -365,6 +422,11 @@ class EnhancedAgentBus:
 
         if self._kafka_bus:
             await self._kafka_bus.stop()
+
+        # Stop metering queue and flush remaining events
+        if self._metering_queue is not None:
+            await self._metering_queue.stop()
+            logger.info("Metering queue stopped")
 
         logger.info("EnhancedAgentBus stopped")
 
@@ -479,6 +541,9 @@ class EnhancedAgentBus:
 
     async def _do_send_message(self, message: AgentMessage) -> ValidationResult:
         """Internal message sending logic."""
+        import time
+        message_start = time.perf_counter()
+
         if OTEL_ENABLED and QUEUE_DEPTH:
             QUEUE_DEPTH.add(1, {"tenant_id": message.tenant_id or "default"})
 
@@ -488,10 +553,23 @@ class EnhancedAgentBus:
             if tenant_errors:
                 self._metrics["messages_failed"] += 1
                 message.status = MessageStatus.FAILED
+                self._meter_agent_message(message, False, (time.perf_counter() - message_start) * 1000)
                 return ValidationResult(is_valid=False, errors=tenant_errors)
 
             # Constitutional validation using processor
-            result = await self._processor.process(message)
+            try:
+                result = await self._processor.process(message)
+            except Exception as e:
+                logger.warning(f"MessageProcessor failed: {e}. Falling back to DEGRADED_MODE safety lock.")
+                # Fallback to local static hash validation (Degraded Mode)
+                # ValidationResult already imported at module level
+                fallback_strategy = StaticHashValidationStrategy(strict=True)
+                is_valid, error = await fallback_strategy.validate(message)
+                result = ValidationResult(is_valid=is_valid)
+                if error:
+                    result.add_error(error)
+                result.metadata["governance_mode"] = "DEGRADED"
+                result.metadata["fallback_reason"] = str(e)
 
             # Audit reporting (asynchronous fire-and-forget)
             if self._audit_client:
@@ -502,6 +580,12 @@ class EnhancedAgentBus:
                 logger.info(f"Message {message.message_id} diverted to deliberation (Score: {result.metadata['impact_score']})")
                 await self._deliberation_queue.enqueue(message, metadata={"impact_score": result.metadata["impact_score"]})
                 result.status = MessageStatus.PENDING_DELIBERATION
+                # Meter deliberation request
+                self._meter_deliberation_request(
+                    message,
+                    result.metadata.get("impact_score", 0.8),
+                    (time.perf_counter() - message_start) * 1000
+                )
                 return result
 
             if result.is_valid:
@@ -510,6 +594,7 @@ class EnhancedAgentBus:
                     success = await self._kafka_bus.send_message(message)
                     if not success:
                         self._metrics["messages_failed"] += 1
+                        self._meter_agent_message(message, False, (time.perf_counter() - message_start) * 1000)
                         return ValidationResult(is_valid=False, errors=["Kafka delivery failed"])
 
                 # Route locally for immediate handlers
@@ -527,10 +612,77 @@ class EnhancedAgentBus:
             else:
                 self._metrics["messages_failed"] += 1
 
+            # Meter the agent message event (fire-and-forget, non-blocking)
+            self._meter_agent_message(message, result.is_valid, (time.perf_counter() - message_start) * 1000)
+
             return result
         finally:
             if OTEL_ENABLED and QUEUE_DEPTH:
                 QUEUE_DEPTH.add(-1, {"tenant_id": message.tenant_id or "default"})
+
+    def _meter_agent_message(
+        self,
+        message: AgentMessage,
+        is_valid: bool,
+        latency_ms: float,
+    ) -> None:
+        """
+        Record agent message event for metering.
+
+        This method is non-blocking and uses fire-and-forget pattern
+        to ensure zero impact on P99 latency.
+        """
+        if not self._metering_hooks:
+            return
+
+        try:
+            self._metering_hooks.on_agent_message(
+                tenant_id=message.tenant_id or 'default',
+                from_agent=message.from_agent,
+                to_agent=message.to_agent,
+                message_type=message.message_type.value,
+                latency_ms=latency_ms,
+                is_valid=is_valid,
+                metadata={
+                    'message_id': message.message_id,
+                    'priority': message.priority.value,
+                    'constitutional_hash': self.constitutional_hash,
+                },
+            )
+        except Exception as e:
+            # Never let metering errors affect the critical path
+            logger.debug(f"Metering error (non-critical): {e}")
+
+    def _meter_deliberation_request(
+        self,
+        message: AgentMessage,
+        impact_score: float,
+        latency_ms: float,
+    ) -> None:
+        """
+        Record deliberation request event for metering.
+
+        This method is non-blocking and uses fire-and-forget pattern
+        to ensure zero impact on P99 latency.
+        """
+        if not self._metering_hooks:
+            return
+
+        try:
+            self._metering_hooks.on_deliberation_request(
+                tenant_id=message.tenant_id or 'default',
+                agent_id=message.from_agent,
+                impact_score=impact_score,
+                latency_ms=latency_ms,
+                metadata={
+                    'message_id': message.message_id,
+                    'message_type': message.message_type.value,
+                    'constitutional_hash': self.constitutional_hash,
+                },
+            )
+        except Exception as e:
+            # Never let metering errors affect the critical path
+            logger.debug(f"Metering error (non-critical): {e}")
 
     @staticmethod
     def _normalize_tenant_id(tenant_id: Optional[str]) -> Optional[str]:
@@ -681,7 +833,7 @@ class EnhancedAgentBus:
                 queue_name='main', priority='all'
             ).set(queue_size)
 
-        return {
+        metrics = {
             **self._metrics,
             "registered_agents": len(self._agents),
             "queue_size": queue_size,
@@ -691,7 +843,14 @@ class EnhancedAgentBus:
             "dynamic_policy_enabled": self._use_dynamic_policy,
             "processor_metrics": self._processor.get_metrics(),
             "metrics_enabled": METRICS_ENABLED,
+            "metering_enabled": self._metering_hooks is not None,
         }
+
+        # Include metering queue metrics if available
+        if self._metering_queue is not None:
+            metrics["metering_metrics"] = self._metering_queue.get_metrics()
+
+        return metrics
 
     async def get_metrics_async(self) -> Dict[str, Any]:
         """Get comprehensive bus metrics asynchronously.

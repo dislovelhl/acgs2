@@ -107,6 +107,30 @@ except ImportError:
     USE_RUST = False
     rust_bus = None
 
+# Re-export metering integration
+try:
+    from .metering_integration import (
+        MeteringConfig,
+        AsyncMeteringQueue,
+        MeteringHooks,
+        MeteringMixin,
+        get_metering_queue,
+        get_metering_hooks,
+        reset_metering,
+        metered_operation,
+        METERING_AVAILABLE,
+    )
+except ImportError:
+    METERING_AVAILABLE = False
+    MeteringConfig = None
+    AsyncMeteringQueue = None
+    MeteringHooks = None
+    MeteringMixin = None
+    get_metering_queue = None
+    get_metering_hooks = None
+    reset_metering = None
+    metered_operation = None
+
 # Backward compatibility alias
 ConstitutionalValidationStrategy = StaticHashValidationStrategy
 
@@ -117,6 +141,7 @@ __all__ = [
     "DEFAULT_REDIS_URL",
     "METRICS_ENABLED",
     "CIRCUIT_BREAKER_ENABLED",
+    "METERING_AVAILABLE",
     # Core Classes
     "MessageProcessor",
     "EnhancedAgentBus",
@@ -145,6 +170,15 @@ __all__ = [
     "OPAProcessingStrategy",
     "OPAValidationStrategy",
     "CompositeProcessingStrategy",
+    # Metering Integration
+    "MeteringConfig",
+    "AsyncMeteringQueue",
+    "MeteringHooks",
+    "MeteringMixin",
+    "get_metering_queue",
+    "get_metering_hooks",
+    "reset_metering",
+    "metered_operation",
     # Functions
     "get_agent_bus",
     "reset_agent_bus",

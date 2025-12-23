@@ -3,7 +3,7 @@ ACGS-2 Enhanced Agent Bus - Message Processor
 Constitutional Hash: cdd01ef066bc6cf2
 
 Message processing with constitutional validation, multi-strategy support,
-and comprehensive metrics instrumentation.
+comprehensive metrics instrumentation, and production billing metering.
 """
 
 import asyncio
@@ -144,6 +144,31 @@ except ImportError:
         AUDIT_CLIENT_AVAILABLE = False
         AuditClient = None
 
+# Import Metering Integration
+try:
+    from .metering_integration import (
+        MeteringHooks,
+        MeteringConfig,
+        AsyncMeteringQueue,
+        get_metering_hooks,
+        METERING_AVAILABLE,
+    )
+except ImportError:
+    try:
+        from metering_integration import (
+            MeteringHooks,
+            MeteringConfig,
+            AsyncMeteringQueue,
+            get_metering_hooks,
+            METERING_AVAILABLE,
+        )
+    except ImportError:
+        METERING_AVAILABLE = False
+        MeteringHooks = None
+        MeteringConfig = None
+        AsyncMeteringQueue = None
+        get_metering_hooks = None
+
 logger = logging.getLogger(__name__)
 
 # Prompt injection detection patterns
@@ -181,7 +206,10 @@ class MessageProcessor:
         policy_fail_closed: bool = False,
         processing_strategy: Optional[ProcessingStrategy] = None,
         audit_client: Optional[AuditClient] = None,
-        use_rust: bool = True
+        use_rust: bool = True,
+        isolated_mode: bool = False,
+        metering_hooks: Optional['MeteringHooks'] = None,
+        enable_metering: bool = True,
     ):
         """Initialize the message processor.
 
@@ -191,13 +219,26 @@ class MessageProcessor:
             processing_strategy: Optional custom processing strategy.
             audit_client: Optional audit client for logging decisions.
             use_rust: If True, prefer Rust backend when available.
+            isolated_mode: If True, run in minimal-dependency mode for edge/governor-in-a-box.
+            metering_hooks: Optional metering hooks for production billing.
+            enable_metering: If True and metering available, enable usage metering.
         """
-        self._use_dynamic_policy = use_dynamic_policy and POLICY_CLIENT_AVAILABLE
+        self._isolated_mode = isolated_mode
+        self._use_dynamic_policy = use_dynamic_policy and POLICY_CLIENT_AVAILABLE and not isolated_mode
         self._policy_fail_closed = policy_fail_closed
         self._use_rust = use_rust
         self._handlers: Dict[MessageType, List[Callable]] = {}
         self._processed_count = 0
         self._failed_count = 0
+
+        # Initialize metering hooks for production billing
+        self._enable_metering = enable_metering and METERING_AVAILABLE and not isolated_mode
+        if metering_hooks is not None:
+            self._metering_hooks = metering_hooks
+        elif self._enable_metering and get_metering_hooks is not None:
+            self._metering_hooks = get_metering_hooks()
+        else:
+            self._metering_hooks = None
 
         # Initialize Rust processor if available
         if USE_RUST and rust_bus is not None:
@@ -243,7 +284,6 @@ class MessageProcessor:
             self._handlers[message_type].remove(handler)
             return True
         return False
-
     def _auto_select_strategy(self) -> ProcessingStrategy:
         """Auto-select the appropriate processing strategy based on configuration."""
         py_val_strategy = StaticHashValidationStrategy(strict=True)
@@ -251,6 +291,10 @@ class MessageProcessor:
             validation_strategy=py_val_strategy,
             metrics_enabled=METRICS_ENABLED
         )
+
+        if self._isolated_mode:
+            logger.info("MessageProcessor operating in ISOLATED_MODE (Edge Governor)")
+            return py_proc_strategy
 
         strategies: List[ProcessingStrategy] = []
 
@@ -323,15 +367,26 @@ class MessageProcessor:
 
     async def _do_process(self, message: AgentMessage) -> ValidationResult:
         """Internal processing logic using strategy pattern."""
+        process_start = time.perf_counter()
+        validation_latency_ms = 0.0
+
         # 1. Prompt Injection Detection
         injection_result = self._detect_prompt_injection(message)
         if injection_result:
             logger.warning(f"Prompt injection detected for agent {message.from_agent}")
+            # Meter the failed validation
+            self._meter_constitutional_validation(message, False, 0.0)
             return injection_result
 
+        # 2. Constitutional validation and processing via strategy
+        validation_start = time.perf_counter()
         result = await self._processing_strategy.process(message, self._handlers)
+        validation_latency_ms = (time.perf_counter() - validation_start) * 1000
 
-        # 2. Impact Scoring
+        # 3. Meter the constitutional validation (fire-and-forget, non-blocking)
+        self._meter_constitutional_validation(message, result.is_valid, validation_latency_ms)
+
+        # 4. Impact Scoring
         if "impact_score" not in result.metadata:
             try:
                 try:
@@ -354,7 +409,42 @@ class MessageProcessor:
         else:
             self._failed_count += 1
 
+        # 5. Store processing latency in metadata for downstream metering
+        result.metadata["processing_latency_ms"] = (time.perf_counter() - process_start) * 1000
+        result.metadata["validation_latency_ms"] = validation_latency_ms
+
         return result
+
+    def _meter_constitutional_validation(
+        self,
+        message: AgentMessage,
+        is_valid: bool,
+        latency_ms: float,
+    ) -> None:
+        """
+        Record constitutional validation event for metering.
+
+        This method is non-blocking and uses fire-and-forget pattern
+        to ensure zero impact on P99 latency.
+        """
+        if not self._metering_hooks:
+            return
+
+        try:
+            self._metering_hooks.on_constitutional_validation(
+                tenant_id=message.tenant_id or 'default',
+                agent_id=message.from_agent,
+                is_valid=is_valid,
+                latency_ms=latency_ms,
+                metadata={
+                    'message_type': message.message_type.value,
+                    'priority': message.priority.value,
+                    'constitutional_hash': self.constitutional_hash,
+                },
+            )
+        except Exception as e:
+            # Never let metering errors affect the critical path
+            logger.debug(f"Metering error (non-critical): {e}")
 
     def _detect_prompt_injection(self, message: AgentMessage) -> Optional[ValidationResult]:
         """Detect potential prompt injection attacks."""
@@ -432,7 +522,7 @@ class MessageProcessor:
 
     def get_metrics(self) -> Dict[str, Any]:
         """Get processing metrics."""
-        return {
+        metrics = {
             "processed_count": self._processed_count,
             "failed_count": self._failed_count,
             "success_rate": self._processed_count / max(1, self._processed_count + self._failed_count),
@@ -440,7 +530,14 @@ class MessageProcessor:
             "dynamic_policy_enabled": self._use_dynamic_policy,
             "opa_enabled": self._opa_client is not None,
             "processing_strategy": self._processing_strategy.get_name(),
+            "metering_enabled": self._metering_hooks is not None,
         }
+
+        # Include metering queue metrics if available
+        if self._metering_hooks and hasattr(self._metering_hooks, '_queue'):
+            metrics["metering_metrics"] = self._metering_hooks._queue.get_metrics()
+
+        return metrics
 
     @property
     def processing_strategy(self) -> ProcessingStrategy:
