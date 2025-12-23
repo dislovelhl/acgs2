@@ -49,7 +49,16 @@ from .vault_kv import VaultKVOperations
 from .vault_audit import VaultAuditLogger
 from .vault_cache import VaultCacheManager
 
-# Local fallback
+# Secure fallback encryption (AES-256-GCM, replaces insecure XOR)
+from .secure_fallback_crypto import (
+    SecureFallbackCrypto,
+    SecureFallbackConfig,
+    is_secure_fallback_ciphertext,
+    is_legacy_local_ciphertext,
+    CRYPTOGRAPHY_AVAILABLE,
+)
+
+# Local fallback for signing (not encryption)
 from .crypto_service import CryptoService
 from ..models import PolicySignature, KeyPair, KeyAlgorithm, KeyStatus
 
@@ -110,9 +119,16 @@ class VaultCryptoService:
         # Initialize audit logger
         self._audit_logger = VaultAuditLogger(enabled=audit_enabled)
 
-        # Local fallback service
+        # Local fallback service for signing
         self._local_crypto = CryptoService() if fallback_enabled else None
         self._local_keys: Dict[str, tuple[str, str]] = {}  # key_name -> (public, private)
+
+        # Secure fallback encryption service (AES-256-GCM)
+        self._secure_fallback: Optional[SecureFallbackCrypto] = None
+        if fallback_enabled and CRYPTOGRAPHY_AVAILABLE:
+            self._secure_fallback = SecureFallbackCrypto(
+                config=SecureFallbackConfig.from_env()
+            )
 
         # Constitutional compliance
         self._constitutional_hash = CONSTITUTIONAL_HASH
@@ -393,13 +409,12 @@ class VaultCryptoService:
                     context=context,
                 )
 
-            elif self.fallback_enabled:
-                import secrets
-                nonce = secrets.token_bytes(12)
-                key_bytes = hashlib.sha256(key_name.encode()).digest()
-                encrypted = bytes(a ^ b for a, b in zip(plaintext, key_bytes * (len(plaintext) // 32 + 1)))
-                ciphertext = f"local:v1:{base64.b64encode(nonce + encrypted).decode()}"
-                logger.warning("Using insecure local encryption fallback - not for production")
+            elif self.fallback_enabled and self._secure_fallback:
+                # Use secure AES-256-GCM fallback instead of insecure XOR
+                ciphertext = self._secure_fallback.encrypt(key_name, plaintext)
+                logger.info(
+                    f"Using secure AES-256-GCM fallback encryption for key '{key_name}'"
+                )
 
             else:
                 raise RuntimeError("Vault unavailable and fallback disabled")
@@ -443,15 +458,29 @@ class VaultCryptoService:
         error_msg = None
 
         try:
-            if ciphertext.startswith("local:"):
+            if is_secure_fallback_ciphertext(ciphertext):
+                # Secure AES-256-GCM fallback ciphertext
+                if not self.fallback_enabled or not self._secure_fallback:
+                    raise RuntimeError("Secure fallback ciphertext but fallback disabled")
+                plaintext = self._secure_fallback.decrypt(key_name, ciphertext)
+                logger.info(
+                    f"Decrypted using secure AES-256-GCM fallback for key '{key_name}'"
+                )
+
+            elif is_legacy_local_ciphertext(ciphertext):
+                # Legacy insecure XOR ciphertext - maintain backward compatibility
+                # but log a strong warning
                 if not self.fallback_enabled:
-                    raise RuntimeError("Local ciphertext but fallback disabled")
+                    raise RuntimeError("Legacy local ciphertext but fallback disabled")
+                logger.warning(
+                    f"SECURITY WARNING: Decrypting legacy insecure XOR ciphertext for key "
+                    f"'{key_name}'. This data should be re-encrypted with secure fallback."
+                )
                 _, _, encoded = ciphertext.split(":", 2)
                 data = base64.b64decode(encoded)
                 nonce, encrypted = data[:12], data[12:]
                 key_bytes = hashlib.sha256(key_name.encode()).digest()
                 plaintext = bytes(a ^ b for a, b in zip(encrypted, key_bytes * (len(encrypted) // 32 + 1)))
-                logger.warning("Using insecure local decryption fallback - not for production")
 
             elif self._vault_available and self._transit:
                 plaintext = await self._transit.decrypt(

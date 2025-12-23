@@ -1,0 +1,95 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: Enhanced Agent Bus Core",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/enhanced_agent_bus/core.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}",
+                "USE_RUST_BACKED": "0"
+            }
+        },
+        {
+            "name": "Python: Audit Service",
+            "type": "python",
+            "request": "launch",
+            "module": "uvicorn",
+            "args": [
+                "services.audit_service.main:app",
+                "--reload",
+                "--port",
+                "8084"
+            ],
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            }
+        },
+        {
+            "name": "Python: Policy Registry",
+            "type": "python",
+            "request": "launch",
+            "module": "uvicorn",
+            "args": [
+                "services.policy_registry.main:app",
+                "--reload",
+                "--port",
+                "8000"
+            ],
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            }
+        },
+        {
+            "name": "Python: Deliberation Layer (Dashboard)",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/enhanced_agent_bus/deliberation_layer/dashboard.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}",
+                "PORT": "8081"
+            }
+        },
+        {
+            "name": "Python: Constraint Generation (Demo)",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/services/core/constraint_generation_system/demo.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}",
+                "PORT": "8082"
+            }
+        },
+        {
+            "name": "Python: Vector Search (Client)",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/services/integration/search_platform/client.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}",
+                "PORT": "8083"
+            }
+        },
+        {
+            "name": "Python: Current File",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "justMyCode": true
+        }
+    ]
+}

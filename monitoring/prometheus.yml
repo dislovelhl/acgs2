@@ -8,6 +8,7 @@ global:
 
 rule_files:
   - "alert_rules.yml"
+  - "acgs2_performance_alerts.yml"
 
 alerting:
   alertmanagers:

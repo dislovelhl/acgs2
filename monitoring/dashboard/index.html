@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+
+    <!-- Preconnect to API server for faster data fetching -->
+    <link rel="preconnect" href="http://localhost:8090" crossorigin />
+    <link rel="dns-prefetch" href="http://localhost:8090" />
+
+    <!-- Favicon with multiple sizes for different devices -->
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <link rel="apple-touch-icon" href="/vite.svg" />
+
+    <!-- Mobile and responsive viewport -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+
+    <!-- SEO and social meta tags -->
+    <meta name="description" content="ACGS-2 Unified Monitoring Dashboard - Constitutional AI Governance System. Real-time monitoring with P99 latency tracking and constitutional compliance." />
+    <meta name="keywords" content="ACGS-2, monitoring, dashboard, constitutional AI, governance, compliance" />
+    <meta name="author" content="ACGS Team" />
+
+    <!-- Constitutional hash for integrity verification -->
+    <meta name="constitutional-hash" content="cdd01ef066bc6cf2" />
+
+    <!-- PWA and mobile app meta tags -->
+    <meta name="theme-color" content="#3b82f6" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="ACGS-2 Dashboard" />
+
+    <!-- Open Graph meta tags for social sharing -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="ACGS-2 Monitoring Dashboard" />
+    <meta property="og:description" content="Constitutional AI Governance System - Real-time Monitoring" />
+    <meta property="og:site_name" content="ACGS-2" />
+
+    <!-- Cache control hints for CDN -->
+    <meta http-equiv="Cache-Control" content="public, max-age=31536000, immutable" />
+
+    <!-- Preload critical fonts if using web fonts -->
+    <!-- <link rel="preload" href="/fonts/inter-var.woff2" as="font" type="font/woff2" crossorigin /> -->
+
+    <title>ACGS-2 Monitoring Dashboard</title>
+
+    <!-- Inline critical CSS for faster FCP -->
+    <style>
+      /* Critical CSS - inline for faster First Contentful Paint */
+      *,*::before,*::after{box-sizing:border-box}
+      html{line-height:1.5;-webkit-text-size-adjust:100%}
+      body{margin:0;font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;background-color:#f3f4f6}
+      #root{min-height:100vh}
+      /* Loading skeleton for perceived performance */
+      .loading-skeleton{background:linear-gradient(90deg,#e5e7eb 25%,#f3f4f6 50%,#e5e7eb 75%);background-size:200% 100%;animation:shimmer 1.5s infinite}
+      @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+    </style>
+  </head>
+  <body>
+    <!-- Loading indicator for initial app load -->
+    <div id="root">
+      <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;background:#f3f4f6">
+        <div style="text-align:center">
+          <div style="width:48px;height:48px;margin:0 auto 16px;border:3px solid #e5e7eb;border-top-color:#3b82f6;border-radius:50%;animation:spin 1s linear infinite"></div>
+          <p style="color:#6b7280;font-size:14px;margin:0">Loading ACGS-2 Dashboard...</p>
+        </div>
+      </div>
+      <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+    </div>
+
+    <!-- Main application script with module preloading -->
+    <script type="module" src="/src/main.tsx"></script>
+
+    <!-- Preload critical chunks for faster navigation -->
+    <link rel="modulepreload" href="/src/main.tsx" />
+  </body>
+</html>

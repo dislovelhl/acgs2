@@ -1,18 +1,10 @@
 [
   {
-    "id": "cmd-task-1766245678764",
-    "type": "task",
+    "id": "cmd-swarm-1766492684380",
+    "type": "swarm",
     "success": true,
-    "duration": 2.096626999999984,
-    "timestamp": 1766245678766,
-    "metadata": {}
-  },
-  {
-    "id": "cmd-neural-1766315363371",
-    "type": "neural",
-    "success": true,
-    "duration": 1.8435519999999883,
-    "timestamp": 1766315363373,
+    "duration": 6.779830000000004,
+    "timestamp": 1766492684387,
     "metadata": {}
   }
 ]

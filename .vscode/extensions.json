@@ -1,0 +1,14 @@
+{
+    "recommendations": [
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "tswalsh.regal",
+        "stefanprodan.prometheus-format",
+        "tamasfe.even-better-toml",
+        "redhat.vscode-yaml",
+        "ms-azuretools.vscode-docker",
+        "rust-lang.rust-analyzer",
+        "esbenp.prettier-vscode",
+        "run-at-scale.vscode-coverage-gutters"
+    ]
+}

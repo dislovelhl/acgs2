@@ -1,0 +1,411 @@
+# ACGS-2 Performance Alert Rules
+# Constitutional Hash: cdd01ef066bc6cf2
+# Version: 1.0.0
+# Last Updated: 2025-12-23
+#
+# Based on validated production metrics:
+# - P99 Latency: 3.23ms (target <5ms)
+# - Throughput: 314 RPS (target >100 RPS)
+# - Success Rate: 100%
+# - Cache Hit Rate: 95%
+
+groups:
+  # ==========================================================================
+  # LATENCY ALERTS
+  # ==========================================================================
+  - name: acgs2.latency
+    interval: 15s
+    rules:
+      # P99 Latency Warning (>4ms, 23% degradation tolerance)
+      - alert: HighP99Latency
+        expr: |
+          histogram_quantile(0.99,
+            sum(rate(http_request_duration_seconds_bucket{service=~"acgs2.*"}[5m])) by (le, service)
+          ) > 0.004
+        for: 2m
+        labels:
+          severity: warning
+          component: performance
+          constitutional_hash: cdd01ef066bc6cf2
+        annotations:
+          summary: "P99 latency exceeds 4ms warning threshold"
+          description: "Service {{ $labels.service }} P99 latency is {{ $value | humanizeDuration }} (warning threshold: 4ms, target: <5ms)"
+          runbook_url: "https://docs.acgs2.io/runbooks/high-latency"
+
+      # P99 Latency Critical (>5ms, constitutional target)
+      - alert: CriticalP99Latency
+        expr: |
+          histogram_quantile(0.99,
+            sum(rate(http_request_duration_seconds_bucket{service=~"acgs2.*"}[5m])) by (le, service)
+          ) > 0.005
+        for: 1m
+        labels:
+          severity: critical
+          component: performance
+          constitutional_hash: cdd01ef066bc6cf2
+        annotations:
+          summary: "P99 latency exceeds 5ms constitutional target"
+          description: "CRITICAL: Service {{ $labels.service }} P99 latency is {{ $value | humanizeDuration }} exceeding constitutional target of 5ms"
+          runbook_url: "https://docs.acgs2.io/runbooks/critical-latency"
+
+      # P50 Latency Degradation
+      - alert: P50LatencyDegraded
+        expr: |
+          histogram_quantile(0.50,
+            sum(rate(http_request_duration_seconds_bucket{service=~"acgs2.*"}[5m])) by (le, service)
+          ) > 0.002
+        for: 5m
+        labels:
+          severity: warning
+          component: performance
+          constitutional_hash: cdd01ef066bc6cf2
+        annotations:
+          summary: "P50 latency elevated"
+          description: "Service {{ $labels.service }} P50 latency is {{ $value | humanizeDuration }} (target: <1ms)"
+
+  # ==========================================================================
+  # THROUGHPUT ALERTS
+  # ==========================================================================
+  - name: acgs2.throughput
+    interval: 15s
+    rules:
+      # Throughput Warning (<150 RPS)
+      - alert: LowThroughput
+        expr: |
+          sum(rate(http_requests_total{service=~"acgs2.*"}[5m])) by (service) < 150
+        for: 5m
+        labels:
+          severity: warning
+          component: performance
+          constitutional_hash: cdd01ef066bc6cf2
+        annotations:
+          summary: "Throughput below warning threshold"
+          description: "Service {{ $labels.service }} throughput is {{ $value | printf \"%.2f\" }} RPS (warning threshold: 150 RPS, target: 314 RPS)"
+          runbook_url: "https://docs.acgs2.io/runbooks/low-throughput"
+
+      # Throughput Critical (<100 RPS, constitutional minimum)
+      - alert: CriticalLowThroughput
+        expr: |
+          sum(rate(http_requests_total{service=~"acgs2.*"}[5m])) by (service) < 100
+        for: 2m
+        labels:
+          severity: critical
+          component: performance
+          constitutional_hash: cdd01ef066bc6cf2
+        annotations:
+          summary: "Throughput below constitutional minimum"
+          description: "CRITICAL: Service {{ $labels.service }} throughput is {{ $value | printf \"%.2f\" }} RPS below constitutional minimum of 100 RPS"
+          runbook_url: "https://docs.acgs2.io/runbooks/critical-throughput"
+
+      # Throughput Drop (50% degradation from baseline)
+      - alert: ThroughputDrop
+        expr: |
+          (
+            sum(rate(http_requests_total{service=~"acgs2.*"}[5m])) by (service)
+            /
+            sum(rate(http_requests_total{service=~"acgs2.*"}[1h] offset 24h)) by (service)
+          ) < 0.5
+        for: 5m
+        labels:
+          severity: warning
+          component: performance
+          constitutional_hash: cdd01ef066bc6cf2
+        annotations:
+          summary: "Significant throughput drop detected"
+          description: "Service {{ $labels.service }} throughput dropped by {{ $value | printf \"%.0f\" }}% compared to 24h ago"
+
+  # ==========================================================================
+  # ERROR RATE ALERTS
+  # ==========================================================================
+  - name: acgs2.errors
+    interval: 15s
+    rules:
+      # Error Rate Warning (>1%)
+      - alert: HighErrorRate
+        expr: |
+          (
+            sum(rate(http_requests_total{service=~"acgs2.*", status=~"5.."}[5m])) by (service)
+            /
+            sum(rate(http_requests_total{service=~"acgs2.*"}[5m])) by (service)
+          ) * 100 > 1
+        for: 2m
+        labels:
+          severity: warning
+          component: reliability
+          constitutional_hash: cdd01ef066bc6cf2
+        annotations:
+          summary: "Error rate exceeds warning threshold"
+          description: "Service {{ $labels.service }} error rate is {{ $value | printf \"%.2f\" }}% (warning threshold: 1%)"
+          runbook_url: "https://docs.acgs2.io/runbooks/high-error-rate"
+
+      # Error Rate Critical (>5%)
+      - alert: CriticalErrorRate
+        expr: |
+          (
+            sum(rate(http_requests_total{service=~"acgs2.*", status=~"5.."}[5m])) by (service)
+            /
+            sum(rate(http_requests_total{service=~"acgs2.*"}[5m])) by (service)
+          ) * 100 > 5
+        for: 1m
+        labels:
+          severity: critical
+          component: reliability
+          constitutional_hash: cdd01ef066bc6cf2
+        annotations:
+          summary: "Error rate exceeds critical threshold"
+          description: "CRITICAL: Service {{ $labels.service }} error rate is {{ $value | printf \"%.2f\" }}% (critical threshold: 5%)"
+          runbook_url: "https://docs.acgs2.io/runbooks/critical-error-rate"
+
+      # Error Spike Detection
+      - alert: ErrorSpike
+        expr: |
+          (
+            sum(rate(http_requests_total{service=~"acgs2.*", status=~"5.."}[5m])) by (service)
+            /
+            sum(rate(http_requests_total{service=~"acgs2.*", status=~"5.."}[1h])) by (service)
+          ) > 5
+        for: 1m
+        labels:
+          severity: warning
+          component: reliability
+          constitutional_hash: cdd01ef066bc6cf2
+        annotations:
+          summary: "Sudden error spike detected"
+          description: "Service {{ $labels.service }} error rate spiked {{ $value | printf \"%.1f\" }}x above hourly average"
+
+  # ==========================================================================
+  # CACHE PERFORMANCE ALERTS
+  # ==========================================================================
+  - name: acgs2.cache
+    interval: 30s
+    rules:
+      # Cache Hit Rate Warning (<85%)
+      - alert: LowCacheHitRate
+        expr: |
+          (
+            sum(rate(cache_hits_total{service=~"acgs2.*"}[5m])) by (cache_name)
+            /
+            (sum(rate(cache_hits_total{service=~"acgs2.*"}[5m])) by (cache_name) + sum(rate(cache_misses_total{service=~"acgs2.*"}[5m])) by (cache_name))
+          ) * 100 < 85
+        for: 5m
+        labels:
+          severity: warning
+          component: cache
+          constitutional_hash: cdd01ef066bc6cf2
+        annotations:
+          summary: "Cache hit rate below constitutional target"
+          description: "Cache {{ $labels.cache_name }} hit rate is {{ $value | printf \"%.2f\" }}% (constitutional target: >85%)"
+          runbook_url: "https://docs.acgs2.io/runbooks/low-cache-hit-rate"
+
+      # Cache Hit Rate Critical (<75%)
+      - alert: CriticalCacheHitRate
+        expr: |
+          (
+            sum(rate(cache_hits_total{service=~"acgs2.*"}[5m])) by (cache_name)
+            /
+            (sum(rate(cache_hits_total{service=~"acgs2.*"}[5m])) by (cache_name) + sum(rate(cache_misses_total{service=~"acgs2.*"}[5m])) by (cache_name))
+          ) * 100 < 75
+        for: 2m
+        labels:
+          severity: critical
+          component: cache
+          constitutional_hash: cdd01ef066bc6cf2
+        annotations:
+          summary: "Cache hit rate critically low"
+          description: "CRITICAL: Cache {{ $labels.cache_name }} hit rate is {{ $value | printf \"%.2f\" }}% causing performance degradation"
+
+  # ==========================================================================
+  # CONSTITUTIONAL COMPLIANCE ALERTS
+  # ==========================================================================
+  - name: acgs2.constitutional
+    interval: 15s
+    rules:
+      # Constitutional Validation Failures
+      - alert: ConstitutionalValidationFailure
+        expr: |
+          sum(rate(constitutional_validations_total{result="failure"}[5m])) by (service) > 0
+        for: 1m
+        labels:
+          severity: critical
+          component: governance
+          constitutional_hash: cdd01ef066bc6cf2
+        annotations:
+          summary: "Constitutional validation failures detected"
+          description: "CRITICAL: Service {{ $labels.service }} has constitutional validation failures - immediate attention required"
+          runbook_url: "https://docs.acgs2.io/runbooks/constitutional-failure"
+
+      # Constitutional Compliance Degraded
+      - alert: ConstitutionalComplianceDegraded
+        expr: |
+          (
+            sum(rate(constitutional_validations_total{result="success"}[5m])) by (service)
+            /
+            sum(rate(constitutional_validations_total[5m])) by (service)
+          ) * 100 < 100
+        for: 1m
+        labels:
+          severity: critical
+          component: governance
+          constitutional_hash: cdd01ef066bc6cf2
+        annotations:
+          summary: "Constitutional compliance below 100%"
+          description: "CRITICAL: Service {{ $labels.service }} constitutional compliance is {{ $value | printf \"%.2f\" }}% (required: 100%)"
+
+      # Constitutional Hash Mismatch
+      - alert: ConstitutionalHashMismatch
+        expr: |
+          sum(rate(constitutional_violations_total{violation_type="hash_mismatch"}[5m])) by (service) > 0
+        for: 0m
+        labels:
+          severity: critical
+          component: governance
+          constitutional_hash: cdd01ef066bc6cf2
+        annotations:
+          summary: "Constitutional hash mismatch detected"
+          description: "CRITICAL: Constitutional hash mismatch in service {{ $labels.service }} - potential integrity violation"
+
+  # ==========================================================================
+  # CIRCUIT BREAKER ALERTS
+  # ==========================================================================
+  - name: acgs2.circuit_breaker
+    interval: 15s
+    rules:
+      # Circuit Breaker Open
+      - alert: CircuitBreakerOpen
+        expr: |
+          circuit_breaker_state{state="open"} == 1
+        for: 0m
+        labels:
+          severity: warning
+          component: resilience
+          constitutional_hash: cdd01ef066bc6cf2
+        annotations:
+          summary: "Circuit breaker opened"
+          description: "Circuit breaker {{ $labels.name }} is OPEN, service degradation in effect"
+          runbook_url: "https://docs.acgs2.io/runbooks/circuit-breaker-open"
+
+      # Multiple Circuit Breakers Open
+      - alert: MultipleCircuitBreakersOpen
+        expr: |
+          count(circuit_breaker_state{state="open"} == 1) > 2
+        for: 1m
+        labels:
+          severity: critical
+          component: resilience
+          constitutional_hash: cdd01ef066bc6cf2
+        annotations:
+          summary: "Multiple circuit breakers open"
+          description: "CRITICAL: {{ $value }} circuit breakers are open, significant service degradation"
+
+      # Health Aggregator Score Low
+      - alert: LowHealthScore
+        expr: |
+          health_aggregator_score < 0.5
+        for: 2m
+        labels:
+          severity: critical
+          component: resilience
+          constitutional_hash: cdd01ef066bc6cf2
+        annotations:
+          summary: "System health score critically low"
+          description: "CRITICAL: Health aggregator score is {{ $value | printf \"%.2f\" }} (threshold: 0.5)"
+
+  # ==========================================================================
+  # SLO BURN RATE ALERTS
+  # ==========================================================================
+  - name: acgs2.slo
+    interval: 60s
+    rules:
+      # Fast Burn (high error budget consumption)
+      - alert: SLOBurnRateFast
+        expr: |
+          (
+            sum(rate(http_requests_total{service=~"acgs2.*", status=~"5.."}[5m]))
+            /
+            sum(rate(http_requests_total{service=~"acgs2.*"}[5m]))
+          ) > 14.4 * 0.001
+        for: 2m
+        labels:
+          severity: critical
+          component: slo
+          constitutional_hash: cdd01ef066bc6cf2
+        annotations:
+          summary: "SLO error budget burning fast (1h depletion)"
+          description: "CRITICAL: Error budget will be depleted in ~1 hour at current rate"
+          runbook_url: "https://docs.acgs2.io/runbooks/slo-burn-rate"
+
+      # Slow Burn (sustained error budget consumption)
+      - alert: SLOBurnRateSlow
+        expr: |
+          (
+            sum(rate(http_requests_total{service=~"acgs2.*", status=~"5.."}[30m]))
+            /
+            sum(rate(http_requests_total{service=~"acgs2.*"}[30m]))
+          ) > 6 * 0.001
+        for: 15m
+        labels:
+          severity: warning
+          component: slo
+          constitutional_hash: cdd01ef066bc6cf2
+        annotations:
+          summary: "SLO error budget burning slowly (6h depletion)"
+          description: "Error budget will be depleted in ~6 hours at current rate"
+
+      # Availability SLO Violation
+      - alert: AvailabilitySLOViolation
+        expr: |
+          (
+            1 - (
+              sum(rate(http_requests_total{service=~"acgs2.*", status=~"5.."}[24h]))
+              /
+              sum(rate(http_requests_total{service=~"acgs2.*"}[24h]))
+            )
+          ) * 100 < 99.9
+        for: 5m
+        labels:
+          severity: critical
+          component: slo
+          constitutional_hash: cdd01ef066bc6cf2
+        annotations:
+          summary: "Availability SLO violated"
+          description: "CRITICAL: 24h availability is {{ $value | printf \"%.3f\" }}% (SLO: 99.9%)"
+
+  # ==========================================================================
+  # PERFORMANCE REGRESSION ALERTS
+  # ==========================================================================
+  - name: acgs2.regression
+    interval: 60s
+    rules:
+      # Latency Regression (20% degradation from 7d baseline)
+      - alert: LatencyRegression
+        expr: |
+          (
+            histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket{service=~"acgs2.*"}[1h])) by (le, service))
+            /
+            histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket{service=~"acgs2.*"}[1h] offset 168h)) by (le, service))
+          ) > 1.2
+        for: 15m
+        labels:
+          severity: warning
+          component: regression
+          constitutional_hash: cdd01ef066bc6cf2
+        annotations:
+          summary: "Latency regression detected"
+          description: "Service {{ $labels.service }} P99 latency increased {{ $value | printf \"%.0f\" }}% compared to 7d ago"
+
+      # Throughput Regression (30% degradation)
+      - alert: ThroughputRegression
+        expr: |
+          (
+            sum(rate(http_requests_total{service=~"acgs2.*"}[1h])) by (service)
+            /
+            sum(rate(http_requests_total{service=~"acgs2.*"}[1h] offset 168h)) by (service)
+          ) < 0.7
+        for: 15m
+        labels:
+          severity: warning
+          component: regression
+          constitutional_hash: cdd01ef066bc6cf2
+        annotations:
+          summary: "Throughput regression detected"
+          description: "Service {{ $labels.service }} throughput decreased {{ $value | printf \"%.0f\" }}% compared to 7d ago"

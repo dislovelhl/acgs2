@@ -1,0 +1,146 @@
+# ACGS-2 Multi-Stage Review Workflow Template
+# Constitutional Hash: cdd01ef066bc6cf2
+# Version: 1.0.0
+
+name: multi_stage_review
+version: "1.0.0"
+description: "Multi-stage review workflow for high-impact decisions requiring deliberation"
+constitutional_hash: cdd01ef066bc6cf2
+
+workflow_type: saga
+
+config:
+  timeout_seconds: 300
+  max_retries: 3
+  fail_closed: true
+  require_human_approval: true
+  impact_threshold: 0.8
+
+steps:
+  - name: validate_hash
+    action: validate_constitutional_hash
+    timeout: 5
+    required: true
+    compensation: null
+    description: "Verify constitutional hash compliance"
+
+  - name: calculate_impact
+    action: calculate_impact_score
+    timeout: 30
+    required: true
+    depends_on: [validate_hash]
+    compensation: null
+    config:
+      model: "distilbert"
+      weights:
+        semantic: 0.30
+        permission: 0.20
+        drift: 0.15
+        historical: 0.15
+        context: 0.20
+    description: "Calculate message impact score using ML model"
+
+  - name: route_by_impact
+    action: adaptive_route
+    timeout: 5
+    required: true
+    depends_on: [calculate_impact]
+    compensation: null
+    config:
+      fast_lane_threshold: 0.5
+      deliberation_threshold: 0.8
+    description: "Route based on impact score"
+
+  - name: policy_evaluation
+    action: evaluate_opa_policy
+    timeout: 30
+    required: true
+    depends_on: [route_by_impact]
+    compensation: revert_policy_state
+    config:
+      policy: "deliberation/high_impact"
+      fail_closed: true
+    description: "Evaluate constitutional governance policies"
+
+  - name: agent_voting
+    action: conduct_voting
+    timeout: 60
+    required: true
+    depends_on: [policy_evaluation]
+    compensation: invalidate_votes
+    config:
+      strategy: "supermajority"
+      quorum: 0.66
+      eligible_agents: ["governance", "security", "compliance"]
+    description: "Conduct multi-agent voting on decision"
+
+  - name: human_review
+    action: request_human_approval
+    timeout: 120
+    required: false
+    depends_on: [agent_voting]
+    compensation: null
+    config:
+      escalation_path: ["team_lead", "manager", "director"]
+      auto_approve_threshold: 0.95
+    description: "Request human-in-the-loop approval for critical decisions"
+
+  - name: final_decision
+    action: aggregate_decision
+    timeout: 10
+    required: true
+    depends_on: [human_review, agent_voting]
+    compensation: null
+    description: "Aggregate all inputs for final decision"
+
+  - name: execute_action
+    action: execute_approved_action
+    timeout: 30
+    required: true
+    depends_on: [final_decision]
+    compensation: rollback_action
+    description: "Execute the approved action"
+
+  - name: blockchain_anchor
+    action: anchor_to_blockchain
+    timeout: 60
+    required: false
+    depends_on: [execute_action]
+    compensation: null
+    config:
+      chain: "governance"
+      include_evidence: true
+    description: "Anchor decision to blockchain for immutability"
+
+  - name: notification
+    action: broadcast_result
+    timeout: 10
+    required: false
+    depends_on: [blockchain_anchor]
+    config:
+      channels: ["agents", "audit", "stakeholders"]
+    description: "Broadcast decision result to all stakeholders"
+
+compensations:
+  revert_policy_state:
+    action: revert_policy_evaluation
+    timeout: 15
+    idempotent: true
+
+  invalidate_votes:
+    action: mark_votes_invalid
+    timeout: 10
+    idempotent: true
+
+  rollback_action:
+    action: rollback_executed_action
+    timeout: 30
+    idempotent: true
+    requires_confirmation: true
+
+metadata:
+  author: "ACGS-2 Team"
+  category: "deliberation"
+  tags: ["high-impact", "multi-stage", "human-in-loop", "blockchain"]
+  performance_target_ms: 500
+  compliance_level: "enterprise"

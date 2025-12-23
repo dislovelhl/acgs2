@@ -12,6 +12,20 @@ from fastapi.responses import JSONResponse
 
 from .services import CryptoService, CacheService, NotificationService, PolicyService
 from shared.audit_client import AuditClient
+
+# Import secure CORS configuration
+try:
+    from shared.security.cors_config import get_cors_config
+    SECURE_CORS_AVAILABLE = True
+except ImportError:
+    SECURE_CORS_AVAILABLE = False
+
+# Import rate limiting middleware
+try:
+    from shared.security.rate_limiter import RateLimitMiddleware, RateLimitConfig
+    RATE_LIMIT_AVAILABLE = True
+except ImportError:
+    RATE_LIMIT_AVAILABLE = False
 from .api.v1 import router as v1_router
 
 # Centralized settings
@@ -68,14 +82,35 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# Add CORS middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=settings.security.cors_origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# Add CORS middleware with secure configuration
+if SECURE_CORS_AVAILABLE:
+    # Use secure CORS configuration from shared module
+    cors_config = get_cors_config()
+    logger.info(f"Using secure CORS configuration with {len(cors_config.get('allow_origins', []))} origins")
+else:
+    # Fallback to settings-based configuration
+    cors_config = {
+        "allow_origins": settings.security.cors_origins,
+        "allow_credentials": True,
+        "allow_methods": ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+        "allow_headers": ["Authorization", "Content-Type", "X-Request-ID", "X-Constitutional-Hash"],
+    }
+    logger.warning("Using fallback CORS configuration - shared.security module not available")
+
+app.add_middleware(CORSMiddleware, **cors_config)
+
+# Add Rate Limiting middleware
+if RATE_LIMIT_AVAILABLE:
+    rate_limit_config = RateLimitConfig.from_env()
+    if rate_limit_config.enabled:
+        app.add_middleware(RateLimitMiddleware, config=rate_limit_config)
+        logger.info(
+            f"Rate limiting enabled with {len(rate_limit_config.rules)} rules"
+        )
+    else:
+        logger.info("Rate limiting is disabled via configuration")
+else:
+    logger.warning("Rate limiting not available - shared.security.rate_limiter not found")
 
 
 @app.middleware("http")

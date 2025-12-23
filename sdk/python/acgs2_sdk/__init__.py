@@ -6,6 +6,7 @@ Constitutional Hash: cdd01ef066bc6cf2
 """
 
 from acgs2_sdk.client import ACGS2Client, create_client
+from acgs2_sdk.governor import Governor
 from acgs2_sdk.config import ACGS2Config, AuthConfig
 from acgs2_sdk.constants import CONSTITUTIONAL_HASH
 from acgs2_sdk.exceptions import (
@@ -50,6 +51,7 @@ __all__ = [
     # Client
     "ACGS2Client",
     "create_client",
+    "Governor",
     # Config
     "ACGS2Config",
     "AuthConfig",

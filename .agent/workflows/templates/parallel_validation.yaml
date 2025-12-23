@@ -1,0 +1,111 @@
+# ACGS-2 Parallel Validation Workflow Template
+# Constitutional Hash: cdd01ef066bc6cf2
+# Version: 1.0.0
+
+name: parallel_validation
+version: "1.0.0"
+description: "DAG-based parallel validation for maximum throughput"
+constitutional_hash: cdd01ef066bc6cf2
+
+workflow_type: dag
+
+config:
+  timeout_seconds: 30
+  max_parallel_nodes: 10
+  fail_fast: false
+
+# DAG nodes with dependencies
+nodes:
+  - id: hash_check
+    name: "Constitutional Hash Check"
+    action: validate_constitutional_hash
+    timeout: 5
+    dependencies: []
+    is_optional: false
+    description: "Validate constitutional hash"
+
+  - id: content_integrity
+    name: "Content Integrity Check"
+    action: verify_content_hash
+    timeout: 5
+    dependencies: []
+    is_optional: false
+    description: "Verify content hasn't been tampered"
+
+  - id: agent_auth
+    name: "Agent Authentication"
+    action: authenticate_agent
+    timeout: 5
+    dependencies: []
+    is_optional: false
+    description: "Verify agent identity"
+
+  # These run in parallel after initial checks
+  - id: policy_check
+    name: "Policy Evaluation"
+    action: evaluate_opa_policy
+    timeout: 15
+    dependencies: [hash_check, agent_auth]
+    is_optional: false
+    config:
+      policy: "validation/standard"
+    description: "Evaluate governance policies"
+
+  - id: permission_check
+    name: "Permission Verification"
+    action: verify_permissions
+    timeout: 10
+    dependencies: [agent_auth]
+    is_optional: false
+    description: "Verify agent permissions for action"
+
+  - id: rate_limit_check
+    name: "Rate Limit Check"
+    action: check_rate_limits
+    timeout: 5
+    dependencies: [agent_auth]
+    is_optional: true
+    description: "Check rate limits for agent"
+
+  - id: context_analysis
+    name: "Context Analysis"
+    action: analyze_context
+    timeout: 10
+    dependencies: [content_integrity]
+    is_optional: true
+    description: "Analyze message context for anomalies"
+
+  # Final aggregation after all parallel checks
+  - id: aggregate_results
+    name: "Aggregate Validation Results"
+    action: aggregate_validation
+    timeout: 5
+    dependencies: [policy_check, permission_check, rate_limit_check, context_analysis]
+    is_optional: false
+    description: "Combine all validation results"
+
+  - id: make_decision
+    name: "Make Final Decision"
+    action: decide_validation
+    timeout: 5
+    dependencies: [aggregate_results]
+    is_optional: false
+    config:
+      require_all_critical: true
+      allow_optional_failures: true
+    description: "Make final validation decision"
+
+  - id: record_audit
+    name: "Record Audit Trail"
+    action: record_audit
+    timeout: 10
+    dependencies: [make_decision]
+    is_optional: true
+    description: "Record validation in audit trail"
+
+metadata:
+  author: "ACGS-2 Team"
+  category: "validation"
+  tags: ["parallel", "dag", "high-throughput"]
+  performance_target_ms: 30
+  expected_parallelism: 4
