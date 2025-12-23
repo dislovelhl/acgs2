@@ -14,7 +14,6 @@ Supports dependency injection for all major components:
 
 import asyncio
 import logging
-import sys
 from typing import Dict, Any, Optional, Callable, List
 from datetime import datetime, timezone
 
@@ -24,28 +23,32 @@ except ImportError:
     # Fallback for direct execution or testing
     from models import AgentMessage, MessageStatus, CONSTITUTIONAL_HASH  # type: ignore
 
+# Import deliberation layer components with fallback chain
+_USING_MOCKS = False
+
 try:
+    # Try relative imports first (package context)
+    from .interfaces import (
+        ImpactScorerProtocol, AdaptiveRouterProtocol,
+        DeliberationQueueProtocol, LLMAssistantProtocol,
+        RedisQueueProtocol, RedisVotingProtocol, OPAGuardProtocol,
+    )
+    from .impact_scorer import get_impact_scorer, calculate_message_impact
+    from .adaptive_router import get_adaptive_router
+    from .deliberation_queue import (
+        get_deliberation_queue, DeliberationStatus, VoteType
+    )
+    from .llm_assistant import get_llm_assistant
+    from .redis_integration import (
+        get_redis_deliberation_queue, get_redis_voting_system
+    )
+    from .opa_guard import (
+        OPAGuard, get_opa_guard, GuardResult, GuardDecision,
+        SignatureResult, ReviewResult
+    )
+except (ImportError, ValueError):
     try:
-        from .interfaces import (
-            ImpactScorerProtocol, AdaptiveRouterProtocol,
-            DeliberationQueueProtocol, LLMAssistantProtocol,
-            RedisQueueProtocol, RedisVotingProtocol, OPAGuardProtocol,
-        )
-        from .impact_scorer import get_impact_scorer, calculate_message_impact
-        from .adaptive_router import get_adaptive_router
-        from .deliberation_queue import (
-            get_deliberation_queue, DeliberationStatus, VoteType
-        )
-        from .llm_assistant import get_llm_assistant
-        from .redis_integration import (
-            get_redis_deliberation_queue, get_redis_voting_system
-        )
-        from .opa_guard import (
-            OPAGuard, get_opa_guard, GuardResult, GuardDecision,
-            SignatureResult, ReviewResult
-        )
-    except (ImportError, ValueError):
-        # Fallback for direct execution or testing
+        # Try absolute imports (direct execution context)
         from interfaces import (  # type: ignore
             ImpactScorerProtocol, AdaptiveRouterProtocol,
             DeliberationQueueProtocol, LLMAssistantProtocol,
@@ -64,143 +67,120 @@ try:
             OPAGuard, get_opa_guard, GuardResult, GuardDecision,
             SignatureResult, ReviewResult
         )
-except ImportError:
-        # Define placeholders if all else fails (e.g. during some specific test setups)
-        try:
-            from unittest.mock import MagicMock, AsyncMock
-        except ImportError:
-            class MagicMock:
-                def __init__(self, *args, **kwargs): pass
-                def __call__(self, *args, **kwargs): return self
-                def __getattr__(self, name): return self
-            AsyncMock = MagicMock
-        
-        import uuid
-        from datetime import datetime, timezone
-        
-        # Truly global storage for mocks in this module's scope across reloads
-        if not hasattr(sys, '_ACGS_MOCK_STORAGE'):
-            sys._ACGS_MOCK_STORAGE = {"tasks": {}, "stats": {}}
-        MOCK_STORAGE = sys._ACGS_MOCK_STORAGE
+    except ImportError:
+        # Use mock implementations when dependencies unavailable
+        _USING_MOCKS = True
+        _mock_import_success = False
 
-        class MockComponent:
-            def __init__(self, *args, **kwargs):
-                self.queue = MOCK_STORAGE["tasks"]
-                self.tasks = self.queue
-                self.stats = MOCK_STORAGE["stats"] or {
-                    "total_queued": 0, "approved": 0, "rejected": 0, "timed_out": 0,
-                    "consensus_reached": 0, "avg_processing_time": 0.0
-                }
-                MOCK_STORAGE["stats"] = self.stats
-                self.processing_tasks = []
-            
-            def __getattr__(self, name):
-                async def async_mock(*args, **kwargs):
-                    def get_arg(idx, key, default=None):
-                        if len(args) > idx: return args[idx]
-                        return kwargs.get(key, default)
+        # Try multiple import paths for mocks
+        for _mock_import_attempt in [
+            lambda: __import__('deliberation_layer.deliberation_mocks', fromlist=['MockComponent']),
+            lambda: __import__('deliberation_mocks', fromlist=['MockComponent']),
+        ]:
+            try:
+                _mock_module = _mock_import_attempt()
+                MockComponent = _mock_module.MockComponent
+                DeliberationStatus = _mock_module.MockDeliberationStatus
+                VoteType = _mock_module.MockVoteType
+                create_mock_impact_scorer = _mock_module.create_mock_impact_scorer
+                create_mock_adaptive_router = _mock_module.create_mock_adaptive_router
+                create_mock_deliberation_queue = _mock_module.create_mock_deliberation_queue
+                create_mock_llm_assistant = _mock_module.create_mock_llm_assistant
+                create_mock_redis_queue = _mock_module.create_mock_redis_queue
+                create_mock_redis_voting = _mock_module.create_mock_redis_voting
+                create_mock_opa_guard = _mock_module.create_mock_opa_guard
+                mock_calculate_message_impact = _mock_module.mock_calculate_message_impact
+                _mock_import_success = True
+                break
+            except (ImportError, ModuleNotFoundError):
+                continue
 
-                    if name in ['route_message', 'route']:
-                        msg = get_arg(0, 'message')
-                        score = getattr(msg, 'impact_score', 0.0)
-                        lane = 'deliberation' if (score and score >= 0.5) else 'fast'
-                        return {'lane': lane, 'decision': 'mock', 'status': 'routed'}
-                    if name == 'process_message':
-                        return {'success': True, 'lane': 'fast', 'status': 'delivered', 'processing_time': 0.1}
-                    if name == 'force_deliberation':
-                        return {'lane': 'deliberation', 'forced': True, 'force_reason': get_arg(1, 'reason', 'manual')}
-                    if name in ['enqueue_for_deliberation', 'enqueue']:
-                        tid = str(uuid.uuid4())
-                        class MockItem: pass
-                        item = MockItem()
-                        item.current_votes = []
-                        item.status = 'pending'
-                        item.item_id = tid
-                        item.task_id = tid
-                        item.message = get_arg(0, 'message')
-                        item.created_at = datetime.now(timezone.utc)
-                        self.queue[tid] = item
-                        return tid
-                    if name == 'submit_agent_vote':
-                        tid = get_arg(0, 'item_id')
-                        if tid in self.queue:
-                            class MockVote: pass
-                            vote = MockVote()
-                            vote.vote = get_arg(2, 'vote')
-                            vote.agent_id = get_arg(1, 'agent_id')
-                            self.queue[tid].current_votes.append(vote)
-                            return True
-                        return False
-                    if name == 'submit_human_decision':
-                        tid = get_arg(0, 'item_id')
-                        if tid in self.queue:
-                            self.queue[tid].status = get_arg(2, 'decision')
-                            return True
-                        return False
-                    if name.startswith('submit_') or name.startswith('resolve_'):
-                        return True
-                    return {}
-                
-                if name.startswith('get_'):
-                    if name == 'get_routing_stats': return {}
-                    if name == 'get_queue_status': return {'stats': self.stats, 'queue_size': len(self.queue), 'processing_count': 0}
-                    if name == 'get_stats': return {}
-                    if name == 'get_task': return lambda tid: self.queue.get(tid)
-                    return lambda *args, **kwargs: None
-                
-                return async_mock
-                
-            def get_routing_stats(self): return {}
-            def get_queue_status(self): return {'stats': self.stats, 'queue_size': len(self.queue), 'processing_count': 0}
-            def get_stats(self): return {}
-            def get_task(self, task_id): return self.queue.get(task_id)
-            async def initialize(self): pass
-            async def close(self): pass
-            def set_impact_threshold(self, threshold): pass
+        if not _mock_import_success:
+            # Inline minimal mocks when all imports fail
+            import sys
+            import uuid
+            from enum import Enum
 
-        from enum import Enum
-        class DeliberationStatus(Enum):
-            PENDING = "pending"
-            UNDER_REVIEW = "under_review"
-            APPROVED = "approved"
-            REJECTED = "rejected"
-            TIMED_OUT = "timed_out"
-            CONSENSUS_REACHED = "consensus_reached"
+            if not hasattr(sys, '_ACGS_MOCK_STORAGE'):
+                sys._ACGS_MOCK_STORAGE = {"tasks": {}, "stats": {}}
 
-        class VoteType(Enum):
-            APPROVE = "approve"
-            REJECT = "reject"
-            ABSTAIN = "abstain"
+            class DeliberationStatus(Enum):  # type: ignore
+                PENDING = "pending"
+                UNDER_REVIEW = "under_review"
+                APPROVED = "approved"
+                REJECTED = "rejected"
+                TIMED_OUT = "timed_out"
+                CONSENSUS_REACHED = "consensus_reached"
 
-        ImpactScorerProtocol = Any # type: ignore
-        AdaptiveRouterProtocol = Any # type: ignore
-        DeliberationQueueProtocol = Any # type: ignore
-        LLMAssistantProtocol = Any # type: ignore
-        RedisQueueProtocol = Any # type: ignore
-        RedisVotingProtocol = Any # type: ignore
-        OPAGuardProtocol = Any # type: ignore
-        
-        # Type stubs for type hints in DeliberationLayer methods
-        GuardResult = Any
-        GuardDecision = Any
-        SignatureResult = Any
-        ReviewResult = Any
-        OPAGuard = MockComponent
-        
-        calculate_message_impact = lambda *args, **kwargs: 0.0
-        get_impact_scorer = lambda *args, **kwargs: MockComponent()
-        get_adaptive_router = lambda *args, **kwargs: MockComponent()
-        get_deliberation_queue = lambda *args, **kwargs: MockComponent()
-        get_llm_assistant = lambda *args, **kwargs: MockComponent()
-        get_redis_deliberation_queue = lambda *args, **kwargs: MockComponent()
-        get_redis_voting_system = lambda *args, **kwargs: MockComponent()
-        get_opa_guard = lambda *args, **kwargs: MockComponent()
+            class VoteType(Enum):  # type: ignore
+                APPROVE = "approve"
+                REJECT = "reject"
+                ABSTAIN = "abstain"
+
+            class MockComponent:  # type: ignore
+                def __init__(self, *args, **kwargs):
+                    self.queue = sys._ACGS_MOCK_STORAGE["tasks"]
+                    self.stats = sys._ACGS_MOCK_STORAGE["stats"]
+                def __getattr__(self, name):
+                    async def async_mock(*a, **k): return {}
+                    return async_mock if not name.startswith('get_') else lambda *a, **k: {}
+                def get_routing_stats(self): return {}
+                def get_queue_status(self): return {'stats': {}, 'queue_size': 0, 'processing_count': 0}
+                def get_task(self, tid): return None
+                async def initialize(self): pass
+                async def close(self): pass
+                def set_impact_threshold(self, t): pass
+
+            create_mock_impact_scorer = lambda *a, **k: MockComponent()
+            create_mock_adaptive_router = lambda *a, **k: MockComponent()
+            create_mock_deliberation_queue = lambda *a, **k: MockComponent()
+            create_mock_llm_assistant = lambda *a, **k: MockComponent()
+            create_mock_redis_queue = lambda *a, **k: MockComponent()
+            create_mock_redis_voting = lambda *a, **k: MockComponent()
+            create_mock_opa_guard = lambda *a, **k: MockComponent()
+            mock_calculate_message_impact = lambda *a, **k: 0.0
+
+        # Set up mock type aliases and factory functions
+        ImpactScorerProtocol = Any  # type: ignore
+        AdaptiveRouterProtocol = Any  # type: ignore
+        DeliberationQueueProtocol = Any  # type: ignore
+        LLMAssistantProtocol = Any  # type: ignore
+        RedisQueueProtocol = Any  # type: ignore
+        RedisVotingProtocol = Any  # type: ignore
+        OPAGuardProtocol = Any  # type: ignore
+        GuardResult = Any  # type: ignore
+        GuardDecision = Any  # type: ignore
+        SignatureResult = Any  # type: ignore
+        ReviewResult = Any  # type: ignore
+        OPAGuard = MockComponent  # type: ignore
+
+        # Factory function aliases
+        calculate_message_impact = mock_calculate_message_impact
+        get_impact_scorer = create_mock_impact_scorer
+        get_adaptive_router = create_mock_adaptive_router
+        get_deliberation_queue = create_mock_deliberation_queue
+        get_llm_assistant = create_mock_llm_assistant
+        get_redis_deliberation_queue = create_mock_redis_queue
+        get_redis_voting_system = create_mock_redis_voting
+        get_opa_guard = create_mock_opa_guard
 
 
 logger = logging.getLogger(__name__)
 
+# Import mixin for OPA Guard methods
+try:
+    from .opa_guard_mixin import OPAGuardMixin
+except ImportError:
+    try:
+        from opa_guard_mixin import OPAGuardMixin  # type: ignore
+    except ImportError:
+        # Define empty mixin if import fails
+        class OPAGuardMixin:  # type: ignore
+            """Fallback empty mixin when opa_guard_mixin unavailable."""
+            pass
 
-class DeliberationLayer:
+
+class DeliberationLayer(OPAGuardMixin):
     """
     Main integration class for the deliberation layer.
 
@@ -210,6 +190,8 @@ class DeliberationLayer:
 
     Supports dependency injection for testing and customization.
     All major components can be injected via constructor parameters.
+
+    OPA Guard methods are provided by OPAGuardMixin.
     """
 
     def __init__(
@@ -973,213 +955,11 @@ class DeliberationLayer:
         """Set callback for OPA guard verification events."""
         self.guard_callback = callback
 
-    # OPA Guard integration methods
-
-    async def verify_action(
-        self,
-        agent_id: str,
-        action: Dict[str, Any],
-        context: Optional[Dict[str, Any]] = None
-    ) -> Optional[GuardResult]:
-        """
-        Verify an action using OPA Guard (VERIFY-BEFORE-ACT pattern).
-
-        Args:
-            agent_id: ID of the agent performing the action
-            action: Action details
-            context: Additional context
-
-        Returns:
-            GuardResult with verification outcome, or None if guard disabled
-        """
-        if not self.opa_guard:
-            return None
-
-        return await self.opa_guard.verify_action(
-            agent_id=agent_id,
-            action=action,
-            context=context or {},
-        )
-
-    async def collect_signatures(
-        self,
-        decision_id: str,
-        required_signers: List[str],
-        threshold: float = 1.0,
-        timeout: Optional[int] = None
-    ) -> Optional[SignatureResult]:
-        """
-        Collect multi-signatures for a decision.
-
-        Args:
-            decision_id: Unique ID for the decision
-            required_signers: List of required signer IDs
-            threshold: Percentage of signatures required
-            timeout: Timeout in seconds
-
-        Returns:
-            SignatureResult, or None if guard disabled
-        """
-        if not self.opa_guard:
-            return None
-
-        return await self.opa_guard.collect_signatures(
-            decision_id=decision_id,
-            required_signers=required_signers,
-            threshold=threshold,
-            timeout=timeout or self.deliberation_timeout,
-        )
-
-    async def submit_signature(
-        self,
-        decision_id: str,
-        signer_id: str,
-        reasoning: str = "",
-        confidence: float = 1.0
-    ) -> bool:
-        """
-        Submit a signature for a pending decision.
-
-        Args:
-            decision_id: Decision ID to sign
-            signer_id: ID of the signer
-            reasoning: Reason for signing
-            confidence: Confidence level
-
-        Returns:
-            True if signature was accepted
-        """
-        if not self.opa_guard:
-            return False
-
-        return await self.opa_guard.submit_signature(
-            decision_id=decision_id,
-            signer_id=signer_id,
-            reasoning=reasoning,
-            confidence=confidence,
-        )
-
-    async def submit_for_review(
-        self,
-        decision: Dict[str, Any],
-        critic_agents: List[str],
-        review_types: Optional[List[str]] = None,
-        timeout: Optional[int] = None
-    ) -> Optional[ReviewResult]:
-        """
-        Submit a decision for critic agent review.
-
-        Args:
-            decision: Decision details to review
-            critic_agents: List of critic agent IDs
-            review_types: Types of review to request
-            timeout: Timeout in seconds
-
-        Returns:
-            ReviewResult, or None if guard disabled
-        """
-        if not self.opa_guard:
-            return None
-
-        return await self.opa_guard.submit_for_review(
-            decision=decision,
-            critic_agents=critic_agents,
-            review_types=review_types,
-            timeout=timeout or self.deliberation_timeout,
-        )
-
-    async def submit_critic_review(
-        self,
-        decision_id: str,
-        critic_id: str,
-        verdict: str,
-        reasoning: str = "",
-        concerns: Optional[List[str]] = None,
-        recommendations: Optional[List[str]] = None,
-        confidence: float = 1.0
-    ) -> bool:
-        """
-        Submit a critic review for a pending decision.
-
-        Args:
-            decision_id: Decision ID being reviewed
-            critic_id: ID of the critic agent
-            verdict: Review verdict (approve/reject/escalate)
-            reasoning: Reason for verdict
-            concerns: List of concerns raised
-            recommendations: List of recommendations
-            confidence: Confidence level
-
-        Returns:
-            True if review was accepted
-        """
-        if not self.opa_guard:
-            return False
-
-        return await self.opa_guard.submit_review(
-            decision_id=decision_id,
-            critic_id=critic_id,
-            verdict=verdict,
-            reasoning=reasoning,
-            concerns=concerns,
-            recommendations=recommendations,
-            confidence=confidence,
-        )
-
-    def register_critic_agent(
-        self,
-        critic_id: str,
-        review_types: List[str],
-        callback: Optional[Callable] = None,
-        metadata: Optional[Dict[str, Any]] = None
-    ):
-        """
-        Register a critic agent for reviews.
-
-        Args:
-            critic_id: Unique ID for the critic agent
-            review_types: Types of reviews this critic can perform
-            callback: Async callback function for review requests
-            metadata: Additional metadata about the critic
-        """
-        if self.opa_guard:
-            self.opa_guard.register_critic_agent(
-                critic_id=critic_id,
-                review_types=review_types,
-                callback=callback,
-                metadata=metadata,
-            )
-
-    def unregister_critic_agent(self, critic_id: str):
-        """Unregister a critic agent."""
-        if self.opa_guard:
-            self.opa_guard.unregister_critic_agent(critic_id)
-
-    def get_guard_audit_log(
-        self,
-        limit: int = 100,
-        offset: int = 0,
-        agent_id: Optional[str] = None
-    ) -> List[Dict[str, Any]]:
-        """
-        Get OPA guard audit log entries.
-
-        Args:
-            limit: Maximum entries to return
-            offset: Offset for pagination
-            agent_id: Filter by agent ID
-
-        Returns:
-            List of audit log entries
-        """
-        if not self.opa_guard:
-            return []
-
-        return self.opa_guard.get_audit_log(
-            limit=limit,
-            offset=offset,
-            agent_id=agent_id,
-        )
+    # OPA Guard methods are provided by OPAGuardMixin:
+    # - verify_action(), collect_signatures(), submit_signature()
+    # - submit_for_review(), submit_critic_review()
+    # - register_critic_agent(), unregister_critic_agent()
+    # - get_guard_audit_log()
 
     async def close(self):
         """Close the deliberation layer and cleanup resources."""

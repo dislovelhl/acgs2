@@ -15,7 +15,7 @@ onnxruntime-tools>=1.7.0
 mlflow>=2.10.0
 
 # Security & Compliance
-opa-client>=1.0.0
+# opa-client - REMOVED: Package does not exist on PyPI
 merkletools>=1.0.3
 
 # (Optional) Blockchain Backends
