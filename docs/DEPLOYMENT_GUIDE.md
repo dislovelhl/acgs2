@@ -1,7 +1,6 @@
 # ACGS-2 Enterprise Deployment Guide
 
-> **Constitutional Hash**: `cdd01ef066bc6cf2`
-> **Version**: 2.1.0
+> **Constitutional Hash**: `cdd01ef066bc6cf2` > **Version**: 2.1.0
 > **Status**: Stable
 > **Last Updated**: 2025-12-20
 > **Language**: EN
@@ -25,36 +24,38 @@
 
 ### Required Tools
 
-| Tool | Version | Purpose |
-|------|---------|---------|
-| Terraform | >= 1.6.0 | Infrastructure provisioning |
-| Helm | >= 3.13.0 | Kubernetes deployment |
-| kubectl | >= 1.28 | Kubernetes management |
-| AWS CLI | >= 2.0 | AWS operations |
-| gcloud CLI | >= 450.0 | GCP operations |
+| Tool       | Version   | Purpose                     |
+| ---------- | --------- | --------------------------- |
+| Terraform  | >= 1.6.0  | Infrastructure provisioning |
+| Helm       | >= 3.13.0 | Kubernetes deployment       |
+| kubectl    | >= 1.28   | Kubernetes management       |
+| AWS CLI    | >= 2.0    | AWS operations              |
+| gcloud CLI | >= 450.0  | GCP operations              |
 
 ### Access Requirements
 
 **AWS:**
+
 - IAM user/role with administrative permissions
 - Access to create EKS, RDS, ElastiCache, MSK, ECR resources
 - Route53 hosted zone (for DNS)
 
 **GCP:**
+
 - Service account with Owner or specific IAM roles
 - Access to create GKE, Cloud SQL, Memorystore, Pub/Sub resources
 - Cloud DNS zone (for DNS)
 
 ### Network Requirements
 
-| Port | Protocol | Purpose |
-|------|----------|---------|
-| 443 | HTTPS | API Gateway, Web UI |
-| 5432 | TCP | PostgreSQL |
-| 6379 | TCP | Redis |
-| 9092 | TCP | Kafka |
-| 8001 | TCP | Constitutional AI Service |
-| 8010 | TCP | API Gateway (internal) |
+| Port | Protocol | Purpose                   |
+| ---- | -------- | ------------------------- |
+| 443  | HTTPS    | API Gateway, Web UI       |
+| 5432 | TCP      | PostgreSQL                |
+| 6379 | TCP      | Redis                     |
+| 9092 | TCP      | Kafka                     |
+| 8001 | TCP      | Constitutional AI Service |
+| 8010 | TCP      | API Gateway (internal)    |
 
 ---
 
@@ -419,6 +420,7 @@ helm upgrade --install acgs2 ./deploy/helm/acgs2 \
 ### Okta Configuration
 
 1. Create an Okta application:
+
    - Application type: OIDC - Web Application
    - Grant types: Authorization Code, Refresh Token
    - Sign-in redirect URIs: `https://api.acgs.yourdomain.com/auth/okta/callback`
@@ -442,6 +444,7 @@ identity:
 ### Azure AD Configuration
 
 1. Register an application in Azure AD:
+
    - Supported account types: Single tenant
    - Redirect URI: `https://api.acgs.yourdomain.com/auth/azure/callback`
 
@@ -511,12 +514,65 @@ kubectl port-forward svc/prometheus-grafana 3000:80 -n monitoring
 
 ### Key Metrics
 
-| Metric | Description | Alert Threshold |
-|--------|-------------|-----------------|
-| `acgs2_constitutional_hash_valid` | Constitutional hash validation | != 1 |
-| `acgs2_request_duration_seconds` | Request latency | P99 > 5s |
-| `acgs2_compliance_check_total` | Compliance validations | Error rate > 1% |
-| `acgs2_agent_messages_total` | Agent message throughput | - |
+| Metric                            | Description                    | Alert Threshold |
+| --------------------------------- | ------------------------------ | --------------- |
+| `acgs2_constitutional_hash_valid` | Constitutional hash validation | != 1            |
+| `acgs2_request_duration_seconds`  | Request latency                | P99 > 5s        |
+| `acgs2_compliance_check_total`    | Compliance validations         | Error rate > 1% |
+| `acgs2_agent_messages_total`      | Agent message throughput       | -               |
+
+---
+
+## Production Sizing Guide
+
+To ensure optimal performance and reliability of the ACGS-2 platform, follow these hardware recommendations based on your expected workload.
+
+### Deployment Tiers
+
+| Component      | Small (Dev/Test) | Medium (Staging)    | Large (Production) |
+| -------------- | ---------------- | ------------------- | ------------------ |
+| **Throughput** | < 100 msg/sec    | 100 - 1,000 msg/sec | > 1,000 msg/sec    |
+| **Agents**     | < 50             | 50 - 500            | > 500              |
+
+### Resource Recommendations (Per Replica)
+
+#### API Gateway
+
+- **Small**: 0.5 vCPU, 512Mi RAM
+- **Medium**: 1 vCPU, 1Gi RAM
+- **Large**: 2 vCPU, 2Gi RAM
+
+#### Constitutional Service
+
+- **Small**: 1 vCPU, 2Gi RAM
+- **Medium**: 2 vCPU, 4Gi RAM
+- **Large**: 4 vCPU, 8Gi RAM
+
+#### Agent Bus Service
+
+- **Small**: 0.5 vCPU, 1Gi RAM
+- **Medium**: 1 vCPU, 2Gi RAM
+- **Large**: 2 vCPU, 4Gi RAM
+
+#### Deliberation Layer (BERT)
+
+- **Small**: 1 vCPU, 2Gi RAM
+- **Medium**: 2 vCPU, 4Gi RAM
+- **Large**: 4 vCPU, 8Gi RAM (GPU recommended)
+
+### Infrastructure Services
+
+| Service        | Small          | Medium          | Large            |
+| -------------- | -------------- | --------------- | ---------------- |
+| **PostgreSQL** | db.t3.medium   | db.m6g.large    | db.r6g.xlarge    |
+| **Redis**      | cache.t3.small | cache.m6g.large | cache.r6g.large  |
+| **Kafka**      | kafka.t3.small | kafka.m5.large  | kafka.m5.2xlarge |
+
+### Storage Recommendations
+
+- **Audit Logs**: 100GB+ (SSD recommended)
+- **Message Queue**: 50GB+ (High IOPS)
+- **Policy Registry**: 10GB+
 
 ---
 
@@ -533,6 +589,7 @@ kubectl get networkpolicy -n acgs2
 ### Pod Security
 
 All pods run with:
+
 - Non-root user (UID 1000)
 - Read-only root filesystem
 - Dropped capabilities
@@ -541,6 +598,7 @@ All pods run with:
 ### Secrets Management
 
 For production, consider:
+
 - AWS Secrets Manager / GCP Secret Manager integration
 - HashiCorp Vault for dynamic secrets
 - Sealed Secrets for GitOps workflows
@@ -552,12 +610,14 @@ For production, consider:
 ### Common Issues
 
 **Pod CrashLoopBackOff:**
+
 ```bash
 kubectl describe pod -n acgs2 <pod-name>
 kubectl logs -n acgs2 <pod-name> --previous
 ```
 
 **Database Connection Issues:**
+
 ```bash
 # Test connectivity
 kubectl run -it --rm debug --image=postgres:15 --restart=Never -- \
@@ -565,6 +625,7 @@ kubectl run -it --rm debug --image=postgres:15 --restart=Never -- \
 ```
 
 **Constitutional Hash Mismatch:**
+
 ```bash
 # Check all services for hash consistency
 kubectl exec -n acgs2 deployment/acgs2-constitutional-service -- \

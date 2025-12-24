@@ -1,6 +1,9 @@
 # ACGS-2 User Guides
 
-**Constitutional Hash: `cdd01ef066bc6cf2`**
+> **Constitutional Hash**: `cdd01ef066bc6cf2` > **Version**: 2.2.0
+> **Status**: Stable
+> **Last Updated**: 2025-12-24
+> **Language**: EN
 
 Welcome to the ACGS-2 (AI Constitutional Governance System) documentation. These comprehensive user guides cover all major components of the platform.
 
@@ -8,12 +11,14 @@ Welcome to the ACGS-2 (AI Constitutional Governance System) documentation. These
 
 ## Quick Navigation
 
-| Guide | Description |
-|-------|-------------|
-| [Enhanced Agent Bus](./enhanced-agent-bus.md) | Core messaging and coordination infrastructure |
-| [Search Platform](./search-platform.md) | Constitutional code search and security scanning |
-| [API Reference](./api-reference.md) | REST API documentation for all services |
-| [Constitutional Framework](./constitutional-framework.md) | Governance, validation, and audit systems |
+| Guide                                                     | Description                                      |
+| --------------------------------------------------------- | ------------------------------------------------ |
+| [Enhanced Agent Bus](./enhanced-agent-bus.md)             | Core messaging and coordination infrastructure   |
+| [Search Platform](./search-platform.md)                   | Constitutional code search and security scanning |
+| [API Reference](./api-reference.md)                       | REST API documentation for all services          |
+| [Constitutional Framework](./constitutional-framework.md) | Governance, validation, and audit systems        |
+| [Python SDK Guide](./sdk-python.md)                       | Official Python SDK usage and examples           |
+| [TypeScript SDK Guide](./sdk-typescript.md)               | Official TypeScript SDK usage and examples       |
 
 ---
 
@@ -22,6 +27,7 @@ Welcome to the ACGS-2 (AI Constitutional Governance System) documentation. These
 ### 1. Understand the Constitutional Framework
 
 Start with the [Constitutional Framework Guide](./constitutional-framework.md) to understand:
+
 - The constitutional hash `cdd01ef066bc6cf2` and its significance
 - Policy management and versioning
 - Audit ledger and Merkle tree verification
@@ -30,6 +36,7 @@ Start with the [Constitutional Framework Guide](./constitutional-framework.md) t
 ### 2. Set Up Agent Communication
 
 Review the [Enhanced Agent Bus Guide](./enhanced-agent-bus.md) to learn:
+
 - Message types and priorities
 - Agent registration and routing
 - Deliberation layer for high-risk decisions
@@ -38,6 +45,7 @@ Review the [Enhanced Agent Bus Guide](./enhanced-agent-bus.md) to learn:
 ### 3. Implement Security Scanning
 
 Follow the [Search Platform Guide](./search-platform.md) for:
+
 - Code search with compliance checking
 - Security vulnerability detection
 - AST-based analysis
@@ -46,6 +54,7 @@ Follow the [Search Platform Guide](./search-platform.md) for:
 ### 4. Integrate with APIs
 
 Use the [API Reference](./api-reference.md) for:
+
 - Policy Registry endpoints
 - Audit Service operations
 - Search Platform queries
@@ -213,10 +222,3 @@ entry_hash = ledger.add_validation_result(result)
 - **API Specs**: OpenAPI specifications in `docs/api/`
 
 ---
-
-## Version Information
-
-- **ACGS-2 Version**: 2.0.0
-- **Constitutional Hash**: `cdd01ef066bc6cf2`
-- **Python**: 3.11+ (3.13 compatible)
-- **Documentation Updated**: 2024

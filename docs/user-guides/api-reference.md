@@ -1,6 +1,9 @@
 # ACGS-2 API Reference - User Guide
 
-**Constitutional Hash: `cdd01ef066bc6cf2`**
+> **Constitutional Hash**: `cdd01ef066bc6cf2` > **Version**: 2.2.0
+> **Status**: Stable
+> **Last Updated**: 2025-12-24
+> **Language**: EN
 
 This guide covers the REST APIs provided by ACGS-2 services, including the Policy Registry, Audit Service, and other microservices. All APIs require constitutional compliance and implement cryptographic signature verification.
 
@@ -25,12 +28,12 @@ This guide covers the REST APIs provided by ACGS-2 services, including the Polic
 
 ### Base URLs
 
-| Service | Default URL | Description |
-|---------|-------------|-------------|
-| Policy Registry | `http://localhost:8001` | Policy management |
-| Audit Service | `http://localhost:8002` | Audit logging |
-| Search Platform | `http://localhost:9080` | Code/document search |
-| Retrieval System | `http://localhost:8003` | Constitutional document retrieval |
+| Service          | Default URL             | Description                       |
+| ---------------- | ----------------------- | --------------------------------- |
+| Policy Registry  | `http://localhost:8000` | Policy management                 |
+| Audit Service    | `http://localhost:8084` | Audit logging                     |
+| Search Platform  | `http://localhost:8083` | Code/document search              |
+| Retrieval System | `http://localhost:8001` | Constitutional document retrieval |
 
 ### Common Headers
 
@@ -102,9 +105,9 @@ GET /api/v1/policies/
 
 **Query Parameters:**
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `status` | string | Filter by status: `active`, `draft`, `retired` |
+| Parameter | Type   | Description                                    |
+| --------- | ------ | ---------------------------------------------- |
+| `status`  | string | Filter by status: `active`, `draft`, `retired` |
 
 **Response:**
 
@@ -128,7 +131,7 @@ GET /api/v1/policies/
 **Example:**
 
 ```bash
-curl -X GET "http://localhost:8001/api/v1/policies/?status=active" \
+curl -X GET "http://localhost:8000/api/v1/policies/?status=active" \
   -H "Authorization: Bearer your-api-key" \
   -H "X-Constitutional-Hash: cdd01ef066bc6cf2"
 ```
@@ -147,9 +150,7 @@ POST /api/v1/policies/
 {
   "name": "security-policy",
   "content": {
-    "rules": [
-      {"id": "rule-001", "type": "required", "field": "encryption"}
-    ]
+    "rules": [{ "id": "rule-001", "type": "required", "field": "encryption" }]
   },
   "format": "json",
   "description": "Security compliance policy"
@@ -175,7 +176,7 @@ POST /api/v1/policies/
 **Example:**
 
 ```bash
-curl -X POST "http://localhost:8001/api/v1/policies/" \
+curl -X POST "http://localhost:8000/api/v1/policies/" \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer your-api-key" \
   -H "X-Constitutional-Hash: cdd01ef066bc6cf2" \
@@ -196,8 +197,8 @@ GET /api/v1/policies/{policy_id}
 
 **Path Parameters:**
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
+| Parameter   | Type   | Description       |
+| ----------- | ------ | ----------------- |
 | `policy_id` | string | Policy identifier |
 
 **Response:**
@@ -262,8 +263,8 @@ POST /api/v1/policies/{policy_id}/versions
 {
   "content": {
     "rules": [
-      {"id": "rule-001", "type": "required", "field": "encryption"},
-      {"id": "rule-002", "type": "optional", "field": "logging"}
+      { "id": "rule-001", "type": "required", "field": "encryption" },
+      { "id": "rule-002", "type": "optional", "field": "logging" }
     ]
   },
   "version": "1.2.0",
@@ -313,8 +314,8 @@ PUT /api/v1/policies/{policy_id}/activate
 
 **Query Parameters:**
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
+| Parameter | Type   | Description                         |
+| --------- | ------ | ----------------------------------- |
 | `version` | string | Version to activate (e.g., "1.2.0") |
 
 **Response:**
@@ -338,8 +339,8 @@ POST /api/v1/policies/{policy_id}/verify
 
 **Query Parameters:**
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
+| Parameter | Type   | Description       |
+| --------- | ------ | ----------------- |
 | `version` | string | Version to verify |
 
 **Response:**
@@ -365,8 +366,8 @@ GET /api/v1/policies/{policy_id}/content
 
 **Query Parameters:**
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
+| Parameter   | Type   | Description                    |
+| ----------- | ------ | ------------------------------ |
 | `client_id` | string | Client ID for A/B test routing |
 
 **Response:**
@@ -375,9 +376,7 @@ GET /api/v1/policies/{policy_id}/content
 {
   "status": "success",
   "data": {
-    "rules": [
-      {"id": "rule-001", "type": "required", "field": "encryption"}
-    ]
+    "rules": [{ "id": "rule-001", "type": "required", "field": "encryption" }]
   }
 }
 ```
@@ -774,8 +773,8 @@ GET /health
   "status": "healthy",
   "version": "2.0.0",
   "workers": {
-    "search": {"status": "healthy", "count": 8},
-    "index": {"status": "healthy", "count": 2}
+    "search": { "status": "healthy", "count": 8 },
+    "index": { "status": "healthy", "count": 2 }
   }
 }
 ```
@@ -809,21 +808,24 @@ Real-time policy updates and notifications.
 ### Connection
 
 ```javascript
-const ws = new WebSocket('ws://localhost:8001/ws');
+const ws = new WebSocket("ws://localhost:8000/ws");
 
 ws.onopen = () => {
   // Subscribe to policy updates
-  ws.send(JSON.stringify({
-    action: 'subscribe',
-    channel: 'policy_updates',
-    policy_ids: ['pol-abc-123', 'pol-xyz-789']
-  }));
+  ws.send(
+    JSON.stringify({
+      action: "subscribe",
+      channel: "policy_updates",
+      policy_ids: ["pol-abc-123", "pol-xyz-789"],
+    })
+  );
 };
 ```
 
 ### Message Types
 
 **Subscription:**
+
 ```json
 {
   "action": "subscribe",
@@ -833,6 +835,7 @@ ws.onopen = () => {
 ```
 
 **Policy Update Notification:**
+
 ```json
 {
   "type": "policy_update",
@@ -847,6 +850,7 @@ ws.onopen = () => {
 ```
 
 **Unsubscribe:**
+
 ```json
 {
   "action": "unsubscribe",
@@ -881,18 +885,18 @@ ws.onopen = () => {
 
 ### Error Codes
 
-| Code | HTTP Status | Description |
-|------|-------------|-------------|
-| `INVALID_REQUEST` | 400 | Malformed request |
-| `UNAUTHORIZED` | 401 | Authentication required |
-| `FORBIDDEN` | 403 | Insufficient permissions |
-| `NOT_FOUND` | 404 | Resource not found |
-| `VALIDATION_ERROR` | 422 | Validation failed |
-| `CONSTITUTIONAL_VIOLATION` | 422 | Constitutional hash invalid |
-| `SIGNATURE_INVALID` | 422 | Cryptographic signature invalid |
-| `RATE_LIMITED` | 429 | Too many requests |
-| `INTERNAL_ERROR` | 500 | Server error |
-| `SERVICE_UNAVAILABLE` | 503 | Service temporarily unavailable |
+| Code                       | HTTP Status | Description                     |
+| -------------------------- | ----------- | ------------------------------- |
+| `INVALID_REQUEST`          | 400         | Malformed request               |
+| `UNAUTHORIZED`             | 401         | Authentication required         |
+| `FORBIDDEN`                | 403         | Insufficient permissions        |
+| `NOT_FOUND`                | 404         | Resource not found              |
+| `VALIDATION_ERROR`         | 422         | Validation failed               |
+| `CONSTITUTIONAL_VIOLATION` | 422         | Constitutional hash invalid     |
+| `SIGNATURE_INVALID`        | 422         | Cryptographic signature invalid |
+| `RATE_LIMITED`             | 429         | Too many requests               |
+| `INTERNAL_ERROR`           | 500         | Server error                    |
+| `SERVICE_UNAVAILABLE`      | 503         | Service temporarily unavailable |
 
 ### Example Error Handling
 
@@ -902,7 +906,7 @@ import httpx
 async def get_policy(policy_id: str):
     async with httpx.AsyncClient() as client:
         response = await client.get(
-            f"http://localhost:8001/api/v1/policies/{policy_id}",
+            f"http://localhost:8000/api/v1/policies/{policy_id}",
             headers={"X-Constitutional-Hash": "cdd01ef066bc6cf2"}
         )
 
@@ -926,12 +930,12 @@ async def get_policy(policy_id: str):
 
 ### Limits
 
-| Endpoint Type | Limit | Window |
-|---------------|-------|--------|
-| Read (GET) | 1000 | 1 minute |
-| Write (POST/PUT/DELETE) | 100 | 1 minute |
-| Search | 50 | 1 minute |
-| WebSocket | 10 connections | per client |
+| Endpoint Type           | Limit          | Window     |
+| ----------------------- | -------------- | ---------- |
+| Read (GET)              | 1000           | 1 minute   |
+| Write (POST/PUT/DELETE) | 100            | 1 minute   |
+| Search                  | 50             | 1 minute   |
+| WebSocket               | 10 connections | per client |
 
 ### Rate Limit Headers
 
@@ -971,7 +975,7 @@ from acgs2_client import ACGS2Client
 
 async def main():
     client = ACGS2Client(
-        base_url="http://localhost:8001",
+        base_url="http://localhost:8000",
         api_key="your-api-key",
         tenant_id="tenant-abc"
     )
@@ -998,20 +1002,20 @@ async def main():
 ### JavaScript/TypeScript SDK
 
 ```typescript
-import { ACGS2Client } from '@acgs2/client';
+import { ACGS2Client } from "@acgs2/client";
 
 const client = new ACGS2Client({
-  baseUrl: 'http://localhost:8001',
-  apiKey: 'your-api-key',
-  tenantId: 'tenant-abc'
+  baseUrl: "http://localhost:8000",
+  apiKey: "your-api-key",
+  tenantId: "tenant-abc",
 });
 
 // List policies
-const policies = await client.policies.list({ status: 'active' });
+const policies = await client.policies.list({ status: "active" });
 
 // Subscribe to updates
-client.ws.subscribe('policy_updates', (event) => {
-  console.log('Policy updated:', event.data);
+client.ws.subscribe("policy_updates", (event) => {
+  console.log("Policy updated:", event.data);
 });
 ```
 
@@ -1019,20 +1023,20 @@ client.ws.subscribe('policy_updates', (event) => {
 
 ```bash
 # List policies
-curl -X GET "http://localhost:8001/api/v1/policies/" \
+curl -X GET "http://localhost:8000/api/v1/policies/" \
   -H "Authorization: Bearer your-api-key" \
   -H "X-Constitutional-Hash: cdd01ef066bc6cf2" \
   -H "X-Tenant-ID: tenant-abc"
 
 # Create policy
-curl -X POST "http://localhost:8001/api/v1/policies/" \
+curl -X POST "http://localhost:8000/api/v1/policies/" \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer your-api-key" \
   -H "X-Constitutional-Hash: cdd01ef066bc6cf2" \
   -d '{"name": "test", "content": {}, "format": "json"}'
 
 # Search code
-curl -X POST "http://localhost:9080/api/v1/search" \
+curl -X POST "http://localhost:8083/api/v1/search" \
   -H "Content-Type: application/json" \
   -d '{"pattern": "TODO", "domain": "code", "options": {"max_results": 50}}'
 ```

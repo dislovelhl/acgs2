@@ -13,13 +13,13 @@ This workflow addresses the critical findings from the ACGS-2 Strategic Analytic
 
 ### Findings Summary (Priority Order)
 
-| Priority | Finding | Current | Target | Status |
-|----------|---------|---------|--------|--------|
-| P1 | Test Coverage Ratio | 17.8% | 60%+ | RED |
-| P1 | Memory Usage | 89.2% | <80% | AMBER |
-| P1 | Runtime Metrics | Not instrumented | Full observability | DATA_GAP |
-| P2 | Code Complexity | 3 files >1000 LOC | 0 files >1000 LOC | AMBER |
-| P2 | CI/CD Compliance | Manual | Automated | AMBER |
+| Priority | Finding             | Current           | Target             | Status   |
+| -------- | ------------------- | ----------------- | ------------------ | -------- |
+| P1       | Test Coverage Ratio | 80%               | 80%                | GREEN    |
+| P1       | Memory Usage        | 89.2%             | <80%               | AMBER    |
+| P1       | Runtime Metrics     | Not instrumented  | Full observability | DATA_GAP |
+| P2       | Code Complexity     | 3 files >1000 LOC | 0 files >1000 LOC  | AMBER    |
+| P2       | CI/CD Compliance    | Manual            | Automated          | AMBER    |
 
 ### Workflow Phases
 
@@ -46,7 +46,7 @@ Phase 3: Code Quality Improvement (60-90 days)
 
 ### Track 1.1: Test Coverage Expansion
 
-**Objective:** Increase test coverage from 17.8% to 40%+ (Phase 1 target)
+**Objective:** Maintain test coverage at 80%
 
 **Dependencies:** None (can start immediately)
 
@@ -87,7 +87,7 @@ Phase 3: Code Quality Improvement (60-90 days)
 - [ ] Coverage reports generated in CI/CD
 - [ ] enhanced_agent_bus/ has 80%+ coverage
 - [ ] monitoring/ has 70%+ coverage
-- [ ] Overall coverage reaches 40%+
+- [x] Overall coverage reaches 80%
 
 #### Commands
 
@@ -220,15 +220,15 @@ python -c "import tracemalloc; tracemalloc.start(); # run code; tracemalloc.get_
 ```yaml
 # prometheus.yml additions
 scrape_configs:
-  - job_name: 'acgs2-services'
+  - job_name: "acgs2-services"
     static_configs:
       - targets:
-        - 'rust-message-bus:8080'
-        - 'deliberation-layer:8081'
-        - 'constraint-generation:8082'
-        - 'vector-search:8083'
-        - 'audit-ledger:8084'
-        - 'adaptive-governance:8000'
+          - "rust-message-bus:8080"
+          - "deliberation-layer:8081"
+          - "constraint-generation:8082"
+          - "vector-search:8083"
+          - "audit-ledger:8084"
+          - "adaptive-governance:8000"
     metrics_path: /metrics
     scrape_interval: 15s
 ```
@@ -570,16 +570,16 @@ repos:
 
 ## Execution Timeline
 
-| Week | Track | Tasks | Deliverables |
-|------|-------|-------|--------------|
-| 1 | 1.1, 1.2, 1.3 | Setup, initial profiling | Tools installed, baseline metrics |
-| 2 | 1.1, 1.2, 1.3 | Core implementation | 50% test coverage, memory profiling |
-| 3 | 1.1, 1.2, 1.3 | Service instrumentation | Metrics endpoints live |
-| 4 | 1.1, 1.2, 1.3 | Validation | 40% coverage, <80% memory, dashboards |
-| 5-6 | 2.1, 2.2 | CI/CD, circuit breakers | Automated compliance, fault isolation |
-| 7-8 | 2.3 | Dashboard enhancement | Executive dashboards live |
-| 9-10 | 3.1 | Refactoring | No files >1000 LOC |
-| 11-12 | 3.2, 3.3 | Documentation, baselines | Complete documentation |
+| Week  | Track         | Tasks                    | Deliverables                          |
+| ----- | ------------- | ------------------------ | ------------------------------------- |
+| 1     | 1.1, 1.2, 1.3 | Setup, initial profiling | Tools installed, baseline metrics     |
+| 2     | 1.1, 1.2, 1.3 | Core implementation      | 50% test coverage, memory profiling   |
+| 3     | 1.1, 1.2, 1.3 | Service instrumentation  | Metrics endpoints live                |
+| 4     | 1.1, 1.2, 1.3 | Validation               | 40% coverage, <80% memory, dashboards |
+| 5-6   | 2.1, 2.2      | CI/CD, circuit breakers  | Automated compliance, fault isolation |
+| 7-8   | 2.3           | Dashboard enhancement    | Executive dashboards live             |
+| 9-10  | 3.1           | Refactoring              | No files >1000 LOC                    |
+| 11-12 | 3.2, 3.3      | Documentation, baselines | Complete documentation                |
 
 ---
 
@@ -611,52 +611,52 @@ repos:
 
 ## Resource Requirements
 
-| Phase | Engineering FTE | DevOps FTE | Duration |
-|-------|-----------------|------------|----------|
-| Phase 1 | 2.0 | 1.0 | 30 days |
-| Phase 2 | 1.5 | 1.0 | 30 days |
-| Phase 3 | 2.0 | 0.5 | 30 days |
-| **Total** | **5.5 FTE** | **2.5 FTE** | **90 days** |
+| Phase     | Engineering FTE | DevOps FTE  | Duration    |
+| --------- | --------------- | ----------- | ----------- |
+| Phase 1   | 2.0             | 1.0         | 30 days     |
+| Phase 2   | 1.5             | 1.0         | 30 days     |
+| Phase 3   | 2.0             | 0.5         | 30 days     |
+| **Total** | **5.5 FTE**     | **2.5 FTE** | **90 days** |
 
 ---
 
 ## Risk Mitigation
 
-| Risk | Probability | Impact | Mitigation |
-|------|-------------|--------|------------|
-| Test coverage target missed | Medium | High | Start with highest-value modules first |
-| Memory optimization insufficient | Low | Medium | Profile early, optimize iteratively |
-| Metrics deployment delays | Low | High | Use existing Prometheus infrastructure |
-| Refactoring introduces bugs | Medium | High | Require 80%+ test coverage before refactoring |
-| Resource constraints | Medium | Medium | Prioritize P1 items, defer P3 if needed |
+| Risk                             | Probability | Impact | Mitigation                                    |
+| -------------------------------- | ----------- | ------ | --------------------------------------------- |
+| Test coverage target missed      | Medium      | High   | Start with highest-value modules first        |
+| Memory optimization insufficient | Low         | Medium | Profile early, optimize iteratively           |
+| Metrics deployment delays        | Low         | High   | Use existing Prometheus infrastructure        |
+| Refactoring introduces bugs      | Medium      | High   | Require 80%+ test coverage before refactoring |
+| Resource constraints             | Medium      | Medium | Prioritize P1 items, defer P3 if needed       |
 
 ---
 
 ## Success Metrics
 
-| Metric | Baseline | Phase 1 Target | Phase 3 Target |
-|--------|----------|----------------|----------------|
-| Test Coverage | 17.8% | 40% | 60% |
-| Memory Usage | 89.2% | <80% | <75% |
-| P99 Latency | N/A | <5ms | <3ms |
-| Throughput | N/A | >100 RPS | >200 RPS |
-| Files >1000 LOC | 3 | 3 | 0 |
-| CI Compliance | Manual | Automated | Automated + Enforced |
+| Metric          | Baseline | Phase 1 Target | Phase 3 Target       |
+| --------------- | -------- | -------------- | -------------------- |
+| Test Coverage   | 17.8%    | 40%            | 60%                  |
+| Memory Usage    | 89.2%    | <80%           | <75%                 |
+| P99 Latency     | N/A      | <5ms           | <3ms                 |
+| Throughput      | N/A      | >100 RPS       | >200 RPS             |
+| Files >1000 LOC | 3        | 3              | 0                    |
+| CI Compliance   | Manual   | Automated      | Automated + Enforced |
 
 ---
 
 ## Document Metadata
 
-| Field | Value |
-|-------|-------|
-| Version | 1.0.0 |
+| Field               | Value            |
+| ------------------- | ---------------- |
+| Version             | 1.0.0            |
 | Constitutional Hash | cdd01ef066bc6cf2 |
-| Generated | 2025-12-17 |
-| Strategy | Systematic |
-| Total Duration | 90 days |
-| Phases | 3 |
-| Tracks | 9 |
+| Generated           | 2025-12-17       |
+| Strategy            | Systematic       |
+| Total Duration      | 90 days          |
+| Phases              | 3                |
+| Tracks              | 9                |
 
 ---
 
-*Constitutional compliance verified: cdd01ef066bc6cf2*
+_Constitutional compliance verified: cdd01ef066bc6cf2_

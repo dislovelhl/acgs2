@@ -7,17 +7,20 @@ All notable changes to the Enhanced Agent Bus are documented in this file.
 ## [2.2.0] - 2025-12-21
 
 ### Added
+
 - **Phase 5 Completion**: Full integration of Rust-based Deliberation Layer and Security modules.
 - **Enhanced Impact Scoring**: Multi-dimensional scoring with ONNX (DistilBERT) fallback support in Rust.
 - **Prompt Injection Defense**: Pre-compiled regex-based adversarial pattern detection in Rust core.
 - **Adaptive Routing**: Real-time threshold adjustment based on feedback loops.
 
 ### Changed
+
 - **Version Bump**: Global version update to `2.2.0` across all documentation and project configs.
 - **Doc Cleanup**: Removed outdated temporary files and local test logs.
 - **Blueprint Update**: Production blueprint updated to reflect verified status of all 5 phases.
 
 ### Security
+
 - Synchronized prompt injection patterns between Python and Rust implementations.
 
 ## [1.1.0] - 2025-12-21
@@ -25,12 +28,14 @@ All notable changes to the Enhanced Agent Bus are documented in this file.
 ### Added
 
 - **S3/MinIO Storage Integration**: Full cloud storage support in `storage_service.py`
+
   - Automatic fallback to local filesystem when S3 unavailable
   - MinIO endpoint support via `S3_ENDPOINT_URL` environment variable
   - Constitutional hash metadata in S3 object tags
   - `bundle_exists()` method for checking bundle availability
 
 - **Authorization Caching**: Performance optimization in `opa_service.py`
+
   - 15-minute TTL cache for RBAC authorization decisions
   - Role-based caching (not user-specific) for better hit rates
   - Automatic cache cleanup for expired entries
@@ -44,6 +49,7 @@ All notable changes to the Enhanced Agent Bus are documented in this file.
 ### Changed
 
 - **Logging Migration**: Replaced `print()` with proper logging
+
   - `impact_scorer.py`: ONNX model loading → `logger.info()`
   - `impact_scorer.py`: AI model failure → `logger.warning()`
   - `hitl_manager.py`: Mock audit → `logger.debug()`
@@ -78,10 +84,10 @@ All notable changes to the Enhanced Agent Bus are documented in this file.
 - Deliberation layer for AI-powered review
 - Circuit breaker patterns
 - Prometheus metrics integration
-- 515 tests with 63.99% coverage
+- 515 tests with 80% coverage
 - P99 latency: 0.023ms
 - Throughput: 55,978 RPS
 
 ---
 
-*Constitutional Hash: cdd01ef066bc6cf2*
+_Constitutional Hash: cdd01ef066bc6cf2_

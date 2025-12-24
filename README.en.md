@@ -1,7 +1,6 @@
 # ACGS-2
 
-> **Constitutional Hash**: `cdd01ef066bc6cf2`
-> **Version**: 2.2.0
+> **Constitutional Hash**: `cdd01ef066bc6cf2` > **Version**: 2.2.0
 > **Status**: Verified
 > **Last Updated**: 2025-12-21
 > **Language**: EN
@@ -29,28 +28,15 @@ graph TD
     B -->|Validation| C{Constitutional Checker}
     C -->|Hash Match| D[Impact Scorer]
     C -->|Violation| E[Blocking & Audit]
-    
+
     D -->|Score >= 0.8| F[Deliberation Layer]
     D -->|Score < 0.8| G[Fast Lane]
-    
+
     F -->|Consensus/HITL| G
     G -->|Delivery| H[Target Agent]
-    
+
     H -->|Final State| I[Blockchain Audit Trail]
 ```
-
-### Service Dependencies
-
-```mermaid
-graph LR
-    Bus(Agent Bus) --> Redis[(Redis Queue)]
-    Bus --> Rust(Rust Backend)
-    Scorer(Impact Scorer) --> BERT(DistilBERT ONNX)
-    Audit(Audit Service) --> Solana(Solana/Avalanche)
-    Audit --> Merkle(Merkle Tree)
-```
-
----
 
 ## 🚀 Quick Start
 
@@ -89,22 +75,6 @@ kubectl apply -f k8s/blue-green-deployment.yml
 - **Infrastructure**: Kubernetes (Istio Service Mesh), Redis, Kafka
 - **Security**: OPA (Open Policy Agent), ZKP (Zero Knowledge Proof)
 - **Storage**: Solana (Main Audit Chain), PostgreSQL (Metadata)
-
----
-
-## 🔐 Policy Failure Behavior
-
-- **OPA Client**: When `fail_closed=True`, OPA evaluation failure will reject requests; set to `False` to fail-open.
-- **Policy Registry**: `PolicyRegistryClient.fail_closed=False` by default allows messages through and logs warnings; can be switched to fail-closed in the core bus via `policy_fail_closed`.
-
----
-
-## 📈 Performance Optimization
-
-ACGS-2 is deeply optimized for large-scale agent collaboration:
-- **Message Bus**: Rust-powered core reduces latency by 90%.
-- **Impact Scorer**: Pre-integrated DistilBERT INT8 quantized model reduces memory footprint by 60%.
-- **Traffic Routing**: Istio integration for zero-trust mTLS communication.
 
 ---
 

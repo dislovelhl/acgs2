@@ -1,125 +1,129 @@
-# ACGS-2 API Reference
+# ACGS-2 API Reference | API 参考
 
-> **Constitutional Hash**: `cdd01ef066bc6cf2`
-> **Version**: 2.1.0
+> **Constitutional Hash**: `cdd01ef066bc6cf2` > **Version**: 2.2.0
 > **Status**: Stable
-> **Last Updated**: 2025-12-20
-> **Language**: CN
+> **Last Updated**: 2025-12-24
+> **Language**: EN / CN
 
-本文档提供了 ACGS-2 核心组件的详细 API 参考。
+本文档提供了 ACGS-2 核心组件和微服务的详细 API 参考。
+This document provides a detailed API reference for ACGS-2 core components and microservices.
 
-## 核心总线 (Enhanced Agent Bus)
+---
+
+## 1. 概览 | Overview
+
+### 服务基础 URL | Base URLs
+
+| Service          | Default URL             | Description   |
+| ---------------- | ----------------------- | ------------- |
+| Policy Registry  | `http://localhost:8000` | 策略管理      |
+| Audit Service    | `http://localhost:8084` | 审计日志      |
+| Search Platform  | `http://localhost:8083` | 代码/文档搜索 |
+| Retrieval System | `http://localhost:8001` | 宪法文档检索  |
+| API Gateway      | `http://localhost:8010` | 统一入口      |
+
+---
+
+## 2. 核心总线 (Enhanced Agent Bus)
 
 ### `EnhancedAgentBus` 类
 
 位于 [`../enhanced_agent_bus/core.py`](../enhanced_agent_bus/core.py)。
 
 #### `__init__(self, redis_url: str = DEFAULT_REDIS_URL, use_dynamic_policy: bool = False, policy_fail_closed: bool = False, use_kafka: bool = False, kafka_bootstrap_servers: str = "localhost:9092")`
+
 初始化增强型代理总线。
+
 - `redis_url`: Redis 连接字符串。
 - `use_dynamic_policy`: 是否使用动态策略注册表。
 - `policy_fail_closed`: 动态策略注册表失败时是否执行 fail-closed。
 - `use_kafka`: 是否使用 Kafka 作为后端。
 
 #### `async start(self) -> None`
+
 启动总线服务，初始化连接和指标。
 
 #### `async stop(self) -> None`
+
 优雅地停止总线服务。
 
 #### `async register_agent(self, agent_id: str, agent_type: str = "default", capabilities: List[str] = None, tenant_id: str = None) -> bool`
+
 注册一个代理。
+
 - `tenant_id`: 用于多租户隔离的关键标识。
 
 #### `async send_message(self, message: AgentMessage) -> ValidationResult`
+
 发送消息。在排队前会进行宪法哈希验证。
 
-#### `async receive_message(self, timeout: float = 1.0) -> Optional[AgentMessage]`
-从总线接收消息。
+---
 
-#### `async broadcast_message(self, message: AgentMessage) -> Dict[str, ValidationResult]`
-在同一租户内广播消息。**严格执行租户隔离**。
+## 3. 策略注册表 API | Policy Registry API
+
+管理宪法策略及其版本和加密签名。
+Manages constitutional policies with versioning and cryptographic signatures.
+
+### 基础路径 | Base URL: `/api/v1/policies`
+
+#### 获取所有策略 | List All Policies
+
+`GET /api/v1/policies/`
+
+#### 创建策略 | Create Policy
+
+`POST /api/v1/policies/`
+
+#### 激活策略版本 | Activate Policy Version
+
+`PUT /api/v1/policies/{policy_id}/activate?version={version}`
 
 ---
 
-## 消息处理器 (Message Processor)
+## 4. 审计服务 API | Audit Service API
 
-### `MessageProcessor` 类
+提供基于 Merkle Tree 验证的不可篡改审计日志。
+Provides immutable audit logging with Merkle tree verification.
 
-#### `async process(self, message: AgentMessage) -> ValidationResult`
-处理消息，包括验证和执行注册的处理程序。支持 Rust 后端加速。
+### 基础路径 | Base URL: `/api/v1/audit`
 
-#### `register_handler(self, message_type: MessageType, handler: Callable) -> None`
-为特定消息类型注册回调函数。
+#### 添加审计条目 | Add Audit Entry
 
----
+`POST /api/v1/audit/entries`
 
-## OPA 客户端 (OPA Client)
+#### 验证审计条目 | Verify Audit Entry
 
-### `OPAClient` 类
-
-位于 [`../enhanced_agent_bus/opa_client.py`](../enhanced_agent_bus/opa_client.py)。
-
-#### `__init__(self, opa_url: str = "http://localhost:8181", mode: str = "http", timeout: float = 5.0, cache_ttl: int = 300, enable_cache: bool = True, redis_url: str = None, fail_closed: bool = True)`
-初始化 OPA 客户端。
-- `fail_closed`: OPA 评估错误或不可用时是否拒绝请求。`True` 表示拒绝 (fail-closed)，`False` 表示允许 (fail-open)。
+`POST /api/v1/audit/verify`
 
 ---
 
-## 策略注册表客户端 (Policy Registry Client)
+## 5. 宪法检索 API | Constitutional Retrieval API
 
-### `PolicyRegistryClient` 类
+提供基于 RAG 的宪法先例和条款检索。
+Provides RAG-based document retrieval for constitutional precedents and provisions.
 
-位于 [`../enhanced_agent_bus/policy_client.py`](../enhanced_agent_bus/policy_client.py)。
+### 基础路径 | Base URL: `/api/v1/retrieval`
 
-#### `__init__(self, registry_url: str = None, api_key: str = None, timeout: float = 5.0, cache_ttl: int = 300, fail_closed: bool = False)`
-初始化策略注册表客户端。
-- `fail_closed`: 策略注册表网络/解析错误时是否拒绝消息。`True` 表示拒绝 (fail-closed)，`False` 表示允许并记录警告。
+#### 搜索相似文档 | Search Similar Documents
 
----
-
-## 审议层 (Deliberation Layer)
-
-### `ImpactScorer` 类
-
-位于 [`../enhanced_agent_bus/deliberation_layer/impact_scorer.py`](../enhanced_agent_bus/deliberation_layer/impact_scorer.py)。
-
-#### `calculate_impact_score(self, message_content: Dict[str, Any], context: Optional[Dict[str, Any]] = None) -> float`
-计算消息的影响分数 (0.0 - 1.0)。
-- 维度包括：语义分析 (BERT)、权限要求、请求频率、历史上下文。
-
-### `AdaptiveRouter` 类
-
-位于 [`../enhanced_agent_bus/deliberation_layer/adaptive_router.py`](../enhanced_agent_bus/deliberation_layer/adaptive_router.py)。
-
-#### `async route_message(self, message: AgentMessage, context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]`
-根据影响分数路由消息。
-- **快速路径 (Fast Path)**: 分数 < 阈值 (默认 0.8)。
-- **审议路径 (Deliberation Path)**: 分数 >= 阈值。
-
-#### `async update_performance_feedback(self, message_id: str, actual_outcome: str, processing_time: float, feedback_score: float = None)`
-提供反馈以供路由算法学习和调整阈值。
+`POST /api/v1/retrieval/search`
 
 ---
 
-## 审计服务 (Audit Service)
+## 6. 搜索平台 API | Search Platform API
 
-### `AuditClient` 类
+高性能代码和文档搜索。
+High-performance code and document search.
 
-位于 [`../enhanced_agent_bus/audit_client.py`](../enhanced_agent_bus/audit_client.py)。
+### 基础路径 | Base URL: `/api/v1/search`
 
-#### `__init__(self, audit_url: str = "http://localhost:8084", timeout: float = 2.0)`
-初始化审计客户端。
+#### 全量搜索 | Full Search
 
-#### `async log_validation(self, message_id: str, result: ValidationResult) -> bool`
-将宪法验证结果记录到不可篡改的账本中。
-
-#### `async log_policy_change(self, policy_id: str, change_type: str, details: Dict[str, Any]) -> bool`
-记录策略变更信息。
+`POST /api/v1/search`
 
 ---
 
-## 数据模型 (Models)
+## 7. 数据模型 | Data Models
 
 ### `AgentMessage`
 
@@ -128,12 +132,33 @@
 - `message_id`: 唯一标识。
 - `constitutional_hash`: 宪法哈希 (必须匹配 `cdd01ef066bc6cf2`)。
 - `tenant_id`: 租户 ID。
-- `impact_score`: 影响分数 (由系统自动填充或手动指定)。
-- `security_context`: 包含策略版本等安全元数据。
+- `impact_score`: 影响分数。
+- `security_context`: 安全元数据。
 
 ---
-### 🔗 Related Documentation
-- [Project Index](../PROJECT_INDEX.md)
-- [Architecture Audit](./architecture_audit.md)
-- [Summary Index](./SUMMARY.md)
-- [Deployment Portal](../deployment_guide.md)
+
+## 8. 错误处理 | Error Handling
+
+所有 API 均遵循标准的错误响应格式：
+All APIs follow a standard error response format:
+
+```json
+{
+  "status": "error",
+  "errors": [
+    {
+      "code": "CONSTITUTIONAL_VIOLATION",
+      "message": "Constitutional hash invalid"
+    }
+  ]
+}
+```
+
+---
+
+### 🔗 相关文档 | Related Documentation
+
+- [项目索引 | Project Index](../PROJECT_INDEX.md)
+- [架构审计 | Architecture Audit](./architecture_audit.md)
+- [用户指南 | User Guides](./user-guides/README.md)
+- [部署门户 | Deployment Portal](../deployment_guide.md)

@@ -1,7 +1,6 @@
 # ACGS-2
 
-> **Constitutional Hash**: `cdd01ef066bc6cf2`
-> **Version**: 2.2.0
+> **Constitutional Hash**: `cdd01ef066bc6cf2` > **Version**: 2.2.0
 > **Status**: Verified
 > **Last Updated**: 2025-12-21
 > **Language**: CN
@@ -29,28 +28,15 @@ graph TD
     B -->|Validation| C{Constitutional Checker}
     C -->|Hash Match| D[Impact Scorer]
     C -->|Violation| E[Blocking & Audit]
-    
+
     D -->|Score >= 0.8| F[Deliberation Layer]
     D -->|Score < 0.8| G[Fast Lane]
-    
+
     F -->|Consensus/HITL| G
     G -->|Delivery| H[Target Agent]
-    
+
     H -->|Final State| I[Blockchain Audit Trail]
 ```
-
-### 服务依赖关系
-
-```mermaid
-graph LR
-    Bus(Agent Bus) --> Redis[(Redis Queue)]
-    Bus --> Rust(Rust Backend)
-    Scorer(Impact Scorer) --> BERT(DistilBERT ONNX)
-    Audit(Audit Service) --> Solana(Solana/Avalanche)
-    Audit --> Merkle(Merkle Tree)
-```
-
----
 
 ## 🚀 快速上手
 
@@ -92,22 +78,6 @@ kubectl apply -f k8s/blue-green-deployment.yml
 
 ---
 
-## 🔐 策略故障行为
-
-- **OPA 客户端**: `fail_closed=True` 时，OPA 评估失败将拒绝请求；设置为 `False` 时可 fail-open。
-- **策略注册表**: `PolicyRegistryClient.fail_closed=False` 默认允许消息通过并记录警告；可通过 `policy_fail_closed` 在核心总线中切换为 fail-closed。
-
----
-
-## 📈 性能优化
-
-ACGS-2 经过深度优化以支持大规模代理协作：
-- **消息总线**: 支持 Rust 核心，延迟降低 90%。
-- **影响评分器**: 预集成 DistilBERT INT8 量化模型，内存占用减少 60%。
-- **流量路由**: 集成 Istio 代理，支持零信任 mTLS 通信。
-
----
-
 ## 📖 文档索引
 
 - [API 参考](docs/api/specs/) (OpenAPI 规范)
@@ -124,7 +94,9 @@ ACGS-2 经过深度优化以支持大规模代理协作：
 **MIT License** - Copyright (c) 2025 ACGS Project
 
 ---
+
 ### 🔗 Related Documentation
+
 - [Project Index](PROJECT_INDEX.md)
 - [Architecture Audit](docs/architecture_audit.md)
 - [API Reference](docs/api_reference.md)

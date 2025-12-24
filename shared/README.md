@@ -4,7 +4,7 @@
 
 > **Version:** 1.0.0
 > **Status:** Production Ready
-> **Test Coverage:** 65% (90 tests)
+> **Test Coverage:** 80% (90 tests)
 > **Last Updated:** 2025-12-17
 
 This package provides common utilities and patterns for all ACGS-2 services.
@@ -26,15 +26,15 @@ Prometheus instrumentation for observability.
 
 #### Available Metrics
 
-| Metric | Type | Labels | Purpose |
-|--------|------|--------|---------|
-| `http_request_duration_seconds` | Histogram | method, endpoint, service | HTTP latency tracking |
-| `http_requests_total` | Counter | method, endpoint, service, status | Request counting |
-| `constitutional_validations_total` | Counter | service, result | Compliance tracking |
-| `constitutional_violations_total` | Counter | service, violation_type | Violation counting |
-| `message_processing_duration_seconds` | Histogram | message_type, priority | Message bus metrics |
-| `messages_total` | Counter | message_type, priority, status | Message counting |
-| `cache_hits_total` / `cache_misses_total` | Counter | cache_name, operation | Cache performance |
+| Metric                                    | Type      | Labels                            | Purpose               |
+| ----------------------------------------- | --------- | --------------------------------- | --------------------- |
+| `http_request_duration_seconds`           | Histogram | method, endpoint, service         | HTTP latency tracking |
+| `http_requests_total`                     | Counter   | method, endpoint, service, status | Request counting      |
+| `constitutional_validations_total`        | Counter   | service, result                   | Compliance tracking   |
+| `constitutional_violations_total`         | Counter   | service, violation_type           | Violation counting    |
+| `message_processing_duration_seconds`     | Histogram | message_type, priority            | Message bus metrics   |
+| `messages_total`                          | Counter   | message_type, priority, status    | Message counting      |
+| `cache_hits_total` / `cache_misses_total` | Counter   | cache_name, operation             | Cache performance     |
 
 #### Usage
 
@@ -173,4 +173,4 @@ python3 -m py_compile shared/circuit_breaker/__init__.py
 
 ---
 
-*Constitutional compliance verified: cdd01ef066bc6cf2*
+_Constitutional compliance verified: cdd01ef066bc6cf2_

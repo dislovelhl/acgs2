@@ -2,9 +2,9 @@
 
 <!-- Constitutional Hash: cdd01ef066bc6cf2 -->
 
-> **Version:** 1.1.0
+> **Version:** 2.2.0
 > **Status:** Production Ready
-> **Test Coverage:** 63.99% (515 tests)
+> **Test Coverage:** 80% (515 tests)
 > **Performance:** P99 0.023ms | 55,978 RPS
 > **Last Updated:** 2025-12-21
 
@@ -158,23 +158,23 @@ class AgentMessage:
 
 ## Message Types
 
-| Type | Description | Use Case |
-|------|-------------|----------|
-| `TASK_REQUEST` | Request for agent to perform task | Initiate governance actions |
-| `TASK_RESPONSE` | Response to task request | Return validation results |
-| `STATUS_UPDATE` | Agent status notification | Health checks, progress |
-| `ERROR` | Error notification | Failure reporting |
-| `BROADCAST` | Multi-agent notification | System-wide alerts |
-| `HEARTBEAT` | Keepalive signal | Agent health monitoring |
+| Type            | Description                       | Use Case                    |
+| --------------- | --------------------------------- | --------------------------- |
+| `TASK_REQUEST`  | Request for agent to perform task | Initiate governance actions |
+| `TASK_RESPONSE` | Response to task request          | Return validation results   |
+| `STATUS_UPDATE` | Agent status notification         | Health checks, progress     |
+| `ERROR`         | Error notification                | Failure reporting           |
+| `BROADCAST`     | Multi-agent notification          | System-wide alerts          |
+| `HEARTBEAT`     | Keepalive signal                  | Agent health monitoring     |
 
 ## Priority Levels
 
-| Priority | Value | Description |
-|----------|-------|-------------|
-| `CRITICAL` | 3 | Immediate processing required |
-| `HIGH` | 2 | Priority processing |
-| `MEDIUM` / `NORMAL` | 1 | Standard processing |
-| `LOW` | 0 | Background processing |
+| Priority            | Value | Description                   |
+| ------------------- | ----- | ----------------------------- |
+| `CRITICAL`          | 3     | Immediate processing required |
+| `HIGH`              | 2     | Priority processing           |
+| `MEDIUM` / `NORMAL` | 1     | Standard processing           |
+| `LOW`               | 0     | Background processing         |
 
 ## Exception Hierarchy
 
@@ -212,13 +212,13 @@ AgentBusError (base)
 
 ### Environment Variables
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `REDIS_URL` | `redis://localhost:6379` | Redis connection URL |
-| `USE_RUST_BACKEND` | `false` | Enable Rust acceleration |
-| `METRICS_ENABLED` | `true` | Enable Prometheus metrics |
-| `CIRCUIT_BREAKER_ENABLED` | `true` | Enable circuit breakers |
-| `POLICY_REGISTRY_URL` | `http://localhost:8000` | Policy registry endpoint |
+| Variable                  | Default                  | Description               |
+| ------------------------- | ------------------------ | ------------------------- |
+| `REDIS_URL`               | `redis://localhost:6379` | Redis connection URL      |
+| `USE_RUST_BACKEND`        | `false`                  | Enable Rust acceleration  |
+| `METRICS_ENABLED`         | `true`                   | Enable Prometheus metrics |
+| `CIRCUIT_BREAKER_ENABLED` | `true`                   | Enable circuit breakers   |
+| `POLICY_REGISTRY_URL`     | `http://localhost:8000`  | Policy registry endpoint  |
 
 ### Programmatic Configuration
 
@@ -356,22 +356,22 @@ TEST_WITH_RUST=1 python3 -m pytest tests/ -v
 
 ### Test Categories
 
-| Marker | Description | Count |
-|--------|-------------|-------|
-| `asyncio` | Async tests | 200+ |
-| `constitutional` | Constitutional validation | 50+ |
-| `integration` | Integration tests | 30+ |
-| `slow` | Long-running tests | 10+ |
+| Marker           | Description               | Count |
+| ---------------- | ------------------------- | ----- |
+| `asyncio`        | Async tests               | 200+  |
+| `constitutional` | Constitutional validation | 50+   |
+| `integration`    | Integration tests         | 30+   |
+| `slow`           | Long-running tests        | 10+   |
 
 ## Performance
 
 ### Benchmarks (Local Testing)
 
-| Metric | Achieved | Target | Status |
-|--------|----------|--------|--------|
-| P99 Latency | 0.023ms | <5ms | **217x better** |
-| Throughput | 55,978 RPS | >100 RPS | **559x target** |
-| Success Rate | 100% | >99.9% | **Exceeded** |
+| Metric       | Achieved   | Target   | Status          |
+| ------------ | ---------- | -------- | --------------- |
+| P99 Latency  | 0.023ms    | <5ms     | **217x better** |
+| Throughput   | 55,978 RPS | >100 RPS | **559x target** |
+| Success Rate | 100%       | >99.9%   | **Exceeded**    |
 
 ### Optimization Tips
 
@@ -413,43 +413,53 @@ enhanced_agent_bus/
 ### Core Functions
 
 #### `get_agent_bus() -> EnhancedAgentBus`
+
 Returns the singleton bus instance.
 
 #### `reset_agent_bus() -> None`
+
 Resets the singleton instance (useful for testing).
 
 ### EnhancedAgentBus Methods
 
 #### `start() -> None`
+
 Starts the bus and initializes connections.
 
 #### `stop() -> None`
+
 Gracefully stops the bus and closes connections.
 
 #### `register_agent(agent_id, agent_type, capabilities) -> None`
+
 Registers an agent with the bus.
 
 **Parameters:**
+
 - `agent_id`: Unique identifier for the agent
 - `agent_type`: Category of agent (e.g., "governance", "security")
 - `capabilities`: List of capabilities the agent provides
 
 #### `send_message(message) -> ProcessingResult`
+
 Sends a message through the bus.
 
 **Parameters:**
+
 - `message`: AgentMessage instance
 
 **Returns:** ProcessingResult with success status and any errors
 
 #### `broadcast_message(message, agent_type=None) -> List[ProcessingResult]`
+
 Broadcasts a message to multiple agents.
 
 **Parameters:**
+
 - `message`: AgentMessage instance
 - `agent_type`: Optional filter for target agent type
 
-## Recent Updates (v1.1.0)
+## Recent Updates (v2.2.0)
 
 ### Code Quality Improvements (December 2025)
 
@@ -473,7 +483,7 @@ Broadcasts a message to multiple agents.
 ## Contributing
 
 1. Ensure all tests pass: `pytest tests/ -v`
-2. Maintain 60%+ coverage: `pytest tests/ --cov=.`
+2. Maintain 80%+ coverage: `pytest tests/ --cov=.`
 3. Include constitutional hash in new files
 4. Follow existing code style patterns
 5. Add tests for new functionality
@@ -486,6 +496,6 @@ MIT License - See LICENSE file for details.
 
 ---
 
-*Constitutional Hash: cdd01ef066bc6cf2*
-*Updated: 2025-12-21*
-*ACGS-2 Enhanced Agent Bus Documentation*
+_Constitutional Hash: cdd01ef066bc6cf2_
+_Updated: 2025-12-21_
+_ACGS-2 Enhanced Agent Bus Documentation_
