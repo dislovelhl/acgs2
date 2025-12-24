@@ -393,7 +393,13 @@ class BaseSaga:
         comp_failed: List[str]
     ) -> SagaStatus:
         """Determine final saga status."""
-        if not failed:
+        # Check if any critical steps failed
+        critical_failed = any(
+            step.name in failed and step.is_critical
+            for step in self._steps
+        )
+
+        if not critical_failed:
             return SagaStatus.COMPLETED
 
         if not comp_executed and not comp_failed:

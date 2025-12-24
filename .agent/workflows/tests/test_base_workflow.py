@@ -222,7 +222,7 @@ class TestBaseWorkflow:
     @pytest.mark.asyncio
     async def test_workflow_run(self):
         """Test basic workflow execution."""
-        workflow = SimpleWorkflow(workflow_name="test")
+        workflow = SimpleWorkflow(workflow_id="test")
 
         result = await workflow.run({"data": "test_value"})
 
@@ -233,7 +233,7 @@ class TestBaseWorkflow:
     async def test_constitutional_hash_validation(self):
         """Test constitutional hash is validated."""
         workflow = SimpleWorkflow(
-            workflow_name="test",
+            workflow_id="test",
             constitutional_hash=CONSTITUTIONAL_HASH,
         )
 
@@ -256,7 +256,7 @@ class TestBaseWorkflow:
                 )
 
         workflow = SlowWorkflow(
-            workflow_name="slow",
+            workflow_id="slow",
             timeout_seconds=0.1,  # Very short timeout
         )
 
@@ -288,7 +288,7 @@ class TestConstitutionalCompliance:
     async def test_workflow_validates_hash(self):
         """Test workflow validates constitutional hash."""
         workflow = SimpleWorkflow(
-            workflow_name="test",
+            workflow_id="test",
             constitutional_hash=CONSTITUTIONAL_HASH,
         )
 
@@ -300,10 +300,11 @@ class TestConstitutionalCompliance:
     async def test_workflow_rejects_invalid_hash(self):
         """Test workflow rejects invalid constitutional hash."""
         workflow = SimpleWorkflow(
-            workflow_name="test",
+            workflow_id="test",
             constitutional_hash=CONSTITUTIONAL_HASH,
         )
 
-        # Should fail with wrong hash
-        is_valid = await workflow.validate_constitutional_hash("wrong_hash")
-        assert not is_valid
+        # Should raise ConstitutionalHashMismatchError with wrong hash
+        from ..base.workflow import ConstitutionalHashMismatchError
+        with pytest.raises(ConstitutionalHashMismatchError):
+            await workflow.validate_constitutional_hash("wrong_hash")
