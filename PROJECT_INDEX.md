@@ -2,7 +2,7 @@
 
 > **Constitutional Hash**: `cdd01ef066bc6cf2` > **Version**: 2.2.0
 > **Purpose**: Efficient context loading for AI assistants
-> **Last Updated**: 2025-12-20
+> **Last Updated**: 2025-12-24
 > **Language**: EN
 
 ## Quick Reference
@@ -36,6 +36,12 @@ ACGS-2/
 │   └── integration/search_platform/
 ├── policies/               # OPA Rego policies
 │   └── rego/
+├── .agent/workflows/       # Agentic workflow orchestration
+│   ├── base/               # BaseWorkflow, WorkflowStep
+│   ├── dags/               # DAGExecutor, parallel orchestration
+│   ├── sagas/              # BaseSaga, LIFO compensation
+│   ├── coordination/       # Voting, Handoff workflows
+│   └── constitutional/     # Validation, Compliance workflows
 ├── .semgrep/              # Security rules
 ├── monitoring/            # Production monitoring
 └── shared/                # Common utilities
@@ -101,7 +107,9 @@ python3 -m pytest tests/ -v
 - `deployment_guide.md`: Consolidated into a unified entry point for production guides.
 - `docs/api_reference.md`: Added Audit Service and Audit Client API details.
 - `docs/DEPLOYMENT_GUIDE_CN.md`: NEW: Chinese version of the enterprise deployment guide.
-- `PROJECT_INDEX.md`: Updated with recent documentation systemic improvements.
+- `PROJECT_INDEX.md`: Updated with Agent Workflows architecture and recent stabilization efforts.
+- `.agent/workflows/`: Verified implementation status, resolved BaseWorkflow regressions, and reached 54+ test cases.
+- `docs/DOCUMENTATION_IMPROVEMENT_SUMMARY.md`: Finalized Phase 5 (Commercial Readiness) documentation.
 
 ---
 

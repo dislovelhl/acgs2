@@ -68,6 +68,7 @@ class BaseWorkflow(ABC):
     def __init__(
         self,
         workflow_id: Optional[str] = None,
+        workflow_name: str = "base",
         activities: Optional[BaseActivities] = None,
         constitutional_hash: str = CONSTITUTIONAL_HASH,
         timeout_seconds: int = 300,
@@ -84,6 +85,7 @@ class BaseWorkflow(ABC):
             fail_closed: If True, reject on validation/policy failures
         """
         self.workflow_id = workflow_id or str(uuid.uuid4())
+        self.workflow_name = workflow_name
         self.activities = activities or get_default_activities()
         self.constitutional_hash = constitutional_hash
         self.timeout_seconds = timeout_seconds
