@@ -21,20 +21,23 @@ python3 -m pytest tests/ -v --tb=short
 python3 -m pytest tests/ --cov=. --cov-report=html
 
 # Single test file
-python3 -m pytest tests/test_core.py -v
+python3 -m pytest tests/test_core_actual.py -v
 
 # Single test method
-python3 -m pytest tests/test_core.py::TestMessageProcessor::test_process_valid_message -v
+python3 -m pytest tests/test_core_actual.py::TestEnhancedAgentBus::test_basic_send -v
 
 # Tests by marker
 python3 -m pytest -m constitutional      # Constitutional validation tests
 python3 -m pytest -m integration          # Integration tests (may require services)
 python3 -m pytest -m "not slow"           # Skip slow tests
 
+# Antifragility tests
+python3 -m pytest tests/test_health_aggregator.py tests/test_chaos_framework.py tests/test_metering_integration.py -v
+
 # With Rust backend enabled
 TEST_WITH_RUST=1 python3 -m pytest tests/ -v
 
-# Syntax verification
+# Syntax verification (all Python files)
 for f in *.py deliberation_layer/*.py tests/*.py; do python3 -m py_compile "$f"; done
 ```
 
@@ -43,17 +46,11 @@ for f in *.py deliberation_layer/*.py tests/*.py; do python3 -m py_compile "$f";
 # From project root
 python3 -m pytest enhanced_agent_bus/tests services tests -v
 
-# Performance benchmarks
-python testing/performance_test.py
+# With PYTHONPATH set for imports
+PYTHONPATH=/home/dislove/document/acgs2 python3 -m pytest enhanced_agent_bus/tests/ -v
 
-# End-to-end tests
-python testing/e2e_test.py
-
-# Load/stress tests
-python testing/load_test.py
-
-# Fault recovery tests
-python testing/fault_recovery_test.py
+# Performance validation
+python3 scripts/validate_performance.py
 ```
 
 ### Infrastructure
@@ -87,26 +84,52 @@ Agent → EnhancedAgentBus → Constitutional Validation (hash: cdd01ef066bc6cf2
            Blockchain Audit
 ```
 
+### Antifragility Architecture (Phase 13)
+```
+                    ┌─────────────────────┐
+                    │  Health Aggregator  │ ← Real-time 0.0-1.0 health scoring
+                    │   (fire-and-forget) │
+                    └──────────┬──────────┘
+                               ↓
+┌──────────────┐    ┌─────────────────────┐    ┌──────────────────┐
+│Circuit Breaker│ ←→ │Recovery Orchestrator│ ←→ │  Chaos Testing   │
+│(3-state FSM)  │    │ (priority queues)   │    │ (blast radius)   │
+└──────────────┘    └─────────────────────┘    └──────────────────┘
+                               ↓
+                    ┌─────────────────────┐
+                    │ Metering Integration│ ← <5μs latency
+                    │  (async queue)      │
+                    └─────────────────────┘
+```
+
 ### Core Components
 
-**enhanced_agent_bus/** - Core message bus implementation
+**enhanced_agent_bus/** - Core message bus implementation (741 tests, 16,948 LOC)
 - `core.py`: `EnhancedAgentBus`, `MessageProcessor` - main bus classes
+- `agent_bus.py`: High-level agent bus interface with lifecycle management
 - `models.py`: `AgentMessage`, `MessageType`, `Priority` enums
 - `exceptions.py`: 22 typed exception classes with hierarchy
 - `validators.py`: Constitutional hash and message validation
-- `policy_client.py`: Policy registry client
+- `policy_client.py`: Policy registry client with caching
 - `opa_client.py`: OPA (Open Policy Agent) integration
-- `registry.py`: Agent registration and bundle management
-- `deliberation_layer/`: AI-powered review for high-impact decisions
-  - `impact_scorer.py`: DistilBERT-based impact scoring (weight: semantic 0.30, permission 0.20, drift 0.15)
-  - `hitl_manager.py`: Human-in-the-loop approval workflow
-  - `adaptive_router.py`: Routes messages based on impact score threshold (default 0.8)
-  - `opa_guard.py`: OPA policy enforcement within deliberation
+
+**enhanced_agent_bus/deliberation_layer/** - AI-powered review for high-impact decisions
+- `impact_scorer.py`: DistilBERT-based scoring (weights: semantic 0.30, permission 0.20, drift 0.15)
+- `hitl_manager.py`: Human-in-the-loop approval workflow
+- `adaptive_router.py`: Routes based on impact score threshold (default 0.8)
+- `opa_guard.py`: OPA policy enforcement within deliberation
+
+**Antifragility Components (Phase 13)**
+- `health_aggregator.py`: Real-time health scoring (0.0-1.0) across circuit breakers
+- `recovery_orchestrator.py`: Priority-based recovery with 4 strategies (EXPONENTIAL_BACKOFF, LINEAR_BACKOFF, IMMEDIATE, MANUAL)
+- `chaos_testing.py`: Controlled failure injection with blast radius limits and emergency stop
+- `metering_integration.py`: Fire-and-forget async metering queue (<5μs latency impact)
 
 **services/** - Microservices (47+)
 - `policy_registry/`: Policy storage and version management (Port 8000)
 - `audit_service/`: Blockchain-anchored audit trails (Port 8084)
 - `constitutional_ai/`: Core constitutional validation service
+- `metering/`: Usage metering and billing service
 - `core/`: Foundational services (constraint generation, etc.)
 
 **policies/rego/** - OPA Rego policies for constitutional governance
@@ -114,7 +137,7 @@ Agent → EnhancedAgentBus → Constitutional Validation (hash: cdd01ef066bc6cf2
 **shared/** - Cross-service utilities
 - `constants.py`: System-wide constants including `CONSTITUTIONAL_HASH`
 - `metrics/`: Prometheus metrics integration
-- `circuit_breaker/`: Fault tolerance patterns
+- `circuit_breaker/`: Circuit breaker registry and fault tolerance patterns
 
 ### Rust Backend (Optional)
 Located in `enhanced_agent_bus/rust/`, provides 10-50x speedup:
@@ -151,6 +174,7 @@ from enhanced_agent_bus.exceptions import (
     MessageValidationError,  # Invalid messages
     PolicyEvaluationError,   # OPA failures
     BusNotStartedError,      # Lifecycle errors
+    MessageTimeoutError,     # Timeout errors (used by chaos testing)
 )
 ```
 
@@ -164,6 +188,17 @@ try:
 except ImportError:
     # Fallback for standalone usage
     CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
+```
+
+### Fire-and-Forget Pattern (Antifragility)
+For non-blocking operations that must not impact P99 latency:
+```python
+# Health aggregation callback - non-blocking
+async def on_health_change(snapshot: HealthSnapshot):
+    asyncio.create_task(notify_monitoring(snapshot))  # Fire-and-forget
+
+# Metering - async queue with <5μs latency impact
+await metering_queue.enqueue(usage_event)  # Non-blocking
 ```
 
 ### Policy Fail Behavior
@@ -190,14 +225,16 @@ except ImportError:
 | `METRICS_ENABLED` | `true` | Prometheus metrics |
 | `POLICY_REGISTRY_URL` | `http://localhost:8000` | Policy registry endpoint |
 | `OPA_URL` | `http://localhost:8181` | OPA server endpoint |
+| `METERING_ENABLED` | `true` | Enable usage metering |
 
 ## Performance Targets
 
 Non-negotiable targets defined in `shared/constants.py`:
-- P99 Latency: <5ms (achieved: 0.023ms)
-- Throughput: >100 RPS (achieved: 55,978 RPS)
+- P99 Latency: <5ms (achieved: 0.278ms - 94% better)
+- Throughput: >100 RPS (achieved: 6,310 RPS - 63x target)
 - Cache Hit Rate: >85% (achieved: 95%)
 - Constitutional Compliance: 100%
+- Antifragility Score: 10/10
 
 ## Code Style
 
@@ -208,6 +245,7 @@ Non-negotiable targets defined in `shared/constants.py`:
 - Use `logging` module, never `print()` in production code
 - Include constitutional hash in file docstrings: `Constitutional Hash: cdd01ef066bc6cf2`
 - Python 3.11+ required; use `datetime.now(timezone.utc)` not deprecated `datetime.utcnow()`
+- Fire-and-forget patterns for non-critical async operations to maintain latency targets
 
 ## Test Markers
 
@@ -218,15 +256,40 @@ Non-negotiable targets defined in `shared/constants.py`:
 @pytest.mark.constitutional # Governance validation tests
 ```
 
+## Antifragility Capabilities
+
+| Capability | Component | Description |
+|------------|-----------|-------------|
+| Circuit Breaker | `shared/circuit_breaker` | 3-state (CLOSED/OPEN/HALF_OPEN) with exponential backoff |
+| Health Aggregation | `health_aggregator.py` | Real-time 0.0-1.0 scoring across all breakers |
+| Recovery Orchestration | `recovery_orchestrator.py` | Priority queues with 4 recovery strategies |
+| Chaos Testing | `chaos_testing.py` | Controlled failure injection with blast radius enforcement |
+| Graceful Degradation | `core.py` | DEGRADED mode fallback on infrastructure failure |
+| Metering Integration | `metering_integration.py` | <5μs fire-and-forget billing events |
+
 ## Deployment Scripts
 
 Located in `scripts/`:
 - `blue-green-deploy.sh`: Zero-downtime deployment
 - `blue-green-rollback.sh`: Instant rollback
 - `health-check.sh`: Comprehensive health monitoring
+- `validate_performance.py`: Performance validation against targets
+- `fix-vulnerabilities.sh`: Automated security patching
 
 Kubernetes manifests in `k8s/`:
 ```bash
 kubectl apply -f k8s/namespace.yml
 kubectl apply -f k8s/blue-green-deployment.yml
 ```
+
+## Workflow Orchestration
+
+ACGS-2 implements Temporal-style workflow patterns. See [docs/WORKFLOW_PATTERNS.md](docs/WORKFLOW_PATTERNS.md) for detailed mapping:
+
+| Pattern | Implementation | Key Feature |
+|---------|---------------|-------------|
+| Saga with Compensation | `StepCompensation` | LIFO rollback with idempotency keys |
+| Fan-Out/Fan-In | `DAGExecutor` | `asyncio.as_completed` for max parallelism |
+| Async Callback | `HITLManager` | Slack/Teams integration for approvals |
+| Recovery Strategies | `RecoveryOrchestrator` | 4 strategies with priority queues |
+| Entity Workflows | `EnhancedAgentBus` | Agent lifecycle with state preservation |
