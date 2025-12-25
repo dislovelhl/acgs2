@@ -53,6 +53,17 @@ from .validators import (
 from .validation_integration_example import (
     IntegratedValidationSystem,
 )
+# Refactored modules for cleaner architecture
+from .config import BusConfiguration
+from .metering_manager import MeteringManager, create_metering_manager
+from .imports import (
+    get_import_status,
+    METRICS_ENABLED,
+    CIRCUIT_BREAKER_ENABLED,
+    DELIBERATION_AVAILABLE,
+    USE_RUST,
+    METERING_AVAILABLE,
+)
 from .exceptions import (
     # Base
     AgentBusError,
@@ -93,6 +104,16 @@ from .exceptions import (
 
 __all__ = [
     "CONSTITUTIONAL_HASH",
+    # Refactored Configuration
+    "BusConfiguration",
+    "MeteringManager",
+    "create_metering_manager",
+    "get_import_status",
+    "METRICS_ENABLED",
+    "CIRCUIT_BREAKER_ENABLED",
+    "DELIBERATION_AVAILABLE",
+    "USE_RUST",
+    "METERING_AVAILABLE",
     # Models
     "AgentMessage",
     "MessageType",

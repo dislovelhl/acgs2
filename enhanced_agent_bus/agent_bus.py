@@ -8,49 +8,56 @@ and comprehensive metrics instrumentation.
 
 import asyncio
 import logging
+import time
 from datetime import datetime, timezone
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, TYPE_CHECKING
 
-# Import Prometheus metrics with fallback
-try:
-    from shared.metrics import (
-        MESSAGE_QUEUE_DEPTH,
-        set_service_info,
-    )
-    METRICS_ENABLED = True
-except ImportError:
-    METRICS_ENABLED = False
+# Use centralized imports module for optional dependencies
+from .imports import (
+    # Feature flags
+    METRICS_ENABLED,
+    OTEL_ENABLED,
+    CIRCUIT_BREAKER_ENABLED,
+    POLICY_CLIENT_AVAILABLE,
+    DELIBERATION_AVAILABLE,
+    CRYPTO_AVAILABLE,
+    CONFIG_AVAILABLE,
+    AUDIT_CLIENT_AVAILABLE,
+    OPA_CLIENT_AVAILABLE,
+    USE_RUST,
+    METERING_AVAILABLE,
+    DEFAULT_REDIS_URL,
+    # Prometheus
+    MESSAGE_QUEUE_DEPTH,
+    set_service_info,
+    # OpenTelemetry
+    tracer,
+    QUEUE_DEPTH,
+    # Circuit breaker
+    get_circuit_breaker,
+    circuit_breaker_health_check,
+    initialize_core_circuit_breakers,
+    CircuitBreakerConfig,
+    # Policy client
+    get_policy_client,
+    PolicyClient,
+    # Deliberation
+    VotingService,
+    DeliberationQueue,
+    # Crypto
+    CryptoService,
+    # Settings
+    settings,
+    # Audit
+    AuditClient,
+    # OPA
+    get_opa_client,
+)
 
-# Import OpenTelemetry with fallback
-try:
-    from opentelemetry import trace, metrics
-    OTEL_ENABLED = True
-    tracer = trace.get_tracer(__name__)
-    meter = metrics.get_meter(__name__)
+# Use centralized metering manager
+from .metering_manager import MeteringManager, create_metering_manager
 
-    QUEUE_DEPTH = meter.create_up_down_counter(
-        "acgs2.queue.depth",
-        description="Current message queue depth",
-        unit="1"
-    )
-except ImportError:
-    OTEL_ENABLED = False
-    tracer = None
-    meter = None
-    QUEUE_DEPTH = None
-
-# Import circuit breaker with fallback
-try:
-    from shared.circuit_breaker import (
-        get_circuit_breaker,
-        circuit_breaker_health_check,
-        initialize_core_circuit_breakers,
-        CircuitBreakerConfig,
-    )
-    CIRCUIT_BREAKER_ENABLED = True
-except ImportError:
-    CIRCUIT_BREAKER_ENABLED = False
-
+# Core package imports with fallback
 try:
     from .models import (
         AgentMessage,
@@ -84,118 +91,11 @@ except ImportError:
         OPAValidationStrategy,
     )
 
-# Import centralized Redis config with fallback
-try:
-    from shared.redis_config import get_redis_url
-    DEFAULT_REDIS_URL = get_redis_url()
-except ImportError:
-    DEFAULT_REDIS_URL = "redis://localhost:6379"
-
-# Import policy client for dynamic validation
-try:
-    from .policy_client import get_policy_client, PolicyClient
-    POLICY_CLIENT_AVAILABLE = True
-except ImportError:
-    POLICY_CLIENT_AVAILABLE = False
-    PolicyClient = None
-
-    def get_policy_client(fail_closed: Optional[bool] = None):
-        return None
-
-# Import Deliberation Layer
-try:
-    try:
-        from .deliberation_layer.voting_service import VotingService, VotingStrategy
-        from .deliberation_layer.deliberation_queue import DeliberationQueue
-    except ImportError:
-        from deliberation_layer.voting_service import VotingService, VotingStrategy
-        from deliberation_layer.deliberation_queue import DeliberationQueue
-    DELIBERATION_AVAILABLE = True
-except ImportError:
-    DELIBERATION_AVAILABLE = False
-
-# Import Crypto Service for identity validation
-try:
-    from services.policy_registry.app.services.crypto_service import CryptoService
-    CRYPTO_AVAILABLE = True
-except ImportError:
-    try:
-        from ..services.crypto_service import CryptoService
-        CRYPTO_AVAILABLE = True
-    except ImportError:
-        CRYPTO_AVAILABLE = False
-        CryptoService = None
-
-# Import settings for security config
-try:
-    from shared.config import settings
-    CONFIG_AVAILABLE = True
-except ImportError:
-    CONFIG_AVAILABLE = False
-    settings = None
-
-# Import Audit Client
-try:
-    from shared.audit_client import AuditClient
-    AUDIT_CLIENT_AVAILABLE = True
-except ImportError:
-    try:
-        from .audit_client import AuditClient
-        AUDIT_CLIENT_AVAILABLE = True
-    except ImportError:
-        AUDIT_CLIENT_AVAILABLE = False
-        AuditClient = None
-
-# Import OPA client
-try:
-    from .opa_client import get_opa_client, OPAClient
-    OPA_CLIENT_AVAILABLE = True
-except ImportError:
-    OPA_CLIENT_AVAILABLE = False
-    OPAClient = None
-    def get_opa_client(): return None
-
-# Import Rust implementation
-try:
-    import enhanced_agent_bus_rust as rust_bus
-    USE_RUST = True
-except ImportError:
-    USE_RUST = False
-    rust_bus = None
-
 # Import MessageProcessor
 try:
     from .message_processor import MessageProcessor
 except ImportError:
     from message_processor import MessageProcessor
-
-# Import Metering Integration
-try:
-    from .metering_integration import (
-        MeteringHooks,
-        MeteringConfig,
-        AsyncMeteringQueue,
-        get_metering_hooks,
-        get_metering_queue,
-        METERING_AVAILABLE,
-    )
-except ImportError:
-    try:
-        from metering_integration import (
-            MeteringHooks,
-            MeteringConfig,
-            AsyncMeteringQueue,
-            get_metering_hooks,
-            get_metering_queue,
-            METERING_AVAILABLE,
-        )
-    except ImportError:
-        METERING_AVAILABLE = False
-        MeteringHooks = None
-        MeteringConfig = None
-        AsyncMeteringQueue = None
-        get_metering_hooks = None
-        get_metering_queue = None
 
 logger = logging.getLogger(__name__)
 
@@ -239,7 +139,7 @@ class EnhancedAgentBus:
         processor: Optional[MessageProcessor] = None,
         use_rust: bool = True,
         enable_metering: bool = True,
-        metering_config: Optional['MeteringConfig'] = None,
+        metering_config: Optional[Any] = None,
     ):
         """Initialize the Enhanced Agent Bus.
 
@@ -265,65 +165,26 @@ class EnhancedAgentBus:
         self._policy_fail_closed = policy_fail_closed
         self._use_rust = use_rust
 
-        # Initialize policy client if using dynamic validation
-        if self._use_dynamic_policy:
-            self._policy_client = get_policy_client(fail_closed=policy_fail_closed)
-        else:
-            self._policy_client = None
-
-        # Initialize OPA client
+        # Initialize clients
+        self._policy_client = self._init_policy_client(policy_fail_closed)
         self._opa_client = get_opa_client()
+        self._audit_client = self._init_audit_client(audit_service_url)
 
-        # Dependency injection with defaults for backward compatibility
-        if registry:
-            self._registry = registry
-        elif use_redis_registry:
-            try:
-                from .registry import RedisAgentRegistry
-            except ImportError:
-                from registry import RedisAgentRegistry
-            self._registry = RedisAgentRegistry(redis_url=redis_url)
-        else:
-            self._registry = InMemoryAgentRegistry()
-
+        # Dependency injection with defaults
+        self._registry = self._init_registry(registry, use_redis_registry, redis_url)
         self._router: MessageRouter = router or DirectMessageRouter()
-
-        # Set validator with preference: injected > OPA > dynamic policy > static hash
-        if validator:
-            self._validator = validator
-        elif self._use_dynamic_policy and self._opa_client:
-            self._validator = OPAValidationStrategy(opa_client=self._opa_client)
-        elif self._use_dynamic_policy and self._policy_client:
-            self._validator = DynamicPolicyValidationStrategy(policy_client=self._policy_client)
-        else:
-            self._validator = StaticHashValidationStrategy(strict=True)
-
-        # Initialize Audit Client
-        if AUDIT_CLIENT_AVAILABLE:
-            self._audit_client = AuditClient(service_url=audit_service_url)
-        else:
-            self._audit_client = None
+        self._validator = self._init_validator(validator)
 
         # Legacy dict for backward compatibility (delegates to registry)
         self._agents: Dict[str, Dict[str, Any]] = {}
         self._message_queue: asyncio.Queue = asyncio.Queue()
 
-        # Initialize metering for production billing
-        self._enable_metering = enable_metering and METERING_AVAILABLE
-        self._metering_config = metering_config
-        if self._enable_metering:
-            if metering_config is not None:
-                self._metering_queue = AsyncMeteringQueue(metering_config)
-                self._metering_hooks = MeteringHooks(self._metering_queue)
-            elif get_metering_queue is not None and get_metering_hooks is not None:
-                self._metering_queue = get_metering_queue()
-                self._metering_hooks = get_metering_hooks()
-            else:
-                self._metering_queue = None
-                self._metering_hooks = None
-        else:
-            self._metering_queue = None
-            self._metering_hooks = None
+        # Initialize metering using MeteringManager
+        self._metering_manager = create_metering_manager(
+            enable_metering=enable_metering and METERING_AVAILABLE,
+            metering_config=metering_config,
+            constitutional_hash=CONSTITUTIONAL_HASH,
+        )
 
         self._processor = processor or MessageProcessor(
             use_dynamic_policy=use_dynamic_policy,
@@ -331,18 +192,15 @@ class EnhancedAgentBus:
             processing_strategy=None,
             audit_client=self._audit_client,
             use_rust=self._use_rust,
-            metering_hooks=self._metering_hooks,
+            metering_hooks=self._metering_manager.hooks,
             enable_metering=enable_metering,
         )
         self._running = False
 
         # Initialize Kafka bus if enabled
-        if self._use_kafka:
-            from .kafka_bus import KafkaEventBus
-            self._kafka_bus = KafkaEventBus(bootstrap_servers=kafka_bootstrap_servers)
-        else:
-            self._kafka_bus = None
+        self._kafka_bus = self._init_kafka(use_kafka, kafka_bootstrap_servers)
 
+        # Initialize circuit breaker for policy registry
         if CIRCUIT_BREAKER_ENABLED and self._use_dynamic_policy:
             self._policy_circuit_breaker = get_circuit_breaker(
                 'policy_registry',
@@ -350,12 +208,8 @@ class EnhancedAgentBus:
             )
 
         # Initialize Deliberation Layer
-        if DELIBERATION_AVAILABLE:
-            self._voting_service = VotingService()
-            self._deliberation_queue = DeliberationQueue()
-        else:
-            self._voting_service = None
-            self._deliberation_queue = None
+        self._voting_service = VotingService() if DELIBERATION_AVAILABLE else None
+        self._deliberation_queue = DeliberationQueue() if DELIBERATION_AVAILABLE else None
 
         self._kafka_consumer_task: Optional[asyncio.Task] = None
 
@@ -366,15 +220,66 @@ class EnhancedAgentBus:
             "started_at": None,
         }
 
+    def _init_policy_client(self, policy_fail_closed: bool) -> Optional[Any]:
+        """Initialize policy client if using dynamic validation."""
+        if self._use_dynamic_policy:
+            return get_policy_client(fail_closed=policy_fail_closed)
+        return None
+
+    def _init_audit_client(self, audit_service_url: str) -> Optional[Any]:
+        """Initialize audit client if available."""
+        if AUDIT_CLIENT_AVAILABLE:
+            return AuditClient(service_url=audit_service_url)
+        return None
+
+    def _init_registry(
+        self,
+        registry: Optional[AgentRegistry],
+        use_redis_registry: bool,
+        redis_url: str,
+    ) -> AgentRegistry:
+        """Initialize agent registry with fallback to defaults."""
+        if registry:
+            return registry
+        if use_redis_registry:
+            try:
+                from .registry import RedisAgentRegistry
+            except ImportError:
+                from registry import RedisAgentRegistry
+            return RedisAgentRegistry(redis_url=redis_url)
+        return InMemoryAgentRegistry()
+
+    def _init_validator(
+        self,
+        validator: Optional[ValidationStrategy],
+    ) -> ValidationStrategy:
+        """Initialize validation strategy with preference ordering."""
+        if validator:
+            return validator
+        if self._use_dynamic_policy and self._opa_client:
+            return OPAValidationStrategy(opa_client=self._opa_client)
+        if self._use_dynamic_policy and self._policy_client:
+            return DynamicPolicyValidationStrategy(policy_client=self._policy_client)
+        return StaticHashValidationStrategy(strict=True)
+
+    def _init_kafka(
+        self,
+        use_kafka: bool,
+        kafka_bootstrap_servers: str,
+    ) -> Optional[Any]:
+        """Initialize Kafka bus if enabled."""
+        if use_kafka:
+            from .kafka_bus import KafkaEventBus
+            return KafkaEventBus(bootstrap_servers=kafka_bootstrap_servers)
+        return None
+
     async def start(self) -> None:
         """Start the agent bus."""
         self._running = True
         self._metrics["started_at"] = datetime.now(timezone.utc).isoformat()
 
-        # Start metering queue for production billing
-        if self._metering_queue is not None:
-            await self._metering_queue.start()
-            logger.info("Metering queue started for production billing")
+        # Start metering manager
+        await self._metering_manager.start()
 
         # Start Kafka bus if enabled
         if self._kafka_bus:
@@ -383,7 +288,7 @@ class EnhancedAgentBus:
                 self._kafka_consumer_task = asyncio.create_task(self._poll_kafka_messages())
 
         # Initialize Prometheus service info
-        if METRICS_ENABLED:
+        if METRICS_ENABLED and set_service_info:
             set_service_info(
                 service_name='enhanced_agent_bus',
                 version='2.0.0',
@@ -391,7 +296,7 @@ class EnhancedAgentBus:
             )
 
         # Initialize core circuit breakers
-        if CIRCUIT_BREAKER_ENABLED:
+        if CIRCUIT_BREAKER_ENABLED and initialize_core_circuit_breakers:
             initialize_core_circuit_breakers()
             logger.info("Circuit breakers initialized for core services")
 
@@ -423,10 +328,8 @@ class EnhancedAgentBus:
         if self._kafka_bus:
             await self._kafka_bus.stop()
 
-        # Stop metering queue and flush remaining events
-        if self._metering_queue is not None:
-            await self._metering_queue.stop()
-            logger.info("Metering queue stopped")
+        # Stop metering manager
+        await self._metering_manager.stop()
 
         logger.info("EnhancedAgentBus stopped")
 
@@ -451,36 +354,15 @@ class EnhancedAgentBus:
             True if registration successful
         """
         # SECURITY: Verify the agent's JWT/SVID identity
-        if auth_token and CRYPTO_AVAILABLE and CONFIG_AVAILABLE:
-            try:
-                public_key = settings.security.jwt_public_key if hasattr(settings.security, 'jwt_public_key') else CONSTITUTIONAL_HASH
-                payload = CryptoService.verify_agent_token(auth_token, public_key)
-
-                # Extract and validate identity
-                token_agent_id = payload.get("agent_id")
-                token_tenant_id = payload.get("tenant_id")
-
-                if token_agent_id != agent_id:
-                    logger.warning(f"Registration failed: agent_id mismatch ({agent_id} vs {token_agent_id})")
-                    return False
-
-                if tenant_id and token_tenant_id != tenant_id:
-                    logger.warning(f"Registration failed: tenant_id mismatch ({tenant_id} vs {token_tenant_id})")
-                    return False
-
-                # Trust the token's claims
-                tenant_id = token_tenant_id
-                capabilities = payload.get("capabilities", capabilities)
-                logger.info(f"Agent identity verified via token for {agent_id}")
-            except Exception as e:
-                logger.error(f"Agent registration identity validation error: {e}")
-                return False
-        elif auth_token:
-            logger.warning("Auth token provided but CryptoService or Config not available")
-        elif self._use_dynamic_policy:
-            # Require identity in dynamic mode
-            logger.warning(f"Registration rejected: Auth token required for agent {agent_id} in dynamic mode")
+        validated_tenant, validated_capabilities = await self._validate_agent_identity(
+            agent_id, tenant_id, capabilities, auth_token
+        )
+        if validated_tenant is False:
             return False
+        if validated_tenant is not None:
+            tenant_id = validated_tenant
+        if validated_capabilities is not None:
+            capabilities = validated_capabilities
 
         constitutional_key = CONSTITUTIONAL_HASH
 
@@ -502,6 +384,59 @@ class EnhancedAgentBus:
         }
         logger.info(f"Agent registered: {agent_id} (type: {agent_type}, tenant: {tenant_id})")
         return True
+
+    async def _validate_agent_identity(
+        self,
+        agent_id: str,
+        tenant_id: Optional[str],
+        capabilities: Optional[List[str]],
+        auth_token: Optional[str],
+    ) -> tuple:
+        """Validate agent identity using JWT token.
+
+        Returns:
+            Tuple of (validated_tenant_id, validated_capabilities)
+            Returns (False, None) if validation fails
+        """
+        if auth_token and CRYPTO_AVAILABLE and CONFIG_AVAILABLE:
+            try:
+                public_key = (
+                    settings.security.jwt_public_key
+                    if hasattr(settings.security, 'jwt_public_key')
+                    else CONSTITUTIONAL_HASH
+                )
+                payload = CryptoService.verify_agent_token(auth_token, public_key)
+
+                # Extract and validate identity
+                token_agent_id = payload.get("agent_id")
+                token_tenant_id = payload.get("tenant_id")
+
+                if token_agent_id != agent_id:
+                    logger.warning(
+                        f"Registration failed: agent_id mismatch ({agent_id} vs {token_agent_id})"
+                    )
+                    return (False, None)
+
+                if tenant_id and token_tenant_id != tenant_id:
+                    logger.warning(
+                        f"Registration failed: tenant_id mismatch ({tenant_id} vs {token_tenant_id})"
+                    )
+                    return (False, None)
+
+                logger.info(f"Agent identity verified via token for {agent_id}")
+                return (token_tenant_id, payload.get("capabilities", capabilities))
+            except Exception as e:
+                logger.error(f"Agent registration identity validation error: {e}")
+                return (False, None)
+        elif auth_token:
+            logger.warning("Auth token provided but CryptoService or Config not available")
+        elif self._use_dynamic_policy:
+            logger.warning(
+                f"Registration rejected: Auth token required for agent {agent_id} in dynamic mode"
+            )
+            return (False, None)
+
+        return (None, None)
 
     async def unregister_agent(self, agent_id: str) -> bool:
         """Unregister an agent from the bus.
@@ -540,149 +475,126 @@ class EnhancedAgentBus:
             return await self._do_send_message(message)
 
     async def _do_send_message(self, message: AgentMessage) -> ValidationResult:
-        """Internal message sending logic."""
-        import time
+        """Internal message sending logic with validation and routing."""
         message_start = time.perf_counter()
 
         if OTEL_ENABLED and QUEUE_DEPTH:
             QUEUE_DEPTH.add(1, {"tenant_id": message.tenant_id or "default"})
 
         try:
-            # Multi-tenant isolation check
+            # Step 1: Multi-tenant isolation check
             tenant_errors = self._validate_tenant_consistency(message)
             if tenant_errors:
-                self._metrics["messages_failed"] += 1
-                message.status = MessageStatus.FAILED
-                self._meter_agent_message(message, False, (time.perf_counter() - message_start) * 1000)
-                return ValidationResult(is_valid=False, errors=tenant_errors)
+                return self._handle_tenant_failure(message, tenant_errors, message_start)
 
-            # Constitutional validation using processor
-            try:
-                result = await self._processor.process(message)
-            except Exception as e:
-                logger.warning(f"MessageProcessor failed: {e}. Falling back to DEGRADED_MODE safety lock.")
-                # Fallback to local static hash validation (Degraded Mode)
-                # ValidationResult already imported at module level
-                fallback_strategy = StaticHashValidationStrategy(strict=True)
-                is_valid, error = await fallback_strategy.validate(message)
-                result = ValidationResult(is_valid=is_valid)
-                if error:
-                    result.add_error(error)
-                result.metadata["governance_mode"] = "DEGRADED"
-                result.metadata["fallback_reason"] = str(e)
+            # Step 2: Constitutional validation with fallback
+            result = await self._perform_validation(message)
 
-            # Audit reporting (asynchronous fire-and-forget)
+            # Step 3: Audit reporting (fire-and-forget)
             if self._audit_client:
                 asyncio.create_task(self._audit_client.report_validation(result))
 
-            # Deliberation Logic (Impact Scoring)
-            if self._deliberation_queue and result.metadata.get("impact_score", 0.0) >= 0.8:
-                logger.info(f"Message {message.message_id} diverted to deliberation (Score: {result.metadata['impact_score']})")
-                await self._deliberation_queue.enqueue(message, metadata={"impact_score": result.metadata["impact_score"]})
-                result.status = MessageStatus.PENDING_DELIBERATION
-                # Meter deliberation request
-                self._meter_deliberation_request(
-                    message,
-                    result.metadata.get("impact_score", 0.8),
-                    (time.perf_counter() - message_start) * 1000
-                )
-                return result
+            # Step 4: Check for high-impact deliberation
+            if self._requires_deliberation(result):
+                return await self._handle_deliberation(message, result, message_start)
 
+            # Step 5: Route and deliver valid messages
             if result.is_valid:
-                # Dispatch via Kafka if enabled
-                if self._kafka_bus:
-                    success = await self._kafka_bus.send_message(message)
-                    if not success:
-                        self._metrics["messages_failed"] += 1
-                        self._meter_agent_message(message, False, (time.perf_counter() - message_start) * 1000)
-                        return ValidationResult(is_valid=False, errors=["Kafka delivery failed"])
-
-                # Route locally for immediate handlers
-                await self._router.route(message, self._registry)
-
-                # Deliver to internal queue if Kafka is not enabled
-                if not self._use_kafka:
-                    await self._message_queue.put(message)
-
-                # Check if recipient exists (warning only)
-                if message.to_agent and message.to_agent not in self._agents:
-                    logger.debug(f"Recipient agent not found locally: {message.to_agent}")
-
+                await self._route_and_deliver(message)
                 self._metrics["messages_sent"] += 1
             else:
                 self._metrics["messages_failed"] += 1
 
-            # Meter the agent message event (fire-and-forget, non-blocking)
-            self._meter_agent_message(message, result.is_valid, (time.perf_counter() - message_start) * 1000)
+            # Step 6: Meter the message
+            self._metering_manager.record_agent_message(
+                message, result.is_valid, (time.perf_counter() - message_start) * 1000
+            )
 
             return result
         finally:
             if OTEL_ENABLED and QUEUE_DEPTH:
                 QUEUE_DEPTH.add(-1, {"tenant_id": message.tenant_id or "default"})
 
-    def _meter_agent_message(
+    def _handle_tenant_failure(
         self,
         message: AgentMessage,
-        is_valid: bool,
-        latency_ms: float,
-    ) -> None:
-        """
-        Record agent message event for metering.
+        errors: List[str],
+        start_time: float,
+    ) -> ValidationResult:
+        """Handle tenant validation failure."""
+        self._metrics["messages_failed"] += 1
+        message.status = MessageStatus.FAILED
+        self._metering_manager.record_agent_message(
+            message, False, (time.perf_counter() - start_time) * 1000
+        )
+        return ValidationResult(is_valid=False, errors=errors)
 
-        This method is non-blocking and uses fire-and-forget pattern
-        to ensure zero impact on P99 latency.
-        """
-        if not self._metering_hooks:
-            return
-
+    async def _perform_validation(self, message: AgentMessage) -> ValidationResult:
+        """Perform constitutional validation with DEGRADED mode fallback."""
         try:
-            self._metering_hooks.on_agent_message(
-                tenant_id=message.tenant_id or 'default',
-                from_agent=message.from_agent,
-                to_agent=message.to_agent,
-                message_type=message.message_type.value,
-                latency_ms=latency_ms,
-                is_valid=is_valid,
-                metadata={
-                    'message_id': message.message_id,
-                    'priority': message.priority.value,
-                    'constitutional_hash': self.constitutional_hash,
-                },
-            )
+            return await self._processor.process(message)
         except Exception as e:
-            # Never let metering errors affect the critical path
-            logger.debug(f"Metering error (non-critical): {e}")
+            logger.warning(
+                f"MessageProcessor failed: {e}. Falling back to DEGRADED_MODE safety lock."
+            )
+            # Fallback to local static hash validation (Degraded Mode)
+            fallback_strategy = StaticHashValidationStrategy(strict=True)
+            is_valid, error = await fallback_strategy.validate(message)
+            result = ValidationResult(is_valid=is_valid)
+            if error:
+                result.add_error(error)
+            result.metadata["governance_mode"] = "DEGRADED"
+            result.metadata["fallback_reason"] = str(e)
+            return result
 
-    def _meter_deliberation_request(
+    def _requires_deliberation(self, result: ValidationResult) -> bool:
+        """Check if message requires deliberation based on impact score."""
+        return (
+            self._deliberation_queue is not None
+            and result.metadata.get("impact_score", 0.0) >= 0.8
+        )
+
+    async def _handle_deliberation(
         self,
         message: AgentMessage,
-        impact_score: float,
-        latency_ms: float,
-    ) -> None:
-        """
-        Record deliberation request event for metering.
+        result: ValidationResult,
+        start_time: float,
+    ) -> ValidationResult:
+        """Handle high-impact message by diverting to deliberation queue."""
+        impact_score = result.metadata.get("impact_score", 0.8)
+        logger.info(
+            f"Message {message.message_id} diverted to deliberation (Score: {impact_score})"
+        )
+        await self._deliberation_queue.enqueue(
+            message, metadata={"impact_score": impact_score}
+        )
+        result.status = MessageStatus.PENDING_DELIBERATION
+        self._metering_manager.record_deliberation_request(
+            message, impact_score, (time.perf_counter() - start_time) * 1000
+        )
+        return result
 
-        This method is non-blocking and uses fire-and-forget pattern
-        to ensure zero impact on P99 latency.
-        """
-        if not self._metering_hooks:
-            return
+    async def _route_and_deliver(self, message: AgentMessage) -> bool:
+        """Route and deliver a validated message."""
+        # Dispatch via Kafka if enabled
+        if self._kafka_bus:
+            success = await self._kafka_bus.send_message(message)
+            if not success:
+                self._metrics["messages_failed"] += 1
+                return False
 
-        try:
-            self._metering_hooks.on_deliberation_request(
-                tenant_id=message.tenant_id or 'default',
-                agent_id=message.from_agent,
-                impact_score=impact_score,
-                latency_ms=latency_ms,
-                metadata={
-                    'message_id': message.message_id,
-                    'message_type': message.message_type.value,
-                    'constitutional_hash': self.constitutional_hash,
-                },
-            )
-        except Exception as e:
-            # Never let metering errors affect the critical path
-            logger.debug(f"Metering error (non-critical): {e}")
+        # Route locally for immediate handlers
+        await self._router.route(message, self._registry)
+
+        # Deliver to internal queue if Kafka is not enabled
+        if not self._use_kafka:
+            await self._message_queue.put(message)
+
+        # Check if recipient exists (warning only)
+        if message.to_agent and message.to_agent not in self._agents:
+            logger.debug(f"Recipient agent not found locally: {message.to_agent}")
+
+        return True
 
     @staticmethod
     def _normalize_tenant_id(tenant_id: Optional[str]) -> Optional[str]:
@@ -828,7 +740,7 @@ class EnhancedAgentBus:
         queue_size = self._message_queue.qsize()
 
         # Update Prometheus queue depth gauge
-        if METRICS_ENABLED:
+        if METRICS_ENABLED and MESSAGE_QUEUE_DEPTH:
             MESSAGE_QUEUE_DEPTH.labels(
                 queue_name='main', priority='all'
             ).set(queue_size)
@@ -843,12 +755,13 @@ class EnhancedAgentBus:
             "dynamic_policy_enabled": self._use_dynamic_policy,
             "processor_metrics": self._processor.get_metrics(),
             "metrics_enabled": METRICS_ENABLED,
-            "metering_enabled": self._metering_hooks is not None,
+            "metering_enabled": self._metering_manager.is_enabled,
         }
 
-        # Include metering queue metrics if available
-        if self._metering_queue is not None:
-            metrics["metering_metrics"] = self._metering_queue.get_metrics()
+        # Include metering metrics if available
+        metering_metrics = self._metering_manager.get_metrics()
+        if metering_metrics:
+            metrics["metering_metrics"] = metering_metrics
 
         return metrics
 
@@ -868,7 +781,7 @@ class EnhancedAgentBus:
                 metrics["policy_registry_status"] = "unavailable"
 
         # Add circuit breaker health
-        if CIRCUIT_BREAKER_ENABLED:
+        if CIRCUIT_BREAKER_ENABLED and circuit_breaker_health_check:
             metrics["circuit_breaker_health"] = circuit_breaker_health_check()
         else:
             metrics["circuit_breaker_health"] = {"status": "disabled"}
