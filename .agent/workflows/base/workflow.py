@@ -24,6 +24,13 @@ try:
 except ImportError:
     CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
 
+# Metrics integration
+try:
+    from shared import metrics
+    HAS_METRICS = True
+except ImportError:
+    HAS_METRICS = False
+
 try:
     from enhanced_agent_bus.exceptions import ConstitutionalHashMismatchError
 except ImportError:
@@ -180,7 +187,7 @@ class BaseWorkflow(ABC):
             # Run compensations on failure
             await self._run_compensations()
 
-            return WorkflowResult.failure(
+            result = WorkflowResult.failure(
                 workflow_id=self.workflow_id,
                 errors=self._errors,
                 execution_time_ms=self._get_elapsed_time_ms(),
@@ -188,6 +195,23 @@ class BaseWorkflow(ABC):
                 steps_failed=self._failed_steps,
                 compensations_executed=[c.name for c in self._compensations if c],
             )
+            return result
+        finally:
+            # Emit workflow metrics
+            if HAS_METRICS:
+                try:
+                    duration_s = self._get_elapsed_time_ms() / 1000.0
+                    metrics.WORKFLOW_EXECUTION_DURATION.labels(
+                        workflow_name=self.workflow_name,
+                        status=self._status.value
+                    ).observe(duration_s)
+
+                    metrics.WORKFLOW_EXECUTIONS_TOTAL.labels(
+                        workflow_name=self.workflow_name,
+                        status=self._status.value
+                    ).inc()
+                except Exception as me:
+                    logger.debug(f"Failed to emit workflow metrics: {me}")
 
     async def validate_constitutional_hash(
         self,
@@ -305,6 +329,17 @@ class BaseWorkflow(ABC):
                     f"(attempt {step.attempt_count}, {step.execution_time_ms:.2f}ms)"
                 )
 
+                # Emit step metrics
+                if HAS_METRICS:
+                    try:
+                        metrics.WORKFLOW_STEP_DURATION.labels(
+                            workflow_name=self.workflow_name,
+                            step_name=step.name,
+                            status="success"
+                        ).observe(step.execution_time_ms / 1000.0)
+                    except Exception as me:
+                        logger.debug(f"Failed to emit step metrics: {me}")
+
                 return result
 
             except asyncio.TimeoutError:
@@ -327,6 +362,14 @@ class BaseWorkflow(ABC):
 
             # Wait before retry
             if step.can_retry():
+                if HAS_METRICS:
+                    try:
+                        metrics.WORKFLOW_STEP_RETRIES_TOTAL.labels(
+                            workflow_name=self.workflow_name,
+                            step_name=step.name
+                        ).inc()
+                    except Exception as me:
+                        logger.debug(f"Failed to emit retry metrics: {me}")
                 await asyncio.sleep(step.retry_delay_seconds)
 
         # All retries exhausted
@@ -340,6 +383,18 @@ class BaseWorkflow(ABC):
         logger.warning(
             f"Workflow {self.workflow_id}: Optional step '{step.name}' failed, continuing"
         )
+
+        # Emit step metrics for failure
+        if HAS_METRICS:
+            try:
+                metrics.WORKFLOW_STEP_DURATION.labels(
+                    workflow_name=self.workflow_name,
+                    step_name=step.name,
+                    status="failed"
+                ).observe(step.execution_time_ms / 1000.0)
+            except Exception as me:
+                logger.debug(f"Failed to emit step metrics: {me}")
+
         return None
 
     def register_compensation(

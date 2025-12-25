@@ -9,6 +9,10 @@ from typing import Any, Dict, List
 
 from ..base.context import WorkflowContext
 from ..sagas.base_saga import BaseSaga, SagaStep, SagaResult, SagaStatus
+from ..sagas.distributed_tx import DistributedTransactionSaga
+from ..sagas.policy_update import PolicyUpdateSaga
+from ..sagas.registration import AgentRegistrationSaga
+from ..base.activities import DefaultActivities
 
 try:
     from shared.constants import CONSTITUTIONAL_HASH
@@ -298,6 +302,69 @@ class TestSagaConstitutionalCompliance:
         await saga.execute(ctx, {})
 
         assert received_hash == CONSTITUTIONAL_HASH
+
+
+class TestExtendedSagas:
+    """Tests for specialized saga implementations."""
+
+    @pytest.mark.asyncio
+    async def test_distributed_transaction_success(self):
+        """Test successful distributed transaction."""
+        class MockActivities(DefaultActivities):
+            async def execute_agent_task(self, agent_id, task_name, payload):
+                return {"status": "ok", "agent_id": agent_id}
+
+        ctx = WorkflowContext.create()
+        input_data = {
+            "target_agent": "agent-1",
+            "processor_agent": "agent-2",
+            "amount": 100
+        }
+        
+        result = await DistributedTransactionSaga.run_standard_tx(ctx, input_data, MockActivities())
+        assert result.status == SagaStatus.COMPLETED
+
+    @pytest.mark.asyncio
+    async def test_policy_update_success(self):
+        """Test successful policy update saga."""
+        class MockActivities(DefaultActivities):
+            async def evaluate_policy(self, workflow_id, policy_path, input_data):
+                return {"allowed": True}
+            async def record_audit(self, workflow_id, event_type, event_data):
+                return "audit-id"
+
+        ctx = WorkflowContext.create()
+        saga = PolicyUpdateSaga(constitutional_hash=CONSTITUTIONAL_HASH)
+        saga.activities = MockActivities()
+        
+        result = await saga.execute(ctx, {
+            "policy_id": "p1",
+            "new_version": "2.0",
+            "canary_agents": ["a1"]
+        })
+        
+        assert result.status == SagaStatus.COMPLETED
+
+    @pytest.mark.asyncio
+    async def test_agent_registration_success(self):
+        """Test successful agent registration saga."""
+        class MockActivities(DefaultActivities):
+            async def evaluate_policy(self, workflow_id, policy_path, input_data):
+                return {"allowed": True}
+            async def record_audit(self, workflow_id, event_type, event_data):
+                return "audit-id"
+
+        ctx = WorkflowContext.create()
+        saga = AgentRegistrationSaga(constitutional_hash=CONSTITUTIONAL_HASH)
+        saga.activities = MockActivities()
+        
+        result = await saga.execute(ctx, {
+            "agent_id": "new-agent",
+            "identity_proof": "proof-data",
+            "capabilities": ["llm"]
+        })
+        
+        assert result.status == SagaStatus.COMPLETED
 
     @pytest.mark.asyncio
     async def test_saga_includes_hash_in_compensation_input(self):

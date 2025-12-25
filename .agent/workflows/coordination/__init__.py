@@ -11,6 +11,8 @@ Multi-agent coordination workflow implementations:
 
 from .voting import VotingWorkflow, VotingResult, VotingStrategy
 from .handoff import HandoffWorkflow, HandoffResult
+from .discovery import AgentDiscoveryWorkflow
+from .swarm import SwarmCoordinationWorkflow
 
 __all__ = [
     "VotingWorkflow",
@@ -18,4 +20,6 @@ __all__ = [
     "VotingStrategy",
     "HandoffWorkflow",
     "HandoffResult",
+    "AgentDiscoveryWorkflow",
+    "SwarmCoordinationWorkflow",
 ]

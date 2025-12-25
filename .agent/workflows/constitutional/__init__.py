@@ -10,8 +10,14 @@ Constitutional governance workflow implementations:
 """
 
 from .validation import ConstitutionalValidationWorkflow, ValidationResult
+from .compliance import ComplianceCheckWorkflow
+from .policy_evaluation import PolicyEvaluationWorkflow
+from .governance_decision import GovernanceDecisionWorkflow
 
 __all__ = [
     "ConstitutionalValidationWorkflow",
     "ValidationResult",
+    "ComplianceCheckWorkflow",
+    "PolicyEvaluationWorkflow",
+    "GovernanceDecisionWorkflow",
 ]

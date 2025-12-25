@@ -22,6 +22,9 @@ allow if {
     valid_agent_permissions
     valid_tenant_isolation
     valid_priority_escalation
+    valid_payload_size
+    valid_rate_limit
+    valid_capabilities
 }
 
 # Validate constitutional hash matches required value
@@ -118,6 +121,43 @@ valid_priority_escalation if {
     input.context.agent_role == "system_admin"
 }
 
+# Validate payload size (Max 1MB by default)
+valid_payload_size if {
+    # Estimate size using strings.count or similar if possible in Rego
+    # Alternatively, expect input.context.payload_size_kb
+    size_kb := input.context.payload_size_kb
+    size_kb <= 1024
+}
+
+# Allow larger payloads for system_admin
+valid_payload_size if {
+    input.context.agent_role == "system_admin"
+}
+
+# Validate rate limit
+valid_rate_limit if {
+    not input.context.rate_limit_exceeded
+}
+
+# Allow system_admin to bypass rate limits
+valid_rate_limit if {
+    input.context.agent_role == "system_admin"
+}
+
+# Validate agent capabilities for specific tasks
+valid_capabilities if {
+    required_caps := input.message.content.required_capabilities
+    count(required_caps) == 0
+}
+
+valid_capabilities if {
+    required_caps := input.message.content.required_capabilities
+    count(required_caps) > 0
+    agent_caps := input.context.agent_capabilities
+    # Check if all required caps are in agent caps
+    count({cap | cap := required_caps[_]; cap in agent_caps}) == count(required_caps)
+}
+
 # Validation errors - provide detailed feedback
 violations[msg] {
     not valid_constitutional_hash
@@ -162,6 +202,21 @@ violations[msg] {
     max_priority := data.agent_permissions[input.context.agent_role].max_priority
     msg := sprintf("Priority escalation violation: agent role '%s' cannot send priority %d (max: %d)",
         [input.context.agent_role, priority, max_priority])
+}
+
+violations[msg] {
+    not valid_payload_size
+    msg := sprintf("Payload size limit exceeded: %d KB (max 1024 KB)", [input.context.payload_size_kb])
+}
+
+violations[msg] {
+    not valid_rate_limit
+    msg := "Rate limit exceeded for agent"
+}
+
+violations[msg] {
+    not valid_capabilities
+    msg := "Agent lacks required capabilities for this operation"
 }
 
 # Message expiration check

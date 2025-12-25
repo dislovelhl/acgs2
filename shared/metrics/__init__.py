@@ -243,6 +243,36 @@ CACHE_SIZE = _get_or_create_gauge(
 )
 
 # ============================================================================
+# Workflow Metrics
+# ============================================================================
+
+WORKFLOW_EXECUTION_DURATION = _get_or_create_histogram(
+    'workflow_execution_duration_seconds',
+    'Time spent executing a workflow',
+    ['workflow_name', 'status'],
+    buckets=[.01, .05, .1, .25, .5, 1.0, 2.5, 5.0, 10.0, 30.0, 60.0, 300.0]
+)
+
+WORKFLOW_EXECUTIONS_TOTAL = _get_or_create_counter(
+    'workflow_executions_total',
+    'Total workflow executions',
+    ['workflow_name', 'status']
+)
+
+WORKFLOW_STEP_DURATION = _get_or_create_histogram(
+    'workflow_step_duration_seconds',
+    'Time spent executing a workflow step',
+    ['workflow_name', 'step_name', 'status'],
+    buckets=[.001, .005, .01, .025, .05, .1, .25, .5, 1.0, 2.5, 5.0]
+)
+
+WORKFLOW_STEP_RETRIES_TOTAL = _get_or_create_counter(
+    'workflow_step_retries_total',
+    'Total workflow step retries',
+    ['workflow_name', 'step_name']
+)
+
+# ============================================================================
 # Service Info
 # ============================================================================
 
@@ -488,6 +518,10 @@ __all__ = [
     'CACHE_MISSES_TOTAL',
     'CACHE_SIZE',
     'SERVICE_INFO',
+    'WORKFLOW_EXECUTION_DURATION',
+    'WORKFLOW_EXECUTIONS_TOTAL',
+    'WORKFLOW_STEP_DURATION',
+    'WORKFLOW_STEP_RETRIES_TOTAL',
     # Decorators
     'track_request_metrics',
     'track_constitutional_validation',

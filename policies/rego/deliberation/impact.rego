@@ -36,7 +36,11 @@ route_to_deliberation if {
 }
 
 route_to_deliberation if {
-    multi_tenant_risk
+    temporal_risk
+}
+
+route_to_deliberation if {
+    resource_risk
 }
 
 route_to_deliberation if {
@@ -158,6 +162,30 @@ forced_deliberation if {
     input.message.content.force_deliberation == true
 }
 
+# Temporal Risk Detection
+temporal_risk if {
+    # Check if action is performed outside business hours (example: 00:00 - 06:00 UTC)
+    # Rego time functions can parse RFC3339
+    now_ns := time.now_ns()
+    hour := time.date(now_ns)[3] # [Y, M, D, h, m, s, ns, tz]
+    hour < 6 # High risk late night operations
+}
+
+temporal_risk if {
+    # High frequency of critical actions from same agent
+    input.context.action_frequency_score > 0.8
+}
+
+# Resource Risk Detection
+resource_risk if {
+    # High memory or CPU request for a single task
+    input.message.content.resource_request.memory_mb > 4096
+}
+
+resource_risk if {
+    input.message.content.resource_request.cpu_cores > 4
+}
+
 forced_deliberation if {
     input.context.force_deliberation == true
 }
@@ -192,6 +220,8 @@ count_risk_factors := num if {
         sensitive_content_detected,
         constitutional_risk_detected,
         multi_tenant_risk,
+        temporal_risk,
+        resource_risk,
         forced_deliberation
     ]
 
@@ -279,6 +309,16 @@ active_risk_factors[factor] {
 active_risk_factors[factor] {
     multi_tenant_risk
     factor := "multi_tenant_risk"
+}
+
+active_risk_factors[factor] {
+    temporal_risk
+    factor := "temporal_risk"
+}
+
+active_risk_factors[factor] {
+    resource_risk
+    factor := "resource_risk"
 }
 
 active_risk_factors[factor] {

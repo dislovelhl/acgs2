@@ -101,26 +101,60 @@ class BaseActivities(ABC):
         pass
 
     @abstractmethod
-    async def send_notification(
+    async def list_agents(
         self,
-        workflow_id: str,
-        channel: str,
-        recipient: str,
-        message: str,
-        metadata: Optional[Dict[str, Any]] = None
-    ) -> str:
+        capabilities: Optional[List[str]] = None,
+        status: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
         """
-        Send notification via specified channel.
+        List agents matching criteria.
 
         Args:
-            workflow_id: Workflow instance identifier
-            channel: Notification channel (e.g., "slack", "email")
-            recipient: Recipient identifier
-            message: Notification message
-            metadata: Additional notification metadata
+            capabilities: Required agent capabilities
+            status: Required agent status
 
         Returns:
-            Notification ID
+            List of agent metadata dicts
+        """
+        pass
+
+    @abstractmethod
+    async def broadcast_command(
+        self,
+        agent_ids: List[str],
+        command: str,
+        payload: Dict[str, Any]
+    ) -> str:
+        """
+        Broadcast command to multiple agents.
+
+        Args:
+            agent_ids: Target agents
+            command: Command name
+            payload: Command data
+
+        Returns:
+            Broadcast operation ID
+        """
+        pass
+
+    @abstractmethod
+    async def execute_agent_task(
+        self,
+        agent_id: str,
+        task_name: str,
+        input_data: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """
+        Execute a task on a specific agent.
+
+        Args:
+            agent_id: Target agent
+            task_name: Task to execute
+            input_data: Task input
+
+        Returns:
+            Task result data
         """
         pass
 
@@ -259,6 +293,58 @@ class DefaultActivities(BaseActivities):
         )
 
         return notification_id
+
+    async def list_agents(
+        self,
+        capabilities: Optional[List[str]] = None,
+        status: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
+        """List agents (mock implementation)."""
+        # In production, this would call AgentDirectoryService
+        logger.info(f"Listing agents with capabilities={capabilities}, status={status}")
+        return [
+            {
+                "agent_id": "agent-1",
+                "capabilities": capabilities or ["analysis"],
+                "status": status or "active",
+                "reputation_score": 0.95,
+                "latency_ms": 12.5,
+            },
+            {
+                "agent_id": "agent-2",
+                "capabilities": capabilities or ["computation"],
+                "status": status or "active",
+                "reputation_score": 0.88,
+                "latency_ms": 45.0,
+            }
+        ]
+
+    async def broadcast_command(
+        self,
+        agent_ids: List[str],
+        command: str,
+        payload: Dict[str, Any]
+    ) -> str:
+        """Broadcast command (mock implementation)."""
+        broadcast_id = str(uuid.uuid4())
+        logger.info(f"Broadcasting {command} to {len(agent_ids)} agents: {broadcast_id}")
+        return broadcast_id
+
+    async def execute_agent_task(
+        self,
+        agent_id: str,
+        task_name: str,
+        input_data: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Execute agent task (mock implementation)."""
+        logger.info(f"Executing task {task_name} on agent {agent_id}")
+        return {
+            "status": "success",
+            "agent_id": agent_id,
+            "task_name": task_name,
+            "output": {"processed": True},
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
 
 
 # Singleton instance

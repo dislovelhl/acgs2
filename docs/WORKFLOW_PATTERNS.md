@@ -489,6 +489,116 @@ def _validate_constitutional(self) -> None:
 
 ---
 
+## 8. Governance Decision Workflow (Entity Pattern)
+
+### Temporal Principle
+- Entity workflows maintain state across interactions
+- Long-running processes with checkpoints
+- Resume from last known state on failure
+
+### ACGS-2 Implementation
+
+The `GovernanceDecisionWorkflow` implements multi-stage governance with voting:
+
+```python
+# .agent/workflows/constitutional/governance_decision.py
+class GovernanceDecisionWorkflow(BaseWorkflow):
+    """
+    Workflow for handling major system changes (e.g., constitutional updates).
+    Requires multi-stage validation and agent consensus via voting.
+    """
+
+    async def execute(self, input: Dict[str, Any]) -> WorkflowResult:
+        # Stage 1: Constitutional hash validation (always first)
+        await self.validate_constitutional_hash()
+
+        # Stage 2: Impact Assessment via OPA
+        impact_result = await self.activities.evaluate_policy(
+            policy_path="acgs/deliberation/impact",
+            input_data={"message": {"content": proposal_data}}
+        )
+        if not impact_result.get("allowed"):
+            return await self.complete({"decision": "rejected"})
+
+        # Stage 3: Multi-Agent Consensus (Voting)
+        voting_wf = VotingWorkflow(
+            eligible_agents=eligible_voters,
+            strategy=VotingStrategy.SUPERMAJORITY,
+        )
+        voting_result = await voting_wf.run(vote_input)
+
+        # Stage 4: Final Approval + Audit Recording
+        await self.activities.record_audit(
+            event_type="governance_decision_finalized",
+            event_data=output
+        )
+        return await self.complete(output)
+```
+
+### Saga Pattern with BaseSaga
+
+```python
+# .agent/workflows/sagas/base_saga.py
+class BaseSaga:
+    """
+    Base saga implementation with LIFO compensation.
+    Steps execute sequentially; on failure, compensations run in reverse.
+
+    Key Principles:
+    - Constitutional validation at saga boundaries
+    - Idempotent compensations for safety
+    - Priority-based compensation ordering
+    """
+
+    async def execute(
+        self,
+        context: WorkflowContext,
+        input: Dict[str, Any]
+    ) -> SagaResult:
+        for step in self._steps:
+            success = await self._execute_step(step, context, input)
+            if success:
+                # Register compensation AFTER successful execution
+                if step.compensate:
+                    self._compensation_stack.append(step)
+            else:
+                if step.is_critical:
+                    # Run compensations in LIFO order
+                    await self._run_compensations(context, input)
+                    break
+
+        return SagaResult(...)
+```
+
+**Example: Policy Update Saga**
+
+```python
+# .agent/workflows/sagas/policy_update.py
+saga = BaseSaga("policy-update-saga")
+
+saga.add_step(SagaStep(
+    "validate_policy",
+    execute=validate_policy_activity,
+    compensate=None  # Validation has no side effects
+))
+
+saga.add_step(SagaStep(
+    "store_policy",
+    execute=store_policy_activity,
+    compensate=delete_policy_activity,  # Undo policy storage
+    idempotency_key="policy_{version}"
+))
+
+saga.add_step(SagaStep(
+    "distribute_policy",
+    execute=distribute_policy_activity,
+    compensate=recall_policy_activity,  # Recall from agents
+    idempotency_key="dist_{version}"
+))
+```
+
+---
+
 ## Summary: ACGS-2 Orchestration Architecture
 
 ```
@@ -520,6 +630,8 @@ def _validate_constitutional(self) -> None:
 
 ## Related Documentation
 
+- [ADR-006: Workflow Orchestration](adr/006-workflow-orchestration-patterns.md) - Architecture decision record
 - [CLAUDE.md](../CLAUDE.md) - Development guide
 - [Architecture Diagram](architecture_diagram.md) - System architecture
 - [API Reference](api_reference.md) - API documentation
+- [`.agent/workflows/`](../.agent/workflows/) - Implementation source code

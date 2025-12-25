@@ -9,7 +9,10 @@ from typing import Dict, Any
 
 from ..coordination.voting import VotingWorkflow, VotingStrategy, VoteDecision, Vote
 from ..coordination.handoff import HandoffWorkflow, HandoffStatus
+from ..coordination.discovery import AgentDiscoveryWorkflow
+from ..coordination.swarm import SwarmCoordinationWorkflow
 from ..base.result import WorkflowStatus
+from ..base.activities import DefaultActivities
 
 try:
     from shared.constants import CONSTITUTIONAL_HASH
@@ -151,3 +154,100 @@ class TestHandoffWorkflow:
 
         assert captured
         assert transferred
+
+
+class TestAgentDiscoveryWorkflow:
+    """Tests for AgentDiscoveryWorkflow."""
+
+    @pytest.mark.asyncio
+    async def test_discovery_success(self):
+        """Test successful agent discovery."""
+        mock_agents = [
+            {"agent_id": "agent-1", "reputation_score": 0.9, "latency_ms": 50, "capabilities": ["vision"]},
+            {"agent_id": "agent-2", "reputation_score": 0.8, "latency_ms": 100, "capabilities": ["vision"]},
+        ]
+
+        class MockActivities(DefaultActivities):
+            async def list_agents(self, capabilities=None, status="active"):
+                return mock_agents
+
+        workflow = AgentDiscoveryWorkflow()
+        workflow.activities = MockActivities()
+
+        result = await workflow.run({
+            "required_capabilities": ["vision"],
+            "min_reputation": 0.5
+        })
+
+        assert result.status == WorkflowStatus.COMPLETED
+        assert result.output["count"] == 2
+        assert result.output["agents"][0]["agent_id"] == "agent-1" # Sorted by reputation
+
+    @pytest.mark.asyncio
+    async def test_discovery_filtering(self):
+        """Test discovery filtering by reputation."""
+        mock_agents = [
+            {"agent_id": "agent-high", "reputation_score": 0.9},
+            {"agent_id": "agent-low", "reputation_score": 0.2},
+        ]
+
+        class MockActivities(DefaultActivities):
+            async def list_agents(self, capabilities=None, status="active"):
+                return mock_agents
+
+        workflow = AgentDiscoveryWorkflow()
+        workflow.activities = MockActivities()
+
+        result = await workflow.run({
+            "min_reputation": 0.8
+        })
+
+        assert result.status == WorkflowStatus.COMPLETED
+        assert result.output["count"] == 1
+        assert result.output["agents"][0]["agent_id"] == "agent-high"
+
+
+class TestSwarmCoordinationWorkflow:
+    """Tests for SwarmCoordinationWorkflow."""
+
+    @pytest.mark.asyncio
+    async def test_swarm_success(self):
+        """Test successful swarm execution."""
+        class MockActivities(DefaultActivities):
+            async def execute_agent_task(self, agent_id, task_name, payload):
+                return {"status": "ok", "agent_id": agent_id}
+
+        workflow = SwarmCoordinationWorkflow()
+        workflow.activities = MockActivities()
+
+        result = await workflow.run({
+            "agent_ids": ["agent-1", "agent-2", "agent-3"],
+            "task_name": "process",
+            "aggregation_strategy": "all"
+        })
+
+        assert result.status == WorkflowStatus.COMPLETED
+        assert result.output["status"] == "success"
+        assert result.output["metrics"]["success_count"] == 3
+
+    @pytest.mark.asyncio
+    async def test_swarm_partial_failure(self):
+        """Test swarm partial failure with 'all' strategy."""
+        class MockActivities(DefaultActivities):
+            async def execute_agent_task(self, agent_id, task_name, payload):
+                if agent_id == "agent-fail":
+                    raise Exception("Fail")
+                return {"status": "ok"}
+
+        workflow = SwarmCoordinationWorkflow()
+        workflow.activities = MockActivities()
+
+        result = await workflow.run({
+            "agent_ids": ["agent-1", "agent-fail"],
+            "task_name": "process",
+            "aggregation_strategy": "all"
+        })
+
+        assert result.status == WorkflowStatus.COMPLETED
+        assert result.output["status"] == "partial_failure"
+        assert result.output["metrics"]["success_count"] == 1

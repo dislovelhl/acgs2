@@ -284,12 +284,33 @@ kubectl apply -f k8s/blue-green-deployment.yml
 
 ## Workflow Orchestration
 
-ACGS-2 implements Temporal-style workflow patterns. See [docs/WORKFLOW_PATTERNS.md](docs/WORKFLOW_PATTERNS.md) for detailed mapping:
+ACGS-2 implements Temporal-style workflow patterns. See [ADR-006](docs/adr/006-workflow-orchestration-patterns.md) and [WORKFLOW_PATTERNS.md](docs/WORKFLOW_PATTERNS.md) for detailed mapping:
 
 | Pattern | Implementation | Key Feature |
 |---------|---------------|-------------|
-| Saga with Compensation | `StepCompensation` | LIFO rollback with idempotency keys |
+| Base Workflow | `BaseWorkflow` | Constitutional validation at boundaries |
+| Saga with Compensation | `BaseSaga`, `StepCompensation` | LIFO rollback with idempotency keys |
 | Fan-Out/Fan-In | `DAGExecutor` | `asyncio.as_completed` for max parallelism |
+| Governance Decision | `GovernanceDecisionWorkflow` | Multi-stage voting with OPA policy |
 | Async Callback | `HITLManager` | Slack/Teams integration for approvals |
 | Recovery Strategies | `RecoveryOrchestrator` | 4 strategies with priority queues |
 | Entity Workflows | `EnhancedAgentBus` | Agent lifecycle with state preservation |
+
+**Workflow Implementation Location**: `.agent/workflows/`
+- `base/workflow.py` - Abstract base with constitutional validation
+- `dags/dag_executor.py` - Parallel execution with topological sort
+- `sagas/base_saga.py` - LIFO compensation orchestrator
+- `constitutional/governance_decision.py` - Multi-agent governance
+
+## Security Architecture (STRIDE)
+
+ACGS-2 implements defense-in-depth security. See [docs/STRIDE_THREAT_MODEL.md](docs/STRIDE_THREAT_MODEL.md) for complete threat analysis:
+
+| STRIDE Threat | Primary Control | Implementation |
+|---------------|----------------|----------------|
+| Spoofing | Constitutional hash + JWT SVIDs | `validators.py`, `auth.py` |
+| Tampering | Hash validation + OPA policies | `opa_client.py`, Merkle proofs |
+| Repudiation | Blockchain-anchored audit | `audit_ledger.py` |
+| Info Disclosure | PII detection + Vault encryption | `constitutional_guardrails.py` |
+| DoS | Rate limiting + Circuit breakers | `rate_limiter.py`, `chaos_testing.py` |
+| Elevation | OPA RBAC + Capabilities | `auth.py`, Rego policies |

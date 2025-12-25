@@ -23,6 +23,13 @@ try:
 except ImportError:
     CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
 
+# Metrics integration
+try:
+    from shared import metrics
+    HAS_METRICS = True
+except ImportError:
+    HAS_METRICS = False
+
 
 logger = logging.getLogger(__name__)
 
@@ -232,6 +239,21 @@ class BaseSaga:
             compensations_executed, compensations_failed
         )
 
+        # Emit saga metrics
+        if HAS_METRICS:
+            try:
+                metrics.WORKFLOW_EXECUTION_DURATION.labels(
+                    workflow_name=f"saga:{self.saga_id.split(':')[0]}",
+                    status=status.value
+                ).observe(execution_time / 1000.0)
+
+                metrics.WORKFLOW_EXECUTIONS_TOTAL.labels(
+                    workflow_name=f"saga:{self.saga_id.split(':')[0]}",
+                    status=status.value
+                ).inc()
+            except Exception as me:
+                logger.debug(f"Failed to emit saga metrics: {me}")
+
         # Collect output from last successful step if completed
         if status == SagaStatus.COMPLETED and self._executed_steps:
             output = self._executed_steps[-1].result
@@ -287,6 +309,19 @@ class BaseSaga:
             context.set_step_result(step.name, result)
 
             logger.debug(f"Saga {self.saga_id}: Step '{step.name}' completed")
+
+            # Emit step metrics
+            if HAS_METRICS:
+                try:
+                    duration_ms = (datetime.now(timezone.utc) - step.executed_at).total_seconds() * 1000 if step.executed_at else 0
+                    metrics.WORKFLOW_STEP_DURATION.labels(
+                        workflow_name="saga",
+                        step_name=step.name,
+                        status="success"
+                    ).observe(duration_ms / 1000.0)
+                except Exception as me:
+                    logger.debug(f"Failed to emit saga step metrics: {me}")
+
             return True
 
         except asyncio.TimeoutError:

@@ -9,9 +9,15 @@ Saga pattern implementations for distributed transactions:
 """
 
 from .base_saga import BaseSaga, SagaStep, SagaResult
+from .distributed_tx import DistributedTransactionSaga
+from .policy_update import PolicyUpdateSaga
+from .registration import AgentRegistrationSaga
 
 __all__ = [
     "BaseSaga",
     "SagaStep",
     "SagaResult",
+    "DistributedTransactionSaga",
+    "PolicyUpdateSaga",
+    "AgentRegistrationSaga",
 ]
