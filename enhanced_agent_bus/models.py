@@ -105,7 +105,7 @@ class RoutingContext:
     timeout_ms: int = 5000
     constitutional_hash: str = CONSTITUTIONAL_HASH
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """Validate routing context."""
         if not self.source_agent_id:
             raise ValueError("source_agent_id is required")
@@ -154,7 +154,7 @@ class AgentMessage:
     # Performance tracking
     performance_metrics: Dict[str, Any] = field(default_factory=dict)
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """Post-initialization validation."""
         # Allow flexible constitutional hash for testing (can be overridden)
         if hasattr(self, '_skip_validation') and self._skip_validation:

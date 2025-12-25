@@ -29,7 +29,7 @@ class AgentBusError(Exception):
         message: str,
         details: Optional[Dict[str, Any]] = None,
         constitutional_hash: str = CONSTITUTIONAL_HASH,
-    ):
+    ) -> None:
         self.message = message
         self.details = details or {}
         self.constitutional_hash = constitutional_hash
@@ -62,7 +62,7 @@ class ConstitutionalHashMismatchError(ConstitutionalError):
         expected_hash: str,
         actual_hash: str,
         context: Optional[str] = None,
-    ):
+    ) -> None:
         self.expected_hash = expected_hash
         self.actual_hash = actual_hash
         message = f"Constitutional hash mismatch: expected '{expected_hash}', got '{actual_hash}'"
@@ -86,7 +86,7 @@ class ConstitutionalValidationError(ConstitutionalError):
         validation_errors: List[str],
         agent_id: Optional[str] = None,
         action_type: Optional[str] = None,
-    ):
+    ) -> None:
         self.validation_errors = validation_errors
         self.agent_id = agent_id
         self.action_type = action_type
@@ -118,7 +118,7 @@ class MessageValidationError(MessageError):
         message_id: str,
         errors: List[str],
         warnings: Optional[List[str]] = None,
-    ):
+    ) -> None:
         self.message_id = message_id
         self.errors = errors
         self.warnings = warnings or []
@@ -141,7 +141,7 @@ class MessageDeliveryError(MessageError):
         message_id: str,
         target_agent: str,
         reason: str,
-    ):
+    ) -> None:
         self.message_id = message_id
         self.target_agent = target_agent
         self.reason = reason
@@ -163,7 +163,7 @@ class MessageTimeoutError(MessageError):
         message_id: str,
         timeout_ms: int,
         operation: Optional[str] = None,
-    ):
+    ) -> None:
         self.message_id = message_id
         self.timeout_ms = timeout_ms
         self.operation = operation
@@ -189,7 +189,7 @@ class MessageRoutingError(MessageError):
         source_agent: str,
         target_agent: str,
         reason: str,
-    ):
+    ) -> None:
         self.message_id = message_id
         self.source_agent = source_agent
         self.target_agent = target_agent
@@ -217,7 +217,7 @@ class AgentError(AgentBusError):
 class AgentNotRegisteredError(AgentError):
     """Raised when an operation requires a registered agent that doesn't exist."""
 
-    def __init__(self, agent_id: str, operation: Optional[str] = None):
+    def __init__(self, agent_id: str, operation: Optional[str] = None) -> None:
         self.agent_id = agent_id
         self.operation = operation
         message = f"Agent '{agent_id}' is not registered"
@@ -235,7 +235,7 @@ class AgentNotRegisteredError(AgentError):
 class AgentAlreadyRegisteredError(AgentError):
     """Raised when attempting to register an agent that already exists."""
 
-    def __init__(self, agent_id: str):
+    def __init__(self, agent_id: str) -> None:
         self.agent_id = agent_id
         super().__init__(
             message=f"Agent '{agent_id}' is already registered",
@@ -251,7 +251,7 @@ class AgentCapabilityError(AgentError):
         agent_id: str,
         required_capabilities: List[str],
         available_capabilities: List[str],
-    ):
+    ) -> None:
         self.agent_id = agent_id
         self.required_capabilities = required_capabilities
         self.available_capabilities = available_capabilities
@@ -284,7 +284,7 @@ class PolicyEvaluationError(PolicyError):
         policy_path: str,
         reason: str,
         input_data: Optional[Dict[str, Any]] = None,
-    ):
+    ) -> None:
         self.policy_path = policy_path
         self.reason = reason
         self.input_data = input_data
@@ -301,7 +301,7 @@ class PolicyEvaluationError(PolicyError):
 class PolicyNotFoundError(PolicyError):
     """Raised when a required policy is not found."""
 
-    def __init__(self, policy_path: str):
+    def __init__(self, policy_path: str) -> None:
         self.policy_path = policy_path
         super().__init__(
             message=f"Policy not found: '{policy_path}'",
@@ -312,7 +312,7 @@ class PolicyNotFoundError(PolicyError):
 class OPAConnectionError(PolicyError):
     """Raised when connection to OPA server fails."""
 
-    def __init__(self, opa_url: str, reason: str):
+    def __init__(self, opa_url: str, reason: str) -> None:
         self.opa_url = opa_url
         self.reason = reason
         super().__init__(
@@ -327,7 +327,7 @@ class OPAConnectionError(PolicyError):
 class OPANotInitializedError(PolicyError):
     """Raised when OPA client is not properly initialized."""
 
-    def __init__(self, operation: str):
+    def __init__(self, operation: str) -> None:
         self.operation = operation
         super().__init__(
             message=f"OPA client not initialized for operation: {operation}",
@@ -353,7 +353,7 @@ class DeliberationTimeoutError(DeliberationError):
         timeout_seconds: int,
         pending_reviews: int = 0,
         pending_signatures: int = 0,
-    ):
+    ) -> None:
         self.decision_id = decision_id
         self.timeout_seconds = timeout_seconds
         self.pending_reviews = pending_reviews
@@ -378,7 +378,7 @@ class SignatureCollectionError(DeliberationError):
         required_signers: List[str],
         collected_signers: List[str],
         reason: str,
-    ):
+    ) -> None:
         self.decision_id = decision_id
         self.required_signers = required_signers
         self.collected_signers = collected_signers
@@ -405,7 +405,7 @@ class ReviewConsensusError(DeliberationError):
         approval_count: int,
         rejection_count: int,
         escalation_count: int,
-    ):
+    ) -> None:
         self.decision_id = decision_id
         self.approval_count = approval_count
         self.rejection_count = rejection_count
@@ -435,7 +435,7 @@ class BusOperationError(AgentBusError):
 class BusNotStartedError(BusOperationError):
     """Raised when operation requires a started bus."""
 
-    def __init__(self, operation: str):
+    def __init__(self, operation: str) -> None:
         self.operation = operation
         super().__init__(
             message=f"Agent bus not started for operation: {operation}",
@@ -446,7 +446,7 @@ class BusNotStartedError(BusOperationError):
 class BusAlreadyStartedError(BusOperationError):
     """Raised when attempting to start an already running bus."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(
             message="Agent bus is already running",
             details={},
@@ -461,7 +461,7 @@ class HandlerExecutionError(BusOperationError):
         handler_name: str,
         message_id: str,
         original_error: Exception,
-    ):
+    ) -> None:
         self.handler_name = handler_name
         self.message_id = message_id
         self.original_error = original_error
@@ -483,7 +483,7 @@ class HandlerExecutionError(BusOperationError):
 class ConfigurationError(AgentBusError):
     """Raised when configuration is invalid or missing."""
 
-    def __init__(self, config_key: str, reason: str):
+    def __init__(self, config_key: str, reason: str) -> None:
         self.config_key = config_key
         self.reason = reason
         super().__init__(

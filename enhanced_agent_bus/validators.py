@@ -35,16 +35,16 @@ class ValidationResult:
     decision: str = "ALLOW"
     constitutional_hash: str = CONSTITUTIONAL_HASH
 
-    def add_error(self, error: str):
+    def add_error(self, error: str) -> None:
         """Add an error to the result."""
         self.errors.append(error)
         self.is_valid = False
 
-    def add_warning(self, warning: str):
+    def add_warning(self, warning: str) -> None:
         """Add a warning to the result."""
         self.warnings.append(warning)
 
-    def merge(self, other: "ValidationResult"):
+    def merge(self, other: "ValidationResult") -> None:
         """Merge another validation result into this one."""
         self.errors.extend(other.errors)
         self.warnings.extend(other.warnings)
