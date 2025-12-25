@@ -655,6 +655,9 @@ class OPAGuard:
         """
         Check if an action complies with constitutional requirements.
 
+        SECURITY: Respects fail_closed setting. When fail_closed=True (default),
+        any evaluation error or missing result results in denial for security.
+
         Args:
             action: Action to check
 
@@ -666,6 +669,7 @@ class OPAGuard:
             action_hash = action.get("constitutional_hash", "")
             if action_hash and action_hash != GUARD_CONSTITUTIONAL_HASH:
                 logger.warning(f"Constitutional hash mismatch: {action_hash}")
+                self._stats["constitutional_failures"] += 1
                 return False
 
             # Evaluate constitutional policy
@@ -680,12 +684,28 @@ class OPAGuard:
                 policy_path="data.acgs.constitutional.validate"
             )
 
-            return result.get("allowed", True)  # Default to True for fallback mode
+            # SECURITY: Respect fail_closed setting when result is missing
+            # If fail_closed=True, missing "allowed" key means deny
+            # If fail_closed=False, missing "allowed" key means allow (legacy behavior)
+            default_value = not self.fail_closed
+            return result.get("allowed", default_value)
 
         except Exception as e:
             logger.error(f"Constitutional compliance check error: {e}")
-            # Fail open with warning for availability
-            return True
+            self._stats["constitutional_failures"] += 1
+            # SECURITY: Respect fail_closed setting on exceptions
+            if self.fail_closed:
+                logger.warning(
+                    "Constitutional compliance check failed - denying action "
+                    "(fail_closed=True)"
+                )
+                return False
+            else:
+                logger.warning(
+                    "Constitutional compliance check failed - allowing action "
+                    "(fail_closed=False, availability mode)"
+                )
+                return True
 
     def get_stats(self) -> Dict[str, Any]:
         """Get guard statistics."""

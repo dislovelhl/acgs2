@@ -115,28 +115,85 @@ class RustValidationStrategy:
     """High-performance validation using the Rust backend.
 
     Constitutional Hash: cdd01ef066bc6cf2
+
+    SECURITY: This strategy implements fail-closed behavior by default.
+    Validation only returns True when the Rust backend explicitly confirms
+    the message is valid. Any error or unavailability results in rejection.
     """
 
-    def __init__(self, rust_processor: Any) -> None:
-        """Initialize with Rust processor."""
+    def __init__(self, rust_processor: Any, fail_closed: bool = True) -> None:
+        """Initialize with Rust processor.
+
+        Args:
+            rust_processor: The Rust processor instance for validation
+            fail_closed: If True, reject on any validation uncertainty (default: True)
+        """
         self._rust_processor = rust_processor
+        self._fail_closed = fail_closed
+        self._constitutional_hash = CONSTITUTIONAL_HASH
 
     async def validate(
         self,
         message: AgentMessage
     ) -> tuple[bool, Optional[str]]:
-        """Validate message using Rust backend."""
+        """Validate message using Rust backend.
+
+        SECURITY: Implements fail-closed validation. Only returns True when
+        the Rust backend explicitly confirms validation success.
+        """
         if not self._rust_processor:
             return False, "Rust processor not available"
 
         try:
-            # We assume Rust processor has a fast validation path
-            # For now, we can use its built-in validation during processing
-            # or a specific validation method if exposed.
-            # In Phase 2, we just ensure the strategy interface is met.
-            # This will be refined as the Rust API evolves.
-            return True, None  # Rust backend handles validation internally for now
+            # Attempt to use Rust processor's validation method
+            # Check for validate_message method (preferred)
+            if hasattr(self._rust_processor, 'validate_message'):
+                result = await self._rust_processor.validate_message(message.to_dict())
+                if isinstance(result, bool):
+                    if result:
+                        return True, None
+                    return False, "Rust validation rejected message"
+                elif isinstance(result, dict):
+                    is_valid = result.get('is_valid', False)
+                    if is_valid:
+                        return True, None
+                    error = result.get('error', 'Rust validation failed')
+                    return False, error
+
+            # Check for synchronous validate method
+            if hasattr(self._rust_processor, 'validate'):
+                result = self._rust_processor.validate(message.to_dict())
+                if isinstance(result, bool):
+                    if result:
+                        return True, None
+                    return False, "Rust validation rejected message"
+                elif isinstance(result, dict):
+                    is_valid = result.get('is_valid', False)
+                    if is_valid:
+                        return True, None
+                    error = result.get('error', 'Rust validation failed')
+                    return False, error
+
+            # Check for constitutional_validate method
+            if hasattr(self._rust_processor, 'constitutional_validate'):
+                result = self._rust_processor.constitutional_validate(
+                    message.constitutional_hash,
+                    self._constitutional_hash
+                )
+                if result:
+                    return True, None
+                return False, "Constitutional hash validation failed in Rust backend"
+
+            # SECURITY: No validation method available - fail closed
+            logger.warning(
+                "RustValidationStrategy: No validation method found on Rust processor. "
+                "Failing closed for security."
+            )
+            return False, "Rust processor has no validation method - fail closed"
+
         except Exception as e:
+            logger.error(f"Rust validation execution error: {e}")
+            # SECURITY: Always fail closed on exceptions
             return False, f"Rust validation error: {str(e)}"
 
 
