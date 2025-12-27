@@ -142,8 +142,10 @@ class TestConstitutionalHashMismatchError:
             expected_hash="expected123",
             actual_hash="actual456"
         )
-        assert "expected123" in str(err)
-        assert "actual456" in str(err)
+        # Error message shows sanitized (truncated) hash prefixes for security
+        assert "expected..." in str(err)
+        assert "actual45..." in str(err)
+        # Full hashes are still available via properties for internal use
         assert err.expected_hash == "expected123"
         assert err.actual_hash == "actual456"
 
@@ -158,11 +160,15 @@ class TestConstitutionalHashMismatchError:
         assert err.details["context"] == "policy validation"
 
     def test_to_dict_includes_hashes(self):
-        """Test to_dict includes hash information."""
+        """Test to_dict includes sanitized hash prefixes for security."""
         err = ConstitutionalHashMismatchError("exp", "act", "ctx")
         result = err.to_dict()
-        assert result["details"]["expected_hash"] == "exp"
-        assert result["details"]["actual_hash"] == "act"
+        # Only sanitized prefixes are exposed in serializable output
+        assert result["details"]["expected_hash_prefix"] == "exp"
+        assert result["details"]["actual_hash_prefix"] == "act"
+        # Full hashes should NOT be in serialized output
+        assert "expected_hash" not in result["details"]
+        assert "actual_hash" not in result["details"]
 
 
 class TestConstitutionalValidationError:

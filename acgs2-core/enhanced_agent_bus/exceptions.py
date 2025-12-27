@@ -55,7 +55,18 @@ class ConstitutionalError(AgentBusError):
 
 
 class ConstitutionalHashMismatchError(ConstitutionalError):
-    """Raised when constitutional hash validation fails."""
+    """Raised when constitutional hash validation fails.
+
+    Security Note: Hash values are sanitized in messages and serialization
+    to prevent exposure in logs, error traces, and debugging output.
+    """
+
+    @staticmethod
+    def _sanitize_hash(hash_value: str, max_visible: int = 8) -> str:
+        """Sanitize hash for safe display in error messages."""
+        if not hash_value or len(hash_value) <= max_visible:
+            return hash_value
+        return hash_value[:max_visible] + "..."
 
     def __init__(
         self,
@@ -63,19 +74,36 @@ class ConstitutionalHashMismatchError(ConstitutionalError):
         actual_hash: str,
         context: Optional[str] = None,
     ) -> None:
-        self.expected_hash = expected_hash
-        self.actual_hash = actual_hash
-        message = f"Constitutional hash mismatch: expected '{expected_hash}', got '{actual_hash}'"
+        # Store original values for internal use only
+        self._expected_hash = expected_hash
+        self._actual_hash = actual_hash
+
+        # Sanitized versions for safe exposure
+        safe_expected = self._sanitize_hash(expected_hash)
+        safe_actual = self._sanitize_hash(actual_hash)
+
+        message = f"Constitutional hash mismatch: expected '{safe_expected}', got '{safe_actual}'"
         if context:
             message += f" (context: {context})"
         super().__init__(
             message=message,
             details={
-                "expected_hash": expected_hash,
-                "actual_hash": actual_hash,
+                # Only expose sanitized hashes in serializable output
+                "expected_hash_prefix": safe_expected,
+                "actual_hash_prefix": safe_actual,
                 "context": context,
             },
         )
+
+    @property
+    def expected_hash(self) -> str:
+        """Return full expected hash for internal validation only."""
+        return self._expected_hash
+
+    @property
+    def actual_hash(self) -> str:
+        """Return full actual hash for internal validation only."""
+        return self._actual_hash
 
 
 class ConstitutionalValidationError(ConstitutionalError):
@@ -496,6 +524,113 @@ class ConfigurationError(AgentBusError):
 
 
 # =============================================================================
+# MACI Role Separation Errors (Gödel Bypass Prevention)
+# =============================================================================
+
+class MACIError(AgentBusError):
+    """Base exception for MACI role separation errors."""
+    pass
+
+
+class MACIRoleViolationError(MACIError):
+    """Raised when an agent attempts an action outside its role."""
+
+    def __init__(
+        self,
+        agent_id: str,
+        role: str,
+        action: str,
+        allowed_roles: Optional[List[str]] = None,
+    ) -> None:
+        self.agent_id = agent_id
+        self.role = role
+        self.action = action
+        self.allowed_roles = allowed_roles or []
+        message = f"Agent '{agent_id}' ({role}) cannot perform '{action}'"
+        if allowed_roles:
+            message += f" - allowed roles: {', '.join(allowed_roles)}"
+        super().__init__(
+            message=message,
+            details={
+                "agent_id": agent_id,
+                "role": role,
+                "action": action,
+                "allowed_roles": self.allowed_roles,
+            },
+        )
+
+
+class MACISelfValidationError(MACIError):
+    """Raised when an agent attempts to validate its own output (Gödel bypass)."""
+
+    def __init__(
+        self,
+        agent_id: str,
+        action: str,
+        output_id: Optional[str] = None,
+    ) -> None:
+        self.agent_id = agent_id
+        self.action = action
+        self.output_id = output_id
+        message = f"Agent '{agent_id}' cannot {action} its own output (Gödel bypass prevention)"
+        if output_id:
+            message += f" [output: {output_id}]"
+        super().__init__(
+            message=message,
+            details={
+                "agent_id": agent_id,
+                "action": action,
+                "output_id": output_id,
+                "prevention_type": "godel_bypass",
+            },
+        )
+
+
+class MACICrossRoleValidationError(MACIError):
+    """Raised when cross-role validation constraints are violated."""
+
+    def __init__(
+        self,
+        validator_agent: str,
+        validator_role: str,
+        target_agent: str,
+        target_role: str,
+        reason: str,
+    ) -> None:
+        self.validator_agent = validator_agent
+        self.validator_role = validator_role
+        self.target_agent = target_agent
+        self.target_role = target_role
+        self.reason = reason
+        super().__init__(
+            message=f"Cross-role validation error: {validator_agent} ({validator_role}) "
+                    f"cannot validate {target_agent} ({target_role}): {reason}",
+            details={
+                "validator_agent": validator_agent,
+                "validator_role": validator_role,
+                "target_agent": target_agent,
+                "target_role": target_role,
+                "reason": reason,
+            },
+        )
+
+
+class MACIRoleNotAssignedError(MACIError):
+    """Raised when an agent has no MACI role assigned."""
+
+    def __init__(self, agent_id: str, operation: str) -> None:
+        self.agent_id = agent_id
+        self.operation = operation
+        super().__init__(
+            message=f"Agent '{agent_id}' has no MACI role assigned for operation: {operation}",
+            details={
+                "agent_id": agent_id,
+                "operation": operation,
+            },
+        )
+
+
+# =============================================================================
 # Export all exceptions
 # =============================================================================
 
@@ -535,6 +670,12 @@ __all__ = [
     "HandlerExecutionError",
     # Configuration
     "ConfigurationError",
+    # MACI Role Separation
+    "MACIError",
+    "MACIRoleViolationError",
+    "MACISelfValidationError",
+    "MACICrossRoleValidationError",
+    "MACIRoleNotAssignedError",
     # Constants
     "CONSTITUTIONAL_HASH",
 ]

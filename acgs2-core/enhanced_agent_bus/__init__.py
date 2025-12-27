@@ -19,9 +19,9 @@ except ImportError:
 from .models import (
     AgentMessage,
     MessageType,
-    MessagePriority,
-    MessageStatus,
     Priority,
+    MessagePriority,  # DEPRECATED: Use Priority instead (v3.0.0 removal)
+    MessageStatus,
     ValidationStatus,
     RoutingContext,
     CONSTITUTIONAL_HASH as MODEL_HASH,
@@ -117,9 +117,9 @@ __all__ = [
     # Models
     "AgentMessage",
     "MessageType",
-    "MessagePriority",
-    "MessageStatus",
     "Priority",
+    "MessagePriority",  # DEPRECATED: Use Priority instead (v3.0.0 removal)
+    "MessageStatus",
     "ValidationStatus",
     "RoutingContext",
     # Core

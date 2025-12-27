@@ -14,6 +14,10 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Callable, Dict, List, Optional, Tuple
 import heapq
+from collections import deque
+
+# Default maximum history size to prevent unbounded memory growth
+DEFAULT_MAX_HISTORY_SIZE = 100
 
 # Import centralized constitutional hash from shared module
 try:
@@ -263,6 +267,7 @@ class RecoveryOrchestrator:
         self,
         default_policy: Optional[RecoveryPolicy] = None,
         constitutional_hash: str = CONSTITUTIONAL_HASH,
+        max_history_size: int = DEFAULT_MAX_HISTORY_SIZE,
     ):
         """
         Initialize recovery orchestrator.
@@ -270,9 +275,11 @@ class RecoveryOrchestrator:
         Args:
             default_policy: Default recovery policy for services
             constitutional_hash: Constitutional hash for validation
+            max_history_size: Maximum recovery history entries to retain (default 100)
         """
         self.constitutional_hash = constitutional_hash
         self.default_policy = default_policy or RecoveryPolicy()
+        self.max_history_size = max_history_size
 
         # Priority queue for recovery tasks (min-heap)
         self._recovery_queue: List[RecoveryTask] = []
@@ -283,8 +290,8 @@ class RecoveryOrchestrator:
         # Active recovery tasks by service name
         self._active_tasks: Dict[str, RecoveryTask] = {}
 
-        # Recovery history
-        self._history: List[RecoveryResult] = []
+        # Recovery history - bounded deque to prevent unbounded memory growth
+        self._history: deque = deque(maxlen=max_history_size)
 
         # Circuit breaker registry
         self._circuit_registry = CircuitBreakerRegistry() if CircuitBreakerRegistry else None
@@ -543,7 +550,7 @@ class RecoveryOrchestrator:
             },
             "recent_history": [
                 result.to_dict()
-                for result in self._history[-10:]  # Last 10 results
+                for result in list(self._history)[-10:]  # Last 10 results
             ],
         }
 

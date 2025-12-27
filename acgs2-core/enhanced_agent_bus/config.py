@@ -64,6 +64,10 @@ class BusConfiguration:
     use_rust: bool = True
     enable_metering: bool = True
 
+    # MACI role separation settings
+    enable_maci: bool = False
+    maci_strict_mode: bool = True
+
     # Optional dependency injections (set to None for defaults)
     # Note: These are typed as Any to avoid circular imports at runtime
     registry: Optional[Any] = None
@@ -123,6 +127,8 @@ class BusConfiguration:
             ),
             use_rust=_parse_bool(os.environ.get('USE_RUST_BACKEND'), True),
             enable_metering=_parse_bool(os.environ.get('METERING_ENABLED'), True),
+            enable_maci=_parse_bool(os.environ.get('MACI_ENABLED'), False),
+            maci_strict_mode=_parse_bool(os.environ.get('MACI_STRICT_MODE'), True),
         )
 
     @classmethod
@@ -138,6 +144,8 @@ class BusConfiguration:
             use_redis_registry=False,
             use_rust=False,
             enable_metering=False,
+            enable_maci=False,
+            maci_strict_mode=False,
         )
 
     @classmethod
@@ -153,6 +161,8 @@ class BusConfiguration:
             use_redis_registry=True,
             use_rust=True,
             enable_metering=True,
+            enable_maci=True,
+            maci_strict_mode=True,
         )
 
     def with_registry(self, registry: Any) -> 'BusConfiguration':
@@ -170,6 +180,8 @@ class BusConfiguration:
             use_redis_registry=self.use_redis_registry,
             use_rust=self.use_rust,
             enable_metering=self.enable_metering,
+            enable_maci=self.enable_maci,
+            maci_strict_mode=self.maci_strict_mode,
             registry=registry,
             router=self.router,
             validator=self.validator,
@@ -193,6 +205,8 @@ class BusConfiguration:
             use_redis_registry=self.use_redis_registry,
             use_rust=self.use_rust,
             enable_metering=self.enable_metering,
+            enable_maci=self.enable_maci,
+            maci_strict_mode=self.maci_strict_mode,
             registry=self.registry,
             router=self.router,
             validator=validator,
@@ -213,6 +227,8 @@ class BusConfiguration:
             "use_redis_registry": self.use_redis_registry,
             "use_rust": self.use_rust,
             "enable_metering": self.enable_metering,
+            "enable_maci": self.enable_maci,
+            "maci_strict_mode": self.maci_strict_mode,
             "constitutional_hash": self.constitutional_hash,
             "has_custom_registry": self.registry is not None,
             "has_custom_router": self.router is not None,

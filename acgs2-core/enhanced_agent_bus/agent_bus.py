@@ -56,6 +56,7 @@ from .imports import (
 
 # Use centralized metering manager
 from .metering_manager import MeteringManager, create_metering_manager
+from .config import BusConfiguration
 
 # Core package imports with fallback
 try:
@@ -96,6 +97,20 @@ try:
     from .message_processor import MessageProcessor
 except ImportError:
     from message_processor import MessageProcessor
+
+# MACI role separation enforcement (optional)
+try:
+    from .maci_enforcement import (
+        MACIRole,
+        MACIRoleRegistry,
+        MACIEnforcer,
+        MACIRoleViolationError,
+        MACIRoleNotAssignedError,
+    )
+    MACI_AVAILABLE = True
+except ImportError:
+    MACI_AVAILABLE = False
+    MACIRole = None  # type: ignore
 
 logger = logging.getLogger(__name__)
 
@@ -140,6 +155,8 @@ class EnhancedAgentBus:
         use_rust: bool = True,
         enable_metering: bool = True,
         metering_config: Optional[Any] = None,
+        enable_maci: bool = False,
+        maci_strict_mode: bool = True,
     ):
         """Initialize the Enhanced Agent Bus.
 
@@ -157,6 +174,8 @@ class EnhancedAgentBus:
             use_rust: Whether to prefer Rust backend when available
             enable_metering: Enable production billing metering
             metering_config: Optional metering configuration
+            enable_maci: Enable MACI role separation enforcement
+            maci_strict_mode: If True, fail-closed on MACI errors
         """
         self.constitutional_hash = CONSTITUTIONAL_HASH
         self.redis_url = redis_url
@@ -186,6 +205,19 @@ class EnhancedAgentBus:
             constitutional_hash=CONSTITUTIONAL_HASH,
         )
 
+        # Initialize MACI role separation enforcement
+        self._enable_maci = enable_maci and MACI_AVAILABLE
+        self._maci_strict_mode = maci_strict_mode
+        self._maci_registry: Optional[MACIRoleRegistry] = None
+        self._maci_enforcer: Optional[MACIEnforcer] = None
+        if self._enable_maci:
+            self._maci_registry = MACIRoleRegistry()
+            self._maci_enforcer = MACIEnforcer(
+                registry=self._maci_registry,
+                strict_mode=maci_strict_mode,
+            )
+            logger.info("MACI role separation enforcement enabled (strict=%s)", maci_strict_mode)
+
         self._processor = processor or MessageProcessor(
             use_dynamic_policy=use_dynamic_policy,
             policy_fail_closed=policy_fail_closed,
@@ -194,6 +226,10 @@ class EnhancedAgentBus:
             use_rust=self._use_rust,
             metering_hooks=self._metering_manager.hooks,
             enable_metering=enable_metering,
+            enable_maci=self._enable_maci,
+            maci_registry=self._maci_registry,
+            maci_enforcer=self._maci_enforcer,
+            maci_strict_mode=maci_strict_mode,
         )
         self._running = False
 
@@ -219,6 +255,55 @@ class EnhancedAgentBus:
             "messages_failed": 0,
             "started_at": None,
         }
+
+    @classmethod
+    def from_config(cls, config: BusConfiguration) -> 'EnhancedAgentBus':
+        """Create an EnhancedAgentBus from a BusConfiguration object.
+
+        This factory method provides a cleaner interface for complex configurations
+        by accepting a single configuration object instead of many individual parameters.
+
+        Example:
+            # Using default configuration
+            bus = EnhancedAgentBus.from_config(BusConfiguration())
+
+            # Using testing configuration
+            bus = EnhancedAgentBus.from_config(BusConfiguration.for_testing())
+
+            # Using production configuration
+            bus = EnhancedAgentBus.from_config(BusConfiguration.for_production())
+
+            # Using environment configuration
+            bus = EnhancedAgentBus.from_config(BusConfiguration.from_environment())
+
+            # Using custom configuration with builder pattern
+            config = BusConfiguration(use_dynamic_policy=True).with_registry(my_registry)
+            bus = EnhancedAgentBus.from_config(config)
+
+        Args:
+            config: BusConfiguration object containing all settings
+
+        Returns:
+            Configured EnhancedAgentBus instance
+        """
+        return cls(
+            redis_url=config.redis_url,
+            use_dynamic_policy=config.use_dynamic_policy,
+            policy_fail_closed=config.policy_fail_closed,
+            use_kafka=config.use_kafka,
+            use_redis_registry=config.use_redis_registry,
+            kafka_bootstrap_servers=config.kafka_bootstrap_servers,
+            audit_service_url=config.audit_service_url,
+            registry=config.registry,
+            router=config.router,
+            validator=config.validator,
+            processor=config.processor,
+            use_rust=config.use_rust,
+            enable_metering=config.enable_metering,
+            metering_config=config.metering_config,
+            enable_maci=config.enable_maci,
+            maci_strict_mode=config.maci_strict_mode,
+        )
 
     def _init_policy_client(self, policy_fail_closed: bool) -> Optional[Any]:
         """Initialize policy client if using dynamic validation."""
@@ -340,6 +425,7 @@ class EnhancedAgentBus:
         capabilities: Optional[List[str]] = None,
         tenant_id: Optional[str] = None,
         auth_token: Optional[str] = None,
+        maci_role: Optional[Any] = None,
     ) -> bool:
         """Register an agent with the bus.
 
@@ -349,6 +435,7 @@ class EnhancedAgentBus:
             capabilities: List of agent capabilities
             tenant_id: Tenant identifier for multi-tenant isolation
             auth_token: JWT authentication token for identity verification
+            maci_role: MACI role (EXECUTIVE/LEGISLATIVE/JUDICIAL) for role separation
 
         Returns:
             True if registration successful
@@ -381,7 +468,27 @@ class EnhancedAgentBus:
             "registered_at": datetime.now(timezone.utc),
             "constitutional_hash": constitutional_key,
             "status": "active",
+            "maci_role": maci_role.value if maci_role else None,
         }
+
+        # Register with MACI if enabled and role provided
+        if self._enable_maci and maci_role is not None and self._maci_registry is not None:
+            try:
+                await self._maci_registry.register_agent(
+                    agent_id=agent_id,
+                    role=maci_role,
+                    metadata={"capabilities": capabilities or []},
+                )
+                logger.info(
+                    f"Agent registered with MACI: {agent_id} (role: {maci_role.value})"
+                )
+            except Exception as e:
+                logger.warning(f"Failed to register agent with MACI: {e}")
+                if self._maci_strict_mode:
+                    # Remove from regular registry on MACI failure in strict mode
+                    del self._agents[agent_id]
+                    return False
+
         logger.info(f"Agent registered: {agent_id} (type: {agent_type}, tenant: {tenant_id})")
         return True
 
@@ -812,6 +919,21 @@ class EnhancedAgentBus:
     def validator(self) -> ValidationStrategy:
         """Get the validation strategy (DI component)."""
         return self._validator
+
+    @property
+    def maci_enabled(self) -> bool:
+        """Check if MACI role separation is enabled."""
+        return self._enable_maci
+
+    @property
+    def maci_registry(self) -> Optional[MACIRoleRegistry]:
+        """Get the MACI role registry for external registration."""
+        return self._maci_registry
+
+    @property
+    def maci_enforcer(self) -> Optional[MACIEnforcer]:
+        """Get the MACI enforcer for validation."""
+        return self._maci_enforcer
 
 
 # Module-level convenience functions

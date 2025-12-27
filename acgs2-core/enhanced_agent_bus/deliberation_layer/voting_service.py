@@ -12,7 +12,10 @@ from enum import Enum
 from typing import Dict, List, Optional, Any, Set
 import uuid
 
-from ..models import AgentMessage, CONSTITUTIONAL_HASH
+try:
+    from ..models import AgentMessage, CONSTITUTIONAL_HASH
+except ImportError:
+    from models import AgentMessage, CONSTITUTIONAL_HASH  # type: ignore
 
 logger = logging.getLogger(__name__)
 
@@ -57,7 +60,7 @@ class VotingService:
                 message_id=message.message_id,
                 strategy=self.default_strategy,
                 participants=set(participants),
-                expires_at=datetime.now(timezone.utc).fromtimestamp(datetime.now(timezone.utc).timestamp() + timeout)
+                expires_at=datetime.fromtimestamp(datetime.now(timezone.utc).timestamp() + timeout, tz=timezone.utc)
             )
             self.elections[election_id] = election
             logger.info(f"Election {election_id} created for message {message.message_id}")

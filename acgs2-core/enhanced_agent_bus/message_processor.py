@@ -67,7 +67,7 @@ try:
     from .models import (
         AgentMessage,
         MessageType,
-        MessagePriority,
+        Priority,
         CONSTITUTIONAL_HASH,
         DecisionLog,
     )
@@ -88,7 +88,7 @@ except ImportError:
     from models import (
         AgentMessage,
         MessageType,
-        MessagePriority,
+        Priority,
         CONSTITUTIONAL_HASH,
         DecisionLog,
     )
@@ -235,6 +235,10 @@ class MessageProcessor:
         isolated_mode: bool = False,
         metering_hooks: Optional['MeteringHooks'] = None,
         enable_metering: bool = True,
+        enable_maci: bool = False,
+        maci_registry: Optional[Any] = None,
+        maci_enforcer: Optional[Any] = None,
+        maci_strict_mode: bool = True,
     ):
         """Initialize the message processor.
 
@@ -247,6 +251,10 @@ class MessageProcessor:
             isolated_mode: If True, run in minimal-dependency mode for edge/governor-in-a-box.
             metering_hooks: Optional metering hooks for production billing.
             enable_metering: If True and metering available, enable usage metering.
+            enable_maci: If True, enable MACI role separation enforcement.
+            maci_registry: Optional MACIRoleRegistry for role management.
+            maci_enforcer: Optional MACIEnforcer for validation.
+            maci_strict_mode: If True, fail-closed on MACI errors.
         """
         self._isolated_mode = isolated_mode
         self._use_dynamic_policy = use_dynamic_policy and POLICY_CLIENT_AVAILABLE and not isolated_mode
@@ -264,6 +272,12 @@ class MessageProcessor:
             self._metering_hooks = get_metering_hooks()
         else:
             self._metering_hooks = None
+
+        # Initialize MACI role separation enforcement
+        self._enable_maci = enable_maci and not isolated_mode
+        self._maci_registry = maci_registry
+        self._maci_enforcer = maci_enforcer
+        self._maci_strict_mode = maci_strict_mode
 
         # Initialize Rust processor if available
         if USE_RUST and rust_bus is not None:
@@ -350,9 +364,25 @@ class MessageProcessor:
 
         if len(strategies) > 1:
             logger.debug(f"Configuring CompositeProcessingStrategy with {len(strategies)} layers")
-            return CompositeProcessingStrategy(strategies=strategies)
+            base_strategy = CompositeProcessingStrategy(strategies=strategies)
+        else:
+            base_strategy = strategies[0]
 
-        return strategies[0]
+        # 4. Wrap with MACI if enabled (outermost layer for role separation)
+        if self._enable_maci:
+            try:
+                from .processing_strategies import MACIProcessingStrategy
+                logger.info("Wrapping strategy with MACI role separation enforcement")
+                return MACIProcessingStrategy(
+                    inner_strategy=base_strategy,
+                    maci_registry=self._maci_registry,
+                    maci_enforcer=self._maci_enforcer,
+                    strict_mode=self._maci_strict_mode,
+                )
+            except ImportError as e:
+                logger.warning(f"MACI processing strategy not available: {e}")
+
+        return base_strategy
 
     async def process(self, message: AgentMessage) -> ValidationResult:
         """Process a message through validation and registered handlers."""
@@ -563,7 +593,7 @@ class MessageProcessor:
         else:
             tags.append("rejected")
 
-        if message.priority == MessagePriority.CRITICAL:
+        if message.priority == Priority.CRITICAL:
             tags.append("high_priority")
 
         return tags

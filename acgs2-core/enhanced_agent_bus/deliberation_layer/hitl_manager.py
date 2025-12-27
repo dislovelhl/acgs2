@@ -110,7 +110,7 @@ class HITLManager:
                          "short": True},
                         {"title": "Action Type", "value": msg.message_type.value,
                          "short": False},
-                        {"title": "Content", "value": msg.content[:100] + "...",
+                        {"title": "Content", "value": str(msg.content)[:100] + "...",
                          "short": False}
                     ],
                     "callback_id": item_id,

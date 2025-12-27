@@ -345,6 +345,171 @@ initialize_all_imports()
 
 
 # =============================================================================
+# Generic Import Utilities (for reducing redundant try/except patterns)
+# =============================================================================
+
+def try_import(
+    relative_path: str,
+    absolute_path: str,
+    names: list[str],
+) -> tuple[bool, dict[str, Any]]:
+    """Try importing from relative path first, then absolute path.
+
+    This utility reduces the common pattern of:
+        try:
+            from .module import Something
+        except ImportError:
+            from module import Something
+
+    Args:
+        relative_path: Relative import path (e.g., ".models")
+        absolute_path: Absolute import path fallback (e.g., "models")
+        names: List of names to import from the module
+
+    Returns:
+        Tuple of (success: bool, imports: dict mapping name to imported object)
+
+    Example:
+        success, imports = try_import(".models", "models", ["AgentMessage", "Priority"])
+        if success:
+            AgentMessage = imports["AgentMessage"]
+            Priority = imports["Priority"]
+    """
+    import importlib
+
+    result: dict[str, Any] = {}
+
+    # Try relative import first
+    try:
+        module = importlib.import_module(relative_path, package=__package__)
+        for name in names:
+            result[name] = getattr(module, name)
+        return True, result
+    except (ImportError, AttributeError):
+        pass
+
+    # Fall back to absolute import
+    try:
+        module = importlib.import_module(absolute_path)
+        for name in names:
+            result[name] = getattr(module, name)
+        return True, result
+    except (ImportError, AttributeError):
+        pass
+
+    return False, result
+
+
+def import_with_fallback(
+    module_paths: list[str],
+    names: list[str],
+    default_values: Optional[dict[str, Any]] = None,
+) -> dict[str, Any]:
+    """Import names from the first available module in the paths list.
+
+    Args:
+        module_paths: List of module paths to try in order
+        names: List of names to import from the module
+        default_values: Optional dict of default values if all imports fail
+
+    Returns:
+        Dict mapping name to imported object (or default value)
+
+    Example:
+        imports = import_with_fallback(
+            ["shared.constants", "enhanced_agent_bus.models"],
+            ["CONSTITUTIONAL_HASH"],
+            {"CONSTITUTIONAL_HASH": "cdd01ef066bc6cf2"}
+        )
+        CONSTITUTIONAL_HASH = imports["CONSTITUTIONAL_HASH"]
+    """
+    import importlib
+
+    for module_path in module_paths:
+        try:
+            module = importlib.import_module(module_path)
+            result = {}
+            for name in names:
+                result[name] = getattr(module, name)
+            return result
+        except (ImportError, AttributeError):
+            continue
+
+    # Return defaults if all imports fail
+    if default_values:
+        return default_values
+    return {name: None for name in names}
+
+
+def optional_import(module_path: str, name: str, default: Any = None) -> Any:
+    """Import a single name from a module, returning default if unavailable.
+
+    This is the simplest utility for optional dependencies.
+
+    Args:
+        module_path: Module path to import from
+        name: Name to import from the module
+        default: Default value if import fails
+
+    Returns:
+        Imported object or default value
+
+    Example:
+        get_circuit_breaker = optional_import("shared.circuit_breaker", "get_circuit_breaker")
+        if get_circuit_breaker:
+            breaker = get_circuit_breaker("my-service")
+    """
+    import importlib
+
+    try:
+        module = importlib.import_module(module_path)
+        return getattr(module, name, default)
+    except (ImportError, AttributeError):
+        return default
+
+
+def try_relative_import(
+    relative_module: str,
+    absolute_module: str,
+    name: str,
+    default: Any = None,
+) -> Any:
+    """Try relative import first, then absolute, returning default if both fail.
+
+    Simplest form for single-name imports with relative/absolute fallback.
+
+    Args:
+        relative_module: Relative module path (e.g., ".models")
+        absolute_module: Absolute module path (e.g., "models")
+        name: Name to import
+        default: Default value if all imports fail
+
+    Returns:
+        Imported object or default value
+
+    Example:
+        ValidationResult = try_relative_import(".validators", "validators", "ValidationResult")
+    """
+    import importlib
+
+    # Try relative import
+    try:
+        module = importlib.import_module(relative_module, package=__package__)
+        return getattr(module, name, default)
+    except (ImportError, AttributeError):
+        pass
+
+    # Try absolute import
+    try:
+        module = importlib.import_module(absolute_module)
+        return getattr(module, name, default)
+    except (ImportError, AttributeError):
+        pass
+
+    return default
+
+
+# =============================================================================
 # Status reporting (useful for debugging and health checks)
 # =============================================================================
 
@@ -364,3 +529,58 @@ def get_import_status() -> dict:
         "metering_available": METERING_AVAILABLE,
         "default_redis_url": DEFAULT_REDIS_URL,
     }
+
+
+# =============================================================================
+# Public API
+# =============================================================================
+
+__all__ = [
+    # Feature Availability Flags
+    "METRICS_ENABLED",
+    "OTEL_ENABLED",
+    "CIRCUIT_BREAKER_ENABLED",
+    "POLICY_CLIENT_AVAILABLE",
+    "DELIBERATION_AVAILABLE",
+    "CRYPTO_AVAILABLE",
+    "CONFIG_AVAILABLE",
+    "AUDIT_CLIENT_AVAILABLE",
+    "OPA_CLIENT_AVAILABLE",
+    "USE_RUST",
+    "METERING_AVAILABLE",
+    "DEFAULT_REDIS_URL",
+    # Optional Module References
+    "MESSAGE_QUEUE_DEPTH",
+    "set_service_info",
+    "tracer",
+    "meter",
+    "QUEUE_DEPTH",
+    "get_circuit_breaker",
+    "circuit_breaker_health_check",
+    "initialize_core_circuit_breakers",
+    "CircuitBreakerConfig",
+    "PolicyClient",
+    "get_policy_client",
+    "VotingService",
+    "VotingStrategy",
+    "DeliberationQueue",
+    "CryptoService",
+    "settings",
+    "AuditClient",
+    "OPAClient",
+    "get_opa_client",
+    "rust_bus",
+    "MeteringHooks",
+    "MeteringConfig",
+    "AsyncMeteringQueue",
+    "get_metering_hooks",
+    "get_metering_queue",
+    # Import Utilities
+    "try_import",
+    "import_with_fallback",
+    "optional_import",
+    "try_relative_import",
+    # Lifecycle
+    "initialize_all_imports",
+    "get_import_status",
+]

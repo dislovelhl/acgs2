@@ -38,7 +38,8 @@ try:
     import enhanced_agent_bus.interfaces as _interfaces
     import enhanced_agent_bus.registry as _registry
     import enhanced_agent_bus.core as _core
-    
+    import enhanced_agent_bus.maci_enforcement as _maci_enforcement
+
     # Patch sys.modules to point flat names to package-qualified modules
     sys.modules['models'] = _models
     sys.modules['validators'] = _validators
@@ -46,6 +47,7 @@ try:
     sys.modules['interfaces'] = _interfaces
     sys.modules['registry'] = _registry
     sys.modules['core'] = _core
+    sys.modules['maci_enforcement'] = _maci_enforcement
 except ImportError:
     # Fallback if the package structure is not respected during execution
     import models as _models
@@ -54,7 +56,8 @@ except ImportError:
     import interfaces as _interfaces
     import registry as _registry
     import core as _core
-    
+    import maci_enforcement as _maci_enforcement
+
     # Patch package names to point to flat modules
     sys.modules['enhanced_agent_bus.models'] = _models
     sys.modules['enhanced_agent_bus.validators'] = _validators
@@ -62,6 +65,7 @@ except ImportError:
     sys.modules['enhanced_agent_bus.interfaces'] = _interfaces
     sys.modules['enhanced_agent_bus.registry'] = _registry
     sys.modules['enhanced_agent_bus.core'] = _core
+    sys.modules['enhanced_agent_bus.maci_enforcement'] = _maci_enforcement
 
 # Rust availability check (already blocked at module top if not TEST_WITH_RUST)
 # _test_with_rust was set at top of file
@@ -88,8 +92,8 @@ else:
 # Re-export commonly used items from the canonical modules
 AgentMessage = _models.AgentMessage
 MessageType = _models.MessageType
-Priority = _models.Priority
-MessagePriority = _models.MessagePriority  # DEPRECATED: Use Priority instead
+Priority = _models.Priority  # Canonical priority enum (higher value = higher priority)
+MessagePriority = _models.MessagePriority  # DEPRECATED: Use Priority instead (v3.0.0 removal)
 MessageStatus = _models.MessageStatus
 CONSTITUTIONAL_HASH = _models.CONSTITUTIONAL_HASH
 

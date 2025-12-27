@@ -5,6 +5,7 @@ Constitutional Hash: cdd01ef066bc6cf2
 Validation utilities for message and agent compliance.
 """
 
+import hmac
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
@@ -69,10 +70,26 @@ class ValidationResult:
 
 
 def validate_constitutional_hash(hash_value: str) -> ValidationResult:
-    """Validate a constitutional hash."""
+    """Validate a constitutional hash.
+
+    Uses constant-time comparison to prevent timing attacks.
+    Error messages are sanitized to prevent hash exposure.
+    """
     result = ValidationResult()
-    if hash_value != CONSTITUTIONAL_HASH:
-        result.add_error(f"Invalid constitutional hash: {hash_value}")
+
+    # Ensure both values are strings for comparison
+    if not isinstance(hash_value, str):
+        result.add_error("Constitutional hash must be a string")
+        return result
+
+    # Use constant-time comparison to prevent timing attacks
+    # hmac.compare_digest prevents attackers from inferring the hash
+    # character-by-character through response time analysis
+    if not hmac.compare_digest(hash_value, CONSTITUTIONAL_HASH):
+        # Sanitize error message: only show prefix to aid debugging
+        # without exposing full hash values
+        safe_provided = hash_value[:8] + "..." if len(hash_value) > 8 else hash_value
+        result.add_error(f"Constitutional hash mismatch (provided: {safe_provided})")
     return result
 
 

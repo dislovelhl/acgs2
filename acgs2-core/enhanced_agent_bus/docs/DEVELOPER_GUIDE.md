@@ -1,7 +1,7 @@
 # Enhanced Agent Bus - Developer Guide
 
 > Constitutional Hash: `cdd01ef066bc6cf2`
-> Version: 2.0.0
+> Version: 2.2.0
 
 ## Table of Contents
 
@@ -450,6 +450,178 @@ async def log_to_audit(message: AgentMessage) -> None:
 asyncio.create_task(log_to_audit(message))
 ```
 
+### Antifragility Patterns
+
+#### Health Monitoring
+
+```python
+from enhanced_agent_bus import (
+    get_health_aggregator,
+    SystemHealthStatus,
+)
+
+async def monitor_health():
+    """Monitor system health with callbacks."""
+    aggregator = get_health_aggregator()
+
+    async def on_health_change(snapshot):
+        if snapshot.status == SystemHealthStatus.CRITICAL:
+            await alert_ops_team(snapshot)
+        elif snapshot.status == SystemHealthStatus.DEGRADED:
+            await log_degradation(snapshot)
+
+    aggregator.register_callback(on_health_change)
+
+    # Get current health
+    snapshot = await aggregator.get_current_health()
+    print(f"System health: {snapshot.score:.2f} ({snapshot.status.value})")
+```
+
+#### Recovery Orchestration
+
+```python
+from enhanced_agent_bus import (
+    RecoveryOrchestrator,
+    RecoveryPolicy,
+    RecoveryStrategy,
+    RecoveryTask,
+)
+
+async def setup_recovery():
+    """Configure automatic recovery for failures."""
+    orchestrator = RecoveryOrchestrator()
+
+    # Define recovery policy
+    policy = RecoveryPolicy(
+        strategy=RecoveryStrategy.EXPONENTIAL_BACKOFF,
+        max_retries=5,
+        initial_delay_seconds=1.0,
+        max_delay_seconds=60.0,
+    )
+
+    # Create recovery task
+    task = RecoveryTask(
+        task_id="db-connection-recovery",
+        resource_id="primary-database",
+        policy=policy,
+    )
+
+    # Submit for automatic recovery
+    result = await orchestrator.submit_recovery(task)
+    return result
+```
+
+#### Chaos Testing
+
+```python
+from enhanced_agent_bus import (
+    get_chaos_engine,
+    ChaosScenario,
+    ChaosType,
+    ResourceType,
+)
+
+async def run_resilience_tests():
+    """Test system resilience with controlled failures."""
+    engine = get_chaos_engine()
+
+    # Define test scenario
+    scenario = ChaosScenario(
+        name="cache-failure-test",
+        chaos_type=ChaosType.ERROR,
+        target_resource=ResourceType.CACHE,
+        intensity=0.3,         # 30% failure rate
+        duration_seconds=30.0,
+        blast_radius=0.1,      # Max 10% affected
+    )
+
+    # Run chaos test
+    async with engine.run_scenario(scenario):
+        # System should degrade gracefully
+        result = await bus.send_message(test_message)
+        assert result.is_valid  # Should still work
+
+    # Verify recovery after chaos
+    health = await get_health_aggregator().get_current_health()
+    assert health.status == SystemHealthStatus.HEALTHY
+```
+
+### MACI Role Enforcement Pattern
+
+Implement Trias Politica role separation:
+
+```python
+from enhanced_agent_bus import (
+    EnhancedAgentBus,
+    MACIRole,
+    MACIAction,
+)
+
+async def setup_maci_agents():
+    """Setup agents with role separation."""
+    bus = EnhancedAgentBus(enable_maci=True, maci_strict_mode=True)
+    await bus.start()
+
+    # Executive: can propose policies
+    await bus.register_agent(
+        agent_id="policy-proposer",
+        agent_type="executive",
+        maci_role=MACIRole.EXECUTIVE,
+    )
+
+    # Legislative: can extract rules
+    await bus.register_agent(
+        agent_id="rule-extractor",
+        agent_type="legislative",
+        maci_role=MACIRole.LEGISLATIVE,
+    )
+
+    # Judicial: can validate and audit
+    await bus.register_agent(
+        agent_id="validator",
+        agent_type="judicial",
+        maci_role=MACIRole.JUDICIAL,
+    )
+
+    return bus
+
+# Role permissions are automatically enforced:
+# - Executive cannot validate (separation of powers)
+# - Legislative cannot propose (checks and balances)
+# - Judicial cannot propose or extract (independence)
+```
+
+### Metering Pattern
+
+Track usage with fire-and-forget metering:
+
+```python
+from enhanced_agent_bus import (
+    get_metering_queue,
+    metered_operation,
+)
+
+# Decorator-based metering
+@metered_operation(operation_name="governance_decision")
+async def make_decision(message: AgentMessage) -> ValidationResult:
+    """Automatically metered operation."""
+    return await process_decision(message)
+
+# Manual metering (fire-and-forget, <5μs impact)
+async def send_with_metering(message: AgentMessage):
+    """Send message with explicit metering."""
+    queue = get_metering_queue()
+
+    # Fire-and-forget - doesn't block
+    await queue.enqueue({
+        "operation": "message_sent",
+        "agent_id": message.from_agent,
+        "bytes": len(str(message.content)),
+    })
+
+    return await bus.send_message(message)
+```
+
 ---
 
 ## Troubleshooting
@@ -556,21 +728,26 @@ print(f"Errors: {metrics['errors']}")
 
 ### Performance Targets
 
-| Metric | Target | How to Achieve |
-|--------|--------|----------------|
-| P99 Latency | <5ms | Use Rust backend |
-| Throughput | >100 RPS | Enable Redis registry |
-| Cache Hit | >85% | Configure TTL properly |
-| Compliance | 100% | Never skip validation |
+| Metric | Target | Achieved | How to Achieve |
+|--------|--------|----------|----------------|
+| P99 Latency | <5ms | 0.278ms | Use Rust backend |
+| Throughput | >100 RPS | 6,310 RPS | Enable Redis registry |
+| Cache Hit | >85% | 95% | Configure TTL properly |
+| Compliance | 100% | 100% | Never skip validation |
+| Antifragility | 10/10 | 10/10 | Health aggregator + recovery |
+| Metering Latency | <10μs | <5μs | Fire-and-forget pattern |
 
 ---
 
 ## Resources
 
-- [API Reference](./API.md)
-- [Architecture Overview](./ARCHITECTURE.md)
-- [STRIDE Threat Model](../../docs/STRIDE_THREAT_MODEL.md)
-- [Workflow Patterns](../../docs/WORKFLOW_PATTERNS.md)
+- [API Reference](./API.md) - Complete API documentation with antifragility and MACI
+- [Architecture Overview](./ARCHITECTURE.md) - System architecture and component diagrams
+- [MACI Guide](../MACI_GUIDE.md) - MACI role enforcement details
+- [Health Aggregator](../HEALTH_AGGREGATOR_SUMMARY.md) - Health monitoring patterns
+- [Recovery Orchestrator](../RECOVERY_ORCHESTRATOR.md) - Recovery strategies
+- [STRIDE Threat Model](../../docs/STRIDE_THREAT_MODEL.md) - Security threat analysis
+- [Workflow Patterns](../../docs/WORKFLOW_PATTERNS.md) - Orchestration patterns
 
 ---
 

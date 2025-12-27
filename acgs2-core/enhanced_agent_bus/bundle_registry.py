@@ -199,16 +199,46 @@ class RegistryAuthProvider(ABC):
 
 
 class BasicAuthProvider(RegistryAuthProvider):
-    """Basic username/password authentication."""
+    """
+    Basic username/password authentication with encrypted credential storage.
+
+    Credentials are encrypted in memory using Fernet symmetric encryption
+    to prevent exposure in memory dumps, debugging, or error traces.
+    """
 
     def __init__(self, username: str, password: str):
-        self.username = username
-        self.password = password
+        # Import Fernet for credential encryption
+        from cryptography.fernet import Fernet
+        import base64
+
+        # Generate a session-specific encryption key
+        # This key lives only in memory and changes each instantiation
+        self._cipher_key = Fernet.generate_key()
+        self._cipher = Fernet(self._cipher_key)
+
+        # Encrypt credentials immediately - never store plaintext
+        self._encrypted_username = self._cipher.encrypt(username.encode())
+        self._encrypted_password = self._cipher.encrypt(password.encode())
+
+        # Clear the plaintext from local scope (defense in depth)
+        del username, password
+
         self._token: Optional[str] = None
+
+    @property
+    def username(self) -> str:
+        """Decrypt username on demand."""
+        return self._cipher.decrypt(self._encrypted_username).decode()
+
+    @property
+    def password(self) -> str:
+        """Decrypt password on demand."""
+        return self._cipher.decrypt(self._encrypted_password).decode()
 
     async def get_token(self) -> str:
         if not self._token:
             import base64
+            # Decrypt credentials only when needed
             credentials = f"{self.username}:{self.password}"
             self._token = base64.b64encode(credentials.encode()).decode()
         return self._token

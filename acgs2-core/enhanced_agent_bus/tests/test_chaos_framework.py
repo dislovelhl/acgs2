@@ -128,7 +128,10 @@ class TestChaosScenario:
                 require_hash_validation=True,
             )
 
-        assert "cdd01ef066bc6cf2" in str(exc_info.value)
+        # Error message shows sanitized hash prefix for security
+        assert "cdd01ef0..." in str(exc_info.value)
+        # Full hash still available via property for internal use
+        assert exc_info.value.expected_hash == "cdd01ef066bc6cf2"
 
     def test_max_duration_enforcement(self):
         """Test max duration limit enforcement."""

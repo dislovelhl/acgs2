@@ -5,6 +5,7 @@ Policy Registry Client for dynamic constitutional validation
 import asyncio
 import os
 import logging
+from collections import OrderedDict
 from typing import Dict, Any, Optional, List
 import httpx
 
@@ -18,6 +19,9 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
+# Default maximum cache size to prevent unbounded memory growth
+DEFAULT_MAX_CACHE_SIZE = 1000
+
 
 class PolicyRegistryClient:
     """Client for communicating with Policy Registry Service"""
@@ -29,13 +33,16 @@ class PolicyRegistryClient:
         timeout: float = 5.0,
         cache_ttl: int = 300,  # 5 minutes
         fail_closed: bool = False,
+        max_cache_size: int = DEFAULT_MAX_CACHE_SIZE,
     ):
         self.registry_url = (registry_url or "http://localhost:8000").rstrip("/")
         self.api_key = api_key
         self.timeout = timeout
         self.cache_ttl = cache_ttl
         self.fail_closed = fail_closed
-        self._cache: Dict[str, Dict[str, Any]] = {}
+        self.max_cache_size = max_cache_size
+        # OrderedDict maintains insertion order for LRU-style eviction
+        self._cache: OrderedDict[str, Dict[str, Any]] = OrderedDict()
         self._http_client = None
 
     async def __aenter__(self):
@@ -86,6 +93,8 @@ class PolicyRegistryClient:
         if cache_key in self._cache:
             cached = self._cache[cache_key]
             if asyncio.get_event_loop().time() - cached["timestamp"] < self.cache_ttl:
+                # Move to end for LRU behavior (most recently accessed)
+                self._cache.move_to_end(cache_key)
                 return cached["content"]
             else:
                 # Expired, remove from cache
@@ -100,13 +109,18 @@ class PolicyRegistryClient:
             )
             response.raise_for_status()
             content = response.json()
-            
+
+            # Evict oldest entries if cache is at capacity
+            while len(self._cache) >= self.max_cache_size:
+                # Remove oldest (first) item - FIFO eviction for LRU
+                self._cache.popitem(last=False)
+
             # Cache the result
             self._cache[cache_key] = {
                 "content": content,
                 "timestamp": asyncio.get_event_loop().time()
             }
-            
+
             return content
             
         except httpx.HTTPStatusError as e:

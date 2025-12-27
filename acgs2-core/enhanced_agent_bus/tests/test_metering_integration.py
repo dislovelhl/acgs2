@@ -427,6 +427,117 @@ class TestMeteredOperationDecorator:
         with pytest.raises(ValueError):
             await test_function()
 
+    @pytest.mark.asyncio
+    async def test_decorator_with_object_tenant_id(self):
+        """Test decorator extracts tenant_id from object attribute."""
+        reset_metering()
+
+        if not METERING_AVAILABLE:
+            pytest.skip("Metering service not available")
+
+        class MessageLike:
+            tenant_id = "extracted-tenant"
+            from_agent = "test-agent"
+
+        @metered_operation(MeterableOperation.CONSTITUTIONAL_VALIDATION)
+        async def test_function(msg: MessageLike) -> bool:
+            return True
+
+        result = await test_function(MessageLike())
+        assert result is True
+
+    @pytest.mark.asyncio
+    async def test_decorator_with_custom_extract_tenant(self):
+        """Test decorator with custom extract_tenant callable."""
+        reset_metering()
+
+        if not METERING_AVAILABLE:
+            pytest.skip("Metering service not available")
+
+        def custom_extract_tenant(obj):
+            return getattr(obj, 'custom_tenant', 'fallback')
+
+        class CustomObject:
+            custom_tenant = "custom-tenant-id"
+
+        @metered_operation(
+            MeterableOperation.CONSTITUTIONAL_VALIDATION,
+            extract_tenant=custom_extract_tenant,
+        )
+        async def test_function(obj) -> bool:
+            return True
+
+        result = await test_function(CustomObject())
+        assert result is True
+
+    @pytest.mark.asyncio
+    async def test_decorator_with_custom_extract_agent(self):
+        """Test decorator with custom extract_agent callable."""
+        reset_metering()
+
+        if not METERING_AVAILABLE:
+            pytest.skip("Metering service not available")
+
+        def custom_extract_agent(obj):
+            return getattr(obj, 'agent_name', None)
+
+        class AgentObject:
+            agent_name = "custom-agent"
+
+        @metered_operation(
+            MeterableOperation.CONSTITUTIONAL_VALIDATION,
+            extract_agent=custom_extract_agent,
+        )
+        async def test_function(obj) -> bool:
+            return True
+
+        result = await test_function(AgentObject())
+        assert result is True
+
+    @pytest.mark.asyncio
+    async def test_decorator_extract_tenant_exception_handling(self):
+        """Test decorator handles extract_tenant exceptions gracefully."""
+        reset_metering()
+
+        if not METERING_AVAILABLE:
+            pytest.skip("Metering service not available")
+
+        def failing_extract_tenant(obj):
+            raise ValueError("Extraction failed")
+
+        @metered_operation(
+            MeterableOperation.CONSTITUTIONAL_VALIDATION,
+            extract_tenant=failing_extract_tenant,
+        )
+        async def test_function(obj) -> bool:
+            return True
+
+        # Should not raise - exception is caught and defaults used
+        result = await test_function(object())
+        assert result is True
+
+    @pytest.mark.asyncio
+    async def test_decorator_extract_agent_exception_handling(self):
+        """Test decorator handles extract_agent exceptions gracefully."""
+        reset_metering()
+
+        if not METERING_AVAILABLE:
+            pytest.skip("Metering service not available")
+
+        def failing_extract_agent(obj):
+            raise RuntimeError("Agent extraction failed")
+
+        @metered_operation(
+            MeterableOperation.CONSTITUTIONAL_VALIDATION,
+            extract_agent=failing_extract_agent,
+        )
+        async def test_function(obj) -> bool:
+            return True
+
+        # Should not raise - exception is caught and None used
+        result = await test_function(object())
+        assert result is True
+
 
 class TestLatencyImpact:
     """Test that metering has minimal latency impact."""

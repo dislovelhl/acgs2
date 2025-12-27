@@ -1,7 +1,7 @@
 # Enhanced Agent Bus - Architecture
 
 > Constitutional Hash: `cdd01ef066bc6cf2`
-> Version: 2.0.0
+> Version: 2.2.0
 
 ## System Overview
 

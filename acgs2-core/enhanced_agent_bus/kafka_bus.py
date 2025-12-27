@@ -16,8 +16,12 @@ try:
 except ImportError:
     KAFKA_AVAILABLE = False
 
-from .models import AgentMessage, MessageStatus, MessageType
-from .exceptions import MessageDeliveryError
+try:
+    from .models import AgentMessage, MessageStatus, MessageType
+    from .exceptions import MessageDeliveryError
+except ImportError:
+    from models import AgentMessage, MessageStatus, MessageType  # type: ignore
+    from exceptions import MessageDeliveryError  # type: ignore
 
 logger = logging.getLogger(__name__)
 
@@ -72,7 +76,11 @@ class KafkaEventBus:
     async def send_message(self, message: AgentMessage) -> bool:
         """Send a message to the appropriate Kafka topic."""
         if not self.producer or not self._running:
-            raise MessageDeliveryError("Kafka producer not started")
+            raise MessageDeliveryError(
+                message_id=message.message_id,
+                target_agent=message.to_agent or "unknown",
+                reason="Kafka producer not started",
+            )
 
         topic = self._get_topic_name(message.tenant_id, message.message_type.name)
         

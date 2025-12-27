@@ -64,6 +64,9 @@ markers = [
 filterwarnings = [
     "ignore::DeprecationWarning",
     "ignore::PendingDeprecationWarning",
+    # Ignore coroutine warnings from mock objects in integration tests
+    "ignore:coroutine 'AsyncMockMixin._execute_mock_call' was never awaited:RuntimeWarning",
+    "ignore:coroutine 'MockComponent.__getattr__.<locals>.async_mock' was never awaited:RuntimeWarning",
 ]
 
 [tool.coverage.run]
@@ -75,6 +78,11 @@ omit = [
     "*.pyc",
     "venv/*",
     ".venv/*",
+    # Test directories in subdirectories
+    "*/tests/*",
+    "observability/tests/*",
+    "specs/tests/*",
+    "acl_adapters/tests/*",
     # Internal test/example files (not part of main package)
     "deliberation_layer/simple_test.py",
     "deliberation_layer/test_deliberation.py",
@@ -83,10 +91,25 @@ omit = [
     # Setup files
     "setup.py",
     "conftest.py",
+    "**/conftest.py",
     # Modules requiring unavailable external dependencies
     "deliberation_layer/dashboard.py",  # Requires streamlit
     "deliberation_layer/impact_scorer.py",  # Requires transformers
     "deliberation_layer/__init__.py",  # Requires transformers
+    # Spec fixtures (not production code)
+    "specs/*",
+    "specs/**/*",
+    # Example and standalone test files (not part of test suite)
+    "test_diagnostic.py",
+    "test_minimal.py",
+    "test_rust_governance.py",
+    "health_aggregator_example.py",
+    # Other non-production code
+    "sandbox.py",
+    "dx_ecosystem.py",
+    "retrieval_triad.py",
+    "sql_agent.py",
+    "graph_database.py",
 ]
 
 [tool.coverage.report]

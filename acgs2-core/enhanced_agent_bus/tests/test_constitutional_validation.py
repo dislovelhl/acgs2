@@ -29,7 +29,8 @@ class TestConstitutionalHashValidation:
         result = validate_constitutional_hash("invalid_hash_123")
         assert not result.is_valid
         assert len(result.errors) == 1
-        assert "Invalid constitutional hash" in result.errors[0]
+        # Error message is sanitized with constant-time comparison
+        assert "Constitutional hash mismatch" in result.errors[0]
 
     def test_empty_constitutional_hash(self):
         """Test that empty constitutional hash fails validation."""

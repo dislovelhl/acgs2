@@ -629,10 +629,130 @@ class CompositeProcessingStrategy:
         return f"composite({'+'.join(s.get_name() for s in self._strategies)})"
 
 
+class MACIProcessingStrategy:
+    """MACI role-separation processing strategy.
+
+    Enforces MACI (Model-based AI Constitutional Intelligence) role separation
+    to prevent Gödel bypass attacks. Must be composed with another strategy
+    for constitutional validation.
+
+    Constitutional Hash: cdd01ef066bc6cf2
+    """
+
+    def __init__(
+        self,
+        inner_strategy: Any,
+        maci_registry: Optional[Any] = None,
+        maci_enforcer: Optional[Any] = None,
+        strict_mode: bool = True,
+    ) -> None:
+        """Initialize MACI processing strategy.
+
+        Args:
+            inner_strategy: The underlying processing strategy to delegate to
+            maci_registry: Optional MACI role registry
+            maci_enforcer: Optional MACI enforcer
+            strict_mode: If True, reject messages from unregistered agents
+        """
+        self._inner_strategy = inner_strategy
+        self._strict_mode = strict_mode
+        self._constitutional_hash = CONSTITUTIONAL_HASH
+
+        # Lazy import to avoid circular dependencies
+        try:
+            from .maci_enforcement import (
+                MACIRoleRegistry,
+                MACIEnforcer,
+                MACIValidationStrategy,
+            )
+            self._maci_available = True
+            self._registry = maci_registry or MACIRoleRegistry()
+            self._enforcer = maci_enforcer or MACIEnforcer(
+                registry=self._registry, strict_mode=strict_mode
+            )
+            self._maci_strategy = MACIValidationStrategy(
+                enforcer=self._enforcer, strict_mode=strict_mode
+            )
+        except ImportError:
+            self._maci_available = False
+            self._registry = None
+            self._enforcer = None
+            self._maci_strategy = None
+            logger.warning("MACI enforcement not available - module not found")
+
+    def is_available(self) -> bool:
+        """Check if the strategy is available."""
+        return self._maci_available and self._inner_strategy.is_available()
+
+    @property
+    def registry(self) -> Optional[Any]:
+        """Get the MACI role registry for external registration."""
+        return self._registry
+
+    @property
+    def enforcer(self) -> Optional[Any]:
+        """Get the MACI enforcer for external access."""
+        return self._enforcer
+
+    async def process(
+        self,
+        message: AgentMessage,
+        handlers: Dict[Any, List[Callable]]
+    ) -> ValidationResult:
+        """Process message with MACI validation before inner strategy.
+
+        MACI validation is a pre-filter that ensures role separation:
+        - Validates sender has appropriate role for message type
+        - Prevents self-validation (Gödel bypass)
+        - Enforces cross-role validation constraints
+
+        Args:
+            message: The message to process
+            handlers: Message handlers to invoke
+
+        Returns:
+            ValidationResult from the processing chain
+        """
+        if not self._maci_available or self._maci_strategy is None:
+            # Fall through to inner strategy if MACI not available
+            return await self._inner_strategy.process(message, handlers)
+
+        # Step 1: MACI role separation validation
+        try:
+            is_valid, maci_error = await self._maci_strategy.validate(message)
+            if not is_valid:
+                logger.warning(
+                    f"MACI validation failed for message {message.message_id}: {maci_error}"
+                )
+                message.status = MessageStatus.FAILED
+                result = ValidationResult(is_valid=False)
+                result.add_error(f"MACI role separation violation: {maci_error}")
+                result.metadata["maci_violation"] = True
+                result.metadata["constitutional_hash"] = self._constitutional_hash
+                return result
+        except Exception as e:
+            logger.error(f"MACI validation error: {e}")
+            if self._strict_mode:
+                message.status = MessageStatus.FAILED
+                result = ValidationResult(is_valid=False)
+                result.add_error(f"MACI validation error: {e}")
+                return result
+            # In non-strict mode, continue to inner strategy
+
+        # Step 2: Delegate to inner strategy for constitutional validation
+        return await self._inner_strategy.process(message, handlers)
+
+    def get_name(self) -> str:
+        """Get strategy name."""
+        inner_name = self._inner_strategy.get_name() if hasattr(self._inner_strategy, 'get_name') else 'unknown'
+        return f"maci+{inner_name}"
+
+
 __all__ = [
     "PythonProcessingStrategy",
     "RustProcessingStrategy",
     "DynamicPolicyProcessingStrategy",
     "OPAProcessingStrategy",
     "CompositeProcessingStrategy",
+    "MACIProcessingStrategy",
 ]

@@ -55,6 +55,11 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
+# Redis connection pool defaults to prevent resource exhaustion
+DEFAULT_REDIS_MAX_CONNECTIONS = 20
+DEFAULT_REDIS_SOCKET_TIMEOUT = 5.0
+DEFAULT_REDIS_SOCKET_CONNECT_TIMEOUT = 5.0
+
 
 class InMemoryAgentRegistry:
     """In-memory implementation of AgentRegistry.
@@ -141,32 +146,48 @@ class RedisAgentRegistry:
     """Redis-based implementation of AgentRegistry for distributed deployments.
 
     Uses Redis hashes to store agent information across multiple instances.
+    Includes connection pool configuration to prevent resource exhaustion.
     Constitutional Hash: cdd01ef066bc6cf2
     """
 
     def __init__(
         self,
         redis_url: str,
-        key_prefix: str = "acgs2:registry:agents"
+        key_prefix: str = "acgs2:registry:agents",
+        max_connections: int = DEFAULT_REDIS_MAX_CONNECTIONS,
+        socket_timeout: float = DEFAULT_REDIS_SOCKET_TIMEOUT,
+        socket_connect_timeout: float = DEFAULT_REDIS_SOCKET_CONNECT_TIMEOUT,
     ) -> None:
-        """Initialize the Redis registry.
+        """Initialize the Redis registry with connection pool configuration.
 
         Args:
             redis_url: Redis connection URL
             key_prefix: Redis key prefix for the registry hash
+            max_connections: Maximum connections in pool (default 20)
+            socket_timeout: Socket timeout in seconds (default 5.0)
+            socket_connect_timeout: Connection timeout in seconds (default 5.0)
         """
         self._redis_url = redis_url
         self._key_prefix = key_prefix
+        self._max_connections = max_connections
+        self._socket_timeout = socket_timeout
+        self._socket_connect_timeout = socket_connect_timeout
         self._constitutional_hash = CONSTITUTIONAL_HASH
         self._redis: Optional[redis.Redis] = None
+        self._pool: Optional[redis.ConnectionPool] = None
 
     async def _get_client(self) -> redis.Redis:
-        """Get or create the Redis client."""
+        """Get or create the Redis client with connection pool limits."""
         if self._redis is None:
-            self._redis = redis.from_url(
+            # Create connection pool with configured limits
+            self._pool = redis.ConnectionPool.from_url(
                 self._redis_url,
-                decode_responses=True
+                max_connections=self._max_connections,
+                socket_timeout=self._socket_timeout,
+                socket_connect_timeout=self._socket_connect_timeout,
+                decode_responses=True,
             )
+            self._redis = redis.Redis(connection_pool=self._pool)
         return self._redis
 
     async def register(
@@ -251,10 +272,13 @@ class RedisAgentRegistry:
         await client.delete(self._key_prefix)
 
     async def close(self) -> None:
-        """Close the Redis client."""
+        """Close the Redis client and connection pool."""
         if self._redis:
             await self._redis.close()
             self._redis = None
+        if self._pool:
+            await self._pool.disconnect()
+            self._pool = None
 
     @property
     def agent_count(self) -> int:

@@ -16,14 +16,23 @@ def mock_redis():
     mock.hget.return_value = None
     mock.hkeys.return_value = []
     mock.hexists.return_value = False
+    mock.close = AsyncMock()
     return mock
 
 @pytest.fixture
-async def registry(mock_redis):
-    with patch("redis.asyncio.from_url", return_value=mock_redis):
-        reg = RedisAgentRegistry(redis_url="redis://localhost:6379")
-        yield reg
-        await reg.close()
+def mock_pool():
+    pool = MagicMock()
+    pool.disconnect = AsyncMock()
+    return pool
+
+@pytest.fixture
+async def registry(mock_redis, mock_pool):
+    # Mock both ConnectionPool.from_url and Redis constructor
+    with patch("redis.asyncio.ConnectionPool.from_url", return_value=mock_pool):
+        with patch("redis.asyncio.Redis", return_value=mock_redis):
+            reg = RedisAgentRegistry(redis_url="redis://localhost:6379")
+            yield reg
+            await reg.close()
 
 @pytest.mark.asyncio
 class TestRedisAgentRegistry:
@@ -117,16 +126,33 @@ class TestRedisAgentRegistry:
 class TestEnhancedAgentBusRedisIntegration:
     async def test_bus_initializes_redis_registry(self):
         """Test that EnhancedAgentBus creates RedisAgentRegistry when configured."""
-        with patch("redis.asyncio.from_url") as mock_from_url:
-            from enhanced_agent_bus.core import EnhancedAgentBus
-            from enhanced_agent_bus.registry import RedisAgentRegistry
-            
-            bus = EnhancedAgentBus(use_redis_registry=True, redis_url="redis://test:6379")
-            
-            assert isinstance(bus.registry, RedisAgentRegistry)
-            assert bus.registry._redis_url == "redis://test:6379"
-            mock_from_url.assert_not_called() # Not created until first use
-            
-            # Trigger use
-            await bus.registry._get_client()
-            mock_from_url.assert_called_once_with("redis://test:6379", decode_responses=True)
+        mock_pool = MagicMock()
+        mock_pool.disconnect = AsyncMock()
+        mock_redis_client = AsyncMock()
+        mock_redis_client.close = AsyncMock()
+
+        with patch("redis.asyncio.ConnectionPool.from_url", return_value=mock_pool) as mock_pool_from_url:
+            with patch("redis.asyncio.Redis", return_value=mock_redis_client):
+                from enhanced_agent_bus.core import EnhancedAgentBus
+                from enhanced_agent_bus.registry import (
+                    RedisAgentRegistry,
+                    DEFAULT_REDIS_MAX_CONNECTIONS,
+                    DEFAULT_REDIS_SOCKET_TIMEOUT,
+                    DEFAULT_REDIS_SOCKET_CONNECT_TIMEOUT,
+                )
+
+                bus = EnhancedAgentBus(use_redis_registry=True, redis_url="redis://test:6379")
+
+                assert isinstance(bus.registry, RedisAgentRegistry)
+                assert bus.registry._redis_url == "redis://test:6379"
+                mock_pool_from_url.assert_not_called()  # Not created until first use
+
+                # Trigger use
+                await bus.registry._get_client()
+                mock_pool_from_url.assert_called_once_with(
+                    "redis://test:6379",
+                    max_connections=DEFAULT_REDIS_MAX_CONNECTIONS,
+                    socket_timeout=DEFAULT_REDIS_SOCKET_TIMEOUT,
+                    socket_connect_timeout=DEFAULT_REDIS_SOCKET_CONNECT_TIMEOUT,
+                    decode_responses=True,
+                )

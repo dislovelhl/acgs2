@@ -32,7 +32,8 @@ try:
     from .models import (
         AgentMessage,
         MessageType,
-        MessagePriority,
+        Priority,
+        MessagePriority,  # DEPRECATED: Use Priority instead (v3.0.0 removal)
         MessageStatus,
         CONSTITUTIONAL_HASH,
         DecisionLog,
@@ -62,7 +63,8 @@ except ImportError:
     from models import (  # type: ignore
         AgentMessage,
         MessageType,
-        MessagePriority,
+        Priority,
+        MessagePriority,  # DEPRECATED: Use Priority instead (v3.0.0 removal)
         MessageStatus,
         CONSTITUTIONAL_HASH,
         DecisionLog,
@@ -148,7 +150,8 @@ __all__ = [
     # Models
     "AgentMessage",
     "MessageType",
-    "MessagePriority",
+    "Priority",
+    "MessagePriority",  # DEPRECATED: Use Priority instead (v3.0.0 removal)
     "MessageStatus",
     "DecisionLog",
     "ValidationResult",

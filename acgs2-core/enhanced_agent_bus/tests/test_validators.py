@@ -335,7 +335,10 @@ class TestValidateConstitutionalHash:
 
         assert result.is_valid is False
         assert len(result.errors) == 1
-        assert "Invalid constitutional hash" in result.errors[0]
+        # Error message is sanitized to prevent hash exposure
+        assert "Constitutional hash mismatch" in result.errors[0]
+        # Verify hash is truncated in error message (security)
+        assert "invalid_..." in result.errors[0]
 
     def test_empty_hash_fails(self):
         """Empty hash fails validation."""
