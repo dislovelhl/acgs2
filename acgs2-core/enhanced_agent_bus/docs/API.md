@@ -1,7 +1,9 @@
 # Enhanced Agent Bus - API Reference
 
 > Constitutional Hash: `cdd01ef066bc6cf2`
-> Version: 2.2.0
+> Version: 2.3.0
+> Tests: 2,091 passing
+> Performance: P99 0.278ms | 6,310 RPS
 
 ## Overview
 
@@ -1024,4 +1026,17 @@ All operations are validated against constitutional hash `cdd01ef066bc6cf2`:
 
 ---
 
+## Additional API Documentation
+
+For detailed component-specific documentation:
+
+| Component | Documentation |
+|-----------|---------------|
+| OPA Client | [OPA_CLIENT.md](./OPA_CLIENT.md) |
+| Recovery Orchestrator | [RECOVERY_ORCHESTRATOR.md](./RECOVERY_ORCHESTRATOR.md) |
+| MACI Enforcement | [../MACI_GUIDE.md](../MACI_GUIDE.md) |
+
+---
+
 *Constitutional Hash: cdd01ef066bc6cf2*
+*Updated: 2025-12-27*

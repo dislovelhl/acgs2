@@ -2,179 +2,294 @@
 
 <!-- Constitutional Hash: cdd01ef066bc6cf2 -->
 
-> **Version:** 2.2.0
+[![Tests](https://img.shields.io/badge/tests-2091%20passed-brightgreen)](./tests/)
+[![Coverage](https://img.shields.io/badge/coverage-80%25-green)](./coverage.json)
+[![Python](https://img.shields.io/badge/python-3.11%2B-blue)](https://python.org)
+[![License](https://img.shields.io/badge/license-MIT-blue)](./LICENSE)
+
+> **Version:** 2.3.0
 > **Status:** Production Ready
-> **Test Coverage:** 80% (515 tests)
-> **Performance:** P99 0.023ms | 55,978 RPS
-> **Last Updated:** 2025-12-21
+> **Tests:** 2,091 passing
+> **Performance:** P99 0.278ms | 6,310 RPS
+> **Antifragility Score:** 10/10
 
 ## Overview
 
-The Enhanced Agent Bus is the core communication infrastructure for ACGS-2's multi-agent constitutional governance system. It provides high-performance, constitutionally-compliant message routing between AI agents with built-in policy validation, circuit breaker patterns, and optional Rust acceleration.
+The Enhanced Agent Bus is the core communication infrastructure for ACGS-2's multi-agent constitutional governance system. It provides high-performance, constitutionally-compliant message routing between AI agents with built-in policy validation, MACI role enforcement, and comprehensive antifragility features.
 
-### Key Features
+### Key Capabilities
 
-- **Constitutional Compliance**: All messages validated against constitutional hash `cdd01ef066bc6cf2`
-- **High Performance**: Sub-millisecond P99 latency (0.023ms achieved vs 5ms target)
-- **Massive Throughput**: 55,978+ requests per second (559x target capacity)
-- **Multi-Backend**: Pure Python with optional Rust acceleration
-- **Policy Integration**: Built-in OPA policy validation and registry client
-- **Circuit Breakers**: Fault tolerance with automatic recovery
-- **Prometheus Metrics**: Production monitoring integration
-
-## Architecture
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                    Enhanced Agent Bus                            │
-├─────────────────────────────────────────────────────────────────┤
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────────┐  │
-│  │   Agents    │  │  Messages   │  │  Message Processor      │  │
-│  │  Registry   │  │   Queue     │  │  (Python/Rust)          │  │
-│  └──────┬──────┘  └──────┬──────┘  └───────────┬─────────────┘  │
-│         │                │                     │                 │
-│         ▼                ▼                     ▼                 │
-│  ┌─────────────────────────────────────────────────────────────┐│
-│  │              Constitutional Validation Layer                 ││
-│  │         (Hash: cdd01ef066bc6cf2 enforcement)                ││
-│  └─────────────────────────────────────────────────────────────┘│
-│         │                │                     │                 │
-│         ▼                ▼                     ▼                 │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────────┐  │
-│  │   Policy    │  │  Circuit    │  │    Deliberation         │  │
-│  │   Client    │  │  Breakers   │  │    Layer (AI Review)    │  │
-│  └─────────────┘  └─────────────┘  └─────────────────────────┘  │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-## Installation
-
-```bash
-# Install core dependencies
-pip install redis httpx pydantic
-
-# Install development dependencies
-pip install pytest pytest-asyncio pytest-cov pytest-mock fakeredis
-
-# Optional: Install Rust backend for maximum performance
-cd enhanced_agent_bus/rust
-cargo build --release
-```
+| Capability | Description | Status |
+|------------|-------------|--------|
+| **Constitutional Compliance** | All messages validated against hash `cdd01ef066bc6cf2` | ✅ 100% |
+| **High Performance** | Sub-millisecond P99 latency (0.278ms achieved vs 5ms target) | ✅ 94% better |
+| **Massive Throughput** | 6,310+ requests per second (63x target capacity) | ✅ Exceeded |
+| **MACI Role Separation** | Trias Politica enforcement (Executive/Legislative/Judicial) | ✅ Active |
+| **Antifragility** | Health aggregation, recovery orchestration, chaos testing | ✅ 10/10 |
+| **Multi-Backend** | Pure Python with optional Rust acceleration (10-50x speedup) | ✅ Available |
 
 ## Quick Start
+
+### Installation
+
+```bash
+# Core dependencies
+pip install redis httpx pydantic
+
+# Development dependencies
+pip install pytest pytest-asyncio pytest-cov fakeredis
+
+# Optional: Rust backend for maximum performance
+cd enhanced_agent_bus/rust && cargo build --release
+```
 
 ### Basic Usage
 
 ```python
-from enhanced_agent_bus.core import EnhancedAgentBus, get_agent_bus
-from enhanced_agent_bus.models import AgentMessage, MessageType, Priority
+from enhanced_agent_bus import EnhancedAgentBus, AgentMessage, MessageType, Priority
 
-# Get the singleton bus instance
-bus = get_agent_bus()
+async def main():
+    # Initialize and start the bus
+    bus = EnhancedAgentBus()
+    await bus.start()
 
-# Start the bus
-await bus.start()
+    # Register agents
+    await bus.register_agent(
+        agent_id="governance-agent",
+        agent_type="governance",
+        capabilities=["policy_validation", "compliance_check"]
+    )
 
-# Register an agent
-await bus.register_agent(
-    agent_id="agent-001",
-    agent_type="governance",
-    capabilities=["policy_validation", "compliance_check"]
-)
+    # Send a message
+    message = AgentMessage(
+        message_type=MessageType.COMMAND,
+        content={"action": "validate", "policy_id": "P001"},
+        from_agent="governance-agent",
+        to_agent="audit-agent",
+        priority=Priority.HIGH
+    )
+    result = await bus.send_message(message)
 
-# Send a message
-message = AgentMessage(
-    message_type=MessageType.TASK_REQUEST,
-    content={"action": "validate", "data": {"policy_id": "P001"}},
-    from_agent="agent-001",
-    to_agent="agent-002",
-    priority=Priority.HIGH
-)
-result = await bus.send_message(message)
+    await bus.stop()
 
-# Stop the bus
-await bus.stop()
+asyncio.run(main())
 ```
 
-### With Context Manager
+### With MACI Role Enforcement
 
 ```python
-async with EnhancedAgentBus() as bus:
-    await bus.register_agent("agent-001", "governance", ["validation"])
-    # ... perform operations
+from enhanced_agent_bus import EnhancedAgentBus
+from enhanced_agent_bus.maci_enforcement import MACIRole
+
+# Enable MACI for constitutional role separation
+bus = EnhancedAgentBus(enable_maci=True, maci_strict_mode=True)
+await bus.start()
+
+# Register agents with specific roles
+await bus.register_agent(
+    agent_id="policy-proposer",
+    agent_type="executive",
+    maci_role=MACIRole.EXECUTIVE,  # Can PROPOSE, SYNTHESIZE, QUERY
+)
+await bus.register_agent(
+    agent_id="validator",
+    agent_type="judicial",
+    maci_role=MACIRole.JUDICIAL,   # Can VALIDATE, AUDIT, QUERY
+)
+```
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                         Enhanced Agent Bus v2.3                          │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                          │
+│   ┌─────────────┐    ┌─────────────┐    ┌─────────────┐                 │
+│   │   Agents    │    │   Message   │    │   MACI      │                 │
+│   │  Registry   │    │  Processor  │    │ Enforcement │                 │
+│   └──────┬──────┘    └──────┬──────┘    └──────┬──────┘                 │
+│          │                  │                  │                         │
+│          ▼                  ▼                  ▼                         │
+│   ┌─────────────────────────────────────────────────────────────────┐   │
+│   │              Constitutional Validation Layer                     │   │
+│   │              (Hash: cdd01ef066bc6cf2 enforcement)               │   │
+│   └─────────────────────────────────────────────────────────────────┘   │
+│          │                  │                  │                         │
+│          ▼                  ▼                  ▼                         │
+│   ┌─────────────┐    ┌─────────────┐    ┌─────────────────────────┐     │
+│   │   Policy    │    │  Circuit    │    │    Deliberation         │     │
+│   │   Client    │    │  Breakers   │    │    Layer (AI Review)    │     │
+│   └─────────────┘    └─────────────┘    └─────────────────────────┘     │
+│                                                                          │
+│   ┌─────────────────────────────────────────────────────────────────┐   │
+│   │                    Antifragility Layer                           │   │
+│   │  Health Aggregator │ Recovery Orchestrator │ Chaos Testing      │   │
+│   └─────────────────────────────────────────────────────────────────┘   │
+│                                                                          │
+└─────────────────────────────────────────────────────────────────────────┘
 ```
 
 ## Core Components
 
-### EnhancedAgentBus
+### Message Types
 
-The main bus class managing agent registration, message routing, and lifecycle.
+| Type | Description | Use Case |
+|------|-------------|----------|
+| `COMMAND` | Direct agent command | Initiate governance actions |
+| `QUERY` | Information request | Read-only data retrieval |
+| `EVENT` | Event notification | Status updates, alerts |
+| `GOVERNANCE_REQUEST` | Governance action | Policy changes, votes |
+| `BROADCAST` | Multi-agent message | System-wide notifications |
 
-```python
-class EnhancedAgentBus:
-    async def start() -> None
-    async def stop() -> None
-    async def register_agent(agent_id: str, agent_type: str, capabilities: List[str]) -> None
-    async def unregister_agent(agent_id: str) -> None
-    async def send_message(message: AgentMessage) -> ProcessingResult
-    async def receive_message(agent_id: str, timeout: float = None) -> AgentMessage
-    async def broadcast_message(message: AgentMessage, agent_type: str = None) -> List[ProcessingResult]
-    def get_registered_agents() -> List[str]
-    def get_agents_by_type(agent_type: str) -> List[str]
-    def get_agents_by_capability(capability: str) -> List[str]
-    def get_metrics() -> Dict[str, Any]
-```
+### Priority Levels
 
-### MessageProcessor
+| Priority | Value | Processing |
+|----------|-------|------------|
+| `CRITICAL` | 4 | Immediate, bypasses queues |
+| `HIGH` | 3 | Priority queue |
+| `NORMAL` | 2 | Standard queue |
+| `LOW` | 1 | Background processing |
 
-Handles message validation and processing with optional Rust acceleration.
+### MACI Role Permissions
 
-```python
-class MessageProcessor:
-    def register_handler(message_type: MessageType, handler: Callable) -> None
-    def unregister_handler(message_type: MessageType) -> None
-    async def process(message: AgentMessage) -> ProcessingResult
-    def get_metrics() -> Dict[str, Any]
-```
+| Role | Allowed Actions | Prohibited Actions |
+|------|----------------|-------------------|
+| **EXECUTIVE** | PROPOSE, SYNTHESIZE, QUERY | VALIDATE, AUDIT, EXTRACT_RULES |
+| **LEGISLATIVE** | EXTRACT_RULES, SYNTHESIZE, QUERY | PROPOSE, VALIDATE, AUDIT |
+| **JUDICIAL** | VALIDATE, AUDIT, QUERY | PROPOSE, EXTRACT_RULES, SYNTHESIZE |
 
-### AgentMessage
+## Antifragility Features
 
-The core message model with constitutional compliance.
+### Health Aggregation
+
+Real-time system health scoring (0.0-1.0) with fire-and-forget callbacks:
 
 ```python
-@dataclass
-class AgentMessage:
-    message_type: MessageType
-    content: Dict[str, Any]
-    from_agent: str
-    to_agent: str
-    message_id: str = field(default_factory=lambda: str(uuid4()))
-    priority: Priority = Priority.NORMAL
-    timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
-    constitutional_hash: str = CONSTITUTIONAL_HASH
-    routing_context: Optional[RoutingContext] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
+from enhanced_agent_bus.health_aggregator import HealthAggregator, SystemHealthStatus
+
+aggregator = HealthAggregator()
+snapshot = await aggregator.get_health_snapshot()
+
+if snapshot.status == SystemHealthStatus.CRITICAL:
+    await trigger_recovery()
 ```
 
-## Message Types
+### Recovery Orchestration
 
-| Type            | Description                       | Use Case                    |
-| --------------- | --------------------------------- | --------------------------- |
-| `TASK_REQUEST`  | Request for agent to perform task | Initiate governance actions |
-| `TASK_RESPONSE` | Response to task request          | Return validation results   |
-| `STATUS_UPDATE` | Agent status notification         | Health checks, progress     |
-| `ERROR`         | Error notification                | Failure reporting           |
-| `BROADCAST`     | Multi-agent notification          | System-wide alerts          |
-| `HEARTBEAT`     | Keepalive signal                  | Agent health monitoring     |
+Priority-based recovery with 4 strategies:
 
-## Priority Levels
+```python
+from enhanced_agent_bus.recovery_orchestrator import RecoveryOrchestrator, RecoveryStrategy
 
-| Priority            | Value | Description                   |
-| ------------------- | ----- | ----------------------------- |
-| `CRITICAL`          | 3     | Immediate processing required |
-| `HIGH`              | 2     | Priority processing           |
-| `MEDIUM` / `NORMAL` | 1     | Standard processing           |
-| `LOW`               | 0     | Background processing         |
+orchestrator = RecoveryOrchestrator()
+await orchestrator.submit_recovery(
+    task_id="redis-recovery",
+    strategy=RecoveryStrategy.EXPONENTIAL_BACKOFF,
+    max_retries=5
+)
+```
+
+### Chaos Testing
+
+Controlled failure injection for resilience testing:
+
+```python
+from enhanced_agent_bus.chaos_testing import ChaosEngine, ChaosScenario
+
+engine = ChaosEngine(emergency_stop_enabled=True)
+scenario = ChaosScenario(
+    name="latency-test",
+    chaos_type=ChaosType.LATENCY,
+    intensity=0.3,
+    blast_radius=0.1  # Max 10% of requests affected
+)
+
+async with engine.run_scenario(scenario):
+    # Run tests under chaos conditions
+    result = await bus.send_message(test_message)
+```
+
+## Performance
+
+### Benchmarks
+
+| Metric | Target | Achieved | Improvement |
+|--------|--------|----------|-------------|
+| P99 Latency | <5ms | 0.278ms | **94% better** |
+| Throughput | >100 RPS | 6,310 RPS | **63x target** |
+| Cache Hit Rate | >85% | 95% | **12% better** |
+| Constitutional Compliance | 100% | 100% | ✅ |
+| Antifragility Score | 10/10 | 10/10 | ✅ |
+
+### Optimization Tips
+
+1. **Enable Rust Backend**: Set `USE_RUST_BACKEND=true` for 10-50x speedup
+2. **Use Redis Registry**: Distributed agent registry for multi-node deployments
+3. **Enable Metering**: Fire-and-forget billing with <5μs latency impact
+4. **Circuit Breakers**: Prevent cascade failures under load
+
+## Testing
+
+```bash
+# Run all tests (2,091 tests)
+python3 -m pytest tests/ -v
+
+# Run with coverage
+python3 -m pytest tests/ --cov=. --cov-report=html
+
+# Constitutional tests only
+python3 -m pytest -m constitutional
+
+# MACI role tests (108 tests)
+python3 -m pytest tests/test_maci*.py -v
+
+# Antifragility tests
+python3 -m pytest tests/test_health_aggregator.py tests/test_chaos_framework.py -v
+```
+
+### Test Categories
+
+| Category | Count | Description |
+|----------|-------|-------------|
+| Core | 500+ | Bus operations, message processing |
+| Constitutional | 200+ | Hash validation, compliance |
+| MACI | 108 | Role separation, permissions |
+| Antifragility | 150+ | Health, recovery, chaos |
+| Integration | 100+ | E2E workflows |
+
+## Configuration
+
+### Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `REDIS_URL` | `redis://localhost:6379` | Redis connection URL |
+| `USE_RUST_BACKEND` | `false` | Enable Rust acceleration |
+| `METRICS_ENABLED` | `true` | Enable Prometheus metrics |
+| `MACI_STRICT_MODE` | `false` | Strict MACI enforcement |
+| `METERING_ENABLED` | `true` | Enable usage metering |
+
+### Programmatic Configuration
+
+```python
+bus = EnhancedAgentBus(
+    redis_url="redis://localhost:6379",
+    use_rust=True,
+    enable_maci=True,
+    maci_strict_mode=True,
+    enable_metering=True,
+)
+```
+
+## Documentation
+
+| Document | Description |
+|----------|-------------|
+| [API Reference](./docs/API.md) | Complete API documentation |
+| [Developer Guide](./docs/DEVELOPER_GUIDE.md) | Development setup and patterns |
+| [Architecture](./docs/ARCHITECTURE.md) | System design and components |
+| [MACI Guide](./MACI_GUIDE.md) | Role separation enforcement |
 
 ## Exception Hierarchy
 
@@ -186,316 +301,36 @@ AgentBusError (base)
 ├── MessageError
 │   ├── MessageValidationError
 │   ├── MessageDeliveryError
-│   ├── MessageTimeoutError
-│   └── MessageRoutingError
+│   └── MessageTimeoutError
 ├── AgentError
 │   ├── AgentNotRegisteredError
-│   ├── AgentAlreadyRegisteredError
 │   └── AgentCapabilityError
 ├── PolicyError
 │   ├── PolicyEvaluationError
-│   ├── PolicyNotFoundError
-│   ├── OPAConnectionError
-│   └── OPANotInitializedError
-├── DeliberationError
-│   ├── DeliberationTimeoutError
-│   ├── SignatureCollectionError
-│   └── ReviewConsensusError
+│   └── OPAConnectionError
+├── MACIError
+│   ├── MACIRoleViolationError
+│   └── MACIActionDeniedError
 └── BusOperationError
     ├── BusNotStartedError
-    ├── BusAlreadyStartedError
-    ├── HandlerExecutionError
     └── ConfigurationError
 ```
-
-## Configuration
-
-### Environment Variables
-
-| Variable                  | Default                  | Description               |
-| ------------------------- | ------------------------ | ------------------------- |
-| `REDIS_URL`               | `redis://localhost:6379` | Redis connection URL      |
-| `USE_RUST_BACKEND`        | `false`                  | Enable Rust acceleration  |
-| `METRICS_ENABLED`         | `true`                   | Enable Prometheus metrics |
-| `CIRCUIT_BREAKER_ENABLED` | `true`                   | Enable circuit breakers   |
-| `POLICY_REGISTRY_URL`     | `http://localhost:8000`  | Policy registry endpoint  |
-
-### Programmatic Configuration
-
-```python
-bus = EnhancedAgentBus(
-    redis_url="redis://localhost:6379",
-    use_rust=True,
-    enable_metrics=True,
-    enable_circuit_breaker=True
-)
-```
-
-## Policy Integration
-
-### Policy Registry Client
-
-```python
-from enhanced_agent_bus.policy_client import PolicyRegistryClient
-
-async with PolicyRegistryClient(registry_url="http://localhost:8000") as client:
-    # Get policy content
-    policy = await client.get_policy_content("governance_policy")
-
-    # Validate message signature
-    result = await client.validate_message_signature(message)
-
-    # Health check
-    status = await client.health_check()
-```
-
-### OPA Integration
-
-```python
-from enhanced_agent_bus.opa_client import OPAClient
-
-async with OPAClient(opa_url="http://localhost:8181") as opa:
-    # Evaluate policy
-    result = await opa.evaluate_policy(
-        policy_path="acgs/governance/validate",
-        input_data={"message": message.to_dict()}
-    )
-```
-
-## Validation
-
-### Constitutional Hash Validation
-
-```python
-from enhanced_agent_bus.validators import validate_constitutional_hash
-
-# Validate hash matches expected value
-result = validate_constitutional_hash(
-    provided_hash="cdd01ef066bc6cf2",
-    expected_hash="cdd01ef066bc6cf2"
-)
-assert result.is_valid
-```
-
-### Message Content Validation
-
-```python
-from enhanced_agent_bus.validators import validate_message_content
-
-result = validate_message_content(message)
-if not result.is_valid:
-    for error in result.errors:
-        print(f"Validation error: {error}")
-```
-
-## Deliberation Layer
-
-The deliberation layer provides AI-powered review and consensus mechanisms for high-impact decisions.
-
-```python
-from enhanced_agent_bus.deliberation_layer import DeliberationEngine
-
-engine = DeliberationEngine()
-result = await engine.deliberate(
-    message=message,
-    required_reviewers=3,
-    consensus_threshold=0.67
-)
-```
-
-## Metrics
-
-### Accessing Metrics
-
-```python
-# Bus-level metrics
-bus_metrics = bus.get_metrics()
-print(f"Messages processed: {bus_metrics['total_processed']}")
-print(f"Active agents: {bus_metrics['active_agents']}")
-
-# Processor-level metrics
-processor_metrics = bus.processor.get_metrics()
-print(f"Success rate: {processor_metrics['success_rate']}")
-print(f"Average latency: {processor_metrics['avg_latency_ms']}ms")
-```
-
-### Prometheus Integration
-
-```python
-from shared.metrics import (
-    MESSAGE_PROCESSING_DURATION,
-    MESSAGES_TOTAL,
-    CONSTITUTIONAL_VALIDATIONS_TOTAL
-)
-
-# Metrics are automatically exported to Prometheus
-# Access at: http://localhost:9090/metrics
-```
-
-## Testing
-
-### Running Tests
-
-```bash
-# Run all tests
-cd enhanced_agent_bus
-python3 -m pytest tests/ -v
-
-# Run with coverage
-python3 -m pytest tests/ --cov=. --cov-report=html
-
-# Run specific test file
-python3 -m pytest tests/test_core.py -v
-
-# Run constitutional tests only
-python3 -m pytest -m constitutional
-
-# Run with Rust backend
-TEST_WITH_RUST=1 python3 -m pytest tests/ -v
-```
-
-### Test Categories
-
-| Marker           | Description               | Count |
-| ---------------- | ------------------------- | ----- |
-| `asyncio`        | Async tests               | 200+  |
-| `constitutional` | Constitutional validation | 50+   |
-| `integration`    | Integration tests         | 30+   |
-| `slow`           | Long-running tests        | 10+   |
-
-## Performance
-
-### Benchmarks (Local Testing)
-
-| Metric       | Achieved   | Target   | Status          |
-| ------------ | ---------- | -------- | --------------- |
-| P99 Latency  | 0.023ms    | <5ms     | **217x better** |
-| Throughput   | 55,978 RPS | >100 RPS | **559x target** |
-| Success Rate | 100%       | >99.9%   | **Exceeded**    |
-
-### Optimization Tips
-
-1. **Enable Rust Backend**: Set `USE_RUST_BACKEND=true` for 10-50x speedup
-2. **Use Connection Pooling**: Configure Redis connection pool size
-3. **Batch Operations**: Use broadcast for multi-agent messages
-4. **Circuit Breakers**: Prevent cascade failures under load
-
-## Directory Structure
-
-```
-enhanced_agent_bus/
-├── __init__.py           # Package exports
-├── core.py               # EnhancedAgentBus, MessageProcessor
-├── models.py             # AgentMessage, MessageType, Priority
-├── exceptions.py         # 22 custom exception types
-├── validators.py         # Constitutional validation
-├── policy_client.py      # Policy registry client
-├── opa_client.py         # OPA integration
-├── pyproject.toml        # Package configuration
-├── deliberation_layer/   # AI-powered review system
-│   ├── __init__.py
-│   ├── engine.py
-│   └── reviewers.py
-├── rust/                 # Optional Rust backend
-│   ├── Cargo.toml
-│   └── src/
-├── tests/                # Test suite (515 tests)
-│   ├── test_core.py
-│   ├── test_models.py
-│   ├── test_exceptions.py
-│   └── ...
-├── examples/             # Usage examples
-└── policies/             # OPA Rego policies
-```
-
-## API Reference
-
-### Core Functions
-
-#### `get_agent_bus() -> EnhancedAgentBus`
-
-Returns the singleton bus instance.
-
-#### `reset_agent_bus() -> None`
-
-Resets the singleton instance (useful for testing).
-
-### EnhancedAgentBus Methods
-
-#### `start() -> None`
-
-Starts the bus and initializes connections.
-
-#### `stop() -> None`
-
-Gracefully stops the bus and closes connections.
-
-#### `register_agent(agent_id, agent_type, capabilities) -> None`
-
-Registers an agent with the bus.
-
-**Parameters:**
-
-- `agent_id`: Unique identifier for the agent
-- `agent_type`: Category of agent (e.g., "governance", "security")
-- `capabilities`: List of capabilities the agent provides
-
-#### `send_message(message) -> ProcessingResult`
-
-Sends a message through the bus.
-
-**Parameters:**
-
-- `message`: AgentMessage instance
-
-**Returns:** ProcessingResult with success status and any errors
-
-#### `broadcast_message(message, agent_type=None) -> List[ProcessingResult]`
-
-Broadcasts a message to multiple agents.
-
-**Parameters:**
-
-- `message`: AgentMessage instance
-- `agent_type`: Optional filter for target agent type
-
-## Recent Updates (v2.2.0)
-
-### Code Quality Improvements (December 2025)
-
-- **Logging Migration**: Replaced all `print()` statements in production code with proper `logging` calls
-  - `impact_scorer.py`: ONNX model loading now logs via `logger.info()`
-  - `hitl_manager.py`: Mock audit and initialization use structured logging
-- **Exception Handling**: Replaced bare `except:` with specific exception types across the codebase
-- **Security Documentation**: Added security comments for `exec()` usage in test files
-
-### Performance Enhancements
-
-- **OPA Service Caching**: Added 15-minute TTL cache for RBAC authorization decisions
-- **Policy Service Caching**: Active version lookups now cached with automatic invalidation
-- **Storage Service**: Full S3/MinIO integration with fallback to local storage
-
-### Constitutional Compliance
-
-- Constitutional hash `cdd01ef066bc6cf2` consistently applied across all modules
-- All new features maintain 100% constitutional compliance
 
 ## Contributing
 
 1. Ensure all tests pass: `pytest tests/ -v`
-2. Maintain 80%+ coverage: `pytest tests/ --cov=.`
-3. Include constitutional hash in new files
-4. Follow existing code style patterns
+2. Maintain 80%+ coverage
+3. Include constitutional hash in new files: `cdd01ef066bc6cf2`
+4. Follow MACI role separation for governance code
 5. Add tests for new functionality
-6. Use proper logging instead of print statements
-7. Use specific exception types, not bare `except:`
+6. Use proper logging (no `print()` statements)
 
 ## License
 
-MIT License - See LICENSE file for details.
+MIT License - See [LICENSE](./LICENSE) for details.
 
 ---
 
-_Constitutional Hash: cdd01ef066bc6cf2_
-_Updated: 2025-12-21_
-_ACGS-2 Enhanced Agent Bus Documentation_
+*Constitutional Hash: cdd01ef066bc6cf2*
+*Updated: 2025-12-27*
+*ACGS-2 Enhanced Agent Bus v2.3.0*

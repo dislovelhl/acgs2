@@ -1,7 +1,9 @@
 # Enhanced Agent Bus - Developer Guide
 
 > Constitutional Hash: `cdd01ef066bc6cf2`
-> Version: 2.2.0
+> Version: 2.3.0
+> Tests: 2,091 passing
+> Performance: P99 0.278ms | 6,310 RPS
 
 ## Table of Contents
 
@@ -191,13 +193,14 @@ class TestMyFeature:
 
 ### Test Coverage
 
-Current coverage: **851 tests**, 20 skipped (circuit breaker availability)
+Current coverage: **2,091 tests**, achieving 80%+ code coverage
 
-Key test files:
-- `test_agent_bus.py` - 55 tests for core bus functionality
-- `test_validators.py` - 56 tests for validation
-- `test_e2e_workflows.py` - 19 end-to-end tests
-- `test_constitutional_validation.py` - Constitutional compliance
+Key test categories:
+- **Core Tests** - 500+ tests for bus operations and message processing
+- **Constitutional Tests** - 200+ tests for governance validation
+- **MACI Tests** - 108 tests for role separation enforcement
+- **Antifragility Tests** - 150+ tests for health, recovery, and chaos
+- **Integration Tests** - 100+ end-to-end workflow tests
 
 ---
 
@@ -741,14 +744,20 @@ print(f"Errors: {metrics['errors']}")
 
 ## Resources
 
+### Core Documentation
 - [API Reference](./API.md) - Complete API documentation with antifragility and MACI
 - [Architecture Overview](./ARCHITECTURE.md) - System architecture and component diagrams
 - [MACI Guide](../MACI_GUIDE.md) - MACI role enforcement details
-- [Health Aggregator](../HEALTH_AGGREGATOR_SUMMARY.md) - Health monitoring patterns
-- [Recovery Orchestrator](../RECOVERY_ORCHESTRATOR.md) - Recovery strategies
+
+### Component Documentation
+- [OPA Client](./OPA_CLIENT.md) - Open Policy Agent integration
+- [Recovery Orchestrator](./RECOVERY_ORCHESTRATOR.md) - Recovery strategies and patterns
+
+### System Documentation
 - [STRIDE Threat Model](../../docs/STRIDE_THREAT_MODEL.md) - Security threat analysis
 - [Workflow Patterns](../../docs/WORKFLOW_PATTERNS.md) - Orchestration patterns
 
 ---
 
 *Constitutional Hash: cdd01ef066bc6cf2*
+*Updated: 2025-12-27*
