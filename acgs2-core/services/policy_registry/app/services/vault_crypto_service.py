@@ -87,6 +87,7 @@ class VaultCryptoService:
         fallback_enabled: bool = True,
         cache_ttl: int = 300,
         audit_enabled: bool = True,
+        allow_legacy_xor: bool = False,
     ):
         """
         Initialize VaultCryptoService.
@@ -96,11 +97,24 @@ class VaultCryptoService:
             fallback_enabled: Enable fallback to local CryptoService
             cache_ttl: Cache TTL for public keys in seconds
             audit_enabled: Enable audit logging
+            allow_legacy_xor: DEPRECATED - Allow decryption of legacy insecure XOR ciphertext.
+                             Defaults to False for security. Only enable for migration purposes.
+                             This option will be removed in a future version.
         """
         self.config = config or VaultConfig.from_env()
         self.fallback_enabled = fallback_enabled
         self.cache_ttl = cache_ttl
         self.audit_enabled = audit_enabled
+        self.allow_legacy_xor = allow_legacy_xor
+
+        # Log deprecation warning if legacy XOR is enabled
+        if allow_legacy_xor:
+            logger.warning(
+                "SECURITY DEPRECATION: allow_legacy_xor=True is enabled. "
+                "Legacy XOR encryption is cryptographically weak. "
+                "Re-encrypt all data using secure AES-256-GCM fallback. "
+                "This option will be removed in version 3.0.0."
+            )
 
         # State
         self._initialized = False
@@ -468,10 +482,19 @@ class VaultCryptoService:
                 )
 
             elif is_legacy_local_ciphertext(ciphertext):
-                # Legacy insecure XOR ciphertext - maintain backward compatibility
-                # but log a strong warning
+                # Legacy insecure XOR ciphertext - BLOCKED by default for security
                 if not self.fallback_enabled:
                     raise RuntimeError("Legacy local ciphertext but fallback disabled")
+
+                if not self.allow_legacy_xor:
+                    raise RuntimeError(
+                        f"SECURITY BLOCK: Legacy insecure XOR ciphertext detected for key "
+                        f"'{key_name}'. Legacy XOR encryption is disabled by default for security. "
+                        f"To decrypt this data for migration purposes, set allow_legacy_xor=True. "
+                        f"Re-encrypt all data using secure AES-256-GCM fallback immediately."
+                    )
+
+                # Only allow decryption if explicitly opted in for migration
                 logger.warning(
                     f"SECURITY WARNING: Decrypting legacy insecure XOR ciphertext for key "
                     f"'{key_name}'. This data should be re-encrypted with secure fallback."

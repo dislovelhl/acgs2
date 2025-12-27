@@ -78,6 +78,12 @@ from .constitutional import (
     ValidationResult,
 )
 
+# Cyclic Orchestration (CEOS V1.0)
+from .cyclic import (
+    GlobalState,
+    StateGraph,
+)
+
 # Coordination workflows
 from .coordination import (
     VotingWorkflow,
@@ -85,6 +91,8 @@ from .coordination import (
     VotingStrategy,
     HandoffWorkflow,
     HandoffResult,
+    SupervisorNode,
+    WorkerNode,
 )
 
 # Template engine

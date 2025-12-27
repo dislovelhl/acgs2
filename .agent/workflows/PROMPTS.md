@@ -18,15 +18,50 @@ _Hash: `cdd01ef066bc6cf2`_
 - Structure output as JSON.
 - Escalate high-impact risks.
 
-### Governance Agent
+### Governance Agent (MACI Legislative)
 
 **Responsibilities:**
 
-- Evaluate OPA policies.
-- Calculate impact scores.
-- Coordinate voting/consensus.
+- Propose and refine OPA/Rego policies.
+- Calculate systemic impact scores.
+- Facilitate democratic consensus (CCAI).
+
+### Verification Agent (MACI Judicial)
+
+**Responsibilities:**
+
+- Validate Executive actions against Legislative policies.
+- Execute Z3/SMT formal logic proofs.
+- Verify constitutional hash `cdd01ef066bc6cf2` integrity.
+
+### Execution Agent (MACI Executive)
+
+**Responsibilities:**
+
+- Implement decided actions via tool calls.
+- Emit real-time telemetry (fire-and-forget).
+- Maintain sub-0.3ms P99 latency.
 
 ## Template Snippets
+
+### Formal Verification Request (Z3/Dafny)
+
+```text
+Verify logical consistency for policy {policy_id}.
+Pre-conditions: {state_vars}
+Post-conditions: {expected_invariants}
+Proof Engine: Z3 SMT Solver
+Constraint: Must satisfy hash cdd01ef066bc6cf2
+```
+
+### Temporal Causal Analysis (Time-R1)
+
+```text
+Analyze event sequence for {trace_id}.
+Timeline: {event_log}
+Task: Identify causal breaches or temporal drift.
+Reference: Immutable ACGS-2 Constitutional Log.
+```
 
 ### Deliberation Request
 
@@ -57,7 +92,8 @@ Required: Mitigations for identified threats.
 2. **JSON Format**: Enforce machine-readable responses.
 3. **Least Privilege**: Define role-specific constraints.
 4. **Fallback**: Default to "Refuse/Escalate" on ambiguity.
-5. **Logs**: All prompt interactions must be logged.
+5. **Independent Verification**: Never trust an agent to verify its own maximal prediction horizon (MACI Role Separation).
+6. **Logs**: All prompt interactions must be logged with `trace_id`.
 
 ## Security
 

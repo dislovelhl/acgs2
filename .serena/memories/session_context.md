@@ -1,47 +1,60 @@
 # PM Agent Session Context
 
 ## Current Session
-- **Date**: 2025-12-19
-- **Status**: Phase 1 Refactoring - Completed (except MessagePriority removal)
-- **Branch**: full
+- **Date**: 2025-12-27
+- **Status**: MACI Role Separation Enforcement - Complete
+- **Branch**: main
 
-## Completed Tasks This Session
+## Completed Tasks
 
-### Phase 1A: Create shared/constants.py ✅
-- Created `/shared/constants.py` with CONSTITUTIONAL_HASH and other constants
-- Updated `shared/__init__.py` to import from constants module
-- Updated `enhanced_agent_bus/models.py` to import from shared (with fallback)
+### MACI Role Separation Enforcement ✅
+**Constitutional Hash**: `cdd01ef066bc6cf2`
 
-### Phase 1B: Unify Priority Enum ✅
-- Added NORMAL alias to Priority (NORMAL = MEDIUM = 1)
-- Added deprecation notice to MessagePriority
-- Updated AgentMessage.priority type from `Any` to `Priority`
-- Updated `from_dict` to use Priority instead of MessagePriority
+#### P1: Security Fixes ✅
+- Fixed race conditions in MACIRoleRegistry with asyncio.Lock
+- Implemented fail-closed mode for strict security
+- Fixed middleware bug where exceptions weren't properly handled
+- Added read-lock concurrency tests
 
-### Phase 1C: Migrate MessagePriority Usages ✅
-Files updated:
-- `tests/conftest.py` - 3 usages migrated
-- `tests/test_core_actual.py` - 6 usages migrated
-- `tests/test_core_extended.py` - 8 usages migrated (plus sorting logic fix)
-- `tests/test_policy_client_actual.py` - 1 usage migrated
-- `tests/test_models_extended.py` - 1 usage migrated
-- `deliberation_layer/test_pillar3_4.py` - 1 usage migrated
+#### P2: Integration ✅
+- Integrated MACI into default agent bus pipeline via `MACIProcessingStrategy`
+- Added `enable_maci` and `maci_strict_mode` parameters to EnhancedAgentBus
+- MessageProcessor auto-selects MACI strategy when enabled
+- Strategy chain: `MACI → (Rust → OPA → Python)`
 
-### Phase 1D: Remove MessagePriority (DEFERRED)
-- MessagePriority is marked deprecated but still present
-- Will be removed in v3.0.0 after full migration validation
+#### P2: Configuration-Based Role Management ✅
+- `MACIAgentRoleConfig` - Agent role configuration dataclass
+- `MACIConfig` - System configuration with strict mode, default role
+- `MACIConfigLoader` - Multi-source loader (YAML, JSON, dict, env vars)
+- `apply_maci_config()` - Async function to apply config to registry
 
-## Verified Changes
-- Priority enum: LOW=0, NORMAL=1, MEDIUM=1, HIGH=2, CRITICAL=3
-- NORMAL == MEDIUM (backward compatibility)
-- Default priority: Priority.MEDIUM
-- from_dict(priority=2) returns Priority.HIGH
+### Files Created/Modified
+- `maci_enforcement.py` - Core MACI module (roles, actions, permissions, config)
+- `agent_bus.py` - MACI integration parameters
+- `processing_strategies.py` - MACIProcessingStrategy decorator pattern
+- `tests/test_maci_enforcement.py` - 61 tests
+- `tests/test_maci_integration.py` - 21 tests
+- `tests/test_maci_config.py` - 26 tests
 
-## Pre-existing Issues Found
-- Some tests fail due to missing `DecisionLog` import in core.py (unrelated to Priority changes)
-- test_models_extended.py has import path issue
+### Test Results
+- **MACI Tests**: 108 passing
+- **Full Suite**: 990 passing
+- **Performance**: P99 0.278ms (target <5ms)
+
+## MACI Architecture
+
+### Role Separation (Trias Politica)
+- **EXECUTIVE**: Can PROPOSE, SYNTHESIZE, QUERY
+- **LEGISLATIVE**: Can EXTRACT_RULES, SYNTHESIZE, QUERY
+- **JUDICIAL**: Can VALIDATE, AUDIT, QUERY
+
+### Key Security Features
+- Prevents Gödel bypass attacks (no self-validation)
+- Cross-role validation constraints
+- Constitutional hash enforcement on all records
+- Fail-closed mode for strict security
 
 ## Next Actions
-- Fix pre-existing test issues (DecisionLog import)
-- Complete Phase 1D when ready (remove MessagePriority)
-- Consider Phase 2: Decoupling & Dependency Injection
+- Add MACI documentation to CLAUDE.md
+- Fix coroutine warnings in integration tests
+- Remove deprecated MessagePriority (Phase 1D cleanup)

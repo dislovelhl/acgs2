@@ -13,6 +13,7 @@ from .voting import VotingWorkflow, VotingResult, VotingStrategy
 from .handoff import HandoffWorkflow, HandoffResult
 from .discovery import AgentDiscoveryWorkflow
 from .swarm import SwarmCoordinationWorkflow
+from .supervisor import SupervisorNode, WorkerNode
 
 __all__ = [
     "VotingWorkflow",
@@ -22,4 +23,6 @@ __all__ = [
     "HandoffResult",
     "AgentDiscoveryWorkflow",
     "SwarmCoordinationWorkflow",
+    "SupervisorNode",
+    "WorkerNode",
 ]

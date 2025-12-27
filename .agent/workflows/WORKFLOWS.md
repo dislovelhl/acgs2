@@ -17,15 +17,26 @@ _Hash: `cdd01ef066bc6cf2`_
 1. **DAGExecutor**: Handles parallel tasks with dependencies.
    - Nodes: `DAGNode(id, func, deps=[])`
    - Execution: Topology-sorted async execution.
-2. **SagaCoordinator**: Manages distributed transactions.
+2. **SagaCoordinator (SagaLLM)**: Manages distributed transactions across multiple agents.
    - Methods: `add_step(step, compensate_func)`, `execute()`, `rollback()`.
-   - Feature: Automatic reverse execution on failure.
+   - Feature: SagaLLM transaction guarantees with automatic reversal on failure.
 
 ## Specialized Workflows
 
-- **ConstitutionalValidation**: Checks hash `cdd01ef066bc6cf2`.
-- **VotingWorkflow**: Implements consensus logic.
-- **HandoffWorkflow**: Transfers control between agents.
+- **ConstitutionalValidation**: Checks hash `cdd01ef066bc6cf2` using formal Z3 SMT solvers.
+- **VotingWorkflow**: Implements CCAI democratic consensus logic.
+- **HandoffWorkflow**: Transfers control between MACI roles (e.g., Executive to Judicial).
+- **TemporalAudit**: Validates causal consistency via Time-R1 engine.
+
+## MACI Orchestration
+
+ACGS-2 employs **Multi-Agent Collaborative Intelligence (MACI)** to bypass self-verification limits.
+
+- **Legislative**: Defines the constitutional space (Prompts/Policies).
+- **Executive**: Acts within the space (Tool Execution/Mamba-2 Processing).
+- **Judicial**: Verifies actions against the space (Z3/Formal Checks).
+
+Workflows MUST enforce role separation: **A Judicial step cannot be performed by the same agent that performed the Executive step.**
 
 ## Operations
 
@@ -57,3 +68,11 @@ pytest .agent/workflows/tests/ -m constitutional
 - Parallelize independent steps in DAGs.
 - Use context caching for expensive results.
 - Fire-and-forget for non-critical metrics emission.
+
+## 2025 Breakthrough Architecture Roadmap
+
+| Phase                   | Focus                  | Key Technologies                             |
+| :---------------------- | :--------------------- | :------------------------------------------- |
+| **Phase 1: Foundation** | Context & Verification | Mamba-2 Hybrid, MACI Agent Roles, Z3 Solver  |
+| **Phase 2: Temporal**   | Causal Consistency     | Time-R1 Engine, Immutable Event Log, SagaLLM |
+| **Phase 3: Symbolic**   | Edge Case Robustness   | ABL-Refl, DeepProbLog, DafnyPro Proofs       |

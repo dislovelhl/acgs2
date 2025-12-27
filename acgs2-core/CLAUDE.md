@@ -34,6 +34,9 @@ python3 -m pytest -m "not slow"           # Skip slow tests
 # Antifragility tests
 python3 -m pytest tests/test_health_aggregator.py tests/test_chaos_framework.py tests/test_metering_integration.py -v
 
+# MACI role separation tests (108 tests)
+python3 -m pytest tests/test_maci*.py -v
+
 # With Rust backend enabled
 TEST_WITH_RUST=1 python3 -m pytest tests/ -v
 
@@ -104,7 +107,7 @@ Agent → EnhancedAgentBus → Constitutional Validation (hash: cdd01ef066bc6cf2
 
 ### Core Components
 
-**enhanced_agent_bus/** - Core message bus implementation (741 tests, 16,948 LOC)
+**enhanced_agent_bus/** - Core message bus implementation (990 tests, 17,500+ LOC)
 - `core.py`: `EnhancedAgentBus`, `MessageProcessor` - main bus classes
 - `agent_bus.py`: High-level agent bus interface with lifecycle management
 - `models.py`: `AgentMessage`, `MessageType`, `Priority` enums
@@ -112,6 +115,8 @@ Agent → EnhancedAgentBus → Constitutional Validation (hash: cdd01ef066bc6cf2
 - `validators.py`: Constitutional hash and message validation
 - `policy_client.py`: Policy registry client with caching
 - `opa_client.py`: OPA (Open Policy Agent) integration
+- `maci_enforcement.py`: MACI role separation enforcement (Executive/Legislative/Judicial)
+- `processing_strategies.py`: Composable processing strategies including `MACIProcessingStrategy`
 
 **enhanced_agent_bus/deliberation_layer/** - AI-powered review for high-impact decisions
 - `impact_scorer.py`: DistilBERT-based scoring (weights: semantic 0.30, permission 0.20, drift 0.15)
@@ -204,6 +209,65 @@ await metering_queue.enqueue(usage_event)  # Non-blocking
 ### Policy Fail Behavior
 - `fail_closed=True`: OPA evaluation failure rejects requests (default for high-security)
 - `fail_closed=False`: Allows pass-through with audit logging
+
+### MACI Role Separation (Trias Politica)
+
+MACI (Model-based AI Constitutional Intelligence) enforces role separation to prevent Gödel bypass attacks:
+
+```python
+from enhanced_agent_bus import EnhancedAgentBus
+from enhanced_agent_bus.maci_enforcement import MACIRole, MACIAction
+
+# Enable MACI on the bus
+bus = EnhancedAgentBus(enable_maci=True, maci_strict_mode=True)
+
+# Register agents with specific roles
+await bus.register_agent(
+    agent_id="policy-proposer",
+    agent_type="executive",
+    maci_role=MACIRole.EXECUTIVE,  # Can PROPOSE, SYNTHESIZE, QUERY
+)
+await bus.register_agent(
+    agent_id="rule-extractor",
+    agent_type="legislative",
+    maci_role=MACIRole.LEGISLATIVE,  # Can EXTRACT_RULES, SYNTHESIZE, QUERY
+)
+await bus.register_agent(
+    agent_id="validator",
+    agent_type="judicial",
+    maci_role=MACIRole.JUDICIAL,  # Can VALIDATE, AUDIT, QUERY
+)
+```
+
+**Role Permissions:**
+
+| Role | Allowed Actions | Prohibited Actions |
+|------|----------------|-------------------|
+| EXECUTIVE | PROPOSE, SYNTHESIZE, QUERY | VALIDATE, AUDIT, EXTRACT_RULES |
+| LEGISLATIVE | EXTRACT_RULES, SYNTHESIZE, QUERY | PROPOSE, VALIDATE, AUDIT |
+| JUDICIAL | VALIDATE, AUDIT, QUERY | PROPOSE, EXTRACT_RULES, SYNTHESIZE |
+
+**Configuration-Based Setup:**
+
+```python
+from enhanced_agent_bus.maci_enforcement import MACIConfigLoader, apply_maci_config
+
+# Load from YAML, JSON, or environment variables
+loader = MACIConfigLoader()
+config = loader.load("maci_config.yaml")  # or loader.load_from_env()
+
+# Apply configuration to registry
+await apply_maci_config(bus.maci_registry, config)
+```
+
+**Environment Variables:**
+```bash
+MACI_STRICT_MODE=true
+MACI_DEFAULT_ROLE=executive
+MACI_AGENT_PROPOSER=executive
+MACI_AGENT_PROPOSER_CAPABILITIES=propose,synthesize
+MACI_AGENT_VALIDATOR=judicial
+```
 
 ## Docker Services (docker-compose.yml)
 
