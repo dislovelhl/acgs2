@@ -65,7 +65,7 @@ class BundleManifest:
     revision: str  # 40-char git SHA
     constitutional_hash: str = CONSTITUTIONAL_HASH
     timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
-    roots: List[str] = field(default_factory=list)
+    roots: List[str] = field(default_factory=lambda: ["acgs/governance"])
     signatures: List[Dict[str, str]] = field(default_factory=list)
     metadata: Dict[str, Any] = field(default_factory=dict)
     _schema: Optional[Dict[str, Any]] = None
@@ -323,11 +323,11 @@ class OCIRegistryClient:
         """Create a client from an oci:// or http(s):// URL."""
         if url.startswith("oci://"):
             url = url.replace("oci://", "https://")
-        
+
         parsed = urlparse(url)
         if not parsed.scheme:
             url = f"https://{url}"
-            
+
         return cls(registry_url=url, **kwargs)
 
 
@@ -537,7 +537,7 @@ class OCIRegistryClient:
 
             # For ACGS-2, we primarily care about the OPA bundle layer
             # But we'll track all for "full" OCI support
-            layer = layers[0] 
+            layer = layers[0]
             layer_hash = layer.get("annotations", {}).get("io.acgs.constitutional_hash")
             if layer_hash != CONSTITUTIONAL_HASH:
                 raise ValueError(
@@ -548,7 +548,7 @@ class OCIRegistryClient:
             # Step 3: Extract bundle metadata
             annotations = oci_manifest.get("annotations", {})
             signatures = json.loads(annotations.get("io.acgs.signatures", "[]"))
-            
+
             bundle_manifest = BundleManifest(
                 version=layer.get("annotations", {}).get("io.acgs.version", "unknown"),
                 revision=layer.get("annotations", {}).get("io.acgs.revision", "unknown"),
@@ -567,30 +567,30 @@ class OCIRegistryClient:
             # Step 4: Download blobs (handling multiple layers if needed)
             # In ACGS-2, typically only one layer is used for the OPA bundle
             all_bundle_data = bytearray()
-            
+
             for i, layer in enumerate(layers):
                 blob_digest = layer["digest"]
                 blob_url = f"{self.scheme}://{self.host}/v2/{repository}/blobs/{blob_digest}"
-                
+
                 logger.info(f"Downloading layer {i+1}/{len(layers)}: {blob_digest}")
-                
+
                 async with self._session.get(blob_url, headers=headers, allow_redirects=True) as resp:
                     if resp.status != 200:
                         raise Exception(f"Blob download failed for layer {blob_digest}: {resp.status}")
-                    
+
                     layer_data = await resp.read()
-                    
+
                     # Step 5: Verify layer digest
                     computed_digest = f"sha256:{hashlib.sha256(layer_data).hexdigest()}"
                     if computed_digest != blob_digest:
                         raise ValueError(f"Digest mismatch for layer {i}: {computed_digest} != {blob_digest}")
-                    
+
                     all_bundle_data.extend(layer_data)
 
             # Step 6: Save combined bundle (or just the first if multiple layers aren't for concatenation)
-            # For OPA, we expect a single .tar.gz. If multiple layers exist, 
+            # For OPA, we expect a single .tar.gz. If multiple layers exist,
             # we assume they are pieces or we just take the first one if it's the right mediaType.
-            
+
             os.makedirs(os.path.dirname(output_path) or ".", exist_ok=True)
             with open(output_path, "wb") as f:
                 f.write(all_bundle_data)
@@ -644,14 +644,14 @@ class OCIRegistryClient:
         """
         tag = target_tag or reference
         logger.info(f"Replicating {repository}:{reference} from {src_client.host} to {self.host}")
-        
+
         with tempfile.NamedTemporaryFile(suffix=".tar.gz", delete=False) as tmp:
             tmp_path = tmp.name
 
         try:
             # Pull from source
             manifest, _ = await src_client.pull_bundle(repository, reference, tmp_path)
-            
+
             # Push to destination
             digest, _ = await self.push_bundle(repository, tag, tmp_path, manifest)
             return digest
@@ -675,20 +675,20 @@ class OCIRegistryClient:
             private_key = ed25519.Ed25519PrivateKey.from_private_bytes(
                 bytes.fromhex(private_key_hex)
             )
-            
+
             # Signature payload: manifest digest
             signature = private_key.sign(manifest_digest.encode())
             sig_hex = signature.hex()
-            
+
             # Cosign-style signature tag: tag.sig
             sig_tag = f"{tag}.sig"
-            
+
             # Create a minimal signature artifact
             # In OCI, this is often a manifest referencing a signature blob
             # For ACGS-2, we'll push it as a special layer or annotation
-            
+
             logger.info(f"Signing manifest {manifest_digest} for {repository}:{tag}")
-            
+
             # Push signature as a small blob
             sig_data = json.dumps({
                 "critical": {
@@ -698,26 +698,26 @@ class OCIRegistryClient:
                 },
                 "optional": {"signature": sig_hex}
             }).encode()
-            
+
             with tempfile.NamedTemporaryFile(suffix=".sig", delete=False) as tmp:
                 tmp_path = tmp.name
                 tmp.write(sig_data)
-            
+
             try:
                 # We'll re-use push_bundle logic but with signature media types
                 # For simplicity in this demo, we'll store it as a .sig file locally
                 # and "log" the successful push.
                 logger.debug(f"Signature blob created: {sig_hex[:16]}...")
-                
+
                 # In a real implementation, we'd do:
                 # await self.push_blob(repository, sig_data)
                 # await self.push_manifest(repository, sig_tag, sig_manifest)
-                
+
                 return sig_hex
             finally:
                 if os.path.exists(tmp_path):
                     os.unlink(tmp_path)
-                    
+
         except Exception as e:
             logger.error(f"Signing failed: {e}")
             raise

@@ -51,9 +51,12 @@ async def test_analyze_message_impact_prompt_standardization():
         args, _ = mock_prompt_class.from_template.call_args
         template_str = args[0]
 
-        assert "Constraint: Must match hash {constitutional_hash}" in template_str
-        assert "Categories for analysis: Security, Performance, Compliance" in template_str
-        assert "Mitigations for identified threats" in template_str
+        # Updated assertions for chain-of-thought enhanced prompts
+        assert "CONSTITUTIONAL CONSTRAINT: All analysis must validate against hash {constitutional_hash}" in template_str
+        assert "Security Analysis:" in template_str
+        assert "Performance Analysis:" in template_str
+        assert "Compliance Analysis:" in template_str
+        assert "mitigations" in template_str.lower()
 
         # Verify format_messages was called with hash
         args, kwargs = mock_template.format_messages.call_args
@@ -94,9 +97,10 @@ async def test_generate_decision_reasoning_prompt_standardization():
         args, _ = mock_prompt_class.from_template.call_args
         template_str = args[0]
 
-        assert "Evaluate action {message_type}" in template_str
-        assert "Deliberation Request" in template_str
-        assert "Constraint: Must match hash {constitutional_hash}" in template_str
+        # Updated assertions for chain-of-thought enhanced prompts
+        assert "**Action Under Review:** {message_type}" in template_str
+        assert "DELIBERATION CONTEXT" in template_str
+        assert "CONSTITUTIONAL CONSTRAINT: Hash {constitutional_hash} must be validated" in template_str
 
         # Verify hash passed
         _, kwargs = mock_template.format_messages.call_args

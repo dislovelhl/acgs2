@@ -255,3 +255,94 @@ class TestDAGConstitutionalCompliance:
 
         result_dict = result.to_dict()
         assert result_dict["constitutional_hash"] == CONSTITUTIONAL_HASH
+
+
+class TestDAGOptimization:
+    """Tests for DAG optimizations (Caching, Priority)."""
+
+    @pytest.mark.asyncio
+    async def test_result_caching(self):
+        """Test result caching avoids re-execution."""
+        execution_count = 0
+
+        async def expensive_op(ctx: WorkflowContext) -> str:
+            nonlocal execution_count
+            execution_count += 1
+            return "expensive_result"
+
+        cache = {}
+        dag = DAGExecutor("cache-dag", result_cache=cache)
+
+        # First run: Should execute
+        dag.add_node(DAGNode("n1", "Node 1", expensive_op, [], cache_key="key-1"))
+        await dag.execute(WorkflowContext.create())
+        assert execution_count == 1
+        assert cache["key-1"] == "expensive_result"
+
+        # Second run: Should use cache
+        dag2 = DAGExecutor("cache-dag-2", result_cache=cache)
+        dag2.add_node(DAGNode("n1", "Node 1", expensive_op, [], cache_key="key-1"))
+        await dag2.execute(WorkflowContext.create())
+        assert execution_count == 1  # Count should NOT increase
+
+    @pytest.mark.asyncio
+    async def test_priority_scheduling(self):
+        """Test nodes with more dependents get priority."""
+        execution_order = []
+
+        async def step(name):
+            async def func(ctx):
+                execution_order.append(name)
+                return name
+            return func
+
+        # limit parallelism to 1 to force serialization based on priority
+        dag = DAGExecutor("priority-dag", max_parallel_nodes=1)
+
+        # Critical path: A -> B -> C (A has 2 dependents total)
+        # Less critical: D -> E (D has 1 dependent total)
+        # Leaf: F (0 dependents)
+
+        # Execution logic adds priority based on number of descendants
+        # A: dependents=[B, C], B->C. A unblocks B. B unblocks C.
+        #   Let's ensure the priority logic: "subtree size"
+        #   A -> B -> C
+        #   A -> D (so A has B, D as direct deps)
+
+        # Let's try a simple meaningful priority test
+        # A -> B -> C -> D (Chain length 4)
+        # E -> F (Chain length 2)
+        # Both A and E are ready initially. A should be picked first because it's the head of a longer chain.
+
+        # Structure:
+        # A -> B -> C -> D
+        # E -> F
+
+        dag.add_node(DAGNode("d", "D", await step("d"), ["c"]))
+        dag.add_node(DAGNode("c", "C", await step("c"), ["b"]))
+        dag.add_node(DAGNode("b", "B", await step("b"), ["a"]))
+        dag.add_node(DAGNode("a", "A", await step("a"), []))
+
+        dag.add_node(DAGNode("f", "F", await step("f"), ["e"]))
+        dag.add_node(DAGNode("e", "E", await step("e"), []))
+
+        await dag.execute(WorkflowContext.create())
+
+        # A has priority 3 (B, C, D)
+        # E has priority 1 (F)
+        # So A should run before E
+
+        # Note: B has priority 2, E has priority 1.
+        # But B becomes ready only after A finishes.
+        # So execution should be A -> (B or E?).
+        # Wait, max_parallel=1.
+
+        # 1. Ready: [A (p=3), E (p=1)] -> Pick A.
+        #    Completed: A. Ready: [B (p=2), E (p=1)].
+        # 2. Pick B.
+        #    Completed: B. Ready: [C (p=1), E (p=1)].
+        #    Tie-breaking is not strictly defined but priority helps.
+
+        assert execution_order[0] == "a"
+        # We at least know A runs before E because A has higher priority
+        assert execution_order.index("a") < execution_order.index("e")

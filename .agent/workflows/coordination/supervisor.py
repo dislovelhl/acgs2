@@ -8,75 +8,92 @@ The Supervisor plans, delegates, and critiques.
 
 from typing import List, Dict, Any, Optional, Callable, Awaitable
 import json
+import logging
 from ..cyclic.state_schema import GlobalState
 from ..cyclic.actor_core import NodeCallable
+from .signatures import PlanningSignature, CritiqueSignature, CEOSPoncho
+
+logger = logging.getLogger(__name__)
 
 class SupervisorNode:
     """
-    Supervisor Node for CEOS Orchestration.
+    Refined Supervisor Node for CEOS Orchestration.
 
-    A Supervisor directs the workflow by deciding which worker to invoke next.
-    It maintains a planning-execution-critique loop.
+    Uses CEOS Signatures (DSPy-style) for structured planning and critiquing.
+    Maintains a planning-execution-critique loop with constitutional feedback.
     """
 
     def __init__(self, name: str = "supervisor", llm_client: Any = None):
         self.name = name
-        self.llm_client = llm_client
+        self.orchestrator = CEOSPoncho(llm_client)
 
     async def __call__(self, state: GlobalState) -> GlobalState:
         """
         State Reducer for the Supervisor.
-
-        Analyzes the history and context to decide the next_node.
         """
         state.update_timestamp()
 
-        # 1. Check if we need to critique previous worker output
+        # 1. Critique Phase
         if state.history and state.history[-1]["node"].startswith("worker_"):
             last_worker_node = state.history[-1]["node"]
-            last_worker_result = state.context.get(f"{last_worker_node}_result")
+            last_worker_result = state.context.get(f"{last_worker_node}_result", {})
 
-            # Critique logic (simplified: always positive or check for 'error' in context)
-            if last_worker_result and last_worker_result.get("status") == "error":
-                state.log_event(self.name, {"action": "critique", "status": "fail", "reason": "Worker error"})
-                # Retry or pivot
+            # Use Critique Signature
+            critique = await self.orchestrator(
+                CritiqueSignature,
+                task_desc=f"Execute step for {last_worker_node}",
+                worker_output=last_worker_result,
+                constitutional_constraints=[state.metadata.constitutional_hash]
+            )
+
+            if not critique["is_passed"]:
+                state.log_event(self.name, {
+                    "action": "critique",
+                    "status": "fail",
+                    "feedback": critique["feedback"]
+                })
+                # Re-run the node with feedback
                 state.next_node = last_worker_node
+                state.context["last_feedback"] = critique["feedback"]
                 return state
 
             state.log_event(self.name, {"action": "critique", "status": "pass"})
 
-        # 2. Planning Logic
+        # 2. Planning Phase
         plan = state.context.get("ceos_plan", [])
         plan_idx = state.context.get("ceos_plan_idx", 0)
 
         if not plan:
-            # First run: Generate plan based on initial context/user request
-            # In a real system, this would call the LLM
             user_request = state.context.get("user_request", "")
-            plan = self._generate_plan(user_request)
+            # Use Planning Signature
+            planning_result = await self.orchestrator(
+                PlanningSignature,
+                user_request=user_request,
+                context=state.context,
+                available_workers=["worker_research", "worker_coder", "worker_validator", "worker_analyst"]
+            )
+
+            plan = planning_result["plan"]
             state.context["ceos_plan"] = plan
             state.context["ceos_plan_idx"] = 0
-            state.log_event(self.name, {"action": "planning", "steps": plan})
+            state.context["planning_reasoning"] = planning_result["reasoning"]
+            state.log_event(self.name, {
+                "action": "planning",
+                "steps": plan,
+                "reasoning": planning_result["reasoning"]
+            })
 
-        # 3. Delegation Logic
+        # 3. Delegation Phase
         if plan_idx < len(plan):
             next_worker = plan[plan_idx]
             state.next_node = next_worker
             state.context["ceos_plan_idx"] = plan_idx + 1
             state.log_event(self.name, {"action": "delegation", "target": next_worker})
         else:
-            # Final check / synthesis
             state.is_finished = True
             state.log_event(self.name, {"action": "completion"})
 
         return state
-
-    def _generate_plan(self, request: str) -> List[str]:
-        """Dummy planner logic."""
-        # This would be where DSPy / LLM logic resides
-        if "code" in request.lower():
-            return ["worker_research", "worker_coder", "worker_validator"]
-        return ["worker_research", "worker_analyst"]
 
 
 class WorkerNode:

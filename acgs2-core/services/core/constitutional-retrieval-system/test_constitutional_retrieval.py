@@ -84,7 +84,11 @@ class ConstitutionalRetrievalTester:
         """Initialize the constitutional retrieval system for testing."""
         try:
             # Initialize components
-            self.vector_db = create_vector_db_manager("qdrant")  # Use Qdrant for testing
+            from vector_database import QDRANT_AVAILABLE
+            db_type = "qdrant" if QDRANT_AVAILABLE else "mock"
+            logger.info(f"Using {db_type} for vector database in tests")
+
+            self.vector_db = create_vector_db_manager(db_type)
             self.doc_processor = DocumentProcessor()
             self.retrieval_engine = RetrievalEngine(self.vector_db, self.doc_processor)
             self.llm_reasoner = LLMReasoner(self.retrieval_engine)
@@ -96,7 +100,7 @@ class ConstitutionalRetrievalTester:
             # Connect to vector database
             connected = await self.vector_db.connect()
             if not connected:
-                logger.error("Failed to connect to vector database")
+                logger.error(f"Failed to connect to vector database ({db_type})")
                 return False
 
             # Initialize collections

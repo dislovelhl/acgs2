@@ -1,0 +1,222 @@
+{
+  "metadata": {
+    "generated": "2025-12-27",
+    "constitutional_hash": "cdd01ef066bc6cf2",
+    "version": "2.2.0",
+    "project_name": "ACGS-2",
+    "description": "Advanced Constitutional Governance System 2"
+  },
+  "metrics": {
+    "p99_latency_ms": 0.278,
+    "p99_target_ms": 5,
+    "throughput_rps": 6310,
+    "throughput_target_rps": 100,
+    "cache_hit_rate": 0.95,
+    "constitutional_compliance": 1.0,
+    "test_files": 139,
+    "python_files": 421,
+    "core_loc": 13091
+  },
+  "structure": {
+    "root": "acgs2",
+    "components": [
+      {
+        "name": "acgs2-core",
+        "path": "acgs2-core/",
+        "description": "Core application logic",
+        "subdirs": [
+          "enhanced_agent_bus",
+          "services",
+          "sdk",
+          "policies",
+          "shared",
+          "integrations"
+        ]
+      },
+      {
+        "name": "acgs2-infra",
+        "path": "acgs2-infra/",
+        "description": "Infrastructure as Code"
+      },
+      {
+        "name": "acgs2-observability",
+        "path": "acgs2-observability/",
+        "description": "Monitoring and dashboards"
+      },
+      {
+        "name": "acgs2-research",
+        "path": "acgs2-research/",
+        "description": "Research papers and specs"
+      },
+      {
+        "name": "workflows",
+        "path": ".agent/workflows/",
+        "description": "Workflow orchestration patterns"
+      }
+    ]
+  },
+  "entry_points": {
+    "test_runners": [
+      {
+        "name": "Unified Tests",
+        "path": "test_all.py",
+        "command": "python3 test_all.py"
+      },
+      {
+        "name": "Agent Bus Tests",
+        "path": "acgs2-core/enhanced_agent_bus/tests/",
+        "command": "python3 -m pytest tests/ -v"
+      },
+      {
+        "name": "Performance Validation",
+        "path": "acgs2-core/scripts/validate_performance.py",
+        "command": "python3 scripts/validate_performance.py"
+      }
+    ],
+    "fastapi_services": [
+      {
+        "name": "Policy Registry",
+        "path": "services/policy_registry/app/main.py",
+        "port": 8000
+      },
+      {
+        "name": "Audit Service",
+        "path": "services/audit_service/app/main.py",
+        "port": 8084
+      },
+      {
+        "name": "Metering",
+        "path": "services/metering/app/api.py",
+        "port": 8085
+      }
+    ],
+    "docker_services": [
+      {"name": "rust-message-bus", "port": 8080},
+      {"name": "deliberation-layer", "port": 8081},
+      {"name": "vector-search", "port": 8083},
+      {"name": "audit-ledger", "port": 8084},
+      {"name": "adaptive-governance", "port": 8000}
+    ]
+  },
+  "core_modules": {
+    "enhanced_agent_bus": {
+      "path": "acgs2-core/enhanced_agent_bus/",
+      "loc": 13091,
+      "modules": [
+        {"name": "core.py", "exports": ["EnhancedAgentBus", "MessageProcessor"]},
+        {"name": "agent_bus.py", "exports": ["AgentBus"]},
+        {"name": "models.py", "exports": ["AgentMessage", "MessageType", "Priority"]},
+        {"name": "validators.py", "exports": ["validate_constitutional_hash"]},
+        {"name": "exceptions.py", "exports": ["ConstitutionalError", "PolicyEvaluationError"]},
+        {"name": "policy_client.py", "exports": ["PolicyClient"]},
+        {"name": "opa_client.py", "exports": ["OPAClient"]},
+        {"name": "maci_enforcement.py", "exports": ["MACIRole", "MACIAction"]}
+      ]
+    },
+    "deliberation_layer": {
+      "path": "acgs2-core/enhanced_agent_bus/deliberation_layer/",
+      "modules": [
+        {"name": "impact_scorer.py", "purpose": "DistilBERT-based scoring"},
+        {"name": "hitl_manager.py", "purpose": "Human-in-the-loop approvals"},
+        {"name": "adaptive_router.py", "purpose": "Impact-based routing"},
+        {"name": "opa_guard.py", "purpose": "OPA policy enforcement"}
+      ]
+    },
+    "antifragility": {
+      "modules": [
+        {"name": "health_aggregator.py", "purpose": "Real-time health scoring"},
+        {"name": "recovery_orchestrator.py", "purpose": "Priority-based recovery"},
+        {"name": "chaos_testing.py", "purpose": "Controlled failure injection"},
+        {"name": "metering_integration.py", "purpose": "Fire-and-forget metering"}
+      ]
+    },
+    "workflows": {
+      "path": ".agent/workflows/",
+      "patterns": [
+        {"name": "Base Workflow", "path": "base/workflow.py"},
+        {"name": "DAG Executor", "path": "dags/dag_executor.py"},
+        {"name": "Saga", "path": "sagas/base_saga.py"},
+        {"name": "Governance", "path": "constitutional/governance_decision.py"}
+      ]
+    }
+  },
+  "services": {
+    "count": 47,
+    "categories": {
+      "core": ["policy_registry", "audit_service", "constitutional_ai", "metering"],
+      "governance": ["governance_synthesis", "policy_governance", "formal_verification"],
+      "ai_ml": ["ai_reasoning", "constitutional_cognition", "breakthrough", "ai_governance"],
+      "infrastructure": ["api_gateway", "identity", "tenant_management", "monitoring"]
+    }
+  },
+  "sdk": {
+    "python": {
+      "path": "acgs2-core/sdk/python/",
+      "package": "acgs2_sdk"
+    },
+    "typescript": {
+      "path": "acgs2-core/sdk/typescript/",
+      "package": "@acgs2/sdk"
+    },
+    "go": {
+      "path": "acgs2-core/sdk/go/"
+    }
+  },
+  "dependencies": {
+    "core": [
+      {"name": "redis", "version": ">=4.5.0"},
+      {"name": "httpx", "version": ">=0.24.0"},
+      {"name": "pydantic", "version": ">=2.0.0"},
+      {"name": "fastapi", "version": "latest"}
+    ],
+    "testing": [
+      {"name": "pytest", "version": ">=7.4.0"},
+      {"name": "pytest-asyncio", "version": ">=0.21.0"},
+      {"name": "pytest-cov", "version": ">=4.1.0"},
+      {"name": "fakeredis", "version": ">=2.18.0"}
+    ]
+  },
+  "configuration": {
+    "files": [
+      {"path": "acgs2-core/docker-compose.yml", "purpose": "Service orchestration"},
+      {"path": "acgs2-core/pytest.ini", "purpose": "Test configuration"},
+      {"path": "acgs2-core/enhanced_agent_bus/pyproject.toml", "purpose": "Package config"},
+      {"path": "acgs2-core/.gitlab-ci.yml", "purpose": "CI/CD pipeline"}
+    ],
+    "environment": [
+      {"name": "REDIS_URL", "default": "redis://localhost:6379"},
+      {"name": "USE_RUST_BACKEND", "default": "false"},
+      {"name": "METRICS_ENABLED", "default": "true"},
+      {"name": "POLICY_REGISTRY_URL", "default": "http://localhost:8000"},
+      {"name": "OPA_URL", "default": "http://localhost:8181"}
+    ]
+  },
+  "test_markers": [
+    {"marker": "asyncio", "description": "Async tests"},
+    {"marker": "slow", "description": "Performance tests"},
+    {"marker": "integration", "description": "External service tests"},
+    {"marker": "constitutional", "description": "Governance validation tests"}
+  ],
+  "documentation": [
+    {"name": "README", "path": "README.md"},
+    {"name": "CLAUDE.md", "path": "acgs2-core/CLAUDE.md"},
+    {"name": "Deployment", "path": "acgs2-core/deployment_guide.md"},
+    {"name": "Architecture", "path": "acgs2-core/docs/adr/"},
+    {"name": "Performance", "path": "acgs2-core/PERFORMANCE_ANALYSIS_REPORT.md"}
+  ],
+  "quick_start": {
+    "setup": [
+      "cd acgs2-core",
+      "python3 -m venv .venv",
+      "source .venv/bin/activate",
+      "pip install -r requirements_optimized.txt"
+    ],
+    "test": [
+      "cd enhanced_agent_bus",
+      "python3 -m pytest tests/ -v --tb=short"
+    ],
+    "run": [
+      "docker-compose up -d"
+    ]
+  }
+}

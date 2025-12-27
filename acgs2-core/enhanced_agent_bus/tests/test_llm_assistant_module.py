@@ -116,11 +116,11 @@ class TestFallbackAnalysis:
         assert 'confidence' in result
         assert 'reasoning' in result
         assert 'impact_areas' in result
-        assert result['analyzed_by'] == 'fallback_analyzer'
+        assert result['analyzed_by'] == 'enhanced_fallback_analyzer'
 
     @pytest.mark.asyncio
     async def test_fallback_analysis_low_risk(self, assistant):
-        """Test fallback analysis for low-risk content."""
+        """Test enhanced fallback analysis for low-risk content."""
         message = AgentMessage(
             from_agent="a", to_agent="b", sender_id="s",
             message_type=MessageType.QUERY,
@@ -129,13 +129,17 @@ class TestFallbackAnalysis:
 
         result = await assistant.analyze_message_impact(message)
 
-        assert result['risk_level'] == 'medium'
+        # Enhanced fallback now properly detects low-risk vs medium-risk
+        assert result['risk_level'] == 'low'
         assert result['requires_human_review'] is False
         assert result['recommended_decision'] == 'approve'
 
     @pytest.mark.asyncio
     async def test_fallback_analysis_high_risk(self, assistant):
-        """Test fallback analysis for high-risk content."""
+        """Test enhanced fallback analysis for high-risk content.
+
+        'breach' is now classified as CRITICAL (highest risk tier).
+        """
         message = AgentMessage(
             from_agent="a", to_agent="b", sender_id="s",
             message_type=MessageType.GOVERNANCE_REQUEST,
@@ -144,7 +148,9 @@ class TestFallbackAnalysis:
 
         result = await assistant.analyze_message_impact(message)
 
-        assert result['risk_level'] == 'high'
+        # Enhanced fallback now uses multi-tier risk classification
+        # 'breach' is a critical keyword, 'critical' is a high keyword
+        assert result['risk_level'] == 'critical'
         assert result['requires_human_review'] is True
         assert result['recommended_decision'] == 'review'
 
@@ -198,11 +204,11 @@ class TestFallbackReasoning:
         assert 'process_summary' in result
         assert 'consensus_analysis' in result
         assert 'final_recommendation' in result
-        assert result['generated_by'] == 'fallback_reasoner'
+        assert result['generated_by'] == 'enhanced_fallback_reasoner'
 
     @pytest.mark.asyncio
     async def test_fallback_reasoning_with_votes(self, assistant, test_message):
-        """Test fallback reasoning with votes."""
+        """Test enhanced fallback reasoning with votes."""
         votes = [
             {'vote': 'approve', 'reasoning': 'Looks good'},
             {'vote': 'approve', 'reasoning': 'Valid'},
@@ -215,8 +221,9 @@ class TestFallbackReasoning:
             human_decision=None
         )
 
-        assert '2/3' in result['consensus_analysis']
-        assert result['final_recommendation'] == 'approve'  # 66% approval > 60% threshold
+        # Enhanced fallback provides detailed percentage-based analysis
+        assert '66.7%' in result['consensus_analysis']
+        assert result['final_recommendation'] == 'approve'  # 66% approval - moderate consensus
 
     @pytest.mark.asyncio
     async def test_fallback_reasoning_with_human_decision(self, assistant, test_message):
@@ -476,7 +483,10 @@ class TestFallbackAnalysisKeywords:
 
     @pytest.mark.asyncio
     async def test_breach_keyword(self, assistant):
-        """Test 'breach' keyword triggers high risk."""
+        """Test 'breach' keyword triggers critical risk.
+
+        Enhanced fallback classifies 'breach' as critical tier (highest risk).
+        """
         message = AgentMessage(
             from_agent="a", to_agent="b", sender_id="s",
             message_type=MessageType.COMMAND,
@@ -485,7 +495,8 @@ class TestFallbackAnalysisKeywords:
 
         result = await assistant.analyze_message_impact(message)
 
-        assert result['risk_level'] == 'high'
+        # 'breach' is now critical tier
+        assert result['risk_level'] == 'critical'
 
     @pytest.mark.asyncio
     async def test_violation_keyword(self, assistant):

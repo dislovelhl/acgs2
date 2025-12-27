@@ -23,7 +23,7 @@ RouterCallable = Callable[[GlobalState], Awaitable[str]]
 class StateGraph:
     """
     Stateful Cyclic Graph for CEOS Orchestration.
-    
+
     Manages nodes, routers, and the execution loop.
     Enforces the 'State Reducer' pattern.
     """
@@ -56,8 +56,8 @@ class StateGraph:
     async def execute(self, initial_state: Optional[GlobalState] = None) -> GlobalState:
         """
         Run the cyclic execution loop.
-        
-        The loop continues until a node sets 'is_finished=True' 
+
+        The loop continues until a node sets 'is_finished=True'
         or an interrupt is triggered.
         """
         if not self.entry_point:
@@ -65,7 +65,7 @@ class StateGraph:
 
         state = initial_state or GlobalState()
         current_node_name = state.next_node or self.entry_point
-        
+
         logger.info(f"Starting CEOS Execution: {self.name} | Session: {state.session_id}")
 
         while not state.is_finished:
@@ -86,7 +86,25 @@ class StateGraph:
             # Execute node (State Reducer)
             logger.debug(f"Executing node: {current_node_name}")
             try:
-                state = await node_func(state)
+                # Support SubGraphs: if node_func is a StateGraph, execute it
+                if isinstance(node_func, StateGraph):
+                    state = await node_func.execute(state)
+                elif asyncio.iscoroutinefunction(node_func):
+                    state = await node_func(state)
+                else:
+                    # Handle synchronous functions
+                    res = node_func(state)
+                    if hasattr(res, "__await__"):
+                        state = await res
+                    else:
+                        state = res
+
+                # Check for is_finished from subgraph
+                if state.is_finished and current_node_name != "__end__":
+                    # If a subgraph finished, we might want to continue in the parent graph
+                    # Reset is_finished to allow parent graph to continue routing
+                    state.is_finished = False
+
                 state.log_event(current_node_name, {"status": "success"})
             except Exception as e:
                 logger.error(f"Error in node '{current_node_name}': {e}")
@@ -99,10 +117,18 @@ class StateGraph:
                     state.is_finished = True
                     return state
 
-            # Determine next node via router if exists, else sequential (if implemented)
+            # Determine next node via router if exists, else sequential
             router = self.routers.get(current_node_name)
             if router:
-                next_node = await router(state)
+                if asyncio.iscoroutinefunction(router):
+                    next_node = await router(state)
+                else:
+                    res = router(state)
+                    if hasattr(res, "__await__"):
+                        next_node = await res
+                    else:
+                        next_node = res
+
                 if next_node == "__end__":
                     state.is_finished = True
                 else:

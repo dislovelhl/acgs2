@@ -39,6 +39,7 @@ class DAGNode:
         compensation: Optional compensation for rollback
         timeout_seconds: Maximum execution time
         is_optional: If True, failure doesn't stop DAG execution
+        cache_key: Optional key for result caching. If provided, result is cached.
     """
     id: str
     name: str
@@ -48,6 +49,7 @@ class DAGNode:
     timeout_seconds: int = 30
     is_optional: bool = False
     requires_constitutional_check: bool = True
+    cache_key: Optional[str] = None
 
     # Runtime state
     result: Optional[Any] = field(default=None, init=False)
@@ -55,6 +57,7 @@ class DAGNode:
     started_at: Optional[datetime] = field(default=None, init=False)
     completed_at: Optional[datetime] = field(default=None, init=False)
     execution_time_ms: float = field(default=0.0, init=False)
+    priority: int = field(default=0, init=False)  # Calculated based on dependencies
 
     def __hash__(self):
         return hash(self.id)
@@ -106,6 +109,8 @@ class DAGExecutor:
     - Constitutional validation at node boundaries
     - Compensation support for rollback
     - Cycle detection
+    - Priority scheduling (critical path optimization)
+    - Result caching for idempotent nodes
 
     Example:
         dag = DAGExecutor("validation-dag")
@@ -122,6 +127,7 @@ class DAGExecutor:
         dag_id: Optional[str] = None,
         constitutional_hash: str = CONSTITUTIONAL_HASH,
         max_parallel_nodes: int = 10,
+        result_cache: Optional[Dict[str, Any]] = None,
     ):
         """
         Initialize DAG executor.
@@ -130,10 +136,12 @@ class DAGExecutor:
             dag_id: Unique DAG identifier
             constitutional_hash: Expected constitutional hash
             max_parallel_nodes: Maximum nodes to execute concurrently
+            result_cache: Optional dictionary to share results across executions
         """
         self.dag_id = dag_id or str(uuid.uuid4())
         self.constitutional_hash = constitutional_hash
         self.max_parallel_nodes = max_parallel_nodes
+        self._external_cache = result_cache if result_cache is not None else {}
 
         self._nodes: Dict[str, DAGNode] = {}
         self._compensations: List[StepCompensation] = []
@@ -142,6 +150,7 @@ class DAGExecutor:
         self._skipped: Set[str] = set()
         self._results: Dict[str, Any] = {}
         self._errors: List[str] = []
+        self._dependents: Dict[str, List[str]] = {}
 
     def add_node(self, node: DAGNode) -> "DAGExecutor":
         """
@@ -201,6 +210,36 @@ class DAGExecutor:
 
         return False
 
+    def _calculate_priorities(self):
+        """
+        Calculate execution priority for each node based on the number of dependents.
+        Nodes that unblock more downstream work get higher priority.
+        """
+        # Build adjacency list (reverse dependencies)
+        self._dependents = {node_id: [] for node_id in self._nodes}
+        for node_id, node in self._nodes.items():
+            for dep_id in node.dependencies:
+                if dep_id in self._dependents:
+                    self._dependents[dep_id].append(node_id)
+
+        # Calculate subtree size for each node (simplified criticality)
+        # Higher number of total downstream nodes = higher priority
+        memo = {}
+
+        def count_downstream(node_id: str) -> int:
+            if node_id in memo:
+                return memo[node_id]
+
+            count = 0
+            for child_id in self._dependents.get(node_id, []):
+                count += 1 + count_downstream(child_id)
+
+            memo[node_id] = count
+            return count
+
+        for node_id, node in self._nodes.items():
+            node.priority = count_downstream(node_id)
+
     def _topological_sort(self) -> List[str]:
         """
         Perform topological sort using Kahn's algorithm.
@@ -233,7 +272,11 @@ class DAGExecutor:
         return result
 
     def _get_ready_nodes(self) -> List[DAGNode]:
-        """Get nodes that are ready to execute (all dependencies satisfied)."""
+        """
+        Get nodes that are ready to execute.
+
+        Sorted by priority (critical path first).
+        """
         ready = []
         for node_id, node in self._nodes.items():
             if node_id in self._completed or node_id in self._failed or node_id in self._skipped:
@@ -260,6 +303,9 @@ class DAGExecutor:
             if deps_satisfied:
                 ready.append(node)
 
+        # Sort by priority descending (smart scheduling)
+        ready.sort(key=lambda n: n.priority, reverse=True)
+
         return ready[:self.max_parallel_nodes]
 
     async def execute(self, context: WorkflowContext) -> DAGResult:
@@ -277,6 +323,9 @@ class DAGExecutor:
         """
         start_time = datetime.now(timezone.utc)
         context.set_step_result("_dag_id", self.dag_id)
+
+        # Calculate priorities before execution
+        self._calculate_priorities()
 
         logger.info(f"DAG {self.dag_id}: Starting execution with {len(self._nodes)} nodes")
 
@@ -369,6 +418,14 @@ class DAGExecutor:
         """
         node.started_at = datetime.now(timezone.utc)
 
+        # Check cache if key is present
+        if node.cache_key and node.cache_key in self._external_cache:
+            logger.info(f"DAG {self.dag_id}: Cache hit for node '{node.id}' (key: {node.cache_key})")
+            node.result = self._external_cache[node.cache_key]
+            node.completed_at = datetime.now(timezone.utc)
+            node.execution_time_ms = 0.0
+            return (node.id, node.result, True)
+
         # Register compensation BEFORE execution
         if node.compensation:
             self._compensations.append(node.compensation)
@@ -380,11 +437,16 @@ class DAGExecutor:
                 timeout=node.timeout_seconds
             )
 
+            # Update state
             node.result = result
             node.completed_at = datetime.now(timezone.utc)
             node.execution_time_ms = (
                 node.completed_at - node.started_at
             ).total_seconds() * 1000
+
+            # Cache result
+            if node.cache_key:
+                self._external_cache[node.cache_key] = result
 
             logger.debug(
                 f"DAG {self.dag_id}: Node '{node.id}' completed "

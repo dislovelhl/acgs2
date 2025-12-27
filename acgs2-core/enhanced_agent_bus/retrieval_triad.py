@@ -41,17 +41,14 @@ class RetrievalTriad:
         """
         logger.info(f"Executing Retrieval Triad for query: {query}")
 
-        # In a real implementation, we would run these in parallel
-        # tasks = [
-        #     self._vector_search(query, limit),
-        #     self._keyword_search(query, limit),
-        #     self._graph_search(query, limit)
-        # ]
-        # results = await asyncio.gather(*tasks)
-
-        vector_results = await self._vector_search(query, limit)
-        keyword_results = await self._keyword_search(query, limit)
-        graph_results = await self._graph_search(query, limit)
+        # Execute searches in parallel as per CEOS mandates
+        tasks = [
+            self._vector_search(query, limit),
+            self._keyword_search(query, limit),
+            self._graph_search(query, limit)
+        ]
+        results = await asyncio.gather(*tasks)
+        vector_results, keyword_results, graph_results = results
 
         # Merge and rank results
         merged_results = self._merge_results(

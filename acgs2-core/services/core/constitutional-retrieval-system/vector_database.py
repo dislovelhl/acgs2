@@ -357,11 +357,58 @@ class MilvusManager(VectorDatabaseManager):
             return False
 
 
+class MockVectorManager(VectorDatabaseManager):
+    """Mock implementation for testing and development."""
+
+    def __init__(self, **kwargs):
+        self.vectors = {}
+
+    async def connect(self) -> bool:
+        return True
+
+    async def disconnect(self) -> None:
+        pass
+
+    async def create_collection(self, collection_name: str, vector_dim: int) -> bool:
+        return True
+
+    async def insert_vectors(self, collection_name: str, vectors: List[List[float]],
+                           payloads: List[Dict[str, Any]], ids: Optional[List[str]] = None) -> bool:
+        for i, vector in enumerate(vectors):
+            vec_id = ids[i] if ids else f"{len(self.vectors)}"
+            self.vectors[vec_id] = {"vector": vector, "payload": payloads[i]}
+        return True
+
+    async def search_vectors(self, collection_name: str, query_vector: List[float],
+                           limit: int = 10, filter_dict: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
+        # Return mock results
+        return [
+            {
+                "id": vid,
+                "score": 0.95,
+                "payload": data["payload"]
+            }
+            for vid, data in list(self.vectors.items())[:limit]
+        ]
+
+    async def delete_vectors(self, collection_name: str, ids: List[str]) -> bool:
+        for vid in ids:
+            self.vectors.pop(vid, None)
+        return True
+
+    async def update_vectors(self, collection_name: str, ids: List[str],
+                           vectors: List[List[float]], payloads: List[Dict[str, Any]]) -> bool:
+        await self.insert_vectors(collection_name, vectors, payloads, ids)
+        return True
+
+
 def create_vector_db_manager(db_type: str = "qdrant", **kwargs) -> VectorDatabaseManager:
     """Factory function to create vector database manager."""
     if db_type.lower() == "qdrant":
         return QdrantManager(**kwargs)
     elif db_type.lower() == "milvus":
         return MilvusManager(**kwargs)
+    elif db_type.lower() == "mock":
+        return MockVectorManager(**kwargs)
     else:
         raise ValueError(f"Unsupported database type: {db_type}")

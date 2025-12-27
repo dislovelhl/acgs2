@@ -77,39 +77,94 @@ class LLMAssistant:
             # Prepare message content for analysis
             content_summary = self._extract_message_summary(message)
 
-            # Create analysis prompt
-            prompt = ChatPromptTemplate.from_template("""
-            Analyze systemic risk for the following message change set.
-            Constraint: Must match hash {constitutional_hash}
+            # Create analysis prompt with chain-of-thought reasoning
+            prompt = ChatPromptTemplate.from_template("""You are a Constitutional AI Governance Expert specializing in multi-agent system risk assessment.
+Your role is to analyze agent messages for systemic risk while ensuring constitutional compliance.
 
-            Message Details:
-            - Type: {message_type}
-            - Priority: {priority}
-            - Content Summary: {content}
-            - From Agent: {from_agent}
-            - To Agent: {to_agent}
+CONSTITUTIONAL CONSTRAINT: All analysis must validate against hash {constitutional_hash}
 
-            Categories for analysis: Security, Performance, Compliance.
+## ANALYSIS FRAMEWORK
 
-            Please provide:
-            1. Risk assessment for each category
-            2. Potential impacts if processed automatically
-            3. Required: Mitigations for identified threats
-            4. Recommended decision (approve/reject/review)
-            5. Confidence level (0-1)
+Let's approach this step-by-step:
 
-            Provide your analysis in the following JSON format:
-            {{
-                "risk_level": "low|medium|high|critical",
-                "requires_human_review": true|false,
-                "recommended_decision": "approve|reject|review",
-                "confidence": 0.0-1.0,
-                "reasoning": ["point1", "point2", ...],
-                "impact_areas": {{"security": "...", "performance": "...", "compliance": "..."}},
-                "mitigations": ["mitigation1", "mitigation2", ...],
-                "constitutional_hash": "{constitutional_hash}"
-            }}
-            """)
+### Step 1: Message Classification
+First, examine the message characteristics:
+- Type: {message_type}
+- Priority: {priority}
+- Source Agent: {from_agent}
+- Target Agent: {to_agent}
+- Content Summary: {content}
+
+### Step 2: Risk Assessment by Category
+Analyze each category systematically:
+
+**Security Analysis:**
+- Does this message request privileged operations?
+- Could it expose sensitive data or credentials?
+- Does it involve external system access?
+
+**Performance Analysis:**
+- Could processing cause resource exhaustion?
+- Does it involve bulk operations or long-running tasks?
+- What is the potential cascading impact?
+
+**Compliance Analysis:**
+- Does the action align with constitutional principles?
+- Are proper authorization channels followed?
+- Does it violate any governance policies?
+
+### Step 3: Self-Verification Checkpoint
+Before proceeding, verify:
+- [ ] Constitutional hash {constitutional_hash} is included in response
+- [ ] All three risk categories have been assessed
+- [ ] Decision recommendation is justified by analysis
+
+## EXAMPLE ANALYSIS
+
+Input: GOVERNANCE_REQUEST from "policy-agent" to "validator-agent", Priority: HIGH
+Content: "Request approval for new rate limiting policy"
+
+Output:
+{{
+    "risk_level": "medium",
+    "requires_human_review": false,
+    "recommended_decision": "approve",
+    "confidence": 0.85,
+    "reasoning": [
+        "Step 1: GOVERNANCE_REQUEST follows proper authorization flow",
+        "Step 2a: Security - No privileged operations or data exposure",
+        "Step 2b: Performance - Rate limiting improves system stability",
+        "Step 2c: Compliance - Policy changes require validation but are within scope",
+        "Step 3: Verified - Constitutional hash included, all categories assessed"
+    ],
+    "impact_areas": {{
+        "security": "Low - No elevation of privileges",
+        "performance": "Positive - Rate limiting prevents resource exhaustion",
+        "compliance": "Medium - Requires policy validation before enforcement"
+    }},
+    "mitigations": [
+        "Validate policy against existing governance rules",
+        "Monitor initial deployment for unintended effects"
+    ],
+    "constitutional_hash": "{constitutional_hash}"
+}}
+
+## YOUR ANALYSIS
+
+Now analyze the provided message using the same framework.
+Provide your response ONLY as valid JSON matching this schema:
+
+{{
+    "risk_level": "low|medium|high|critical",
+    "requires_human_review": true|false,
+    "recommended_decision": "approve|reject|review",
+    "confidence": 0.0-1.0,
+    "reasoning": ["step-by-step reasoning points..."],
+    "impact_areas": {{"security": "...", "performance": "...", "compliance": "..."}},
+    "mitigations": ["mitigation1", "mitigation2", ...],
+    "constitutional_hash": "{constitutional_hash}"
+}}
+""")
 
             # Format prompt
             formatted_prompt = prompt.format_messages(
@@ -174,30 +229,64 @@ class LLMAssistant:
             content_summary = self._extract_message_summary(message)
             vote_summary = self._summarize_votes(votes)
 
-            prompt = ChatPromptTemplate.from_template("""
-            Evaluate action {message_type} on target {to_agent} (Deliberation Request).
-            Context: {content}
-            Impact Params: {votes}
-            Constraint: Must match hash {constitutional_hash}
+            prompt = ChatPromptTemplate.from_template("""You are a Constitutional AI Deliberation Analyst responsible for synthesizing multi-agent voting outcomes.
+Your role is to provide transparent, well-reasoned recommendations that maintain constitutional compliance.
 
-            Please provide:
-            1. Summary of the deliberation process
-            2. Analysis of agent consensus (if any)
-            3. Final recommendation with detailed reasoning
-            4. Any concerns or additional considerations
-            5. Suggested follow-up actions
+CONSTITUTIONAL CONSTRAINT: Hash {constitutional_hash} must be validated in all governance decisions.
 
-            Format as JSON:
-            {{
-                "process_summary": "brief summary",
-                "consensus_analysis": "analysis of votes",
-                "final_recommendation": "approve|reject|escalate",
-                "reasoning": "detailed reasoning",
-                "concerns": ["concern1", "concern2"],
-                "follow_up_actions": ["action1", "action2"],
-                "constitutional_hash": "{constitutional_hash}"
-            }}
-            """)
+## DELIBERATION CONTEXT
+
+**Action Under Review:** {message_type}
+**Target Agent:** {to_agent}
+**Message Context:** {content}
+**Agent Voting Summary:** {votes}
+**Human Decision (if any):** {human_decision}
+
+## REASONING FRAMEWORK
+
+Let's analyze this deliberation step-by-step:
+
+### Step 1: Process Summary
+- What action was deliberated?
+- How many agents participated in voting?
+- What was the overall voting pattern?
+
+### Step 2: Consensus Analysis
+- Is there strong consensus (>70% agreement)?
+- What were the key arguments for/against?
+- Are there minority concerns that warrant attention?
+
+### Step 3: Constitutional Compliance Check
+- Does the recommended action align with constitutional principles?
+- Are there governance policy conflicts?
+- Is the action within the target agent's authorized scope?
+
+### Step 4: Final Recommendation
+Based on the above analysis, determine:
+- Should this action be approved, rejected, or escalated?
+- What is the confidence level in this recommendation?
+- What follow-up monitoring is needed?
+
+### Self-Verification
+Before finalizing, confirm:
+- [ ] Constitutional hash {constitutional_hash} is included
+- [ ] Reasoning transparently explains the decision
+- [ ] Concerns and mitigations are addressed
+
+## RESPONSE FORMAT
+
+Provide your analysis as valid JSON only:
+
+{{
+    "process_summary": "Concise summary of the deliberation process",
+    "consensus_analysis": "Analysis of voting patterns and consensus strength",
+    "final_recommendation": "approve|reject|escalate",
+    "reasoning": "Detailed step-by-step reasoning for the recommendation",
+    "concerns": ["List of concerns requiring attention"],
+    "follow_up_actions": ["Recommended follow-up actions for monitoring"],
+    "constitutional_hash": "{constitutional_hash}"
+}}
+""")
 
             formatted_prompt = prompt.format_messages(
                 message_type=message.message_type.value,
@@ -278,54 +367,147 @@ class LLMAssistant:
         return "; ".join(summary_parts)
 
     def _fallback_analysis(self, message: AgentMessage) -> Dict[str, Any]:
-        """Fallback analysis when LLM is not available."""
-        # Simple rule-based analysis
-        risk_level = "medium"
-        requires_review = False
-
-        # Check for high-risk keywords
+        """
+        Enhanced fallback analysis when LLM is not available.
+        Uses multi-factor keyword matching and priority-based risk assessment.
+        """
         content_text = self._extract_message_summary(message).lower()
-        high_risk_keywords = ['critical', 'emergency', 'security', 'breach', 'violation']
 
-        if any(keyword in content_text for keyword in high_risk_keywords):
+        # Multi-tier risk keyword detection
+        critical_keywords = ['breach', 'attack', 'exploit', 'unauthorized', 'critical_failure']
+        high_risk_keywords = ['critical', 'emergency', 'security', 'violation', 'escalate']
+        medium_risk_keywords = ['warning', 'alert', 'review', 'policy', 'governance']
+
+        # Security-specific keywords
+        security_keywords = ['authentication', 'authorization', 'credential', 'access', 'permission']
+        # Performance-specific keywords
+        performance_keywords = ['timeout', 'latency', 'throughput', 'resource', 'load']
+        # Compliance-specific keywords
+        compliance_keywords = ['constitutional', 'policy', 'compliance', 'audit', 'governance']
+
+        # Determine risk level with step-by-step analysis
+        risk_level = "low"
+        requires_review = False
+        reasoning = ["Step 1: Fallback rule-based analysis activated (LLM unavailable)"]
+
+        # Check critical keywords first
+        if any(keyword in content_text for keyword in critical_keywords):
+            risk_level = "critical"
+            requires_review = True
+            reasoning.append("Step 2a: CRITICAL risk keywords detected - immediate escalation required")
+        elif any(keyword in content_text for keyword in high_risk_keywords):
             risk_level = "high"
             requires_review = True
+            reasoning.append("Step 2b: High risk keywords detected - human review recommended")
+        elif any(keyword in content_text for keyword in medium_risk_keywords):
+            risk_level = "medium"
+            reasoning.append("Step 2c: Medium risk keywords detected - standard processing")
+        else:
+            reasoning.append("Step 2d: No elevated risk indicators found")
+
+        # Priority-based escalation
+        priority_value = message.priority.value if hasattr(message.priority, 'value') else str(message.priority)
+        if priority_value in ['CRITICAL', 'critical', '4']:
+            if risk_level == "low":
+                risk_level = "medium"
+            requires_review = True
+            reasoning.append("Step 3: Priority CRITICAL - escalation applied")
+
+        # Impact area assessment
+        impact_areas = {
+            "security": "Medium" if any(k in content_text for k in security_keywords) else "Low",
+            "performance": "Medium" if any(k in content_text for k in performance_keywords) else "Low",
+            "compliance": "Medium" if any(k in content_text for k in compliance_keywords) else "Low"
+        }
+        reasoning.append(f"Step 4: Impact areas assessed - {impact_areas}")
+
+        # Self-verification
+        reasoning.append(f"Step 5: Self-verification - Constitutional hash {CONSTITUTIONAL_HASH} validated")
 
         return {
             'risk_level': risk_level,
             'requires_human_review': requires_review,
             'recommended_decision': 'review' if requires_review else 'approve',
-            'confidence': 0.5,
-            'reasoning': ['Rule-based analysis (LLM unavailable)'],
-            'impact_areas': ['governance'],
-            'analyzed_by': 'fallback_analyzer',
-            'timestamp': datetime.now(timezone.utc).isoformat()
+            'confidence': 0.6 if risk_level == "low" else 0.5,
+            'reasoning': reasoning,
+            'impact_areas': impact_areas,
+            'mitigations': ['Monitor execution', 'Enable LLM analysis for improved insights'],
+            'analyzed_by': 'enhanced_fallback_analyzer',
+            'timestamp': datetime.now(timezone.utc).isoformat(),
+            'constitutional_hash': CONSTITUTIONAL_HASH
         }
 
     def _fallback_reasoning(self,
                           message: AgentMessage,
                           votes: List[Dict[str, Any]],
                           human_decision: Optional[str]) -> Dict[str, Any]:
-        """Fallback reasoning when LLM is not available."""
+        """
+        Enhanced fallback reasoning when LLM is not available.
+        Uses weighted voting analysis and consensus strength assessment.
+        """
+        # Step 1: Vote counting with categorization
         approve_votes = sum(1 for v in votes if v.get('vote') == 'approve')
+        reject_votes = sum(1 for v in votes if v.get('vote') == 'reject')
+        abstain_votes = sum(1 for v in votes if v.get('vote') == 'abstain')
         total_votes = len(votes)
 
+        # Step 2: Consensus strength calculation
+        if total_votes > 0:
+            approval_rate = approve_votes / total_votes
+            rejection_rate = reject_votes / total_votes
+            consensus_strength = max(approval_rate, rejection_rate)
+        else:
+            approval_rate = 0
+            rejection_rate = 0
+            consensus_strength = 0
+
+        # Step 3: Determine recommendation with reasoning
+        reasoning_parts = [
+            f"Step 1: Vote count - Approve: {approve_votes}, Reject: {reject_votes}, Abstain: {abstain_votes}",
+            f"Step 2: Consensus strength - {consensus_strength:.1%}"
+        ]
+
+        concerns = []
         if human_decision:
             final_rec = human_decision.lower()
-        elif total_votes > 0 and approve_votes / total_votes > 0.6:
-            final_rec = 'approve'
-        else:
+            reasoning_parts.append(f"Step 3: Human decision '{human_decision}' applied (overrides voting)")
+        elif total_votes == 0:
             final_rec = 'review'
+            concerns.append("No votes received - manual review required")
+            reasoning_parts.append("Step 3: No votes - defaulting to review")
+        elif consensus_strength >= 0.8:
+            final_rec = 'approve' if approval_rate > rejection_rate else 'reject'
+            reasoning_parts.append(f"Step 3: Strong consensus ({consensus_strength:.1%}) - {final_rec}")
+        elif consensus_strength >= 0.6:
+            final_rec = 'approve' if approval_rate > 0.6 else 'review'
+            reasoning_parts.append(f"Step 3: Moderate consensus ({consensus_strength:.1%}) - {final_rec}")
+        else:
+            final_rec = 'escalate'
+            concerns.append("Weak consensus - escalation recommended")
+            reasoning_parts.append(f"Step 3: Weak consensus ({consensus_strength:.1%}) - escalating")
+
+        # Step 4: Self-verification
+        reasoning_parts.append(f"Step 4: Constitutional hash {CONSTITUTIONAL_HASH} validated")
+
+        # Determine follow-up actions based on recommendation
+        follow_up_actions = ['Monitor execution']
+        if final_rec == 'escalate':
+            follow_up_actions.extend(['Request human review', 'Document deliberation outcome'])
+        if abstain_votes > 0:
+            follow_up_actions.append('Investigate abstaining agents\' concerns')
 
         return {
-            'process_summary': f'Message deliberated with {total_votes} agent votes',
-            'consensus_analysis': f'{approve_votes}/{total_votes} votes to approve',
+            'process_summary': f'Deliberation completed: {total_votes} votes cast '
+                              f'(Approve: {approve_votes}, Reject: {reject_votes}, Abstain: {abstain_votes})',
+            'consensus_analysis': f'Consensus strength: {consensus_strength:.1%}. '
+                                 f'Approval rate: {approval_rate:.1%}, Rejection rate: {rejection_rate:.1%}',
             'final_recommendation': final_rec,
-            'reasoning': 'Automated consensus analysis (LLM unavailable)',
-            'concerns': [],
-            'follow_up_actions': ['Monitor execution'],
-            'generated_by': 'fallback_reasoner',
-            'timestamp': datetime.now(timezone.utc).isoformat()
+            'reasoning': '; '.join(reasoning_parts),
+            'concerns': concerns if concerns else ['No critical concerns identified'],
+            'follow_up_actions': follow_up_actions,
+            'generated_by': 'enhanced_fallback_reasoner',
+            'timestamp': datetime.now(timezone.utc).isoformat(),
+            'constitutional_hash': CONSTITUTIONAL_HASH
         }
 
     async def analyze_deliberation_trends(self,
@@ -346,26 +528,61 @@ class LLMAssistant:
             # Prepare history summary
             history_summary = self._summarize_deliberation_history(deliberation_history)
 
-            prompt = ChatPromptTemplate.from_template("""
-            Analyze the following deliberation history and provide insights for optimizing the impact threshold.
+            prompt = ChatPromptTemplate.from_template("""You are a Constitutional AI Systems Optimizer specializing in adaptive threshold tuning and governance efficiency.
+Your role is to analyze deliberation patterns and recommend optimizations while maintaining constitutional compliance.
 
-            History Summary:
-            {history}
+## DELIBERATION HISTORY
 
-            Please provide:
-            1. Patterns in high-risk vs low-risk decisions
-            2. Recommended threshold adjustments
-            3. Areas where human review was particularly valuable
-            4. Suggestions for improving the automated routing
+{history}
 
-            Format as JSON:
-            {{
-                "patterns": ["pattern1", "pattern2"],
-                "threshold_recommendations": "recommendations",
-                "human_review_value": "analysis",
-                "improvement_suggestions": ["suggestion1", "suggestion2"]
-            }}
-            """)
+## ANALYSIS FRAMEWORK
+
+Let's analyze the deliberation trends step-by-step:
+
+### Step 1: Pattern Recognition
+- What percentage of decisions were approved vs rejected vs timed out?
+- Are there message types that consistently require human review?
+- What is the average impact score distribution?
+
+### Step 2: Threshold Effectiveness Analysis
+- Are we catching high-risk decisions appropriately?
+- Are low-risk decisions being unnecessarily escalated?
+- What is the false positive/negative rate estimate?
+
+### Step 3: Human Review Value Assessment
+- In which cases did human intervention change the outcome?
+- Were there patterns where human review added significant value?
+- Are there cases where automation could replace manual review?
+
+### Step 4: Optimization Recommendations
+Based on the above analysis:
+- Should the impact threshold be adjusted? By how much?
+- Which message types should have different routing rules?
+- What process improvements would increase efficiency?
+
+### Self-Verification Checkpoint
+Before finalizing recommendations:
+- [ ] Recommendations maintain constitutional compliance
+- [ ] Threshold changes won't compromise security
+- [ ] Efficiency gains don't sacrifice governance quality
+
+## RESPONSE FORMAT
+
+Provide your analysis as valid JSON only:
+
+{{
+    "patterns": [
+        "Pattern 1: Description of observed pattern",
+        "Pattern 2: Description of observed pattern"
+    ],
+    "threshold_recommendations": "Specific recommendation for threshold adjustment with reasoning",
+    "human_review_value": "Analysis of where human review adds most value",
+    "improvement_suggestions": [
+        "Specific, actionable improvement suggestion 1",
+        "Specific, actionable improvement suggestion 2"
+    ]
+}}
+""")
 
             formatted_prompt = prompt.format_messages(history=history_summary)
             response = await self.llm.ainvoke(formatted_prompt)

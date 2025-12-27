@@ -71,6 +71,8 @@ class DeliberationWorkflowInput:
     required_votes: int = 3
     consensus_threshold: float = 0.66
     timeout_seconds: int = 300
+    version: str = "1.0.0"
+    agent_weights: Dict[str, float] = field(default_factory=dict)
     metadata: Dict[str, Any] = field(default_factory=dict)
 
 
@@ -91,6 +93,7 @@ class DeliberationWorkflowResult:
     reasoning: str = ""
     processing_time_ms: float = 0.0
     audit_hash: Optional[str] = None
+    version: str = "1.0.0"
     constitutional_hash: str = CONSTITUTIONAL_HASH
     compensations_executed: List[str] = field(default_factory=list)
     errors: List[str] = field(default_factory=list)
@@ -113,6 +116,7 @@ class DeliberationWorkflowResult:
             "reasoning": self.reasoning,
             "processing_time_ms": self.processing_time_ms,
             "audit_hash": self.audit_hash,
+            "version": self.version,
             "constitutional_hash": self.constitutional_hash,
             "compensations_executed": self.compensations_executed,
             "errors": self.errors,
@@ -127,6 +131,7 @@ class Vote:
     decision: str  # "approve", "reject", "abstain"
     reasoning: str
     confidence: float
+    weight: float = 1.0
     timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
 
 
@@ -520,7 +525,8 @@ class DeliberationWorkflow:
                 consensus_reached = self._check_consensus(
                     votes=self._votes,
                     required_votes=input.required_votes,
-                    threshold=input.consensus_threshold
+                    threshold=input.consensus_threshold,
+                    agent_weights=input.agent_weights
                 )
 
             # Step 5: Human review (if required or no consensus)
@@ -674,14 +680,33 @@ class DeliberationWorkflow:
         self,
         votes: List[Vote],
         required_votes: int,
-        threshold: float
+        threshold: float,
+        agent_weights: Optional[Dict[str, float]] = None
     ) -> bool:
-        """Check if consensus threshold is reached."""
+        """
+        Check if consensus threshold is reached, considering agent weights.
+
+        If agent_weights is provided, calculates the weighted average.
+        Otherwise, uses simple majority.
+        """
         if len(votes) < required_votes:
             return False
 
-        approvals = sum(1 for v in votes if v.decision == "approve")
-        return (approvals / len(votes)) >= threshold
+        agent_weights = agent_weights or {}
+
+        total_weight = 0.0
+        approved_weight = 0.0
+
+        for vote in votes:
+            weight = agent_weights.get(vote.agent_id, vote.weight)
+            total_weight += weight
+            if vote.decision == "approve":
+                approved_weight += weight
+
+        if total_weight == 0:
+            return False
+
+        return (approved_weight / total_weight) >= threshold
 
     async def _wait_for_human_decision(
         self,
@@ -771,6 +796,7 @@ class DeliberationWorkflow:
             human_reviewer=self._human_reviewer,
             reasoning=reasoning,
             processing_time_ms=processing_time,
+            version=input.version,
             constitutional_hash=CONSTITUTIONAL_HASH,
             errors=self._errors.copy(),
             metadata=input.metadata.copy(),

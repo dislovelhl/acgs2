@@ -149,7 +149,7 @@ class TestBundleManifest:
     def test_default_roots(self):
         """Manifest has default empty roots list."""
         manifest = BundleManifest(version="1.0.0", revision="a" * 40)
-        assert manifest.roots == []
+        assert manifest.roots == ["acgs/governance"]
 
     def test_default_signatures(self):
         """Manifest has default empty signatures list."""
@@ -194,7 +194,7 @@ class TestBundleManifest:
             "version": "2.0.0",
             "revision": "b" * 40,
             "roots": ["r1"],
-            "signatures": [{"keyid": "key1", "sig": "sig1"}],
+            "signatures": [{"keyid": "key12345", "sig": "a" * 64, "alg": "ed25519"}],
             "metadata": {"test": True}
         }
         manifest = BundleManifest.from_dict(data)
@@ -595,7 +595,7 @@ class TestManifestRoundTrip:
             roots=["policies/main"],
             metadata={"env": "prod", "count": 42}
         )
-        original.add_signature("key1", "sig1", "ed25519")
+        original.add_signature("key12345", "a" * 64, "ed25519")
 
         data = original.to_dict()
         restored = BundleManifest.from_dict(data)
@@ -667,6 +667,7 @@ class TestClientHeaders:
     async def test_headers_with_ecr_auth(self):
         """Headers with ECR auth use Basic prefix."""
         auth = AWSECRAuthProvider()
+        auth.refresh_token = AsyncMock(return_value="test_token")
         auth._token = "test_token"  # Mock token
 
         client = OCIRegistryClient(

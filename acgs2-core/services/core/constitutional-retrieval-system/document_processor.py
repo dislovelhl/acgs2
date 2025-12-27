@@ -157,8 +157,8 @@ class DocumentProcessor:
         text = re.sub(r'Page \d+ of \d+', '', text)
 
         # Normalize quotes
-        text = re.sub(r'["""]', '"', text)
-        text = re.sub(r'['']', "'", text)
+        text = text.replace('“', '"').replace('”', '"').replace('„', '"')
+        text = text.replace('‘', "'").replace('’', "'").replace('‚', "'")
 
         return text.strip()
 

@@ -23,10 +23,13 @@ Reference: https://temporal.io/blog/saga-pattern-made-easy
 
 import asyncio
 import logging
-from dataclasses import dataclass, field
+import json
+import os
+from pathlib import Path
+from dataclasses import dataclass, field, asdict
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional, Awaitable, TypeVar, Generic
+from typing import Any, Callable, Dict, List, Optional, Awaitable, TypeVar, Generic, Union
 from abc import ABC, abstractmethod
 import uuid
 
@@ -157,6 +160,7 @@ class SagaResult:
     failed_compensations: List[str]
     total_execution_time_ms: float
     context: SagaContext
+    version: str = "1.0.0"
     constitutional_hash: str = CONSTITUTIONAL_HASH
     errors: List[str] = field(default_factory=list)
 
@@ -170,10 +174,87 @@ class SagaResult:
             "compensated_steps": self.compensated_steps,
             "failed_compensations": self.failed_compensations,
             "total_execution_time_ms": self.total_execution_time_ms,
+            "version": self.version,
             "constitutional_hash": self.constitutional_hash,
             "errors": self.errors,
             "step_results": self.context.step_results,
         }
+
+
+@dataclass
+class SagaState:
+    """Serializable state of a saga for persistence."""
+    saga_id: str
+    status: SagaStatus
+    completed_steps: List[str]
+    failed_step: Optional[str]
+    compensated_steps: List[str]
+    failed_compensations: List[str]
+    context: Dict[str, Any]
+    version: str = "1.0.0"
+    updated_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+
+    def to_json(self) -> str:
+        """Serialize to JSON string."""
+        data = asdict(self)
+        data['status'] = self.status.value
+        data['updated_at'] = self.updated_at.isoformat()
+        return json.dumps(data)
+
+    @classmethod
+    def from_json(cls, json_str: str) -> 'SagaState':
+        """Deserialize from JSON string."""
+        data = json.loads(json_str)
+        data['status'] = SagaStatus(data['status'])
+        data['updated_at'] = datetime.fromisoformat(data['updated_at'])
+        return cls(**data)
+
+
+class SagaPersistenceProvider(ABC):
+    """Abstract provider for saga state persistence."""
+
+    @abstractmethod
+    async def save_state(self, state: SagaState) -> None:
+        """Save saga state."""
+        pass
+
+    @abstractmethod
+    async def load_state(self, saga_id: str) -> Optional[SagaState]:
+        """Load saga state."""
+        pass
+
+    @abstractmethod
+    async def delete_state(self, saga_id: str) -> None:
+        """Delete saga state."""
+        pass
+
+
+class FileSagaPersistenceProvider(SagaPersistenceProvider):
+    """File-based persistence provider for saga state."""
+
+    def __init__(self, base_path: Union[str, Path] = "storage/workflow_states"):
+        self.base_path = Path(base_path)
+        self.base_path.mkdir(parents=True, exist_ok=True)
+
+    def _get_path(self, saga_id: str) -> Path:
+        return self.base_path / f"{saga_id}.json"
+
+    async def save_state(self, state: SagaState) -> None:
+        path = self._get_path(state.saga_id)
+        with open(path, 'w') as f:
+            f.write(state.to_json())
+
+    async def load_state(self, saga_id: str) -> Optional[SagaState]:
+        path = self._get_path(saga_id)
+        if not path.exists():
+            return None
+        with open(path, 'r') as f:
+            return SagaState.from_json(f.read())
+
+    async def delete_state(self, saga_id: str) -> None:
+        path = self._get_path(saga_id)
+        if path.exists():
+            path.unlink()
 
 
 class SagaActivities(ABC):
@@ -435,10 +516,14 @@ class ConstitutionalSagaWorkflow:
     def __init__(
         self,
         saga_id: str,
-        activities: Optional[SagaActivities] = None
+        activities: Optional[SagaActivities] = None,
+        persistence_provider: Optional[SagaPersistenceProvider] = None,
+        version: str = "1.0.0"
     ):
         self.saga_id = saga_id
         self.activities = activities or DefaultSagaActivities()
+        self.persistence_provider = persistence_provider
+        self.version = version
 
         self._steps: List[SagaStep] = []
         self._compensations: List[SagaCompensation] = []
@@ -454,6 +539,21 @@ class ConstitutionalSagaWorkflow:
         self._steps.append(step)
         return self
 
+    async def _save_current_state(self, context: SagaContext):
+        """Save the current saga state if a persistence provider is configured."""
+        if self.persistence_provider:
+            state = SagaState(
+                saga_id=self.saga_id,
+                status=self._status,
+                completed_steps=self._completed_steps.copy(),
+                failed_step=self._failed_step,
+                compensated_steps=self._compensated_steps.copy(),
+                failed_compensations=self._failed_compensations.copy(),
+                context=context.step_results.copy(),
+                version=self.version
+            )
+            await self.persistence_provider.save_state(state)
+
     async def execute(self, context: Optional[SagaContext] = None) -> SagaResult:
         """
         Execute the saga with automatic compensation on failure.
@@ -465,6 +565,9 @@ class ConstitutionalSagaWorkflow:
 
         if context is None:
             context = SagaContext(saga_id=self.saga_id)
+
+        # Save initial state
+        await self._save_current_state(context)
 
         try:
             # Execute steps in order
@@ -485,6 +588,9 @@ class ConstitutionalSagaWorkflow:
                 )
             else:
                 self._status = SagaStatus.COMPLETED
+
+            # Final state save
+            await self._save_current_state(context)
 
         except Exception as e:
             logger.error(f"Saga {self.saga_id} failed with exception: {e}")
@@ -538,6 +644,9 @@ class ConstitutionalSagaWorkflow:
                 context.set_step_result(step.name, result)
                 self._completed_steps.append(step.name)
 
+                # Save state after each step
+                await self._save_current_state(context)
+
                 logger.info(
                     f"Saga {self.saga_id}: Step '{step.name}' completed "
                     f"(attempt {attempt + 1}, {step.execution_time_ms:.2f}ms)"
@@ -580,6 +689,9 @@ class ConstitutionalSagaWorkflow:
                 self._compensated_steps.append(compensation.name)
             else:
                 self._failed_compensations.append(compensation.name)
+
+            # Save state after each compensation
+            await self._save_current_state(context)
 
     async def _execute_compensation(
         self,
@@ -642,9 +754,41 @@ class ConstitutionalSagaWorkflow:
             failed_compensations=self._failed_compensations.copy(),
             total_execution_time_ms=execution_time,
             context=context,
+            version=self.version,
             constitutional_hash=context.constitutional_hash,
             errors=context.errors.copy(),
         )
+
+    @staticmethod
+    async def resume(
+        saga_id: str,
+        persistence_provider: SagaPersistenceProvider,
+        activities: Optional[SagaActivities] = None
+    ) -> Optional["ConstitutionalSagaWorkflow"]:
+        """
+        Resume a saga from persistent storage.
+
+        This recreates the workflow instance and populates its state.
+        Caller must re-add all steps to the workflow before calling execute().
+        """
+        state = await persistence_provider.load_state(saga_id)
+        if not state:
+            return None
+
+        saga = ConstitutionalSagaWorkflow(
+            saga_id=saga_id,
+            activities=activities,
+            persistence_provider=persistence_provider,
+            version=state.version
+        )
+
+        saga._status = state.status
+        saga._completed_steps = state.completed_steps.copy()
+        saga._failed_step = state.failed_step
+        saga._compensated_steps = state.compensated_steps.copy()
+        saga._failed_compensations = state.failed_compensations.copy()
+
+        return saga
 
     def get_status(self) -> SagaStatus:
         """Query current saga status."""

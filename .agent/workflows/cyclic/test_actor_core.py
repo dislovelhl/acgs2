@@ -102,3 +102,46 @@ async def test_error_handler():
 
     assert final_state.context.get("handled") is True
     assert "fail" in final_state.errors[0]
+@pytest.mark.asyncio
+async def test_subgraph_execution():
+    """Test that a StateGraph can be used as a node in another graph."""
+
+    # 1. Child Graph
+    child_graph = StateGraph("child")
+
+    async def child_node(state: GlobalState) -> GlobalState:
+        state.context["child_visited"] = True
+        state.is_finished = True # Signal end of child graph
+        return state
+
+    child_graph.add_node("child_node", child_node)
+    child_graph.set_entry_point("child_node")
+
+    # 2. Parent Graph
+    parent_graph = StateGraph("parent")
+
+    async def parent_start(state: GlobalState) -> GlobalState:
+        state.context["parent_started"] = True
+        return state
+
+    async def parent_end(state: GlobalState) -> GlobalState:
+        state.context["parent_ended"] = True
+        state.is_finished = True
+        return state
+
+    parent_graph.add_node("start", parent_start)
+    parent_graph.add_node("call_child", child_graph) # CHILD GRAPH AS NODE
+    parent_graph.add_node("end", parent_end)
+
+    parent_graph.set_entry_point("start")
+    parent_graph.add_conditional_edges("start", lambda s: "call_child")
+    parent_graph.add_conditional_edges("call_child", lambda s: "end")
+
+    # 3. Execute
+    final_state = await parent_graph.execute()
+
+    # 4. Verify
+    assert final_state.context.get("parent_started") is True
+    assert final_state.context.get("child_visited") is True
+    assert final_state.context.get("parent_ended") is True
+    assert final_state.is_finished is True
