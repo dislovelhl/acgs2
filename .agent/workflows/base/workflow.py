@@ -35,10 +35,11 @@ try:
     from enhanced_agent_bus.exceptions import ConstitutionalHashMismatchError
 except ImportError:
     class ConstitutionalHashMismatchError(Exception):
-        def __init__(self, expected: str, actual: str):
-            self.expected = expected
-            self.actual = actual
-            super().__init__(f"Constitutional hash mismatch: expected {expected}, got {actual}")
+        def __init__(self, expected_hash: str, actual_hash: str, context: Optional[str] = None):
+            self.expected_hash = expected_hash
+            self.actual_hash = actual_hash
+            self.context = context
+            super().__init__(f"Constitutional hash mismatch: expected {expected_hash}, got {actual_hash}")
 
 
 logger = logging.getLogger(__name__)
@@ -247,8 +248,8 @@ class BaseWorkflow(ABC):
 
             if self.fail_closed:
                 raise ConstitutionalHashMismatchError(
-                    expected=CONSTITUTIONAL_HASH,
-                    actual=hash_to_check,
+                    expected_hash=CONSTITUTIONAL_HASH,
+                    actual_hash=hash_to_check,
                 )
 
             logger.warning(
