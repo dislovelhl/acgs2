@@ -19,8 +19,9 @@ class TestCellularResilience:
         Verify that a failure in the MessageProcessor's primary path 
         triggers a fallback to local 'DEGRADED' mode in the AgentBus.
         """
-        bus = EnhancedAgentBus()
-        
+        # MACI is disabled for these legacy tests to isolate cellular resilience testing
+        bus = EnhancedAgentBus(enable_maci=False)
+
         # Mock the processor to raise an exception, simulating a crash/hang
         with patch.object(bus._processor, 'process', side_effect=Exception("Infrastructure Crash simulated")):
             message = AgentMessage(
@@ -43,8 +44,8 @@ class TestCellularResilience:
         """
         Verify that Isolated Mode (Governor-in-a-Box) maintains sub-5ms latency.
         """
-        # Initialize processor in isolated mode
-        processor = MessageProcessor(isolated_mode=True)
+        # Initialize processor in isolated mode (MACI disabled for isolated testing)
+        processor = MessageProcessor(isolated_mode=True, enable_maci=False)
         
         message = AgentMessage(
             message_type=MessageType.COMMAND,
@@ -74,7 +75,8 @@ class TestCellularResilience:
         Stress test the AgentBus with high concurrency during a simulated outage.
         Ensures constitutional locks remain intact and state doesn't corrupt.
         """
-        bus = EnhancedAgentBus()
+        # MACI is disabled for these legacy tests to isolate stress testing
+        bus = EnhancedAgentBus(enable_maci=False)
 
         # Simulate partial failure: 50% of requests fail to the processor
         # Use asyncio.Lock to prevent race conditions on counter
@@ -127,13 +129,14 @@ class TestCellularResilience:
         import message_processor
 
         # Test 1: Isolated mode always disables dynamic policy regardless of setting
-        proc_isolated = MessageProcessor(use_dynamic_policy=True, isolated_mode=True)
+        # MACI is disabled for these legacy tests to isolate policy decoupling testing
+        proc_isolated = MessageProcessor(use_dynamic_policy=True, isolated_mode=True, enable_maci=False)
         assert proc_isolated._use_dynamic_policy == False, "Isolated mode should always disable dynamic policy"
         assert proc_isolated._isolated_mode == True, "Isolated mode flag should be True"
 
         # Test 2: Isolated mode = False respects POLICY_CLIENT_AVAILABLE
         # (If POLICY_CLIENT_AVAILABLE is False, _use_dynamic_policy remains False)
-        proc_normal = MessageProcessor(use_dynamic_policy=True, isolated_mode=False)
+        proc_normal = MessageProcessor(use_dynamic_policy=True, isolated_mode=False, enable_maci=False)
         expected_dynamic = message_processor.POLICY_CLIENT_AVAILABLE
         assert proc_normal._use_dynamic_policy == expected_dynamic, \
             f"Non-isolated mode with use_dynamic_policy=True should match POLICY_CLIENT_AVAILABLE={expected_dynamic}"

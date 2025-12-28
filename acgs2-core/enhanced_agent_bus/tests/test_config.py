@@ -37,16 +37,18 @@ class TestBusConfigurationDefaults:
         """Test default feature flag values."""
         config = BusConfiguration()
         assert config.use_dynamic_policy is False
-        assert config.policy_fail_closed is False
+        # SECURITY FIX (2025-12): Default to fail-closed for security-first behavior
+        assert config.policy_fail_closed is True
         assert config.use_kafka is False
         assert config.use_redis_registry is False
         assert config.use_rust is True
         assert config.enable_metering is True
 
     def test_default_maci_settings(self):
-        """Test default MACI settings."""
+        """Test default MACI settings - enabled by default per audit finding 2025-12."""
         config = BusConfiguration()
-        assert config.enable_maci is False
+        # SECURITY: MACI enabled by default to prevent Gödel bypass attacks
+        assert config.enable_maci is True
         assert config.maci_strict_mode is True
 
     def test_default_optional_dependencies(self):

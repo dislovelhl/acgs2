@@ -105,7 +105,8 @@ class TestPolicyRegistryClientActual:
         assert client.registry_url == "http://localhost:8000"
         assert client.timeout == 5.0
         assert client.cache_ttl == 300
-        assert client.fail_closed is False
+        # SECURITY FIX (2025-12): Default to fail-closed for security-first behavior
+        assert client.fail_closed is True
         assert client._cache == {}
         assert client._http_client is None
 
@@ -265,13 +266,33 @@ class TestValidateMessageActual:
         )
 
     @pytest.mark.asyncio
-    async def test_no_policy_returns_warning(self, client, message):
-        """Test no policy returns valid with warning."""
+    async def test_no_policy_fails_closed_by_default(self, client, message):
+        """Test no policy fails closed by default (SECURITY FIX 2025-12).
+
+        When policy registry is unavailable or policy not found, validation
+        must fail (fail-closed) to prevent bypass attacks.
+        """
         with patch.object(client, 'get_policy_content', new_callable=AsyncMock) as mock_get:
             mock_get.return_value = None
             result = await client.validate_message_signature(message)
-            assert result.is_valid is True
-            assert any("unavailable" in w.lower() for w in result.warnings)
+            # SECURITY: Default fail-closed behavior - policy unavailable = DENY
+            assert result.is_valid is False
+            assert any("unavailable" in e.lower() or "not found" in e.lower() for e in result.errors)
+
+    @pytest.mark.asyncio
+    async def test_no_policy_with_fail_open_returns_warning(self, message):
+        """Test no policy with explicit fail_closed=False returns warning."""
+        # Explicit fail-open for legacy/testing scenarios only
+        fail_open_client = PolicyRegistryClient(fail_closed=False)
+        await fail_open_client.initialize()
+        try:
+            with patch.object(fail_open_client, 'get_policy_content', new_callable=AsyncMock) as mock_get:
+                mock_get.return_value = None
+                result = await fail_open_client.validate_message_signature(message)
+                assert result.is_valid is True
+                assert any("unavailable" in w.lower() for w in result.warnings)
+        finally:
+            await fail_open_client.close()
 
     @pytest.mark.asyncio
     async def test_valid_content_passes(self, client, message):
@@ -345,14 +366,34 @@ class TestValidateMessageActual:
             assert any("topic" in w.lower() for w in result.warnings)
 
     @pytest.mark.asyncio
-    async def test_network_error_returns_warning(self, client, message):
-        """Test network error returns valid with warning."""
+    async def test_network_error_fails_closed_by_default(self, client, message):
+        """Test network error fails closed by default (SECURITY FIX 2025-12).
+
+        Network errors during validation must result in DENY to prevent
+        bypass attacks when policy registry is unreachable.
+        """
         import httpx
         with patch.object(client, 'get_policy_content', new_callable=AsyncMock) as mock_get:
             mock_get.side_effect = httpx.TimeoutException("Timeout")
             result = await client.validate_message_signature(message)
-            assert result.is_valid is True
-            assert any("network" in w.lower() for w in result.warnings)
+            # SECURITY: Default fail-closed behavior - network error = DENY
+            assert result.is_valid is False
+            assert any("network" in e.lower() for e in result.errors)
+
+    @pytest.mark.asyncio
+    async def test_network_error_with_fail_open_returns_warning(self, message):
+        """Test network error with explicit fail_closed=False returns warning."""
+        import httpx
+        fail_open_client = PolicyRegistryClient(fail_closed=False)
+        await fail_open_client.initialize()
+        try:
+            with patch.object(fail_open_client, 'get_policy_content', new_callable=AsyncMock) as mock_get:
+                mock_get.side_effect = httpx.TimeoutException("Timeout")
+                result = await fail_open_client.validate_message_signature(message)
+                assert result.is_valid is True
+                assert any("network" in w.lower() for w in result.warnings)
+        finally:
+            await fail_open_client.close()
 
 
 class TestHealthCheckActual:

@@ -70,8 +70,13 @@ filterwarnings = [
 ]
 
 [tool.coverage.run]
+# Source directory for coverage collection
 source = ["."]
 branch = true
+# Ensure coverage finds modules even when run from different directories
+relative_files = true
+# Dynamically find source based on current directory
+dynamic_context = "test_function"
 omit = [
     "tests/*",
     "*/__pycache__/*",

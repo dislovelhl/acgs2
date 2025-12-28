@@ -33,9 +33,9 @@ async def lifespan(app: FastAPI):
     logger.info("Starting Audit Service")
     await ledger.start()
     logger.info("Audit Service started")
-    
+
     yield
-    
+
     # Shutdown
     logger.info("Shutting down Audit Service")
     await ledger.stop()
@@ -82,10 +82,25 @@ async def get_batch_root(batch_id: str):
         raise HTTPException(status_code=404, detail="Batch not found or root not available")
     return {"batch_id": batch_id, "root_hash": root}
 
+@app.post("/record")
+async def record_validation(result: Dict[str, Any]):
+    """Record a validation result in the audit ledger"""
+    try:
+        # Record the validation result
+        entry_hash = await ledger.add_validation_result(result)
+        return {
+            "status": "recorded",
+            "entry_hash": entry_hash,
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+    except Exception as e:
+        logger.error(f"Failed to record validation: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.post("/verify")
 async def verify_entry(
-    entry_hash: str, 
-    merkle_proof: List[Any], 
+    entry_hash: str,
+    merkle_proof: List[Any],
     root_hash: str
 ):
     """Verify an inclusion proof for an entry hash"""

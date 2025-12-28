@@ -34,8 +34,9 @@ class TestMessageProcessorActual:
 
     @pytest.fixture
     def processor(self):
-        """Create a MessageProcessor instance."""
-        return MessageProcessor()
+        """Create a MessageProcessor instance with MACI disabled for isolated testing."""
+        # MACI is disabled for these legacy tests to isolate core functionality
+        return MessageProcessor(enable_maci=False)
 
     def test_processor_initialization(self, processor):
         """Test processor initializes correctly."""
@@ -170,8 +171,9 @@ class TestEnhancedAgentBusActual:
 
     @pytest.fixture
     def bus(self):
-        """Create an EnhancedAgentBus instance."""
-        return EnhancedAgentBus()
+        """Create an EnhancedAgentBus instance with MACI disabled for isolated testing."""
+        # MACI is disabled for these legacy tests to isolate core functionality
+        return EnhancedAgentBus(enable_maci=False)
 
     @pytest.mark.asyncio
     async def test_bus_initialization(self, bus):
@@ -458,8 +460,9 @@ class TestMessageProcessorAdditional:
 
     @pytest.fixture
     def processor(self):
-        """Create a MessageProcessor instance."""
-        return MessageProcessor()
+        """Create a MessageProcessor instance with MACI disabled for isolated testing."""
+        # MACI is disabled for these legacy tests to isolate core functionality
+        return MessageProcessor(enable_maci=False)
 
     def test_unregister_handler_not_found(self, processor):
         """Test unregistering handler that doesn't exist."""

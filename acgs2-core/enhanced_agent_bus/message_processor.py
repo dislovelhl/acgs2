@@ -235,7 +235,8 @@ class MessageProcessor:
         isolated_mode: bool = False,
         metering_hooks: Optional['MeteringHooks'] = None,
         enable_metering: bool = True,
-        enable_maci: bool = False,
+        # SECURITY FIX (audit finding 2025-12): MACI enabled by default
+        enable_maci: bool = True,
         maci_registry: Optional[Any] = None,
         maci_enforcer: Optional[Any] = None,
         maci_strict_mode: bool = True,
@@ -251,7 +252,7 @@ class MessageProcessor:
             isolated_mode: If True, run in minimal-dependency mode for edge/governor-in-a-box.
             metering_hooks: Optional metering hooks for production billing.
             enable_metering: If True and metering available, enable usage metering.
-            enable_maci: If True, enable MACI role separation enforcement.
+            enable_maci: Enable MACI role separation enforcement (default True per audit).
             maci_registry: Optional MACIRoleRegistry for role management.
             maci_enforcer: Optional MACIEnforcer for validation.
             maci_strict_mode: If True, fail-closed on MACI errors.

@@ -1,0 +1,34 @@
+system:
+  name: acgs-2
+  runtime: kubernetes
+  workload_profile:
+    cpu_services: true
+    gpu_services: true
+  governance:
+    model: constitutional
+    fail_closed: true
+    hitl: supported
+    constitutional_hash: "cdd01ef066bc6cf2"
+
+sources:
+  - path: acgs2-core/services
+    type: microservices
+  - path: acgs2-core/enhanced_agent_bus
+    type: agent-modules
+  - path: acgs2-core/orchestrators
+    type: orchestrator-modules
+  - path: acgs2-core/policies
+    type: governance-artifacts
+  - path: acgs2-infra
+    type: infrastructure-as-code
+
+diagrams:
+  c4:
+    context: true
+    container: true
+    component: true
+  dependencies: true
+  sequences:
+    - agent_bus_validation
+    - policy_enforcement_flow
+    - blockchain_audit_trail

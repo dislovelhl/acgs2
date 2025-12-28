@@ -152,10 +152,12 @@ class TestMessageProcessorInit:
         # Metering hooks may still be None if not available
         assert processor._enable_metering is False or processor._metering_hooks is None
 
-    def test_maci_disabled_by_default(self):
-        """MACI is disabled by default."""
+    def test_maci_enabled_by_default(self):
+        """MACI is enabled by default per audit finding 2025-12."""
         processor = MessageProcessor()
-        assert processor._enable_maci is False
+        # SECURITY: MACI enabled by default to prevent Gödel bypass attacks
+        assert processor._enable_maci is True
+        # Registry and enforcer are set via bus, not processor default
         assert processor._maci_registry is None
         assert processor._maci_enforcer is None
 

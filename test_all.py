@@ -65,6 +65,13 @@ def main():
     else:
         obs_passed = True # Skip if not found
 
+    # 6. Governance Experiments (Research)
+    res_path = os.path.join(root, "acgs2-research/governance-experiments")
+    if os.path.exists(res_path):
+        gov_exp_passed = run_test("Governance Experiments", os.path.join(res_path, "tests"), {"PYTHONPATH": f"{res_path}:{os.path.join(res_path, 'src')}"})
+    else:
+        gov_exp_passed = True # Skip if not found
+
     # Summary
     print("================ Summary ================")
     print(f"Agent Workflows: {'SUCCESS' if wf_passed else 'FAILED'}")
@@ -73,12 +80,14 @@ def main():
     for name, passed in service_results.items():
         print(f"{name:16}: {'SUCCESS' if passed else 'FAILED'}")
     print(f"Observability:   {'SUCCESS' if obs_passed else 'FAILED'}")
+    print(f"Gov Experiments: {'SUCCESS' if gov_exp_passed else 'FAILED'}")
 
     all_passed = all([
         wf_passed,
         perf_passed,
         bus_passed,
         obs_passed,
+        gov_exp_passed,
         *service_results.values()
     ])
 

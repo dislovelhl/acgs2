@@ -87,9 +87,15 @@ class TestReportValidation:
             constitutional_hash="cdd01ef066bc6cf2",
         )
 
-        audit_hash = await client.report_validation(result)
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {"entry_hash": "test_hash_123"}
 
-        assert audit_hash == "simulated_audit_hash"
+        with patch.object(client.client, "post", new_callable=AsyncMock) as mock_post:
+            mock_post.return_value = mock_response
+            audit_hash = await client.report_validation(result)
+            assert audit_hash == "test_hash_123"
+            mock_post.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_report_validation_with_plain_dataclass(self) -> None:
@@ -97,9 +103,14 @@ class TestReportValidation:
         client = AuditClient()
         result = PlainDataclass(field1="test", field2=42)
 
-        audit_hash = await client.report_validation(result)
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {"entry_hash": "test_hash_456"}
 
-        assert audit_hash == "simulated_audit_hash"
+        with patch.object(client.client, "post", new_callable=AsyncMock) as mock_post:
+            mock_post.return_value = mock_response
+            audit_hash = await client.report_validation(result)
+            assert audit_hash == "test_hash_456"
 
     @pytest.mark.asyncio
     async def test_report_validation_with_dict(self) -> None:
@@ -111,9 +122,14 @@ class TestReportValidation:
             "constitutional_hash": "cdd01ef066bc6cf2",
         }
 
-        audit_hash = await client.report_validation(result)
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {"entry_hash": "test_hash_789"}
 
-        assert audit_hash == "simulated_audit_hash"
+        with patch.object(client.client, "post", new_callable=AsyncMock) as mock_post:
+            mock_post.return_value = mock_response
+            audit_hash = await client.report_validation(result)
+            assert audit_hash == "test_hash_789"
 
     @pytest.mark.asyncio
     async def test_report_validation_with_invalid_result(self) -> None:
@@ -126,9 +142,14 @@ class TestReportValidation:
             errors=["Hash mismatch"],
         )
 
-        audit_hash = await client.report_validation(result)
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {"entry_hash": "invalid_hash_result"}
 
-        assert audit_hash == "simulated_audit_hash"
+        with patch.object(client.client, "post", new_callable=AsyncMock) as mock_post:
+            mock_post.return_value = mock_response
+            audit_hash = await client.report_validation(result)
+            assert audit_hash == "invalid_hash_result"
 
     @pytest.mark.asyncio
     async def test_report_validation_exception_handling(self) -> None:
@@ -160,9 +181,14 @@ class TestReportValidation:
         """Test reporting with empty dictionary."""
         client = AuditClient()
 
-        audit_hash = await client.report_validation({})
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {"entry_hash": "empty_dict_hash"}
 
-        assert audit_hash == "simulated_audit_hash"
+        with patch.object(client.client, "post", new_callable=AsyncMock) as mock_post:
+            mock_post.return_value = mock_response
+            audit_hash = await client.report_validation({})
+            assert audit_hash == "empty_dict_hash"
 
 
 # =============================================================================
@@ -296,8 +322,14 @@ class TestAuditClientIntegration:
             message_id="integration-msg",
             constitutional_hash="cdd01ef066bc6cf2",
         )
-        audit_hash = await client.report_validation(result)
-        assert audit_hash is not None
+        mock_post_response = MagicMock()
+        mock_post_response.status_code = 200
+        mock_post_response.json.return_value = {"entry_hash": "full_workflow_hash"}
+
+        with patch.object(client.client, "post", new_callable=AsyncMock) as mock_post:
+            mock_post.return_value = mock_post_response
+            audit_hash = await client.report_validation(result)
+            assert audit_hash == "full_workflow_hash"
 
         # Mock stats response
         mock_response = MagicMock()
@@ -322,13 +354,19 @@ class TestAuditClientIntegration:
             for i in range(5)
         ]
 
+        mock_post_response = MagicMock()
+        mock_post_response.status_code = 200
+        mock_post_response.json.return_value = {"entry_hash": "multi_test_hash"}
+
         hashes = []
-        for result in results:
-            audit_hash = await client.report_validation(result)
-            hashes.append(audit_hash)
+        with patch.object(client.client, "post", new_callable=AsyncMock) as mock_post:
+            mock_post.return_value = mock_post_response
+            for result in results:
+                audit_hash = await client.report_validation(result)
+                hashes.append(audit_hash)
 
         assert len(hashes) == 5
-        assert all(h == "simulated_audit_hash" for h in hashes)
+        assert all(h == "multi_test_hash" for h in hashes)
 
     @pytest.mark.asyncio
     async def test_mixed_validation_results(self) -> None:
@@ -350,9 +388,15 @@ class TestAuditClientIntegration:
             errors=["Constitutional hash mismatch"],
         )
 
-        valid_hash = await client.report_validation(valid_result)
-        invalid_hash = await client.report_validation(invalid_result)
+        mock_post_response = MagicMock()
+        mock_post_response.status_code = 200
+        mock_post_response.json.return_value = {"entry_hash": "mixed_test_hash"}
 
-        assert valid_hash is not None
-        assert invalid_hash is not None
+        with patch.object(client.client, "post", new_callable=AsyncMock) as mock_post:
+            mock_post.return_value = mock_post_response
+            valid_hash = await client.report_validation(valid_result)
+            invalid_hash = await client.report_validation(invalid_result)
+
+        assert valid_hash == "mixed_test_hash"
+        assert invalid_hash == "mixed_test_hash"
 

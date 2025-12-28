@@ -64,8 +64,8 @@ def test_processor_imports():
     """Verify MessageProcessor can be imported and instantiated."""
     from core import MessageProcessor
 
-    # Create processor
-    processor = MessageProcessor()
+    # Create processor (MACI disabled for environment check tests)
+    processor = MessageProcessor(enable_maci=False)
 
     assert processor is not None
     assert processor.constitutional_hash == "cdd01ef066bc6cf2"
@@ -82,8 +82,8 @@ async def test_basic_message_flow():
     from models import AgentMessage, MessageType, MessageStatus
     from core import MessageProcessor
 
-    # Create processor
-    processor = MessageProcessor()
+    # Create processor (MACI disabled for environment check tests)
+    processor = MessageProcessor(enable_maci=False)
 
     # Create valid message
     message = AgentMessage(

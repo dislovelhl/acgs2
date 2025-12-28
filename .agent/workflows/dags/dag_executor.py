@@ -22,6 +22,17 @@ try:
 except ImportError:
     CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
 
+# Import for constitutional validation
+try:
+    from enhanced_agent_bus.exceptions import ConstitutionalHashMismatchError
+except ImportError:
+    class ConstitutionalHashMismatchError(Exception):
+        """Constitutional hash validation failed."""
+        def __init__(self, expected: str, actual: str):
+            self.expected = expected
+            self.actual = actual
+            super().__init__(f"Constitutional hash mismatch: expected {expected}, got {actual}")
+
 
 logger = logging.getLogger(__name__)
 
@@ -128,6 +139,7 @@ class DAGExecutor:
         constitutional_hash: str = CONSTITUTIONAL_HASH,
         max_parallel_nodes: int = 10,
         result_cache: Optional[Dict[str, Any]] = None,
+        fail_closed: bool = True,
     ):
         """
         Initialize DAG executor.
@@ -137,11 +149,14 @@ class DAGExecutor:
             constitutional_hash: Expected constitutional hash
             max_parallel_nodes: Maximum nodes to execute concurrently
             result_cache: Optional dictionary to share results across executions
+            fail_closed: If True (default), constitutional hash mismatch raises error.
+                        SECURITY: Should always be True in production.
         """
         self.dag_id = dag_id or str(uuid.uuid4())
         self.constitutional_hash = constitutional_hash
         self.max_parallel_nodes = max_parallel_nodes
         self._external_cache = result_cache if result_cache is not None else {}
+        self._fail_closed = fail_closed
 
         self._nodes: Dict[str, DAGNode] = {}
         self._compensations: List[StepCompensation] = []
@@ -151,6 +166,47 @@ class DAGExecutor:
         self._results: Dict[str, Any] = {}
         self._errors: List[str] = []
         self._dependents: Dict[str, List[str]] = {}
+
+    def _validate_constitutional_hash(self, context: WorkflowContext) -> bool:
+        """
+        Validate constitutional hash from context.
+
+        SECURITY FIX (audit finding 2025-12): DAGExecutor must validate
+        constitutional hash before executing nodes that require it.
+
+        Args:
+            context: Workflow context containing constitutional_hash
+
+        Returns:
+            True if valid, False if invalid (when fail_closed=False)
+
+        Raises:
+            ConstitutionalHashMismatchError: If hash mismatch and fail_closed=True
+        """
+        # Get hash from context or use expected
+        context_hash = context.step_results.get("constitutional_hash", self.constitutional_hash)
+
+        is_valid = context_hash == self.constitutional_hash
+
+        if not is_valid:
+            error_msg = (
+                f"DAG {self.dag_id}: Constitutional hash mismatch - "
+                f"expected {self.constitutional_hash}, got {context_hash}"
+            )
+
+            if self._fail_closed:
+                logger.error(error_msg)
+                raise ConstitutionalHashMismatchError(
+                    expected=self.constitutional_hash,
+                    actual=context_hash
+                )
+            else:
+                logger.warning(
+                    f"{error_msg} - continuing (fail_closed=False) "
+                    "WARNING: This should not be used in production"
+                )
+
+        return is_valid
 
     def add_node(self, node: DAGNode) -> "DAGExecutor":
         """
@@ -413,10 +469,28 @@ class DAGExecutor:
         """
         Execute a single DAG node.
 
+        SECURITY FIX (audit finding 2025-12): Now validates constitutional
+        hash before executing nodes that require it.
+
         Returns:
             Tuple of (node_id, result, success)
         """
         node.started_at = datetime.now(timezone.utc)
+
+        # SECURITY FIX: Validate constitutional hash BEFORE execution
+        # if the node requires it (audit finding 2025-12)
+        if node.requires_constitutional_check:
+            try:
+                self._validate_constitutional_hash(context)
+                logger.debug(
+                    f"DAG {self.dag_id}: Node '{node.id}' constitutional validation passed"
+                )
+            except ConstitutionalHashMismatchError as e:
+                node.error = str(e)
+                logger.error(
+                    f"DAG {self.dag_id}: Node '{node.id}' failed constitutional validation"
+                )
+                return (node.id, None, False)
 
         # Check cache if key is present
         if node.cache_key and node.cache_key in self._external_cache:

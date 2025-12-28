@@ -23,6 +23,17 @@ try:
 except ImportError:
     CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
 
+# Import for constitutional validation
+try:
+    from enhanced_agent_bus.exceptions import ConstitutionalHashMismatchError
+except ImportError:
+    class ConstitutionalHashMismatchError(Exception):
+        """Constitutional hash validation failed."""
+        def __init__(self, expected: str, actual: str):
+            self.expected = expected
+            self.actual = actual
+            super().__init__(f"Constitutional hash mismatch: expected {expected}, got {actual}")
+
 # Metrics integration
 try:
     from shared import metrics
@@ -129,6 +140,7 @@ class BaseSaga:
         saga_id: Optional[str] = None,
         constitutional_hash: str = CONSTITUTIONAL_HASH,
         max_compensation_retries: int = 3,
+        fail_closed: bool = True,
     ):
         """
         Initialize saga.
@@ -137,10 +149,13 @@ class BaseSaga:
             saga_id: Unique saga identifier
             constitutional_hash: Expected constitutional hash
             max_compensation_retries: Max retries for failed compensations
+            fail_closed: If True (default), fail on constitutional hash mismatch.
+                        SECURITY: Should always be True in production.
         """
         self.saga_id = saga_id or str(uuid.uuid4())
         self.constitutional_hash = constitutional_hash
         self.max_compensation_retries = max_compensation_retries
+        self._fail_closed = fail_closed
 
         self._steps: List[SagaStep] = []
         self._executed_steps: List[SagaStep] = []
@@ -277,6 +292,45 @@ class BaseSaga:
             errors=errors,
         )
 
+    def _validate_constitutional_hash(self, context: WorkflowContext) -> bool:
+        """
+        Validate constitutional hash from context.
+
+        SECURITY FIX (audit finding 2025-12): BaseSaga must validate
+        constitutional hash before executing steps. This prevents
+        unvalidated constitutional hash flows through the saga.
+
+        Args:
+            context: Workflow context containing step results
+
+        Returns:
+            True if hash is valid
+
+        Raises:
+            ConstitutionalHashMismatchError: If fail_closed=True and hash invalid
+        """
+        context_hash = context.step_results.get("constitutional_hash", self.constitutional_hash)
+        is_valid = context_hash == self.constitutional_hash
+
+        if not is_valid:
+            error_msg = (
+                f"Saga {self.saga_id}: Constitutional hash mismatch - "
+                f"expected {self.constitutional_hash}, got {context_hash}"
+            )
+            if self._fail_closed:
+                logger.error(error_msg)
+                raise ConstitutionalHashMismatchError(
+                    expected=self.constitutional_hash,
+                    actual=context_hash
+                )
+            else:
+                logger.warning(
+                    f"{error_msg} - continuing (fail_closed=False) - "
+                    "WARNING: fail_closed=False should not be used in production"
+                )
+
+        return is_valid
+
     async def _execute_step(
         self,
         step: SagaStep,
@@ -289,6 +343,16 @@ class BaseSaga:
         Returns:
             True if step succeeded, False otherwise
         """
+        # SECURITY FIX (audit finding 2025-12): Validate constitutional hash
+        # BEFORE executing the step to prevent unvalidated flows
+        try:
+            self._validate_constitutional_hash(context)
+            logger.debug(f"Saga {self.saga_id}: Step '{step.name}' constitutional validation passed")
+        except ConstitutionalHashMismatchError as e:
+            step.error = str(e)
+            logger.error(f"Saga {self.saga_id}: Step '{step.name}' failed constitutional validation")
+            return False
+
         logger.debug(f"Saga {self.saga_id}: Executing step '{step.name}'")
 
         step_input = {

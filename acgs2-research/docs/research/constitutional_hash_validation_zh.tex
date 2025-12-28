@@ -56,18 +56,18 @@
 
 \begin{figure}[htbp]
 \centering
-\begin{tikzpicture}[node distance=1.5cm]
-\node (decision) [draw, circle] {治理\\决策};
-\node (hash) [draw, rectangle, right of=decision] {宪法哈希\\生成};
-\node (validation) [draw, rectangle, right of=hash] {加密\\验证};
-\node (blockchain) [draw, rectangle, below of=validation] {区块链\\存储};
-\node (audit) [draw, rectangle, left of=blockchain] {不可变\\审计轨迹};
+\begin{tikzpicture}[node distance=2cm, auto, >=Stealth]
+    \node (decision) [draw, circle, align=center] {治理\\决策};
+    \node (hash) [draw, rectangle, right=of decision, align=center] {宪法哈希\\生成};
+    \node (validation) [draw, rectangle, right=of hash, align=center] {加密\\验证};
+    \node (blockchain) [draw, rectangle, below=of validation, align=center] {区块链\\存储};
+    \node (audit) [draw, rectangle, left=of blockchain, align=center] {不可变\\审计轨迹};
 
-\draw[->] (decision) -- (hash);
-\draw[->] (hash) -- (validation);
-\draw[->] (validation) -- (blockchain);
-\draw[->] (blockchain) -- (audit);
-\draw[->] (audit) -- (decision) node[midway, left] {合规\\反馈};
+    \draw [->] (decision) -- (hash);
+    \draw [->] (hash) -- (validation);
+    \draw [->] (validation) -- (blockchain);
+    \draw [->] (blockchain) -- (audit);
+    \draw [->] (audit) -- (decision) node[midway, left, align=center] {合规\\反馈};
 \end{tikzpicture}
 \caption{宪法哈希验证和审计轨迹生成}
 \label{fig:hash_validation_flow_zh}

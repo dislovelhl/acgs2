@@ -32,12 +32,13 @@ if MACI_AVAILABLE:
 class TestEnhancedAgentBusMACIIntegration:
     """Test MACI integration with EnhancedAgentBus."""
 
-    def test_bus_maci_disabled_by_default(self):
-        """Test that MACI is disabled by default."""
+    def test_bus_maci_enabled_by_default(self):
+        """Test that MACI is enabled by default per audit finding 2025-12."""
         bus = EnhancedAgentBus()
-        assert not bus.maci_enabled
-        assert bus.maci_registry is None
-        assert bus.maci_enforcer is None
+        # SECURITY: MACI enabled by default to prevent Gödel bypass attacks
+        assert bus.maci_enabled
+        assert bus.maci_registry is not None
+        assert bus.maci_enforcer is not None
 
     def test_bus_maci_enabled(self):
         """Test enabling MACI on the bus."""
@@ -126,10 +127,12 @@ class TestEnhancedAgentBusMACIIntegration:
 class TestMessageProcessorMACIIntegration:
     """Test MACI integration with MessageProcessor."""
 
-    def test_processor_maci_disabled_by_default(self):
-        """Test that MACI is disabled by default in MessageProcessor."""
+    def test_processor_maci_enabled_by_default(self):
+        """Test that MACI is enabled by default per audit finding 2025-12."""
         processor = MessageProcessor()
-        assert processor._enable_maci is False
+        # SECURITY: MACI enabled by default to prevent Gödel bypass attacks
+        assert processor._enable_maci is True
+        # Registry is set via bus, not processor default
         assert processor._maci_registry is None
 
     def test_processor_maci_enabled(self):

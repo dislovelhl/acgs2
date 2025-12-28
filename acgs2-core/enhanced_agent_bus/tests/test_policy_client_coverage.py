@@ -37,7 +37,8 @@ class TestPolicyRegistryClientInit:
         assert client.api_key is None
         assert client.timeout == 5.0
         assert client.cache_ttl == 300
-        assert client.fail_closed is False
+        # SECURITY FIX (2025-12): Default to fail-closed for security-first behavior
+        assert client.fail_closed is True
         assert client.max_cache_size == DEFAULT_MAX_CACHE_SIZE
         assert isinstance(client._cache, OrderedDict)
         assert client._http_client is None

@@ -1,0 +1,86 @@
+# AI Policy Extraction Prompts
+
+# Universal Metadata Schema
+# {
+#   "title": "String",
+#   "authority": "String",
+#   "jurisdiction": "EU | US | Global",
+#   "policy_area": ["String"],
+#   "publish_date": "YYYY-MM-DD",
+#   "effective_date": "YYYY-MM-DD",
+#   "deadline": "YYYY-MM-DD",
+#   "severity": "Low | Medium | High | Critical",
+#   "summary": "String",
+#   "affected_entities": ["String"],
+#   "compliance_actions": ["String"],
+#   "source_confidence": "High | Medium | Low"
+# }
+
+prompts:
+  eu_ai_act:
+    system: |
+      You are a regulatory analyst specializing in EU technology law.
+      Extract structured data with high precision.
+      Output valid JSON only.
+    user: |
+      From the text below, extract:
+      {
+        "title": "",
+        "authority": "",
+        "jurisdiction": "EU",
+        "policy_area": [],
+        "publish_date": "",
+        "effective_date": "",
+        "deadline": "",
+        "severity": "Low|Medium|High|Critical",
+        "summary": "",
+        "obligations": [],
+        "affected_entities": [],
+        "source_confidence": "High|Medium|Low"
+      }
+      Rules:
+      - If AI Act related, include whether it concerns GPAI or High-Risk AI.
+      - If a deadline is not explicit, use the publication date + 90 days as a default estimate.
+      - Severity is Critical if non-compliance leads to fines or market access restrictions.
+      - Mark severity ≥ Medium if a new deadline is introduced.
+      Text:
+      {{ARTICLE_BODY}}
+
+  us_federal_policy:
+    system: |
+      You are a US federal policy analyst.
+      Focus on compliance, procurement, and agency obligations.
+      Return strict JSON.
+    user: |
+      Extract:
+      {
+        "title": "",
+        "authority": "",
+        "jurisdiction": "US",
+        "policy_area": [],
+        "publish_date": "",
+        "effective_date": "",
+        "deadline": "",
+        "severity": "Low|Medium|High|Critical",
+        "summary": "",
+        "agency_scope": [],
+        "compliance_actions": [],
+        "procurement_impact": true|false
+      }
+      Rules:
+      - OMB or EO directives default to severity ≥ Medium.
+      - Mark procurement_impact = true if agencies must change acquisition behavior.
+      - If memo applies government-wide, agency_scope = ["All Federal Agencies"].
+      - If deadline is missing, default to 180 days after publication.
+      Text:
+      {{ARTICLE_BODY}}
+
+  universal_classifier:
+    system: |
+      You are a policy triage assistant.
+    user: |
+      Classify jurisdiction, urgency, and relevance to AI governance.
+      If not AI-related, return {"relevant": false}.
+      Otherwise return {"relevant": true, ...full schema}.
+      Text:
+      {{ARTICLE_BODY}}

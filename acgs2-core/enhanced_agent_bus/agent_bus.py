@@ -155,7 +155,8 @@ class EnhancedAgentBus:
         use_rust: bool = True,
         enable_metering: bool = True,
         metering_config: Optional[Any] = None,
-        enable_maci: bool = False,
+        # SECURITY FIX (audit finding 2025-12): MACI enabled by default
+        enable_maci: bool = True,
         maci_strict_mode: bool = True,
     ):
         """Initialize the Enhanced Agent Bus.
@@ -174,7 +175,7 @@ class EnhancedAgentBus:
             use_rust: Whether to prefer Rust backend when available
             enable_metering: Enable production billing metering
             metering_config: Optional metering configuration
-            enable_maci: Enable MACI role separation enforcement
+            enable_maci: Enable MACI role separation enforcement (default True per audit)
             maci_strict_mode: If True, fail-closed on MACI errors
         """
         self.constitutional_hash = CONSTITUTIONAL_HASH

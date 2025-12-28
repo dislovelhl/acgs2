@@ -1,0 +1,45 @@
+site_name: ACGS-2 Architecture & Governance
+theme:
+  name: material
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - content.code.copy
+  palette:
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: deep orange
+      accent: deep orange
+
+nav:
+  - Overview: index.md
+  - Architecture:
+      - System Context: architecture/C4_Context.md
+      - Containers: architecture/C4_Container.md
+      - Core Services:
+          - Audit Service: architecture/C4_Component_audit_service.md
+          - Policy Registry: architecture/C4_Component_policy_registry.md
+          - Agent Bus: architecture/C4_Component_enhanced_agent_bus.md
+  - Governance:
+      - Extraction of Rego/OPA rules and Constitutional Model: summaries/rego_rules.md
+      - Enforcement Paths: summaries/enforcement.md
+      - Audit Guarantees: summaries/audit.md
+  - Workflows:
+      - Workflow Reference: workflows_reference.md
+      - Core Executors: architecture/executors.md
+  - Change Log: CHANGELOG-ARCH.md
+
+markdown_extensions:
+  - admonition
+  - footnotes
+  - toc:
+      permalink: true
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format

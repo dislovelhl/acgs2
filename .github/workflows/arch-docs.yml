@@ -1,0 +1,70 @@
+name: nightly-architecture-docs
+
+on:
+  schedule:
+    - cron: "0 02 * * *"
+  workflow_dispatch: {}
+
+jobs:
+  arch-docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install tooling
+        run: |
+          pip install repo-scanner plantuml-generator mkdocs mkdocs-material
+          sudo apt-get update
+          sudo apt-get install -y graphviz
+
+      - name: Scan architecture
+        run: |
+          repo-scanner \
+            --path . \
+            --manifest arch-manifest.yaml \
+            --out .tmp/arch.json \
+            --fail-on-empty
+
+      - name: Drift detection
+        run: |
+          if [ -f .tmp/arch.prev.json ]; then
+            diff .tmp/arch.prev.json .tmp/arch.json > .tmp/arch.diff || true
+          fi
+          cp .tmp/arch.json .tmp/arch.prev.json
+
+      - name: Extract OPA rules
+        run: |
+          python3 acgs2-research/governance-experiments/scripts/extract_opa_rules.py
+
+      - name: Generate performance overlay
+        run: |
+          python3 acgs2-research/governance-experiments/scripts/generate_perf_overlay.py
+
+      - name: Generate diagrams
+        run: |
+          plantuml-generator \
+            --spec .tmp/arch.json \
+            --out docs/architecture \
+            --theme governance
+
+      - name: AI summaries (policy-aware)
+        run: |
+          # Note: agentos is an internally used CLI for ACGS-2 documentation
+          agentos summarize \
+            --spec .tmp/arch.json \
+            --governance acgs2-core/policies/constitution.yaml \
+            --diagrams docs/architecture \
+            --out docs/summaries \
+            --redact sensitive
+        env:
+          AGENTOS_API_KEY: ${{ secrets.AGENTOS_API_KEY }}
+
+      - name: Build site
+        run: mkdocs build
+
+      - name: Deploy Docs
+        uses: peaceiris/actions-gh-pages@v3
+        if: github.ref == 'refs/heads/main'
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./site

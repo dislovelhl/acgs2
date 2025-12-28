@@ -19,8 +19,9 @@ class TestMessageProcessorDebug:
 
     @pytest.fixture
     def processor(self):
-        """Create a MessageProcessor instance."""
-        proc = MessageProcessor()
+        """Create a MessageProcessor instance with MACI disabled for isolated testing."""
+        # MACI is disabled for these legacy tests to isolate constitutional validation
+        proc = MessageProcessor(enable_maci=False)
         print(f"\n[DEBUG] Created MessageProcessor:")
         print(f"  - Constitutional hash: {proc.constitutional_hash}")
         print(f"  - Strategy: {proc.processing_strategy.get_name()}")

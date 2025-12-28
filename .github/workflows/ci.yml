@@ -1,0 +1,151 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+      - name: Install dependencies
+        run: |
+          pip install -e .[dev]
+      - name: Ruff Check
+        run: ruff check .
+      - name: Black Check
+        run: black --check .
+      - name: Mypy Check
+        run: mypy .
+
+  semgrep:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Semgrep Scan
+        run: |
+          pip install semgrep
+          semgrep ci --severity=HIGH
+
+  test:
+    needs: [lint, semgrep]
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        suite:
+          [
+            "Agent Workflows",
+            "Enhanced Agent Bus",
+            "Policy Registry",
+            "Metering",
+            "Constitutional Retrieval",
+            "Constraint Generation",
+            "Observability",
+            "Governance Experiments",
+          ]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+      - name: Install dependencies
+        run: |
+          pip install -e .[test]
+          # Install sub-package specific deps if needed
+          if [ -f "acgs2-core/enhanced_agent_bus/pyproject.toml" ]; then
+            pip install -e acgs2-core/enhanced_agent_bus[dev]
+          fi
+      - name: Run ${{ matrix.suite }} Tests
+        env:
+          PYTHONPATH: .:${{ github.workspace }}/acgs2-core:${{ github.workspace }}/acgs2-research/governance-experiments/src
+        run: |
+          case "${{ matrix.suite }}" in
+            "Agent Workflows")
+              pytest .agent/workflows/tests/ --cov --cov-report=xml:coverage_${{ strategy.job-index }}.xml
+              ;;
+            "Enhanced Agent Bus")
+              pytest acgs2-core/enhanced_agent_bus/tests/ --cov --cov-report=xml:coverage_${{ strategy.job-index }}.xml
+              ;;
+            "Policy Registry")
+              pytest acgs2-core/services/policy_registry/tests/ --cov --cov-report=xml:coverage_${{ strategy.job-index }}.xml
+              ;;
+            "Metering")
+              pytest acgs2-core/services/metering/tests/ --cov --cov-report=xml:coverage_${{ strategy.job-index }}.xml
+              ;;
+            "Constitutional Retrieval")
+              pytest acgs2-core/services/core/constitutional-retrieval-system/tests/ --cov --cov-report=xml:coverage_${{ strategy.job-index }}.xml
+              ;;
+            "Constraint Generation")
+              pytest acgs2-core/services/core/constraint_generation_system/tests/ --cov --cov-report=xml:coverage_${{ strategy.job-index }}.xml
+              ;;
+            "Observability")
+              pytest acgs2-observability/tests/ --cov --cov-report=xml:coverage_${{ strategy.job-index }}.xml
+              ;;
+            "Governance Experiments")
+              pytest acgs2-research/governance-experiments/tests/ --cov --cov-report=xml:coverage_${{ strategy.job-index }}.xml
+              ;;
+          esac
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-data-${{ strategy.job-index }}
+          path: coverage_*.xml
+
+  coverage-gate:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download all coverage data
+        uses: actions/download-artifact@v4
+        with:
+          path: coverage-reports
+      - name: Combine and Check Coverage
+        run: |
+          pip install coverage[toml]
+          # Merge coverage reports if multiple are present
+          coverage combine coverage-reports/*/coverage_*.xml || true
+          coverage xml
+          python ci/coverage_gate.py 85 coverage.xml
+
+  build-scan:
+    needs: coverage-gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build Optimized Bus Image
+        run: |
+          docker build -t acgs2-bus:ci -f acgs2-core/Dockerfile.optimized acgs2-core/
+      - name: Trivy Security Scan
+        uses: aquasecurity/trivy-action@0.24.0
+        with:
+          image-ref: acgs2-bus:ci
+          exit-code: "1"
+          severity: "HIGH,CRITICAL"
+          ignore-unfixed: true
+
+  docs-check:
+    needs: coverage-gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+      - name: Install dependencies
+        run: pip install -e .[docs]
+      - name: Build Docs (Strict)
+        run: mkdocs build --strict

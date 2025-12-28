@@ -164,11 +164,28 @@ class DefaultActivities(BaseActivities):
     Default implementation of workflow activities.
 
     Uses ACGS-2 components where available, with fallbacks for testing.
+
+    SECURITY: By default, this implementation uses fail-closed behavior:
+    - Policy evaluation denies if OPA is unavailable
+    - Audit recording raises error if audit service is unavailable
+
+    Set fail_closed=False only for development/testing environments.
     """
 
-    def __init__(self):
+    def __init__(self, fail_closed: bool = True, allow_mock_audit: bool = False):
+        """
+        Initialize activities.
+
+        Args:
+            fail_closed: If True (default), deny on OPA failure and error on audit failure.
+                        Set to False only for development/testing.
+            allow_mock_audit: If True, allow mock audit hashes when audit service unavailable.
+                             SECURITY WARNING: Should be False in production.
+        """
         self._opa_client = None
         self._audit_client = None
+        self._fail_closed = fail_closed
+        self._allow_mock_audit = allow_mock_audit
 
     async def validate_constitutional_hash(
         self,
@@ -223,15 +240,28 @@ class DefaultActivities(BaseActivities):
         except Exception as e:
             logger.warning(f"OPA evaluation failed: {e}")
 
-        # Fallback: allow with warning
-        logger.warning(
-            f"Workflow {workflow_id}: OPA not available, using fallback (allow)"
-        )
-        return {
-            "allowed": True,
-            "reasons": ["OPA not configured - fallback allow"],
-            "policy_version": "fallback",
-        }
+        # SECURITY FIX: Fail-closed by default (audit finding 2025-12)
+        # When OPA is unavailable, default behavior is DENY, not ALLOW
+        if self._fail_closed:
+            logger.error(
+                f"Workflow {workflow_id}: OPA not available, DENYING request (fail-closed mode)"
+            )
+            return {
+                "allowed": False,
+                "reasons": ["OPA not available - fail-closed mode - request denied"],
+                "policy_version": "fail-closed",
+            }
+        else:
+            # Only allow fallback in explicit development/testing mode
+            logger.warning(
+                f"Workflow {workflow_id}: OPA not available, using fallback (allow) "
+                "- WARNING: fail_closed=False should not be used in production"
+            )
+            return {
+                "allowed": True,
+                "reasons": ["OPA not configured - fallback allow (non-production mode)"],
+                "policy_version": "fallback",
+            }
 
     async def record_audit(
         self,
@@ -259,7 +289,18 @@ class DefaultActivities(BaseActivities):
         except Exception as e:
             logger.warning(f"Audit recording failed: {e}")
 
-        # Fallback: generate mock audit hash
+        # SECURITY FIX: Fail-closed by default for audit (audit finding 2025-12)
+        # Mock audit hashes undermine blockchain-anchored audit trails
+        if not self._allow_mock_audit:
+            error_msg = (
+                f"Workflow {workflow_id}: Audit service unavailable - "
+                "cannot record to blockchain-anchored audit trail. "
+                "Set allow_mock_audit=True only for testing."
+            )
+            logger.error(error_msg)
+            raise RuntimeError(error_msg)
+
+        # Only generate mock hash in explicit testing mode
         import hashlib
         import json
 
@@ -268,13 +309,17 @@ class DefaultActivities(BaseActivities):
             "event_type": event_type,
             "event_data": event_data,
             "timestamp": datetime.now(timezone.utc).isoformat(),
+            "_mock": True,  # Clearly mark as mock
         }
         audit_hash = hashlib.sha256(
             json.dumps(audit_data, default=str, sort_keys=True).encode()
         ).hexdigest()[:16]
 
-        logger.info(f"Workflow {workflow_id}: Audit recorded (mock): {audit_hash}")
-        return audit_hash
+        logger.warning(
+            f"Workflow {workflow_id}: Audit recorded (MOCK - not blockchain-anchored): {audit_hash} "
+            "- WARNING: allow_mock_audit=True should not be used in production"
+        )
+        return f"mock:{audit_hash}"  # Prefix with 'mock:' to clearly identify
 
     async def send_notification(
         self,

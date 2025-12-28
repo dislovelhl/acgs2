@@ -12,6 +12,12 @@ _Hash: `cdd01ef066bc6cf2`_
 - **WorkflowStep**: Individual unit of execution.
 - **WorkflowResult**: Outcome (Success/Failure + Metadata).
 
+### Security Enforcements (Audit 2025)
+
+1. **Fail-Closed Default**: All validation logic MUST return False/Error on exception (VULN-001, VULN-002).
+2. **Sanitized Errors**: Exceptions MUST be caught and sanitized before returning to caller (VULN-008).
+3. **Credential Safety**: No plain-text secrets in memory or logs (VULN-004).
+
 ## Core Executors
 
 1. **DAGExecutor**: Handles parallel tasks with dependencies.
@@ -19,7 +25,7 @@ _Hash: `cdd01ef066bc6cf2`_
    - Execution: Topology-sorted async execution.
 2. **SagaCoordinator (SagaLLM)**: Manages distributed transactions across multiple agents.
    - Methods: `add_step(step, compensate_func)`, `execute()`, `rollback()`.
-   - Feature: SagaLLM transaction guarantees with automatic reversal on failure.
+   - Feature: SagaLLM transaction guarantees with automatic reversal on failure (inc. Security Exceptions).
 
 ## Specialized Workflows
 
@@ -52,7 +58,7 @@ Workflows MUST enforce role separation: **A Judicial step cannot be performed by
 
 - Use `CircuitBreaker` for external calls.
 - Implement exponential backoff for DB/Redis.
-- Ensure all exceptions bound to `trace_id`.
+- **Sanitization**: Ensure all exceptions bound to `trace_id` AND Sanitized before external exposure.
 
 ## Testing
 

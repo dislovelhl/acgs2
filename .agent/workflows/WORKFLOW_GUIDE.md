@@ -96,18 +96,22 @@ Create a design document using this template:
 
 ```markdown
 ## Workflow: [Name]
+
 - **Type**: [DAG|Saga|Voting|Handoff|Custom]
 - **Purpose**: [One sentence description]
 - **Hash Validation**: Required at [entry/each step/exit]
 
 ### Steps
+
 1. [Step Name] - [Description] - [Compensation if any]
 2. [Step Name] - [Description] - [Compensation if any]
 
 ### Dependencies
+
 - [Upstream system or workflow]
 
 ### Failure Handling
+
 - [Scenario]: [Action]
 ```
 
@@ -156,9 +160,10 @@ class MyGovernanceWorkflow(BaseWorkflow):
                 "Workflow failed",
                 extra={"trace_id": context.trace_id, "error": str(e)}
             )
+            # SECURE: Return sanitized error used content
             return WorkflowResult.failure(
                 workflow_id=self.workflow_id,
-                error=str(e)
+                error="Internal processing error"  # Never expose internal details
             )
 
     async def _process(self, data: dict) -> dict:
@@ -461,13 +466,13 @@ context = WorkflowContext.create(trace_id="debug-12345")
 
 Key metrics to monitor in Grafana:
 
-| Metric | Alert Threshold |
-|:---|:---|
-| `workflow_execution_duration_p99` | > 0.5ms |
-| `workflow_success_rate` | < 99.5% |
-| `saga_compensation_count` | > 10/min |
-| `dag_parallelization_ratio` | < 0.7 |
-| `constitutional_validation_failures` | > 0 |
+| Metric                               | Alert Threshold |
+| :----------------------------------- | :-------------- |
+| `workflow_execution_duration_p99`    | > 0.5ms         |
+| `workflow_success_rate`              | < 99.5%         |
+| `saga_compensation_count`            | > 10/min        |
+| `dag_parallelization_ratio`          | < 0.7           |
+| `constitutional_validation_failures` | > 0             |
 
 ---
 
@@ -534,7 +539,7 @@ async def execute(self, context):
 
 ### 5. MACI Role Separation
 
-```python
+````python
 # Never verify your own actions
 class ExecutiveAgent:
     async def perform_action(self, action):
@@ -547,7 +552,29 @@ class ExecutiveAgent:
             "action": action,
             "result": result
         })
-```
+
+### 6. Security Hardening
+
+```python
+# 1. Fail-Closed Default
+# BAD: if error, return True
+# GOOD: if error, return False/Raise
+try:
+    validate()
+except Exception:
+    return False  # Fail closed!
+
+# 2. Credential Safety
+# BAD: self.password = "secret"
+# GOOD: use Secrets Manager or Encrypted Memory
+self._key = Fernet.generate_key()
+
+# 3. Input Validation
+# Always sanitize Tenant IDs and other inputs
+tenant_id = normalize_tenant_id(raw_id)
+````
+
+````
 
 ---
 
@@ -563,6 +590,8 @@ class ExecutiveAgent:
 - [ ] Trace IDs propagated through all steps
 - [ ] Logging bound to constitutional hash
 - [ ] Metrics exposed on `/metrics` endpoint
+- [ ] **Security**: No mock components in production code
+- [ ] **Security**: Credentials encrypted in memory
 
 ### Deployment
 
@@ -622,8 +651,8 @@ from .agent.workflows.config import CONSTITUTIONAL_HASH
 
 # Templates
 from .agent.workflows.templates import TemplateEngine
-```
+````
 
 ---
 
-*For questions or support, refer to [INTEGRATION.md](./INTEGRATION.md) or open an issue in the project repository.*
+_For questions or support, refer to [INTEGRATION.md](./INTEGRATION.md) or open an issue in the project repository._

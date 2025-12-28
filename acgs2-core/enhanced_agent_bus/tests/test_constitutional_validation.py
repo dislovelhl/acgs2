@@ -157,8 +157,10 @@ class TestMessageProcessor:
 
     @pytest.fixture
     def processor(self):
-        """Create a MessageProcessor instance."""
-        return MessageProcessor()
+        """Create a MessageProcessor instance with MACI disabled for isolated testing."""
+        # MACI is disabled for these legacy tests to isolate constitutional validation
+        # For MACI-specific tests, see test_maci_integration.py
+        return MessageProcessor(enable_maci=False)
 
     @pytest.fixture
     def valid_message(self):
@@ -256,8 +258,10 @@ class TestEnhancedAgentBus:
 
     @pytest.fixture
     def agent_bus(self):
-        """Create an EnhancedAgentBus instance."""
-        return EnhancedAgentBus()
+        """Create an EnhancedAgentBus instance with MACI disabled for isolated testing."""
+        # MACI is disabled for these legacy tests to isolate constitutional validation
+        # For MACI-specific tests, see test_maci_integration.py
+        return EnhancedAgentBus(enable_maci=False)
 
     @pytest.fixture
     def valid_message(self):

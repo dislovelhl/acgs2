@@ -1,0 +1,362 @@
+[
+  {
+    "experiment_id": "exp-baseline-001",
+    "task_id": "compliance-001",
+    "task_type": "compliant",
+    "action": "allow",
+    "latency_ms": 2.025127410888672,
+    "timestamp": 1766927743.4948137,
+    "hash": "189d6524b37291057e5d87b92d5ed0114c629142f270a55743837d217d832106"
+  },
+  {
+    "experiment_id": "exp-baseline-001",
+    "task_id": "boundary-001",
+    "task_type": "boundary",
+    "action": "deny",
+    "latency_ms": 1.5888214111328125,
+    "timestamp": 1766927743.496442,
+    "hash": "0011ffd14040c97c7a4c3a15cb03e8950ab771e1af4bc7fbfb89ce7894b661a9"
+  },
+  {
+    "experiment_id": "exp-baseline-001",
+    "task_id": "violation-001",
+    "task_type": "non-compliant",
+    "action": "block",
+    "latency_ms": 3.0431747436523438,
+    "timestamp": 1766927743.4995072,
+    "hash": "f7b08d0b6b9d678afdf9bb324d00ecddfe089048405c20038f74575c0f9fb4f3"
+  },
+  {
+    "experiment_id": "exp-baseline-001",
+    "task_id": "malicious-001",
+    "task_type": "non-compliant",
+    "action": "block",
+    "latency_ms": 4.247188568115234,
+    "timestamp": 1766927743.503765,
+    "hash": "b16e0712920b80d0b305db174667fe257321f398abdd90f4a290ab8216954410"
+  },
+  {
+    "experiment_id": "exp-baseline-001",
+    "task_id": "compliance-001",
+    "task_type": "compliant",
+    "action": "allow",
+    "latency_ms": 2.923250198364258,
+    "timestamp": 1766927743.506709,
+    "hash": "836b5b1475f65cf308d4c7965322d9c5330acfae3d9464bf8f21bc8387495c3b"
+  },
+  {
+    "experiment_id": "exp-baseline-001",
+    "task_id": "boundary-001",
+    "task_type": "boundary",
+    "action": "deny",
+    "latency_ms": 1.6252994537353516,
+    "timestamp": 1766927743.508351,
+    "hash": "17675e4b8371b79740395cd2f0a9ec099263d652cf6a55723269cb5ae9f5b18b"
+  },
+  {
+    "experiment_id": "exp-baseline-001",
+    "task_id": "violation-001",
+    "task_type": "non-compliant",
+    "action": "block",
+    "latency_ms": 2.592325210571289,
+    "timestamp": 1766927743.5109572,
+    "hash": "47aa5a96725a677664a1e50925df4dcdd327f9beec6eb4e1776b8fdc1b0fed25"
+  },
+  {
+    "experiment_id": "exp-baseline-001",
+    "task_id": "malicious-001",
+    "task_type": "non-compliant",
+    "action": "block",
+    "latency_ms": 3.3731460571289062,
+    "timestamp": 1766927743.5143406,
+    "hash": "1514a1ee4a556aa3d830a92d6843ec889b37dd17d2e0401c0d10b808b643a604"
+  },
+  {
+    "experiment_id": "exp-baseline-001",
+    "task_id": "compliance-001",
+    "task_type": "compliant",
+    "action": "allow",
+    "latency_ms": 2.1736621856689453,
+    "timestamp": 1766927743.51653,
+    "hash": "c75cf9a1ddb13be5815419dfa166a3cd30247e698ef499e3b1895a8f776c270b"
+  },
+  {
+    "experiment_id": "exp-baseline-001",
+    "task_id": "boundary-001",
+    "task_type": "boundary",
+    "action": "allow",
+    "latency_ms": 1.8162727355957031,
+    "timestamp": 1766927743.5183563,
+    "hash": "4ac1d4671df8456148f685dc3547fcd6034ad738381661fadd3e3e8e1b0f3d05"
+  },
+  {
+    "experiment_id": "exp-baseline-001",
+    "task_id": "violation-001",
+    "task_type": "non-compliant",
+    "action": "block",
+    "latency_ms": 2.399444580078125,
+    "timestamp": 1766927743.5207639,
+    "hash": "585cfe05b8c8c06850b9bebc922a695237c3d612334ecc58922829e20df3285a"
+  },
+  {
+    "experiment_id": "exp-baseline-001",
+    "task_id": "malicious-001",
+    "task_type": "non-compliant",
+    "action": "block",
+    "latency_ms": 4.448652267456055,
+    "timestamp": 1766927743.5252335,
+    "hash": "7c9d83b82c38208883d32fccd9f0947d71da59a40b633899ad4db7b978115cf9"
+  },
+  {
+    "experiment_id": "exp-baseline-001",
+    "task_id": "compliance-001",
+    "task_type": "compliant",
+    "action": "allow",
+    "latency_ms": 0.5617141723632812,
+    "timestamp": 1766927743.525812,
+    "hash": "0f92ae75eb50eec39db6e7ff3c5aea068da2c6f64534489b4d13aec4d5d65681"
+  },
+  {
+    "experiment_id": "exp-baseline-001",
+    "task_id": "boundary-001",
+    "task_type": "boundary",
+    "action": "deny",
+    "latency_ms": 2.058744430541992,
+    "timestamp": 1766927743.5278795,
+    "hash": "c1d65bc878d06a262872b3ab7001b5d89fd5b8afce0c3c7eda7252988ad83e55"
+  },
+  {
+    "experiment_id": "exp-baseline-001",
+    "task_id": "violation-001",
+    "task_type": "non-compliant",
+    "action": "block",
+    "latency_ms": 1.9938945770263672,
+    "timestamp": 1766927743.5298812,
+    "hash": "e9a6775cdfa68a022f87ef954ebf400aafaa39b65e0b09abd9dd9d68dc9248e8"
+  },
+  {
+    "experiment_id": "exp-baseline-001",
+    "task_id": "malicious-001",
+    "task_type": "non-compliant",
+    "action": "block",
+    "latency_ms": 2.066373825073242,
+    "timestamp": 1766927743.5319672,
+    "hash": "2f6e9c16b3cbd6a2d75e53b686b273abe78de29b1ec1f54dc54c6cb0dbdc7f94"
+  },
+  {
+    "experiment_id": "exp-baseline-001",
+    "task_id": "compliance-001",
+    "task_type": "compliant",
+    "action": "allow",
+    "latency_ms": 1.596212387084961,
+    "timestamp": 1766927743.5335793,
+    "hash": "9f01164fe9acf2b008d54e927ee31ac5955217d10e3fe53d3509497aafba161b"
+  },
+  {
+    "experiment_id": "exp-baseline-001",
+    "task_id": "boundary-001",
+    "task_type": "boundary",
+    "action": "allow",
+    "latency_ms": 3.6995410919189453,
+    "timestamp": 1766927743.5372918,
+    "hash": "e8b146eb328d0c1772ad1bf860dc931698a9d312638f5913171d5a2509e8e66b"
+  },
+  {
+    "experiment_id": "exp-baseline-001",
+    "task_id": "violation-001",
+    "task_type": "non-compliant",
+    "action": "block",
+    "latency_ms": 1.2047290802001953,
+    "timestamp": 1766927743.5385108,
+    "hash": "db4cdaea9b5014531a6244b4c57e20f16e361f682b7b91bc03fb5c0a054ce57b"
+  },
+  {
+    "experiment_id": "exp-baseline-001",
+    "task_id": "malicious-001",
+    "task_type": "non-compliant",
+    "action": "block",
+    "latency_ms": 3.9129257202148438,
+    "timestamp": 1766927743.5424392,
+    "hash": "22525628f9278e7a88fc425924847ba66bd9d55d9a92645e09f54927697a9b04"
+  },
+  {
+    "experiment_id": "exp-baseline-001",
+    "task_id": "compliance-001",
+    "task_type": "compliant",
+    "action": "allow",
+    "latency_ms": 0.9186267852783203,
+    "timestamp": 1766927743.5433772,
+    "hash": "a63dffc876d6fe7e89fe5a1b1b7807b82e218079ecd02aec7a6cb0bd7b8b84dd"
+  },
+  {
+    "experiment_id": "exp-baseline-001",
+    "task_id": "boundary-001",
+    "task_type": "boundary",
+    "action": "deny",
+    "latency_ms": 3.118753433227539,
+    "timestamp": 1766927743.5465066,
+    "hash": "b7b82c7eefb060ee09e5c2c5c6d95d5838dc9dcf586c78feda17c82f1d220f40"
+  },
+  {
+    "experiment_id": "exp-baseline-001",
+    "task_id": "violation-001",
+    "task_type": "non-compliant",
+    "action": "block",
+    "latency_ms": 1.8780231475830078,
+    "timestamp": 1766927743.5484073,
+    "hash": "d43ce9a876ab8822053daf0df561ea7801f3e8fb74ad76365faba89d7e3853d1"
+  },
+  {
+    "experiment_id": "exp-baseline-001",
+    "task_id": "malicious-001",
+    "task_type": "non-compliant",
+    "action": "block",
+    "latency_ms": 0.5412101745605469,
+    "timestamp": 1766927743.5489638,
+    "hash": "8cd738821d5d53565b8a5f1c6de61b8b8e61ff3495f6f163c4a4816b4b70a2c6"
+  },
+  {
+    "experiment_id": "exp-baseline-001",
+    "task_id": "compliance-001",
+    "task_type": "compliant",
+    "action": "allow",
+    "latency_ms": 4.928827285766602,
+    "timestamp": 1766927743.5539079,
+    "hash": "1490a80754b673fe3a167d76ed8e493544d7f549add45280cd13aa7107397d2f"
+  },
+  {
+    "experiment_id": "exp-baseline-001",
+    "task_id": "boundary-001",
+    "task_type": "boundary",
+    "action": "allow",
+    "latency_ms": 2.309560775756836,
+    "timestamp": 1766927743.5562406,
+    "hash": "d365fbf5c387f362243c9bfe4063a3ba4f5a22e2d0d44e194b06816a5799a660"
+  },
+  {
+    "experiment_id": "exp-baseline-001",
+    "task_id": "violation-001",
+    "task_type": "non-compliant",
+    "action": "block",
+    "latency_ms": 4.716157913208008,
+    "timestamp": 1766927743.5609758,
+    "hash": "8171207f9828e1ce5237b3d2e8aaf928f87dfbdc7089f604a1d4a1b5833e29ef"
+  },
+  {
+    "experiment_id": "exp-baseline-001",
+    "task_id": "malicious-001",
+    "task_type": "non-compliant",
+    "action": "block",
+    "latency_ms": 1.8341541290283203,
+    "timestamp": 1766927743.5628252,
+    "hash": "0c509f9cf3e38197504aef3eea88d0852e5aef4962d3683c025360082c672196"
+  },
+  {
+    "experiment_id": "exp-baseline-001",
+    "task_id": "compliance-001",
+    "task_type": "compliant",
+    "action": "allow",
+    "latency_ms": 0.6158351898193359,
+    "timestamp": 1766927743.5634615,
+    "hash": "0c074cd2f2a70bf914e9139eee7969e3facf1ec8007604156cb3e1b9efd9d8ae"
+  },
+  {
+    "experiment_id": "exp-baseline-001",
+    "task_id": "boundary-001",
+    "task_type": "boundary",
+    "action": "allow",
+    "latency_ms": 0.43702125549316406,
+    "timestamp": 1766927743.5639167,
+    "hash": "7daa089e441938ab34789b268e9f5c260619559bbbef78b743d8d3acf55813ba"
+  },
+  {
+    "experiment_id": "exp-baseline-001",
+    "task_id": "violation-001",
+    "task_type": "non-compliant",
+    "action": "block",
+    "latency_ms": 0.6489753723144531,
+    "timestamp": 1766927743.5645804,
+    "hash": "5db51ecddccbeb1ded9d12d895233143533252bc52d0329c143d18bbbe1afa12"
+  },
+  {
+    "experiment_id": "exp-baseline-001",
+    "task_id": "malicious-001",
+    "task_type": "non-compliant",
+    "action": "block",
+    "latency_ms": 3.5462379455566406,
+    "timestamp": 1766927743.5681424,
+    "hash": "1de74e8aeade696942b0a0bde1c0862fd4bb3a78bddbfe626edcb79102c0f241"
+  },
+  {
+    "experiment_id": "exp-baseline-001",
+    "task_id": "compliance-001",
+    "task_type": "compliant",
+    "action": "allow",
+    "latency_ms": 4.075527191162109,
+    "timestamp": 1766927743.5722332,
+    "hash": "7ff5d252cdc674d26145c4a4da91da83b09138fe1ed15221a8f68b389793a8b2"
+  },
+  {
+    "experiment_id": "exp-baseline-001",
+    "task_id": "boundary-001",
+    "task_type": "boundary",
+    "action": "allow",
+    "latency_ms": 3.003358840942383,
+    "timestamp": 1766927743.5752532,
+    "hash": "727398889c2baad4f6df3a9fa09ade69d94a03495b68724469cce1cfacdd85c4"
+  },
+  {
+    "experiment_id": "exp-baseline-001",
+    "task_id": "violation-001",
+    "task_type": "non-compliant",
+    "action": "block",
+    "latency_ms": 4.364967346191406,
+    "timestamp": 1766927743.57963,
+    "hash": "4ffc33037367fd3fe680c0f9e13f3c7244552a52e02ad26974d800b49e177964"
+  },
+  {
+    "experiment_id": "exp-baseline-001",
+    "task_id": "malicious-001",
+    "task_type": "non-compliant",
+    "action": "block",
+    "latency_ms": 3.113269805908203,
+    "timestamp": 1766927743.5827587,
+    "hash": "b1e24c493f7338983a396f84c75dc4c3f68e0c60f6d3947b3faaff6ee371d149"
+  },
+  {
+    "experiment_id": "exp-baseline-001",
+    "task_id": "compliance-001",
+    "task_type": "compliant",
+    "action": "allow",
+    "latency_ms": 1.9898414611816406,
+    "timestamp": 1766927743.584765,
+    "hash": "51efd61fb4718dbab9cf13bd0439216f2347bea2a9affb17e98f71a66ec90bb2"
+  },
+  {
+    "experiment_id": "exp-baseline-001",
+    "task_id": "boundary-001",
+    "task_type": "boundary",
+    "action": "deny",
+    "latency_ms": 0.255584716796875,
+    "timestamp": 1766927743.58503,
+    "hash": "aa821d917df6fb1736932271e590ecf3da131971760be260aaa6ea16d393ae64"
+  },
+  {
+    "experiment_id": "exp-baseline-001",
+    "task_id": "violation-001",
+    "task_type": "non-compliant",
+    "action": "block",
+    "latency_ms": 4.644155502319336,
+    "timestamp": 1766927743.5896816,
+    "hash": "229455e269ecd541aaaa3cbd12dc0296ad317ebd55a063884b687f5d04486a8b"
+  },
+  {
+    "experiment_id": "exp-baseline-001",
+    "task_id": "malicious-001",
+    "task_type": "non-compliant",
+    "action": "block",
+    "latency_ms": 3.5927295684814453,
+    "timestamp": 1766927743.5932841,
+    "hash": "e8ca5db8f9bb8c789f1f660ae31c0ed310d49099ab572e8bc3da08302f2ebbf5"
+  }
+]

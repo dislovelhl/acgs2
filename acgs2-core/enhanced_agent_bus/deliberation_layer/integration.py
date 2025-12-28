@@ -67,102 +67,14 @@ except (ImportError, ValueError):
             OPAGuard, get_opa_guard, GuardResult, GuardDecision,
             SignatureResult, ReviewResult
         )
-    except ImportError:
-        # Use mock implementations when dependencies unavailable
-        _USING_MOCKS = True
-        _mock_import_success = False
-
-        # Try multiple import paths for mocks
-        for _mock_import_attempt in [
-            lambda: __import__('deliberation_layer.deliberation_mocks', fromlist=['MockComponent']),
-            lambda: __import__('deliberation_mocks', fromlist=['MockComponent']),
-        ]:
-            try:
-                _mock_module = _mock_import_attempt()
-                MockComponent = _mock_module.MockComponent
-                DeliberationStatus = _mock_module.MockDeliberationStatus
-                VoteType = _mock_module.MockVoteType
-                create_mock_impact_scorer = _mock_module.create_mock_impact_scorer
-                create_mock_adaptive_router = _mock_module.create_mock_adaptive_router
-                create_mock_deliberation_queue = _mock_module.create_mock_deliberation_queue
-                create_mock_llm_assistant = _mock_module.create_mock_llm_assistant
-                create_mock_redis_queue = _mock_module.create_mock_redis_queue
-                create_mock_redis_voting = _mock_module.create_mock_redis_voting
-                create_mock_opa_guard = _mock_module.create_mock_opa_guard
-                mock_calculate_message_impact = _mock_module.mock_calculate_message_impact
-                _mock_import_success = True
-                break
-            except (ImportError, ModuleNotFoundError):
-                continue
-
-        if not _mock_import_success:
-            # Inline minimal mocks when all imports fail
-            import sys
-            import uuid
-            from enum import Enum
-
-            if not hasattr(sys, '_ACGS_MOCK_STORAGE'):
-                sys._ACGS_MOCK_STORAGE = {"tasks": {}, "stats": {}}
-
-            class DeliberationStatus(Enum):  # type: ignore
-                PENDING = "pending"
-                UNDER_REVIEW = "under_review"
-                APPROVED = "approved"
-                REJECTED = "rejected"
-                TIMED_OUT = "timed_out"
-                CONSENSUS_REACHED = "consensus_reached"
-
-            class VoteType(Enum):  # type: ignore
-                APPROVE = "approve"
-                REJECT = "reject"
-                ABSTAIN = "abstain"
-
-            class MockComponent:  # type: ignore
-                def __init__(self, *args, **kwargs):
-                    self.queue = sys._ACGS_MOCK_STORAGE["tasks"]
-                    self.stats = sys._ACGS_MOCK_STORAGE["stats"]
-                def __getattr__(self, name):
-                    async def async_mock(*a, **k): return {}
-                    return async_mock if not name.startswith('get_') else lambda *a, **k: {}
-                def get_routing_stats(self): return {}
-                def get_queue_status(self): return {'stats': {}, 'queue_size': 0, 'processing_count': 0}
-                def get_task(self, tid): return None
-                async def initialize(self): pass
-                async def close(self): pass
-                def set_impact_threshold(self, t): pass
-
-            create_mock_impact_scorer = lambda *a, **k: MockComponent()
-            create_mock_adaptive_router = lambda *a, **k: MockComponent()
-            create_mock_deliberation_queue = lambda *a, **k: MockComponent()
-            create_mock_llm_assistant = lambda *a, **k: MockComponent()
-            create_mock_redis_queue = lambda *a, **k: MockComponent()
-            create_mock_redis_voting = lambda *a, **k: MockComponent()
-            create_mock_opa_guard = lambda *a, **k: MockComponent()
-            mock_calculate_message_impact = lambda *a, **k: 0.0
-
-        # Set up mock type aliases and factory functions
-        ImpactScorerProtocol = Any  # type: ignore
-        AdaptiveRouterProtocol = Any  # type: ignore
-        DeliberationQueueProtocol = Any  # type: ignore
-        LLMAssistantProtocol = Any  # type: ignore
-        RedisQueueProtocol = Any  # type: ignore
-        RedisVotingProtocol = Any  # type: ignore
-        OPAGuardProtocol = Any  # type: ignore
-        GuardResult = Any  # type: ignore
-        GuardDecision = Any  # type: ignore
-        SignatureResult = Any  # type: ignore
-        ReviewResult = Any  # type: ignore
-        OPAGuard = MockComponent  # type: ignore
-
-        # Factory function aliases
-        calculate_message_impact = mock_calculate_message_impact
-        get_impact_scorer = create_mock_impact_scorer
-        get_adaptive_router = create_mock_adaptive_router
-        get_deliberation_queue = create_mock_deliberation_queue
-        get_llm_assistant = create_mock_llm_assistant
-        get_redis_deliberation_queue = create_mock_redis_queue
-        get_redis_voting_system = create_mock_redis_voting
-        get_opa_guard = create_mock_opa_guard
+    except ImportError as e:
+        # FAIL-CLOSED: Critical security dependencies are missing.
+        # System MUST NOT proceed in an insecure mocked state (VULN-003).
+        logging.getLogger(__name__).critical(f"Critical Deliberation Layer dependencies missing: {e}")
+        raise RuntimeError(
+            "CRITICAL SECURITY FAILURE: Deliberation Layer dependencies are missing. "
+            "System is configured to fail-closed to prevent insecure operation with mock components."
+        ) from e
 
 
 logger = logging.getLogger(__name__)
@@ -537,11 +449,12 @@ class DeliberationLayer(OPAGuardMixin):
 
         except Exception as e:
             logger.error(f"OPA Guard verification error: {e}")
-            # Return permissive result on error to avoid blocking
+            # FAIL-CLOSED: Deny on error for security-critical operations (VULN-002)
             return GuardResult(
-                decision=GuardDecision.ALLOW,
-                is_allowed=True,
-                validation_warnings=[f"Guard error: {str(e)}"],
+                decision=GuardDecision.DENY,
+                is_allowed=False,
+                validation_errors=[f"Guard verification failed: {str(e)}"],
+                validation_warnings=[],
             )
 
     async def _handle_guard_denial(
@@ -1019,12 +932,12 @@ class DeliberationLayer(OPAGuardMixin):
     ) -> Dict[str, Any]:
         """
         Resolve a pending deliberation item and update learning model.
-        
+
         Args:
             item_id: ID of the deliberation item/task
             approved: Whether the action was approved
             feedback_score: Optional feedback score (0.0-1.0)
-            
+
         Returns:
             Resolution result
         """
@@ -1033,22 +946,22 @@ class DeliberationLayer(OPAGuardMixin):
 
         # 1. Resolve in queue
         await self.deliberation_queue.resolve_task(item_id, approved)
-        
+
         # 2. Get task details for feedback
         # Note: DeliberationQueue.get_task must be available
         if hasattr(self.deliberation_queue, 'get_task'):
             task = self.deliberation_queue.get_task(item_id)
         else:
             task = None
-            
+
         if not task:
             logger.warning(f"Resolved task {item_id} not found for feedback provided")
             return {"status": "resolved_no_feedback"}
-            
+
         # 3. Calculate processing time
         now = datetime.now(timezone.utc)
         processing_time = (now - task.created_at).total_seconds()
-        
+
         # 4. Update adaptive router
         if self.adaptive_router:
             actual_outcome = "approved" if approved else "rejected"
@@ -1058,7 +971,7 @@ class DeliberationLayer(OPAGuardMixin):
                 processing_time=processing_time,
                 feedback_score=feedback_score
             )
-        
+
         return {
             "status": "resolved",
             "outcome": "approved" if approved else "rejected",

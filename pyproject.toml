@@ -1,0 +1,66 @@
+[project]
+name = "acgs2-root"
+version = "2.2.0"
+description = "ACGS-2 Root Project Configuration"
+requires-python = ">=3.11"
+
+[project.optional-dependencies]
+dev = [
+    "ruff>=0.7.1",
+    "black>=24.10.0",
+    "mypy>=1.13.0",
+    "pre-commit>=4.0.0",
+]
+test = [
+    "pytest>=7.4.0",
+    "pytest-cov>=4.1.0",
+    "pytest-xdist>=3.3.1",
+    "coverage[toml]>=7.3.0",
+]
+docs = [
+    "mkdocs>=1.5.0",
+    "mkdocs-material>=9.4.0",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+select = ["E", "F", "B", "I"]
+
+[tool.black]
+line-length = 100
+target-version = ['py311']
+
+[tool.mypy]
+strict = true
+ignore_missing_imports = true
+exclude = ["venv", ".venv", "tests"]
+
+[tool.pytest.ini_options]
+addopts = "-q --maxfail=1 --dist=loadfile"
+testpaths = [
+    "acgs2-core/enhanced_agent_bus/tests",
+    "acgs2-core/services/policy_registry/tests",
+    "acgs2-core/services/metering/tests",
+    "acgs2-observability/tests",
+    "acgs2-research/governance-experiments/tests"
+]
+pythonpath = [
+    ".",
+    "acgs2-core",
+    "acgs2-core/enhanced_agent_bus",
+    "acgs2-research/governance-experiments/src"
+]
+
+[tool.coverage.run]
+branch = true
+source = ["acgs2-core", "acgs2-observability", "acgs2-research"]
+omit = ["*/tests/*", "*/venv/*", ".venv/*"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+]
