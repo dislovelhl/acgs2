@@ -6,7 +6,7 @@ Configuration dataclass for the Enhanced Agent Bus.
 Follows the Builder pattern for clean configuration management.
 """
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import Any, Optional, TYPE_CHECKING
 
 # Import types conditionally to avoid circular imports
@@ -58,14 +58,18 @@ class BusConfiguration:
 
     # Feature flags
     use_dynamic_policy: bool = False
-    policy_fail_closed: bool = False
+    # SECURITY FIX (2025-12): Default to fail-closed for security-first behavior
+    policy_fail_closed: bool = True
     use_kafka: bool = False
     use_redis_registry: bool = False
     use_rust: bool = True
     enable_metering: bool = True
 
     # MACI role separation settings
-    enable_maci: bool = False
+    # SECURITY FIX (audit finding 2025-12): MACI enabled by default to prevent
+    # Gödel bypass attacks through role separation enforcement.
+    # Set enable_maci=False only for legacy/testing - see for_testing() method.
+    enable_maci: bool = True
     maci_strict_mode: bool = True
 
     # Optional dependency injections (set to None for defaults)
@@ -127,7 +131,8 @@ class BusConfiguration:
             ),
             use_rust=_parse_bool(os.environ.get('USE_RUST_BACKEND'), True),
             enable_metering=_parse_bool(os.environ.get('METERING_ENABLED'), True),
-            enable_maci=_parse_bool(os.environ.get('MACI_ENABLED'), False),
+            # SECURITY FIX: Default to True per audit finding 2025-12
+            enable_maci=_parse_bool(os.environ.get('MACI_ENABLED'), True),
             maci_strict_mode=_parse_bool(os.environ.get('MACI_STRICT_MODE'), True),
         )
 
@@ -169,51 +174,17 @@ class BusConfiguration:
         """Return a new configuration with the specified registry.
 
         Builder pattern method for fluent configuration.
+        Uses dataclasses.replace() for immutable field updates.
         """
-        return BusConfiguration(
-            redis_url=self.redis_url,
-            kafka_bootstrap_servers=self.kafka_bootstrap_servers,
-            audit_service_url=self.audit_service_url,
-            use_dynamic_policy=self.use_dynamic_policy,
-            policy_fail_closed=self.policy_fail_closed,
-            use_kafka=self.use_kafka,
-            use_redis_registry=self.use_redis_registry,
-            use_rust=self.use_rust,
-            enable_metering=self.enable_metering,
-            enable_maci=self.enable_maci,
-            maci_strict_mode=self.maci_strict_mode,
-            registry=registry,
-            router=self.router,
-            validator=self.validator,
-            processor=self.processor,
-            metering_config=self.metering_config,
-            constitutional_hash=self.constitutional_hash,
-        )
+        return replace(self, registry=registry)
 
     def with_validator(self, validator: Any) -> 'BusConfiguration':
         """Return a new configuration with the specified validator.
 
         Builder pattern method for fluent configuration.
+        Uses dataclasses.replace() for immutable field updates.
         """
-        return BusConfiguration(
-            redis_url=self.redis_url,
-            kafka_bootstrap_servers=self.kafka_bootstrap_servers,
-            audit_service_url=self.audit_service_url,
-            use_dynamic_policy=self.use_dynamic_policy,
-            policy_fail_closed=self.policy_fail_closed,
-            use_kafka=self.use_kafka,
-            use_redis_registry=self.use_redis_registry,
-            use_rust=self.use_rust,
-            enable_metering=self.enable_metering,
-            enable_maci=self.enable_maci,
-            maci_strict_mode=self.maci_strict_mode,
-            registry=self.registry,
-            router=self.router,
-            validator=validator,
-            processor=self.processor,
-            metering_config=self.metering_config,
-            constitutional_hash=self.constitutional_hash,
-        )
+        return replace(self, validator=validator)
 
     def to_dict(self) -> dict:
         """Convert configuration to dictionary for logging/serialization."""

@@ -25,7 +25,7 @@ class AuditClient:
         """
         Reports a single validation result to the audit ledger.
         Returns the entry hash if successful.
-        
+
         Note: This is designed to be fire-and-forget or async monitored.
         """
         try:
@@ -40,35 +40,19 @@ class AuditClient:
                 else:
                     data = validation_result
 
-            # We assume there is an endpoint or we use the ledger in-process if configured
-            # For this integration, we'll assume a direct ledger dependency or API call.
-            # If the AuditService is in-process (shared library), we could call it directly.
-            # However, the plan specified an API entrypoint.
-            
-            # Since the AuditService's ledger is async, we can also integrate it directly
-            # if we have access to the code.
-            
-            # For now, let's assume we post to the Audit Service API if it's a separate service.
-            # But the current AuditLedger implementation in services/audit_service/core 
-            # is what we really want to use if this is a monolithic-style development.
-            
-            # If we are in the same environment, we can import AuditLedger.
+            # Post to the Audit Service API (FR-1.3)
             try:
-                from services.audit_service.core.audit_ledger import AuditLedger
-                # If we can import it, we use it directly for better performance
-                # This depends on your deployment model. 
-                # If they are truly disparate microservices, use httpx.
-                pass 
-            except ImportError:
-                pass
-
-            # Placeholder for actual API call to the AuditService
-            # In a real microservice setup:
-            # response = await self.client.post(f"{self.service_url}/audit/record", json=data)
-            # return response.json().get("hash")
-            
-            logger.debug(f"Audit record prepared for: {data.get('constitutional_hash')}")
-            return "simulated_audit_hash"
+                response = await self.client.post(f"{self.service_url}/record", json=data)
+                if response.status_code == 200:
+                    audit_hash = response.json().get("entry_hash")
+                    logger.info(f"Audit record successful: {audit_hash}")
+                    return audit_hash
+                else:
+                    logger.error(f"Audit Service returned error {response.status_code}: {response.text}")
+                    return None
+            except httpx.RequestError as e:
+                logger.error(f"Network error communicating with Audit Service: {e}")
+                return None
 
         except Exception as e:
             logger.error(f"Failed to report validation to audit service: {e}")

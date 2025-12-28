@@ -5,6 +5,7 @@ Policy Registry Client for dynamic constitutional validation
 import asyncio
 import os
 import logging
+import time
 from collections import OrderedDict
 from typing import Dict, Any, Optional, List
 import httpx
@@ -32,7 +33,7 @@ class PolicyRegistryClient:
         api_key: Optional[str] = None,
         timeout: float = 5.0,
         cache_ttl: int = 300,  # 5 minutes
-        fail_closed: bool = False,
+        fail_closed: bool = True,  # SECURITY: Default to fail-closed for safety
         max_cache_size: int = DEFAULT_MAX_CACHE_SIZE,
     ):
         self.registry_url = (registry_url or "http://localhost:8000").rstrip("/")
@@ -92,7 +93,7 @@ class PolicyRegistryClient:
         cache_key = f"{policy_id}:{client_id or 'default'}"
         if cache_key in self._cache:
             cached = self._cache[cache_key]
-            if asyncio.get_event_loop().time() - cached["timestamp"] < self.cache_ttl:
+            if time.monotonic() - cached["timestamp"] < self.cache_ttl:
                 # Move to end for LRU behavior (most recently accessed)
                 self._cache.move_to_end(cache_key)
                 return cached["content"]
@@ -118,7 +119,7 @@ class PolicyRegistryClient:
             # Cache the result
             self._cache[cache_key] = {
                 "content": content,
-                "timestamp": asyncio.get_event_loop().time()
+                "timestamp": time.monotonic()
             }
 
             return content
@@ -277,7 +278,7 @@ def get_policy_client(fail_closed: Optional[bool] = None) -> PolicyRegistryClien
         _policy_client = PolicyRegistryClient(
             registry_url=os.getenv("POLICY_REGISTRY_URL"), # Or another fallback
             api_key=api_key,
-            fail_closed=fail_closed if fail_closed is not None else False,
+            fail_closed=fail_closed if fail_closed is not None else True,  # SECURITY: fail-closed default
         )
     elif fail_closed is not None:
         _policy_client.fail_closed = fail_closed
@@ -286,7 +287,7 @@ def get_policy_client(fail_closed: Optional[bool] = None) -> PolicyRegistryClien
 
 async def initialize_policy_client(
     registry_url: str = "http://localhost:8000",
-    fail_closed: bool = False
+    fail_closed: bool = True  # SECURITY: Default to fail-closed for safety
 ):
     """Initialize global policy client"""
     global _policy_client

@@ -41,7 +41,73 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
-class PythonProcessingStrategy:
+# =============================================================================
+# Handler Executor Mixin - DRY extraction of common handler execution logic
+# =============================================================================
+
+class HandlerExecutorMixin:
+    """Mixin providing common handler execution logic.
+
+    Extracted to eliminate code duplication across processing strategies.
+    Constitutional Hash: cdd01ef066bc6cf2
+    """
+
+    async def _execute_handlers(
+        self,
+        message: AgentMessage,
+        handlers: Dict[Any, List[Callable]]
+    ) -> ValidationResult:
+        """Execute registered handlers for the message.
+
+        Updates message status through PROCESSING -> DELIVERED/FAILED lifecycle.
+        Handles both sync and async handlers transparently.
+
+        Args:
+            message: The message to process
+            handlers: Dict mapping message types to handler lists
+
+        Returns:
+            ValidationResult indicating success or failure
+        """
+        message.status = MessageStatus.PROCESSING
+        message.updated_at = datetime.now(timezone.utc)
+
+        try:
+            message_handlers = handlers.get(message.message_type, [])
+            for handler in message_handlers:
+                if asyncio.iscoroutinefunction(handler):
+                    await handler(message)
+                else:
+                    handler(message)
+
+            message.status = MessageStatus.DELIVERED
+            message.updated_at = datetime.now(timezone.utc)
+            return ValidationResult(is_valid=True)
+
+        except (TypeError, ValueError, AttributeError) as e:
+            message.status = MessageStatus.FAILED
+            logger.error(f"Handler error: {type(e).__name__}: {e}")
+            return ValidationResult(
+                is_valid=False,
+                errors=[f"Handler error: {type(e).__name__}: {e}"],
+            )
+        except RuntimeError as e:
+            message.status = MessageStatus.FAILED
+            logger.error(f"Runtime error in handler: {e}")
+            return ValidationResult(
+                is_valid=False,
+                errors=[f"Runtime error: {e}"],
+            )
+        except Exception as e:
+            message.status = MessageStatus.FAILED
+            logger.error(f"Unexpected handler error: {type(e).__name__}: {e}")
+            return ValidationResult(
+                is_valid=False,
+                errors=[f"Handler error: {e}"],
+            )
+
+
+class PythonProcessingStrategy(HandlerExecutorMixin):
     """Python-based processing strategy with static hash validation.
 
     Standard implementation that validates constitutional hash and executes handlers.
@@ -83,44 +149,8 @@ class PythonProcessingStrategy:
         if self._metrics_enabled:
             self._record_validation_metrics(validation_start, success=True)
 
-        # Execute handlers
+        # Execute handlers (inherited from HandlerExecutorMixin)
         return await self._execute_handlers(message, handlers)
-
-    async def _execute_handlers(
-        self,
-        message: AgentMessage,
-        handlers: Dict[Any, List[Callable]]
-    ) -> ValidationResult:
-        """Execute registered handlers for the message."""
-        message.status = MessageStatus.PROCESSING
-        message.updated_at = datetime.now(timezone.utc)
-
-        try:
-            message_handlers = handlers.get(message.message_type, [])
-            for handler in message_handlers:
-                if asyncio.iscoroutinefunction(handler):
-                    await handler(message)
-                else:
-                    handler(message)
-
-            message.status = MessageStatus.DELIVERED
-            message.updated_at = datetime.now(timezone.utc)
-            return ValidationResult(is_valid=True)
-
-        except (TypeError, ValueError, AttributeError) as e:
-            message.status = MessageStatus.FAILED
-            logger.error(f"Handler error: {type(e).__name__}: {e}")
-            return ValidationResult(
-                is_valid=False,
-                errors=[f"Handler error: {type(e).__name__}: {e}"],
-            )
-        except RuntimeError as e:
-            message.status = MessageStatus.FAILED
-            logger.error(f"Runtime error in handler: {e}")
-            return ValidationResult(
-                is_valid=False,
-                errors=[f"Runtime error: {e}"],
-            )
 
     def _record_validation_metrics(self, start_time: float, success: bool) -> None:
         """Record validation metrics if enabled."""
@@ -377,10 +407,11 @@ class RustProcessingStrategy:
         return "rust"
 
 
-class DynamicPolicyProcessingStrategy:
+class DynamicPolicyProcessingStrategy(HandlerExecutorMixin):
     """Dynamic policy-based processing strategy.
 
     Uses policy registry for constitutional validation.
+    Inherits handler execution from HandlerExecutorMixin.
     Constitutional Hash: cdd01ef066bc6cf2
     """
 
@@ -427,7 +458,7 @@ class DynamicPolicyProcessingStrategy:
                 message.status = MessageStatus.FAILED
                 return ValidationResult(is_valid=False, errors=[error] if error else [])
 
-            # Execute handlers
+            # Execute handlers (inherited from HandlerExecutorMixin)
             return await self._execute_handlers(message, handlers)
 
         except Exception as e:
@@ -436,35 +467,6 @@ class DynamicPolicyProcessingStrategy:
             return ValidationResult(
                 is_valid=False,
                 errors=[f"Policy validation error: {e}"],
-            )
-
-    async def _execute_handlers(
-        self,
-        message: AgentMessage,
-        handlers: Dict[Any, List[Callable]]
-    ) -> ValidationResult:
-        """Execute registered handlers for the message."""
-        message.status = MessageStatus.PROCESSING
-        message.updated_at = datetime.now(timezone.utc)
-
-        try:
-            message_handlers = handlers.get(message.message_type, [])
-            for handler in message_handlers:
-                if asyncio.iscoroutinefunction(handler):
-                    await handler(message)
-                else:
-                    handler(message)
-
-            message.status = MessageStatus.DELIVERED
-            message.updated_at = datetime.now(timezone.utc)
-            return ValidationResult(is_valid=True)
-
-        except Exception as e:
-            message.status = MessageStatus.FAILED
-            logger.error(f"Handler error: {e}")
-            return ValidationResult(
-                is_valid=False,
-                errors=[f"Handler error: {e}"],
             )
 
     def is_available(self) -> bool:
@@ -476,10 +478,11 @@ class DynamicPolicyProcessingStrategy:
         return "dynamic_policy"
 
 
-class OPAProcessingStrategy:
+class OPAProcessingStrategy(HandlerExecutorMixin):
     """OPA-based processing strategy.
 
     Uses OPA for constitutional validation.
+    Inherits handler execution from HandlerExecutorMixin.
     Constitutional Hash: cdd01ef066bc6cf2
     """
 
@@ -522,7 +525,7 @@ class OPAProcessingStrategy:
                 message.status = MessageStatus.FAILED
                 return ValidationResult(is_valid=False, errors=[error] if error else [])
 
-            # Execute handlers
+            # Execute handlers (inherited from HandlerExecutorMixin)
             return await self._execute_handlers(message, handlers)
 
         except Exception as e:
@@ -531,35 +534,6 @@ class OPAProcessingStrategy:
             return ValidationResult(
                 is_valid=False,
                 errors=[f"OPA validation error: {e}"],
-            )
-
-    async def _execute_handlers(
-        self,
-        message: AgentMessage,
-        handlers: Dict[Any, List[Callable]]
-    ) -> ValidationResult:
-        """Execute registered handlers for the message."""
-        message.status = MessageStatus.PROCESSING
-        message.updated_at = datetime.now(timezone.utc)
-
-        try:
-            message_handlers = handlers.get(message.message_type, [])
-            for handler in message_handlers:
-                if asyncio.iscoroutinefunction(handler):
-                    await handler(message)
-                else:
-                    handler(message)
-
-            message.status = MessageStatus.DELIVERED
-            message.updated_at = datetime.now(timezone.utc)
-            return ValidationResult(is_valid=True)
-
-        except Exception as e:
-            message.status = MessageStatus.FAILED
-            logger.error(f"Handler error: {e}")
-            return ValidationResult(
-                is_valid=False,
-                errors=[f"Handler error: {e}"],
             )
 
     def is_available(self) -> bool:
