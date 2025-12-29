@@ -28,6 +28,8 @@ dev = [
     "pytest-cov>=4.1.0",
     "pytest-mock>=3.11.0",
     "fakeredis>=2.18.0",
+    "pyyaml>=6.0",
+    "pybreaker>=1.0.0",
 ]
 ml = [
     "numpy>=1.24.0",
