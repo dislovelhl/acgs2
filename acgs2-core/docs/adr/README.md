@@ -14,12 +14,14 @@ This directory contains Architecture Decision Records (ADRs) for ACGS-2 (Advance
 | [004](004-antifragility-architecture.md) | Antifragility Architecture | Accepted | 2024-12-24 | Resilience |
 | [005](005-stride-security-architecture.md) | STRIDE-Based Security Architecture | Accepted | 2024-12-24 | Security |
 | [006](006-workflow-orchestration-patterns.md) | Temporal-Style Workflow Patterns | Accepted | 2024-12-24 | Architecture |
+| [007](007-enhanced-agent-bus-refactoring.md) | Enhanced Agent Bus Refactoring | Accepted | 2025-12-29 | Architecture |
 
 ## Categories
 
 ### Architecture
 - [ADR-001](001-hybrid-architecture.md): Hybrid Rust/Python architecture for performance + accessibility
 - [ADR-006](006-workflow-orchestration-patterns.md): Temporal-style workflow orchestration patterns
+- [ADR-007](007-enhanced-agent-bus-refactoring.md): Enhanced Agent Bus refactoring (DRY, UV, dependencies)
 
 ### Security
 - [ADR-002](002-blockchain-audit.md): Blockchain-anchored audit trails for non-repudiation
