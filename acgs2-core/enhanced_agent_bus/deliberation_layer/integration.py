@@ -49,21 +49,23 @@ try:
 except (ImportError, ValueError):
     try:
         # Try absolute imports (direct execution context)
-        from interfaces import (  # type: ignore
+        # Use deliberation_layer prefix for interfaces to avoid conflict with
+        # top-level enhanced_agent_bus.interfaces module
+        from deliberation_layer.interfaces import (  # type: ignore
             ImpactScorerProtocol, AdaptiveRouterProtocol,
             DeliberationQueueProtocol, LLMAssistantProtocol,
             RedisQueueProtocol, RedisVotingProtocol, OPAGuardProtocol,
         )
-        from impact_scorer import get_impact_scorer, calculate_message_impact  # type: ignore
-        from adaptive_router import get_adaptive_router  # type: ignore
-        from deliberation_queue import (  # type: ignore
+        from deliberation_layer.impact_scorer import get_impact_scorer, calculate_message_impact  # type: ignore
+        from deliberation_layer.adaptive_router import get_adaptive_router  # type: ignore
+        from deliberation_layer.deliberation_queue import (  # type: ignore
             get_deliberation_queue, DeliberationStatus, VoteType
         )
-        from llm_assistant import get_llm_assistant  # type: ignore
-        from redis_integration import (  # type: ignore
+        from deliberation_layer.llm_assistant import get_llm_assistant  # type: ignore
+        from deliberation_layer.redis_integration import (  # type: ignore
             get_redis_deliberation_queue, get_redis_voting_system
         )
-        from opa_guard import (  # type: ignore
+        from deliberation_layer.opa_guard import (  # type: ignore
             OPAGuard, get_opa_guard, GuardResult, GuardDecision,
             SignatureResult, ReviewResult
         )
