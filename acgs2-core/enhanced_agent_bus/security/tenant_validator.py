@@ -20,14 +20,22 @@ class TenantValidator:
 
     @classmethod
     def normalize(cls, tenant_id: Optional[str]) -> Optional[str]:
-        """Normalize tenant_id to a consistent representative form."""
+        """Normalize tenant_id to a consistent representative form.
+
+        Empty strings and whitespace-only strings are treated as None
+        for consistent tenant isolation behavior.
+        """
         if tenant_id is None:
             return None
 
         # 1. Strip whitespace
         normalized = tenant_id.strip()
 
-        # 2. Convert to lowercase for consistent casing
+        # 2. Treat empty strings as None for consistent isolation
+        if not normalized:
+            return None
+
+        # 3. Convert to lowercase for consistent casing
         normalized = normalized.lower()
 
         return normalized

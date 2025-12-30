@@ -895,11 +895,13 @@ class TestEdgeCases:
         assert len(info["capabilities"]) == 100
 
     @pytest.mark.asyncio
-    async def test_unicode_tenant_id(self, agent_bus, constitutional_hash, mock_processor):
-        """Test with unicode tenant ID."""
+    async def test_unicode_tenant_id_rejected(self, agent_bus, constitutional_hash, mock_processor):
+        """Test that unicode tenant IDs are rejected for security (homograph attack prevention)."""
         mock_processor.process = AsyncMock(return_value=ValidationResult(is_valid=True))
 
         await agent_bus.start()
+        # Unicode tenant IDs should be normalized but validation will reject them
+        # This is intentional security behavior to prevent homograph attacks
         await agent_bus.register_agent("unicode-agent", "worker", [], "テナント-1")
 
         message = AgentMessage(
@@ -913,8 +915,10 @@ class TestEdgeCases:
             tenant_id="テナント-1",
         )
 
+        # Validation should fail due to invalid tenant_id format (non-ASCII)
         result = await agent_bus.send_message(message)
-        assert result.is_valid is True
+        assert result.is_valid is False
+        assert any("tenant" in err.lower() or "format" in err.lower() for err in result.errors)
         await agent_bus.stop()
 
 

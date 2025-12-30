@@ -840,12 +840,16 @@ class EnhancedAgentBus:
         original_to_agent = message.to_agent
         skipped_agents = []
 
+        # Normalize message tenant_id for consistent comparison
+        message_tenant = self._normalize_tenant_id(message.tenant_id)
+
         for agent_id, info in self._agents.items():
+            # Agent tenant_id is already normalized during registration
             agent_tenant = info.get("tenant_id")
 
             # STRICT MULTI-TENANT ISOLATION
-            if message.tenant_id:
-                if agent_tenant != message.tenant_id:
+            if message_tenant:
+                if agent_tenant != message_tenant:
                     skipped_agents.append(agent_id)
                     continue
             else:
