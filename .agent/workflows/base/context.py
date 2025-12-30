@@ -6,10 +6,10 @@ State container passed through workflow execution.
 Accumulates results from each step and provides shared state.
 """
 
+import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
-import uuid
 
 try:
     from shared.constants import CONSTITUTIONAL_HASH
@@ -35,6 +35,7 @@ class WorkflowContext:
         metadata: Additional context data
         started_at: Workflow start timestamp
     """
+
     workflow_id: str
     constitutional_hash: str = CONSTITUTIONAL_HASH
     tenant_id: Optional[str] = None
@@ -135,7 +136,7 @@ class WorkflowContext:
         cls,
         tenant_id: Optional[str] = None,
         parent_workflow_id: Optional[str] = None,
-        metadata: Optional[Dict[str, Any]] = None
+        metadata: Optional[Dict[str, Any]] = None,
     ) -> "WorkflowContext":
         """
         Factory method to create a new workflow context.

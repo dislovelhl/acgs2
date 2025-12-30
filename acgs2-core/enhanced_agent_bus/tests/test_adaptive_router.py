@@ -10,14 +10,15 @@ Comprehensive tests for the AdaptiveRouter class covering:
 - Routing statistics
 """
 
+from datetime import datetime
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
-from unittest.mock import Mock, AsyncMock, patch, MagicMock
-from datetime import datetime, timezone
-from typing import Dict, Any
-
-from enhanced_agent_bus.models import AgentMessage, MessageType, Priority, MessageStatus
-from enhanced_agent_bus.deliberation_layer.adaptive_router import AdaptiveRouter, get_adaptive_router
-
+from enhanced_agent_bus.deliberation_layer.adaptive_router import (
+    AdaptiveRouter,
+    get_adaptive_router,
+)
+from enhanced_agent_bus.models import AgentMessage, MessageStatus, MessageType
 
 try:
     from shared.constants import CONSTITUTIONAL_HASH
@@ -36,12 +37,12 @@ def mock_deliberation_queue():
 @pytest.fixture
 def router(mock_deliberation_queue):
     """Create an AdaptiveRouter instance with mocked dependencies."""
-    with patch('enhanced_agent_bus.deliberation_layer.adaptive_router.get_deliberation_queue',
-               return_value=mock_deliberation_queue):
+    with patch(
+        "enhanced_agent_bus.deliberation_layer.adaptive_router.get_deliberation_queue",
+        return_value=mock_deliberation_queue,
+    ):
         router = AdaptiveRouter(
-            impact_threshold=0.8,
-            deliberation_timeout=300,
-            enable_learning=True
+            impact_threshold=0.8, deliberation_timeout=300, enable_learning=True
         )
     return router
 
@@ -49,12 +50,12 @@ def router(mock_deliberation_queue):
 @pytest.fixture
 def router_no_learning(mock_deliberation_queue):
     """Create an AdaptiveRouter with learning disabled."""
-    with patch('enhanced_agent_bus.deliberation_layer.adaptive_router.get_deliberation_queue',
-               return_value=mock_deliberation_queue):
+    with patch(
+        "enhanced_agent_bus.deliberation_layer.adaptive_router.get_deliberation_queue",
+        return_value=mock_deliberation_queue,
+    ):
         router = AdaptiveRouter(
-            impact_threshold=0.8,
-            deliberation_timeout=300,
-            enable_learning=False
+            impact_threshold=0.8, deliberation_timeout=300, enable_learning=False
         )
     return router
 
@@ -68,7 +69,7 @@ def low_impact_message():
         message_type=MessageType.COMMAND,
         content={"action": "simple_query"},
         impact_score=0.3,
-        constitutional_hash=CONSTITUTIONAL_HASH
+        constitutional_hash=CONSTITUTIONAL_HASH,
     )
 
 
@@ -81,7 +82,7 @@ def high_impact_message():
         message_type=MessageType.GOVERNANCE_REQUEST,
         content={"action": "critical_governance_decision"},
         impact_score=0.95,
-        constitutional_hash=CONSTITUTIONAL_HASH
+        constitutional_hash=CONSTITUTIONAL_HASH,
     )
 
 
@@ -93,7 +94,7 @@ def message_no_score():
         to_agent="agent-2",
         message_type=MessageType.COMMAND,
         content={"action": "new_request"},
-        constitutional_hash=CONSTITUTIONAL_HASH
+        constitutional_hash=CONSTITUTIONAL_HASH,
     )
 
 
@@ -102,24 +103,26 @@ class TestAdaptiveRouterInitialization:
 
     def test_default_initialization(self, mock_deliberation_queue):
         """Test router initializes with default parameters."""
-        with patch('enhanced_agent_bus.deliberation_layer.adaptive_router.get_deliberation_queue',
-                   return_value=mock_deliberation_queue):
+        with patch(
+            "enhanced_agent_bus.deliberation_layer.adaptive_router.get_deliberation_queue",
+            return_value=mock_deliberation_queue,
+        ):
             router = AdaptiveRouter()
 
         assert router.impact_threshold == 0.8
         assert router.deliberation_timeout == 300
         assert router.enable_learning is True
         assert router.routing_history == []
-        assert router.performance_metrics['total_messages'] == 0
+        assert router.performance_metrics["total_messages"] == 0
 
     def test_custom_initialization(self, mock_deliberation_queue):
         """Test router initializes with custom parameters."""
-        with patch('enhanced_agent_bus.deliberation_layer.adaptive_router.get_deliberation_queue',
-                   return_value=mock_deliberation_queue):
+        with patch(
+            "enhanced_agent_bus.deliberation_layer.adaptive_router.get_deliberation_queue",
+            return_value=mock_deliberation_queue,
+        ):
             router = AdaptiveRouter(
-                impact_threshold=0.5,
-                deliberation_timeout=600,
-                enable_learning=False
+                impact_threshold=0.5, deliberation_timeout=600, enable_learning=False
             )
 
         assert router.impact_threshold == 0.5
@@ -130,14 +133,14 @@ class TestAdaptiveRouterInitialization:
         """Test that performance metrics are properly initialized."""
         metrics = router.performance_metrics
 
-        assert 'total_messages' in metrics
-        assert 'fast_lane_count' in metrics
-        assert 'deliberation_count' in metrics
-        assert 'deliberation_approved' in metrics
-        assert 'deliberation_rejected' in metrics
-        assert 'deliberation_timeout' in metrics
-        assert 'false_positives' in metrics
-        assert 'false_negatives' in metrics
+        assert "total_messages" in metrics
+        assert "fast_lane_count" in metrics
+        assert "deliberation_count" in metrics
+        assert "deliberation_approved" in metrics
+        assert "deliberation_rejected" in metrics
+        assert "deliberation_timeout" in metrics
+        assert "false_positives" in metrics
+        assert "false_negatives" in metrics
 
 
 class TestRouteMessage:
@@ -148,30 +151,32 @@ class TestRouteMessage:
         """Test that low impact messages are routed to fast lane."""
         result = await router.route_message(low_impact_message)
 
-        assert result['lane'] == 'fast'
-        assert result['impact_score'] == 0.3
-        assert result['requires_deliberation'] is False
-        assert result['fast_path_enabled'] is True
-        assert router.performance_metrics['fast_lane_count'] == 1
-        assert router.performance_metrics['total_messages'] == 1
+        assert result["lane"] == "fast"
+        assert result["impact_score"] == 0.3
+        assert result["requires_deliberation"] is False
+        assert result["fast_path_enabled"] is True
+        assert router.performance_metrics["fast_lane_count"] == 1
+        assert router.performance_metrics["total_messages"] == 1
 
     @pytest.mark.asyncio
     async def test_route_high_impact_to_deliberation(self, router, high_impact_message):
         """Test that high impact messages are routed to deliberation."""
         result = await router.route_message(high_impact_message)
 
-        assert result['lane'] == 'deliberation'
-        assert result['impact_score'] == 0.95
-        assert result['requires_deliberation'] is True
-        assert result['opa_enforced'] is True
-        assert router.performance_metrics['deliberation_count'] == 1
-        assert router.performance_metrics['total_messages'] == 1
+        assert result["lane"] == "deliberation"
+        assert result["impact_score"] == 0.95
+        assert result["requires_deliberation"] is True
+        assert result["opa_enforced"] is True
+        assert router.performance_metrics["deliberation_count"] == 1
+        assert router.performance_metrics["total_messages"] == 1
 
     @pytest.mark.asyncio
     async def test_route_boundary_score_at_threshold(self, router, mock_deliberation_queue):
         """Test routing behavior at exactly the threshold."""
-        with patch('enhanced_agent_bus.deliberation_layer.adaptive_router.get_deliberation_queue',
-                   return_value=mock_deliberation_queue):
+        with patch(
+            "enhanced_agent_bus.deliberation_layer.adaptive_router.get_deliberation_queue",
+            return_value=mock_deliberation_queue,
+        ):
             router = AdaptiveRouter(impact_threshold=0.8)
 
         # Score exactly at threshold should go to deliberation
@@ -181,16 +186,18 @@ class TestRouteMessage:
             message_type=MessageType.COMMAND,
             content={"action": "test"},
             impact_score=0.8,
-            constitutional_hash=CONSTITUTIONAL_HASH
+            constitutional_hash=CONSTITUTIONAL_HASH,
         )
 
         result = await router.route_message(message)
-        assert result['lane'] == 'deliberation'
+        assert result["lane"] == "deliberation"
 
     @pytest.mark.asyncio
     async def test_route_calculates_missing_impact_score(self, router, message_no_score):
         """Test that missing impact scores are calculated."""
-        with patch('enhanced_agent_bus.deliberation_layer.impact_scorer.get_impact_scorer') as mock_scorer:
+        with patch(
+            "enhanced_agent_bus.deliberation_layer.impact_scorer.get_impact_scorer"
+        ) as mock_scorer:
             scorer_instance = MagicMock()
             scorer_instance.calculate_impact_score = MagicMock(return_value=0.4)
             mock_scorer.return_value = scorer_instance
@@ -199,7 +206,7 @@ class TestRouteMessage:
             result = await router.route_message(message_no_score)
 
             assert message_no_score.impact_score == 0.4
-            assert result['lane'] == 'fast'
+            assert result["lane"] == "fast"
 
     @pytest.mark.asyncio
     async def test_route_message_updates_status(self, router, low_impact_message):
@@ -214,15 +221,11 @@ class TestRouteMessage:
     @pytest.mark.asyncio
     async def test_route_with_context(self, router, low_impact_message):
         """Test routing with additional context."""
-        context = {
-            "tenant_id": "tenant-123",
-            "user_role": "admin",
-            "action_severity": "low"
-        }
+        context = {"tenant_id": "tenant-123", "user_role": "admin", "action_severity": "low"}
 
         result = await router.route_message(low_impact_message, context=context)
 
-        assert result['lane'] == 'fast'
+        assert result["lane"] == "fast"
 
 
 class TestRoutingHistory:
@@ -236,13 +239,15 @@ class TestRoutingHistory:
         assert len(router.routing_history) == 1
         entry = router.routing_history[0]
 
-        assert entry['message_id'] == low_impact_message.message_id
-        assert entry['impact_score'] == 0.3
-        assert entry['routing_decision']['lane'] == 'fast'
-        assert 'timestamp' in entry
+        assert entry["message_id"] == low_impact_message.message_id
+        assert entry["impact_score"] == 0.3
+        assert entry["routing_decision"]["lane"] == "fast"
+        assert "timestamp" in entry
 
     @pytest.mark.asyncio
-    async def test_routing_history_disabled_when_learning_off(self, router_no_learning, low_impact_message):
+    async def test_routing_history_disabled_when_learning_off(
+        self, router_no_learning, low_impact_message
+    ):
         """Test that history is not recorded when learning is disabled."""
         await router_no_learning.route_message(low_impact_message)
 
@@ -251,8 +256,10 @@ class TestRoutingHistory:
     @pytest.mark.asyncio
     async def test_routing_history_capped_at_1000(self, router, mock_deliberation_queue):
         """Test that routing history is capped at 1000 entries."""
-        with patch('enhanced_agent_bus.deliberation_layer.adaptive_router.get_deliberation_queue',
-                   return_value=mock_deliberation_queue):
+        with patch(
+            "enhanced_agent_bus.deliberation_layer.adaptive_router.get_deliberation_queue",
+            return_value=mock_deliberation_queue,
+        ):
             router = AdaptiveRouter(enable_learning=True)
 
         # Add 1050 routing decisions
@@ -263,7 +270,7 @@ class TestRoutingHistory:
                 message_type=MessageType.COMMAND,
                 content={"index": i},
                 impact_score=0.3,
-                constitutional_hash=CONSTITUTIONAL_HASH
+                constitutional_hash=CONSTITUTIONAL_HASH,
             )
             await router.route_message(message)
 
@@ -280,12 +287,12 @@ class TestPerformanceFeedback:
 
         await router.update_performance_feedback(
             message_id=high_impact_message.message_id,
-            actual_outcome='approved',
+            actual_outcome="approved",
             processing_time=2.5,
-            feedback_score=0.9
+            feedback_score=0.9,
         )
 
-        assert router.performance_metrics['deliberation_approved'] == 1
+        assert router.performance_metrics["deliberation_approved"] == 1
 
     @pytest.mark.asyncio
     async def test_update_feedback_rejected(self, router, high_impact_message):
@@ -294,12 +301,12 @@ class TestPerformanceFeedback:
 
         await router.update_performance_feedback(
             message_id=high_impact_message.message_id,
-            actual_outcome='rejected',
+            actual_outcome="rejected",
             processing_time=3.0,
-            feedback_score=0.1
+            feedback_score=0.1,
         )
 
-        assert router.performance_metrics['deliberation_rejected'] == 1
+        assert router.performance_metrics["deliberation_rejected"] == 1
 
     @pytest.mark.asyncio
     async def test_update_feedback_timeout(self, router, high_impact_message):
@@ -308,35 +315,35 @@ class TestPerformanceFeedback:
 
         await router.update_performance_feedback(
             message_id=high_impact_message.message_id,
-            actual_outcome='timeout',
-            processing_time=300.0
+            actual_outcome="timeout",
+            processing_time=300.0,
         )
 
-        assert router.performance_metrics['deliberation_timeout'] == 1
+        assert router.performance_metrics["deliberation_timeout"] == 1
 
     @pytest.mark.asyncio
     async def test_update_feedback_missing_message(self, router):
         """Test feedback update for non-existent message."""
         # Should not raise, just log warning
         await router.update_performance_feedback(
-            message_id="non-existent-id",
-            actual_outcome='approved',
-            processing_time=1.0
+            message_id="non-existent-id", actual_outcome="approved", processing_time=1.0
         )
 
         # Metrics should remain unchanged
-        assert router.performance_metrics['deliberation_approved'] == 0
+        assert router.performance_metrics["deliberation_approved"] == 0
 
     @pytest.mark.asyncio
-    async def test_update_feedback_disabled_when_learning_off(self, router_no_learning, high_impact_message):
+    async def test_update_feedback_disabled_when_learning_off(
+        self, router_no_learning, high_impact_message
+    ):
         """Test that feedback is ignored when learning is disabled."""
         await router_no_learning.route_message(high_impact_message)
 
         # Should return without updating
         await router_no_learning.update_performance_feedback(
             message_id=high_impact_message.message_id,
-            actual_outcome='approved',
-            processing_time=2.0
+            actual_outcome="approved",
+            processing_time=2.0,
         )
 
         # No history to update
@@ -349,8 +356,10 @@ class TestAdaptiveThresholdAdjustment:
     @pytest.mark.asyncio
     async def test_threshold_not_adjusted_insufficient_data(self, router, mock_deliberation_queue):
         """Test threshold is not adjusted with insufficient data."""
-        with patch('enhanced_agent_bus.deliberation_layer.adaptive_router.get_deliberation_queue',
-                   return_value=mock_deliberation_queue):
+        with patch(
+            "enhanced_agent_bus.deliberation_layer.adaptive_router.get_deliberation_queue",
+            return_value=mock_deliberation_queue,
+        ):
             router = AdaptiveRouter(impact_threshold=0.8)
 
         original_threshold = router.impact_threshold
@@ -363,13 +372,11 @@ class TestAdaptiveThresholdAdjustment:
                 message_type=MessageType.COMMAND,
                 content={"index": i},
                 impact_score=0.5,
-                constitutional_hash=CONSTITUTIONAL_HASH
+                constitutional_hash=CONSTITUTIONAL_HASH,
             )
             await router.route_message(message)
             await router.update_performance_feedback(
-                message_id=message.message_id,
-                actual_outcome='success',
-                processing_time=1.0
+                message_id=message.message_id, actual_outcome="success", processing_time=1.0
             )
 
         assert router.impact_threshold == original_threshold
@@ -377,8 +384,10 @@ class TestAdaptiveThresholdAdjustment:
     @pytest.mark.asyncio
     async def test_threshold_bounded_between_0_1_and_0_95(self, router, mock_deliberation_queue):
         """Test threshold stays within valid bounds."""
-        with patch('enhanced_agent_bus.deliberation_layer.adaptive_router.get_deliberation_queue',
-                   return_value=mock_deliberation_queue):
+        with patch(
+            "enhanced_agent_bus.deliberation_layer.adaptive_router.get_deliberation_queue",
+            return_value=mock_deliberation_queue,
+        ):
             router = AdaptiveRouter(impact_threshold=0.95)
 
         # Even with adjustments, threshold should stay <= 0.95
@@ -397,26 +406,28 @@ class TestRoutingStatistics:
         """Test stats retrieval with no messages."""
         stats = router.get_routing_stats()
 
-        assert stats['total_messages'] == 0
-        assert stats['fast_lane_count'] == 0
-        assert stats['deliberation_count'] == 0
+        assert stats["total_messages"] == 0
+        assert stats["fast_lane_count"] == 0
+        assert stats["deliberation_count"] == 0
 
     @pytest.mark.asyncio
-    async def test_get_routing_stats_with_data(self, router, low_impact_message, high_impact_message):
+    async def test_get_routing_stats_with_data(
+        self, router, low_impact_message, high_impact_message
+    ):
         """Test stats retrieval with processed messages."""
         await router.route_message(low_impact_message)
         await router.route_message(high_impact_message)
 
         stats = router.get_routing_stats()
 
-        assert stats['total_messages'] == 2
-        assert stats['fast_lane_count'] == 1
-        assert stats['deliberation_count'] == 1
-        assert stats['fast_lane_percentage'] == 0.5
-        assert stats['deliberation_percentage'] == 0.5
-        assert stats['current_threshold'] == 0.8
-        assert stats['learning_enabled'] is True
-        assert stats['history_size'] == 2
+        assert stats["total_messages"] == 2
+        assert stats["fast_lane_count"] == 1
+        assert stats["deliberation_count"] == 1
+        assert stats["fast_lane_percentage"] == 0.5
+        assert stats["deliberation_percentage"] == 0.5
+        assert stats["current_threshold"] == 0.8
+        assert stats["learning_enabled"] is True
+        assert stats["history_size"] == 2
 
 
 class TestThresholdManagement:
@@ -448,9 +459,9 @@ class TestForceDeliberation:
 
         result = await router.force_deliberation(low_impact_message, reason="manual_review")
 
-        assert result['lane'] == 'deliberation'
-        assert result['forced'] is True
-        assert result['force_reason'] == "manual_review"
+        assert result["lane"] == "deliberation"
+        assert result["forced"] is True
+        assert result["force_reason"] == "manual_review"
         # Original score should be restored
         assert low_impact_message.impact_score == 0.3
 
@@ -459,15 +470,15 @@ class TestForceDeliberation:
         """Test force deliberation with default reason."""
         result = await router.force_deliberation(low_impact_message)
 
-        assert result['forced'] is True
-        assert result['force_reason'] == "manual_override"
+        assert result["forced"] is True
+        assert result["force_reason"] == "manual_override"
 
     @pytest.mark.asyncio
     async def test_force_deliberation_increments_counter(self, router, low_impact_message):
         """Test that force deliberation increments deliberation counter."""
         await router.force_deliberation(low_impact_message)
 
-        assert router.performance_metrics['deliberation_count'] == 1
+        assert router.performance_metrics["deliberation_count"] == 1
 
 
 class TestGetAdaptiveRouter:
@@ -475,9 +486,13 @@ class TestGetAdaptiveRouter:
 
     def test_get_adaptive_router_returns_instance(self, mock_deliberation_queue):
         """Test that get_adaptive_router returns a router instance."""
-        with patch('enhanced_agent_bus.deliberation_layer.adaptive_router.get_deliberation_queue',
-                   return_value=mock_deliberation_queue):
-            with patch('enhanced_agent_bus.deliberation_layer.adaptive_router._adaptive_router', None):
+        with patch(
+            "enhanced_agent_bus.deliberation_layer.adaptive_router.get_deliberation_queue",
+            return_value=mock_deliberation_queue,
+        ):
+            with patch(
+                "enhanced_agent_bus.deliberation_layer.adaptive_router._adaptive_router", None
+            ):
                 router = get_adaptive_router()
 
                 assert router is not None
@@ -485,10 +500,13 @@ class TestGetAdaptiveRouter:
 
     def test_get_adaptive_router_returns_same_instance(self, mock_deliberation_queue):
         """Test that get_adaptive_router returns the same instance on repeated calls."""
-        with patch('enhanced_agent_bus.deliberation_layer.adaptive_router.get_deliberation_queue',
-                   return_value=mock_deliberation_queue):
+        with patch(
+            "enhanced_agent_bus.deliberation_layer.adaptive_router.get_deliberation_queue",
+            return_value=mock_deliberation_queue,
+        ):
             # Reset the singleton using the already imported module
             from enhanced_agent_bus.deliberation_layer import adaptive_router as router_module
+
             router_module._adaptive_router = None
 
             router1 = get_adaptive_router()
@@ -503,19 +521,45 @@ class TestMultipleRoutingDecisions:
     @pytest.mark.asyncio
     async def test_multiple_messages_different_paths(self, router, mock_deliberation_queue):
         """Test routing multiple messages to different paths."""
-        with patch('enhanced_agent_bus.deliberation_layer.adaptive_router.get_deliberation_queue',
-                   return_value=mock_deliberation_queue):
+        with patch(
+            "enhanced_agent_bus.deliberation_layer.adaptive_router.get_deliberation_queue",
+            return_value=mock_deliberation_queue,
+        ):
             router = AdaptiveRouter(impact_threshold=0.5)
 
         messages = [
-            AgentMessage(from_agent="a", to_agent="b", message_type=MessageType.COMMAND,
-                        content={}, impact_score=0.3, constitutional_hash=CONSTITUTIONAL_HASH),
-            AgentMessage(from_agent="a", to_agent="b", message_type=MessageType.COMMAND,
-                        content={}, impact_score=0.7, constitutional_hash=CONSTITUTIONAL_HASH),
-            AgentMessage(from_agent="a", to_agent="b", message_type=MessageType.COMMAND,
-                        content={}, impact_score=0.2, constitutional_hash=CONSTITUTIONAL_HASH),
-            AgentMessage(from_agent="a", to_agent="b", message_type=MessageType.COMMAND,
-                        content={}, impact_score=0.9, constitutional_hash=CONSTITUTIONAL_HASH),
+            AgentMessage(
+                from_agent="a",
+                to_agent="b",
+                message_type=MessageType.COMMAND,
+                content={},
+                impact_score=0.3,
+                constitutional_hash=CONSTITUTIONAL_HASH,
+            ),
+            AgentMessage(
+                from_agent="a",
+                to_agent="b",
+                message_type=MessageType.COMMAND,
+                content={},
+                impact_score=0.7,
+                constitutional_hash=CONSTITUTIONAL_HASH,
+            ),
+            AgentMessage(
+                from_agent="a",
+                to_agent="b",
+                message_type=MessageType.COMMAND,
+                content={},
+                impact_score=0.2,
+                constitutional_hash=CONSTITUTIONAL_HASH,
+            ),
+            AgentMessage(
+                from_agent="a",
+                to_agent="b",
+                message_type=MessageType.COMMAND,
+                content={},
+                impact_score=0.9,
+                constitutional_hash=CONSTITUTIONAL_HASH,
+            ),
         ]
 
         results = []
@@ -523,13 +567,13 @@ class TestMultipleRoutingDecisions:
             result = await router.route_message(msg)
             results.append(result)
 
-        assert results[0]['lane'] == 'fast'  # 0.3 < 0.5
-        assert results[1]['lane'] == 'deliberation'  # 0.7 >= 0.5
-        assert results[2]['lane'] == 'fast'  # 0.2 < 0.5
-        assert results[3]['lane'] == 'deliberation'  # 0.9 >= 0.5
+        assert results[0]["lane"] == "fast"  # 0.3 < 0.5
+        assert results[1]["lane"] == "deliberation"  # 0.7 >= 0.5
+        assert results[2]["lane"] == "fast"  # 0.2 < 0.5
+        assert results[3]["lane"] == "deliberation"  # 0.9 >= 0.5
 
-        assert router.performance_metrics['fast_lane_count'] == 2
-        assert router.performance_metrics['deliberation_count'] == 2
+        assert router.performance_metrics["fast_lane_count"] == 2
+        assert router.performance_metrics["deliberation_count"] == 2
 
 
 class TestConstitutionalCompliance:
@@ -552,5 +596,5 @@ class TestConstitutionalCompliance:
         """Test that routing decisions include timestamps."""
         result = await router.route_message(low_impact_message)
 
-        assert 'decision_timestamp' in result
-        assert isinstance(result['decision_timestamp'], datetime)
+        assert "decision_timestamp" in result
+        assert isinstance(result["decision_timestamp"], datetime)

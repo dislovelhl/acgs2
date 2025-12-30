@@ -10,17 +10,19 @@ import logging
 from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 
-from .vault_models import VaultConfig, CONSTITUTIONAL_HASH
+from .vault_models import CONSTITUTIONAL_HASH, VaultConfig
 
 # HTTP client - prefer httpx for async, fallback to aiohttp
 try:
     import httpx
+
     HTTPX_AVAILABLE = True
 except ImportError:
     HTTPX_AVAILABLE = False
 
 try:
     import aiohttp
+
     AIOHTTP_AVAILABLE = True
 except ImportError:
     AIOHTTP_AVAILABLE = False
@@ -28,6 +30,7 @@ except ImportError:
 # Optional hvac library for Vault SDK operations
 try:
     import hvac
+
     HVAC_AVAILABLE = True
 except ImportError:
     HVAC_AVAILABLE = False
@@ -81,7 +84,9 @@ class VaultHttpClient:
                     url=self.config.address,
                     token=self.config.token,
                     namespace=self.config.namespace,
-                    verify=self.config.verify_tls if self.config.verify_tls else self.config.ca_cert,
+                    verify=(
+                        self.config.verify_tls if self.config.verify_tls else self.config.ca_cert
+                    ),
                 )
                 if self._hvac_client.is_authenticated():
                     self._vault_available = True

@@ -7,26 +7,19 @@ and MessageProcessor.
 """
 
 import pytest
-from datetime import datetime, timezone
-from typing import Optional
-
-from enhanced_agent_bus.agent_bus import EnhancedAgentBus, MACI_AVAILABLE
+from enhanced_agent_bus.agent_bus import MACI_AVAILABLE, EnhancedAgentBus
 from enhanced_agent_bus.message_processor import MessageProcessor
 from enhanced_agent_bus.models import (
+    CONSTITUTIONAL_HASH,
     AgentMessage,
     MessageType,
-    MessageStatus,
-    CONSTITUTIONAL_HASH,
 )
 
 # Skip if MACI not available
-pytestmark = pytest.mark.skipif(
-    not MACI_AVAILABLE,
-    reason="MACI module not available"
-)
+pytestmark = pytest.mark.skipif(not MACI_AVAILABLE, reason="MACI module not available")
 
 if MACI_AVAILABLE:
-    from enhanced_agent_bus.maci_enforcement import MACIRole, MACIAction
+    from enhanced_agent_bus.maci_enforcement import MACIAction, MACIRole
 
 
 class TestEnhancedAgentBusMACIIntegration:
@@ -143,8 +136,8 @@ class TestMessageProcessorMACIIntegration:
     def test_processor_maci_with_registry(self):
         """Test MessageProcessor with external MACI registry."""
         from enhanced_agent_bus.maci_enforcement import (
-            MACIRoleRegistry,
             MACIEnforcer,
+            MACIRoleRegistry,
         )
 
         registry = MACIRoleRegistry()
@@ -194,13 +187,13 @@ class TestMACIProcessingStrategyIntegration:
 
     def test_maci_strategy_with_external_registry(self):
         """Test MACIProcessingStrategy with external registry."""
+        from enhanced_agent_bus.maci_enforcement import (
+            MACIEnforcer,
+            MACIRoleRegistry,
+        )
         from enhanced_agent_bus.processing_strategies import (
             MACIProcessingStrategy,
             PythonProcessingStrategy,
-        )
-        from enhanced_agent_bus.maci_enforcement import (
-            MACIRoleRegistry,
-            MACIEnforcer,
         )
 
         registry = MACIRoleRegistry()
@@ -219,13 +212,13 @@ class TestMACIProcessingStrategyIntegration:
     @pytest.mark.asyncio
     async def test_maci_strategy_validates_messages(self):
         """Test that MACI strategy validates messages."""
+        from enhanced_agent_bus.maci_enforcement import (
+            MACIEnforcer,
+            MACIRoleRegistry,
+        )
         from enhanced_agent_bus.processing_strategies import (
             MACIProcessingStrategy,
             PythonProcessingStrategy,
-        )
-        from enhanced_agent_bus.maci_enforcement import (
-            MACIRoleRegistry,
-            MACIEnforcer,
         )
 
         registry = MACIRoleRegistry()
@@ -293,7 +286,6 @@ class TestMACIEndToEndIntegration:
     @pytest.mark.asyncio
     async def test_maci_role_separation_enforced(self):
         """Test that role separation is enforced in message processing."""
-        from enhanced_agent_bus.maci_enforcement import MACIEnforcer
 
         bus = EnhancedAgentBus(enable_maci=True, maci_strict_mode=True)
 

@@ -5,39 +5,35 @@ Constitutional Hash: cdd01ef066bc6cf2
 Comprehensive tests for production billing metering integration.
 """
 
-import pytest
-import asyncio
-import time
-from datetime import datetime, timezone
-from typing import Optional, Dict, Any
-from unittest.mock import Mock, AsyncMock, patch, MagicMock
-
-import sys
 import os
+import sys
+import time
+
+import pytest
 
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Import metering integration module
 from metering_integration import (
-    MeteringConfig,
+    CONSTITUTIONAL_HASH,
+    METERING_AVAILABLE,
     AsyncMeteringQueue,
+    MeteringConfig,
     MeteringHooks,
     MeteringMixin,
-    get_metering_queue,
     get_metering_hooks,
-    reset_metering,
+    get_metering_queue,
     metered_operation,
-    METERING_AVAILABLE,
-    CONSTITUTIONAL_HASH,
+    reset_metering,
 )
 
 # Import models for testing
 try:
-    from models import AgentMessage, MessageType, MessagePriority
+    from models import AgentMessage, MessagePriority, MessageType
     from validators import ValidationResult
 except ImportError:
-    from enhanced_agent_bus.models import AgentMessage, MessageType, MessagePriority
+    from enhanced_agent_bus.models import AgentMessage, MessagePriority, MessageType
     from enhanced_agent_bus.validators import ValidationResult
 
 # Import metering models with fallback mocks
@@ -49,12 +45,14 @@ except ImportError:
 
     class MeterableOperation(Enum):
         """Mock MeterableOperation for testing."""
+
         CONSTITUTIONAL_VALIDATION = "constitutional_validation"
         POLICY_EVALUATION = "policy_evaluation"
         MESSAGE_PROCESSING = "message_processing"
 
     class MeteringTier(Enum):
         """Mock MeteringTier for testing."""
+
         STANDARD = "standard"
         PREMIUM = "premium"
 
@@ -455,7 +453,7 @@ class TestMeteredOperationDecorator:
             pytest.skip("Metering service not available")
 
         def custom_extract_tenant(obj):
-            return getattr(obj, 'custom_tenant', 'fallback')
+            return getattr(obj, "custom_tenant", "fallback")
 
         class CustomObject:
             custom_tenant = "custom-tenant-id"
@@ -479,7 +477,7 @@ class TestMeteredOperationDecorator:
             pytest.skip("Metering service not available")
 
         def custom_extract_agent(obj):
-            return getattr(obj, 'agent_name', None)
+            return getattr(obj, "agent_name", None)
 
         class AgentObject:
             agent_name = "custom-agent"

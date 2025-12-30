@@ -5,23 +5,21 @@ Constitutional Hash: cdd01ef066bc6cf2
 Comprehensive tests for the deliberation layer voting service.
 """
 
+from datetime import datetime, timezone
+
 import pytest
-import asyncio
-from datetime import datetime, timezone, timedelta
-from unittest.mock import MagicMock, patch
-
 from enhanced_agent_bus.deliberation_layer.voting_service import (
-    VotingStrategy,
-    Vote,
     Election,
+    Vote,
     VotingService,
+    VotingStrategy,
 )
-from enhanced_agent_bus.models import AgentMessage, CONSTITUTIONAL_HASH
-
+from enhanced_agent_bus.models import CONSTITUTIONAL_HASH, AgentMessage
 
 # =============================================================================
 # Fixtures
 # =============================================================================
+
 
 @pytest.fixture
 def valid_message() -> AgentMessage:
@@ -62,6 +60,7 @@ def super_majority_voting_service() -> VotingService:
 # VotingStrategy Tests
 # =============================================================================
 
+
 class TestVotingStrategy:
     """Tests for VotingStrategy enum."""
 
@@ -90,16 +89,13 @@ class TestVotingStrategy:
 # Vote Tests
 # =============================================================================
 
+
 class TestVote:
     """Tests for Vote dataclass."""
 
     def test_create_approve_vote(self) -> None:
         """Test creating an approval vote."""
-        vote = Vote(
-            agent_id="agent-1",
-            decision="APPROVE",
-            reason="Looks good"
-        )
+        vote = Vote(agent_id="agent-1", decision="APPROVE", reason="Looks good")
         assert vote.agent_id == "agent-1"
         assert vote.decision == "APPROVE"
         assert vote.reason == "Looks good"
@@ -107,21 +103,14 @@ class TestVote:
 
     def test_create_deny_vote(self) -> None:
         """Test creating a deny vote."""
-        vote = Vote(
-            agent_id="agent-2",
-            decision="DENY",
-            reason="Policy violation"
-        )
+        vote = Vote(agent_id="agent-2", decision="DENY", reason="Policy violation")
         assert vote.agent_id == "agent-2"
         assert vote.decision == "DENY"
         assert vote.reason == "Policy violation"
 
     def test_create_abstain_vote(self) -> None:
         """Test creating an abstain vote."""
-        vote = Vote(
-            agent_id="agent-3",
-            decision="ABSTAIN"
-        )
+        vote = Vote(agent_id="agent-3", decision="ABSTAIN")
         assert vote.decision == "ABSTAIN"
         assert vote.reason is None
 
@@ -139,6 +128,7 @@ class TestVote:
 # Election Tests
 # =============================================================================
 
+
 class TestElection:
     """Tests for Election dataclass."""
 
@@ -148,7 +138,7 @@ class TestElection:
             election_id="election-123",
             message_id="msg-456",
             strategy=VotingStrategy.QUORUM,
-            participants={"agent-1", "agent-2", "agent-3"}
+            participants={"agent-1", "agent-2", "agent-3"},
         )
         assert election.election_id == "election-123"
         assert election.message_id == "msg-456"
@@ -163,27 +153,21 @@ class TestElection:
             election_id="e1",
             message_id="m1",
             strategy=VotingStrategy.UNANIMOUS,
-            participants={"a1"}
+            participants={"a1"},
         )
         assert election.status == "OPEN"
 
     def test_election_created_at_auto_generated(self) -> None:
         """Test that created_at is automatically generated."""
         election = Election(
-            election_id="e1",
-            message_id="m1",
-            strategy=VotingStrategy.QUORUM,
-            participants={"a1"}
+            election_id="e1", message_id="m1", strategy=VotingStrategy.QUORUM, participants={"a1"}
         )
         assert isinstance(election.created_at, datetime)
 
     def test_election_expires_at_default_none(self) -> None:
         """Test expires_at defaults to None."""
         election = Election(
-            election_id="e1",
-            message_id="m1",
-            strategy=VotingStrategy.QUORUM,
-            participants={"a1"}
+            election_id="e1", message_id="m1", strategy=VotingStrategy.QUORUM, participants={"a1"}
         )
         assert election.expires_at is None
 
@@ -191,6 +175,7 @@ class TestElection:
 # =============================================================================
 # VotingService Tests
 # =============================================================================
+
 
 class TestVotingService:
     """Tests for VotingService class."""
@@ -212,9 +197,7 @@ class TestVotingService:
     ) -> None:
         """Test creating an election."""
         participants = ["agent-1", "agent-2", "agent-3"]
-        election_id = await voting_service.create_election(
-            valid_message, participants, timeout=30
-        )
+        election_id = await voting_service.create_election(valid_message, participants, timeout=30)
 
         assert election_id is not None
         assert election_id in voting_service.elections
@@ -231,9 +214,7 @@ class TestVotingService:
     ) -> None:
         """Test successfully casting a vote."""
         participants = ["agent-1", "agent-2"]
-        election_id = await voting_service.create_election(
-            valid_message, participants
-        )
+        election_id = await voting_service.create_election(valid_message, participants)
 
         vote = Vote(agent_id="agent-1", decision="APPROVE")
         result = await voting_service.cast_vote(election_id, vote)
@@ -248,9 +229,7 @@ class TestVotingService:
     ) -> None:
         """Test voting by non-participant is rejected."""
         participants = ["agent-1", "agent-2"]
-        election_id = await voting_service.create_election(
-            valid_message, participants
-        )
+        election_id = await voting_service.create_election(valid_message, participants)
 
         vote = Vote(agent_id="agent-3", decision="APPROVE")  # Not a participant
         result = await voting_service.cast_vote(election_id, vote)
@@ -258,9 +237,7 @@ class TestVotingService:
         assert result is False
 
     @pytest.mark.asyncio
-    async def test_cast_vote_invalid_election(
-        self, voting_service: VotingService
-    ) -> None:
+    async def test_cast_vote_invalid_election(self, voting_service: VotingService) -> None:
         """Test voting on non-existent election fails."""
         vote = Vote(agent_id="agent-1", decision="APPROVE")
         result = await voting_service.cast_vote("non-existent-id", vote)
@@ -268,9 +245,7 @@ class TestVotingService:
         assert result is False
 
     @pytest.mark.asyncio
-    async def test_get_result_non_existent_election(
-        self, voting_service: VotingService
-    ) -> None:
+    async def test_get_result_non_existent_election(self, voting_service: VotingService) -> None:
         """Test getting result of non-existent election."""
         result = await voting_service.get_result("non-existent-id")
         assert result is None
@@ -279,6 +254,7 @@ class TestVotingService:
 # =============================================================================
 # Quorum Strategy Tests
 # =============================================================================
+
 
 class TestQuorumStrategy:
     """Tests for quorum voting strategy."""
@@ -289,9 +265,7 @@ class TestQuorumStrategy:
     ) -> None:
         """Test quorum is reached with majority approvals."""
         participants = ["agent-1", "agent-2", "agent-3"]
-        election_id = await quorum_voting_service.create_election(
-            valid_message, participants
-        )
+        election_id = await quorum_voting_service.create_election(valid_message, participants)
 
         # 2 out of 3 approve (more than 50%)
         await quorum_voting_service.cast_vote(
@@ -310,9 +284,7 @@ class TestQuorumStrategy:
     ) -> None:
         """Test quorum denies with majority denials."""
         participants = ["agent-1", "agent-2", "agent-3", "agent-4"]
-        election_id = await quorum_voting_service.create_election(
-            valid_message, participants
-        )
+        election_id = await quorum_voting_service.create_election(valid_message, participants)
 
         # 2 out of 4 deny (50%, which should trigger denial)
         await quorum_voting_service.cast_vote(
@@ -330,6 +302,7 @@ class TestQuorumStrategy:
 # Unanimous Strategy Tests
 # =============================================================================
 
+
 class TestUnanimousStrategy:
     """Tests for unanimous voting strategy."""
 
@@ -339,9 +312,7 @@ class TestUnanimousStrategy:
     ) -> None:
         """Test unanimous approval when all agree."""
         participants = ["agent-1", "agent-2", "agent-3"]
-        election_id = await unanimous_voting_service.create_election(
-            valid_message, participants
-        )
+        election_id = await unanimous_voting_service.create_election(valid_message, participants)
 
         # All 3 approve
         await unanimous_voting_service.cast_vote(
@@ -363,9 +334,7 @@ class TestUnanimousStrategy:
     ) -> None:
         """Test unanimous fails with single denial."""
         participants = ["agent-1", "agent-2", "agent-3"]
-        election_id = await unanimous_voting_service.create_election(
-            valid_message, participants
-        )
+        election_id = await unanimous_voting_service.create_election(valid_message, participants)
 
         # First two approve, third denies
         await unanimous_voting_service.cast_vote(
@@ -386,6 +355,7 @@ class TestUnanimousStrategy:
 # =============================================================================
 # Super Majority Strategy Tests
 # =============================================================================
+
 
 class TestSuperMajorityStrategy:
     """Tests for super majority (2/3) voting strategy."""
@@ -437,6 +407,7 @@ class TestSuperMajorityStrategy:
 # Election Result Tests
 # =============================================================================
 
+
 class TestElectionResults:
     """Tests for election result retrieval."""
 
@@ -451,9 +422,7 @@ class TestElectionResults:
         )
 
         # Only one vote cast, election still open
-        await voting_service.cast_vote(
-            election_id, Vote(agent_id="agent-1", decision="APPROVE")
-        )
+        await voting_service.cast_vote(election_id, Vote(agent_id="agent-1", decision="APPROVE"))
 
         result = await voting_service.get_result(election_id)
         # Should be None since election is still open
@@ -465,9 +434,7 @@ class TestElectionResults:
     ) -> None:
         """Test getting result of closed approved election."""
         participants = ["agent-1", "agent-2", "agent-3"]
-        election_id = await quorum_voting_service.create_election(
-            valid_message, participants
-        )
+        election_id = await quorum_voting_service.create_election(valid_message, participants)
 
         # Majority approves
         await quorum_voting_service.cast_vote(
@@ -485,6 +452,7 @@ class TestElectionResults:
 # Integration Tests
 # =============================================================================
 
+
 class TestVotingServiceIntegration:
     """Integration tests for voting service."""
 
@@ -496,19 +464,15 @@ class TestVotingServiceIntegration:
         participants = ["agent-1", "agent-2", "agent-3"]
 
         # Create election
-        election_id = await voting_service.create_election(
-            valid_message, participants
-        )
+        election_id = await voting_service.create_election(valid_message, participants)
         assert election_id is not None
 
         # Cast votes
         await voting_service.cast_vote(
-            election_id,
-            Vote(agent_id="agent-1", decision="APPROVE", reason="Looks good")
+            election_id, Vote(agent_id="agent-1", decision="APPROVE", reason="Looks good")
         )
         await voting_service.cast_vote(
-            election_id,
-            Vote(agent_id="agent-2", decision="APPROVE", reason="Constitutional")
+            election_id, Vote(agent_id="agent-2", decision="APPROVE", reason="Constitutional")
         )
 
         # Election should be resolved
@@ -535,28 +499,16 @@ class TestVotingServiceIntegration:
         participants = ["agent-1", "agent-2", "agent-3"]
 
         # Create two elections
-        election_id_1 = await voting_service.create_election(
-            valid_message, participants
-        )
-        election_id_2 = await voting_service.create_election(
-            message2, participants
-        )
+        election_id_1 = await voting_service.create_election(valid_message, participants)
+        election_id_2 = await voting_service.create_election(message2, participants)
 
         # Vote on first election
-        await voting_service.cast_vote(
-            election_id_1, Vote(agent_id="agent-1", decision="APPROVE")
-        )
-        await voting_service.cast_vote(
-            election_id_1, Vote(agent_id="agent-2", decision="APPROVE")
-        )
+        await voting_service.cast_vote(election_id_1, Vote(agent_id="agent-1", decision="APPROVE"))
+        await voting_service.cast_vote(election_id_1, Vote(agent_id="agent-2", decision="APPROVE"))
 
         # Vote on second election (denial)
-        await voting_service.cast_vote(
-            election_id_2, Vote(agent_id="agent-1", decision="DENY")
-        )
-        await voting_service.cast_vote(
-            election_id_2, Vote(agent_id="agent-2", decision="DENY")
-        )
+        await voting_service.cast_vote(election_id_2, Vote(agent_id="agent-1", decision="DENY"))
+        await voting_service.cast_vote(election_id_2, Vote(agent_id="agent-2", decision="DENY"))
 
         # Check both elections are resolved correctly
         result_1 = await voting_service.get_result(election_id_1)

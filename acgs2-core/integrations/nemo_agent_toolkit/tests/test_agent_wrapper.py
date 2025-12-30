@@ -3,26 +3,26 @@ Tests for Agent Wrapper
 Constitutional Hash: cdd01ef066bc6cf2
 """
 
+from unittest.mock import AsyncMock, MagicMock
+
 import pytest
-from datetime import UTC, datetime
-from unittest.mock import AsyncMock, MagicMock, patch
 
 from nemo_agent_toolkit.agent_wrapper import (
+    CONSTITUTIONAL_HASH,
     ConstitutionalAgentWrapper,
-    WrapperConfig,
     ExecutionResult,
+    NeMoAgentIntegration,
+    WrapperConfig,
+    constitutional_guardrail,
+    wrap_crewai_agent,
     wrap_langchain_agent,
     wrap_llamaindex_agent,
-    wrap_crewai_agent,
-    constitutional_guardrail,
-    NeMoAgentIntegration,
-    CONSTITUTIONAL_HASH,
 )
 from nemo_agent_toolkit.constitutional_guardrails import (
     ConstitutionalGuardrails,
+    GuardrailAction,
     GuardrailConfig,
     GuardrailResult,
-    GuardrailAction,
 )
 
 
@@ -261,6 +261,7 @@ class TestAgentExecutionMethods:
     @pytest.mark.asyncio
     async def test_callable_agent(self):
         """Test callable agent."""
+
         # Create a callable that doesn't have invoke/run methods
         def simple_agent(x):
             return "callable result"
@@ -307,6 +308,7 @@ class TestConstitutionalGuardrailDecorator:
     @pytest.mark.asyncio
     async def test_decorator_allows_clean_function(self):
         """Test decorator allows clean function execution."""
+
         @constitutional_guardrail()
         async def my_function(query: str) -> str:
             return f"Processed: {query}"
@@ -317,6 +319,7 @@ class TestConstitutionalGuardrailDecorator:
     @pytest.mark.asyncio
     async def test_decorator_blocks_violation(self):
         """Test decorator blocks on input violation."""
+
         @constitutional_guardrail()
         async def my_function(query: str) -> str:
             return f"Processed: {query}"
@@ -341,6 +344,7 @@ class TestConstitutionalGuardrailDecorator:
     @pytest.mark.asyncio
     async def test_decorator_input_validation_disabled(self):
         """Test decorator with input validation disabled."""
+
         @constitutional_guardrail(validate_input=False)
         async def my_function(query: str) -> str:
             return f"Processed: {query}"

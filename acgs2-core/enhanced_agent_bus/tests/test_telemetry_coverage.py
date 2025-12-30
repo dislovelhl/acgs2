@@ -5,34 +5,31 @@ Constitutional Hash: cdd01ef066bc6cf2
 Tests for observability/telemetry.py to increase coverage.
 """
 
-import pytest
-from unittest.mock import MagicMock, patch
-
 try:
     from enhanced_agent_bus.observability.telemetry import (
-        TelemetryConfig,
-        NoOpSpan,
-        NoOpTracer,
+        OTEL_AVAILABLE,
         NoOpCounter,
         NoOpHistogram,
-        NoOpUpDownCounter,
         NoOpMeter,
-        get_tracer,
+        NoOpSpan,
+        NoOpTracer,
+        NoOpUpDownCounter,
+        TelemetryConfig,
         get_meter,
-        OTEL_AVAILABLE,
+        get_tracer,
     )
 except ImportError:
     from observability.telemetry import (
-        TelemetryConfig,
-        NoOpSpan,
-        NoOpTracer,
+        OTEL_AVAILABLE,
         NoOpCounter,
         NoOpHistogram,
-        NoOpUpDownCounter,
         NoOpMeter,
-        get_tracer,
+        NoOpSpan,
+        NoOpTracer,
+        NoOpUpDownCounter,
+        TelemetryConfig,
         get_meter,
-        OTEL_AVAILABLE,
+        get_tracer,
     )
 
 
@@ -174,7 +171,7 @@ class TestGetTracer:
         tracer = get_tracer("test-module")
         assert tracer is not None
         # Should have start_as_current_span method
-        assert hasattr(tracer, 'start_as_current_span')
+        assert hasattr(tracer, "start_as_current_span")
 
 
 class TestGetMeter:
@@ -185,7 +182,7 @@ class TestGetMeter:
         meter = get_meter("test-module")
         assert meter is not None
         # Should have create_counter method
-        assert hasattr(meter, 'create_counter')
+        assert hasattr(meter, "create_counter")
 
 
 class TestOtelAvailable:

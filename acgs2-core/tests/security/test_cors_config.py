@@ -10,21 +10,21 @@ Tests verify:
 """
 
 import os
+import sys
+
 import pytest
 
-import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../.."))
 
 from shared.security.cors_config import (
+    CONSTITUTIONAL_HASH,
+    DEFAULT_ORIGINS,
     CORSConfig,
     CORSEnvironment,
-    get_cors_config,
-    get_strict_cors_config,
     detect_environment,
+    get_cors_config,
     get_origins_from_env,
     validate_origin,
-    DEFAULT_ORIGINS,
-    CONSTITUTIONAL_HASH,
 )
 
 
@@ -64,6 +64,7 @@ class TestCORSConfig:
     def test_wildcard_warning_in_development(self, caplog):
         """Wildcard + credentials should warn in development."""
         import logging
+
         caplog.set_level(logging.WARNING)
 
         config = CORSConfig(
@@ -161,7 +162,7 @@ class TestGetOriginsFromEnv:
         """Parse comma-separated origins."""
         monkeypatch.setenv(
             "CORS_ALLOWED_ORIGINS",
-            "https://app1.example.com, https://app2.example.com, https://app3.example.com"
+            "https://app1.example.com, https://app2.example.com, https://app3.example.com",
         )
         origins = get_origins_from_env()
         assert origins == [
@@ -201,9 +202,7 @@ class TestGetCorsConfig:
         monkeypatch.setenv("ENV", "development")
         monkeypatch.delenv("CORS_ALLOWED_ORIGINS", raising=False)
 
-        config = get_cors_config(
-            additional_origins=["https://custom.example.com"]
-        )
+        config = get_cors_config(additional_origins=["https://custom.example.com"])
 
         assert "https://custom.example.com" in config["allow_origins"]
 

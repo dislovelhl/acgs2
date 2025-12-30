@@ -9,14 +9,13 @@ Comprehensive test coverage for authentication API endpoints including:
 - OPA authorization integration
 """
 
-import pytest
-from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
+from app.api.v1 import auth
+from app.api.v1.auth import check_role, get_current_user
 from fastapi import FastAPI, HTTPException
 from fastapi.testclient import TestClient
-
-from app.api.v1 import auth
-from app.api.v1.auth import get_current_user, check_role
 
 # Constitutional hash constant
 CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
@@ -25,6 +24,7 @@ CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
 # =============================================================================
 # Mock Services
 # =============================================================================
+
 
 class MockCryptoService:
     """Mock crypto service for testing."""
@@ -37,7 +37,7 @@ class MockCryptoService:
                 "tenant_id": "tenant-abc",
                 "role": "admin",
                 "capabilities": ["read", "write"],
-                "constitutional_hash": CONSTITUTIONAL_HASH
+                "constitutional_hash": CONSTITUTIONAL_HASH,
             }
         elif token == "agent_token":
             return {
@@ -45,7 +45,7 @@ class MockCryptoService:
                 "tenant_id": "tenant-xyz",
                 "role": "agent",
                 "capabilities": ["read"],
-                "constitutional_hash": CONSTITUTIONAL_HASH
+                "constitutional_hash": CONSTITUTIONAL_HASH,
             }
         elif token == "expired_token":
             raise Exception("Token expired")
@@ -54,7 +54,9 @@ class MockCryptoService:
         else:
             raise Exception("Invalid token")
 
-    def issue_agent_token(self, agent_id: str, tenant_id: str, capabilities: list, private_key_b64: str):
+    def issue_agent_token(
+        self, agent_id: str, tenant_id: str, capabilities: list, private_key_b64: str
+    ):
         """Mock token issuance."""
         if private_key_b64 == "invalid_key":
             raise Exception("Invalid private key")
@@ -90,6 +92,7 @@ class MockSettings:
 # Fixtures
 # =============================================================================
 
+
 @pytest.fixture
 def mock_crypto_service():
     return MockCryptoService()
@@ -122,6 +125,7 @@ def client(app_with_auth):
 # get_current_user Tests
 # =============================================================================
 
+
 class TestGetCurrentUser:
     """Tests for get_current_user dependency."""
 
@@ -131,8 +135,8 @@ class TestGetCurrentUser:
         credentials = MagicMock()
         credentials.credentials = "valid_token"
 
-        with patch('app.api.v1.auth.get_crypto_service', return_value=mock_crypto_service):
-            with patch('shared.config.settings', mock_settings):
+        with patch("app.api.v1.auth.get_crypto_service", return_value=mock_crypto_service):
+            with patch("shared.config.settings", mock_settings):
                 result = await get_current_user(credentials, mock_crypto_service)
 
         assert result["sub"] == "agent-123"
@@ -146,7 +150,7 @@ class TestGetCurrentUser:
         credentials = MagicMock()
         credentials.credentials = "expired_token"
 
-        with patch('shared.config.settings', mock_settings):
+        with patch("shared.config.settings", mock_settings):
             with pytest.raises(HTTPException) as exc_info:
                 await get_current_user(credentials, mock_crypto_service)
 
@@ -159,7 +163,7 @@ class TestGetCurrentUser:
         credentials = MagicMock()
         credentials.credentials = "invalid_signature"
 
-        with patch('shared.config.settings', mock_settings):
+        with patch("shared.config.settings", mock_settings):
             with pytest.raises(HTTPException) as exc_info:
                 await get_current_user(credentials, mock_crypto_service)
 
@@ -171,7 +175,7 @@ class TestGetCurrentUser:
         credentials = MagicMock()
         credentials.credentials = "garbage_token"
 
-        with patch('shared.config.settings', mock_settings):
+        with patch("shared.config.settings", mock_settings):
             with pytest.raises(HTTPException) as exc_info:
                 await get_current_user(credentials, mock_crypto_service)
 
@@ -181,6 +185,7 @@ class TestGetCurrentUser:
 # =============================================================================
 # check_role Tests
 # =============================================================================
+
 
 class TestCheckRole:
     """Tests for check_role dependency factory."""
@@ -192,9 +197,11 @@ class TestCheckRole:
         mock_opa = MockOPAService(authorize_result=True)
 
         # Get the inner role_checker function
-        role_checker_dep = check_role(["admin", "registry-admin"], action="manage", resource="policy")
+        role_checker_dep = check_role(
+            ["admin", "registry-admin"], action="manage", resource="policy"
+        )
 
-        with patch('app.services.OPAService', return_value=mock_opa):
+        with patch("app.services.OPAService", return_value=mock_opa):
             # Call the inner async function directly with user
             result = await role_checker_dep(user=user)
             assert result == user
@@ -207,7 +214,7 @@ class TestCheckRole:
 
         role_checker_dep = check_role(["admin"], action="manage", resource="policy")
 
-        with patch('app.services.OPAService', return_value=mock_opa):
+        with patch("app.services.OPAService", return_value=mock_opa):
             with pytest.raises(HTTPException) as exc_info:
                 await role_checker_dep(user=user)
 
@@ -222,7 +229,7 @@ class TestCheckRole:
 
         role_checker_dep = check_role(["admin"], action="manage", resource="policy")
 
-        with patch('app.services.OPAService', return_value=mock_opa):
+        with patch("app.services.OPAService", return_value=mock_opa):
             with pytest.raises(HTTPException) as exc_info:
                 await role_checker_dep(user=user)
 
@@ -237,7 +244,7 @@ class TestCheckRole:
 
         role_checker_dep = check_role(["agent"], action="read", resource="policy")
 
-        with patch('app.services.OPAService', return_value=mock_opa):
+        with patch("app.services.OPAService", return_value=mock_opa):
             result = await role_checker_dep(user=user)
             assert result == user
 
@@ -247,9 +254,11 @@ class TestCheckRole:
         user = {"sub": "agent-123", "role": "registry-admin"}
         mock_opa = MockOPAService(authorize_result=True)
 
-        role_checker_dep = check_role(["admin", "registry-admin", "operator"], action="manage", resource="policy")
+        role_checker_dep = check_role(
+            ["admin", "registry-admin", "operator"], action="manage", resource="policy"
+        )
 
-        with patch('app.services.OPAService', return_value=mock_opa):
+        with patch("app.services.OPAService", return_value=mock_opa):
             result = await role_checker_dep(user=user)
             assert result == user
 
@@ -257,6 +266,7 @@ class TestCheckRole:
 # =============================================================================
 # Token Issuance Endpoint Tests
 # =============================================================================
+
 
 class TestTokenIssuance:
     """Tests for POST /token endpoint."""
@@ -271,30 +281,33 @@ class TestTokenIssuance:
 
         # Override dependencies
         from app.api.dependencies import get_crypto_service
+
         app.dependency_overrides[get_crypto_service] = lambda: mock_crypto
 
         # Mock get_current_user to return admin user
         admin_user = {"sub": "admin-123", "role": "admin"}
 
-        with patch('app.api.v1.auth.get_current_user', return_value=admin_user):
-            with patch('app.services.OPAService', return_value=mock_opa):
-                with patch('shared.config.settings', mock_settings):
+        with patch("app.api.v1.auth.get_current_user", return_value=admin_user):
+            with patch("app.services.OPAService", return_value=mock_opa):
+                with patch("shared.config.settings", mock_settings):
                     client = TestClient(app)
 
                     # Note: In real test, we'd need to properly mock the auth dependencies
                     # For now, we'll test the function directly
 
     @pytest.mark.asyncio
-    async def test_issue_token_without_private_key_uses_system_key(self, mock_crypto_service, mock_settings):
+    async def test_issue_token_without_private_key_uses_system_key(
+        self, mock_crypto_service, mock_settings
+    ):
         """Test token issuance uses system key when none provided."""
         admin_user = {"sub": "admin-123", "role": "admin"}
 
-        with patch('shared.config.settings', mock_settings):
+        with patch("shared.config.settings", mock_settings):
             token = mock_crypto_service.issue_agent_token(
                 agent_id="new-agent",
                 tenant_id="tenant-abc",
                 capabilities=["read", "write"],
-                private_key_b64="mock_private_key_b64"
+                private_key_b64="mock_private_key_b64",
             )
 
         assert "new-agent" in token
@@ -306,7 +319,7 @@ class TestTokenIssuance:
             agent_id="custom-agent",
             tenant_id="tenant-xyz",
             capabilities=["admin"],
-            private_key_b64="custom_private_key"
+            private_key_b64="custom_private_key",
         )
 
         assert "custom-agent" in token
@@ -316,10 +329,7 @@ class TestTokenIssuance:
         """Test token issuance with invalid key raises error."""
         with pytest.raises(Exception) as exc_info:
             mock_crypto_service.issue_agent_token(
-                agent_id="agent",
-                tenant_id="tenant",
-                capabilities=[],
-                private_key_b64="invalid_key"
+                agent_id="agent", tenant_id="tenant", capabilities=[], private_key_b64="invalid_key"
             )
 
         assert "Invalid private key" in str(exc_info.value)
@@ -328,6 +338,7 @@ class TestTokenIssuance:
 # =============================================================================
 # Authorization Flow Tests
 # =============================================================================
+
 
 class TestAuthorizationFlow:
     """Tests for complete authorization flow."""
@@ -338,9 +349,11 @@ class TestAuthorizationFlow:
         user = {"sub": "admin-123", "role": "admin"}
         mock_opa = MockOPAService(authorize_result=True)
 
-        role_checker_dep = check_role(["admin", "registry-admin"], action="issue_token", resource="auth")
+        role_checker_dep = check_role(
+            ["admin", "registry-admin"], action="issue_token", resource="auth"
+        )
 
-        with patch('app.services.OPAService', return_value=mock_opa):
+        with patch("app.services.OPAService", return_value=mock_opa):
             result = await role_checker_dep(user=user)
             assert result["role"] == "admin"
 
@@ -350,9 +363,11 @@ class TestAuthorizationFlow:
         user = {"sub": "agent-123", "role": "agent"}
         mock_opa = MockOPAService(authorize_result=True)
 
-        role_checker_dep = check_role(["admin", "registry-admin"], action="issue_token", resource="auth")
+        role_checker_dep = check_role(
+            ["admin", "registry-admin"], action="issue_token", resource="auth"
+        )
 
-        with patch('app.services.OPAService', return_value=mock_opa):
+        with patch("app.services.OPAService", return_value=mock_opa):
             with pytest.raises(HTTPException) as exc_info:
                 await role_checker_dep(user=user)
 
@@ -363,6 +378,7 @@ class TestAuthorizationFlow:
 # Edge Cases Tests
 # =============================================================================
 
+
 class TestEdgeCases:
     """Tests for edge cases and error handling."""
 
@@ -370,10 +386,7 @@ class TestEdgeCases:
     async def test_empty_capabilities(self, mock_crypto_service):
         """Test token issuance with empty capabilities."""
         token = mock_crypto_service.issue_agent_token(
-            agent_id="agent",
-            tenant_id="tenant",
-            capabilities=[],
-            private_key_b64="valid_key"
+            agent_id="agent", tenant_id="tenant", capabilities=[], private_key_b64="valid_key"
         )
         assert token is not None
 
@@ -384,7 +397,7 @@ class TestEdgeCases:
             agent_id="agent/with/slashes-and_underscores.dot",
             tenant_id="tenant",
             capabilities=["read"],
-            private_key_b64="valid_key"
+            private_key_b64="valid_key",
         )
         assert "agent/with/slashes-and_underscores.dot" in token
 
@@ -395,7 +408,7 @@ class TestEdgeCases:
             agent_id="agent",
             tenant_id="租户-123",
             capabilities=["read"],
-            private_key_b64="valid_key"
+            private_key_b64="valid_key",
         )
         assert token is not None
 
@@ -407,7 +420,7 @@ class TestEdgeCases:
             agent_id="agent",
             tenant_id="tenant",
             capabilities=capabilities,
-            private_key_b64="valid_key"
+            private_key_b64="valid_key",
         )
         assert token is not None
 
@@ -415,6 +428,7 @@ class TestEdgeCases:
 # =============================================================================
 # Security Tests
 # =============================================================================
+
 
 class TestSecurityControls:
     """Tests for security controls."""
@@ -425,7 +439,7 @@ class TestSecurityControls:
         credentials = MagicMock()
         credentials.credentials = None
 
-        with patch('shared.config.settings', mock_settings):
+        with patch("shared.config.settings", mock_settings):
             # When credentials are None, verify_agent_token should fail
             with pytest.raises(Exception):
                 mock_crypto_service.verify_agent_token(None, "public_key")
@@ -438,7 +452,7 @@ class TestSecurityControls:
 
         role_checker_dep = check_role(["admin"], action="manage", resource="policy")  # lowercase
 
-        with patch('app.services.OPAService', return_value=mock_opa):
+        with patch("app.services.OPAService", return_value=mock_opa):
             with pytest.raises(HTTPException) as exc_info:
                 await role_checker_dep(user=user)
 
@@ -454,7 +468,7 @@ class TestSecurityControls:
 
         role_checker_dep = check_role(["admin"], action="manage", resource="policy")
 
-        with patch('app.services.OPAService', return_value=mock_opa):
+        with patch("app.services.OPAService", return_value=mock_opa):
             with pytest.raises(Exception) as exc_info:
                 await role_checker_dep(user=user)
 
@@ -464,6 +478,7 @@ class TestSecurityControls:
 # =============================================================================
 # Constitutional Compliance Tests
 # =============================================================================
+
 
 class TestConstitutionalCompliance:
     """Tests for constitutional compliance markers."""
@@ -486,12 +501,14 @@ class TestConstitutionalCompliance:
         assert "/token" in routes
 
     @pytest.mark.asyncio
-    async def test_verified_token_contains_constitutional_hash(self, mock_crypto_service, mock_settings):
+    async def test_verified_token_contains_constitutional_hash(
+        self, mock_crypto_service, mock_settings
+    ):
         """Test verified token payload contains constitutional hash."""
         credentials = MagicMock()
         credentials.credentials = "valid_token"
 
-        with patch('shared.config.settings', mock_settings):
+        with patch("shared.config.settings", mock_settings):
             result = await get_current_user(credentials, mock_crypto_service)
 
         assert result["constitutional_hash"] == CONSTITUTIONAL_HASH
@@ -500,6 +517,7 @@ class TestConstitutionalCompliance:
 # =============================================================================
 # Integration Tests
 # =============================================================================
+
 
 class TestIntegration:
     """Integration-style tests for auth API."""
@@ -512,7 +530,7 @@ class TestIntegration:
             agent_id="test-agent",
             tenant_id="test-tenant",
             capabilities=["read", "write"],
-            private_key_b64="private_key"
+            private_key_b64="private_key",
         )
         assert token is not None
 
@@ -520,7 +538,7 @@ class TestIntegration:
         credentials = MagicMock()
         credentials.credentials = "valid_token"
 
-        with patch('shared.config.settings', mock_settings):
+        with patch("shared.config.settings", mock_settings):
             user = await get_current_user(credentials, mock_crypto_service)
 
         assert user["sub"] == "agent-123"
@@ -529,6 +547,6 @@ class TestIntegration:
         mock_opa = MockOPAService(authorize_result=True)
         role_checker_dep = check_role(["admin"], action="read", resource="policy")
 
-        with patch('app.services.OPAService', return_value=mock_opa):
+        with patch("app.services.OPAService", return_value=mock_opa):
             result = await role_checker_dep(user=user)
             assert result == user

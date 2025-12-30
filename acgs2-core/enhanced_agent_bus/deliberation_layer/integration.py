@@ -14,65 +14,85 @@ Supports dependency injection for all major components:
 
 import asyncio
 import logging
-from typing import Dict, Any, Optional, Callable, List
 from datetime import datetime, timezone
+from typing import Any, Callable, Dict, Optional
 
 try:
-    from ..models import AgentMessage, MessageStatus, CONSTITUTIONAL_HASH
+    from ..models import CONSTITUTIONAL_HASH, AgentMessage, MessageStatus
 except ImportError:
     # Fallback for direct execution or testing
-    from models import AgentMessage, MessageStatus, CONSTITUTIONAL_HASH  # type: ignore
+    from models import AgentMessage, MessageStatus  # type: ignore
 
 # Import deliberation layer components with fallback chain
 _USING_MOCKS = False
 
 try:
     # Try relative imports first (package context)
-    from .interfaces import (
-        ImpactScorerProtocol, AdaptiveRouterProtocol,
-        DeliberationQueueProtocol, LLMAssistantProtocol,
-        RedisQueueProtocol, RedisVotingProtocol, OPAGuardProtocol,
-    )
-    from .impact_scorer import get_impact_scorer, calculate_message_impact
     from .adaptive_router import get_adaptive_router
-    from .deliberation_queue import (
-        get_deliberation_queue, DeliberationStatus, VoteType
+    from .deliberation_queue import DeliberationStatus, VoteType, get_deliberation_queue
+    from .impact_scorer import calculate_message_impact, get_impact_scorer
+    from .interfaces import (
+        AdaptiveRouterProtocol,
+        DeliberationQueueProtocol,
+        ImpactScorerProtocol,
+        LLMAssistantProtocol,
+        OPAGuardProtocol,
+        RedisQueueProtocol,
+        RedisVotingProtocol,
     )
     from .llm_assistant import get_llm_assistant
-    from .redis_integration import (
-        get_redis_deliberation_queue, get_redis_voting_system
-    )
     from .opa_guard import (
-        OPAGuard, get_opa_guard, GuardResult, GuardDecision,
-        SignatureResult, ReviewResult
+        GuardDecision,
+        GuardResult,
+        OPAGuard,
+        ReviewResult,
+        SignatureResult,
+        get_opa_guard,
     )
+    from .redis_integration import get_redis_deliberation_queue, get_redis_voting_system
 except (ImportError, ValueError):
     try:
         # Try absolute imports (direct execution context)
         # Use deliberation_layer prefix for interfaces to avoid conflict with
         # top-level enhanced_agent_bus.interfaces module
-        from deliberation_layer.interfaces import (  # type: ignore
-            ImpactScorerProtocol, AdaptiveRouterProtocol,
-            DeliberationQueueProtocol, LLMAssistantProtocol,
-            RedisQueueProtocol, RedisVotingProtocol, OPAGuardProtocol,
-        )
-        from deliberation_layer.impact_scorer import get_impact_scorer, calculate_message_impact  # type: ignore
         from deliberation_layer.adaptive_router import get_adaptive_router  # type: ignore
         from deliberation_layer.deliberation_queue import (  # type: ignore
-            get_deliberation_queue, DeliberationStatus, VoteType
+            DeliberationStatus,
+            VoteType,
+            get_deliberation_queue,
+        )
+        from deliberation_layer.impact_scorer import (  # type: ignore
+            calculate_message_impact,
+            get_impact_scorer,
+        )
+        from deliberation_layer.interfaces import (  # type: ignore
+            AdaptiveRouterProtocol,
+            DeliberationQueueProtocol,
+            ImpactScorerProtocol,
+            LLMAssistantProtocol,
+            OPAGuardProtocol,
+            RedisQueueProtocol,
+            RedisVotingProtocol,
         )
         from deliberation_layer.llm_assistant import get_llm_assistant  # type: ignore
-        from deliberation_layer.redis_integration import (  # type: ignore
-            get_redis_deliberation_queue, get_redis_voting_system
-        )
         from deliberation_layer.opa_guard import (  # type: ignore
-            OPAGuard, get_opa_guard, GuardResult, GuardDecision,
-            SignatureResult, ReviewResult
+            GuardDecision,
+            GuardResult,
+            OPAGuard,
+            ReviewResult,
+            SignatureResult,
+            get_opa_guard,
+        )
+        from deliberation_layer.redis_integration import (  # type: ignore
+            get_redis_deliberation_queue,
+            get_redis_voting_system,
         )
     except ImportError as e:
         # FAIL-CLOSED: Critical security dependencies are missing.
         # System MUST NOT proceed in an insecure mocked state (VULN-003).
-        logging.getLogger(__name__).critical(f"Critical Deliberation Layer dependencies missing: {e}")
+        logging.getLogger(__name__).critical(
+            f"Critical Deliberation Layer dependencies missing: {e}"
+        )
         raise RuntimeError(
             "CRITICAL SECURITY FAILURE: Deliberation Layer dependencies are missing. "
             "System is configured to fail-closed to prevent insecure operation with mock components."
@@ -91,6 +111,7 @@ except ImportError:
         # Define empty mixin if import fails
         class OPAGuardMixin:  # type: ignore
             """Fallback empty mixin when opa_guard_mixin unavailable."""
+
             pass
 
 
@@ -161,7 +182,7 @@ class DeliberationLayer(OPAGuardMixin):
         self.impact_scorer = impact_scorer or get_impact_scorer()
         self.adaptive_router = adaptive_router or get_adaptive_router()
         # Sync threshold
-        if hasattr(self.adaptive_router, 'set_impact_threshold'):
+        if hasattr(self.adaptive_router, "set_impact_threshold"):
             self.adaptive_router.set_impact_threshold(self.impact_threshold)
         self.deliberation_queue = deliberation_queue or get_deliberation_queue()
 
@@ -274,30 +295,25 @@ class DeliberationLayer(OPAGuardMixin):
             return await self._finalize_processing(message, result, start_time)
 
         except asyncio.CancelledError:
-            logger.info(
-                f"Message processing cancelled for {message.message_id}"
-            )
+            logger.info(f"Message processing cancelled for {message.message_id}")
             raise
         except asyncio.TimeoutError as e:
-            logger.error(
-                f"Timeout processing message {message.message_id}: {e}"
-            )
+            logger.error(f"Timeout processing message {message.message_id}: {e}")
             elapsed = datetime.now(timezone.utc) - start_time
             return {
-                'success': False,
-                'error': f'Timeout: {e}',
-                'processing_time': elapsed.total_seconds()
+                "success": False,
+                "error": f"Timeout: {e}",
+                "processing_time": elapsed.total_seconds(),
             }
         except (ValueError, KeyError, TypeError) as e:
             logger.error(
-                f"Data error processing message {message.message_id}: "
-                f"{type(e).__name__}: {e}"
+                f"Data error processing message {message.message_id}: " f"{type(e).__name__}: {e}"
             )
             elapsed = datetime.now(timezone.utc) - start_time
             return {
-                'success': False,
-                'error': f'{type(e).__name__}: {e}',
-                'processing_time': elapsed.total_seconds()
+                "success": False,
+                "error": f"{type(e).__name__}: {e}",
+                "processing_time": elapsed.total_seconds(),
             }
         except (AttributeError, RuntimeError) as e:
             logger.error(
@@ -306,11 +322,10 @@ class DeliberationLayer(OPAGuardMixin):
             )
             elapsed = datetime.now(timezone.utc) - start_time
             return {
-                'success': False,
-                'error': f'{type(e).__name__}: {e}',
-                'processing_time': elapsed.total_seconds()
+                "success": False,
+                "error": f"{type(e).__name__}: {e}",
+                "processing_time": elapsed.total_seconds(),
             }
-
 
     def _prepare_processing_context(self, message: AgentMessage) -> Dict[str, Any]:
         """Prepare context for multi-dimensional analysis."""
@@ -319,7 +334,7 @@ class DeliberationLayer(OPAGuardMixin):
             "tenant_id": message.tenant_id,
             "priority": message.priority,
             "message_type": message.message_type,
-            "constitutional_hash": message.constitutional_hash
+            "constitutional_hash": message.constitutional_hash,
         }
 
     def _ensure_impact_score(self, message: AgentMessage, context: Dict[str, Any]):
@@ -334,9 +349,7 @@ class DeliberationLayer(OPAGuardMixin):
             )
 
     async def _evaluate_opa_guard(
-        self,
-        message: AgentMessage,
-        start_time: datetime
+        self, message: AgentMessage, start_time: datetime
     ) -> Optional[Dict[str, Any]]:
         """Evaluate message with OPA Guard and handle early returns."""
         if not self.opa_guard:
@@ -347,53 +360,40 @@ class DeliberationLayer(OPAGuardMixin):
         # If guard denies, return immediate rejection dictionary
         if guard_result and not guard_result.is_allowed:
             if guard_result.decision == GuardDecision.DENY:
-                return await self._handle_guard_denial(
-                    message, guard_result, start_time
-                )
+                return await self._handle_guard_denial(message, guard_result, start_time)
             elif guard_result.decision == GuardDecision.REQUIRE_SIGNATURES:
-                return await self._handle_signature_requirement(
-                    message, guard_result, start_time
-                )
+                return await self._handle_signature_requirement(message, guard_result, start_time)
             elif guard_result.decision == GuardDecision.REQUIRE_REVIEW:
-                return await self._handle_review_requirement(
-                    message, guard_result, start_time
-                )
+                return await self._handle_review_requirement(message, guard_result, start_time)
 
         return {"guard_result": guard_result}
 
-    async def _execute_routing(self, message: AgentMessage, context: Dict[str, Any]) -> Dict[str, Any]:
+    async def _execute_routing(
+        self, message: AgentMessage, context: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Determine route and execute lane-specific processing."""
         routing_decision = await self.adaptive_router.route_message(message, context)
 
-        if routing_decision.get('lane') == 'fast':
-            return await self._process_fast_lane(
-                message, routing_decision
-            )
+        if routing_decision.get("lane") == "fast":
+            return await self._process_fast_lane(message, routing_decision)
         else:
-            return await self._process_deliberation(
-                message, routing_decision
-            )
+            return await self._process_deliberation(message, routing_decision)
 
     async def _finalize_processing(
-        self,
-        message: AgentMessage,
-        result: Dict[str, Any],
-        start_time: datetime
+        self, message: AgentMessage, result: Dict[str, Any], start_time: datetime
     ) -> Dict[str, Any]:
         """Finalize processing, record metrics and return result."""
         elapsed = datetime.now(timezone.utc) - start_time
         processing_time = elapsed.total_seconds()
 
-        await self._record_performance_feedback(
-            message, result, processing_time
-        )
+        await self._record_performance_feedback(message, result, processing_time)
 
-        result['processing_time'] = processing_time
-        result['success'] = True
+        result["processing_time"] = processing_time
+        result["success"] = True
 
         # Include guard result if available in result or message
-        if 'guard_result' not in result and hasattr(message, '_guard_result'):
-             result['guard_result'] = message._guard_result
+        if "guard_result" not in result and hasattr(message, "_guard_result"):
+            result["guard_result"] = message._guard_result
 
         logger.info(
             f"Processed message {message.message_id} in "
@@ -402,10 +402,7 @@ class DeliberationLayer(OPAGuardMixin):
 
         return result
 
-    async def _verify_with_opa_guard(
-        self,
-        message: AgentMessage
-    ) -> Optional[GuardResult]:
+    async def _verify_with_opa_guard(self, message: AgentMessage) -> Optional[GuardResult]:
         """
         Verify message with OPA Guard before processing.
 
@@ -432,7 +429,7 @@ class DeliberationLayer(OPAGuardMixin):
                 "tenant_id": message.tenant_id,
                 "priority": (
                     message.priority.value
-                    if hasattr(message.priority, 'value')
+                    if hasattr(message.priority, "value")
                     else str(message.priority)
                 ),
             }
@@ -460,10 +457,7 @@ class DeliberationLayer(OPAGuardMixin):
             )
 
     async def _handle_guard_denial(
-        self,
-        message: AgentMessage,
-        guard_result: GuardResult,
-        start_time: datetime
+        self, message: AgentMessage, guard_result: GuardResult, start_time: datetime
     ) -> Dict[str, Any]:
         """Handle guard denial of action."""
         message.status = MessageStatus.FAILED
@@ -477,19 +471,16 @@ class DeliberationLayer(OPAGuardMixin):
         )
 
         return {
-            'success': False,
-            'lane': 'denied',
-            'status': 'denied_by_guard',
-            'guard_result': guard_result.to_dict(),
-            'errors': guard_result.validation_errors,
-            'processing_time': processing_time,
+            "success": False,
+            "lane": "denied",
+            "status": "denied_by_guard",
+            "guard_result": guard_result.to_dict(),
+            "errors": guard_result.validation_errors,
+            "processing_time": processing_time,
         }
 
     async def _handle_signature_requirement(
-        self,
-        message: AgentMessage,
-        guard_result: GuardResult,
-        start_time: datetime
+        self, message: AgentMessage, guard_result: GuardResult, start_time: datetime
     ) -> Dict[str, Any]:
         """Handle requirement for multi-signature collection."""
         # Create signature request
@@ -507,17 +498,15 @@ class DeliberationLayer(OPAGuardMixin):
 
         if signature_result.is_valid:
             # Signatures collected, proceed with processing
-            logger.info(
-                f"Signatures collected for message {message.message_id}"
-            )
+            logger.info(f"Signatures collected for message {message.message_id}")
             # Re-process without guard (already verified)
             routing = await self.adaptive_router.route_message(message)
-            if routing.get('lane') == 'fast':
+            if routing.get("lane") == "fast":
                 result = await self._process_fast_lane(message, routing)
             else:
                 result = await self._process_deliberation(message, routing)
-            result['signature_result'] = signature_result.to_dict()
-            result['processing_time'] = processing_time
+            result["signature_result"] = signature_result.to_dict()
+            result["processing_time"] = processing_time
             return result
         else:
             message.status = MessageStatus.FAILED
@@ -526,19 +515,16 @@ class DeliberationLayer(OPAGuardMixin):
                 f"{message.message_id}: {signature_result.status.value}"
             )
             return {
-                'success': False,
-                'lane': 'signature_required',
-                'status': 'signature_collection_failed',
-                'guard_result': guard_result.to_dict(),
-                'signature_result': signature_result.to_dict(),
-                'processing_time': processing_time,
+                "success": False,
+                "lane": "signature_required",
+                "status": "signature_collection_failed",
+                "guard_result": guard_result.to_dict(),
+                "signature_result": signature_result.to_dict(),
+                "processing_time": processing_time,
             }
 
     async def _handle_review_requirement(
-        self,
-        message: AgentMessage,
-        guard_result: GuardResult,
-        start_time: datetime
+        self, message: AgentMessage, guard_result: GuardResult, start_time: datetime
     ) -> Dict[str, Any]:
         """Handle requirement for critic agent review."""
         decision = {
@@ -559,16 +545,14 @@ class DeliberationLayer(OPAGuardMixin):
 
         if review_result.consensus_verdict == "approve":
             # Review approved, proceed with processing
-            logger.info(
-                f"Review approved for message {message.message_id}"
-            )
+            logger.info(f"Review approved for message {message.message_id}")
             routing = await self.adaptive_router.route_message(message)
-            if routing.get('lane') == 'fast':
+            if routing.get("lane") == "fast":
                 result = await self._process_fast_lane(message, routing)
             else:
                 result = await self._process_deliberation(message, routing)
-            result['review_result'] = review_result.to_dict()
-            result['processing_time'] = processing_time
+            result["review_result"] = review_result.to_dict()
+            result["processing_time"] = processing_time
             return result
         else:
             message.status = MessageStatus.FAILED
@@ -577,15 +561,17 @@ class DeliberationLayer(OPAGuardMixin):
                 f"{review_result.consensus_verdict}"
             )
             return {
-                'success': False,
-                'lane': 'review_required',
-                'status': f'review_{review_result.consensus_verdict}',
-                'guard_result': guard_result.to_dict(),
-                'review_result': review_result.to_dict(),
-                'processing_time': processing_time,
+                "success": False,
+                "lane": "review_required",
+                "status": f"review_{review_result.consensus_verdict}",
+                "guard_result": guard_result.to_dict(),
+                "review_result": review_result.to_dict(),
+                "processing_time": processing_time,
             }
 
-    async def _process_fast_lane(self, message: AgentMessage, routing_decision: Dict[str, Any]) -> Dict[str, Any]:
+    async def _process_fast_lane(
+        self, message: AgentMessage, routing_decision: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Process message through fast lane."""
         # Update message status
         message.status = MessageStatus.DELIVERED
@@ -595,28 +581,28 @@ class DeliberationLayer(OPAGuardMixin):
             await self.fast_lane_callback(message)
 
         return {
-            'lane': 'fast',
-            'status': 'delivered',
-            'impact_score': message.impact_score,
-            'routing_decision': routing_decision
+            "lane": "fast",
+            "status": "delivered",
+            "impact_score": message.impact_score,
+            "routing_decision": routing_decision,
         }
 
-    async def _process_deliberation(self, message: AgentMessage, routing_decision: Dict[str, Any]) -> Dict[str, Any]:
+    async def _process_deliberation(
+        self, message: AgentMessage, routing_decision: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Process message through deliberation queue."""
         # Enqueue for deliberation
         item_id = await self.deliberation_queue.enqueue_for_deliberation(
             message=message,
             requires_human_review=True,
-            requires_multi_agent_vote=routing_decision.get('impact_score', 0) > 0.9,
-            timeout_seconds=self.deliberation_timeout
+            requires_multi_agent_vote=routing_decision.get("impact_score", 0) > 0.9,
+            timeout_seconds=self.deliberation_timeout,
         )
 
         # Store in Redis if enabled
         if self.redis_queue:
             await self.redis_queue.enqueue_deliberation_item(
-                message=message,
-                item_id=item_id,
-                metadata=routing_decision
+                message=message, item_id=item_id, metadata=routing_decision
             )
 
         # Execute deliberation callback if provided
@@ -624,37 +610,36 @@ class DeliberationLayer(OPAGuardMixin):
             await self.deliberation_callback(message, routing_decision)
 
         return {
-            'lane': 'deliberation',
-            'item_id': item_id,
-            'status': 'queued',
-            'impact_score': message.impact_score,
-            'routing_decision': routing_decision,
-            'estimated_wait_time': self.deliberation_timeout
+            "lane": "deliberation",
+            "item_id": item_id,
+            "status": "queued",
+            "impact_score": message.impact_score,
+            "routing_decision": routing_decision,
+            "estimated_wait_time": self.deliberation_timeout,
         }
 
-    async def _record_performance_feedback(self,
-                                         message: AgentMessage,
-                                         result: Dict[str, Any],
-                                         processing_time: float):
+    async def _record_performance_feedback(
+        self, message: AgentMessage, result: Dict[str, Any], processing_time: float
+    ):
         """Record performance feedback for learning."""
         if not self.enable_learning:
             return
 
         try:
             # Determine outcome
-            if result.get('lane') == 'fast':
-                outcome = 'fast_lane'
-                feedback_score = 0.8 if result.get('success') else 0.2
+            if result.get("lane") == "fast":
+                outcome = "fast_lane"
+                feedback_score = 0.8 if result.get("success") else 0.2
             else:
                 # For deliberation, we'll need to track the final outcome
-                outcome = 'deliberation_queued'
+                outcome = "deliberation_queued"
                 feedback_score = None  # Will be updated when deliberation completes
 
             await self.adaptive_router.update_performance_feedback(
                 message_id=message.message_id,
                 actual_outcome=outcome,
                 processing_time=processing_time,
-                feedback_score=feedback_score
+                feedback_score=feedback_score,
             )
 
         except asyncio.CancelledError:
@@ -662,11 +647,9 @@ class DeliberationLayer(OPAGuardMixin):
         except (ValueError, KeyError, AttributeError) as e:
             logger.error(f"Failed to record performance feedback: {type(e).__name__}: {e}")
 
-    async def submit_human_decision(self,
-                                  item_id: str,
-                                  reviewer: str,
-                                  decision: str,
-                                  reasoning: str) -> bool:
+    async def submit_human_decision(
+        self, item_id: str, reviewer: str, decision: str, reasoning: str
+    ) -> bool:
         """
         Submit human review decision.
 
@@ -684,10 +667,10 @@ class DeliberationLayer(OPAGuardMixin):
                 deliberation_decision = decision
             else:
                 decision_map = {
-                    'approved': DeliberationStatus.APPROVED,
-                    'rejected': DeliberationStatus.REJECTED,
-                    'escalated': DeliberationStatus.UNDER_REVIEW,
-                    'under_review': DeliberationStatus.UNDER_REVIEW
+                    "approved": DeliberationStatus.APPROVED,
+                    "rejected": DeliberationStatus.REJECTED,
+                    "escalated": DeliberationStatus.UNDER_REVIEW,
+                    "under_review": DeliberationStatus.UNDER_REVIEW,
                 }
                 deliberation_decision = decision_map.get(
                     str(decision).lower(), DeliberationStatus.REJECTED
@@ -697,11 +680,13 @@ class DeliberationLayer(OPAGuardMixin):
                 item_id=item_id,
                 reviewer=reviewer,
                 decision=deliberation_decision,
-                reasoning=reasoning
+                reasoning=reasoning,
             )
 
             if success:
-                logger.info(f"Human decision submitted for item {item_id}: {decision} by {reviewer}")
+                logger.info(
+                    f"Human decision submitted for item {item_id}: {decision} by {reviewer}"
+                )
 
                 # Update performance feedback
                 await self._update_deliberation_outcome(item_id, decision, reasoning)
@@ -711,18 +696,17 @@ class DeliberationLayer(OPAGuardMixin):
         except asyncio.CancelledError:
             raise
         except (ValueError, KeyError, TypeError) as e:
-            logger.error(f"Failed to submit human decision for item {item_id}: {type(e).__name__}: {e}")
+            logger.error(
+                f"Failed to submit human decision for item {item_id}: {type(e).__name__}: {e}"
+            )
             return False
         except (AttributeError, RuntimeError) as e:
             logger.error(f"Runtime error submitting human decision for item {item_id}: {e}")
             return False
 
-    async def submit_agent_vote(self,
-                              item_id: str,
-                              agent_id: str,
-                              vote: str,
-                              reasoning: str,
-                              confidence: float = 1.0) -> bool:
+    async def submit_agent_vote(
+        self, item_id: str, agent_id: str, vote: str, reasoning: str, confidence: float = 1.0
+    ) -> bool:
         """
         Submit agent vote for deliberation item.
 
@@ -732,9 +716,9 @@ class DeliberationLayer(OPAGuardMixin):
         try:
             # Map vote string to VoteType enum
             vote_map = {
-                'approve': VoteType.APPROVE,
-                'reject': VoteType.REJECT,
-                'abstain': VoteType.ABSTAIN
+                "approve": VoteType.APPROVE,
+                "reject": VoteType.REJECT,
+                "abstain": VoteType.ABSTAIN,
             }
             vote_enum = vote_map.get(vote.lower(), VoteType.ABSTAIN)
 
@@ -743,7 +727,7 @@ class DeliberationLayer(OPAGuardMixin):
                 agent_id=agent_id,
                 vote=vote_enum,
                 reasoning=reasoning,
-                confidence=confidence
+                confidence=confidence,
             )
 
             if success:
@@ -756,7 +740,7 @@ class DeliberationLayer(OPAGuardMixin):
                         agent_id=agent_id,
                         vote=vote,
                         reasoning=reasoning,
-                        confidence=confidence
+                        confidence=confidence,
                     )
 
             return success
@@ -770,10 +754,7 @@ class DeliberationLayer(OPAGuardMixin):
             logger.error(f"Runtime error submitting agent vote for item {item_id}: {e}")
             return False
 
-    async def _update_deliberation_outcome(self,
-                                         item_id: str,
-                                         decision: str,
-                                         reasoning: str):
+    async def _update_deliberation_outcome(self, item_id: str, decision: str, reasoning: str):
         """Update performance feedback for completed deliberation."""
         if not self.enable_learning:
             return
@@ -784,27 +765,25 @@ class DeliberationLayer(OPAGuardMixin):
             if not item_details:
                 return
 
-            message_id = item_details.get('message_id')
+            message_id = item_details.get("message_id")
             if not message_id:
                 return
 
             # Map decision to outcome
-            outcome_map = {
-                'approved': 'approved',
-                'rejected': 'rejected',
-                'escalated': 'escalated'
-            }
+            outcome_map = {"approved": "approved", "rejected": "rejected", "escalated": "escalated"}
 
-            outcome = outcome_map.get(decision, 'rejected')
+            outcome = outcome_map.get(decision, "rejected")
 
             # Calculate feedback score based on decision confidence
-            feedback_score = 0.9 if decision == 'approved' else 0.7 if decision == 'escalated' else 0.5
+            feedback_score = (
+                0.9 if decision == "approved" else 0.7 if decision == "escalated" else 0.5
+            )
 
             await self.adaptive_router.update_performance_feedback(
                 message_id=message_id,
                 actual_outcome=outcome,
                 processing_time=0,  # Will be calculated from history
-                feedback_score=feedback_score
+                feedback_score=feedback_score,
             )
 
         except asyncio.CancelledError:
@@ -819,44 +798,40 @@ class DeliberationLayer(OPAGuardMixin):
             queue_stats = self.deliberation_queue.get_queue_status()
 
             stats = {
-                'layer_status': 'operational',
-                'impact_threshold': self.impact_threshold,
-                'deliberation_timeout': self.deliberation_timeout,
-                'features': {
-                    'redis_enabled': self.enable_redis,
-                    'learning_enabled': self.enable_learning,
-                    'llm_enabled': self.enable_llm,
-                    'opa_guard_enabled': self.enable_opa_guard,
+                "layer_status": "operational",
+                "impact_threshold": self.impact_threshold,
+                "deliberation_timeout": self.deliberation_timeout,
+                "features": {
+                    "redis_enabled": self.enable_redis,
+                    "learning_enabled": self.enable_learning,
+                    "llm_enabled": self.enable_llm,
+                    "opa_guard_enabled": self.enable_opa_guard,
                 },
-                'router_stats': router_stats,
-                'queue_stats': queue_stats['stats'],
-                'queue_size': queue_stats['queue_size'],
-                'processing_count': queue_stats['processing_count']
+                "router_stats": router_stats,
+                "queue_stats": queue_stats["stats"],
+                "queue_size": queue_stats["queue_size"],
+                "processing_count": queue_stats["processing_count"],
             }
 
             # Include OPA Guard stats if enabled
             if self.opa_guard:
-                stats['opa_guard_stats'] = self.opa_guard.get_stats()
+                stats["opa_guard_stats"] = self.opa_guard.get_stats()
 
             if self.redis_queue:
                 try:
-                    stats['redis_info'] = asyncio.run(
-                        self.redis_queue.get_stream_info()
-                    )
+                    stats["redis_info"] = asyncio.run(self.redis_queue.get_stream_info())
                 except RuntimeError:
                     # Already in async context
-                    stats['redis_info'] = None
+                    stats["redis_info"] = None
 
             return stats
 
         except (ValueError, KeyError, AttributeError) as e:
-            logger.error(
-                f"Failed to get layer stats: {type(e).__name__}: {e}"
-            )
-            return {'error': f'{type(e).__name__}: {e}'}
+            logger.error(f"Failed to get layer stats: {type(e).__name__}: {e}")
+            return {"error": f"{type(e).__name__}: {e}"}
         except RuntimeError as e:
             logger.error(f"Runtime error getting layer stats: {e}")
-            return {'error': f'RuntimeError: {e}'}
+            return {"error": f"RuntimeError: {e}"}
 
     def set_fast_lane_callback(self, callback: Callable):
         """Set callback for fast lane processing."""
@@ -892,7 +867,7 @@ class DeliberationLayer(OPAGuardMixin):
     async def analyze_trends(self) -> Dict[str, Any]:
         """Analyze deliberation trends for optimization."""
         if not self.llm_assistant:
-            return {'error': 'LLM assistant not enabled'}
+            return {"error": "LLM assistant not enabled"}
 
         try:
             # Get deliberation history (simplified)
@@ -905,12 +880,14 @@ class DeliberationLayer(OPAGuardMixin):
             raise
         except (ValueError, KeyError, AttributeError) as e:
             logger.error(f"Failed to analyze trends: {type(e).__name__}: {e}")
-            return {'error': f'{type(e).__name__}: {e}'}
+            return {"error": f"{type(e).__name__}: {e}"}
         except RuntimeError as e:
             logger.error(f"Runtime error analyzing trends: {e}")
-            return {'error': f'RuntimeError: {e}'}
+            return {"error": f"RuntimeError: {e}"}
 
-    async def force_deliberation(self, message: AgentMessage, reason: str = "manual_override") -> Dict[str, Any]:
+    async def force_deliberation(
+        self, message: AgentMessage, reason: str = "manual_override"
+    ) -> Dict[str, Any]:
         """Force a message into deliberation regardless of impact score."""
         logger.info(f"Forcing message {message.message_id} into deliberation: {reason}")
 
@@ -925,12 +902,8 @@ class DeliberationLayer(OPAGuardMixin):
 
         return result
 
-
     async def resolve_deliberation_item(
-        self,
-        item_id: str,
-        approved: bool,
-        feedback_score: Optional[float] = None
+        self, item_id: str, approved: bool, feedback_score: Optional[float] = None
     ) -> Dict[str, Any]:
         """
         Resolve a pending deliberation item and update learning model.
@@ -951,7 +924,7 @@ class DeliberationLayer(OPAGuardMixin):
 
         # 2. Get task details for feedback
         # Note: DeliberationQueue.get_task must be available
-        if hasattr(self.deliberation_queue, 'get_task'):
+        if hasattr(self.deliberation_queue, "get_task"):
             task = self.deliberation_queue.get_task(item_id)
         else:
             task = None
@@ -971,18 +944,19 @@ class DeliberationLayer(OPAGuardMixin):
                 message_id=task.message.message_id,
                 actual_outcome=actual_outcome,
                 processing_time=processing_time,
-                feedback_score=feedback_score
+                feedback_score=feedback_score,
             )
 
         return {
             "status": "resolved",
             "outcome": "approved" if approved else "rejected",
-            "processing_time": processing_time
+            "processing_time": processing_time,
         }
 
 
 # Global deliberation layer instance
 _deliberation_layer = None
+
 
 def get_deliberation_layer() -> DeliberationLayer:
     """Get or create global deliberation layer instance."""

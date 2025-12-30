@@ -1,16 +1,8 @@
-from fastapi import FastAPI, HTTPException, BackgroundTasks
-from pydantic import BaseModel, Field
 import logging
-import asyncio
-from typing import Any, Dict, Optional
-
-
-import logging
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
-from pathlib import Path
-from typing import Dict, List, Optional, Union, Any, Tuple
 
 """
 ACGS Code Analysis Engine - Cache Service
@@ -22,12 +14,11 @@ import hashlib
 import json
 import time
 from datetime import datetime, timezone
-from typing import Any
+
 import redis.asyncio as redis
 from app.utils.constitutional import (
     CONSTITUTIONAL_HASH,
     ensure_constitutional_compliance,
-
 )
 from app.utils.logging import get_logger, performance_logger
 
@@ -71,7 +62,8 @@ class CacheService:
         self.cache_misses = 0
         self.cache_errors = 0
 
-        logger.info("Cache service initialized",
+        logger.info(
+            "Cache service initialized",
             extra={
                 "redis_url": redis_url,
                 "key_prefix": key_prefix,
@@ -102,8 +94,9 @@ class CacheService:
             await self.redis_client.ping()
             self.is_connected = True
 
-            logger.info("Cache service connected to Redis",
-            extra={
+            logger.info(
+                "Cache service connected to Redis",
+                extra={
                     "redis_url": self.redis_url,
                     "constitutional_hash": CONSTITUTIONAL_HASH,
                 },
@@ -129,8 +122,9 @@ class CacheService:
             self.redis_client = None
             self.is_connected = False
 
-            logger.info("Cache service disconnected from Redis",
-            extra={"constitutional_hash": CONSTITUTIONAL_HASH},
+            logger.info(
+                "Cache service disconnected from Redis",
+                extra={"constitutional_hash": CONSTITUTIONAL_HASH},
             )
 
     async def get(self, key: str, default: Any = None) -> Any:
@@ -407,9 +401,7 @@ class CacheService:
 
             # Calculate hit rate
             total_operations = self.cache_hits + self.cache_misses
-            hit_rate = (
-                (self.cache_hits / total_operations) if total_operations > 0 else 0.0
-            )
+            hit_rate = (self.cache_hits / total_operations) if total_operations > 0 else 0.0
 
             cache_info = {
                 "is_connected": self.is_connected,
@@ -426,9 +418,7 @@ class CacheService:
                 "redis_info": {
                     "used_memory": redis_info.get("used_memory_human"),
                     "connected_clients": redis_info.get("connected_clients"),
-                    "total_commands_processed": redis_info.get(
-                        "total_commands_processed"
-                    ),
+                    "total_commands_processed": redis_info.get("total_commands_processed"),
                     "keyspace_hits": redis_info.get("keyspace_hits"),
                     "keyspace_misses": redis_info.get("keyspace_misses"),
                 },

@@ -5,12 +5,10 @@ Constitutional Hash: cdd01ef066bc6cf2
 Comprehensive test coverage for agent_bus.py - the core EnhancedAgentBus class.
 """
 
-import asyncio
-import pytest
 import uuid
-from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
-from unittest.mock import AsyncMock, MagicMock, patch, PropertyMock
+from unittest.mock import AsyncMock, MagicMock
+
+import pytest
 
 try:
     from enhanced_agent_bus.agent_bus import (
@@ -18,20 +16,21 @@ try:
         get_agent_bus,
         reset_agent_bus,
     )
-    from enhanced_agent_bus.models import (
-        AgentMessage,
-        MessageType,
-        Priority,
-        MessageStatus,
-        CONSTITUTIONAL_HASH,
-    )
-    from enhanced_agent_bus.validators import ValidationResult
     from enhanced_agent_bus.exceptions import (
         BusNotStartedError,
         ConstitutionalHashMismatchError,
     )
+    from enhanced_agent_bus.models import (
+        CONSTITUTIONAL_HASH,
+        AgentMessage,
+        MessageStatus,
+        MessageType,
+        Priority,
+    )
+    from enhanced_agent_bus.validators import ValidationResult
 except ImportError:
     import sys
+
     sys.path.insert(0, "/home/dislove/document/acgs2")
     from enhanced_agent_bus.agent_bus import (
         EnhancedAgentBus,
@@ -39,17 +38,13 @@ except ImportError:
         reset_agent_bus,
     )
     from enhanced_agent_bus.models import (
+        CONSTITUTIONAL_HASH,
         AgentMessage,
+        MessageStatus,
         MessageType,
         Priority,
-        MessageStatus,
-        CONSTITUTIONAL_HASH,
     )
     from enhanced_agent_bus.validators import ValidationResult
-    from enhanced_agent_bus.exceptions import (
-        BusNotStartedError,
-        ConstitutionalHashMismatchError,
-    )
 
 
 # Test fixtures
@@ -157,6 +152,7 @@ def sample_message_no_tenant(constitutional_hash):
 # LIFECYCLE TESTS
 # =============================================================================
 
+
 class TestLifecycle:
     """Test EnhancedAgentBus lifecycle management."""
 
@@ -197,6 +193,7 @@ class TestLifecycle:
 # =============================================================================
 # AGENT REGISTRATION TESTS
 # =============================================================================
+
 
 class TestAgentRegistration:
     """Test agent registration functionality."""
@@ -279,6 +276,7 @@ class TestAgentRegistration:
 # AGENT FILTERING TESTS
 # =============================================================================
 
+
 class TestAgentFiltering:
     """Test agent filtering by type and capability."""
 
@@ -328,6 +326,7 @@ class TestAgentFiltering:
 # MESSAGE SENDING TESTS
 # =============================================================================
 
+
 class TestMessageSending:
     """Test message sending functionality."""
 
@@ -340,7 +339,9 @@ class TestMessageSending:
         assert result.is_valid is True
 
     @pytest.mark.asyncio
-    async def test_send_message_validation_failure(self, started_agent_bus, sample_message, mock_processor):
+    async def test_send_message_validation_failure(
+        self, started_agent_bus, sample_message, mock_processor
+    ):
         """Test message sending with validation failure."""
         failed_result = ValidationResult(is_valid=False)
         failed_result.add_error("Validation failed")
@@ -350,7 +351,9 @@ class TestMessageSending:
         assert result.is_valid is False
 
     @pytest.mark.asyncio
-    async def test_send_message_increments_metrics(self, started_agent_bus, sample_message, mock_processor):
+    async def test_send_message_increments_metrics(
+        self, started_agent_bus, sample_message, mock_processor
+    ):
         """Test that sending message updates metrics."""
         mock_processor.process = AsyncMock(return_value=ValidationResult(is_valid=True))
         initial_metrics = started_agent_bus.get_metrics()
@@ -378,6 +381,7 @@ class TestMessageSending:
 # =============================================================================
 # MULTI-TENANT ISOLATION TESTS (CRITICAL SECURITY)
 # =============================================================================
+
 
 class TestMultiTenantIsolation:
     """Test multi-tenant isolation - CRITICAL SECURITY FEATURE."""
@@ -441,7 +445,9 @@ class TestMultiTenantIsolation:
         assert any("Tenant mismatch" in err for err in result.errors)
 
     @pytest.mark.asyncio
-    async def test_tenant_match_accepted(self, started_agent_bus, constitutional_hash, mock_processor):
+    async def test_tenant_match_accepted(
+        self, started_agent_bus, constitutional_hash, mock_processor
+    ):
         """Test that matching tenant is accepted."""
         mock_processor.process = AsyncMock(return_value=ValidationResult(is_valid=True))
 
@@ -474,7 +480,9 @@ class TestMultiTenantIsolation:
         assert result.is_valid is True
 
     @pytest.mark.asyncio
-    async def test_no_tenant_agents_isolated(self, started_agent_bus, constitutional_hash, mock_processor):
+    async def test_no_tenant_agents_isolated(
+        self, started_agent_bus, constitutional_hash, mock_processor
+    ):
         """Test that agents without tenant are isolated from tenanted agents."""
         mock_processor.process = AsyncMock(return_value=ValidationResult(is_valid=True))
 
@@ -509,6 +517,7 @@ class TestMultiTenantIsolation:
 # =============================================================================
 # BROADCAST TESTS
 # =============================================================================
+
 
 class TestBroadcast:
     """Test broadcast functionality with tenant isolation."""
@@ -574,6 +583,7 @@ class TestBroadcast:
 # MESSAGE RECEIVING TESTS
 # =============================================================================
 
+
 class TestMessageReceiving:
     """Test message receiving functionality."""
 
@@ -602,6 +612,7 @@ class TestMessageReceiving:
 # =============================================================================
 # METRICS TESTS
 # =============================================================================
+
 
 class TestMetrics:
     """Test metrics collection functionality."""
@@ -644,6 +655,7 @@ class TestMetrics:
 # DEGRADED MODE TESTS
 # =============================================================================
 
+
 class TestDegradedMode:
     """Test degraded mode fallback behavior."""
 
@@ -683,9 +695,7 @@ class TestDegradedMode:
         assert result.is_valid is True
 
     @pytest.mark.asyncio
-    async def test_degraded_mode_rejects_invalid_hash(
-        self, started_agent_bus, mock_processor
-    ):
+    async def test_degraded_mode_rejects_invalid_hash(self, started_agent_bus, mock_processor):
         """Test that degraded mode rejects invalid constitutional hash."""
         mock_processor.process = AsyncMock(side_effect=Exception("Processor failure"))
 
@@ -708,6 +718,7 @@ class TestDegradedMode:
 # =============================================================================
 # DI COMPONENT TESTS
 # =============================================================================
+
 
 class TestDIComponents:
     """Test dependency injection and component access."""
@@ -737,6 +748,7 @@ class TestDIComponents:
 # SINGLETON TESTS
 # =============================================================================
 
+
 class TestSingleton:
     """Test singleton pattern for default agent bus."""
 
@@ -765,6 +777,7 @@ class TestSingleton:
 # =============================================================================
 # TENANT HELPER TESTS
 # =============================================================================
+
 
 class TestTenantHelpers:
     """Test tenant helper methods."""
@@ -799,6 +812,7 @@ class TestTenantHelpers:
 # INITIALIZATION TESTS
 # =============================================================================
 
+
 class TestInitialization:
     """Test EnhancedAgentBus initialization options."""
 
@@ -829,19 +843,18 @@ class TestInitialization:
 # CONSTITUTIONAL HASH VALIDATION TESTS
 # =============================================================================
 
+
 class TestConstitutionalHash:
     """Test constitutional hash enforcement."""
 
     @pytest.mark.asyncio
     async def test_bus_has_constitutional_hash(self, agent_bus, constitutional_hash):
         """Test that bus maintains constitutional hash."""
-        assert hasattr(agent_bus, 'constitutional_hash')
+        assert hasattr(agent_bus, "constitutional_hash")
         assert agent_bus.constitutional_hash == constitutional_hash
 
     @pytest.mark.asyncio
-    async def test_registered_agents_have_constitutional_hash(
-        self, agent_bus, constitutional_hash
-    ):
+    async def test_registered_agents_have_constitutional_hash(self, agent_bus, constitutional_hash):
         """Test that registered agents include constitutional hash."""
         await agent_bus.register_agent("test-agent", "worker", [], None)
         info = agent_bus.get_agent_info("test-agent")
@@ -851,6 +864,7 @@ class TestConstitutionalHash:
 # =============================================================================
 # EDGE CASE TESTS
 # =============================================================================
+
 
 class TestEdgeCases:
     """Test edge cases and boundary conditions."""
@@ -907,6 +921,7 @@ class TestEdgeCases:
 # =============================================================================
 # COVERAGE ENHANCEMENT TESTS
 # =============================================================================
+
 
 class TestFromConfigFactory:
     """Test from_config factory method for coverage."""
@@ -1150,6 +1165,7 @@ class TestRegistryInitialization:
         bus = EnhancedAgentBus(use_redis_registry=False, enable_maci=False)
 
         from registry import InMemoryAgentRegistry
+
         assert isinstance(bus._registry, InMemoryAgentRegistry)
 
 
@@ -1236,6 +1252,7 @@ class TestDeliberationQueue:
         result.metadata["impact_score"] = 0.95
 
         import time
+
         start_time = time.perf_counter()
 
         await bus._handle_deliberation(message, result, start_time)
@@ -1358,6 +1375,7 @@ class TestValidatorInitialization:
         bus = EnhancedAgentBus(use_dynamic_policy=False, enable_maci=False)
 
         from registry import StaticHashValidationStrategy
+
         assert isinstance(bus._validator, StaticHashValidationStrategy)
 
 
@@ -1373,10 +1391,7 @@ class TestJWTAgentValidation:
     async def test_validate_agent_identity_no_token(self, bus_for_jwt):
         """Test validation when no auth token is provided."""
         result = await bus_for_jwt._validate_agent_identity(
-            agent_id="test-agent",
-            tenant_id=None,
-            capabilities=[],
-            auth_token=None
+            agent_id="test-agent", tenant_id=None, capabilities=[], auth_token=None
         )
 
         # Should return (None, None) when no token
@@ -1388,10 +1403,7 @@ class TestJWTAgentValidation:
         # This tests the path where token is provided but CRYPTO_AVAILABLE or CONFIG_AVAILABLE is False
         # We test the warning path for token without crypto
         result = await bus_for_jwt._validate_agent_identity(
-            agent_id="test-agent",
-            tenant_id=None,
-            capabilities=[],
-            auth_token="some.jwt.token"
+            agent_id="test-agent", tenant_id=None, capabilities=[], auth_token="some.jwt.token"
         )
 
         # Without both CRYPTO_AVAILABLE and CONFIG_AVAILABLE, returns (None, None) with warning logged
@@ -1403,10 +1415,7 @@ class TestJWTAgentValidation:
         bus = EnhancedAgentBus(enable_maci=False, use_dynamic_policy=True)
 
         result = await bus._validate_agent_identity(
-            agent_id="test-agent",
-            tenant_id=None,
-            capabilities=[],
-            auth_token=None
+            agent_id="test-agent", tenant_id=None, capabilities=[], auth_token=None
         )
 
         # In dynamic mode without token, should return (False, None)
@@ -1564,7 +1573,7 @@ class TestRegistrationWithJWTValidation:
             agent_type="worker",
             capabilities=["original"],
             tenant_id=None,
-            auth_token="mock.jwt.token"
+            auth_token="mock.jwt.token",
         )
 
         assert result == True
@@ -1586,9 +1595,7 @@ class TestRegistrationWithJWTValidation:
         bus._validate_agent_identity = mock_validate
 
         result = await bus.register_agent(
-            agent_id="test-agent",
-            agent_type="worker",
-            auth_token="invalid.jwt.token"
+            agent_id="test-agent", agent_type="worker", auth_token="invalid.jwt.token"
         )
 
         assert result == False
@@ -1771,12 +1778,9 @@ class TestRedisRegistryPath:
         """Test Redis registry fallback when not available."""
         # Without Redis URL, should use InMemory
         bus = EnhancedAgentBus(
-            enable_maci=False,
-            use_redis_registry=True,
-            redis_url="redis://localhost:6379"
+            enable_maci=False, use_redis_registry=True, redis_url="redis://localhost:6379"
         )
 
-        from registry import InMemoryAgentRegistry
         # May use Redis or fallback to InMemory depending on availability
         assert bus._registry is not None
 
@@ -1794,6 +1798,7 @@ class TestOPAValidatorPath:
 
         # Re-initialize validator to pick up OPA client
         from registry import OPAValidationStrategy
+
         bus._validator = OPAValidationStrategy(opa_client=mock_opa)
 
         assert isinstance(bus._validator, OPAValidationStrategy)
@@ -1808,6 +1813,7 @@ class TestOPAValidatorPath:
 
         # Re-initialize validator to pick up policy client
         from registry import DynamicPolicyValidationStrategy
+
         bus._validator = DynamicPolicyValidationStrategy(policy_client=mock_policy)
 
         assert isinstance(bus._validator, DynamicPolicyValidationStrategy)

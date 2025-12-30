@@ -5,21 +5,19 @@ Constitutional Hash: cdd01ef066bc6cf2
 Extended tests to increase validators.py coverage.
 """
 
-import pytest
-
 try:
     from enhanced_agent_bus.validators import (
+        CONSTITUTIONAL_HASH,
         ValidationResult,
         validate_constitutional_hash,
         validate_message_content,
-        CONSTITUTIONAL_HASH,
     )
 except ImportError:
     from validators import (
+        CONSTITUTIONAL_HASH,
         ValidationResult,
         validate_constitutional_hash,
         validate_message_content,
-        CONSTITUTIONAL_HASH,
     )
 
 

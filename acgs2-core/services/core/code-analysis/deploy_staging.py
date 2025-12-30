@@ -7,15 +7,15 @@ Constitutional Hash: cdd01ef066bc6cf2
 """
 
 # Secure subprocess management
-from acgs2.services.shared.security.secure_subprocess import execute_command
-from datetime import datetime
 import json
 import pathlib
 import sys
 import time
+from datetime import datetime
 from typing import Any
 
 import requests
+from acgs2.services.shared.security.secure_subprocess import execute_command
 
 
 class StagingDeployment:
@@ -132,14 +132,21 @@ class StagingDeployment:
             ]
 
             result = await execute_command(
-                build_cmd, check=False, capture_output=True, text=True, timeout=300,
+                build_cmd,
+                check=False,
+                capture_output=True,
+                text=True,
+                timeout=300,
             )
 
             if result.returncode == 0:
                 # Verify image
                 verify_cmd = ["docker", "images", "acgs-code-analysis-engine:latest"]
                 verify_result = await execute_command(
-                    verify_cmd, check=False, capture_output=True, text=True,
+                    verify_cmd,
+                    check=False,
+                    capture_output=True,
+                    text=True,
                 )
 
                 return {
@@ -183,7 +190,11 @@ class StagingDeployment:
             ]
 
             result = await execute_command(
-                start_cmd, check=False, capture_output=True, text=True, timeout=300,
+                start_cmd,
+                check=False,
+                capture_output=True,
+                text=True,
+                timeout=300,
             )
 
             if result.returncode == 0:
@@ -200,7 +211,10 @@ class StagingDeployment:
                     "ps",
                 ]
                 status_result = await execute_command(
-                    status_cmd, check=False, capture_output=True, text=True,
+                    status_cmd,
+                    check=False,
+                    capture_output=True,
+                    text=True,
                 )
 
                 return {
@@ -239,7 +253,11 @@ class StagingDeployment:
             ]
 
             result = await execute_command(
-                migration_cmd, check=False, capture_output=True, text=True, timeout=30,
+                migration_cmd,
+                check=False,
+                capture_output=True,
+                text=True,
+                timeout=30,
             )
 
             if result.returncode == 0:
@@ -272,8 +290,7 @@ class StagingDeployment:
 
                         # Verify constitutional hash
                         constitutional_valid = (
-                            health_data.get("constitutional_hash")
-                            == self.constitutional_hash
+                            health_data.get("constitutional_hash") == self.constitutional_hash
                         )
 
                         return {
@@ -438,6 +455,7 @@ class StagingDeployment:
             "execution_time_seconds": execution_time,
         }
 
+
 async def main() -> Any:
     """Main deployment execution function"""
     deployer = StagingDeployment()
@@ -459,6 +477,8 @@ async def main() -> Any:
     except Exception:
         sys.exit(1)
 
+
 if __name__ == "__main__":
     import asyncio
+
     asyncio.run(main())

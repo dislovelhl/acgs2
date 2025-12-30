@@ -10,18 +10,17 @@ Comprehensive tests for the AdapterRegistry class covering:
 - Async close operations
 """
 
-import pytest
-from unittest.mock import Mock, AsyncMock, MagicMock, patch
 from datetime import datetime, timezone
-from typing import Dict, Any, Optional, TypeVar
+from typing import Any, Dict, Optional
+from unittest.mock import Mock
 
+import pytest
+from enhanced_agent_bus.acl_adapters.base import ACLAdapter, AdapterConfig
 from enhanced_agent_bus.acl_adapters.registry import (
     AdapterRegistry,
-    get_registry,
     get_adapter,
+    get_registry,
 )
-from enhanced_agent_bus.acl_adapters.base import ACLAdapter, AdapterConfig
-
 
 try:
     from shared.constants import CONSTITUTIONAL_HASH
@@ -179,11 +178,7 @@ class TestGetOrCreate:
     def test_create_with_config(self, fresh_registry):
         """Test creating adapter with configuration."""
         config = AdapterConfig(timeout_ms=5000, max_retries=5)
-        adapter = fresh_registry.get_or_create(
-            "configured-adapter",
-            MockAdapter,
-            config=config
-        )
+        adapter = fresh_registry.get_or_create("configured-adapter", MockAdapter, config=config)
 
         assert adapter is not None
         assert adapter.config is not None

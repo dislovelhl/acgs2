@@ -5,9 +5,10 @@ Constitutional Hash: cdd01ef066bc6cf2
 Handles test isolation for shared modules.
 """
 
-import pytest
-import sys
 import os
+import sys
+
+import pytest
 
 # Add parent directories to path for local imports
 # This allows `from shared.xxx import ...` to work
@@ -19,12 +20,12 @@ if _parent_dir not in sys.path:
 # Clear cached modules that might have registered prometheus metrics
 # This ensures clean state for each test session
 _modules_to_clear = [
-    'shared',
-    'shared.metrics',
-    'shared.circuit_breaker',
-    'shared.redis_config',
-    'enhanced_agent_bus',
-    'enhanced_agent_bus.core',
+    "shared",
+    "shared.metrics",
+    "shared.circuit_breaker",
+    "shared.redis_config",
+    "enhanced_agent_bus",
+    "enhanced_agent_bus.core",
 ]
 
 

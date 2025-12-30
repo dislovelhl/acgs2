@@ -6,12 +6,13 @@ Lightweight signature system to simulate DSPy structural reasoning.
 Enforces typed inputs and outputs for cognitive orchestration.
 """
 
-from typing import Any, Dict, List, Optional, Type, get_type_hints
-from pydantic import BaseModel, Field
-import json
 import logging
+from typing import Any, Dict, List, Type, get_type_hints
+
+from pydantic import BaseModel, Field
 
 logger = logging.getLogger(__name__)
+
 
 class BaseSignature(BaseModel):
     """Base class for all CEOS Signatures."""
@@ -35,6 +36,7 @@ class BaseSignature(BaseModel):
         prompt.append("\nOutput: Return a valid JSON object matching the requested fields.")
         return "\n".join(prompt)
 
+
 class PlanningSignature(BaseSignature):
     """
     Generate a sequence of worker nodes to solve a user request.
@@ -48,8 +50,10 @@ class PlanningSignature(BaseSignature):
         plan: A list of strings representingworker node names in execution order.
         reasoning: Short explanation for the chosen plan.
     """
+
     plan: List[str] = []
     reasoning: str = ""
+
 
 class CritiqueSignature(BaseSignature):
     """
@@ -65,9 +69,11 @@ class CritiqueSignature(BaseSignature):
         feedback: Detailed critique or correction instructions.
         impact_score_delta: Suggested adjustment to impact score based on quality.
     """
+
     is_passed: bool = False
     feedback: str = ""
     impact_score_delta: float = 0.0
+
 
 class CEOSPoncho:
     """
@@ -97,11 +103,11 @@ class CEOSPoncho:
             if "code" in req or "refactor" in req:
                 return {
                     "plan": ["worker_research", "worker_coder", "worker_validator"],
-                    "reasoning": "Coding request detected. Using standard TDD cycle."
+                    "reasoning": "Coding request detected. Using standard TDD cycle.",
                 }
             return {
                 "plan": ["worker_research", "worker_analyst"],
-                "reasoning": "Informational request detected."
+                "reasoning": "Informational request detected.",
             }
 
         if signature == CritiqueSignature:
@@ -110,14 +116,15 @@ class CEOSPoncho:
                 return {
                     "is_passed": False,
                     "feedback": "Worker reported an internal error.",
-                    "impact_score_delta": -0.1
+                    "impact_score_delta": -0.1,
                 }
             return {
                 "is_passed": True,
                 "feedback": "Output looks valid based on heuristic check.",
-                "impact_score_delta": 0.0
+                "impact_score_delta": 0.0,
             }
 
         return {}
+
 
 __all__ = ["PlanningSignature", "CritiqueSignature", "CEOSPoncho"]

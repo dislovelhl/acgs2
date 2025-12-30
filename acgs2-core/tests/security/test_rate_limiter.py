@@ -10,26 +10,25 @@ Tests verify:
 - Rate limit headers
 """
 
-import asyncio
 import os
-import pytest
-from datetime import datetime, timezone
-from unittest.mock import AsyncMock, MagicMock, patch
-
 import sys
+from datetime import datetime, timezone
+
+import pytest
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../.."))
 
 from shared.security.rate_limiter import (
-    RateLimitMiddleware,
-    RateLimitConfig,
-    RateLimitRule,
-    RateLimitResult,
-    RateLimitScope,
+    CONSTITUTIONAL_HASH,
+    REDIS_AVAILABLE,
     RateLimitAlgorithm,
+    RateLimitConfig,
+    RateLimitMiddleware,
+    RateLimitResult,
+    RateLimitRule,
+    RateLimitScope,
     SlidingWindowRateLimiter,
     create_rate_limit_middleware,
-    REDIS_AVAILABLE,
-    CONSTITUTIONAL_HASH,
 )
 
 
@@ -182,11 +181,11 @@ class TestSlidingWindowBasicBehavior:
             reset_at=datetime.now(timezone.utc),
             retry_after=None,
         )
-        assert hasattr(result, 'allowed')
-        assert hasattr(result, 'limit')
-        assert hasattr(result, 'remaining')
-        assert hasattr(result, 'reset_at')
-        assert hasattr(result, 'retry_after')
+        assert hasattr(result, "allowed")
+        assert hasattr(result, "limit")
+        assert hasattr(result, "remaining")
+        assert hasattr(result, "reset_at")
+        assert hasattr(result, "retry_after")
 
     @pytest.mark.asyncio
     async def test_denied_has_retry_after(self):
@@ -236,16 +235,22 @@ class TestRateLimitMiddleware:
     @pytest.fixture
     def mock_app(self):
         """Create mock FastAPI app."""
+
         async def app(scope, receive, send):
-            await send({
-                "type": "http.response.start",
-                "status": 200,
-                "headers": [],
-            })
-            await send({
-                "type": "http.response.body",
-                "body": b"OK",
-            })
+            await send(
+                {
+                    "type": "http.response.start",
+                    "status": 200,
+                    "headers": [],
+                }
+            )
+            await send(
+                {
+                    "type": "http.response.body",
+                    "body": b"OK",
+                }
+            )
+
         return app
 
     def test_middleware_creation(self, mock_app, config):

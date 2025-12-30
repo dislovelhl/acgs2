@@ -8,7 +8,7 @@ Constitutional Hash: cdd01ef066bc6cf2
 import logging
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 logger = logging.getLogger(__name__)
 

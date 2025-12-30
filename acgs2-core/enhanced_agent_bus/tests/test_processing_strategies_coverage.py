@@ -5,38 +5,37 @@ Constitutional Hash: cdd01ef066bc6cf2
 Comprehensive tests for processing_strategies.py.
 """
 
+from unittest.mock import AsyncMock, MagicMock
+
 import pytest
-from unittest.mock import MagicMock, AsyncMock
-from datetime import datetime, timezone
 
 try:
-    from enhanced_agent_bus.processing_strategies import (
-        PythonProcessingStrategy,
-        DynamicPolicyProcessingStrategy,
-        OPAProcessingStrategy,
-        CompositeProcessingStrategy,
-        MACIProcessingStrategy,
-    )
     from enhanced_agent_bus.models import (
-        AgentMessage,
-        MessageType,
-        MessageStatus,
         CONSTITUTIONAL_HASH,
+        AgentMessage,
+        MessageStatus,
+        MessageType,
+    )
+    from enhanced_agent_bus.processing_strategies import (
+        CompositeProcessingStrategy,
+        DynamicPolicyProcessingStrategy,
+        MACIProcessingStrategy,
+        OPAProcessingStrategy,
+        PythonProcessingStrategy,
     )
     from enhanced_agent_bus.validators import ValidationResult
 except ImportError:
-    from processing_strategies import (
-        PythonProcessingStrategy,
-        DynamicPolicyProcessingStrategy,
-        OPAProcessingStrategy,
-        CompositeProcessingStrategy,
-        MACIProcessingStrategy,
-    )
     from models import (
+        CONSTITUTIONAL_HASH,
         AgentMessage,
         MessageType,
-        MessageStatus,
-        CONSTITUTIONAL_HASH,
+    )
+    from processing_strategies import (
+        CompositeProcessingStrategy,
+        DynamicPolicyProcessingStrategy,
+        MACIProcessingStrategy,
+        OPAProcessingStrategy,
+        PythonProcessingStrategy,
     )
     from validators import ValidationResult
 
@@ -93,6 +92,7 @@ class TestPythonProcessingStrategy:
     async def test_process_with_sync_handler(self, strategy, message):
         """Process executes sync handlers."""
         call_log = []
+
         def sync_handler(msg):
             call_log.append(msg.message_id)
 
@@ -105,6 +105,7 @@ class TestPythonProcessingStrategy:
     async def test_process_with_async_handler(self, strategy, message):
         """Process executes async handlers."""
         call_log = []
+
         async def async_handler(msg):
             call_log.append(msg.message_id)
 
@@ -116,6 +117,7 @@ class TestPythonProcessingStrategy:
     @pytest.mark.asyncio
     async def test_process_handler_type_error(self, strategy, message):
         """Process handles TypeError in handler."""
+
         def error_handler(msg):
             raise TypeError("test error")
 
@@ -128,6 +130,7 @@ class TestPythonProcessingStrategy:
     @pytest.mark.asyncio
     async def test_process_handler_runtime_error(self, strategy, message):
         """Process handles RuntimeError in handler."""
+
         def error_handler(msg):
             raise RuntimeError("runtime issue")
 
@@ -139,6 +142,7 @@ class TestPythonProcessingStrategy:
     @pytest.mark.asyncio
     async def test_process_handler_value_error(self, strategy, message):
         """Process handles ValueError in handler."""
+
         def error_handler(msg):
             raise ValueError("bad value")
 
@@ -204,8 +208,7 @@ class TestDynamicPolicyProcessingStrategy:
         mock_validator.validate = AsyncMock(return_value=(True, None))
 
         strategy = DynamicPolicyProcessingStrategy(
-            policy_client=mock_client,
-            validation_strategy=mock_validator
+            policy_client=mock_client, validation_strategy=mock_validator
         )
         handlers = {}
         result = await strategy.process(message, handlers)
@@ -219,8 +222,7 @@ class TestDynamicPolicyProcessingStrategy:
         mock_validator.validate = AsyncMock(return_value=(False, "Policy denied"))
 
         strategy = DynamicPolicyProcessingStrategy(
-            policy_client=mock_client,
-            validation_strategy=mock_validator
+            policy_client=mock_client, validation_strategy=mock_validator
         )
         handlers = {}
         result = await strategy.process(message, handlers)
@@ -234,8 +236,7 @@ class TestDynamicPolicyProcessingStrategy:
         mock_validator.validate = AsyncMock(side_effect=Exception("Policy error"))
 
         strategy = DynamicPolicyProcessingStrategy(
-            policy_client=mock_client,
-            validation_strategy=mock_validator
+            policy_client=mock_client, validation_strategy=mock_validator
         )
         handlers = {}
         result = await strategy.process(message, handlers)
@@ -282,10 +283,7 @@ class TestOPAProcessingStrategy:
         mock_validator = MagicMock()
         mock_validator.validate = AsyncMock(return_value=(True, None))
 
-        strategy = OPAProcessingStrategy(
-            opa_client=mock_client,
-            validation_strategy=mock_validator
-        )
+        strategy = OPAProcessingStrategy(opa_client=mock_client, validation_strategy=mock_validator)
         handlers = {}
         result = await strategy.process(message, handlers)
         assert result.is_valid is True
@@ -297,10 +295,7 @@ class TestOPAProcessingStrategy:
         mock_validator = MagicMock()
         mock_validator.validate = AsyncMock(return_value=(False, "OPA denied"))
 
-        strategy = OPAProcessingStrategy(
-            opa_client=mock_client,
-            validation_strategy=mock_validator
-        )
+        strategy = OPAProcessingStrategy(opa_client=mock_client, validation_strategy=mock_validator)
         handlers = {}
         result = await strategy.process(message, handlers)
         assert result.is_valid is False
@@ -313,13 +308,11 @@ class TestOPAProcessingStrategy:
         mock_validator.validate = AsyncMock(return_value=(True, None))
 
         call_log = []
+
         def test_handler(msg):
             call_log.append(msg.message_id)
 
-        strategy = OPAProcessingStrategy(
-            opa_client=mock_client,
-            validation_strategy=mock_validator
-        )
+        strategy = OPAProcessingStrategy(opa_client=mock_client, validation_strategy=mock_validator)
         handlers = {MessageType.COMMAND: [test_handler]}
         result = await strategy.process(message, handlers)
         assert result.is_valid is True
@@ -522,9 +515,7 @@ class TestMACIProcessingStrategy:
 
         if maci._maci_available and maci._maci_strategy:
             # Mock MACI validation failure
-            maci._maci_strategy.validate = AsyncMock(
-                return_value=(False, "Role violation")
-            )
+            maci._maci_strategy.validate = AsyncMock(return_value=(False, "Role violation"))
 
             handlers = {}
             result = await maci.process(message, handlers)
@@ -560,9 +551,7 @@ class TestMACIProcessingStrategy:
 
         if maci._maci_available and maci._maci_strategy:
             # Mock MACI validation exception
-            maci._maci_strategy.validate = AsyncMock(
-                side_effect=Exception("MACI error")
-            )
+            maci._maci_strategy.validate = AsyncMock(side_effect=Exception("MACI error"))
 
             handlers = {}
             result = await maci.process(message, handlers)
@@ -575,9 +564,7 @@ class TestMACIProcessingStrategy:
 
         if maci._maci_available and maci._maci_strategy:
             # Mock MACI validation exception
-            maci._maci_strategy.validate = AsyncMock(
-                side_effect=Exception("MACI error")
-            )
+            maci._maci_strategy.validate = AsyncMock(side_effect=Exception("MACI error"))
 
             handlers = {}
             result = await maci.process(message, handlers)
@@ -590,9 +577,7 @@ class TestMACIProcessingStrategy:
         mock_enforcer = MagicMock()
 
         maci = MACIProcessingStrategy(
-            mock_inner_strategy,
-            maci_registry=mock_registry,
-            maci_enforcer=mock_enforcer
+            mock_inner_strategy, maci_registry=mock_registry, maci_enforcer=mock_enforcer
         )
         # If MACI available, custom registry/enforcer should be used
         if maci._maci_available:
@@ -639,10 +624,13 @@ class TestStrategyIntegration:
         python_strategy = PythonProcessingStrategy()
 
         call_order = []
+
         def handler1(msg):
             call_order.append(1)
+
         def handler2(msg):
             call_order.append(2)
+
         async def handler3(msg):
             call_order.append(3)
 

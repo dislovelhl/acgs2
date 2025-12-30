@@ -9,9 +9,9 @@ Arweave特点：
 """
 
 import json
-import time
-from typing import Dict, List, Optional, Any
 import logging
+import time
+from typing import Any, Dict, Optional
 
 # 注意：实际部署时需要安装arweave-python-client
 # pip install arweave-python-client
@@ -110,7 +110,7 @@ class ArweaveClient:
                 "entries": log_data.get("entries", []),
                 "timestamp": log_data["timestamp"],
                 "metadata": log_data.get("metadata", {}),
-                "stored_at": int(time.time())
+                "stored_at": int(time.time()),
             }
 
             # 转换为JSON
@@ -128,7 +128,9 @@ class ArweaveClient:
             # result = transaction.send()
 
             # 模拟交易ID
-            transaction_id = f"arweave_tx_{hash(json_data) & 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF:064x}"
+            transaction_id = (
+                f"arweave_tx_{hash(json_data) & 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF:064x}"
+            )
             logger.info(f"Stored audit log {log_data['batch_id']} to Arweave, TX: {transaction_id}")
 
             return transaction_id
@@ -137,8 +139,9 @@ class ArweaveClient:
             logger.error(f"Failed to store audit log: {e}")
             return None
 
-    def store_batch_hash(self, batch_id: str, root_hash: str,
-                        metadata: Optional[Dict[str, Any]] = None) -> Optional[str]:
+    def store_batch_hash(
+        self, batch_id: str, root_hash: str, metadata: Optional[Dict[str, Any]] = None
+    ) -> Optional[str]:
         """
         存储批次哈希到Arweave（轻量级存储）
 
@@ -162,14 +165,16 @@ class ArweaveClient:
                 "batch_id": batch_id,
                 "root_hash": root_hash,
                 "timestamp": int(time.time()),
-                "metadata": metadata or {}
+                "metadata": metadata or {},
             }
 
             json_data = json.dumps(hash_data, sort_keys=True)
 
             # 实际实现：创建、签名并发送交易
             # 模拟交易ID
-            transaction_id = f"arweave_hash_{hash(json_data) & 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF:064x}"
+            transaction_id = (
+                f"arweave_hash_{hash(json_data) & 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF:064x}"
+            )
             logger.info(f"Stored batch hash {batch_id} to Arweave, TX: {transaction_id}")
 
             return transaction_id
@@ -205,7 +210,7 @@ class ArweaveClient:
                 "root_hash": f"mock_hash_{transaction_id[:16]}",
                 "entry_count": 100,
                 "timestamp": int(time.time()),
-                "transaction_id": transaction_id
+                "transaction_id": transaction_id,
             }
 
             logger.info(f"Retrieved audit log from Arweave, TX: {transaction_id}")
@@ -215,8 +220,7 @@ class ArweaveClient:
             logger.error(f"Failed to retrieve audit log {transaction_id}: {e}")
             return None
 
-    def verify_data_integrity(self, transaction_id: str,
-                            expected_data: Dict[str, Any]) -> bool:
+    def verify_data_integrity(self, transaction_id: str, expected_data: Dict[str, Any]) -> bool:
         """
         验证Arweave上数据的完整性
 
@@ -232,7 +236,7 @@ class ArweaveClient:
             return False
 
         # 比较关键字段
-        key_fields = ['batch_id', 'root_hash', 'entry_count']
+        key_fields = ["batch_id", "root_hash", "entry_count"]
         for field in key_fields:
             if stored_data.get(field) != expected_data.get(field):
                 return False
@@ -264,7 +268,7 @@ class ArweaveClient:
                 "status": "confirmed",
                 "block_height": 1234567,
                 "block_hash": f"block_{hash(transaction_id) & 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF:064x}",
-                "confirmations": 10
+                "confirmations": 10,
             }
 
             return mock_status
@@ -286,7 +290,7 @@ class ArweaveClient:
             "host": self.config.get("host", "arweave.net"),
             "port": self.config.get("port", 443),
             "protocol": self.config.get("protocol", "https"),
-            "wallet_loaded": self.wallet is not None
+            "wallet_loaded": self.wallet is not None,
         }
 
     def estimate_storage_cost(self, data_size: int) -> Optional[float]:

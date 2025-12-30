@@ -10,12 +10,11 @@ Tests verify:
 - WebSocket functionality
 """
 
-import asyncio
 import os
 import sys
-import pytest
 from datetime import datetime, timezone
-from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 
 # Add project root to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
@@ -24,26 +23,31 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspa
 try:
     from monitoring.dashboard_api import (
         CONSTITUTIONAL_HASH,
-        ServiceHealthStatus,
-        AlertSeverity,
-        ServiceHealth,
-        SystemMetrics,
-        PerformanceMetrics,
         AlertInfo,
-        DashboardOverview,
-        HealthAggregateResponse,
-        MetricsResponse,
-        MetricsCollector,
-        ServiceHealthChecker,
         AlertManager,
+        AlertSeverity,
+        DashboardOverview,
         DashboardService,
+        HealthAggregateResponse,
+        MetricsCollector,
+        MetricsResponse,
+        PerformanceMetrics,
+        ServiceHealth,
+        ServiceHealthChecker,
+        ServiceHealthStatus,
+        SystemMetrics,
     )
 except ImportError:
     # Direct import fallback
     import importlib.util
+
     spec = importlib.util.spec_from_file_location(
         "dashboard_api",
-        os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "monitoring", "dashboard_api.py")
+        os.path.join(
+            os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+            "monitoring",
+            "dashboard_api.py",
+        ),
     )
     dashboard_api = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(dashboard_api)

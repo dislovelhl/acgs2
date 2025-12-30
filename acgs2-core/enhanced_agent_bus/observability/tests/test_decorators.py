@@ -4,14 +4,14 @@ Constitutional Hash: cdd01ef066bc6cf2
 """
 
 import asyncio
+
 import pytest
 
 try:
-    from ..decorators import traced, metered, timed, SpanContext
+    from ..decorators import SpanContext, metered, timed, traced
     from ..telemetry import CONSTITUTIONAL_HASH
 except ImportError:
-    from observability.decorators import traced, metered, timed, SpanContext  # type: ignore
-    from observability.telemetry import CONSTITUTIONAL_HASH  # type: ignore
+    from observability.decorators import SpanContext, metered, timed, traced  # type: ignore
 
 
 class TestTracedDecorator:

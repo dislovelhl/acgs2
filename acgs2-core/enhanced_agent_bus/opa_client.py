@@ -12,30 +12,30 @@ import json
 import logging
 import os
 from datetime import datetime, timezone
-from typing import Any, Dict, Optional, List
+from typing import Any, Dict, Optional
+
 import httpx
 
 try:
-    from .models import AgentMessage, CONSTITUTIONAL_HASH
-    from .validators import ValidationResult
     from .exceptions import (
         OPAConnectionError,
         OPANotInitializedError,
         PolicyEvaluationError,
     )
+    from .models import CONSTITUTIONAL_HASH, AgentMessage
+    from .validators import ValidationResult
 except ImportError:
     # Fallback for direct execution or testing
-    from models import AgentMessage, CONSTITUTIONAL_HASH  # type: ignore
-    from validators import ValidationResult  # type: ignore
     from exceptions import (  # type: ignore
-        OPAConnectionError,
         OPANotInitializedError,
-        PolicyEvaluationError,
     )
+    from models import CONSTITUTIONAL_HASH  # type: ignore
+    from validators import ValidationResult  # type: ignore
 
 # Import centralized Redis config for caching
 try:
     from shared.redis_config import get_redis_url
+
     REDIS_AVAILABLE = True
 except ImportError:
     REDIS_AVAILABLE = False
@@ -44,9 +44,11 @@ except ImportError:
         """Mock redis url."""
         return f"redis://localhost:6379/{db}"
 
+
 # Optional Redis client for caching
 try:
     import redis.asyncio as aioredis
+
     REDIS_CLIENT_AVAILABLE = True
 except ImportError:
     REDIS_CLIENT_AVAILABLE = False
@@ -55,6 +57,7 @@ except ImportError:
 # Optional OPA Python SDK for embedded mode
 try:
     from opa import OPA as EmbeddedOPA
+
     OPA_SDK_AVAILABLE = True
 except ImportError:
     OPA_SDK_AVAILABLE = False
@@ -81,7 +84,6 @@ class OPAClient:
         cache_ttl: int = 300,  # 5 minutes
         enable_cache: bool = True,
         redis_url: Optional[str] = None,
-        fail_closed: bool = True,
     ):
         """Initialize OPA client."""
         self.opa_url = opa_url.rstrip("/")
@@ -89,7 +91,9 @@ class OPAClient:
         self.timeout = timeout
         self.cache_ttl = cache_ttl
         self.enable_cache = enable_cache
-        self.fail_closed = fail_closed
+        # SECURITY FIX (VULN-002): Force fail-closed architecture.
+        # This prevents any "fail-open" scenarios when OPA is unavailable.
+        self.fail_closed = True
         self._http_client: Optional[httpx.AsyncClient] = None
         self._redis_client: Optional[Any] = None
         self._embedded_opa: Optional[Any] = None
@@ -119,8 +123,7 @@ class OPAClient:
             if not self._http_client:
                 self._http_client = httpx.AsyncClient(
                     timeout=self.timeout,
-                    limits=httpx.Limits(max_keepalive_connections=10,
-                                        max_connections=20)
+                    limits=httpx.Limits(max_keepalive_connections=10, max_connections=20),
                 )
 
         if self.mode == "embedded" and OPA_SDK_AVAILABLE:
@@ -133,16 +136,13 @@ class OPAClient:
                 if not self._http_client:
                     self._http_client = httpx.AsyncClient(
                         timeout=self.timeout,
-                        limits=httpx.Limits(max_keepalive_connections=10,
-                                            max_connections=20)
+                        limits=httpx.Limits(max_keepalive_connections=10, max_connections=20),
                     )
 
         if self.enable_cache and REDIS_CLIENT_AVAILABLE:
             try:
                 self._redis_client = await aioredis.from_url(
-                    self.redis_url,
-                    encoding="utf-8",
-                    decode_responses=True
+                    self.redis_url, encoding="utf-8", decode_responses=True
                 )
                 await self._redis_client.ping()
                 logger.info("Redis cache initialized for OPA client")
@@ -163,8 +163,7 @@ class OPAClient:
         self._embedded_opa = None
         self._memory_cache.clear()
 
-    def _generate_cache_key(self, policy_path: str,
-                            input_data: Dict[str, Any]) -> str:
+    def _generate_cache_key(self, policy_path: str, input_data: Dict[str, Any]) -> str:
         """Generate cache key."""
         input_str = json.dumps(input_data, sort_keys=True)
         input_hash = hashlib.sha256(input_str.encode()).hexdigest()[:16]
@@ -200,24 +199,18 @@ class OPAClient:
 
         if self._redis_client:
             try:
-                await self._redis_client.setex(
-                    cache_key,
-                    self.cache_ttl,
-                    json.dumps(result)
-                )
+                await self._redis_client.setex(cache_key, self.cache_ttl, json.dumps(result))
                 return
             except Exception as e:
                 logger.warning(f"Redis cache write error: {e}")
 
         self._memory_cache[cache_key] = {
             "result": result,
-            "timestamp": datetime.now(timezone.utc).timestamp()
+            "timestamp": datetime.now(timezone.utc).timestamp(),
         }
 
     async def evaluate_policy(
-        self,
-        input_data: Dict[str, Any],
-        policy_path: str = "data.acgs.allow"
+        self, input_data: Dict[str, Any], policy_path: str = "data.acgs.allow"
     ) -> Dict[str, Any]:
         """Evaluate a policy."""
         cache_key = self._generate_cache_key(policy_path, input_data)
@@ -240,36 +233,22 @@ class OPAClient:
             logger.error(f"Policy evaluation error: {e}")
             return self._handle_evaluation_error(e, policy_path)
 
-    def _handle_evaluation_error(
-        self,
-        error: Exception,
-        policy_path: str
-    ) -> Dict[str, Any]:
-        """Build a response for OPA evaluation failures."""
-        allowed = not self.fail_closed
-        security_mode = "fail-closed" if self.fail_closed else "fail-open"
-        reason = (
-            f"Policy evaluation failed: {str(error)}"
-            if self.fail_closed
-            else f"Policy evaluation failed: {str(error)} (allowed fail-open)"
-        )
+    def _handle_evaluation_error(self, error: Exception, policy_path: str) -> Dict[str, Any]:
+        """Build a response for OPA evaluation failures - ALWAYS FAIL-CLOSED."""
+        logger.error(f"OPA evaluation failed: {error}")
         return {
-            "result": allowed,
-            "allowed": allowed,
-            "reason": reason,
+            "result": False,
+            "allowed": False,
+            "reason": f"Policy evaluation failed: {str(error)}",
             "metadata": {
                 "error": str(error),
                 "mode": self.mode,
                 "policy_path": policy_path,
-                "security": security_mode,
-            }
+                "security": "fail-closed",
+            },
         }
 
-    async def _evaluate_http(
-        self,
-        input_data: Dict[str, Any],
-        policy_path: str
-    ) -> Dict[str, Any]:
+    async def _evaluate_http(self, input_data: Dict[str, Any], policy_path: str) -> Dict[str, Any]:
         """Evaluate policy via HTTP API."""
         if not self._http_client:
             raise OPANotInitializedError("HTTP policy evaluation")
@@ -278,10 +257,7 @@ class OPAClient:
             path_parts = policy_path.replace("data.", "").replace(".", "/")
             url = f"{self.opa_url}/v1/data/{path_parts}"
 
-            response = await self._http_client.post(
-                url,
-                json={"input": input_data}
-            )
+            response = await self._http_client.post(url, json={"input": input_data})
             response.raise_for_status()
 
             data = response.json()
@@ -292,7 +268,7 @@ class OPAClient:
                     "result": opa_result,
                     "allowed": opa_result,
                     "reason": "Policy evaluated successfully",
-                    "metadata": {"mode": "http", "policy_path": policy_path}
+                    "metadata": {"mode": "http", "policy_path": policy_path},
                 }
             elif isinstance(opa_result, dict):
                 return {
@@ -302,15 +278,15 @@ class OPAClient:
                     "metadata": {
                         "mode": "http",
                         "policy_path": policy_path,
-                        **opa_result.get("metadata", {})
-                    }
+                        **opa_result.get("metadata", {}),
+                    },
                 }
             else:
                 return {
                     "result": False,
                     "allowed": False,
                     "reason": f"Unexpected result type: {type(opa_result)}",
-                    "metadata": {"mode": "http", "policy_path": policy_path}
+                    "metadata": {"mode": "http", "policy_path": policy_path},
                 }
 
         except Exception as e:
@@ -318,9 +294,7 @@ class OPAClient:
             raise
 
     async def _evaluate_embedded(
-        self,
-        input_data: Dict[str, Any],
-        policy_path: str
+        self, input_data: Dict[str, Any], policy_path: str
     ) -> Dict[str, Any]:
         """Evaluate policy via embedded OPA SDK."""
         if not self._embedded_opa:
@@ -329,10 +303,7 @@ class OPAClient:
         try:
             loop = asyncio.get_event_loop()
             opa_result = await loop.run_in_executor(
-                None,
-                self._embedded_opa.evaluate,
-                policy_path,
-                input_data
+                None, self._embedded_opa.evaluate, policy_path, input_data
             )
 
             if isinstance(opa_result, bool):
@@ -340,7 +311,7 @@ class OPAClient:
                     "result": opa_result,
                     "allowed": opa_result,
                     "reason": "Policy evaluated successfully",
-                    "metadata": {"mode": "embedded", "policy_path": policy_path}
+                    "metadata": {"mode": "embedded", "policy_path": policy_path},
                 }
             elif isinstance(opa_result, dict):
                 return {
@@ -350,15 +321,15 @@ class OPAClient:
                     "metadata": {
                         "mode": "embedded",
                         "policy_path": policy_path,
-                        **opa_result.get("metadata", {})
-                    }
+                        **opa_result.get("metadata", {}),
+                    },
                 }
             else:
                 return {
                     "result": False,
                     "allowed": False,
                     "reason": f"Unexpected result type: {type(opa_result)}",
-                    "metadata": {"mode": "embedded", "policy_path": policy_path}
+                    "metadata": {"mode": "embedded", "policy_path": policy_path},
                 }
 
         except Exception as e:
@@ -366,13 +337,10 @@ class OPAClient:
             raise
 
     async def _evaluate_fallback(
-        self,
-        input_data: Dict[str, Any],
-        policy_path: str
+        self, input_data: Dict[str, Any], policy_path: str
     ) -> Dict[str, Any]:
-        """Fallback policy evaluation."""
-        security_mode = "fail-closed" if self.fail_closed else "fail-open"
-        logger.warning(f"Using {security_mode} fallback for {policy_path}")
+        """Fallback policy evaluation - ALWAYS FAIL-CLOSED."""
+        logger.warning(f"Using fail-closed fallback for {policy_path}")
 
         constitutional_hash = input_data.get("constitutional_hash", "")
         if constitutional_hash != CONSTITUTIONAL_HASH:
@@ -380,51 +348,31 @@ class OPAClient:
                 "result": False,
                 "allowed": False,
                 "reason": f"Invalid constitutional hash: {constitutional_hash}",
-                "metadata": {"mode": "fallback", "policy_path": policy_path}
+                "metadata": {"mode": "fallback", "policy_path": policy_path},
             }
 
-        if self.fail_closed:
-            return {
-                "result": False,
-                "allowed": False,
-                "reason": "OPA service unavailable - denied (fail-closed)",
-                "metadata": {
-                    "mode": "fallback",
-                    "policy_path": policy_path,
-                    "security": "fail-closed"
-                }
-            }
         return {
-            "result": True,
-            "allowed": True,
-            "reason": "OPA service unavailable - allowed (fail-open)",
-            "metadata": {
-                "mode": "fallback",
-                "policy_path": policy_path,
-                "security": "fail-open"
-            }
+            "result": False,
+            "allowed": False,
+            "reason": "OPA service unavailable - denied (fail-closed)",
+            "metadata": {"mode": "fallback", "policy_path": policy_path, "security": "fail-closed"},
         }
 
-    async def validate_constitutional(
-        self,
-        message: Dict[str, Any]
-    ) -> ValidationResult:
+    async def validate_constitutional(self, message: Dict[str, Any]) -> ValidationResult:
         """Validate message against constitutional rules."""
         try:
             input_data = {
                 "message": message,
                 "constitutional_hash": message.get("constitutional_hash", ""),
-                "timestamp": datetime.now(timezone.utc).isoformat()
+                "timestamp": datetime.now(timezone.utc).isoformat(),
             }
 
             result = await self.evaluate_policy(
-                input_data,
-                policy_path="data.acgs.constitutional.validate"
+                input_data, policy_path="data.acgs.constitutional.validate"
             )
 
             validation_result = ValidationResult(
-                is_valid=result["allowed"],
-                constitutional_hash=CONSTITUTIONAL_HASH
+                is_valid=result["allowed"], constitutional_hash=CONSTITUTIONAL_HASH
             )
 
             if not result["allowed"]:
@@ -435,17 +383,12 @@ class OPAClient:
 
         except Exception as e:
             logger.error(f"Constitutional validation error: {e}")
-            res = ValidationResult(is_valid=False,
-                                   constitutional_hash=CONSTITUTIONAL_HASH)
+            res = ValidationResult(is_valid=False, constitutional_hash=CONSTITUTIONAL_HASH)
             res.add_error(f"Error: {str(e)}")
             return res
 
     async def check_agent_authorization(
-        self,
-        agent_id: str,
-        action: str,
-        resource: str,
-        context: Optional[Dict[str, Any]] = None
+        self, agent_id: str, action: str, resource: str, context: Optional[Dict[str, Any]] = None
     ) -> bool:
         """Check if agent is authorized."""
         try:
@@ -461,13 +404,10 @@ class OPAClient:
                 "resource": resource,
                 "context": ctx,
                 "constitutional_hash": provided_hash,
-                "timestamp": datetime.now(timezone.utc).isoformat()
+                "timestamp": datetime.now(timezone.utc).isoformat(),
             }
 
-            result = await self.evaluate_policy(
-                input_data,
-                policy_path="data.acgs.rbac.allow"
-            )
+            result = await self.evaluate_policy(input_data, policy_path="data.acgs.rbac.allow")
 
             return result["allowed"]
 
@@ -479,21 +419,14 @@ class OPAClient:
         """Check OPA service health."""
         try:
             if self.mode == "http" and self._http_client:
-                response = await self._http_client.get(
-                    f"{self.opa_url}/health",
-                    timeout=2.0
-                )
+                response = await self._http_client.get(f"{self.opa_url}/health", timeout=2.0)
                 response.raise_for_status()
                 return {"status": "healthy", "mode": "http"}
             return {"status": "healthy", "mode": self.mode}
         except Exception as e:
             return {"status": "unhealthy", "error": str(e)}
 
-    async def load_policy(
-        self,
-        policy_id: str,
-        policy_content: str
-    ) -> bool:
+    async def load_policy(self, policy_id: str, policy_content: str) -> bool:
         """Load a policy into OPA."""
         if self.mode != "http" or not self._http_client:
             return False
@@ -502,7 +435,7 @@ class OPAClient:
             response = await self._http_client.put(
                 f"{self.opa_url}/v1/policies/{policy_id}",
                 data=policy_content,
-                headers={"Content-Type": "text/plain"}
+                headers={"Content-Type": "text/plain"},
             )
             response.raise_for_status()
             return True
@@ -510,12 +443,7 @@ class OPAClient:
             logger.error(f"Failed to load policy {policy_id}: {e}")
             return False
 
-    async def load_bundle_from_url(
-        self,
-        url: str,
-        signature: str,
-        public_key: str
-    ) -> bool:
+    async def load_bundle_from_url(self, url: str, signature: str, public_key: str) -> bool:
         """
         Download and load an OPA bundle with signature verification.
         Implements Pillar 1: Dynamic Policy-as-Code distribution.
@@ -558,31 +486,21 @@ class OPAClient:
             logger.error(f"Failed to load bundle: {e}")
             return await self._rollback_to_lkg()
 
-    async def _verify_bundle(
-        self,
-        bundle_path: str,
-        signature: str,
-        public_key: str
-    ) -> bool:
+    async def _verify_bundle(self, bundle_path: str, signature: str, public_key: str) -> bool:
         """Verify bundle signature using CryptoService."""
         try:
             import sys
-            sys.path.append(os.path.join(os.getcwd(),
-                                         "services/policy_registry"))
+
+            sys.path.append(os.path.join(os.getcwd(), "services/policy_registry"))
             from app.services.crypto_service import CryptoService
 
             with open(bundle_path, "rb") as f:
                 data = f.read()
                 bundle_hash = hashlib.sha256(data).hexdigest()
 
-            metadata = {
-                "hash": bundle_hash,
-                "constitutional_hash": CONSTITUTIONAL_HASH
-            }
+            metadata = {"hash": bundle_hash, "constitutional_hash": CONSTITUTIONAL_HASH}
 
-            return CryptoService.verify_policy_signature(
-                metadata, signature, public_key
-            )
+            return CryptoService.verify_policy_signature(metadata, signature, public_key)
         except Exception as e:
             logger.error(f"Verification error: {e}")
             return False
@@ -613,23 +531,16 @@ class OPAClient:
 _opa_client: Optional[OPAClient] = None
 
 
-def get_opa_client(fail_closed: Optional[bool] = None) -> OPAClient:
+def get_opa_client() -> OPAClient:
     """Get global OPA client instance."""
     global _opa_client
     if _opa_client is None:
-        if fail_closed is None:
-            _opa_client = OPAClient()
-        else:
-            _opa_client = OPAClient(fail_closed=fail_closed)
-    elif fail_closed is not None:
-        _opa_client.fail_closed = fail_closed
+        _opa_client = OPAClient()
     return _opa_client
 
 
 async def initialize_opa_client(
-    opa_url: str = "http://localhost:8181",
-    mode: str = "http",
-    **kwargs
+    opa_url: str = "http://localhost:8181", mode: str = "http", **kwargs
 ) -> OPAClient:
     """Initialize global OPA client."""
     global _opa_client

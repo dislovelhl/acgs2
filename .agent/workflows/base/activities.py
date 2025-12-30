@@ -6,11 +6,11 @@ Activity interface for external operations in workflows.
 All activities MUST be idempotent.
 """
 
+import logging
+import uuid
 from abc import ABC, abstractmethod
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
-import logging
-import uuid
 
 try:
     from shared.constants import CONSTITUTIONAL_HASH
@@ -42,10 +42,7 @@ class BaseActivities(ABC):
 
     @abstractmethod
     async def validate_constitutional_hash(
-        self,
-        workflow_id: str,
-        provided_hash: str,
-        expected_hash: str = CONSTITUTIONAL_HASH
+        self, workflow_id: str, provided_hash: str, expected_hash: str = CONSTITUTIONAL_HASH
     ) -> Dict[str, Any]:
         """
         Validate constitutional hash compliance.
@@ -62,10 +59,7 @@ class BaseActivities(ABC):
 
     @abstractmethod
     async def evaluate_policy(
-        self,
-        workflow_id: str,
-        policy_path: str,
-        input_data: Dict[str, Any]
+        self, workflow_id: str, policy_path: str, input_data: Dict[str, Any]
     ) -> Dict[str, Any]:
         """
         Evaluate OPA policy for the given input.
@@ -82,10 +76,7 @@ class BaseActivities(ABC):
 
     @abstractmethod
     async def record_audit(
-        self,
-        workflow_id: str,
-        event_type: str,
-        event_data: Dict[str, Any]
+        self, workflow_id: str, event_type: str, event_data: Dict[str, Any]
     ) -> str:
         """
         Record event to blockchain-anchored audit trail.
@@ -102,9 +93,7 @@ class BaseActivities(ABC):
 
     @abstractmethod
     async def list_agents(
-        self,
-        capabilities: Optional[List[str]] = None,
-        status: Optional[str] = None
+        self, capabilities: Optional[List[str]] = None, status: Optional[str] = None
     ) -> List[Dict[str, Any]]:
         """
         List agents matching criteria.
@@ -120,10 +109,7 @@ class BaseActivities(ABC):
 
     @abstractmethod
     async def broadcast_command(
-        self,
-        agent_ids: List[str],
-        command: str,
-        payload: Dict[str, Any]
+        self, agent_ids: List[str], command: str, payload: Dict[str, Any]
     ) -> str:
         """
         Broadcast command to multiple agents.
@@ -140,10 +126,7 @@ class BaseActivities(ABC):
 
     @abstractmethod
     async def execute_agent_task(
-        self,
-        agent_id: str,
-        task_name: str,
-        input_data: Dict[str, Any]
+        self, agent_id: str, task_name: str, input_data: Dict[str, Any]
     ) -> Dict[str, Any]:
         """
         Execute a task on a specific agent.
@@ -188,16 +171,15 @@ class DefaultActivities(BaseActivities):
         self._allow_mock_audit = allow_mock_audit
 
     async def validate_constitutional_hash(
-        self,
-        workflow_id: str,
-        provided_hash: str,
-        expected_hash: str = CONSTITUTIONAL_HASH
+        self, workflow_id: str, provided_hash: str, expected_hash: str = CONSTITUTIONAL_HASH
     ) -> Dict[str, Any]:
         """Validate constitutional hash."""
         is_valid = provided_hash == expected_hash
-        errors = [] if is_valid else [
-            f"Constitutional hash mismatch: expected {expected_hash}, got {provided_hash}"
-        ]
+        errors = (
+            []
+            if is_valid
+            else [f"Constitutional hash mismatch: expected {expected_hash}, got {provided_hash}"]
+        )
 
         logger.info(
             f"Workflow {workflow_id}: Constitutional hash validation "
@@ -214,10 +196,7 @@ class DefaultActivities(BaseActivities):
         }
 
     async def evaluate_policy(
-        self,
-        workflow_id: str,
-        policy_path: str,
-        input_data: Dict[str, Any]
+        self, workflow_id: str, policy_path: str, input_data: Dict[str, Any]
     ) -> Dict[str, Any]:
         """Evaluate OPA policy."""
         try:
@@ -225,6 +204,7 @@ class DefaultActivities(BaseActivities):
             if self._opa_client is None:
                 try:
                     from enhanced_agent_bus.opa_client import get_opa_client
+
                     self._opa_client = get_opa_client()
                 except ImportError:
                     pass
@@ -264,10 +244,7 @@ class DefaultActivities(BaseActivities):
             }
 
     async def record_audit(
-        self,
-        workflow_id: str,
-        event_type: str,
-        event_data: Dict[str, Any]
+        self, workflow_id: str, event_type: str, event_data: Dict[str, Any]
     ) -> str:
         """Record to audit trail."""
         try:
@@ -275,15 +252,14 @@ class DefaultActivities(BaseActivities):
             if self._audit_client is None:
                 try:
                     from enhanced_agent_bus.audit_client import AuditClient
+
                     self._audit_client = AuditClient()
                 except ImportError:
                     pass
 
             if self._audit_client:
                 return await self._audit_client.record(
-                    workflow_id=workflow_id,
-                    event_type=event_type,
-                    event_data=event_data
+                    workflow_id=workflow_id, event_type=event_type, event_data=event_data
                 )
 
         except Exception as e:
@@ -327,7 +303,7 @@ class DefaultActivities(BaseActivities):
         channel: str,
         recipient: str,
         message: str,
-        metadata: Optional[Dict[str, Any]] = None
+        metadata: Optional[Dict[str, Any]] = None,
     ) -> str:
         """Send notification."""
         notification_id = str(uuid.uuid4())
@@ -340,9 +316,7 @@ class DefaultActivities(BaseActivities):
         return notification_id
 
     async def list_agents(
-        self,
-        capabilities: Optional[List[str]] = None,
-        status: Optional[str] = None
+        self, capabilities: Optional[List[str]] = None, status: Optional[str] = None
     ) -> List[Dict[str, Any]]:
         """List agents (mock implementation)."""
         # In production, this would call AgentDirectoryService
@@ -361,14 +335,11 @@ class DefaultActivities(BaseActivities):
                 "status": status or "active",
                 "reputation_score": 0.88,
                 "latency_ms": 45.0,
-            }
+            },
         ]
 
     async def broadcast_command(
-        self,
-        agent_ids: List[str],
-        command: str,
-        payload: Dict[str, Any]
+        self, agent_ids: List[str], command: str, payload: Dict[str, Any]
     ) -> str:
         """Broadcast command (mock implementation)."""
         broadcast_id = str(uuid.uuid4())
@@ -376,10 +347,7 @@ class DefaultActivities(BaseActivities):
         return broadcast_id
 
     async def execute_agent_task(
-        self,
-        agent_id: str,
-        task_name: str,
-        input_data: Dict[str, Any]
+        self, agent_id: str, task_name: str, input_data: Dict[str, Any]
     ) -> Dict[str, Any]:
         """Execute agent task (mock implementation)."""
         logger.info(f"Executing task {task_name} on agent {agent_id}")
@@ -388,7 +356,7 @@ class DefaultActivities(BaseActivities):
             "agent_id": agent_id,
             "task_name": task_name,
             "output": {"processed": True},
-            "timestamp": datetime.now(timezone.utc).isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }
 
 

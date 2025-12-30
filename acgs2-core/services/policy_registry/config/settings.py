@@ -3,11 +3,9 @@ Configuration settings for Policy Registry Service
 Constitutional Hash: cdd01ef066bc6cf2
 """
 
-import os
 from typing import Optional
 
 from pydantic import BaseSettings
-
 
 # Constitutional compliance constant
 CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
@@ -60,6 +58,7 @@ class Settings(BaseSettings):
 
     class Config:
         """Pydantic configuration"""
+
         env_prefix = "POLICY_REGISTRY_"
         case_sensitive = False
 

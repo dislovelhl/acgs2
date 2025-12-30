@@ -5,9 +5,9 @@ Constitutional Hash: cdd01ef066bc6cf2
 
 import logging
 from contextlib import asynccontextmanager
-from typing import Dict, Any, List
+from typing import Any, Dict, List
 
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 from ..core.audit_ledger import AuditLedger
@@ -26,6 +26,7 @@ logger = logging.getLogger(__name__)
 # Global ledger instance
 ledger = AuditLedger()
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan manager"""
@@ -41,11 +42,12 @@ async def lifespan(app: FastAPI):
     await ledger.stop()
     logger.info("Audit Service stopped")
 
+
 app = FastAPI(
     title="Decentralized Audit Service",
     description="Immutable proof of agent interactions and governance decisions",
     version="1.0.0",
-    lifespan=lifespan
+    lifespan=lifespan,
 )
 
 # Add CORS middleware
@@ -57,14 +59,17 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 @app.get("/health/live")
 async def liveness_check():
     return {"status": "alive", "service": "audit-service"}
+
 
 @app.get("/stats")
 async def get_stats():
     """Get audit ledger statistics"""
     return await ledger.get_ledger_stats()
+
 
 @app.get("/batch/{batch_id}")
 async def get_batch_entries(batch_id: str):
@@ -74,6 +79,7 @@ async def get_batch_entries(batch_id: str):
         raise HTTPException(status_code=404, detail="Batch not found")
     return [entry.to_dict() for entry in entries]
 
+
 @app.get("/batch/{batch_id}/root")
 async def get_batch_root(batch_id: str):
     """Get the Merkle root of a specific batch"""
@@ -81,6 +87,7 @@ async def get_batch_root(batch_id: str):
     if not root:
         raise HTTPException(status_code=404, detail="Batch not found or root not available")
     return {"batch_id": batch_id, "root_hash": root}
+
 
 @app.post("/record")
 async def record_validation(result: Dict[str, Any]):
@@ -91,22 +98,21 @@ async def record_validation(result: Dict[str, Any]):
         return {
             "status": "recorded",
             "entry_hash": entry_hash,
-            "timestamp": datetime.now(timezone.utc).isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }
     except Exception as e:
         logger.error(f"Failed to record validation: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+
 @app.post("/verify")
-async def verify_entry(
-    entry_hash: str,
-    merkle_proof: List[Any],
-    root_hash: str
-):
+async def verify_entry(entry_hash: str, merkle_proof: List[Any], root_hash: str):
     """Verify an inclusion proof for an entry hash"""
     is_valid = await ledger.verify_entry(entry_hash, merkle_proof, root_hash)
     return {"entry_hash": entry_hash, "is_valid": is_valid}
 
+
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run("main:app", host="0.0.0.0", port=8001, reload=True)

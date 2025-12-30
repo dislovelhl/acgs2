@@ -4,14 +4,16 @@ Constitutional Hash: cdd01ef066bc6cf2
 """
 
 import pytest
+
 from ..base.context import WorkflowContext
-from ..sagas.policy_deployment import PolicyDeploymentSaga
 from ..sagas.base_saga import SagaStatus
+from ..sagas.policy_deployment import PolicyDeploymentSaga
 
 try:
     from shared.constants import CONSTITUTIONAL_HASH
 except ImportError:
     CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
+
 
 class TestPolicyDeploymentSaga:
     """Test suite for PolicyDeploymentSaga."""
@@ -22,10 +24,9 @@ class TestPolicyDeploymentSaga:
         saga = PolicyDeploymentSaga()
         context = WorkflowContext.create()
 
-        result = await saga.execute(context, {
-            "policy_id": "pol-123",
-            "policy_content": {"rules": ["allow_all"]}
-        })
+        result = await saga.execute(
+            context, {"policy_id": "pol-123", "policy_content": {"rules": ["allow_all"]}}
+        )
 
         assert result.status == SagaStatus.COMPLETED
         assert result.output["active"] is True
@@ -38,11 +39,14 @@ class TestPolicyDeploymentSaga:
         context = WorkflowContext.create()
 
         # Trigger deployment failure
-        result = await saga.execute(context, {
-            "policy_id": "pol-123",
-            "policy_content": {"rules": ["allow_all"]},
-            "simulate_deploy_failure": True
-        })
+        result = await saga.execute(
+            context,
+            {
+                "policy_id": "pol-123",
+                "policy_content": {"rules": ["allow_all"]},
+                "simulate_deploy_failure": True,
+            },
+        )
 
         # Expect COMPENSATED status (rollback successful)
         assert result.status == SagaStatus.COMPENSATED
@@ -55,11 +59,14 @@ class TestPolicyDeploymentSaga:
         context = WorkflowContext.create()
 
         # Trigger verification failure
-        result = await saga.execute(context, {
-            "policy_id": "pol-123",
-            "policy_content": {"rules": ["allow_all"]},
-            "simulate_verify_failure": True
-        })
+        result = await saga.execute(
+            context,
+            {
+                "policy_id": "pol-123",
+                "policy_content": {"rules": ["allow_all"]},
+                "simulate_verify_failure": True,
+            },
+        )
 
         assert result.status == SagaStatus.COMPENSATED
         assert "Policy verification failed" in str(result.errors[0])
@@ -70,10 +77,9 @@ class TestPolicyDeploymentSaga:
         saga = PolicyDeploymentSaga()
         context = WorkflowContext.create()
 
-        result = await saga.execute(context, {
-            "policy_id": "pol-123",
-            "policy_content": {"unsafe": "true"}
-        })
+        result = await saga.execute(
+            context, {"policy_id": "pol-123", "policy_content": {"unsafe": "true"}}
+        )
 
         # Expect FAILED because validation fail has no compensations (it's the first step/step failure before any compensated steps)
         assert result.status == SagaStatus.FAILED

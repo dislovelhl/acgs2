@@ -1,15 +1,17 @@
 ---
-description: 
+description:
 ---
 
 # ACGS-2 Agent Workflows
 
-> **Constitutional Hash**: `cdd01ef066bc6cf2` | **Version**: 1.1.0 | **Last Updated**: 2025-12-22
+> **Constitutional Hash**: `cdd01ef066bc6cf2` | **Version**: 1.2.0 | **Last Updated**: 2025-12-28
 
 ## Overview
+
 Canonical workflow layer for ACGS-2 agent orchestration, implementing constitutional governance via Temporal-style workflows, Sagas, and DAGs.
 
 ## Architecture & Directory
+
 ```
 .agent/workflows/
 ├── __init__.py        # Package exports
@@ -27,6 +29,9 @@ Canonical workflow layer for ACGS-2 agent orchestration, implementing constituti
 │   └── handoff.py     # HandoffWorkflow (agent-to-agent transfer)
 ├── sagas/             # Distributed transactions
 │   └── base_saga.py   # BaseSaga with LIFO compensation
+├── cyclic/            # Stateful cyclic orchestration
+│   ├── actor_core.py  # StateGraph engine
+│   └── state_schema.py # Strictly typed GlobalState
 ├── dags/              # Parallel orchestration
 │   └── dag_executor.py # DAGExecutor with asyncio.as_completed
 ├── templates/         # Declarative YAML definitions
@@ -43,6 +48,7 @@ Canonical workflow layer for ACGS-2 agent orchestration, implementing constituti
 ## Quick Start
 
 ### DAG-Based Parallel Execution
+
 ```python
 from .agent.workflows import DAGExecutor, DAGNode, WorkflowContext
 
@@ -58,6 +64,7 @@ result = await dag.execute(context)
 ```
 
 ### Saga Pattern with Compensation
+
 ```python
 from .agent.workflows import BaseSaga, SagaStep
 
@@ -71,6 +78,7 @@ result = await saga.execute(context, {"order_id": "123"})
 ```
 
 ### Multi-Agent Voting
+
 ```python
 from .agent.workflows import VotingWorkflow, VotingStrategy
 
@@ -82,18 +90,41 @@ workflow = VotingWorkflow(
 result = await workflow.run({"proposal": "Allow high-impact action"})
 ```
 
+### Cyclic (Actor Model) Orchestration
+
+```python
+from .agent.workflows.cyclic import StateGraph, GlobalState
+
+graph = StateGraph("analysis-loop")
+
+@graph.add_node("analyze")
+async def analyze_node(state: GlobalState):
+    # Perform state transformation
+    state.context["processed"] = True
+    return state
+
+graph.add_conditional_edges("analyze", lambda s: "__end__")
+graph.set_entry_point("analyze")
+
+final_state = await graph.execute(GlobalState())
+```
+
 ## Workflow Types
-| Category | Key Workflows | Purpose |
-|:---|:---|:---|
-| **Constitutional** | `ConstitutionalValidationWorkflow` | Hash validation, integrity, compliance |
-| **Coordination** | `VotingWorkflow`, `HandoffWorkflow` | Multi-agent consensus & task transfer |
-| **Sagas** | `BaseSaga` | Distributed transactions with rollback |
-| **DAGs** | `DAGExecutor` | Parallel execution of dependent tasks |
+
+| Category           | Key Workflows                       | Purpose                                        |
+| :----------------- | :---------------------------------- | :--------------------------------------------- |
+| **Constitutional** | `ConstitutionalValidationWorkflow`  | Hash validation, integrity, compliance         |
+| **Coordination**   | `VotingWorkflow`, `HandoffWorkflow` | Multi-agent consensus & task transfer          |
+| **Sagas**          | `BaseSaga`                          | Distributed transactions with rollback         |
+| **DAGs**           | `DAGExecutor`                       | Parallel execution of dependent tasks          |
+| **Cyclic**         | `StateGraph`                        | Stateful orchestration with loops & interrupts |
 
 ## Core Patterns
 
 ### Constitutional First
+
 Hash validation is mandatory at all workflow boundaries:
+
 ```python
 class GovernanceWorkflow(BaseWorkflow):
     async def execute(self, input: Dict) -> WorkflowResult:
@@ -104,6 +135,7 @@ class GovernanceWorkflow(BaseWorkflow):
 ```
 
 ### Saga Compensation (LIFO Order)
+
 ```python
 # Compensations are registered BEFORE execution
 # On failure, they run in reverse order
@@ -114,6 +146,7 @@ Rollback: Comp_B → Comp_A (LIFO)
 ```
 
 ### DAG Parallelism
+
 ```python
 # Independent nodes execute concurrently
 # asyncio.as_completed processes results as they finish
@@ -123,26 +156,30 @@ Rollback: Comp_B → Comp_A (LIFO)
 ```
 
 ## Performance Targets
-| Metric | Target | Notes |
-|:---|:---|:---|
-| P99 Latency | <5ms | Validation workflows |
-| Throughput | >100 RPS | DAG parallel execution |
-| Compliance | 100% | Constitutional hash mandatory |
-| Compensation | <30s | Saga rollback timeout |
+
+| Metric       | Target   | Notes                         |
+| :----------- | :------- | :---------------------------- |
+| P99 Latency  | <5ms     | Validation workflows          |
+| Throughput   | >100 RPS | DAG parallel execution        |
+| Compliance   | 100%     | Constitutional hash mandatory |
+| Compensation | <30s     | Saga rollback timeout         |
 
 ## Implementation Status
-| Component | Status | Description |
-|:---|:---|:---|
-| Base Abstractions | ✅ Complete | Workflow, Step, Context, Result, Activities |
-| DAG Executor | ✅ Complete | Parallel execution with cycle detection |
-| Saga Pattern | ✅ Complete | LIFO compensation with retries |
-| Constitutional Validation | ✅ Complete | Multi-stage validation workflow |
-| Voting Workflow | ✅ Complete | Majority/unanimous/weighted strategies |
-| Handoff Workflow | ✅ Complete | Agent-to-agent state transfer |
-| Template Engine | ✅ Complete | YAML workflow definitions |
-| Test Suite | ✅ Complete | 50+ test cases |
+
+| Component                 | Status      | Description                                 |
+| :------------------------ | :---------- | :------------------------------------------ |
+| Base Abstractions         | ✅ Complete | Workflow, Step, Context, Result, Activities |
+| DAG Executor              | ✅ Complete | Parallel execution with cycle detection     |
+| Saga Pattern              | ✅ Complete | LIFO compensation with retries              |
+| Constitutional Validation | ✅ Complete | Multi-stage validation workflow             |
+| Voting Workflow           | ✅ Complete | Majority/unanimous/weighted strategies      |
+| Handoff Workflow          | ✅ Complete | Agent-to-agent state transfer               |
+| Template Engine           | ✅ Complete | YAML workflow definitions                   |
+| Cyclic Graph              | ✅ Complete | Actor-model stateful orchestration          |
+| Test Suite                | ✅ Complete | 50+ test cases                              |
 
 ## Testing
+
 ```bash
 # Run all workflow tests
 cd .agent/workflows
@@ -156,4 +193,5 @@ python3 -m pytest tests/test_dag_executor.py -v
 ```
 
 ---
-*Related: [Enhanced Agent Bus](../enhanced_agent_bus/) | [Deliberation Layer](../enhanced_agent_bus/deliberation_layer/)*
+
+_Related: [Enhanced Agent Bus](../enhanced_agent_bus/) | [Deliberation Layer](../enhanced_agent_bus/deliberation_layer/)_

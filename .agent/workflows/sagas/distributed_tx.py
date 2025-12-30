@@ -6,10 +6,10 @@ Saga for atomic operations across multiple services/agents.
 """
 
 import logging
-from typing import Any, Dict, Optional, List
+from typing import Any, Dict, List, Optional
 
-from .base_saga import BaseSaga, SagaStep, SagaResult
 from ..base.context import WorkflowContext
+from .base_saga import BaseSaga, SagaResult, SagaStep
 
 try:
     from shared.constants import CONSTITUTIONAL_HASH
@@ -36,10 +36,7 @@ class DistributedTransactionSaga(BaseSaga):
         )
 
     async def execute_transaction(
-        self,
-        context: WorkflowContext,
-        steps: List[SagaStep],
-        input_data: Dict[str, Any]
+        self, context: WorkflowContext, steps: List[SagaStep], input_data: Dict[str, Any]
     ) -> SagaResult:
         """
         Execute a set of transaction steps.
@@ -52,10 +49,7 @@ class DistributedTransactionSaga(BaseSaga):
 
     @classmethod
     async def run_standard_tx(
-        cls,
-        context: WorkflowContext,
-        input_data: Dict[str, Any],
-        activities: Any
+        cls, context: WorkflowContext, input_data: Dict[str, Any], activities: Any
     ) -> SagaResult:
         """
         Helper to run a standard multi-agent transaction.
@@ -63,16 +57,22 @@ class DistributedTransactionSaga(BaseSaga):
         saga = cls(constitutional_hash=context.constitutional_hash)
 
         # Example: Reserve -> Charge -> Process
-        saga.add_step(SagaStep(
-            name="reserve_resource",
-            execute=lambda x: activities.execute_agent_task(x["target_agent"], "reserve", x),
-            compensate=lambda x: activities.execute_agent_task(x["target_agent"], "release", x)
-        ))
+        saga.add_step(
+            SagaStep(
+                name="reserve_resource",
+                execute=lambda x: activities.execute_agent_task(x["target_agent"], "reserve", x),
+                compensate=lambda x: activities.execute_agent_task(x["target_agent"], "release", x),
+            )
+        )
 
-        saga.add_step(SagaStep(
-            name="process_transaction",
-            execute=lambda x: activities.execute_agent_task(x["processor_agent"], "process", x),
-            compensate=lambda x: activities.execute_agent_task(x["processor_agent"], "undo_process", x)
-        ))
+        saga.add_step(
+            SagaStep(
+                name="process_transaction",
+                execute=lambda x: activities.execute_agent_task(x["processor_agent"], "process", x),
+                compensate=lambda x: activities.execute_agent_task(
+                    x["processor_agent"], "undo_process", x
+                ),
+            )
+        )
 
         return await saga.execute(context, input_data)

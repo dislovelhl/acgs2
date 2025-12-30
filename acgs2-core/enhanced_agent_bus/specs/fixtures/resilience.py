@@ -5,12 +5,13 @@ Constitutional Hash: cdd01ef066bc6cf2
 Fixtures for circuit breakers, chaos testing, and saga patterns.
 """
 
-import pytest
 import asyncio
 from dataclasses import dataclass, field
-from typing import Optional, Dict, Any, Callable, List, Awaitable
-from enum import Enum
 from datetime import datetime, timezone
+from enum import Enum
+from typing import Any, Awaitable, Callable, Dict, List, Optional
+
+import pytest
 
 try:
     from shared.constants import CONSTITUTIONAL_HASH

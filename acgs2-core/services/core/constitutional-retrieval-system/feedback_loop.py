@@ -6,14 +6,13 @@ based on decision outcomes, user feedback, and performance metrics.
 """
 
 import logging
-from typing import List, Dict, Any, Optional
-from datetime import datetime, timedelta, timezone
 from collections import defaultdict
-import asyncio
+from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional
 
-from vector_database import VectorDatabaseManager
 from document_processor import DocumentProcessor
 from retrieval_engine import RetrievalEngine
+from vector_database import VectorDatabaseManager
 
 logger = logging.getLogger(__name__)
 
@@ -21,9 +20,12 @@ logger = logging.getLogger(__name__)
 class FeedbackLoop:
     """Manages feedback collection and index updates for continuous improvement."""
 
-    def __init__(self, vector_db: VectorDatabaseManager,
-                 doc_processor: DocumentProcessor,
-                 retrieval_engine: RetrievalEngine):
+    def __init__(
+        self,
+        vector_db: VectorDatabaseManager,
+        doc_processor: DocumentProcessor,
+        retrieval_engine: RetrievalEngine,
+    ):
         """
         Initialize feedback loop.
 
@@ -45,10 +47,13 @@ class FeedbackLoop:
         self.update_interval_days = 7  # Update every 7 days
         self.last_update = datetime.now(timezone.utc)
 
-    async def collect_decision_feedback(self, query: str,
-                                      retrieved_documents: List[Dict[str, Any]],
-                                      decision: Dict[str, Any],
-                                      user_feedback: Optional[Dict[str, Any]] = None) -> str:
+    async def collect_decision_feedback(
+        self,
+        query: str,
+        retrieved_documents: List[Dict[str, Any]],
+        decision: Dict[str, Any],
+        user_feedback: Optional[Dict[str, Any]] = None,
+    ) -> str:
         """
         Collect feedback on a decision and retrieved documents.
 
@@ -72,7 +77,7 @@ class FeedbackLoop:
             "user_feedback": user_feedback or {},
             "retrieval_quality": self._assess_retrieval_quality(retrieved_documents, decision),
             "decision_confidence": decision.get("confidence", 0.0),
-            "processed": False
+            "processed": False,
         }
 
         self.feedback_history.append(feedback_entry)
@@ -121,15 +126,16 @@ class FeedbackLoop:
                 "status": "success",
                 "updates_applied": len(index_updates),
                 "feedback_processed": len(self.feedback_history),
-                "metrics": self.performance_metrics.copy()
+                "metrics": self.performance_metrics.copy(),
             }
 
         except Exception as e:
             logger.error(f"Index update failed: {e}")
             return {"status": "error", "message": str(e)}
 
-    async def add_new_knowledge(self, documents: List[Dict[str, Any]],
-                              source: str = "manual") -> bool:
+    async def add_new_knowledge(
+        self, documents: List[Dict[str, Any]], source: str = "manual"
+    ) -> bool:
         """
         Add new documents to the knowledge base.
 
@@ -152,7 +158,7 @@ class FeedbackLoop:
                     "type": "knowledge_addition",
                     "documents_added": len(documents),
                     "source": source,
-                    "processed": True
+                    "processed": True,
                 }
                 self.feedback_history.append(feedback_entry)
 
@@ -171,13 +177,15 @@ class FeedbackLoop:
         total_feedback = len(self.feedback_history)
         processed_feedback = sum(1 for f in self.feedback_history if f.get("processed", False))
 
-        metrics.update({
-            "total_feedback_collected": total_feedback,
-            "processed_feedback": processed_feedback,
-            "pending_feedback": total_feedback - processed_feedback,
-            "last_update": self.last_update.isoformat(),
-            "days_since_update": (datetime.now(timezone.utc) - self.last_update).days
-        })
+        metrics.update(
+            {
+                "total_feedback_collected": total_feedback,
+                "processed_feedback": processed_feedback,
+                "pending_feedback": total_feedback - processed_feedback,
+                "last_update": self.last_update.isoformat(),
+                "days_since_update": (datetime.now(timezone.utc) - self.last_update).days,
+            }
+        )
 
         return metrics
 
@@ -202,15 +210,16 @@ class FeedbackLoop:
             return {
                 "status": "success",
                 "recommendations": recommendations,
-                "analysis": performance_analysis
+                "analysis": performance_analysis,
             }
 
         except Exception as e:
             logger.error(f"Parameter optimization failed: {e}")
             return {"status": "error", "message": str(e)}
 
-    def _assess_retrieval_quality(self, documents: List[Dict[str, Any]],
-                                decision: Dict[str, Any]) -> Dict[str, Any]:
+    def _assess_retrieval_quality(
+        self, documents: List[Dict[str, Any]], decision: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Assess the quality of document retrieval."""
         if not documents:
             return {"quality_score": 0.0, "issues": ["no_documents_retrieved"]}
@@ -232,7 +241,7 @@ class FeedbackLoop:
             "average_score": avg_score,
             "high_relevance_count": high_relevance_count,
             "total_documents": len(documents),
-            "issues": issues
+            "issues": issues,
         }
 
     def _analyze_feedback_patterns(self) -> Dict[str, Any]:
@@ -246,7 +255,7 @@ class FeedbackLoop:
             "avg_decision_confidence": 0.0,
             "common_issues": defaultdict(int),
             "decision_distribution": defaultdict(int),
-            "query_categories": defaultdict(int)
+            "query_categories": defaultdict(int),
         }
 
         total_feedback = len(self.feedback_history)
@@ -286,31 +295,37 @@ class FeedbackLoop:
 
         # If retrieval quality is low, suggest adding more documents
         if feedback_analysis.get("avg_retrieval_quality", 1.0) < 0.7:
-            updates.append({
-                "type": "add_documents",
-                "reason": "low_retrieval_quality",
-                "priority": "high",
-                "description": "Add more comprehensive constitutional documents"
-            })
+            updates.append(
+                {
+                    "type": "add_documents",
+                    "reason": "low_retrieval_quality",
+                    "priority": "high",
+                    "description": "Add more comprehensive constitutional documents",
+                }
+            )
 
         # If decision confidence is low, suggest better indexing
         if feedback_analysis.get("avg_decision_confidence", 1.0) < 0.6:
-            updates.append({
-                "type": "reindex_documents",
-                "reason": "low_decision_confidence",
-                "priority": "medium",
-                "description": "Re-index documents with improved chunking strategy"
-            })
+            updates.append(
+                {
+                    "type": "reindex_documents",
+                    "reason": "low_decision_confidence",
+                    "priority": "medium",
+                    "description": "Re-index documents with improved chunking strategy",
+                }
+            )
 
         # Address common issues
         common_issues = feedback_analysis.get("common_issues", {})
         if "no_highly_relevant_documents" in common_issues:
-            updates.append({
-                "type": "expand_coverage",
-                "reason": "missing_relevant_documents",
-                "priority": "high",
-                "description": "Add documents covering underrepresented legal areas"
-            })
+            updates.append(
+                {
+                    "type": "expand_coverage",
+                    "reason": "missing_relevant_documents",
+                    "priority": "high",
+                    "description": "Add documents covering underrepresented legal areas",
+                }
+            )
 
         return updates
 
@@ -348,24 +363,29 @@ class FeedbackLoop:
 
         return results
 
-    def _update_performance_metrics(self, feedback_analysis: Dict[str, Any],
-                                  update_results: Dict[str, Any]) -> None:
+    def _update_performance_metrics(
+        self, feedback_analysis: Dict[str, Any], update_results: Dict[str, Any]
+    ) -> None:
         """Update internal performance metrics."""
-        self.performance_metrics.update({
-            "last_feedback_analysis": feedback_analysis,
-            "last_update_results": update_results,
-            "total_updates_applied": self.performance_metrics.get("total_updates_applied", 0) +
-                                   update_results.get("applied", 0),
-            "update_success_rate": update_results.get("applied", 0) /
-                                 max(update_results.get("applied", 0) + update_results.get("failed", 0), 1)
-        })
+        self.performance_metrics.update(
+            {
+                "last_feedback_analysis": feedback_analysis,
+                "last_update_results": update_results,
+                "total_updates_applied": self.performance_metrics.get("total_updates_applied", 0)
+                + update_results.get("applied", 0),
+                "update_success_rate": update_results.get("applied", 0)
+                / max(update_results.get("applied", 0) + update_results.get("failed", 0), 1),
+            }
+        )
 
     async def _check_and_trigger_update(self) -> None:
         """Check if update should be triggered and execute if needed."""
         days_since_update = (datetime.now(timezone.utc) - self.last_update).days
 
-        if (len(self.feedback_history) >= self.min_feedback_threshold or
-            days_since_update >= self.update_interval_days):
+        if (
+            len(self.feedback_history) >= self.min_feedback_threshold
+            or days_since_update >= self.update_interval_days
+        ):
             logger.info("Triggering automatic index update")
             await self.update_index_from_feedback()
 
@@ -375,7 +395,7 @@ class FeedbackLoop:
             "avg_query_length": 0.0,
             "avg_documents_retrieved": 0.0,
             "retrieval_success_rate": 0.0,
-            "high_confidence_decisions": 0
+            "high_confidence_decisions": 0,
         }
 
         if not self.feedback_history:
@@ -411,14 +431,18 @@ class FeedbackLoop:
         # Adjust retrieval limits based on performance
         avg_docs = performance.get("avg_documents_retrieved", 5)
         if avg_docs < 3:
-            recommendations["increase_retrieval_limit"] = "Increase from current limit to retrieve more documents"
+            recommendations["increase_retrieval_limit"] = (
+                "Increase from current limit to retrieve more documents"
+            )
         elif avg_docs > 10:
             recommendations["decrease_retrieval_limit"] = "Decrease limit to improve relevance"
 
         # Adjust similarity thresholds
         success_rate = performance.get("retrieval_success_rate", 0.0)
         if success_rate < 0.7:
-            recommendations["lower_similarity_threshold"] = "Lower threshold to include more potentially relevant documents"
+            recommendations["lower_similarity_threshold"] = (
+                "Lower threshold to include more potentially relevant documents"
+            )
 
         # Chunk size optimization
         query_length = performance.get("avg_query_length", 100)

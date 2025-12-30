@@ -3,19 +3,18 @@ Tests for Constitutional Profiler
 Constitutional Hash: cdd01ef066bc6cf2
 """
 
-import pytest
 import time
-from datetime import UTC, datetime
 from unittest.mock import MagicMock
 
+import pytest
+
 from nemo_agent_toolkit.profiler import (
+    CONSTITUTIONAL_HASH,
     ConstitutionalProfiler,
     GovernanceMetrics,
-    ProfilerEvent,
-    ProfilerContext,
-    NeMoProfilerBridge,
     MetricType,
-    CONSTITUTIONAL_HASH,
+    NeMoProfilerBridge,
+    ProfilerEvent,
 )
 
 
@@ -256,6 +255,7 @@ class TestConstitutionalProfiler:
 
     def test_remove_callback(self, profiler):
         """Test removing callback."""
+
         def callback(event):
             pass
 

@@ -4,8 +4,8 @@ WebSocket API for real-time policy updates
 
 import asyncio
 import logging
-from typing import Dict, Any
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends
+
+from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect
 
 from ..dependencies import get_notification_service
 
@@ -15,8 +15,7 @@ logger = logging.getLogger(__name__)
 
 @router.websocket("/updates")
 async def policy_updates_websocket(
-    websocket: WebSocket,
-    notification_service = Depends(get_notification_service)
+    websocket: WebSocket, notification_service=Depends(get_notification_service)
 ):
     """WebSocket endpoint for real-time policy updates"""
     await websocket.accept()

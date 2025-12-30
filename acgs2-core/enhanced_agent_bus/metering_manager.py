@@ -7,7 +7,7 @@ Follows the fire-and-forget pattern for zero-latency impact.
 """
 
 import logging
-from typing import Any, Dict, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Dict, Optional
 
 if TYPE_CHECKING:
     from .models import AgentMessage
@@ -86,7 +86,7 @@ class MeteringManager:
 
     def record_agent_message(
         self,
-        message: 'AgentMessage',
+        message: "AgentMessage",
         is_valid: bool,
         latency_ms: float,
     ) -> None:
@@ -105,16 +105,16 @@ class MeteringManager:
 
         try:
             self._metering_hooks.on_agent_message(
-                tenant_id=message.tenant_id or 'default',
+                tenant_id=message.tenant_id or "default",
                 from_agent=message.from_agent,
                 to_agent=message.to_agent,
                 message_type=message.message_type.value,
                 latency_ms=latency_ms,
                 is_valid=is_valid,
                 metadata={
-                    'message_id': message.message_id,
-                    'priority': message.priority.value,
-                    'constitutional_hash': self._constitutional_hash,
+                    "message_id": message.message_id,
+                    "priority": message.priority.value,
+                    "constitutional_hash": self._constitutional_hash,
                 },
             )
         except Exception as e:
@@ -123,7 +123,7 @@ class MeteringManager:
 
     def record_deliberation_request(
         self,
-        message: 'AgentMessage',
+        message: "AgentMessage",
         impact_score: float,
         latency_ms: float,
     ) -> None:
@@ -142,14 +142,14 @@ class MeteringManager:
 
         try:
             self._metering_hooks.on_deliberation_request(
-                tenant_id=message.tenant_id or 'default',
+                tenant_id=message.tenant_id or "default",
                 agent_id=message.from_agent,
                 impact_score=impact_score,
                 latency_ms=latency_ms,
                 metadata={
-                    'message_id': message.message_id,
-                    'message_type': message.message_type.value,
-                    'constitutional_hash': self._constitutional_hash,
+                    "message_id": message.message_id,
+                    "message_type": message.message_type.value,
+                    "constitutional_hash": self._constitutional_hash,
                 },
             )
         except Exception as e:
@@ -178,13 +178,13 @@ class MeteringManager:
 
         try:
             self._metering_hooks.on_validation_result(
-                tenant_id=tenant_id or 'default',
+                tenant_id=tenant_id or "default",
                 agent_id=agent_id,
                 is_valid=is_valid,
                 latency_ms=latency_ms,
                 metadata={
-                    'error_type': error_type,
-                    'constitutional_hash': self._constitutional_hash,
+                    "error_type": error_type,
+                    "constitutional_hash": self._constitutional_hash,
                 },
             )
         except Exception as e:
@@ -229,19 +229,19 @@ def create_metering_manager(
     try:
         try:
             from .metering_integration import (
-                MeteringHooks,
+                METERING_AVAILABLE,
                 AsyncMeteringQueue,
+                MeteringHooks,
                 get_metering_hooks,
                 get_metering_queue,
-                METERING_AVAILABLE,
             )
         except ImportError:
             from metering_integration import (
-                MeteringHooks,
+                METERING_AVAILABLE,
                 AsyncMeteringQueue,
+                MeteringHooks,
                 get_metering_hooks,
                 get_metering_queue,
-                METERING_AVAILABLE,
             )
 
         if not METERING_AVAILABLE:

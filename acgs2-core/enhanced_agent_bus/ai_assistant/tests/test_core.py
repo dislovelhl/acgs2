@@ -3,24 +3,23 @@ ACGS-2 AI Assistant - Core Orchestrator Tests
 Constitutional Hash: cdd01ef066bc6cf2
 """
 
-import pytest
-from typing import Dict, Any
-
-import sys
 import os
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
+import sys
+
+import pytest
+
+sys.path.insert(
+    0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+)
 
 from enhanced_agent_bus.ai_assistant.core import (
     AIAssistant,
     AssistantConfig,
     AssistantState,
     ProcessingResult,
-    ConversationListener,
     create_assistant,
 )
-from enhanced_agent_bus.ai_assistant.context import ConversationContext, ConversationState
-from enhanced_agent_bus.ai_assistant.nlu import NLUEngine, NLUResult
-from enhanced_agent_bus.ai_assistant.dialog import DialogManager
+from enhanced_agent_bus.ai_assistant.nlu import NLUResult
 
 # Import centralized constitutional hash with fallback
 try:
@@ -139,9 +138,7 @@ class TestAIAssistant:
     @pytest.mark.asyncio
     async def test_initialize(self):
         """Test assistant initialization."""
-        assistant = AIAssistant(
-            config=AssistantConfig(enable_governance=False)
-        )
+        assistant = AIAssistant(config=AssistantConfig(enable_governance=False))
 
         result = await assistant.initialize()
 
@@ -152,9 +149,7 @@ class TestAIAssistant:
     @pytest.mark.asyncio
     async def test_shutdown(self):
         """Test assistant shutdown."""
-        assistant = AIAssistant(
-            config=AssistantConfig(enable_governance=False)
-        )
+        assistant = AIAssistant(config=AssistantConfig(enable_governance=False))
         await assistant.initialize()
 
         await assistant.shutdown()
@@ -176,9 +171,7 @@ class TestAIAssistant:
     @pytest.mark.asyncio
     async def test_process_message_success(self):
         """Test successful message processing."""
-        assistant = AIAssistant(
-            config=AssistantConfig(enable_governance=False)
-        )
+        assistant = AIAssistant(config=AssistantConfig(enable_governance=False))
         await assistant.initialize()
 
         result = await assistant.process_message(
@@ -195,9 +188,7 @@ class TestAIAssistant:
     @pytest.mark.asyncio
     async def test_process_message_returns_intent(self):
         """Test that processing returns intent."""
-        assistant = AIAssistant(
-            config=AssistantConfig(enable_governance=False)
-        )
+        assistant = AIAssistant(config=AssistantConfig(enable_governance=False))
         await assistant.initialize()
 
         result = await assistant.process_message(
@@ -212,9 +203,7 @@ class TestAIAssistant:
     @pytest.mark.asyncio
     async def test_process_message_with_session(self):
         """Test processing with session ID."""
-        assistant = AIAssistant(
-            config=AssistantConfig(enable_governance=False)
-        )
+        assistant = AIAssistant(config=AssistantConfig(enable_governance=False))
         await assistant.initialize()
 
         result = await assistant.process_message(
@@ -233,9 +222,7 @@ class TestAIAssistantSessionManagement:
     @pytest.mark.asyncio
     async def test_get_session(self):
         """Test getting an active session."""
-        assistant = AIAssistant(
-            config=AssistantConfig(enable_governance=False)
-        )
+        assistant = AIAssistant(config=AssistantConfig(enable_governance=False))
         await assistant.initialize()
 
         await assistant.process_message(
@@ -252,9 +239,7 @@ class TestAIAssistantSessionManagement:
     @pytest.mark.asyncio
     async def test_get_user_sessions(self):
         """Test getting sessions for a user."""
-        assistant = AIAssistant(
-            config=AssistantConfig(enable_governance=False)
-        )
+        assistant = AIAssistant(config=AssistantConfig(enable_governance=False))
         await assistant.initialize()
 
         await assistant.process_message("user123", "Hello", "session1")
@@ -268,9 +253,7 @@ class TestAIAssistantSessionManagement:
     @pytest.mark.asyncio
     async def test_end_session(self):
         """Test ending a session."""
-        assistant = AIAssistant(
-            config=AssistantConfig(enable_governance=False)
-        )
+        assistant = AIAssistant(config=AssistantConfig(enable_governance=False))
         await assistant.initialize()
 
         await assistant.process_message(
@@ -287,9 +270,7 @@ class TestAIAssistantSessionManagement:
     @pytest.mark.asyncio
     async def test_end_nonexistent_session(self):
         """Test ending a session that doesn't exist."""
-        assistant = AIAssistant(
-            config=AssistantConfig(enable_governance=False)
-        )
+        assistant = AIAssistant(config=AssistantConfig(enable_governance=False))
         await assistant.initialize()
 
         result = assistant.end_session("nonexistent")
@@ -303,9 +284,7 @@ class TestAIAssistantConversationFlow:
     @pytest.mark.asyncio
     async def test_multi_turn_conversation(self):
         """Test multi-turn conversation."""
-        assistant = AIAssistant(
-            config=AssistantConfig(enable_governance=False)
-        )
+        assistant = AIAssistant(config=AssistantConfig(enable_governance=False))
         await assistant.initialize()
 
         # First turn
@@ -339,9 +318,7 @@ class TestAIAssistantConversationFlow:
     @pytest.mark.asyncio
     async def test_context_preserved_across_turns(self):
         """Test that context is preserved across turns."""
-        assistant = AIAssistant(
-            config=AssistantConfig(enable_governance=False)
-        )
+        assistant = AIAssistant(config=AssistantConfig(enable_governance=False))
         await assistant.initialize()
 
         await assistant.process_message(
@@ -362,9 +339,7 @@ class TestAIAssistantMetrics:
     @pytest.mark.asyncio
     async def test_get_metrics(self):
         """Test getting assistant metrics."""
-        assistant = AIAssistant(
-            config=AssistantConfig(enable_governance=False)
-        )
+        assistant = AIAssistant(config=AssistantConfig(enable_governance=False))
         await assistant.initialize()
 
         await assistant.process_message("user123", "Hello")
@@ -380,9 +355,7 @@ class TestAIAssistantMetrics:
     @pytest.mark.asyncio
     async def test_get_health(self):
         """Test getting health status."""
-        assistant = AIAssistant(
-            config=AssistantConfig(enable_governance=False)
-        )
+        assistant = AIAssistant(config=AssistantConfig(enable_governance=False))
         await assistant.initialize()
 
         health = assistant.get_health()
@@ -397,6 +370,7 @@ class TestAIAssistantListeners:
     @pytest.mark.asyncio
     async def test_add_listener(self):
         """Test adding a listener."""
+
         class MockListener:
             def __init__(self):
                 self.messages_received = []
@@ -411,9 +385,7 @@ class TestAIAssistantListeners:
             async def on_error(self, context, error):
                 pass
 
-        assistant = AIAssistant(
-            config=AssistantConfig(enable_governance=False)
-        )
+        assistant = AIAssistant(config=AssistantConfig(enable_governance=False))
         listener = MockListener()
         assistant.add_listener(listener)
 
@@ -426,6 +398,7 @@ class TestAIAssistantListeners:
     @pytest.mark.asyncio
     async def test_remove_listener(self):
         """Test removing a listener."""
+
         class MockListener:
             def __init__(self):
                 self.call_count = 0
@@ -439,9 +412,7 @@ class TestAIAssistantListeners:
             async def on_error(self, context, error):
                 pass
 
-        assistant = AIAssistant(
-            config=AssistantConfig(enable_governance=False)
-        )
+        assistant = AIAssistant(config=AssistantConfig(enable_governance=False))
         listener = MockListener()
         assistant.add_listener(listener)
         assistant.remove_listener(listener)
@@ -491,9 +462,7 @@ class TestAIAssistantErrorHandling:
     @pytest.mark.asyncio
     async def test_empty_message(self):
         """Test handling empty message."""
-        assistant = AIAssistant(
-            config=AssistantConfig(enable_governance=False)
-        )
+        assistant = AIAssistant(config=AssistantConfig(enable_governance=False))
         await assistant.initialize()
 
         result = await assistant.process_message(
@@ -507,9 +476,7 @@ class TestAIAssistantErrorHandling:
     @pytest.mark.asyncio
     async def test_whitespace_message(self):
         """Test handling whitespace-only message."""
-        assistant = AIAssistant(
-            config=AssistantConfig(enable_governance=False)
-        )
+        assistant = AIAssistant(config=AssistantConfig(enable_governance=False))
         await assistant.initialize()
 
         result = await assistant.process_message(
@@ -527,6 +494,7 @@ class TestAIAssistantCustomComponents:
     @pytest.mark.asyncio
     async def test_custom_nlu_engine(self):
         """Test using custom NLU engine."""
+
         class MockNLUEngine:
             async def process(self, text, context=None):
                 return NLUResult(
@@ -547,7 +515,7 @@ class TestAIAssistantCustomComponents:
     @pytest.mark.asyncio
     async def test_custom_dialog_manager(self):
         """Test using custom dialog manager."""
-        from enhanced_agent_bus.ai_assistant.dialog import DialogAction, ActionType
+        from enhanced_agent_bus.ai_assistant.dialog import ActionType, DialogAction
 
         class MockDialogManager:
             async def process_turn(self, context, nlu_result):

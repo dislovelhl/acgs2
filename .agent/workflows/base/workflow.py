@@ -9,15 +9,15 @@ step execution, compensation handling, and audit recording.
 
 import asyncio
 import logging
+import uuid
 from abc import ABC, abstractmethod
 from datetime import datetime, timezone
-from typing import Any, Callable, Dict, List, Optional, Awaitable
-import uuid
+from typing import Any, Dict, List, Optional
 
+from .activities import BaseActivities, get_default_activities
 from .context import WorkflowContext
 from .result import WorkflowResult, WorkflowStatus
-from .step import WorkflowStep, StepCompensation, StepStatus
-from .activities import BaseActivities, get_default_activities
+from .step import StepCompensation, WorkflowStep
 
 try:
     from shared.constants import CONSTITUTIONAL_HASH
@@ -27,6 +27,7 @@ except ImportError:
 # Metrics integration
 try:
     from shared import metrics
+
     HAS_METRICS = True
 except ImportError:
     HAS_METRICS = False
@@ -34,12 +35,15 @@ except ImportError:
 try:
     from enhanced_agent_bus.exceptions import ConstitutionalHashMismatchError
 except ImportError:
+
     class ConstitutionalHashMismatchError(Exception):
         def __init__(self, expected_hash: str, actual_hash: str, context: Optional[str] = None):
             self.expected_hash = expected_hash
             self.actual_hash = actual_hash
             self.context = context
-            super().__init__(f"Constitutional hash mismatch: expected {expected_hash}, got {actual_hash}")
+            super().__init__(
+                f"Constitutional hash mismatch: expected {expected_hash}, got {actual_hash}"
+            )
 
 
 logger = logging.getLogger(__name__)
@@ -161,10 +165,7 @@ class BaseWorkflow(ABC):
 
         try:
             # Execute with timeout
-            result = await asyncio.wait_for(
-                self.execute(input),
-                timeout=self.timeout_seconds
-            )
+            result = await asyncio.wait_for(self.execute(input), timeout=self.timeout_seconds)
             return result
 
         except asyncio.TimeoutError:
@@ -203,21 +204,16 @@ class BaseWorkflow(ABC):
                 try:
                     duration_s = self._get_elapsed_time_ms() / 1000.0
                     metrics.WORKFLOW_EXECUTION_DURATION.labels(
-                        workflow_name=self.workflow_name,
-                        status=self._status.value
+                        workflow_name=self.workflow_name, status=self._status.value
                     ).observe(duration_s)
 
                     metrics.WORKFLOW_EXECUTIONS_TOTAL.labels(
-                        workflow_name=self.workflow_name,
-                        status=self._status.value
+                        workflow_name=self.workflow_name, status=self._status.value
                     ).inc()
                 except Exception as me:
                     logger.debug(f"Failed to emit workflow metrics: {me}")
 
-    async def validate_constitutional_hash(
-        self,
-        provided_hash: Optional[str] = None
-    ) -> bool:
+    async def validate_constitutional_hash(self, provided_hash: Optional[str] = None) -> bool:
         """
         Validate constitutional hash.
 
@@ -314,8 +310,7 @@ class BaseWorkflow(ABC):
 
                 # Execute with timeout
                 result = await asyncio.wait_for(
-                    step.execute(step_input),
-                    timeout=step.timeout_seconds
+                    step.execute(step_input), timeout=step.timeout_seconds
                 )
 
                 # Success
@@ -334,9 +329,7 @@ class BaseWorkflow(ABC):
                 if HAS_METRICS:
                     try:
                         metrics.WORKFLOW_STEP_DURATION.labels(
-                            workflow_name=self.workflow_name,
-                            step_name=step.name,
-                            status="success"
+                            workflow_name=self.workflow_name, step_name=step.name, status="success"
                         ).observe(step.execution_time_ms / 1000.0)
                     except Exception as me:
                         logger.debug(f"Failed to emit step metrics: {me}")
@@ -366,8 +359,7 @@ class BaseWorkflow(ABC):
                 if HAS_METRICS:
                     try:
                         metrics.WORKFLOW_STEP_RETRIES_TOTAL.labels(
-                            workflow_name=self.workflow_name,
-                            step_name=step.name
+                            workflow_name=self.workflow_name, step_name=step.name
                         ).inc()
                     except Exception as me:
                         logger.debug(f"Failed to emit retry metrics: {me}")
@@ -389,19 +381,14 @@ class BaseWorkflow(ABC):
         if HAS_METRICS:
             try:
                 metrics.WORKFLOW_STEP_DURATION.labels(
-                    workflow_name=self.workflow_name,
-                    step_name=step.name,
-                    status="failed"
+                    workflow_name=self.workflow_name, step_name=step.name, status="failed"
                 ).observe(step.execution_time_ms / 1000.0)
             except Exception as me:
                 logger.debug(f"Failed to emit step metrics: {me}")
 
         return None
 
-    def register_compensation(
-        self,
-        compensation: StepCompensation
-    ) -> None:
+    def register_compensation(self, compensation: StepCompensation) -> None:
         """
         Register a compensation action.
 
@@ -438,7 +425,8 @@ class BaseWorkflow(ABC):
                     "workflow_id": self.workflow_id,
                     "compensation_name": compensation.name,
                     "context": self._context.step_results if self._context else {},
-                    "idempotency_key": compensation.idempotency_key or f"{self.workflow_id}:{compensation.name}",
+                    "idempotency_key": compensation.idempotency_key
+                    or f"{self.workflow_id}:{compensation.name}",
                 }
 
                 success = False
@@ -479,11 +467,7 @@ class BaseWorkflow(ABC):
 
         return executed
 
-    async def complete(
-        self,
-        output: Any,
-        record_audit: bool = True
-    ) -> WorkflowResult:
+    async def complete(self, output: Any, record_audit: bool = True) -> WorkflowResult:
         """
         Complete the workflow successfully.
 
@@ -507,7 +491,7 @@ class BaseWorkflow(ABC):
                         "output": output,
                         "steps_completed": self._completed_steps,
                         "execution_time_ms": self._get_elapsed_time_ms(),
-                    }
+                    },
                 )
             except Exception as e:
                 logger.warning(f"Audit recording failed: {e}")

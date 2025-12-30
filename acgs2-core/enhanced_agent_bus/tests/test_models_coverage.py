@@ -5,28 +5,29 @@ Constitutional Hash: cdd01ef066bc6cf2
 Extended tests to increase models.py coverage.
 """
 
-import pytest
 from datetime import datetime, timezone
+
+import pytest
 
 try:
     from enhanced_agent_bus.models import (
+        CONSTITUTIONAL_HASH,
         AgentMessage,
+        DecisionLog,
+        MessageStatus,
         MessageType,
         Priority,
-        MessageStatus,
-        DecisionLog,
         RoutingContext,
-        CONSTITUTIONAL_HASH,
     )
 except ImportError:
     from models import (
+        CONSTITUTIONAL_HASH,
         AgentMessage,
+        DecisionLog,
+        MessageStatus,
         MessageType,
         Priority,
-        MessageStatus,
-        DecisionLog,
         RoutingContext,
-        CONSTITUTIONAL_HASH,
     )
 
 

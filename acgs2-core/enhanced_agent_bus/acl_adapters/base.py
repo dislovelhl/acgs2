@@ -13,7 +13,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, Callable, Generic, Optional, TypeVar
+from typing import Generic, Optional, TypeVar
 
 try:
     from shared.constants import CONSTITUTIONAL_HASH
@@ -210,9 +210,7 @@ class SimpleCircuitBreaker:
                 self._state = AdapterState.CLOSED
                 self._failure_count = 0
                 self._success_count = 0
-                logger.info(
-                    f"[{CONSTITUTIONAL_HASH}] Circuit breaker recovered to CLOSED"
-                )
+                logger.info(f"[{CONSTITUTIONAL_HASH}] Circuit breaker recovered to CLOSED")
         elif self._state == AdapterState.CLOSED:
             # Decrement failure count on success (sliding window effect)
             self._failure_count = max(0, self._failure_count - 1)
@@ -225,9 +223,7 @@ class SimpleCircuitBreaker:
         if self._state == AdapterState.HALF_OPEN:
             # Any failure in half-open returns to open
             self._state = AdapterState.OPEN
-            logger.warning(
-                f"[{CONSTITUTIONAL_HASH}] Circuit breaker reopened from HALF_OPEN"
-            )
+            logger.warning(f"[{CONSTITUTIONAL_HASH}] Circuit breaker reopened from HALF_OPEN")
         elif self._state == AdapterState.CLOSED:
             self._failure_count += 1
             if self._failure_count >= self.failure_threshold:
@@ -264,9 +260,7 @@ class TokenBucketRateLimiter:
             self._last_update = now
 
             # Add tokens based on elapsed time
-            self._tokens = min(
-                self.burst, self._tokens + elapsed * self.rate_per_second
-            )
+            self._tokens = min(self.burst, self._tokens + elapsed * self.rate_per_second)
 
             if self._tokens >= 1.0:
                 self._tokens -= 1.0
@@ -380,9 +374,7 @@ class ACLAdapter(ABC, Generic[T, R]):
         try:
             # 1. Check rate limit
             if not await self.rate_limiter.acquire():
-                raise RateLimitExceededError(
-                    self.name, self.config.rate_limit_per_second
-                )
+                raise RateLimitExceededError(self.name, self.config.rate_limit_per_second)
 
             # 2. Check cache
             if self.config.cache_enabled:
@@ -425,9 +417,7 @@ class ACLAdapter(ABC, Generic[T, R]):
 
                 except asyncio.TimeoutError:
                     self.circuit_breaker.record_failure()
-                    result.error = AdapterTimeoutError(
-                        self.name, self.config.timeout_ms
-                    )
+                    result.error = AdapterTimeoutError(self.name, self.config.timeout_ms)
                     result.retry_count = attempt
 
                     if attempt < self.config.max_retries:
@@ -495,8 +485,7 @@ class ACLAdapter(ABC, Generic[T, R]):
     async def _backoff(self, attempt: int) -> None:
         """Calculate and apply exponential backoff."""
         delay_ms = min(
-            self.config.retry_base_delay_ms
-            * (self.config.retry_exponential_base**attempt),
+            self.config.retry_base_delay_ms * (self.config.retry_exponential_base**attempt),
             self.config.retry_max_delay_ms,
         )
         await asyncio.sleep(delay_ms / 1000.0)
@@ -535,9 +524,7 @@ class ACLAdapter(ABC, Generic[T, R]):
             "fallback_uses": self._fallback_uses,
             "circuit_state": self.circuit_breaker.state.value,
             "success_rate": (
-                self._successful_calls / self._total_calls
-                if self._total_calls > 0
-                else 0.0
+                self._successful_calls / self._total_calls if self._total_calls > 0 else 0.0
             ),
             "cache_hit_rate": (
                 self._cache_hits / self._total_calls if self._total_calls > 0 else 0.0

@@ -6,14 +6,14 @@ Constitutional Hash: cdd01ef066bc6cf2
 import pytest
 
 from ..opa_adapter import (
+    CONSTITUTIONAL_HASH,
     OPAAdapter,
     OPAAdapterConfig,
     OPARequest,
     OPAResponse,
-    check_constitutional_compliance,
     check_agent_permission,
+    check_constitutional_compliance,
     evaluate_maci_role,
-    CONSTITUTIONAL_HASH,
 )
 
 

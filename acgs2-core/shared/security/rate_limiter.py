@@ -24,7 +24,6 @@ Usage:
     )
 """
 
-import asyncio
 import hashlib
 import logging
 import os
@@ -32,11 +31,11 @@ import time
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional
 
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
-from starlette.responses import Response, JSONResponse
+from starlette.responses import JSONResponse, Response
 
 # Constitutional hash for validation
 CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
@@ -46,10 +45,12 @@ logger = logging.getLogger(__name__)
 # Redis client - optional dependency
 try:
     import redis.asyncio as aioredis
+
     REDIS_AVAILABLE = True
 except ImportError:
     try:
         import aioredis
+
         REDIS_AVAILABLE = True
     except ImportError:
         aioredis = None
@@ -58,6 +59,7 @@ except ImportError:
 
 class RateLimitScope(str, Enum):
     """Scope for rate limiting."""
+
     IP = "ip"
     TENANT = "tenant"
     ENDPOINT = "endpoint"
@@ -67,6 +69,7 @@ class RateLimitScope(str, Enum):
 
 class RateLimitAlgorithm(str, Enum):
     """Rate limiting algorithm."""
+
     SLIDING_WINDOW = "sliding_window"
     TOKEN_BUCKET = "token_bucket"
     FIXED_WINDOW = "fixed_window"
@@ -84,6 +87,7 @@ class RateLimitRule:
         endpoints: Optional list of endpoint patterns to apply to
         burst_multiplier: Allow burst above limit temporarily
     """
+
     requests: int
     window_seconds: int
     scope: RateLimitScope = RateLimitScope.IP
@@ -110,22 +114,25 @@ class RateLimitConfig:
         exempt_paths: Paths exempt from rate limiting
         key_prefix: Redis key prefix
     """
+
     redis_url: str = "redis://localhost:6379/0"
     enabled: bool = True
     rules: List[RateLimitRule] = field(default_factory=list)
     algorithm: RateLimitAlgorithm = RateLimitAlgorithm.SLIDING_WINDOW
     fail_open: bool = True  # Allow when Redis down
     include_response_headers: bool = True
-    exempt_paths: List[str] = field(default_factory=lambda: [
-        "/health",
-        "/healthz",
-        "/ready",
-        "/readyz",
-        "/metrics",
-        "/docs",
-        "/redoc",
-        "/openapi.json",
-    ])
+    exempt_paths: List[str] = field(
+        default_factory=lambda: [
+            "/health",
+            "/healthz",
+            "/ready",
+            "/readyz",
+            "/metrics",
+            "/docs",
+            "/redoc",
+            "/openapi.json",
+        ]
+    )
     key_prefix: str = "acgs2:ratelimit"
     audit_enabled: bool = True
 
@@ -139,49 +146,52 @@ class RateLimitConfig:
         ip_limit = int(os.environ.get("RATE_LIMIT_IP_REQUESTS", "100"))
         ip_window = int(os.environ.get("RATE_LIMIT_IP_WINDOW", "60"))
         if ip_limit > 0:
-            rules.append(RateLimitRule(
-                requests=ip_limit,
-                window_seconds=ip_window,
-                scope=RateLimitScope.IP,
-            ))
+            rules.append(
+                RateLimitRule(
+                    requests=ip_limit,
+                    window_seconds=ip_window,
+                    scope=RateLimitScope.IP,
+                )
+            )
 
         # Tenant-based rule
         tenant_limit = int(os.environ.get("RATE_LIMIT_TENANT_REQUESTS", "1000"))
         tenant_window = int(os.environ.get("RATE_LIMIT_TENANT_WINDOW", "60"))
         if tenant_limit > 0:
-            rules.append(RateLimitRule(
-                requests=tenant_limit,
-                window_seconds=tenant_window,
-                scope=RateLimitScope.TENANT,
-            ))
+            rules.append(
+                RateLimitRule(
+                    requests=tenant_limit,
+                    window_seconds=tenant_window,
+                    scope=RateLimitScope.TENANT,
+                )
+            )
 
         # Global fallback rule
         global_limit = int(os.environ.get("RATE_LIMIT_GLOBAL_REQUESTS", "10000"))
         global_window = int(os.environ.get("RATE_LIMIT_GLOBAL_WINDOW", "60"))
         if global_limit > 0:
-            rules.append(RateLimitRule(
-                requests=global_limit,
-                window_seconds=global_window,
-                scope=RateLimitScope.GLOBAL,
-            ))
+            rules.append(
+                RateLimitRule(
+                    requests=global_limit,
+                    window_seconds=global_window,
+                    scope=RateLimitScope.GLOBAL,
+                )
+            )
 
         return cls(
             redis_url=os.environ.get("REDIS_URL", "redis://localhost:6379/0"),
             enabled=os.environ.get("RATE_LIMIT_ENABLED", "true").lower() == "true",
             rules=rules,
             fail_open=os.environ.get("RATE_LIMIT_FAIL_OPEN", "true").lower() == "true",
-            include_response_headers=os.environ.get(
-                "RATE_LIMIT_HEADERS", "true"
-            ).lower() == "true",
-            audit_enabled=os.environ.get(
-                "RATE_LIMIT_AUDIT", "true"
-            ).lower() == "true",
+            include_response_headers=os.environ.get("RATE_LIMIT_HEADERS", "true").lower() == "true",
+            audit_enabled=os.environ.get("RATE_LIMIT_AUDIT", "true").lower() == "true",
         )
 
 
 @dataclass
 class RateLimitResult:
     """Result of a rate limit check."""
+
     allowed: bool
     limit: int
     remaining: int
@@ -353,9 +363,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                     self.redis,
                     self.config.key_prefix,
                 )
-                logger.info(
-                    f"Rate limiter initialized with Redis: {self.config.redis_url}"
-                )
+                logger.info(f"Rate limiter initialized with Redis: {self.config.redis_url}")
             except Exception as e:
                 logger.warning(f"Failed to connect to Redis for rate limiting: {e}")
                 self.limiter = SlidingWindowRateLimiter(None, self.config.key_prefix)
@@ -500,10 +508,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         for rule in self.config.rules:
             # Check if rule applies to this endpoint
             if rule.endpoints:
-                path_matches = any(
-                    request.url.path.startswith(ep)
-                    for ep in rule.endpoints
-                )
+                path_matches = any(request.url.path.startswith(ep) for ep in rule.endpoints)
                 if not path_matches:
                     continue
 

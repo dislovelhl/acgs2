@@ -9,10 +9,10 @@ import logging
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Type
+
 import yaml
 
 from ..base.workflow import BaseWorkflow
-from ..base.context import WorkflowContext
 
 try:
     from shared.constants import CONSTITUTIONAL_HASH
@@ -37,6 +37,7 @@ class WorkflowTemplate:
         steps: Step definitions
         config: Workflow configuration
     """
+
     name: str
     version: str
     description: str
@@ -134,11 +135,7 @@ class TemplateEngine:
         self._actions[name] = action
         logger.debug(f"Registered action: {name}")
 
-    def register_workflow_type(
-        self,
-        name: str,
-        workflow_class: Type[BaseWorkflow]
-    ) -> None:
+    def register_workflow_type(self, name: str, workflow_class: Type[BaseWorkflow]) -> None:
         """
         Register a workflow type.
 

@@ -6,13 +6,13 @@ Sophisticated context management with constitutional validation,
 entity tracking, and conversation state management.
 """
 
+import hashlib
+import json
 import logging
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional, Callable, Union
 from enum import Enum
-import hashlib
-import json
+from typing import Any, Dict, List, Optional, Union
 
 # Import centralized constitutional hash with fallback
 try:
@@ -25,6 +25,7 @@ logger = logging.getLogger(__name__)
 
 class ConversationState(Enum):
     """Conversation state enumeration."""
+
     INITIALIZED = "initialized"
     ACTIVE = "active"
     AWAITING_INPUT = "awaiting_input"
@@ -39,6 +40,7 @@ class ConversationState(Enum):
 
 class MessageRole(Enum):
     """Message role enumeration."""
+
     USER = "user"
     ASSISTANT = "assistant"
     SYSTEM = "system"
@@ -47,6 +49,7 @@ class MessageRole(Enum):
 @dataclass
 class Message:
     """Represents a single message in the conversation."""
+
     role: MessageRole
     content: str
     timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
@@ -94,6 +97,7 @@ class Message:
 @dataclass
 class UserProfile:
     """User profile for personalization."""
+
     user_id: str
     name: Optional[str] = None
     email: Optional[str] = None
@@ -135,6 +139,7 @@ class ConversationContext:
     - Entity states
     - Conversation flow state
     """
+
     user_id: str
     session_id: str
     messages: List[Message] = field(default_factory=list)
@@ -153,9 +158,14 @@ class ConversationContext:
     def __post_init__(self):
         """Enforce max_history constraint after initialization."""
         if len(self.messages) > self.max_history:
-            self.messages = self.messages[-self.max_history:]
+            self.messages = self.messages[-self.max_history :]
 
-    def add_message(self, message_or_role: Union[Message, str, MessageRole], content: Optional[str] = None, **kwargs) -> Message:
+    def add_message(
+        self,
+        message_or_role: Union[Message, str, MessageRole],
+        content: Optional[str] = None,
+        **kwargs,
+    ) -> Message:
         """
         Add a message to the conversation history.
 
@@ -172,17 +182,21 @@ class ConversationContext:
                 role = message_or_role
             else:
                 # Convert string to MessageRole
-                role = MessageRole(message_or_role) if message_or_role in [r.value for r in MessageRole] else MessageRole.USER
+                role = (
+                    MessageRole(message_or_role)
+                    if message_or_role in [r.value for r in MessageRole]
+                    else MessageRole.USER
+                )
             message = Message(
                 role=role,
                 content=content or "",
                 constitutional_hash=self.constitutional_hash,
-                **kwargs
+                **kwargs,
             )
         self.messages.append(message)
         # Enforce max_history
         if len(self.messages) > self.max_history:
-            self.messages = self.messages[-self.max_history:]
+            self.messages = self.messages[-self.max_history :]
         self.updated_at = datetime.now(timezone.utc)
         return message
 
@@ -206,14 +220,17 @@ class ConversationContext:
 
     def get_context_hash(self) -> str:
         """Generate a hash of the current context for caching."""
-        context_str = json.dumps({
-            "user_id": self.user_id,
-            "session_id": self.session_id,
-            "state": self.conversation_state.value,
-            "entities": self.entities,
-            "slots": self.slots,
-            "message_count": len(self.messages),
-        }, sort_keys=True)
+        context_str = json.dumps(
+            {
+                "user_id": self.user_id,
+                "session_id": self.session_id,
+                "state": self.conversation_state.value,
+                "entities": self.entities,
+                "slots": self.slots,
+                "message_count": len(self.messages),
+            },
+            sort_keys=True,
+        )
         return hashlib.sha256(context_str.encode()).hexdigest()[:16]
 
     def update_entity(self, entity_type: str, entity_value: Any, **metadata) -> None:
@@ -300,8 +317,16 @@ class ConversationContext:
             entities=data.get("entities", {}),
             slots=data.get("slots", {}),
             metadata=data.get("metadata", {}),
-            created_at=datetime.fromisoformat(data["created_at"]) if data.get("created_at") else datetime.now(timezone.utc),
-            updated_at=datetime.fromisoformat(data["updated_at"]) if data.get("updated_at") else datetime.now(timezone.utc),
+            created_at=(
+                datetime.fromisoformat(data["created_at"])
+                if data.get("created_at")
+                else datetime.now(timezone.utc)
+            ),
+            updated_at=(
+                datetime.fromisoformat(data["updated_at"])
+                if data.get("updated_at")
+                else datetime.now(timezone.utc)
+            ),
             constitutional_hash=data.get("constitutional_hash", CONSTITUTIONAL_HASH),
             tenant_id=data.get("tenant_id"),
         )
@@ -337,7 +362,7 @@ class ContextManager:
             user_id=user_id,
             session_id=session_id,
             constitutional_hash=self.constitutional_hash,
-            **kwargs
+            **kwargs,
         )
         self._sessions[session_id] = context
         return context
@@ -480,10 +505,12 @@ class ContextManager:
 
         resolutions = {
             "current_date": now.strftime("%Y-%m-%d"),
-            "next_day": (now.replace(hour=0, minute=0, second=0) +
-                        __import__("datetime").timedelta(days=1)).strftime("%Y-%m-%d"),
-            "previous_day": (now.replace(hour=0, minute=0, second=0) -
-                           __import__("datetime").timedelta(days=1)).strftime("%Y-%m-%d"),
+            "next_day": (
+                now.replace(hour=0, minute=0, second=0) + __import__("datetime").timedelta(days=1)
+            ).strftime("%Y-%m-%d"),
+            "previous_day": (
+                now.replace(hour=0, minute=0, second=0) - __import__("datetime").timedelta(days=1)
+            ).strftime("%Y-%m-%d"),
             "current_time": now.strftime("%H:%M"),
             "next_week": (now + __import__("datetime").timedelta(weeks=1)).strftime("%Y-%m-%d"),
             "previous_week": (now - __import__("datetime").timedelta(weeks=1)).strftime("%Y-%m-%d"),
@@ -505,10 +532,7 @@ class ContextManager:
             return None
 
         # Get previous intent
-        previous_messages = [
-            m for m in context.messages[-5:]
-            if m.role == "user" and m.intent
-        ]
+        previous_messages = [m for m in context.messages[-5:] if m.role == "user" and m.intent]
 
         if not previous_messages:
             return None
@@ -548,7 +572,7 @@ class ContextManager:
         """
         # Keep system messages and recent messages
         system_messages = [m for m in context.messages if m.role == "system"]
-        recent_messages = context.messages[-self.max_context_length:]
+        recent_messages = context.messages[-self.max_context_length :]
 
         # Combine, avoiding duplicates
         context.messages = system_messages + [

@@ -6,13 +6,14 @@ This module provides circuit breaker patterns for fault tolerance in ACGS-2 serv
 Based on the pybreaker library with ACGS-2 specific enhancements.
 """
 
-import pybreaker
-from functools import wraps
-from typing import Callable, Optional, Any, Type
-from datetime import datetime, timezone
 import logging
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from enum import Enum
+from functools import wraps
+from typing import Any, Callable, Optional, Type
+
+import pybreaker
 
 # Constitutional Hash for governance validation
 CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
@@ -22,6 +23,7 @@ logger = logging.getLogger(__name__)
 
 class CircuitState(Enum):
     """Circuit breaker states."""
+
     CLOSED = "closed"  # Normal operation
     OPEN = "open"  # Failing, rejecting calls
     HALF_OPEN = "half_open"  # Testing if service recovered
@@ -30,6 +32,7 @@ class CircuitState(Enum):
 @dataclass
 class CircuitBreakerConfig:
     """Configuration for circuit breaker."""
+
     fail_max: int = 5  # Number of failures before opening
     reset_timeout: int = 30  # Seconds before attempting reset
     exclude_exceptions: tuple = ()  # Exceptions that don't count as failures
@@ -62,8 +65,7 @@ class ACGSCircuitBreakerListener(pybreaker.CircuitBreakerListener):
     def success(self, cb: pybreaker.CircuitBreaker):
         """Log successful calls."""
         logger.debug(
-            f"[{self.constitutional_hash}] Circuit breaker '{self.service_name}' "
-            f"call succeeded"
+            f"[{self.constitutional_hash}] Circuit breaker '{self.service_name}' " f"call succeeded"
         )
 
     def failure(self, cb: pybreaker.CircuitBreaker, exc: Exception):
@@ -97,9 +99,7 @@ class CircuitBreakerRegistry:
         return cls._instance
 
     def get_or_create(
-        self,
-        service_name: str,
-        config: Optional[CircuitBreakerConfig] = None
+        self, service_name: str, config: Optional[CircuitBreakerConfig] = None
     ) -> pybreaker.CircuitBreaker:
         """
         Get or create a circuit breaker for a service.
@@ -119,11 +119,9 @@ class CircuitBreakerRegistry:
                 fail_max=config.fail_max,
                 reset_timeout=config.reset_timeout,
                 exclude=config.exclude_exceptions,
-                listeners=[listener]
+                listeners=[listener],
             )
-            logger.info(
-                f"[{CONSTITUTIONAL_HASH}] Created circuit breaker for '{service_name}'"
-            )
+            logger.info(f"[{CONSTITUTIONAL_HASH}] Created circuit breaker for '{service_name}'")
 
         return self._breakers[service_name]
 
@@ -131,9 +129,9 @@ class CircuitBreakerRegistry:
         """Get states of all circuit breakers."""
         return {
             name: {
-                'state': cb.current_state,
-                'fail_counter': cb.fail_counter,
-                'success_counter': cb.success_counter
+                "state": cb.current_state,
+                "fail_counter": cb.fail_counter,
+                "success_counter": cb.success_counter,
             }
             for name, cb in self._breakers.items()
         }
@@ -142,9 +140,7 @@ class CircuitBreakerRegistry:
         """Reset a circuit breaker to closed state."""
         if service_name in self._breakers:
             self._breakers[service_name].close()
-            logger.info(
-                f"[{CONSTITUTIONAL_HASH}] Reset circuit breaker for '{service_name}'"
-            )
+            logger.info(f"[{CONSTITUTIONAL_HASH}] Reset circuit breaker for '{service_name}'")
 
     def reset_all(self):
         """Reset all circuit breakers."""
@@ -157,8 +153,7 @@ _registry = CircuitBreakerRegistry()
 
 
 def get_circuit_breaker(
-    service_name: str,
-    config: Optional[CircuitBreakerConfig] = None
+    service_name: str, config: Optional[CircuitBreakerConfig] = None
 ) -> pybreaker.CircuitBreaker:
     """
     Get or create a circuit breaker for a service.
@@ -176,7 +171,7 @@ def get_circuit_breaker(
 def with_circuit_breaker(
     service_name: str,
     fallback: Optional[Callable] = None,
-    config: Optional[CircuitBreakerConfig] = None
+    config: Optional[CircuitBreakerConfig] = None,
 ):
     """
     Decorator to wrap a function with circuit breaker protection.
@@ -192,6 +187,7 @@ def with_circuit_breaker(
             # Call external service
             ...
     """
+
     def decorator(func: Callable):
         cb = get_circuit_breaker(service_name, config)
 
@@ -201,8 +197,7 @@ def with_circuit_breaker(
                 return cb.call(func, *args, **kwargs)
             except pybreaker.CircuitBreakerError:
                 logger.warning(
-                    f"[{CONSTITUTIONAL_HASH}] Circuit open for '{service_name}', "
-                    f"using fallback"
+                    f"[{CONSTITUTIONAL_HASH}] Circuit open for '{service_name}', " f"using fallback"
                 )
                 if fallback:
                     return fallback(*args, **kwargs)
@@ -214,17 +209,17 @@ def with_circuit_breaker(
                 return await cb.call(func, *args, **kwargs)
             except pybreaker.CircuitBreakerError:
                 logger.warning(
-                    f"[{CONSTITUTIONAL_HASH}] Circuit open for '{service_name}', "
-                    f"using fallback"
+                    f"[{CONSTITUTIONAL_HASH}] Circuit open for '{service_name}', " f"using fallback"
                 )
                 if fallback:
                     result = fallback(*args, **kwargs)
-                    if hasattr(result, '__await__'):
+                    if hasattr(result, "__await__"):
                         return await result
                     return result
                 raise
 
         import asyncio
+
         if asyncio.iscoroutinefunction(func):
             return async_wrapper
         return sync_wrapper
@@ -241,27 +236,26 @@ def circuit_breaker_health_check() -> dict:
     """
     states = _registry.get_all_states()
     open_circuits = [
-        name for name, state in states.items()
-        if state['state'] == pybreaker.STATE_OPEN
+        name for name, state in states.items() if state["state"] == pybreaker.STATE_OPEN
     ]
 
     return {
-        'constitutional_hash': CONSTITUTIONAL_HASH,
-        'timestamp': datetime.now(timezone.utc).isoformat(),
-        'overall_health': 'degraded' if open_circuits else 'healthy',
-        'open_circuits': open_circuits,
-        'circuit_states': states
+        "constitutional_hash": CONSTITUTIONAL_HASH,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "overall_health": "degraded" if open_circuits else "healthy",
+        "open_circuits": open_circuits,
+        "circuit_states": states,
     }
 
 
 # Pre-configured circuit breakers for ACGS-2 core services
 CORE_SERVICES = [
-    'rust_message_bus',
-    'deliberation_layer',
-    'constraint_generation',
-    'vector_search',
-    'audit_ledger',
-    'adaptive_governance'
+    "rust_message_bus",
+    "deliberation_layer",
+    "constraint_generation",
+    "vector_search",
+    "audit_ledger",
+    "adaptive_governance",
 ]
 
 
@@ -276,16 +270,16 @@ def initialize_core_circuit_breakers():
 
 __all__ = [
     # Constants
-    'CONSTITUTIONAL_HASH',
-    'CORE_SERVICES',
+    "CONSTITUTIONAL_HASH",
+    "CORE_SERVICES",
     # Classes
-    'CircuitState',
-    'CircuitBreakerConfig',
-    'ACGSCircuitBreakerListener',
-    'CircuitBreakerRegistry',
+    "CircuitState",
+    "CircuitBreakerConfig",
+    "ACGSCircuitBreakerListener",
+    "CircuitBreakerRegistry",
     # Functions
-    'get_circuit_breaker',
-    'with_circuit_breaker',
-    'circuit_breaker_health_check',
-    'initialize_core_circuit_breakers',
+    "get_circuit_breaker",
+    "with_circuit_breaker",
+    "circuit_breaker_health_check",
+    "initialize_core_circuit_breakers",
 ]

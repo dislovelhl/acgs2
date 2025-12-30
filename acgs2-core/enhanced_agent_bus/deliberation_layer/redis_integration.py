@@ -5,14 +5,14 @@ Constitutional Hash: cdd01ef066bc6cf2
 Provides Redis-backed persistence for deliberation queue and voting system.
 """
 
-import asyncio
 import json
 import logging
-from typing import Dict, Any, Optional, List
 from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional
 
 try:
     import redis.asyncio as aioredis
+
     REDIS_AVAILABLE = True
 except ImportError:
     aioredis = None
@@ -38,9 +38,7 @@ class RedisDeliberationQueue:
 
         try:
             self.redis_client = aioredis.from_url(
-                self.redis_url,
-                encoding="utf-8",
-                decode_responses=True
+                self.redis_url, encoding="utf-8", decode_responses=True
             )
             # Test connection
             await self.redis_client.ping()
@@ -59,10 +57,7 @@ class RedisDeliberationQueue:
             logger.info("Disconnected from Redis")
 
     async def enqueue_deliberation_item(
-        self,
-        message: Any,
-        item_id: str,
-        metadata: Optional[Dict[str, Any]] = None
+        self, message: Any, item_id: str, metadata: Optional[Dict[str, Any]] = None
     ) -> bool:
         """
         Enqueue a deliberation item in Redis.
@@ -87,18 +82,14 @@ class RedisDeliberationQueue:
                 "message_type": message.message_type.value,
                 "content": json.dumps(message.content),
                 "created_at": datetime.now(timezone.utc).isoformat(),
-                "metadata": json.dumps(metadata or {})
+                "metadata": json.dumps(metadata or {}),
             }
 
             # Add to stream
             await self.redis_client.xadd(self.stream_key, item_data)
 
             # Add to queue hash
-            await self.redis_client.hset(
-                self.queue_key,
-                item_id,
-                json.dumps(item_data)
-            )
+            await self.redis_client.hset(self.queue_key, item_id, json.dumps(item_data))
 
             logger.debug(f"Enqueued deliberation item {item_id}")
             return True
@@ -122,10 +113,7 @@ class RedisDeliberationQueue:
             return None
 
     async def update_deliberation_status(
-        self,
-        item_id: str,
-        status: str,
-        additional_data: Optional[Dict[str, Any]] = None
+        self, item_id: str, status: str, additional_data: Optional[Dict[str, Any]] = None
     ) -> bool:
         """Update the status of a deliberation item."""
         if not self.redis_client:
@@ -141,11 +129,7 @@ class RedisDeliberationQueue:
             if additional_data:
                 item.update(additional_data)
 
-            await self.redis_client.hset(
-                self.queue_key,
-                item_id,
-                json.dumps(item)
-            )
+            await self.redis_client.hset(self.queue_key, item_id, json.dumps(item))
             return True
 
         except (ConnectionError, OSError, TypeError) as e:
@@ -217,9 +201,7 @@ class RedisVotingSystem:
 
         try:
             self.redis_client = aioredis.from_url(
-                self.redis_url,
-                encoding="utf-8",
-                decode_responses=True
+                self.redis_url, encoding="utf-8", decode_responses=True
             )
             await self.redis_client.ping()
             logger.info("Voting system connected to Redis")
@@ -236,12 +218,7 @@ class RedisVotingSystem:
             self.redis_client = None
 
     async def submit_vote(
-        self,
-        item_id: str,
-        agent_id: str,
-        vote: str,
-        reasoning: str,
-        confidence: float = 1.0
+        self, item_id: str, agent_id: str, vote: str, reasoning: str, confidence: float = 1.0
     ) -> bool:
         """
         Submit a vote for a deliberation item.
@@ -266,14 +243,10 @@ class RedisVotingSystem:
                 "vote": vote,
                 "reasoning": reasoning,
                 "confidence": confidence,
-                "timestamp": datetime.now(timezone.utc).isoformat()
+                "timestamp": datetime.now(timezone.utc).isoformat(),
             }
 
-            await self.redis_client.hset(
-                votes_key,
-                agent_id,
-                json.dumps(vote_data)
-            )
+            await self.redis_client.hset(votes_key, agent_id, json.dumps(vote_data))
 
             # Set expiry (24 hours)
             await self.redis_client.expire(votes_key, 86400)
@@ -316,10 +289,7 @@ class RedisVotingSystem:
         return counts
 
     async def check_consensus(
-        self,
-        item_id: str,
-        required_votes: int = 3,
-        threshold: float = 0.66
+        self, item_id: str, required_votes: int = 3, threshold: float = 0.66
     ) -> Dict[str, Any]:
         """
         Check if consensus has been reached.
@@ -335,11 +305,7 @@ class RedisVotingSystem:
         counts = await self.get_vote_count(item_id)
 
         if counts["total"] < required_votes:
-            return {
-                "consensus_reached": False,
-                "reason": "insufficient_votes",
-                "counts": counts
-            }
+            return {"consensus_reached": False, "reason": "insufficient_votes", "counts": counts}
 
         approval_rate = counts["approve"] / counts["total"]
         if approval_rate >= threshold:
@@ -347,21 +313,21 @@ class RedisVotingSystem:
                 "consensus_reached": True,
                 "decision": "approved",
                 "approval_rate": approval_rate,
-                "counts": counts
+                "counts": counts,
             }
         elif (counts["reject"] / counts["total"]) >= threshold:
             return {
                 "consensus_reached": True,
                 "decision": "rejected",
                 "rejection_rate": counts["reject"] / counts["total"],
-                "counts": counts
+                "counts": counts,
             }
 
         return {
             "consensus_reached": False,
             "reason": "threshold_not_met",
             "approval_rate": approval_rate,
-            "counts": counts
+            "counts": counts,
         }
 
 

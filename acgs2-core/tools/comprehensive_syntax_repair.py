@@ -13,7 +13,7 @@ Fixes multiple corruption patterns in Python files:
 import re
 import sys
 from pathlib import Path
-from typing import List, Tuple
+from typing import Tuple
 
 CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
 
@@ -30,7 +30,7 @@ def fix_with_statement_corruption(content: str) -> Tuple[str, int]:
             actual_code_here
     """
     fixes = 0
-    lines = content.split('\n')
+    lines = content.split("\n")
     new_lines = []
     i = 0
 
@@ -38,7 +38,7 @@ def fix_with_statement_corruption(content: str) -> Tuple[str, int]:
         line = lines[i]
 
         # Check for 'with' statement followed by empty or except
-        if re.match(r'^(\s*)with\s+.+:\s*$', line):
+        if re.match(r"^(\s*)with\s+.+:\s*$", line):
             indent = len(line) - len(line.lstrip())
             with_line = line
 
@@ -52,7 +52,7 @@ def fix_with_statement_corruption(content: str) -> Tuple[str, int]:
                 next_stripped = next_line.strip()
 
                 # Check for except immediately after with (corruption)
-                if re.match(r'^(\s*)except\s+', next_line):
+                if re.match(r"^(\s*)except\s+", next_line):
                     except_indent = len(next_line) - len(next_line.lstrip())
                     if except_indent == indent:
                         # Found the corruption - skip the try/except block
@@ -62,12 +62,14 @@ def fix_with_statement_corruption(content: str) -> Tuple[str, int]:
                         while k < len(lines):
                             skip_line = lines[k]
                             skip_stripped = skip_line.strip()
-                            if skip_stripped == 'raise':
+                            if skip_stripped == "raise":
                                 k += 1
                                 # Collect code after raise until indent decreases
                                 while k < len(lines):
                                     after_line = lines[k]
-                                    if after_line.strip() and not after_line.startswith(' ' * (indent + 4)):
+                                    if after_line.strip() and not after_line.startswith(
+                                        " " * (indent + 4)
+                                    ):
                                         break
                                     if after_line.strip():
                                         code_after_raise.append(after_line)
@@ -75,7 +77,7 @@ def fix_with_statement_corruption(content: str) -> Tuple[str, int]:
                                 break
                             k += 1
                         break
-                elif next_stripped and not next_stripped.startswith('#'):
+                elif next_stripped and not next_stripped.startswith("#"):
                     break
                 j += 1
 
@@ -91,7 +93,7 @@ def fix_with_statement_corruption(content: str) -> Tuple[str, int]:
         new_lines.append(line)
         i += 1
 
-    return '\n'.join(new_lines), fixes
+    return "\n".join(new_lines), fixes
 
 
 def fix_try_in_with_block(content: str) -> Tuple[str, int]:
@@ -110,14 +112,14 @@ def fix_try_in_with_block(content: str) -> Tuple[str, int]:
 
     # Pattern: with statement followed by try, then except at same level as try
     pattern = re.compile(
-        r'^(\s*)(with\s+[^:]+:\s*\n)'
-        r'\1    try:\s*\n'
-        r'\1        (with\s+[^:]+:\s*\n)'
-        r'\1    except\s+[^:]+:\s*\n'
-        r'(?:\1        [^\n]+\n)*'
-        r'\1        raise\s*\n'
-        r'(\1            [^\n]+\n)',
-        re.MULTILINE
+        r"^(\s*)(with\s+[^:]+:\s*\n)"
+        r"\1    try:\s*\n"
+        r"\1        (with\s+[^:]+:\s*\n)"
+        r"\1    except\s+[^:]+:\s*\n"
+        r"(?:\1        [^\n]+\n)*"
+        r"\1        raise\s*\n"
+        r"(\1            [^\n]+\n)",
+        re.MULTILINE,
     )
 
     def replace_pattern(match):
@@ -127,7 +129,7 @@ def fix_try_in_with_block(content: str) -> Tuple[str, int]:
         second_with = match.group(3)
         body = match.group(4)
         fixes += 1
-        return f'{indent}{first_with}{indent}    {second_with}{body}'
+        return f"{indent}{first_with}{indent}    {second_with}{body}"
 
     content = pattern.sub(replace_pattern, content)
     return content, fixes
@@ -136,14 +138,14 @@ def fix_try_in_with_block(content: str) -> Tuple[str, int]:
 def fix_empty_with_blocks(content: str) -> Tuple[str, int]:
     """Add pass to empty with blocks."""
     fixes = 0
-    lines = content.split('\n')
+    lines = content.split("\n")
     new_lines = []
 
     for i, line in enumerate(lines):
         new_lines.append(line)
 
         # Check if this is a with statement
-        match = re.match(r'^(\s*)with\s+.+:\s*$', line)
+        match = re.match(r"^(\s*)with\s+.+:\s*$", line)
         if match:
             indent = match.group(1)
             # Check if next line exists and is not indented properly
@@ -153,15 +155,15 @@ def fix_empty_with_blocks(content: str) -> Tuple[str, int]:
                     next_indent = len(next_line) - len(next_line.lstrip())
                     expected_indent = len(indent) + 4
                     # If next line is except or at same/lower indent, add pass
-                    if next_indent <= len(indent) or next_line.strip().startswith('except'):
-                        new_lines.append(f'{indent}    pass')
+                    if next_indent <= len(indent) or next_line.strip().startswith("except"):
+                        new_lines.append(f"{indent}    pass")
                         fixes += 1
             else:
                 # End of file, add pass
-                new_lines.append(f'{indent}    pass')
+                new_lines.append(f"{indent}    pass")
                 fixes += 1
 
-    return '\n'.join(new_lines), fixes
+    return "\n".join(new_lines), fixes
 
 
 def fix_broken_except_chain(content: str) -> Tuple[str, int]:
@@ -170,7 +172,7 @@ def fix_broken_except_chain(content: str) -> Tuple[str, int]:
     Remove orphaned except blocks that break the code.
     """
     fixes = 0
-    lines = content.split('\n')
+    lines = content.split("\n")
     new_lines = []
 
     skip_until_indent = -1
@@ -190,7 +192,7 @@ def fix_broken_except_chain(content: str) -> Tuple[str, int]:
                 continue
 
         # Check for orphaned except (not preceded by try at same level)
-        if re.match(r'^(\s*)except\s+', line):
+        if re.match(r"^(\s*)except\s+", line):
             indent = len(line) - len(line.lstrip())
             # Look back for matching try
             found_try = False
@@ -198,7 +200,7 @@ def fix_broken_except_chain(content: str) -> Tuple[str, int]:
                 prev = new_lines[j]
                 if prev.strip():
                     prev_indent = len(prev) - len(prev.lstrip())
-                    if prev_indent == indent and prev.strip().startswith('try:'):
+                    if prev_indent == indent and prev.strip().startswith("try:"):
                         found_try = True
                         break
                     elif prev_indent < indent:
@@ -212,7 +214,7 @@ def fix_broken_except_chain(content: str) -> Tuple[str, int]:
 
         new_lines.append(line)
 
-    return '\n'.join(new_lines), fixes
+    return "\n".join(new_lines), fixes
 
 
 def fix_code_after_raise(content: str) -> Tuple[str, int]:
@@ -221,14 +223,14 @@ def fix_code_after_raise(content: str) -> Tuple[str, int]:
     Move it before the raise or remove the raise.
     """
     fixes = 0
-    lines = content.split('\n')
+    lines = content.split("\n")
     new_lines = []
 
     i = 0
     while i < len(lines):
         line = lines[i]
 
-        if line.strip() == 'raise':
+        if line.strip() == "raise":
             raise_indent = len(line) - len(line.lstrip())
             # Check if there's code after at same indent
             if i + 1 < len(lines):
@@ -244,24 +246,24 @@ def fix_code_after_raise(content: str) -> Tuple[str, int]:
         new_lines.append(line)
         i += 1
 
-    return '\n'.join(new_lines), fixes
+    return "\n".join(new_lines), fixes
 
 
 def fix_double_except(content: str) -> Tuple[str, int]:
     """Remove duplicate except blocks."""
     fixes = 0
-    lines = content.split('\n')
+    lines = content.split("\n")
     new_lines = []
 
     i = 0
     while i < len(lines):
         line = lines[i]
 
-        if re.match(r'^(\s*)except\s+', line):
+        if re.match(r"^(\s*)except\s+", line):
             # Check if next line is also except at same indent
             if i + 1 < len(lines):
                 next_line = lines[i + 1]
-                if re.match(r'^(\s*)except\s+', next_line):
+                if re.match(r"^(\s*)except\s+", next_line):
                     indent1 = len(line) - len(line.lstrip())
                     indent2 = len(next_line) - len(next_line.lstrip())
                     if indent1 == indent2:
@@ -273,22 +275,24 @@ def fix_double_except(content: str) -> Tuple[str, int]:
         new_lines.append(line)
         i += 1
 
-    return '\n'.join(new_lines), fixes
+    return "\n".join(new_lines), fixes
 
 
 def add_pass_to_empty_blocks(content: str) -> Tuple[str, int]:
     """Add pass statement to empty code blocks."""
     fixes = 0
-    lines = content.split('\n')
+    lines = content.split("\n")
     new_lines = []
 
     for i, line in enumerate(lines):
         new_lines.append(line)
 
         # Check for block starters
-        if re.match(r'^(\s*)(if|elif|else|for|while|try|except|finally|def|class|with)\s*.*:\s*$', line):
-            indent_match = re.match(r'^(\s*)', line)
-            indent = indent_match.group(1) if indent_match else ''
+        if re.match(
+            r"^(\s*)(if|elif|else|for|while|try|except|finally|def|class|with)\s*.*:\s*$", line
+        ):
+            indent_match = re.match(r"^(\s*)", line)
+            indent = indent_match.group(1) if indent_match else ""
 
             # Check next non-empty line
             j = i + 1
@@ -302,14 +306,14 @@ def add_pass_to_empty_blocks(content: str) -> Tuple[str, int]:
 
                 # If next line is not properly indented, add pass
                 if next_indent <= len(indent):
-                    new_lines.append(f'{indent}    pass')
+                    new_lines.append(f"{indent}    pass")
                     fixes += 1
             else:
                 # End of file
-                new_lines.append(f'{indent}    pass')
+                new_lines.append(f"{indent}    pass")
                 fixes += 1
 
-    return '\n'.join(new_lines), fixes
+    return "\n".join(new_lines), fixes
 
 
 def remove_orphan_logger_blocks(content: str) -> Tuple[str, int]:
@@ -320,15 +324,15 @@ def remove_orphan_logger_blocks(content: str) -> Tuple[str, int]:
 
     # Pattern: except followed by logger.error and raise, then more except
     pattern = re.compile(
-        r'^(\s*)except\s+\w+(\s+as\s+\w+)?:\s*\n'
-        r'\1    logger\.error\([^)]+\)\s*\n'
-        r'\1    raise\s*\n'
-        r'(?=\1except\s+)',
-        re.MULTILINE
+        r"^(\s*)except\s+\w+(\s+as\s+\w+)?:\s*\n"
+        r"\1    logger\.error\([^)]+\)\s*\n"
+        r"\1    raise\s*\n"
+        r"(?=\1except\s+)",
+        re.MULTILINE,
     )
 
     while pattern.search(content):
-        content = pattern.sub('', content)
+        content = pattern.sub("", content)
         fixes += 1
 
     return content, fixes
@@ -337,7 +341,7 @@ def remove_orphan_logger_blocks(content: str) -> Tuple[str, int]:
 def process_file(filepath: Path, dry_run: bool = False) -> Tuple[bool, int]:
     """Process a single file with all repair functions."""
     try:
-        content = filepath.read_text(encoding='utf-8')
+        content = filepath.read_text(encoding="utf-8")
     except Exception as e:
         print(f"  Error reading {filepath}: {e}")
         return False, 0
@@ -360,7 +364,7 @@ def process_file(filepath: Path, dry_run: bool = False) -> Tuple[bool, int]:
 
     if content != original_content:
         if not dry_run:
-            filepath.write_text(content, encoding='utf-8')
+            filepath.write_text(content, encoding="utf-8")
         return True, total_fixes
 
     return False, 0
@@ -369,14 +373,14 @@ def process_file(filepath: Path, dry_run: bool = False) -> Tuple[bool, int]:
 def main():
     import argparse
 
-    parser = argparse.ArgumentParser(description='Comprehensive syntax repair for ACGS-2')
-    parser.add_argument('paths', nargs='*', default=['.'])
-    parser.add_argument('--dry-run', action='store_true')
-    parser.add_argument('--verbose', '-v', action='store_true')
+    parser = argparse.ArgumentParser(description="Comprehensive syntax repair for ACGS-2")
+    parser.add_argument("paths", nargs="*", default=["."])
+    parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument("--verbose", "-v", action="store_true")
 
     args = parser.parse_args()
 
-    print(f"ACGS-2 Comprehensive Syntax Repair Tool")
+    print("ACGS-2 Comprehensive Syntax Repair Tool")
     print(f"Constitutional Hash: {CONSTITUTIONAL_HASH}")
     print()
 
@@ -387,15 +391,15 @@ def main():
     for path_str in args.paths:
         path = Path(path_str)
 
-        if path.is_file() and path.suffix == '.py':
+        if path.is_file() and path.suffix == ".py":
             files = [path]
         elif path.is_dir():
-            files = list(path.rglob('*.py'))
+            files = list(path.rglob("*.py"))
         else:
             continue
 
         for filepath in files:
-            skip_dirs = ['__pycache__', '.git', 'node_modules', '.venv', 'venv']
+            skip_dirs = ["__pycache__", ".git", "node_modules", ".venv", "venv"]
             if any(skip_dir in str(filepath) for skip_dir in skip_dirs):
                 continue
 
@@ -409,11 +413,11 @@ def main():
                     action = "Would fix" if args.dry_run else "Fixed"
                     print(f"  {action} {fixes} patterns in {filepath}")
 
-    print(f"Summary:")
+    print("Summary:")
     print(f"  Files scanned: {total_files}")
     print(f"  Files modified: {modified_files}")
     print(f"  Total fixes: {total_fixes}")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     sys.exit(main())

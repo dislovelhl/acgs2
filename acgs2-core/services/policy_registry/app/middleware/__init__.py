@@ -5,20 +5,20 @@ Constitutional Hash: cdd01ef066bc6cf2
 
 from .rbac import (
     CONSTITUTIONAL_HASH,
-    Role,
-    Permission,
-    Scope,
     ROLE_PERMISSIONS,
-    TokenClaims,
     AccessDecision,
+    Permission,
     RBACConfig,
     RBACMiddleware,
-    get_rbac_middleware,
+    Role,
+    Scope,
+    TokenClaims,
     configure_rbac,
+    get_claims,
+    get_rbac_middleware,
     require_permission,
     require_role,
     require_tenant_access,
-    get_claims,
 )
 
 __all__ = [

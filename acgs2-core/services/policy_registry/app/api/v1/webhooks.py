@@ -3,16 +3,17 @@ Webhooks API endpoints
 Constitutional Hash: cdd01ef066bc6cf2
 """
 
-import hmac
 import hashlib
-import logging
-import tempfile
-import os
+import hmac
 import json
+import logging
+import os
+import tempfile
 from datetime import datetime, timezone
 from functools import lru_cache
-from typing import Dict, Any, Optional, List
-from fastapi import APIRouter, Request, HTTPException, Depends, Header, BackgroundTasks
+from typing import Any, Dict
+
+from fastapi import APIRouter, BackgroundTasks, Depends, Header, HTTPException, Request
 
 from ...services import CompilerService, StorageService
 
@@ -27,6 +28,7 @@ DUMMY_PRIVATE_KEY = "0" * 64
 # Lazy import to avoid circular dependency issues
 def _get_settings():
     from shared.config import settings
+
     return settings
 
 
@@ -42,10 +44,7 @@ def get_storage_service() -> StorageService:
     return StorageService()
 
 
-async def verify_github_signature(
-    request: Request,
-    x_hub_signature_256: str = Header(None)
-):
+async def verify_github_signature(request: Request, x_hub_signature_256: str = Header(None)):
     """Verify GitHub webhook signature"""
     settings = _get_settings()
     webhook_secret = settings.bundle.github_webhook_secret
@@ -58,9 +57,7 @@ async def verify_github_signature(
 
     body = await request.body()
     signature = hmac.new(
-        webhook_secret.get_secret_value().encode(),
-        body,
-        hashlib.sha256
+        webhook_secret.get_secret_value().encode(), body, hashlib.sha256
     ).hexdigest()
 
     expected_signature = f"sha256={signature}"
@@ -69,9 +66,7 @@ async def verify_github_signature(
 
 
 async def process_policy_update(
-    payload: Dict[str, Any],
-    compiler: CompilerService,
-    storage: StorageService
+    payload: Dict[str, Any], compiler: CompilerService, storage: StorageService
 ):
     """Background task to compile, sign, and store new policy bundle"""
     # Lazy imports for bundle registry
@@ -97,9 +92,7 @@ async def process_policy_update(
 
         # We'll use the whole policies directory as input
         success = await compiler.compile_bundle(
-            paths=[policy_dir],
-            output_path=bundle_path,
-            run_tests=True
+            paths=[policy_dir], output_path=bundle_path, run_tests=True
         )
 
         if not success:
@@ -114,10 +107,10 @@ async def process_policy_update(
 
         # Create manifest
         manifest = BundleManifest(
-            version="v1.1.0", # Increment version for Phase 2
+            version="v1.1.0",  # Increment version for Phase 2
             revision=payload.get("after", "unknown"),
             constitutional_hash=settings.ai.constitutional_hash,
-            timestamp=datetime.now(timezone.utc).isoformat()
+            timestamp=datetime.now(timezone.utc).isoformat(),
         )
 
         # 4. OCI Manifest Signing (Cosign compatible)
@@ -130,7 +123,7 @@ async def process_policy_update(
                     repository="acgs/policies",
                     tag="latest",
                     manifest_digest=digest,
-                    private_key_hex=DUMMY_PRIVATE_KEY
+                    private_key_hex=DUMMY_PRIVATE_KEY,
                 )
                 manifest.add_signature("system-key", sig_hex)
             except Exception as e:
@@ -157,13 +150,16 @@ async def process_policy_update(
 async def github_webhook(
     background_tasks: BackgroundTasks,
     payload: Dict[str, Any],
-    _ = Depends(verify_github_signature),
-    compiler = Depends(get_compiler_service),
-    storage = Depends(get_storage_service)
+    _=Depends(verify_github_signature),
+    compiler=Depends(get_compiler_service),
+    storage=Depends(get_storage_service),
 ):
     """Handle GitHub push events to trigger policy bundle creation"""
     # Trigger background task for compilation
     background_tasks.add_task(process_policy_update, payload, compiler, storage)
 
     logger.info(f"Triggered background policy update for commit: {payload.get('after')}")
-    return {"status": "triggered", "message": "Policy compilation and signing started in background"}
+    return {
+        "status": "triggered",
+        "message": "Policy compilation and signing started in background",
+    }

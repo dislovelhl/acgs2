@@ -10,7 +10,7 @@ import logging
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
-from .vault_models import VaultAuditEntry, VaultOperation, CONSTITUTIONAL_HASH
+from .vault_models import CONSTITUTIONAL_HASH, VaultAuditEntry, VaultOperation
 
 logger = logging.getLogger(__name__)
 
@@ -81,14 +81,11 @@ class VaultAuditLogger:
 
         # Trim if exceeds max entries
         if len(self._audit_log) > self._max_entries:
-            self._audit_log = self._audit_log[-self._max_entries:]
+            self._audit_log = self._audit_log[-self._max_entries :]
 
         # Log to standard logger
         level = logging.INFO if success else logging.WARNING
-        logger.log(
-            level,
-            f"Vault audit: {operation.value} key={key_name} success={success}"
-        )
+        logger.log(level, f"Vault audit: {operation.value} key={key_name} success={success}")
 
         # Send to external handler if configured
         if self._external_handler:
@@ -151,10 +148,7 @@ class VaultAuditLogger:
             operation_counts[op_name] = operation_counts.get(op_name, 0) + 1
 
         # Recent failures
-        recent_failures = [
-            e.to_dict() for e in self._audit_log[-10:]
-            if not e.success
-        ]
+        recent_failures = [e.to_dict() for e in self._audit_log[-10:] if not e.success]
 
         return {
             "total_entries": total,
@@ -195,12 +189,14 @@ class VaultAuditLogger:
             return entries
         elif format == "json":
             import json
+
             return json.dumps(entries, indent=2, default=str)
         elif format == "csv":
             if not entries:
                 return ""
             import csv
             import io
+
             output = io.StringIO()
             writer = csv.DictWriter(output, fieldnames=entries[0].keys())
             writer.writeheader()

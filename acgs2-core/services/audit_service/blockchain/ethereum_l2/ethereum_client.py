@@ -9,11 +9,11 @@ Ethereum Layer 2 区块链客户端
 - Base
 """
 
-import json
 import asyncio
-import time
-from typing import Dict, List, Optional, Any
+import json
 import logging
+import time
+from typing import Any, Dict, Optional
 
 # 注意：实际部署时需要安装web3
 # pip install web3
@@ -30,26 +30,26 @@ class EthereumL2Client:
             "name": "Optimism",
             "rpc_url": "https://mainnet.optimism.io",
             "chain_id": 10,
-            "explorer": "https://optimistic.etherscan.io"
+            "explorer": "https://optimistic.etherscan.io",
         },
         "arbitrum": {
             "name": "Arbitrum One",
             "rpc_url": "https://arb1.arbitrum.io/rpc",
             "chain_id": 42161,
-            "explorer": "https://arbiscan.io"
+            "explorer": "https://arbiscan.io",
         },
         "polygon": {
             "name": "Polygon",
             "rpc_url": "https://polygon-rpc.com",
             "chain_id": 137,
-            "explorer": "https://polygonscan.com"
+            "explorer": "https://polygonscan.com",
         },
         "base": {
             "name": "Base",
             "rpc_url": "https://mainnet.base.org",
             "chain_id": 8453,
-            "explorer": "https://basescan.org"
-        }
+            "explorer": "https://basescan.org",
+        },
     }
 
     def __init__(self, network: str, config: Dict[str, Any]):
@@ -91,7 +91,7 @@ class EthereumL2Client:
         try:
             # 模拟网络延迟
             await asyncio.sleep(0.1)
-            
+
             logger.info(f"Connected to {self.network_config['name']} network")
             self.connected = True
             return True
@@ -128,7 +128,7 @@ class EthereumL2Client:
                 "root_hash": batch_data["root_hash"],
                 "entry_count": batch_data["entry_count"],
                 "timestamp": batch_data["timestamp"],
-                "entries_hashes": batch_data["entries_hashes"]
+                "entries_hashes": batch_data["entries_hashes"],
             }
 
             # 模拟区块链确认延迟
@@ -137,7 +137,9 @@ class EthereumL2Client:
             # 模拟交易哈希
             tx_data_str = json.dumps(transaction_data, sort_keys=True)
             tx_hash = f"0x{hash(tx_data_str) & 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF:064x}"
-            logger.info(f"Submitted audit batch {batch_data['batch_id']} to {self.network}, TX: {tx_hash}")
+            logger.info(
+                f"Submitted audit batch {batch_data['batch_id']} to {self.network}, TX: {tx_hash}"
+            )
 
             return tx_hash
 
@@ -171,7 +173,7 @@ class EthereumL2Client:
                 "timestamp": int(time.time()),
                 "submitter": "0x1234567890123456789012345678901234567890",
                 "confirmed": True,
-                "blockchain_type": f"ethereum_l2_{self.network}"
+                "blockchain_type": f"ethereum_l2_{self.network}",
             }
 
             logger.info(f"Queried audit batch {batch_id} from {self.network}")
@@ -213,7 +215,7 @@ class EthereumL2Client:
             "rpc_url": self.network_config["rpc_url"],
             "explorer": self.network_config["explorer"],
             "connected": self.connected,
-            "contract_address": self.config.get("contract_address", "unknown")
+            "contract_address": self.config.get("contract_address", "unknown"),
         }
 
     async def estimate_gas_cost(self, batch_data: Dict[str, Any]) -> Optional[int]:
@@ -264,7 +266,7 @@ class EthereumL2Client:
                 "blockNumber": 12345678,
                 "gasUsed": 150000,
                 "status": 1,  # 成功
-                "logs": []
+                "logs": [],
             }
 
             return mock_receipt

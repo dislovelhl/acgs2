@@ -12,12 +12,12 @@ from typing import Any, Dict, List, Optional
 
 from .models import SearchMatch
 
-
 CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
 
 
 class ConstitutionalViolationType(str, Enum):
     """Types of constitutional violations that can be detected."""
+
     MISSING_HASH = "missing_hash"
     INVALID_HASH = "invalid_hash"
     UNSAFE_PATTERN = "unsafe_pattern"
@@ -29,6 +29,7 @@ class ConstitutionalViolationType(str, Enum):
 @dataclass
 class ConstitutionalViolation:
     """A detected constitutional violation."""
+
     violation_type: ConstitutionalViolationType
     file: str
     line_number: int
@@ -54,6 +55,7 @@ class ConstitutionalViolation:
 @dataclass
 class ConstitutionalSearchResult:
     """Result of a constitutional code search."""
+
     query: str
     total_files_searched: int
     total_matches: int
@@ -87,6 +89,7 @@ class ConstitutionalSearchResult:
 @dataclass
 class ConstitutionalPattern:
     """Pattern for detecting constitutional violations."""
+
     name: str
     pattern: str
     violation_type: ConstitutionalViolationType

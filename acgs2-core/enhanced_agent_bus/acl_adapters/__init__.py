@@ -29,16 +29,16 @@ Usage:
 
 from .base import (
     ACLAdapter,
+    AdapterCircuitOpenError,
     AdapterConfig,
     AdapterResult,
     AdapterState,
     AdapterTimeoutError,
-    AdapterCircuitOpenError,
     RateLimitExceededError,
 )
-from .z3_adapter import Z3Adapter, Z3AdapterConfig, Z3Request, Z3Response
 from .opa_adapter import OPAAdapter, OPAAdapterConfig, OPARequest, OPAResponse
 from .registry import AdapterRegistry
+from .z3_adapter import Z3Adapter, Z3AdapterConfig, Z3Request, Z3Response
 
 # Constitutional hash for governance validation
 CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"

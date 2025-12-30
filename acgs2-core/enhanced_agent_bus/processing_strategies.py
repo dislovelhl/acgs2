@@ -12,31 +12,35 @@ from datetime import datetime, timezone
 from typing import Any, Callable, Dict, List, Optional
 
 try:
-    from .models import AgentMessage, MessageStatus, CONSTITUTIONAL_HASH
-    from .validators import ValidationResult
+    from .models import CONSTITUTIONAL_HASH, AgentMessage, MessageStatus
     from .validation_strategies import (
-        StaticHashValidationStrategy,
         DynamicPolicyValidationStrategy,
         OPAValidationStrategy,
         RustValidationStrategy,
+        StaticHashValidationStrategy,
     )
+    from .validators import ValidationResult
 except ImportError:
-    from models import AgentMessage, MessageStatus, CONSTITUTIONAL_HASH  # type: ignore
-    from validators import ValidationResult  # type: ignore
+    from models import CONSTITUTIONAL_HASH, AgentMessage, MessageStatus  # type: ignore
     from validation_strategies import (  # type: ignore
-        StaticHashValidationStrategy,
         DynamicPolicyValidationStrategy,
         OPAValidationStrategy,
         RustValidationStrategy,
+        StaticHashValidationStrategy,
     )
+    from validators import ValidationResult  # type: ignore
 
 try:
-    from .opa_client import get_opa_client, OPAClient
+    from .opa_client import OPAClient, get_opa_client
+
     OPA_CLIENT_AVAILABLE = True
 except ImportError:
     OPA_CLIENT_AVAILABLE = False
     OPAClient = None  # type: ignore
-    def get_opa_client(): return None
+
+    def get_opa_client():
+        return None
+
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +48,7 @@ logger = logging.getLogger(__name__)
 # =============================================================================
 # Handler Executor Mixin - DRY extraction of common handler execution logic
 # =============================================================================
+
 
 class HandlerExecutorMixin:
     """Mixin providing common handler execution logic.
@@ -53,9 +58,7 @@ class HandlerExecutorMixin:
     """
 
     async def _execute_handlers(
-        self,
-        message: AgentMessage,
-        handlers: Dict[Any, List[Callable]]
+        self, message: AgentMessage, handlers: Dict[Any, List[Callable]]
     ) -> ValidationResult:
         """Execute registered handlers for the message.
 
@@ -115,9 +118,7 @@ class PythonProcessingStrategy(HandlerExecutorMixin):
     """
 
     def __init__(
-        self,
-        validation_strategy: Optional[Any] = None,
-        metrics_enabled: bool = False
+        self, validation_strategy: Optional[Any] = None, metrics_enabled: bool = False
     ) -> None:
         """Initialize Python processing strategy.
 
@@ -130,9 +131,7 @@ class PythonProcessingStrategy(HandlerExecutorMixin):
         self._validation_strategy = validation_strategy or StaticHashValidationStrategy(strict=True)
 
     async def process(
-        self,
-        message: AgentMessage,
-        handlers: Dict[Any, List[Callable]]
+        self, message: AgentMessage, handlers: Dict[Any, List[Callable]]
     ) -> ValidationResult:
         """Process message with validation and handlers."""
         validation_start = time.perf_counter()
@@ -160,21 +159,22 @@ class PythonProcessingStrategy(HandlerExecutorMixin):
                 CONSTITUTIONAL_VALIDATIONS_TOTAL,
                 CONSTITUTIONAL_VIOLATIONS_TOTAL,
             )
+
             validation_duration = time.perf_counter() - start_time
-            CONSTITUTIONAL_VALIDATION_DURATION.labels(
-                service='enhanced_agent_bus'
-            ).observe(validation_duration)
+            CONSTITUTIONAL_VALIDATION_DURATION.labels(service="enhanced_agent_bus").observe(
+                validation_duration
+            )
 
             if success:
                 CONSTITUTIONAL_VALIDATIONS_TOTAL.labels(
-                    service='enhanced_agent_bus', result='success'
+                    service="enhanced_agent_bus", result="success"
                 ).inc()
             else:
                 CONSTITUTIONAL_VALIDATIONS_TOTAL.labels(
-                    service='enhanced_agent_bus', result='failure'
+                    service="enhanced_agent_bus", result="failure"
                 ).inc()
                 CONSTITUTIONAL_VIOLATIONS_TOTAL.labels(
-                    service='enhanced_agent_bus', violation_type='hash_mismatch'
+                    service="enhanced_agent_bus", violation_type="hash_mismatch"
                 ).inc()
         except ImportError:
             pass  # Metrics not available
@@ -203,7 +203,7 @@ class RustProcessingStrategy:
         self,
         rust_processor: Optional[Any] = None,
         rust_bus: Optional[Any] = None,
-        validation_strategy: Optional[Any] = None
+        validation_strategy: Optional[Any] = None,
     ) -> None:
         """Initialize Rust processing strategy.
 
@@ -227,9 +227,7 @@ class RustProcessingStrategy:
         self._max_threshold = 3
 
     async def process(
-        self,
-        message: AgentMessage,
-        handlers: Dict[Any, List[Callable]]
+        self, message: AgentMessage, handlers: Dict[Any, List[Callable]]
     ) -> ValidationResult:
         """Process message using Rust backend."""
         if not self.is_available():
@@ -300,13 +298,13 @@ class RustProcessingStrategy:
 
         if self._failure_count >= self._max_threshold:
             if not self._breaker_tripped:
-                logger.error(f"Rust backend circuit breaker TRIPPED after {self._failure_count} failures")
+                logger.error(
+                    f"Rust backend circuit breaker TRIPPED after {self._failure_count} failures"
+                )
                 self._breaker_tripped = True
 
     async def _run_handlers(
-        self,
-        message: AgentMessage,
-        handlers: Dict[Any, List[Callable]]
+        self, message: AgentMessage, handlers: Dict[Any, List[Callable]]
     ) -> None:
         """Run all registered handlers for the message type."""
         message_handlers = handlers.get(message.message_type, [])
@@ -380,10 +378,12 @@ class RustProcessingStrategy:
         """Convert Rust ValidationResult to Python ValidationResult."""
         return ValidationResult(
             is_valid=rust_result.is_valid,
-            errors=list(rust_result.errors) if hasattr(rust_result, 'errors') else [],
-            warnings=list(rust_result.warnings) if hasattr(rust_result, 'warnings') else [],
-            metadata=dict(rust_result.metadata) if hasattr(rust_result, 'metadata') else {},
-            constitutional_hash=getattr(rust_result, 'constitutional_hash', self._constitutional_hash),
+            errors=list(rust_result.errors) if hasattr(rust_result, "errors") else [],
+            warnings=list(rust_result.warnings) if hasattr(rust_result, "warnings") else [],
+            metadata=dict(rust_result.metadata) if hasattr(rust_result, "metadata") else {},
+            constitutional_hash=getattr(
+                rust_result, "constitutional_hash", self._constitutional_hash
+            ),
         )
 
     def is_available(self) -> bool:
@@ -416,9 +416,7 @@ class DynamicPolicyProcessingStrategy(HandlerExecutorMixin):
     """
 
     def __init__(
-        self,
-        policy_client: Optional[Any] = None,
-        validation_strategy: Optional[Any] = None
+        self, policy_client: Optional[Any] = None, validation_strategy: Optional[Any] = None
     ) -> None:
         """Initialize dynamic policy processing strategy.
 
@@ -433,16 +431,17 @@ class DynamicPolicyProcessingStrategy(HandlerExecutorMixin):
         if self._policy_client is None:
             try:
                 from .policy_client import get_policy_client
+
                 self._policy_client = get_policy_client()
             except ImportError:
                 logger.debug("Policy client not available")
 
-        self._validation_strategy = validation_strategy or DynamicPolicyValidationStrategy(self._policy_client)
+        self._validation_strategy = validation_strategy or DynamicPolicyValidationStrategy(
+            self._policy_client
+        )
 
     async def process(
-        self,
-        message: AgentMessage,
-        handlers: Dict[Any, List[Callable]]
+        self, message: AgentMessage, handlers: Dict[Any, List[Callable]]
     ) -> ValidationResult:
         """Process message with dynamic policy validation."""
         if not self.is_available():
@@ -487,9 +486,7 @@ class OPAProcessingStrategy(HandlerExecutorMixin):
     """
 
     def __init__(
-        self,
-        opa_client: Optional[Any] = None,
-        validation_strategy: Optional[Any] = None
+        self, opa_client: Optional[Any] = None, validation_strategy: Optional[Any] = None
     ) -> None:
         """Initialize OPA processing strategy.
 
@@ -507,9 +504,7 @@ class OPAProcessingStrategy(HandlerExecutorMixin):
         self._validation_strategy = validation_strategy or OPAValidationStrategy(self._opa_client)
 
     async def process(
-        self,
-        message: AgentMessage,
-        handlers: Dict[Any, List[Callable]]
+        self, message: AgentMessage, handlers: Dict[Any, List[Callable]]
     ) -> ValidationResult:
         """Process message with OPA validation."""
         if not self.is_available():
@@ -552,10 +547,7 @@ class CompositeProcessingStrategy:
     is unavailable or fails with a system error.
     """
 
-    def __init__(
-        self,
-        strategies: List[Any]
-    ) -> None:
+    def __init__(self, strategies: List[Any]) -> None:
         self._strategies = strategies
         self._constitutional_hash = CONSTITUTIONAL_HASH
 
@@ -564,9 +556,7 @@ class CompositeProcessingStrategy:
         return any(s.is_available() for s in self._strategies)
 
     async def process(
-        self,
-        message: AgentMessage,
-        handlers: Dict[Any, List[Callable]]
+        self, message: AgentMessage, handlers: Dict[Any, List[Callable]]
     ) -> ValidationResult:
         """Process message trying multiple strategies with fallback."""
         last_error = None
@@ -635,10 +625,11 @@ class MACIProcessingStrategy:
         # Lazy import to avoid circular dependencies
         try:
             from .maci_enforcement import (
-                MACIRoleRegistry,
                 MACIEnforcer,
+                MACIRoleRegistry,
                 MACIValidationStrategy,
             )
+
             self._maci_available = True
             self._registry = maci_registry or MACIRoleRegistry()
             self._enforcer = maci_enforcer or MACIEnforcer(
@@ -669,9 +660,7 @@ class MACIProcessingStrategy:
         return self._enforcer
 
     async def process(
-        self,
-        message: AgentMessage,
-        handlers: Dict[Any, List[Callable]]
+        self, message: AgentMessage, handlers: Dict[Any, List[Callable]]
     ) -> ValidationResult:
         """Process message with MACI validation before inner strategy.
 
@@ -718,7 +707,11 @@ class MACIProcessingStrategy:
 
     def get_name(self) -> str:
         """Get strategy name."""
-        inner_name = self._inner_strategy.get_name() if hasattr(self._inner_strategy, 'get_name') else 'unknown'
+        inner_name = (
+            self._inner_strategy.get_name()
+            if hasattr(self._inner_strategy, "get_name")
+            else "unknown"
+        )
         return f"maci+{inner_name}"
 
 

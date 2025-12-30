@@ -5,24 +5,24 @@ Constitutional Hash: cdd01ef066bc6cf2
 Extended tests for models to improve coverage.
 """
 
-import pytest
 from datetime import datetime, timezone
 
+import pytest
 from enhanced_agent_bus.models import (
     CONSTITUTIONAL_HASH,
-    MessageType,
-    Priority,
-    ValidationStatus,
+    AgentMessage,
     MessagePriority,
     MessageStatus,
+    MessageType,
+    Priority,
     RoutingContext,
-    AgentMessage,
+    ValidationStatus,
 )
-
 
 # ============================================================================
 # Constitutional Hash Tests
 # ============================================================================
+
 
 class TestConstitutionalHashCompliance:
     """Test constitutional hash compliance."""
@@ -36,15 +36,13 @@ class TestConstitutionalHashCompliance:
 # RoutingContext Tests
 # ============================================================================
 
+
 class TestRoutingContext:
     """Test RoutingContext dataclass."""
 
     def test_basic_creation(self):
         """Test basic routing context creation."""
-        ctx = RoutingContext(
-            source_agent_id="agent-1",
-            target_agent_id="agent-2"
-        )
+        ctx = RoutingContext(source_agent_id="agent-1", target_agent_id="agent-2")
         assert ctx.source_agent_id == "agent-1"
         assert ctx.target_agent_id == "agent-2"
         assert ctx.routing_key == ""
@@ -64,7 +62,7 @@ class TestRoutingContext:
             retry_count=1,
             max_retries=5,
             timeout_ms=10000,
-            constitutional_hash="custom_hash"
+            constitutional_hash="custom_hash",
         )
         assert ctx.routing_key == "my.routing.key"
         assert ctx.routing_tags == ["tag1", "tag2"]
@@ -93,6 +91,7 @@ class TestRoutingContext:
 # AgentMessage Tests
 # ============================================================================
 
+
 class TestAgentMessage:
     """Test AgentMessage dataclass."""
 
@@ -119,7 +118,7 @@ class TestAgentMessage:
             to_agent="receiver",
             message_type=MessageType.QUERY,
             priority=Priority.HIGH,
-            tenant_id="tenant-1"
+            tenant_id="tenant-1",
         )
         assert msg.content == {"action": "test"}
         assert msg.from_agent == "sender"
@@ -131,10 +130,7 @@ class TestAgentMessage:
     def test_to_dict(self):
         """Test to_dict serialization."""
         msg = AgentMessage(
-            content={"key": "value"},
-            from_agent="agent-1",
-            to_agent="agent-2",
-            tenant_id="tenant-1"
+            content={"key": "value"}, from_agent="agent-1", to_agent="agent-2", tenant_id="tenant-1"
         )
         result = msg.to_dict()
 
@@ -163,7 +159,7 @@ class TestAgentMessage:
             "message_type": "query",
             "tenant_id": "tenant-x",
             "priority": 2,  # Priority.HIGH value
-            "status": "processing"
+            "status": "processing",
         }
         msg = AgentMessage.from_dict(data)
 
@@ -197,10 +193,7 @@ class TestAgentMessage:
 
     def test_routing_context_set(self):
         """Test routing context can be set."""
-        routing = RoutingContext(
-            source_agent_id="source",
-            target_agent_id="target"
-        )
+        routing = RoutingContext(source_agent_id="source", target_agent_id="target")
         msg = AgentMessage(routing=routing)
         assert msg.routing is not None
         assert msg.routing.source_agent_id == "source"
@@ -208,17 +201,13 @@ class TestAgentMessage:
 
     def test_security_context(self):
         """Test security context field."""
-        msg = AgentMessage(
-            security_context={"role": "admin", "permissions": ["read", "write"]}
-        )
+        msg = AgentMessage(security_context={"role": "admin", "permissions": ["read", "write"]})
         assert msg.security_context["role"] == "admin"
         assert "read" in msg.security_context["permissions"]
 
     def test_performance_metrics(self):
         """Test performance metrics field."""
-        msg = AgentMessage(
-            performance_metrics={"latency_ms": 5, "throughput": 1000}
-        )
+        msg = AgentMessage(performance_metrics={"latency_ms": 5, "throughput": 1000})
         assert msg.performance_metrics["latency_ms"] == 5
         assert msg.performance_metrics["throughput"] == 1000
 
@@ -243,6 +232,7 @@ class TestAgentMessage:
 # ============================================================================
 # Enum Tests
 # ============================================================================
+
 
 class TestMessageType:
     """Test MessageType enum."""
@@ -327,12 +317,14 @@ class TestMessageStatus:
 # Module Export Tests
 # ============================================================================
 
+
 class TestModuleExports:
     """Test module exports."""
 
     def test_all_exports(self):
         """Test __all__ exports are correct."""
         from enhanced_agent_bus.models import __all__
+
         expected = [
             "CONSTITUTIONAL_HASH",
             "MessageType",

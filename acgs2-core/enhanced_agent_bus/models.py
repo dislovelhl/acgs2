@@ -5,16 +5,16 @@ Constitutional Hash: cdd01ef066bc6cf2
 Data models for agent communication and message handling.
 """
 
+import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Dict, List, Optional
-import uuid
 
 try:
     from .exceptions import MessageValidationError
 except ImportError:
-    from exceptions import MessageValidationError  # type: ignore
+    pass  # type: ignore
 
 # Import centralized constitutional hash from shared module
 try:
@@ -26,6 +26,7 @@ except ImportError:
 
 class MessageType(Enum):
     """Types of messages in the agent bus."""
+
     COMMAND = "command"
     QUERY = "query"
     RESPONSE = "response"
@@ -48,6 +49,7 @@ class Priority(Enum):
     Note: NORMAL is an alias for MEDIUM for backward compatibility
     with code that used MessagePriority.NORMAL.
     """
+
     LOW = 0
     NORMAL = 1  # Alias for MEDIUM (backward compatibility)
     MEDIUM = 1
@@ -57,6 +59,7 @@ class Priority(Enum):
 
 class ValidationStatus(Enum):
     """Status of message validation."""
+
     PENDING = "pending"
     VALID = "valid"
     INVALID = "invalid"
@@ -77,6 +80,7 @@ class MessagePriority(Enum):
         MessagePriority.NORMAL -> Priority.NORMAL (or Priority.MEDIUM)
         MessagePriority.LOW -> Priority.LOW
     """
+
     CRITICAL = 0
     HIGH = 1
     NORMAL = 2
@@ -85,6 +89,7 @@ class MessagePriority(Enum):
 
 class MessageStatus(Enum):
     """Message processing status."""
+
     PENDING = "pending"
     PROCESSING = "processing"
     DELIVERED = "delivered"
@@ -96,6 +101,7 @@ class MessageStatus(Enum):
 @dataclass
 class RoutingContext:
     """Context for message routing in the agent bus."""
+
     source_agent_id: str
     target_agent_id: str
     routing_key: str = ""
@@ -157,7 +163,7 @@ class AgentMessage:
     def __post_init__(self) -> None:
         """Post-initialization validation."""
         # Allow flexible constitutional hash for testing (can be overridden)
-        if hasattr(self, '_skip_validation') and self._skip_validation:
+        if hasattr(self, "_skip_validation") and self._skip_validation:
             return
         self.constitutional_validated = True
 
@@ -182,14 +188,16 @@ class AgentMessage:
     def to_dict_raw(self) -> Dict[str, Any]:
         """Convert message to dictionary with all fields for serialization."""
         data = self.to_dict()
-        data.update({
-            "payload": self.payload,
-            "sender_id": self.sender_id,
-            "security_context": self.security_context,
-            "expires_at": self.expires_at.isoformat() if self.expires_at else None,
-            "impact_score": self.impact_score,
-            "performance_metrics": self.performance_metrics
-        })
+        data.update(
+            {
+                "payload": self.payload,
+                "sender_id": self.sender_id,
+                "security_context": self.security_context,
+                "expires_at": self.expires_at.isoformat() if self.expires_at else None,
+                "impact_score": self.impact_score,
+                "performance_metrics": self.performance_metrics,
+            }
+        )
         return data
 
     @classmethod
@@ -211,6 +219,7 @@ class AgentMessage:
 @dataclass
 class DecisionLog:
     """Structured decision log for compliance and observability."""
+
     trace_id: str
     span_id: str
     agent_id: str
@@ -236,7 +245,7 @@ class DecisionLog:
             "constitutional_hash": self.constitutional_hash,
             "timestamp": self.timestamp.isoformat(),
             "compliance_tags": self.compliance_tags,
-            "metadata": self.metadata
+            "metadata": self.metadata,
         }
 
 

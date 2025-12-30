@@ -24,19 +24,17 @@ import logging
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
+from .vault_http_client import (
+    VaultHttpClient,
+)
+
 # Import from refactored modules
 from .vault_models import (
     CONSTITUTIONAL_HASH,
+    VaultAuditEntry,
     VaultConfig,
     VaultKeyType,
     VaultOperation,
-    VaultAuditEntry,
-)
-from .vault_http_client import (
-    VaultHttpClient,
-    HTTPX_AVAILABLE,
-    AIOHTTP_AVAILABLE,
-    HVAC_AVAILABLE,
 )
 
 # Backward compatibility: re-export httpx for test patching
@@ -44,23 +42,23 @@ try:
     import httpx
 except ImportError:
     httpx = None  # type: ignore
-from .vault_transit import VaultTransitOperations
-from .vault_kv import VaultKVOperations
-from .vault_audit import VaultAuditLogger
-from .vault_cache import VaultCacheManager
-
-# Secure fallback encryption (AES-256-GCM, replaces insecure XOR)
-from .secure_fallback_crypto import (
-    SecureFallbackCrypto,
-    SecureFallbackConfig,
-    is_secure_fallback_ciphertext,
-    is_legacy_local_ciphertext,
-    CRYPTOGRAPHY_AVAILABLE,
-)
+from ..models import PolicySignature
 
 # Local fallback for signing (not encryption)
 from .crypto_service import CryptoService
-from ..models import PolicySignature, KeyPair, KeyAlgorithm, KeyStatus
+
+# Secure fallback encryption (AES-256-GCM, replaces insecure XOR)
+from .secure_fallback_crypto import (
+    CRYPTOGRAPHY_AVAILABLE,
+    SecureFallbackConfig,
+    SecureFallbackCrypto,
+    is_legacy_local_ciphertext,
+    is_secure_fallback_ciphertext,
+)
+from .vault_audit import VaultAuditLogger
+from .vault_cache import VaultCacheManager
+from .vault_kv import VaultKVOperations
+from .vault_transit import VaultTransitOperations
 
 logger = logging.getLogger(__name__)
 
@@ -140,9 +138,7 @@ class VaultCryptoService:
         # Secure fallback encryption service (AES-256-GCM)
         self._secure_fallback: Optional[SecureFallbackCrypto] = None
         if fallback_enabled and CRYPTOGRAPHY_AVAILABLE:
-            self._secure_fallback = SecureFallbackCrypto(
-                config=SecureFallbackConfig.from_env()
-            )
+            self._secure_fallback = SecureFallbackCrypto(config=SecureFallbackConfig.from_env())
 
         # Constitutional compliance
         self._constitutional_hash = CONSTITUTIONAL_HASH
@@ -182,13 +178,10 @@ class VaultCryptoService:
         if self._vault_available:
             # Initialize operation handlers
             self._transit = VaultTransitOperations(
-                self._http_client,
-                transit_mount=self.config.transit_mount
+                self._http_client, transit_mount=self.config.transit_mount
             )
             self._kv = VaultKVOperations(
-                self._http_client,
-                kv_mount=self.config.kv_mount,
-                kv_version=self.config.kv_version
+                self._http_client, kv_mount=self.config.kv_mount, kv_version=self.config.kv_version
             )
 
         result["fallback_available"] = self.fallback_enabled
@@ -426,9 +419,7 @@ class VaultCryptoService:
             elif self.fallback_enabled and self._secure_fallback:
                 # Use secure AES-256-GCM fallback instead of insecure XOR
                 ciphertext = self._secure_fallback.encrypt(key_name, plaintext)
-                logger.info(
-                    f"Using secure AES-256-GCM fallback encryption for key '{key_name}'"
-                )
+                logger.info(f"Using secure AES-256-GCM fallback encryption for key '{key_name}'")
 
             else:
                 raise RuntimeError("Vault unavailable and fallback disabled")
@@ -477,9 +468,7 @@ class VaultCryptoService:
                 if not self.fallback_enabled or not self._secure_fallback:
                     raise RuntimeError("Secure fallback ciphertext but fallback disabled")
                 plaintext = self._secure_fallback.decrypt(key_name, ciphertext)
-                logger.info(
-                    f"Decrypted using secure AES-256-GCM fallback for key '{key_name}'"
-                )
+                logger.info(f"Decrypted using secure AES-256-GCM fallback for key '{key_name}'")
 
             elif is_legacy_local_ciphertext(ciphertext):
                 # Legacy insecure XOR ciphertext - BLOCKED by default for security
@@ -503,7 +492,9 @@ class VaultCryptoService:
                 data = base64.b64decode(encoded)
                 nonce, encrypted = data[:12], data[12:]
                 key_bytes = hashlib.sha256(key_name.encode()).digest()
-                plaintext = bytes(a ^ b for a, b in zip(encrypted, key_bytes * (len(encrypted) // 32 + 1)))
+                plaintext = bytes(
+                    a ^ b for a, b in zip(encrypted, key_bytes * (len(encrypted) // 32 + 1))
+                )
 
             elif self._vault_available and self._transit:
                 plaintext = await self._transit.decrypt(
@@ -650,8 +641,8 @@ class VaultCryptoService:
             "cache_stats": cache_stats,
             # Backward compatibility - total cache entries
             "cache_entries": (
-                cache_stats.get("public_keys", {}).get("entries", 0) +
-                cache_stats.get("key_info", {}).get("entries", 0)
+                cache_stats.get("public_keys", {}).get("entries", 0)
+                + cache_stats.get("key_info", {}).get("entries", 0)
             ),
             "audit_entries_count": self._audit_logger.entry_count,
             "timestamp": datetime.now(timezone.utc).isoformat(),
@@ -937,6 +928,7 @@ class VaultCryptoService:
 
 
 # Convenience functions
+
 
 async def create_vault_crypto_service(
     vault_addr: Optional[str] = None,

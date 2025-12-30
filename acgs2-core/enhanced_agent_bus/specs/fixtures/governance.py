@@ -5,11 +5,12 @@ Constitutional Hash: cdd01ef066bc6cf2
 Fixtures for consensus checking, policy verification, and governance testing.
 """
 
-import pytest
 from dataclasses import dataclass, field
-from typing import Optional, Dict, Any, List, Set, Callable
-from enum import Enum
 from datetime import datetime, timezone
+from enum import Enum
+from typing import Any, Callable, Dict, List, Optional
+
+import pytest
 
 try:
     from shared.constants import CONSTITUTIONAL_HASH
@@ -142,9 +143,7 @@ class SpecConsensusChecker:
         approve_weight = sum(
             v.weight for v in self.votes.values() if v.vote_type == VoteType.APPROVE
         )
-        reject_weight = sum(
-            v.weight for v in self.votes.values() if v.vote_type == VoteType.REJECT
-        )
+        reject_weight = sum(v.weight for v in self.votes.values() if v.vote_type == VoteType.REJECT)
         abstain_weight = sum(
             v.weight for v in self.votes.values() if v.vote_type == VoteType.ABSTAIN
         )
@@ -394,7 +393,11 @@ class SpecPolicyVerifier:
         """
         for result in self.verification_log:
             if result.enforcement == PolicyEnforcement.STRICT and not result.passed:
-                if scope is None or scope == self.rules.get(result.rule_id, PolicyRule("", "", lambda: True)).scope:
+                if (
+                    scope is None
+                    or scope
+                    == self.rules.get(result.rule_id, PolicyRule("", "", lambda: True)).scope
+                ):
                     return False
         return True
 

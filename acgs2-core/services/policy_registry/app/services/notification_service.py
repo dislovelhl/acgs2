@@ -5,8 +5,8 @@ Notification service for policy updates via WebSocket and Kafka
 import asyncio
 import json
 import logging
-from typing import Dict, Any, List, Set
 from datetime import datetime, timezone
+from typing import Any, Dict, Set
 
 try:
     from aiokafka import AIOKafkaProducer
@@ -20,9 +20,7 @@ class NotificationService:
     """Service for real-time notifications of policy changes"""
 
     def __init__(
-        self,
-        kafka_bootstrap_servers: str = "localhost:9092",
-        kafka_topic: str = "policy-updates"
+        self, kafka_bootstrap_servers: str = "localhost:9092", kafka_topic: str = "policy-updates"
     ):
         self.kafka_bootstrap_servers = kafka_bootstrap_servers
         self.kafka_topic = kafka_topic
@@ -49,11 +47,11 @@ class NotificationService:
     async def shutdown(self):
         """Shutdown notification services"""
         self._running = False
-        
+
         # Close Kafka producer
         if self.kafka_producer:
             await self.kafka_producer.stop()
-        
+
         # Close WebSocket connections
         for queue in self.websocket_connections.copy():
             try:
@@ -64,15 +62,11 @@ class NotificationService:
         self.websocket_connections.clear()
 
     async def notify_policy_update(
-        self,
-        policy_id: str,
-        version: str,
-        action: str,
-        metadata: Dict[str, Any] = None
+        self, policy_id: str, version: str, action: str, metadata: Dict[str, Any] = None
     ):
         """
         Notify subscribers of policy updates
-        
+
         Args:
             policy_id: Policy identifier
             version: Policy version
@@ -85,12 +79,12 @@ class NotificationService:
             "version": version,
             "action": action,
             "timestamp": datetime.now(timezone.utc).isoformat(),
-            "metadata": metadata or {}
+            "metadata": metadata or {},
         }
-        
+
         # Send to Kafka
         await self._send_to_kafka(notification)
-        
+
         # Send to WebSocket connections
         await self._send_to_websockets(notification)
 
@@ -98,13 +92,11 @@ class NotificationService:
         """Send notification to Kafka topic"""
         if not self.kafka_producer:
             return
-            
+
         try:
-            message = json.dumps(notification).encode('utf-8')
+            message = json.dumps(notification).encode("utf-8")
             await self.kafka_producer.send_and_wait(
-                self.kafka_topic,
-                message,
-                key=notification["policy_id"].encode('utf-8')
+                self.kafka_topic, message, key=notification["policy_id"].encode("utf-8")
             )
             logger.debug(f"Sent policy update to Kafka: {notification['policy_id']}")
         except Exception as e:
@@ -113,14 +105,14 @@ class NotificationService:
     async def _send_to_websockets(self, notification: Dict[str, Any]):
         """Send notification to WebSocket connections"""
         disconnected = set()
-        
+
         for queue in self.websocket_connections:
             try:
                 await queue.put(notification)
             except Exception as e:
                 logger.warning(f"WebSocket send failed: {e}")
                 disconnected.add(queue)
-        
+
         # Remove disconnected clients
         self.websocket_connections -= disconnected
 
@@ -139,14 +131,14 @@ class NotificationService:
         notification = {
             "type": "health_status",
             "status": status,
-            "timestamp": datetime.now(timezone.utc).isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }
-        
+
         await self._send_to_websockets(notification)
 
     async def get_connection_count(self) -> Dict[str, int]:
         """Get current connection counts"""
         return {
             "websocket_connections": len(self.websocket_connections),
-            "kafka_available": self.kafka_producer is not None
+            "kafka_available": self.kafka_producer is not None,
         }

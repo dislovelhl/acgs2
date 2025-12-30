@@ -4,22 +4,20 @@ ACGS-2 Constraint Generation System Tests
 测试约束生成系统的完整功能
 """
 
-import unittest
 import asyncio
-from unittest.mock import Mock, patch
-import sys
 import os
+import sys
+import unittest
 
 # 添加项目根目录到路径
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))))
 
 from constraint_generator import ConstraintGenerator, GenerationRequest, GenerationResult
-from language_constraints import LanguageConstraints
 from dynamic_updater import DynamicConstraintUpdater
-from unit_test_generator import UnitTestGenerator
-from quality_scorer import QualityScorer
 from feedback_loop import FeedbackLoop
-
+from language_constraints import LanguageConstraints
+from quality_scorer import QualityScorer
+from unit_test_generator import UnitTestGenerator
 
 
 class TestConstraintGenerationSystem(unittest.TestCase):
@@ -31,7 +29,7 @@ class TestConstraintGenerationSystem(unittest.TestCase):
             use_guidance=False,  # 测试时禁用以避免依赖
             use_outlines=False,
             enable_dynamic_update=True,
-            enable_feedback_loop=True
+            enable_feedback_loop=True,
         )
 
     def tearDown(self):
@@ -44,7 +42,7 @@ class TestConstraintGenerationSystem(unittest.TestCase):
             language="python",
             task_description="Create a function to calculate fibonacci numbers",
             generate_tests=True,
-            quality_check=True
+            quality_check=True,
         )
 
         self.assertEqual(request.language, "python")
@@ -54,10 +52,7 @@ class TestConstraintGenerationSystem(unittest.TestCase):
     def test_generation_result_creation(self):
         """测试生成结果创建"""
         result = GenerationResult(
-            code="def fib(n): return n",
-            syntax_valid=True,
-            quality_score=8.5,
-            generation_time=1.2
+            code="def fib(n): return n", syntax_valid=True, quality_score=8.5, generation_time=1.2
         )
 
         self.assertEqual(result.code, "def fib(n): return n")
@@ -71,7 +66,7 @@ class TestConstraintGenerationSystem(unittest.TestCase):
             language="python",
             task_description="Create a simple calculator class",
             generate_tests=True,
-            quality_check=True
+            quality_check=True,
         )
 
         result = await self.generator.generate_code(request)
@@ -89,7 +84,7 @@ class TestConstraintGenerationSystem(unittest.TestCase):
             language="javascript",
             task_description="Create a function to validate email addresses",
             generate_tests=True,
-            quality_check=True
+            quality_check=True,
         )
 
         result = await self.generator.generate_code(request)
@@ -104,15 +99,15 @@ class TestConstraintGenerationSystem(unittest.TestCase):
 
         # 测试Python约束
         python_constraints = constraints.get_constraints("python")
-        self.assertEqual(python_constraints['language'], 'python')
-        self.assertEqual(python_constraints['indent_style'], 'spaces')
-        self.assertEqual(python_constraints['indent_size'], 4)
+        self.assertEqual(python_constraints["language"], "python")
+        self.assertEqual(python_constraints["indent_style"], "spaces")
+        self.assertEqual(python_constraints["indent_size"], 4)
 
         # 测试JavaScript约束
         js_constraints = constraints.get_constraints("javascript")
-        self.assertEqual(js_constraints['language'], 'javascript')
-        self.assertEqual(js_constraints['indent_style'], 'spaces')
-        self.assertEqual(js_constraints['indent_size'], 2)
+        self.assertEqual(js_constraints["language"], "javascript")
+        self.assertEqual(js_constraints["indent_style"], "spaces")
+        self.assertEqual(js_constraints["indent_size"], 2)
 
     def test_dynamic_constraint_updater(self):
         """测试动态约束更新器"""
@@ -123,10 +118,7 @@ class TestConstraintGenerationSystem(unittest.TestCase):
         self.assertIsInstance(constraints, dict)
 
         # 测试反馈处理
-        feedback = {
-            'language': 'python',
-            'syntax_errors_reduced': True
-        }
+        feedback = {"language": "python", "syntax_errors_reduced": True}
 
         # 注意：这里是同步方法，但在实际实现中可能是异步的
         # await updater.process_feedback(feedback)
@@ -185,12 +177,9 @@ def calculate_fibonacci(n):
         feedback_loop = FeedbackLoop()
 
         # 创建模拟结果
-        request = {'language': 'python', 'task_description': 'test task'}
+        request = {"language": "python", "task_description": "test task"}
         result = GenerationResult(
-            code="def test(): pass",
-            syntax_valid=True,
-            quality_score=8.0,
-            generation_time=1.0
+            code="def test(): pass", syntax_valid=True, quality_score=8.0, generation_time=1.0
         )
 
         # 处理反馈
@@ -199,14 +188,14 @@ def calculate_fibonacci(n):
 
         # 获取摘要
         summary = feedback_loop.get_feedback_summary()
-        self.assertIn('total_samples', summary)
+        self.assertIn("total_samples", summary)
 
     def test_constraint_violations_tracking(self):
         """测试约束违反跟踪"""
         result = GenerationResult(
             code="invalid code",
             syntax_valid=False,
-            constraint_violations=["Missing semicolon", "Invalid syntax"]
+            constraint_violations=["Missing semicolon", "Invalid syntax"],
         )
 
         self.assertFalse(result.syntax_valid)
@@ -215,14 +204,14 @@ def calculate_fibonacci(n):
 
     async def test_multilanguage_support(self):
         """测试多语言支持"""
-        languages = ['python', 'javascript', 'java', 'cpp', 'go']
+        languages = ["python", "javascript", "java", "cpp", "go"]
 
         for language in languages:
             request = GenerationRequest(
                 language=language,
                 task_description=f"Create a hello world function in {language}",
                 generate_tests=False,
-                quality_check=False
+                quality_check=False,
             )
 
             result = await self.generator.generate_code(request)
@@ -235,12 +224,12 @@ def calculate_fibonacci(n):
         """测试性能指标"""
         stats = self.generator.get_stats()
 
-        self.assertIn('total_generations', stats)
-        self.assertIn('successful_generations', stats)
-        self.assertIn('syntax_errors_caught', stats)
+        self.assertIn("total_generations", stats)
+        self.assertIn("successful_generations", stats)
+        self.assertIn("syntax_errors_caught", stats)
 
         # 初始状态应该都是0
-        self.assertEqual(stats['total_generations'], 0)
+        self.assertEqual(stats["total_generations"], 0)
 
     async def test_error_handling(self):
         """测试错误处理"""
@@ -249,7 +238,7 @@ def calculate_fibonacci(n):
             language="invalid_language",
             task_description="Test invalid language",
             generate_tests=False,
-            quality_check=False
+            quality_check=False,
         )
 
         result = await self.generator.generate_code(request)
@@ -262,21 +251,21 @@ def calculate_fibonacci(n):
         constraints = LanguageConstraints()
 
         python_schema = constraints._get_python_schema()
-        self.assertIn('type', python_schema)
-        self.assertEqual(python_schema['type'], 'object')
-        self.assertIn('properties', python_schema)
+        self.assertIn("type", python_schema)
+        self.assertEqual(python_schema["type"], "object")
+        self.assertIn("properties", python_schema)
 
     def test_cfg_grammar_loading(self):
         """测试CFG语法加载"""
         constraints = LanguageConstraints()
 
         python_grammar = constraints._get_python_grammar()
-        self.assertIn('start:', python_grammar)
-        self.assertIn('statement:', python_grammar)
+        self.assertIn("start:", python_grammar)
+        self.assertIn("statement:", python_grammar)
 
         js_grammar = constraints._get_javascript_grammar()
-        self.assertIn('start:', js_grammar)
-        self.assertIn('statement:', js_grammar)
+        self.assertIn("start:", js_grammar)
+        self.assertIn("statement:", js_grammar)
 
 
 class TestIntegration(unittest.TestCase):
@@ -287,7 +276,7 @@ class TestIntegration(unittest.TestCase):
             use_guidance=False,
             use_outlines=False,
             enable_dynamic_update=True,
-            enable_feedback_loop=True
+            enable_feedback_loop=True,
         )
 
     async def test_full_pipeline(self):
@@ -298,10 +287,10 @@ class TestIntegration(unittest.TestCase):
             task_description="Create a class to manage a library system with books and users",
             context={
                 "requirements": "Should support adding books, borrowing books, returning books",
-                "constraints": "Use proper error handling and type hints"
+                "constraints": "Use proper error handling and type hints",
             },
             generate_tests=True,
-            quality_check=True
+            quality_check=True,
         )
 
         # 生成代码
@@ -326,7 +315,7 @@ class TestIntegration(unittest.TestCase):
                 language="python",
                 task_description=f"Create a function to {task}",
                 generate_tests=False,
-                quality_check=True
+                quality_check=True,
             )
             for task in ["sort a list", "validate email", "calculate factorial", "parse JSON"]
         ]
@@ -357,7 +346,7 @@ def run_async_test(coro):
         loop.close()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # 为异步测试创建包装器
     async def run_async_tests():
         suite = unittest.TestLoader().loadTestsFromTestCase(TestConstraintGenerationSystem)
@@ -365,7 +354,7 @@ if __name__ == '__main__':
 
         # 运行异步测试
         for test_case in suite:
-            if hasattr(test_case, '_testMethodName'):
+            if hasattr(test_case, "_testMethodName"):
                 test_method = getattr(test_case, test_case._testMethodName)
                 if asyncio.iscoroutinefunction(test_method):
                     try:

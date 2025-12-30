@@ -5,17 +5,16 @@ Constitutional Hash: cdd01ef066bc6cf2
 Comprehensive tests for the MeteringManager class and factory function.
 """
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
-from typing import Any, Dict, Optional
 
+import pytest
 from enhanced_agent_bus.metering_manager import MeteringManager, create_metering_manager
-from enhanced_agent_bus.models import AgentMessage, MessageType, Priority, CONSTITUTIONAL_HASH
-
+from enhanced_agent_bus.models import CONSTITUTIONAL_HASH, AgentMessage, MessageType, Priority
 
 # =============================================================================
 # Fixtures
 # =============================================================================
+
 
 @pytest.fixture
 def valid_message() -> AgentMessage:
@@ -52,7 +51,9 @@ def mock_metering_queue() -> AsyncMock:
 
 
 @pytest.fixture
-def metering_manager(mock_metering_hooks: MagicMock, mock_metering_queue: AsyncMock) -> MeteringManager:
+def metering_manager(
+    mock_metering_hooks: MagicMock, mock_metering_queue: AsyncMock
+) -> MeteringManager:
     """Create a metering manager with mocks."""
     return MeteringManager(
         metering_hooks=mock_metering_hooks,
@@ -74,6 +75,7 @@ def disabled_metering_manager() -> MeteringManager:
 # =============================================================================
 # MeteringManager Initialization Tests
 # =============================================================================
+
 
 class TestMeteringManagerInit:
     """Tests for MeteringManager initialization."""
@@ -118,6 +120,7 @@ class TestMeteringManagerInit:
 # MeteringManager Properties Tests
 # =============================================================================
 
+
 class TestMeteringManagerProperties:
     """Tests for MeteringManager properties."""
 
@@ -154,6 +157,7 @@ class TestMeteringManagerProperties:
 # Start/Stop Tests
 # =============================================================================
 
+
 class TestMeteringManagerLifecycle:
     """Tests for MeteringManager start/stop methods."""
 
@@ -189,6 +193,7 @@ class TestMeteringManagerLifecycle:
 # =============================================================================
 # Record Agent Message Tests
 # =============================================================================
+
 
 class TestRecordAgentMessage:
     """Tests for record_agent_message method."""
@@ -280,6 +285,7 @@ class TestRecordAgentMessage:
 # Record Deliberation Request Tests
 # =============================================================================
 
+
 class TestRecordDeliberationRequest:
     """Tests for record_deliberation_request method."""
 
@@ -334,6 +340,7 @@ class TestRecordDeliberationRequest:
 # =============================================================================
 # Record Validation Result Tests
 # =============================================================================
+
 
 class TestRecordValidationResult:
     """Tests for record_validation_result method."""
@@ -409,6 +416,7 @@ class TestRecordValidationResult:
 # Get Metrics Tests
 # =============================================================================
 
+
 class TestGetMetrics:
     """Tests for get_metrics method."""
 
@@ -430,6 +438,7 @@ class TestGetMetrics:
 # Factory Function Tests
 # =============================================================================
 
+
 class TestCreateMeteringManager:
     """Tests for create_metering_manager factory function."""
 
@@ -443,7 +452,7 @@ class TestCreateMeteringManager:
     def test_create_metering_manager_import_error(self) -> None:
         """Test factory handles import errors gracefully."""
         # When metering_integration is not available, should return disabled manager
-        with patch.dict('sys.modules', {'metering_integration': None}):
+        with patch.dict("sys.modules", {"metering_integration": None}):
             manager = create_metering_manager(enable_metering=True)
             # May or may not be enabled depending on import resolution
             # The key is that it doesn't raise
@@ -462,6 +471,7 @@ class TestCreateMeteringManager:
 # =============================================================================
 # Integration Tests
 # =============================================================================
+
 
 class TestMeteringManagerIntegration:
     """Integration tests for MeteringManager."""

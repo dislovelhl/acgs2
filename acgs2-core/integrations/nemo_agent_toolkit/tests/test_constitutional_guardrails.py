@@ -4,15 +4,14 @@ Constitutional Hash: cdd01ef066bc6cf2
 """
 
 import pytest
-from datetime import UTC, datetime
 
 from nemo_agent_toolkit.constitutional_guardrails import (
+    CONSTITUTIONAL_HASH,
     ConstitutionalGuardrails,
+    GuardrailAction,
     GuardrailConfig,
     GuardrailResult,
-    GuardrailAction,
     ViolationType,
-    CONSTITUTIONAL_HASH,
 )
 
 
@@ -146,9 +145,7 @@ class TestConstitutionalGuardrails:
     @pytest.mark.asyncio
     async def test_check_input_with_ssn(self, guardrails):
         """Test detecting SSN in input."""
-        result = await guardrails.check_input(
-            "My SSN is 123-45-6789"
-        )
+        result = await guardrails.check_input("My SSN is 123-45-6789")
         assert result.allowed is False
         assert result.action == GuardrailAction.BLOCK
         assert any(v["type"] == "privacy" for v in result.violations)
@@ -156,27 +153,21 @@ class TestConstitutionalGuardrails:
     @pytest.mark.asyncio
     async def test_check_input_with_email(self, guardrails):
         """Test detecting email in input."""
-        result = await guardrails.check_input(
-            "Contact me at john.doe@example.com"
-        )
+        result = await guardrails.check_input("Contact me at john.doe@example.com")
         assert result.allowed is False
         assert any(v["type"] == "privacy" for v in result.violations)
 
     @pytest.mark.asyncio
     async def test_check_input_with_phone(self, guardrails):
         """Test detecting phone number in input."""
-        result = await guardrails.check_input(
-            "Call me at 555-123-4567"
-        )
+        result = await guardrails.check_input("Call me at 555-123-4567")
         assert result.allowed is False
         assert any(v["type"] == "privacy" for v in result.violations)
 
     @pytest.mark.asyncio
     async def test_check_input_with_credit_card(self, guardrails):
         """Test detecting credit card in input."""
-        result = await guardrails.check_input(
-            "My card is 1234567890123456"
-        )
+        result = await guardrails.check_input("My card is 1234567890123456")
         assert result.allowed is False
         assert any(v["type"] == "privacy" for v in result.violations)
 
@@ -184,9 +175,7 @@ class TestConstitutionalGuardrails:
     async def test_check_input_safety_threat(self, guardrails):
         """Test detecting security threats."""
         # Pattern matches "hack system" or "attack server" etc.
-        result = await guardrails.check_input(
-            "I want to hack system and exploit database"
-        )
+        result = await guardrails.check_input("I want to hack system and exploit database")
         assert result.allowed is False
         assert any(v["type"] == "security" for v in result.violations)
 
@@ -200,9 +189,7 @@ class TestConstitutionalGuardrails:
     @pytest.mark.asyncio
     async def test_check_output_with_pii_redaction(self, guardrails):
         """Test PII redaction in output."""
-        result = await guardrails.check_output(
-            "User email is john@example.com"
-        )
+        result = await guardrails.check_output("User email is john@example.com")
         # Output should be modified (redacted) not blocked
         if result.modified_content:
             assert "[REDACTED]" in result.modified_content
@@ -211,9 +198,7 @@ class TestConstitutionalGuardrails:
     @pytest.mark.asyncio
     async def test_check_output_harmful_content(self, guardrails):
         """Test detecting harmful content in output."""
-        result = await guardrails.check_output(
-            "Here are instructions to hack the system"
-        )
+        result = await guardrails.check_output("Here are instructions to hack the system")
         assert any(v["type"] == "safety" for v in result.violations)
 
     @pytest.mark.asyncio
@@ -259,6 +244,7 @@ class TestConstitutionalGuardrails:
 
     def test_add_custom_input_validator(self, guardrails):
         """Test adding custom input validator."""
+
         def custom_validator(content):
             return GuardrailResult(
                 action=GuardrailAction.ALLOW,
@@ -270,6 +256,7 @@ class TestConstitutionalGuardrails:
 
     def test_add_custom_output_validator(self, guardrails):
         """Test adding custom output validator."""
+
         def custom_validator(content):
             return GuardrailResult(
                 action=GuardrailAction.ALLOW,

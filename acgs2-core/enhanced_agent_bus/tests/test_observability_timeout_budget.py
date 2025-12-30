@@ -5,23 +5,24 @@ Constitutional Hash: cdd01ef066bc6cf2
 
 import asyncio
 import time
+
 import pytest
 
 try:
     from observability.timeout_budget import (
-        LayerTimeoutError,
+        CONSTITUTIONAL_HASH,
         Layer,
         LayerTimeoutBudget,
+        LayerTimeoutError,
         TimeoutBudgetManager,
-        CONSTITUTIONAL_HASH,
     )
 except ImportError:
     from ..observability.timeout_budget import (
-        LayerTimeoutError,
+        CONSTITUTIONAL_HASH,
         Layer,
         LayerTimeoutBudget,
+        LayerTimeoutError,
         TimeoutBudgetManager,
-        CONSTITUTIONAL_HASH,
     )
 
 

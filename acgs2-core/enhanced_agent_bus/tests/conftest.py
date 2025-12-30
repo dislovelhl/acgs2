@@ -14,12 +14,10 @@ import sys
 _test_with_rust = os.environ.get("TEST_WITH_RUST", "0") == "1"
 if not _test_with_rust:
     # Block all Rust-related imports
-    sys.modules['enhanced_agent_bus_rust'] = None
+    sys.modules["enhanced_agent_bus_rust"] = None
 
 import asyncio
-import importlib.util
 from datetime import datetime, timezone
-from typing import Any, Dict, Generator
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -32,40 +30,40 @@ if enhanced_agent_bus_dir not in sys.path:
 # Ensure consistent class identity by patching sys.modules
 # This maps 'models' etc. to their 'enhanced_agent_bus.models' counterparts
 try:
-    import enhanced_agent_bus.models as _models
-    import enhanced_agent_bus.validators as _validators
+    import enhanced_agent_bus.core as _core
     import enhanced_agent_bus.exceptions as _exceptions
     import enhanced_agent_bus.interfaces as _interfaces
-    import enhanced_agent_bus.registry as _registry
-    import enhanced_agent_bus.core as _core
     import enhanced_agent_bus.maci_enforcement as _maci_enforcement
+    import enhanced_agent_bus.models as _models
+    import enhanced_agent_bus.registry as _registry
+    import enhanced_agent_bus.validators as _validators
 
     # Patch sys.modules to point flat names to package-qualified modules
-    sys.modules['models'] = _models
-    sys.modules['validators'] = _validators
-    sys.modules['exceptions'] = _exceptions
-    sys.modules['interfaces'] = _interfaces
-    sys.modules['registry'] = _registry
-    sys.modules['core'] = _core
-    sys.modules['maci_enforcement'] = _maci_enforcement
+    sys.modules["models"] = _models
+    sys.modules["validators"] = _validators
+    sys.modules["exceptions"] = _exceptions
+    sys.modules["interfaces"] = _interfaces
+    sys.modules["registry"] = _registry
+    sys.modules["core"] = _core
+    sys.modules["maci_enforcement"] = _maci_enforcement
 except ImportError:
     # Fallback if the package structure is not respected during execution
-    import models as _models
-    import validators as _validators
+    import core as _core
     import exceptions as _exceptions
     import interfaces as _interfaces
-    import registry as _registry
-    import core as _core
     import maci_enforcement as _maci_enforcement
+    import models as _models
+    import registry as _registry
+    import validators as _validators
 
     # Patch package names to point to flat modules
-    sys.modules['enhanced_agent_bus.models'] = _models
-    sys.modules['enhanced_agent_bus.validators'] = _validators
-    sys.modules['enhanced_agent_bus.exceptions'] = _exceptions
-    sys.modules['enhanced_agent_bus.interfaces'] = _interfaces
-    sys.modules['enhanced_agent_bus.registry'] = _registry
-    sys.modules['enhanced_agent_bus.core'] = _core
-    sys.modules['enhanced_agent_bus.maci_enforcement'] = _maci_enforcement
+    sys.modules["enhanced_agent_bus.models"] = _models
+    sys.modules["enhanced_agent_bus.validators"] = _validators
+    sys.modules["enhanced_agent_bus.exceptions"] = _exceptions
+    sys.modules["enhanced_agent_bus.interfaces"] = _interfaces
+    sys.modules["enhanced_agent_bus.registry"] = _registry
+    sys.modules["enhanced_agent_bus.core"] = _core
+    sys.modules["enhanced_agent_bus.maci_enforcement"] = _maci_enforcement
 
 # Rust availability check (already blocked at module top if not TEST_WITH_RUST)
 # _test_with_rust was set at top of file
@@ -76,12 +74,14 @@ if not _test_with_rust:
     # Also patch message_processor directly if it's already imported
     try:
         import enhanced_agent_bus.message_processor as _message_processor
+
         _message_processor.USE_RUST = False
     except (ImportError, AttributeError):
         pass
 else:
     try:
         import enhanced_agent_bus_rust as _rust_bus
+
         RUST_AVAILABLE = True
         _core.USE_RUST = True
     except ImportError:
@@ -107,6 +107,7 @@ EnhancedAgentBus = _core.EnhancedAgentBus
 
 # === Pytest Configuration ===
 
+
 @pytest.fixture(scope="session")
 def event_loop():
     """Create event loop for async tests."""
@@ -116,6 +117,7 @@ def event_loop():
 
 
 # === Model Fixtures ===
+
 
 @pytest.fixture
 def constitutional_hash() -> str:
@@ -197,6 +199,7 @@ def broadcast_message() -> AgentMessage:
 
 # === Processor Fixtures ===
 
+
 @pytest.fixture
 def message_processor() -> MessageProcessor:
     """Create a fresh MessageProcessor instance."""
@@ -217,6 +220,7 @@ def processor_with_handler(message_processor) -> MessageProcessor:
 
 
 # === Agent Bus Fixtures ===
+
 
 @pytest.fixture
 def agent_bus() -> EnhancedAgentBus:
@@ -250,6 +254,7 @@ async def agent_bus_with_agents(started_agent_bus) -> EnhancedAgentBus:
 
 # === Mock Fixtures ===
 
+
 @pytest.fixture
 def mock_redis():
     """Create a mock Redis client."""
@@ -281,20 +286,25 @@ def mock_http_client():
 @pytest.fixture
 def mock_deliberation_approver():
     """Create a mock approver for deliberation tests."""
+
     async def auto_approve(item):
         return {"approved": True, "reason": "Auto-approved for testing"}
+
     return auto_approve
 
 
 @pytest.fixture
 def mock_deliberation_rejector():
     """Create a mock rejector for deliberation tests."""
+
     async def auto_reject(item):
         return {"approved": False, "reason": "Auto-rejected for testing"}
+
     return auto_reject
 
 
 # === Validation Fixtures ===
+
 
 @pytest.fixture
 def valid_validation_result() -> ValidationResult:
@@ -321,6 +331,7 @@ def validation_result_with_warnings() -> ValidationResult:
 
 # === Time-related Fixtures ===
 
+
 @pytest.fixture
 def fixed_timestamp() -> datetime:
     """Return a fixed timestamp for deterministic tests."""
@@ -337,6 +348,7 @@ def mock_datetime(fixed_timestamp):
 
 
 # === Performance Testing Fixtures ===
+
 
 @pytest.fixture
 def performance_messages(valid_message) -> list:
@@ -356,6 +368,7 @@ def performance_messages(valid_message) -> list:
 
 # === Cleanup Fixtures ===
 
+
 @pytest.fixture(autouse=True)
 def reset_singletons():
     """Reset singleton instances between tests."""
@@ -363,11 +376,12 @@ def reset_singletons():
     yield
     # Cleanup after test
     # Reset core module singletons if they have reset functions
-    if hasattr(_core, 'reset_agent_bus'):
+    if hasattr(_core, "reset_agent_bus"):
         _core.reset_agent_bus()
 
 
 # === Rust Testing Support ===
+
 
 @pytest.fixture
 def rust_available() -> bool:
@@ -401,9 +415,7 @@ def rust_enabled_bus():
 
 def pytest_configure(config):
     """Register custom markers."""
-    config.addinivalue_line(
-        "markers", "requires_rust: mark test as requiring Rust implementation"
-    )
+    config.addinivalue_line("markers", "requires_rust: mark test as requiring Rust implementation")
 
 
 @pytest.fixture(autouse=True)

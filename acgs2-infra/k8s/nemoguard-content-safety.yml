@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nemoguard-content-safety
+  namespace: acgs-governance
+  labels:
+    app: nemoguard-content-safety
+    component: governance
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: nemoguard-content-safety
+  template:
+    metadata:
+      labels:
+        app: nemoguard-content-safety
+    spec:
+      containers:
+        - name: nemoguard
+          image: nvcr.io/nvidia/nim/nemoguard-content-safety:24.12
+          ports:
+            - containerPort: 8000
+          env:
+            - name: NGC_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: ngc-secret
+                  key: api-key
+          resources:
+            limits:
+              nvidia.com/gpu: 1
+              cpu: "4"
+              memory: "16Gi"
+            requests:
+              nvidia.com/gpu: 1
+              cpu: "2"
+              memory: "8Gi"
+          livenessProbe:
+            httpGet:
+              path: /v1/health/live
+              port: 8000
+            initialDelaySeconds: 60
+          readinessProbe:
+            httpGet:
+              path: /v1/health/ready
+              port: 8000
+            initialDelaySeconds: 30
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nemoguard-content-safety
+  namespace: acgs-governance
+spec:
+  selector:
+    app: nemoguard-content-safety
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8000

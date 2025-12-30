@@ -6,14 +6,15 @@ and historical precedents using Hugging Face Transformers.
 """
 
 import logging
-from typing import List, Dict, Any, Optional, Tuple
 import re
-from pathlib import Path
 from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any, Dict, List
 
 try:
-    from transformers import AutoTokenizer, AutoModel
     from sentence_transformers import SentenceTransformer
+    from transformers import AutoModel, AutoTokenizer
+
     HUGGINGFACE_AVAILABLE = True
 except ImportError:
     HUGGINGFACE_AVAILABLE = False
@@ -46,7 +47,9 @@ class DocumentProcessor:
         else:
             logger.warning("Hugging Face transformers not available")
 
-    def process_constitutional_document(self, content: str, metadata: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def process_constitutional_document(
+        self, content: str, metadata: Dict[str, Any]
+    ) -> List[Dict[str, Any]]:
         """
         Process a constitutional document into chunks with metadata.
 
@@ -67,23 +70,24 @@ class DocumentProcessor:
         chunk_objects = []
         for i, chunk in enumerate(chunks):
             chunk_metadata = metadata.copy()
-            chunk_metadata.update({
-                "chunk_id": f"{metadata.get('doc_id', 'unknown')}_chunk_{i}",
-                "chunk_index": i,
-                "total_chunks": len(chunks),
-                "content_length": len(chunk),
-                "processed_at": datetime.now(timezone.utc).isoformat()
-            })
+            chunk_metadata.update(
+                {
+                    "chunk_id": f"{metadata.get('doc_id', 'unknown')}_chunk_{i}",
+                    "chunk_index": i,
+                    "total_chunks": len(chunks),
+                    "content_length": len(chunk),
+                    "processed_at": datetime.now(timezone.utc).isoformat(),
+                }
+            )
 
-            chunk_objects.append({
-                "content": chunk,
-                "metadata": chunk_metadata
-            })
+            chunk_objects.append({"content": chunk, "metadata": chunk_metadata})
 
         logger.info(f"Processed document into {len(chunks)} chunks")
         return chunk_objects
 
-    def process_precedent_document(self, content: str, metadata: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def process_precedent_document(
+        self, content: str, metadata: Dict[str, Any]
+    ) -> List[Dict[str, Any]]:
         """
         Process a historical precedent document.
 
@@ -109,19 +113,18 @@ class DocumentProcessor:
 
             for i, chunk in enumerate(chunks):
                 chunk_metadata = metadata.copy()
-                chunk_metadata.update({
-                    "section": section_name,
-                    "chunk_id": f"{metadata.get('case_id', 'unknown')}_{section_name}_chunk_{i}",
-                    "chunk_index": i,
-                    "total_chunks": len(chunks),
-                    "content_length": len(chunk),
-                    "processed_at": datetime.now(timezone.utc).isoformat()
-                })
+                chunk_metadata.update(
+                    {
+                        "section": section_name,
+                        "chunk_id": f"{metadata.get('case_id', 'unknown')}_{section_name}_chunk_{i}",
+                        "chunk_index": i,
+                        "total_chunks": len(chunks),
+                        "content_length": len(chunk),
+                        "processed_at": datetime.now(timezone.utc).isoformat(),
+                    }
+                )
 
-                chunk_objects.append({
-                    "content": chunk,
-                    "metadata": chunk_metadata
-                })
+                chunk_objects.append({"content": chunk, "metadata": chunk_metadata})
 
         logger.info(f"Processed precedent into {len(chunk_objects)} chunks")
         return chunk_objects
@@ -150,15 +153,15 @@ class DocumentProcessor:
     def _clean_text(self, text: str) -> str:
         """Clean and normalize text content."""
         # Remove excessive whitespace
-        text = re.sub(r'\s+', ' ', text.strip())
+        text = re.sub(r"\s+", " ", text.strip())
 
         # Remove page numbers, headers, footers (basic patterns)
-        text = re.sub(r'\n\s*\d+\s*\n', '\n', text)
-        text = re.sub(r'Page \d+ of \d+', '', text)
+        text = re.sub(r"\n\s*\d+\s*\n", "\n", text)
+        text = re.sub(r"Page \d+ of \d+", "", text)
 
         # Normalize quotes
-        text = text.replace('“', '"').replace('”', '"').replace('„', '"')
-        text = text.replace('‘', "'").replace('’', "'").replace('‚', "'")
+        text = text.replace("“", '"').replace("”", '"').replace("„", '"')
+        text = text.replace("‘", "'").replace("’", "'").replace("‚", "'")
 
         return text.strip()
 
@@ -177,7 +180,7 @@ class DocumentProcessor:
             return [text]
 
         chunks = []
-        sentences = re.split(r'(?<=[.!?])\s+', text)
+        sentences = re.split(r"(?<=[.!?])\s+", text)
 
         current_chunk = ""
         for sentence in sentences:
@@ -203,21 +206,16 @@ class DocumentProcessor:
         Returns:
             Dictionary of section name to content
         """
-        sections = {
-            "facts": "",
-            "reasoning": "",
-            "decision": "",
-            "full_text": text
-        }
+        sections = {"facts": "", "reasoning": "", "decision": "", "full_text": text}
 
         # Simple pattern matching for common precedent structures
         # This would need to be enhanced for real legal documents
         text_lower = text.lower()
 
         # Look for section headers
-        fact_patterns = [r'facts?:', r'background:', r'history:']
-        reasoning_patterns = [r'reasoning:', r'analysis:', r'consideration:']
-        decision_patterns = [r'decision:', r'judgment:', r'ruling:', r'held:']
+        fact_patterns = [r"facts?:", r"background:", r"history:"]
+        reasoning_patterns = [r"reasoning:", r"analysis:", r"consideration:"]
+        decision_patterns = [r"decision:", r"judgment:", r"ruling:", r"held:"]
 
         # Extract facts section
         for pattern in fact_patterns:
@@ -280,19 +278,20 @@ class DocumentProcessor:
         for file_path in directory.rglob("*"):
             if file_path.is_file():
                 try:
-                    if file_path.suffix.lower() in ['.txt', '.md']:
-                        content = file_path.read_text(encoding='utf-8')
+                    if file_path.suffix.lower() in [".txt", ".md"]:
+                        content = file_path.read_text(encoding="utf-8")
                         metadata = self._extract_file_metadata(file_path)
                         chunks = self.process_constitutional_document(content, metadata)
                         all_chunks.extend(chunks)
-                    elif file_path.suffix.lower() == '.json':
+                    elif file_path.suffix.lower() == ".json":
                         # Handle JSON structured data
                         import json
-                        data = json.loads(file_path.read_text(encoding='utf-8'))
-                        if isinstance(data, dict) and 'content' in data:
-                            metadata = data.get('metadata', {})
-                            metadata['source_file'] = str(file_path)
-                            chunks = self.process_constitutional_document(data['content'], metadata)
+
+                        data = json.loads(file_path.read_text(encoding="utf-8"))
+                        if isinstance(data, dict) and "content" in data:
+                            metadata = data.get("metadata", {})
+                            metadata["source_file"] = str(file_path)
+                            chunks = self.process_constitutional_document(data["content"], metadata)
                             all_chunks.extend(chunks)
                 except Exception as e:
                     logger.error(f"Failed to process file {file_path}: {e}")
@@ -307,19 +306,19 @@ class DocumentProcessor:
             "filename": file_path.name,
             "file_type": file_path.suffix,
             "doc_id": file_path.stem,
-            "processed_at": datetime.now(timezone.utc).isoformat()
+            "processed_at": datetime.now(timezone.utc).isoformat(),
         }
 
         # Try to extract date from filename
-        date_match = re.search(r'\d{4}[-_]\d{2}[-_]\d{2}', file_path.name)
+        date_match = re.search(r"\d{4}[-_]\d{2}[-_]\d{2}", file_path.name)
         if date_match:
-            metadata["date"] = date_match.group().replace('_', '-')
+            metadata["date"] = date_match.group().replace("_", "-")
 
         # Classify document type
         name_lower = file_path.name.lower()
-        if 'constitution' in name_lower:
+        if "constitution" in name_lower:
             metadata["doc_type"] = "constitution"
-        elif 'precedent' in name_lower or 'case' in name_lower:
+        elif "precedent" in name_lower or "case" in name_lower:
             metadata["doc_type"] = "precedent"
         else:
             metadata["doc_type"] = "document"

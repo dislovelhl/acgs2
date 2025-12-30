@@ -6,26 +6,26 @@ Integration tests validating health aggregator with real circuit breakers.
 """
 
 import asyncio
+
 import pytest
-from datetime import datetime, timezone
 
 try:
     from enhanced_agent_bus.health_aggregator import (
-        CONSTITUTIONAL_HASH,
         CIRCUIT_BREAKER_AVAILABLE,
-        SystemHealthStatus,
+        CONSTITUTIONAL_HASH,
         HealthAggregator,
         HealthAggregatorConfig,
+        SystemHealthStatus,
         get_health_aggregator,
         reset_health_aggregator,
     )
 except ImportError:
     from health_aggregator import (
-        CONSTITUTIONAL_HASH,
         CIRCUIT_BREAKER_AVAILABLE,
-        SystemHealthStatus,
+        CONSTITUTIONAL_HASH,
         HealthAggregator,
         HealthAggregatorConfig,
+        SystemHealthStatus,
         get_health_aggregator,
         reset_health_aggregator,
     )
@@ -35,8 +35,7 @@ pytestmark = [
     pytest.mark.constitutional,
     pytest.mark.integration,
     pytest.mark.skipif(
-        not CIRCUIT_BREAKER_AVAILABLE,
-        reason="Circuit breaker support not available"
+        not CIRCUIT_BREAKER_AVAILABLE, reason="Circuit breaker support not available"
     ),
 ]
 
@@ -76,15 +75,16 @@ async def aggregator_with_registry(registry):
 class TestHealthAggregatorIntegration:
     """Integration tests with real circuit breaker registry."""
 
-    async def test_integration_with_circuit_breaker_registry(self, aggregator_with_registry, registry):
+    async def test_integration_with_circuit_breaker_registry(
+        self, aggregator_with_registry, registry
+    ):
         """Test integration with real CircuitBreakerRegistry."""
         from shared.circuit_breaker import get_circuit_breaker
-        import pybreaker
 
         # Create some circuit breakers through registry
-        cb1 = get_circuit_breaker('test_service_1')
-        cb2 = get_circuit_breaker('test_service_2')
-        cb3 = get_circuit_breaker('test_service_3')
+        cb1 = get_circuit_breaker("test_service_1")
+        cb2 = get_circuit_breaker("test_service_2")
+        cb3 = get_circuit_breaker("test_service_3")
 
         # All should be closed initially
         health = aggregator_with_registry.get_system_health()
@@ -94,13 +94,13 @@ class TestHealthAggregatorIntegration:
 
     async def test_health_degradation_detection(self, aggregator_with_registry, registry):
         """Test detecting health degradation as circuits open."""
-        from shared.circuit_breaker import get_circuit_breaker
         import pybreaker
+        from shared.circuit_breaker import get_circuit_breaker
 
         # Create breakers
-        cb1 = get_circuit_breaker('service_1')
-        cb2 = get_circuit_breaker('service_2')
-        cb3 = get_circuit_breaker('service_3')
+        cb1 = get_circuit_breaker("service_1")
+        cb2 = get_circuit_breaker("service_2")
+        cb3 = get_circuit_breaker("service_3")
 
         # Initial health should be good
         health = aggregator_with_registry.get_system_health()
@@ -124,7 +124,7 @@ class TestHealthAggregatorIntegration:
         # Health should be degraded
         health = aggregator_with_registry.get_system_health()
         assert health.open_breakers == 1
-        assert 'service_1' in health.critical_services
+        assert "service_1" in health.critical_services
         # With 1/3 open: (2*1.0 + 0*0.5 + 1*0.0) / 3 = 0.67 (DEGRADED)
         assert health.status == SystemHealthStatus.DEGRADED
 
@@ -133,18 +133,20 @@ class TestHealthAggregatorIntegration:
         from shared.circuit_breaker import get_circuit_breaker
 
         # Create breakers
-        cb1 = get_circuit_breaker('monitored_1')
-        cb2 = get_circuit_breaker('monitored_2')
+        cb1 = get_circuit_breaker("monitored_1")
+        cb2 = get_circuit_breaker("monitored_2")
 
         # Track status changes
         status_changes = []
 
         def track_changes(report):
-            status_changes.append({
-                'status': report.status,
-                'score': report.health_score,
-                'timestamp': report.timestamp,
-            })
+            status_changes.append(
+                {
+                    "status": report.status,
+                    "score": report.health_score,
+                    "timestamp": report.timestamp,
+                }
+            )
 
         aggregator_with_registry.on_health_change(track_changes)
 
@@ -167,11 +169,11 @@ class TestHealthAggregatorIntegration:
 
     async def test_custom_breaker_with_registry(self, aggregator_with_registry, registry):
         """Test mixing custom breakers with registry breakers."""
-        from shared.circuit_breaker import get_circuit_breaker
         import pybreaker
+        from shared.circuit_breaker import get_circuit_breaker
 
         # Add registry breakers
-        cb1 = get_circuit_breaker('registry_service')
+        cb1 = get_circuit_breaker("registry_service")
 
         # Add custom breaker
         class CustomBreaker:
@@ -180,29 +182,29 @@ class TestHealthAggregatorIntegration:
             success_counter = 2
 
         custom = CustomBreaker()
-        aggregator_with_registry.register_circuit_breaker('custom_service', custom)
+        aggregator_with_registry.register_circuit_breaker("custom_service", custom)
 
         # Get health
         health = aggregator_with_registry.get_system_health()
 
         # Should include both registry and custom breakers
         assert health.total_breakers == 2
-        assert 'registry_service' in health.circuit_details
-        assert 'custom_service' in health.circuit_details
+        assert "registry_service" in health.circuit_details
+        assert "custom_service" in health.circuit_details
         assert health.half_open_breakers == 1
-        assert 'custom_service' in health.degraded_services
+        assert "custom_service" in health.degraded_services
 
     async def test_real_world_monitoring_scenario(self, aggregator_with_registry, registry):
         """Test realistic monitoring scenario with multiple services."""
-        from shared.circuit_breaker import get_circuit_breaker, CircuitBreakerConfig
         import pybreaker
+        from shared.circuit_breaker import CircuitBreakerConfig, get_circuit_breaker
 
         # Create services with different configurations
         services = {
-            'database': CircuitBreakerConfig(fail_max=3, reset_timeout=10),
-            'cache': CircuitBreakerConfig(fail_max=5, reset_timeout=5),
-            'api_gateway': CircuitBreakerConfig(fail_max=10, reset_timeout=30),
-            'notification': CircuitBreakerConfig(fail_max=2, reset_timeout=15),
+            "database": CircuitBreakerConfig(fail_max=3, reset_timeout=10),
+            "cache": CircuitBreakerConfig(fail_max=5, reset_timeout=5),
+            "api_gateway": CircuitBreakerConfig(fail_max=10, reset_timeout=30),
+            "notification": CircuitBreakerConfig(fail_max=2, reset_timeout=15),
         }
 
         breakers = {}
@@ -213,14 +215,16 @@ class TestHealthAggregatorIntegration:
         health_history = []
 
         def record_health(report):
-            health_history.append({
-                'timestamp': report.timestamp,
-                'status': report.status.value,
-                'score': report.health_score,
-                'open': report.open_breakers,
-                'degraded_services': report.degraded_services,
-                'critical_services': report.critical_services,
-            })
+            health_history.append(
+                {
+                    "timestamp": report.timestamp,
+                    "status": report.status.value,
+                    "score": report.health_score,
+                    "open": report.open_breakers,
+                    "degraded_services": report.degraded_services,
+                    "critical_services": report.critical_services,
+                }
+            )
 
         aggregator_with_registry.on_health_change(record_health)
 
@@ -233,7 +237,7 @@ class TestHealthAggregatorIntegration:
 
         for _ in range(4):  # Exceed fail_max of 3
             try:
-                breakers['database'].call(db_failure)
+                breakers["database"].call(db_failure)
             except (ConnectionError, pybreaker.CircuitBreakerError):
                 # Catch both the original error and CircuitBreakerError when breaker opens
                 pass
@@ -242,13 +246,13 @@ class TestHealthAggregatorIntegration:
         await asyncio.sleep(0.3)
 
         # Database circuit should be open
-        assert breakers['database'].current_state == pybreaker.STATE_OPEN
+        assert breakers["database"].current_state == pybreaker.STATE_OPEN
 
         # Get current health
         health = aggregator_with_registry.get_system_health()
         assert health.total_breakers == 4
         assert health.open_breakers >= 1
-        assert 'database' in health.critical_services
+        assert "database" in health.critical_services
 
         # Simulate notification service also failing
         def notification_failure():
@@ -256,7 +260,7 @@ class TestHealthAggregatorIntegration:
 
         for _ in range(3):  # Exceed fail_max of 2
             try:
-                breakers['notification'].call(notification_failure)
+                breakers["notification"].call(notification_failure)
             except (TimeoutError, pybreaker.CircuitBreakerError):
                 # Catch both the original error and CircuitBreakerError when breaker opens
                 pass
@@ -279,8 +283,8 @@ class TestHealthAggregatorIntegration:
         from shared.circuit_breaker import get_circuit_breaker
 
         # Create some breakers
-        cb1 = get_circuit_breaker('metrics_test_1')
-        cb2 = get_circuit_breaker('metrics_test_2')
+        cb1 = get_circuit_breaker("metrics_test_1")
+        cb2 = get_circuit_breaker("metrics_test_2")
 
         # Start monitoring
         await aggregator_with_registry.start()
@@ -292,13 +296,13 @@ class TestHealthAggregatorIntegration:
         metrics = aggregator_with_registry.get_metrics()
 
         # Verify metrics
-        assert metrics['running'] is True
-        assert metrics['enabled'] is True
-        assert metrics['snapshots_collected'] > 0
-        assert metrics['total_breakers'] == 2
-        assert metrics['current_status'] == 'healthy'
-        assert metrics['current_health_score'] == 1.0
-        assert metrics['constitutional_hash'] == CONSTITUTIONAL_HASH
+        assert metrics["running"] is True
+        assert metrics["enabled"] is True
+        assert metrics["snapshots_collected"] > 0
+        assert metrics["total_breakers"] == 2
+        assert metrics["current_status"] == "healthy"
+        assert metrics["current_health_score"] == 1.0
+        assert metrics["constitutional_hash"] == CONSTITUTIONAL_HASH
 
         await aggregator_with_registry.stop()
 
@@ -307,7 +311,7 @@ class TestHealthAggregatorIntegration:
         from shared.circuit_breaker import get_circuit_breaker
 
         # Create breakers
-        cb = get_circuit_breaker('history_test')
+        cb = get_circuit_breaker("history_test")
 
         # Start monitoring
         await aggregator_with_registry.start()
@@ -326,7 +330,9 @@ class TestHealthAggregatorIntegration:
 
         await aggregator_with_registry.stop()
 
-    async def test_constitutional_compliance_throughout_lifecycle(self, aggregator_with_registry, registry):
+    async def test_constitutional_compliance_throughout_lifecycle(
+        self, aggregator_with_registry, registry
+    ):
         """Test constitutional compliance is maintained throughout lifecycle."""
         from shared.circuit_breaker import get_circuit_breaker
 
@@ -334,7 +340,7 @@ class TestHealthAggregatorIntegration:
         assert aggregator_with_registry.config.constitutional_hash == CONSTITUTIONAL_HASH
 
         # Create breakers
-        cb = get_circuit_breaker('compliance_test')
+        cb = get_circuit_breaker("compliance_test")
 
         # Get health report
         health = aggregator_with_registry.get_system_health()
@@ -351,11 +357,11 @@ class TestHealthAggregatorIntegration:
         # Verify serialized data
         health = aggregator_with_registry.get_system_health()
         data = health.to_dict()
-        assert data['constitutional_hash'] == CONSTITUTIONAL_HASH
+        assert data["constitutional_hash"] == CONSTITUTIONAL_HASH
 
         # Get metrics
         metrics = aggregator_with_registry.get_metrics()
-        assert metrics['constitutional_hash'] == CONSTITUTIONAL_HASH
+        assert metrics["constitutional_hash"] == CONSTITUTIONAL_HASH
 
         await aggregator_with_registry.stop()
 
@@ -375,8 +381,8 @@ class TestGlobalSingletonIntegration:
         aggregator = get_health_aggregator()
 
         # Create some breakers
-        cb1 = get_circuit_breaker('singleton_test_1')
-        cb2 = get_circuit_breaker('singleton_test_2')
+        cb1 = get_circuit_breaker("singleton_test_1")
+        cb2 = get_circuit_breaker("singleton_test_2")
 
         # Get health
         health = aggregator.get_system_health()

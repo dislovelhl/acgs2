@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 
+
 def generate_performance_overlay():
     """Generates a mock performance overlay data for the documentation site."""
     # In a real scenario, this would fetch from Prometheus API
@@ -10,22 +11,23 @@ def generate_performance_overlay():
         "global_metrics": {
             "p99_latency_ms": 0.278,
             "avg_throughput_rps": 6310,
-            "error_rate": 0.0001
+            "error_rate": 0.0001,
         },
         "gpu_utilization": {
             "worker-north-01": 72.5,
             "worker-north-02": 68.1,
-            "inference-pool-01": 85.0
-        }
+            "inference-pool-01": 85.0,
+        },
     }
 
     output_path = Path("/home/dislove/document/acgs2/docs/data/performance_overlay.json")
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    with open(output_path, 'w') as f:
+    with open(output_path, "w") as f:
         json.dump(metrics, f, indent=2)
 
     print(f"Successfully generated performance overlay at {output_path}")
+
 
 if __name__ == "__main__":
     generate_performance_overlay()

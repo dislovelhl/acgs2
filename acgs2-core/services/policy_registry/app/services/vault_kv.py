@@ -9,8 +9,6 @@ and retrieval using HashiCorp Vault.
 import logging
 from typing import Any, Dict, Optional
 
-from .vault_models import CONSTITUTIONAL_HASH
-
 logger = logging.getLogger(__name__)
 
 

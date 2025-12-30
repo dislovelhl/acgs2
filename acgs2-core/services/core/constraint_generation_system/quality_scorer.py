@@ -4,12 +4,11 @@ ACGS-2 Quality Scorer
 """
 
 import logging
-from typing import Dict, Any, Optional, List
+import os
 import re
 import subprocess
-import json
-import os
 from pathlib import Path
+from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -19,10 +18,12 @@ class QualityScorer:
     代码质量评分器 - 集成SonarQube进行质量评估
     """
 
-    def __init__(self,
-                 sonarqube_url: str = "http://localhost:9000",
-                 sonarqube_token: Optional[str] = None,
-                 enable_local_analysis: bool = True):
+    def __init__(
+        self,
+        sonarqube_url: str = "http://localhost:9000",
+        sonarqube_token: Optional[str] = None,
+        enable_local_analysis: bool = True,
+    ):
         """
         初始化质量评分器
 
@@ -32,17 +33,17 @@ class QualityScorer:
             enable_local_analysis: 是否启用本地分析
         """
         self.sonarqube_url = sonarqube_url
-        self.sonarqube_token = sonarqube_token or os.getenv('SONARQUBE_TOKEN')
+        self.sonarqube_token = sonarqube_token or os.getenv("SONARQUBE_TOKEN")
         self.enable_local_analysis = enable_local_analysis
 
         # 质量指标权重
         self.weights = {
-            'complexity': 0.2,
-            'duplications': 0.15,
-            'maintainability': 0.25,
-            'reliability': 0.2,
-            'security': 0.1,
-            'test_coverage': 0.1
+            "complexity": 0.2,
+            "duplications": 0.15,
+            "maintainability": 0.25,
+            "reliability": 0.2,
+            "security": 0.1,
+            "test_coverage": 0.1,
         }
 
         # 语言特定的质量规则
@@ -66,25 +67,31 @@ class QualityScorer:
             scores = {}
 
             # 基本语法检查
-            scores['syntax'] = self._check_syntax_quality(code, language)
+            scores["syntax"] = self._check_syntax_quality(code, language)
 
             # 复杂度分析
-            scores['complexity'] = self._analyze_complexity(code, language)
+            scores["complexity"] = self._analyze_complexity(code, language)
 
             # 代码风格检查
-            scores['style'] = self._check_code_style(code, language)
+            scores["style"] = self._check_code_style(code, language)
 
             # 最佳实践检查
-            scores['best_practices'] = self._check_best_practices(code, language)
+            scores["best_practices"] = self._check_best_practices(code, language)
 
             # 文档完整性
-            scores['documentation'] = self._check_documentation(code, language)
+            scores["documentation"] = self._check_documentation(code, language)
 
             # 如果启用SonarQube，进行远程分析
-            if self.sonarqube_token and language in ['python', 'javascript', 'java', 'cpp', 'typescript']:
+            if self.sonarqube_token and language in [
+                "python",
+                "javascript",
+                "java",
+                "cpp",
+                "typescript",
+            ]:
                 sonar_score = await self._analyze_with_sonarqube(code, language)
                 if sonar_score is not None:
-                    scores['sonarqube'] = sonar_score
+                    scores["sonarqube"] = sonar_score
 
             # 计算综合分数
             final_score = self._calculate_overall_score(scores)
@@ -100,10 +107,10 @@ class QualityScorer:
     def _check_syntax_quality(self, code: str, language: str) -> float:
         """检查语法质量"""
         try:
-            if language == 'python':
-                compile(code, '<string>', 'exec')
+            if language == "python":
+                compile(code, "<string>", "exec")
                 return 1.0
-            elif language == 'javascript':
+            elif language == "javascript":
                 # 基本检查：括号匹配等
                 return self._check_javascript_syntax_quality(code)
             else:
@@ -123,15 +130,21 @@ class QualityScorer:
             score -= 0.3
 
         # 检查分号使用
-        lines = code.split('\n')
+        lines = code.split("\n")
         missing_semicolons = 0
         for line in lines:
             line = line.strip()
-            if (line and not line.startswith('//') and not line.startswith('/*') and
-                not line.endswith(';') and not line.endswith('{') and not line.endswith('}') and
-                not line.endswith(',')):
+            if (
+                line
+                and not line.startswith("//")
+                and not line.startswith("/*")
+                and not line.endswith(";")
+                and not line.endswith("{")
+                and not line.endswith("}")
+                and not line.endswith(",")
+            ):
                 # 简单的启发式检查
-                if re.match(r'.*\w+\s*\([^)]*\)\s*$', line):  # 函数调用
+                if re.match(r".*\w+\s*\([^)]*\)\s*$", line):  # 函数调用
                     missing_semicolons += 1
 
         if missing_semicolons > 0:
@@ -141,7 +154,7 @@ class QualityScorer:
 
     def _check_bracket_matching(self, code: str) -> bool:
         """检查括号匹配"""
-        brackets = {'(': ')', '[': ']', '{': '}'}
+        brackets = {"(": ")", "[": "]", "{": "}"}
         stack = []
 
         for char in code:
@@ -159,12 +172,22 @@ class QualityScorer:
     def _analyze_complexity(self, code: str, language: str) -> float:
         """分析代码复杂度"""
         # 简单的复杂度度量
-        lines = len([line for line in code.split('\n') if line.strip()])
+        lines = len([line for line in code.split("\n") if line.strip()])
 
         # 圈复杂度估算
         complexity_indicators = [
-            'if ', 'elif ', 'else:', 'for ', 'while ', 'case ', 'catch ',
-            '&&', '||', '?', 'try:', 'except '
+            "if ",
+            "elif ",
+            "else:",
+            "for ",
+            "while ",
+            "case ",
+            "catch ",
+            "&&",
+            "||",
+            "?",
+            "try:",
+            "except ",
         ]
 
         complexity_score = 1  # 基础复杂度
@@ -184,9 +207,9 @@ class QualityScorer:
     def _check_code_style(self, code: str, language: str) -> float:
         """检查代码风格"""
         score = 1.0
-        lines = code.split('\n')
+        lines = code.split("\n")
 
-        if language == 'python':
+        if language == "python":
             # 检查行长度
             long_lines = sum(1 for line in lines if len(line) > 79)
             if long_lines > 0:
@@ -194,14 +217,14 @@ class QualityScorer:
 
             # 检查缩进
             for line in lines:
-                if line.strip() and not line.startswith(' ') and not line.startswith('\t'):
+                if line.strip() and not line.startswith(" ") and not line.startswith("\t"):
                     # 检查缩进是否为4的倍数
                     indent = len(line) - len(line.lstrip())
                     if indent % 4 != 0:
                         score -= 0.1
                         break
 
-        elif language in ['javascript', 'typescript']:
+        elif language in ["javascript", "typescript"]:
             # 检查行长度
             long_lines = sum(1 for line in lines if len(line) > 80)
             if long_lines > 0:
@@ -213,19 +236,19 @@ class QualityScorer:
         """检查最佳实践"""
         score = 1.0
 
-        if language == 'python':
+        if language == "python":
             # 检查异常处理
-            if 'try:' in code and 'except:' not in code and 'except Exception' not in code:
+            if "try:" in code and "except:" not in code and "except Exception" not in code:
                 score -= 0.2
 
             # 检查变量命名
-            bad_names = re.findall(r'\b[a-z][A-Z]+\b', code)  # camelCase in Python
+            bad_names = re.findall(r"\b[a-z][A-Z]+\b", code)  # camelCase in Python
             if bad_names:
                 score -= min(0.1, len(bad_names) * 0.02)
 
-        elif language in ['javascript', 'typescript']:
+        elif language in ["javascript", "typescript"]:
             # 检查var使用（应该用let/const）
-            var_count = code.count('var ')
+            var_count = code.count("var ")
             if var_count > 0:
                 score -= min(0.2, var_count * 0.05)
 
@@ -235,21 +258,21 @@ class QualityScorer:
         """检查文档完整性"""
         score = 0.5  # 基础分数
 
-        if language == 'python':
+        if language == "python":
             # 检查docstring
             if '"""' in code or "'''" in code:
                 score += 0.3
 
             # 检查函数注释
-            functions = len(re.findall(r'def\s+\w+', code))
-            comments = len(re.findall(r'#.*', code))
+            functions = len(re.findall(r"def\s+\w+", code))
+            comments = len(re.findall(r"#.*", code))
             if functions > 0:
                 comment_ratio = comments / functions
                 score += min(0.2, comment_ratio * 0.1)
 
-        elif language in ['javascript', 'typescript']:
+        elif language in ["javascript", "typescript"]:
             # 检查JSDoc注释
-            if '/**' in code:
+            if "/**" in code:
                 score += 0.3
 
         return min(1.0, score)
@@ -258,20 +281,20 @@ class QualityScorer:
         """使用SonarQube进行分析"""
         try:
             # 创建临时文件
-            temp_dir = Path('/tmp/sonarqube_analysis')
+            temp_dir = Path("/tmp/sonarqube_analysis")
             temp_dir.mkdir(exist_ok=True)
 
             # 根据语言确定文件扩展名
             ext_map = {
-                'python': '.py',
-                'javascript': '.js',
-                'typescript': '.ts',
-                'java': '.java',
-                'cpp': '.cpp'
+                "python": ".py",
+                "javascript": ".js",
+                "typescript": ".ts",
+                "java": ".java",
+                "cpp": ".cpp",
             }
 
-            ext = ext_map.get(language, '.txt')
-            temp_file = temp_dir / f'analysis_code{ext}'
+            ext = ext_map.get(language, ".txt")
+            temp_file = temp_dir / f"analysis_code{ext}"
             temp_file.write_text(code)
 
             # 运行sonar-scanner（如果可用）
@@ -292,8 +315,9 @@ class QualityScorer:
     def _is_sonar_scanner_available(self) -> bool:
         """检查sonar-scanner是否可用"""
         try:
-            result = subprocess.run(['sonar-scanner', '--version'],
-                                  capture_output=True, text=True, timeout=5)
+            result = subprocess.run(
+                ["sonar-scanner", "--version"], capture_output=True, text=True, timeout=5
+            )
             return result.returncode == 0
         except (subprocess.TimeoutExpired, FileNotFoundError):
             return False
@@ -302,31 +326,31 @@ class QualityScorer:
         """运行SonarQube分析"""
         try:
             # 创建sonar-project.properties
-            props_file = Path(file_path).parent / 'sonar-project.properties'
-            props_content = f'''sonar.projectKey=constraint-analysis
+            props_file = Path(file_path).parent / "sonar-project.properties"
+            props_content = f"""sonar.projectKey=constraint-analysis
 sonar.projectName=Constraint Analysis
 sonar.projectVersion=1.0
 sonar.sources=.
 sonar.language={language}
 sonar.host.url={self.sonarqube_url}
 sonar.login={self.sonarqube_token}
-'''
+"""
             props_file.write_text(props_content)
 
             # 运行分析
-            cmd = ['sonar-scanner', '-Dsonar.projectBaseDir=' + str(Path(file_path).parent)]
+            cmd = ["sonar-scanner", "-Dsonar.projectBaseDir=" + str(Path(file_path).parent)]
             result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
 
             if result.returncode == 0:
                 # 解析结果（这里需要根据实际的SonarQube API来获取结果）
                 # 简化版本：返回模拟结果
                 return {
-                    'complexity': 5,
-                    'duplications': 0,
-                    'maintainability': 'A',
-                    'reliability': 'A',
-                    'security': 'A',
-                    'coverage': 80.0
+                    "complexity": 5,
+                    "duplications": 0,
+                    "maintainability": "A",
+                    "reliability": "A",
+                    "security": "A",
+                    "coverage": 80.0,
                 }
 
             # 清理
@@ -345,31 +369,31 @@ sonar.login={self.sonarqube_token}
         score = 0.0
 
         # 复杂度评分（反向：复杂度越低分数越高）
-        complexity = results.get('complexity', 10)
-        score += (1 - min(complexity / 50, 1)) * self.weights['complexity']
+        complexity = results.get("complexity", 10)
+        score += (1 - min(complexity / 50, 1)) * self.weights["complexity"]
 
         # 重复代码评分
-        duplications = results.get('duplications', 0)
-        score += (1 - min(duplications / 100, 1)) * self.weights['duplications']
+        duplications = results.get("duplications", 0)
+        score += (1 - min(duplications / 100, 1)) * self.weights["duplications"]
 
         # 可维护性评分
-        maintainability = results.get('maintainability', 'C')
-        maint_score = {'A': 1.0, 'B': 0.7, 'C': 0.4, 'D': 0.1, 'E': 0.0}.get(maintainability, 0.5)
-        score += maint_score * self.weights['maintainability']
+        maintainability = results.get("maintainability", "C")
+        maint_score = {"A": 1.0, "B": 0.7, "C": 0.4, "D": 0.1, "E": 0.0}.get(maintainability, 0.5)
+        score += maint_score * self.weights["maintainability"]
 
         # 可靠性评分
-        reliability = results.get('reliability', 'C')
-        rel_score = {'A': 1.0, 'B': 0.7, 'C': 0.4, 'D': 0.1, 'E': 0.0}.get(reliability, 0.5)
-        score += rel_score * self.weights['reliability']
+        reliability = results.get("reliability", "C")
+        rel_score = {"A": 1.0, "B": 0.7, "C": 0.4, "D": 0.1, "E": 0.0}.get(reliability, 0.5)
+        score += rel_score * self.weights["reliability"]
 
         # 安全性评分
-        security = results.get('security', 'C')
-        sec_score = {'A': 1.0, 'B': 0.7, 'C': 0.4, 'D': 0.1, 'E': 0.0}.get(security, 0.5)
-        score += sec_score * self.weights['security']
+        security = results.get("security", "C")
+        sec_score = {"A": 1.0, "B": 0.7, "C": 0.4, "D": 0.1, "E": 0.0}.get(security, 0.5)
+        score += sec_score * self.weights["security"]
 
         # 测试覆盖率
-        coverage = results.get('coverage', 0) / 100
-        score += coverage * self.weights['test_coverage']
+        coverage = results.get("coverage", 0) / 100
+        score += coverage * self.weights["test_coverage"]
 
         return score
 
@@ -380,17 +404,17 @@ sonar.login={self.sonarqube_token}
 
         # 应用各个维度的评分
         for metric, score in scores.items():
-            if metric == 'syntax':
+            if metric == "syntax":
                 base_score += (score - 0.5) * 2  # -1 到 +1
-            elif metric == 'complexity':
+            elif metric == "complexity":
                 base_score += (score - 0.5) * 2
-            elif metric == 'style':
+            elif metric == "style":
                 base_score += (score - 0.5) * 1
-            elif metric == 'best_practices':
+            elif metric == "best_practices":
                 base_score += (score - 0.5) * 1.5
-            elif metric == 'documentation':
+            elif metric == "documentation":
                 base_score += (score - 0.5) * 1
-            elif metric == 'sonarqube':
+            elif metric == "sonarqube":
                 base_score += (score - 0.5) * 3  # SonarQube结果权重更高
 
         # 确保分数在0-10范围内
@@ -399,19 +423,19 @@ sonar.login={self.sonarqube_token}
     def _load_quality_rules(self) -> Dict[str, List[Dict[str, Any]]]:
         """加载质量规则"""
         return {
-            'python': [
-                {'rule': 'line_length', 'max_length': 79},
-                {'rule': 'indent_style', 'style': 'spaces', 'size': 4},
-                {'rule': 'naming_convention', 'pattern': r'^[a-z_][a-z0-9_]*$'},
+            "python": [
+                {"rule": "line_length", "max_length": 79},
+                {"rule": "indent_style", "style": "spaces", "size": 4},
+                {"rule": "naming_convention", "pattern": r"^[a-z_][a-z0-9_]*$"},
             ],
-            'javascript': [
-                {'rule': 'line_length', 'max_length': 80},
-                {'rule': 'indent_style', 'style': 'spaces', 'size': 2},
-                {'rule': 'semicolon_required', 'value': True},
+            "javascript": [
+                {"rule": "line_length", "max_length": 80},
+                {"rule": "indent_style", "style": "spaces", "size": 2},
+                {"rule": "semicolon_required", "value": True},
             ],
-            'java': [
-                {'rule': 'line_length', 'max_length': 100},
-                {'rule': 'indent_style', 'style': 'spaces', 'size': 4},
-                {'rule': 'brace_style', 'style': 'same_line'},
-            ]
+            "java": [
+                {"rule": "line_length", "max_length": 100},
+                {"rule": "indent_style", "style": "spaces", "size": 4},
+                {"rule": "brace_style", "style": "same_line"},
+            ],
         }

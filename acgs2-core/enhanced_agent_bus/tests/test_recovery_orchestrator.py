@@ -5,37 +5,35 @@ Constitutional Hash: cdd01ef066bc6cf2
 Comprehensive tests for the recovery orchestrator module.
 """
 
-import asyncio
+from datetime import datetime, timezone
+
 import pytest
-from datetime import datetime, timezone, timedelta
-from unittest.mock import AsyncMock, MagicMock, patch
 
 # Import module under test
 try:
     from enhanced_agent_bus.recovery_orchestrator import (
         CONSTITUTIONAL_HASH,
-        RecoveryStrategy,
-        RecoveryState,
-        RecoveryPolicy,
-        RecoveryResult,
-        RecoveryTask,
+        RecoveryConstitutionalError,
         RecoveryOrchestrator,
         RecoveryOrchestratorError,
+        RecoveryPolicy,
+        RecoveryResult,
+        RecoveryState,
+        RecoveryStrategy,
+        RecoveryTask,
         RecoveryValidationError,
-        RecoveryConstitutionalError,
     )
 except ImportError:
     from recovery_orchestrator import (
         CONSTITUTIONAL_HASH,
-        RecoveryStrategy,
-        RecoveryState,
-        RecoveryPolicy,
-        RecoveryResult,
-        RecoveryTask,
         RecoveryOrchestrator,
         RecoveryOrchestratorError,
+        RecoveryPolicy,
+        RecoveryResult,
+        RecoveryState,
+        RecoveryStrategy,
+        RecoveryTask,
         RecoveryValidationError,
-        RecoveryConstitutionalError,
     )
 
 
@@ -57,7 +55,7 @@ class TestConstitutionalCompliance:
             from enhanced_agent_bus import recovery_orchestrator as ro_mod
         except (ImportError, ModuleNotFoundError):
             import recovery_orchestrator as ro_mod
-        assert hasattr(ro_mod, 'CONSTITUTIONAL_HASH')
+        assert hasattr(ro_mod, "CONSTITUTIONAL_HASH")
         assert ro_mod.CONSTITUTIONAL_HASH == "cdd01ef066bc6cf2"
 
     def test_recovery_policy_has_constitutional_hash(self):
@@ -849,15 +847,17 @@ class TestModuleExports:
         """Helper to get module with fallback imports."""
         try:
             from enhanced_agent_bus import recovery_orchestrator
+
             return recovery_orchestrator
         except (ImportError, ModuleNotFoundError):
             import recovery_orchestrator
+
             return recovery_orchestrator
 
     def test_all_enums_exported(self):
         """Test all enums are exported."""
         ro_mod = self._get_module()
-        required_enums = ['RecoveryStrategy', 'RecoveryState']
+        required_enums = ["RecoveryStrategy", "RecoveryState"]
         for enum_name in required_enums:
             assert hasattr(ro_mod, enum_name)
 
@@ -865,10 +865,10 @@ class TestModuleExports:
         """Test all classes are exported."""
         ro_mod = self._get_module()
         required_classes = [
-            'RecoveryPolicy',
-            'RecoveryResult',
-            'RecoveryTask',
-            'RecoveryOrchestrator',
+            "RecoveryPolicy",
+            "RecoveryResult",
+            "RecoveryTask",
+            "RecoveryOrchestrator",
         ]
         for class_name in required_classes:
             assert hasattr(ro_mod, class_name)
@@ -877,9 +877,9 @@ class TestModuleExports:
         """Test all exceptions are exported."""
         ro_mod = self._get_module()
         required_exceptions = [
-            'RecoveryOrchestratorError',
-            'RecoveryValidationError',
-            'RecoveryConstitutionalError',
+            "RecoveryOrchestratorError",
+            "RecoveryValidationError",
+            "RecoveryConstitutionalError",
         ]
         for exc_name in required_exceptions:
             assert hasattr(ro_mod, exc_name)
@@ -887,7 +887,7 @@ class TestModuleExports:
     def test_constants_exported(self):
         """Test constants are exported."""
         ro_mod = self._get_module()
-        assert hasattr(ro_mod, 'CONSTITUTIONAL_HASH')
+        assert hasattr(ro_mod, "CONSTITUTIONAL_HASH")
 
 
 # =============================================================================

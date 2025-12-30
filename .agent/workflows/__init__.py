@@ -35,41 +35,26 @@ Example:
     result = await saga.execute(context, {"order_id": "123"})
 """
 
-from .config import (
-    CONSTITUTIONAL_HASH,
-    WorkflowType,
-    FailurePolicy,
-    WorkflowConfig,
-    StepConfig,
-    DAGConfig,
-    SagaConfig,
-    DEFAULT_WORKFLOW_CONFIG,
-    PERFORMANCE_THRESHOLDS,
-)
-
 # Base abstractions
 from .base import (
+    BaseActivities,
     BaseWorkflow,
-    WorkflowStatus,
-    WorkflowStep,
     StepStatus,
     WorkflowContext,
     WorkflowResult,
-    BaseActivities,
+    WorkflowStatus,
+    WorkflowStep,
 )
-
-# DAG orchestration
-from .dags import (
-    DAGNode,
-    DAGExecutor,
-    DAGResult,
-)
-
-# Saga pattern
-from .sagas import (
-    BaseSaga,
-    SagaStep,
-    SagaResult,
+from .config import (
+    CONSTITUTIONAL_HASH,
+    DEFAULT_WORKFLOW_CONFIG,
+    PERFORMANCE_THRESHOLDS,
+    DAGConfig,
+    FailurePolicy,
+    SagaConfig,
+    StepConfig,
+    WorkflowConfig,
+    WorkflowType,
 )
 
 # Constitutional workflows
@@ -78,21 +63,35 @@ from .constitutional import (
     ValidationResult,
 )
 
+# Coordination workflows
+from .coordination import (
+    HandoffResult,
+    HandoffWorkflow,
+    SupervisorNode,
+    VotingResult,
+    VotingStrategy,
+    VotingWorkflow,
+    WorkerNode,
+)
+
 # Cyclic Orchestration (CEOS V1.0)
 from .cyclic import (
     GlobalState,
     StateGraph,
 )
 
-# Coordination workflows
-from .coordination import (
-    VotingWorkflow,
-    VotingResult,
-    VotingStrategy,
-    HandoffWorkflow,
-    HandoffResult,
-    SupervisorNode,
-    WorkerNode,
+# DAG orchestration
+from .dags import (
+    DAGExecutor,
+    DAGNode,
+    DAGResult,
+)
+
+# Saga pattern
+from .sagas import (
+    BaseSaga,
+    SagaResult,
+    SagaStep,
 )
 
 # Template engine

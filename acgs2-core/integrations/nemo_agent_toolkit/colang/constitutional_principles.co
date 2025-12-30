@@ -1,0 +1,24 @@
+# ACGS-2 Constitutional Principles
+# Language: Colang 2.0
+# Constitutional Hash: cdd01ef066bc6cf2
+
+import "standard"
+import "guardrail"
+
+# Flow to monitor and block any PII leaks in bot responses
+flow monitor privacy check
+    when bot said $text
+    if len(regex_findall("pii_patterns", $text)) > 0
+        abort "Constitutional violation: Privacy leak detected."
+
+# Flow to monitor and block any unsafe content as defined by safety patterns
+flow monitor safety check
+    when bot said $text
+    if contains_unsafe_content($text)
+        abort "Constitutional violation: Unsafe content detected."
+
+# Flow to monitor for prompt injection attempts
+flow monitor jailbreak detection
+    when user said $text
+    if detect_jailbreak($text)
+        abort "Constitutional violation: Jailbreak attempt detected."

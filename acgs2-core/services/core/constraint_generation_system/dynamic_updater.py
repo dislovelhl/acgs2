@@ -3,11 +3,11 @@ ACGS-2 Dynamic Constraint Updater
 基于实时反馈动态调整CFG约束
 """
 
-import logging
-from typing import Dict, Any, List, Optional, TYPE_CHECKING
-from datetime import datetime, timedelta, timezone
-from collections import defaultdict
 import json
+import logging
+from collections import defaultdict
+from datetime import datetime, timedelta, timezone
+from typing import TYPE_CHECKING, Any, Dict, List
 
 if TYPE_CHECKING:
     from constraint_generator import GenerationRequest, GenerationResult
@@ -20,10 +20,12 @@ class DynamicConstraintUpdater:
     动态约束更新器 - 基于反馈实时调整约束
     """
 
-    def __init__(self,
-                 feedback_window_hours: int = 24,
-                 min_feedback_samples: int = 10,
-                 update_threshold: float = 0.1):
+    def __init__(
+        self,
+        feedback_window_hours: int = 24,
+        min_feedback_samples: int = 10,
+        update_threshold: float = 0.1,
+    ):
         """
         初始化动态更新器
 
@@ -60,13 +62,13 @@ class DynamicConstraintUpdater:
 
         # 记录反馈
         feedback_entry = {
-            'timestamp': timestamp,
-            'task': request.task_description,
-            'syntax_valid': result.syntax_valid,
-            'quality_score': result.quality_score,
-            'generation_time': result.generation_time,
-            'constraint_violations': result.constraint_violations,
-            'feedback_data': result.feedback_data
+            "timestamp": timestamp,
+            "task": request.task_description,
+            "syntax_valid": result.syntax_valid,
+            "quality_score": result.quality_score,
+            "generation_time": result.generation_time,
+            "constraint_violations": result.constraint_violations,
+            "feedback_data": result.feedback_data,
         }
 
         self.feedback_history[language].append(feedback_entry)
@@ -97,14 +99,10 @@ class DynamicConstraintUpdater:
         Args:
             feedback: 反馈数据
         """
-        language = feedback.get('language', 'unknown').lower()
+        language = feedback.get("language", "unknown").lower()
         timestamp = datetime.now(timezone.utc)
 
-        feedback_entry = {
-            'timestamp': timestamp,
-            'external_feedback': True,
-            **feedback
-        }
+        feedback_entry = {"timestamp": timestamp, "external_feedback": True, **feedback}
 
         self.feedback_history[language].append(feedback_entry)
         self._cleanup_old_feedback(language)
@@ -116,8 +114,7 @@ class DynamicConstraintUpdater:
         """清理过期反馈"""
         cutoff_time = datetime.now(timezone.utc) - self.feedback_window
         self.feedback_history[language] = [
-            entry for entry in self.feedback_history[language]
-            if entry['timestamp'] > cutoff_time
+            entry for entry in self.feedback_history[language] if entry["timestamp"] > cutoff_time
         ]
 
     async def _analyze_and_update_constraints(self, language: str):
@@ -159,15 +156,21 @@ class DynamicConstraintUpdater:
             return {}
 
         total_samples = len(feedback)
-        syntax_errors = sum(1 for f in feedback if not f.get('syntax_valid', True))
-        quality_scores = [f.get('quality_score', 0) for f in feedback if f.get('quality_score') is not None]
-        generation_times = [f.get('generation_time', 0) for f in feedback if f.get('generation_time', 0) > 0]
+        syntax_errors = sum(1 for f in feedback if not f.get("syntax_valid", True))
+        quality_scores = [
+            f.get("quality_score", 0) for f in feedback if f.get("quality_score") is not None
+        ]
+        generation_times = [
+            f.get("generation_time", 0) for f in feedback if f.get("generation_time", 0) > 0
+        ]
 
         metrics = {
-            'syntax_error_rate': syntax_errors / total_samples,
-            'avg_quality_score': sum(quality_scores) / len(quality_scores) if quality_scores else 0,
-            'avg_generation_time': sum(generation_times) / len(generation_times) if generation_times else 0,
-            'total_samples': total_samples
+            "syntax_error_rate": syntax_errors / total_samples,
+            "avg_quality_score": sum(quality_scores) / len(quality_scores) if quality_scores else 0,
+            "avg_generation_time": (
+                sum(generation_times) / len(generation_times) if generation_times else 0
+            ),
+            "total_samples": total_samples,
         }
 
         return metrics
@@ -189,7 +192,7 @@ class DynamicConstraintUpdater:
             return True  # 首次更新
 
         # 检查关键指标变化
-        key_metrics = ['syntax_error_rate', 'avg_quality_score']
+        key_metrics = ["syntax_error_rate", "avg_quality_score"]
 
         for metric in key_metrics:
             if metric in new_metrics and metric in old_metrics:
@@ -203,10 +206,9 @@ class DynamicConstraintUpdater:
 
         return False
 
-    def _generate_constraint_updates(self,
-                                   language: str,
-                                   feedback: List[Dict[str, Any]],
-                                   metrics: Dict[str, float]) -> Dict[str, Any]:
+    def _generate_constraint_updates(
+        self, language: str, feedback: List[Dict[str, Any]], metrics: Dict[str, float]
+    ) -> Dict[str, Any]:
         """
         生成约束更新
 
@@ -221,42 +223,42 @@ class DynamicConstraintUpdater:
         updates = {}
 
         # 基于语法错误率调整
-        syntax_error_rate = metrics.get('syntax_error_rate', 0)
+        syntax_error_rate = metrics.get("syntax_error_rate", 0)
         if syntax_error_rate > 0.1:  # 高于10%的错误率
-            updates['strict_syntax_check'] = True
-            updates['max_complexity'] = max(1, updates.get('max_complexity', 5) - 1)
+            updates["strict_syntax_check"] = True
+            updates["max_complexity"] = max(1, updates.get("max_complexity", 5) - 1)
         elif syntax_error_rate < 0.01:  # 低于1%的错误率
-            updates['strict_syntax_check'] = False
-            updates['max_complexity'] = min(10, updates.get('max_complexity', 5) + 1)
+            updates["strict_syntax_check"] = False
+            updates["max_complexity"] = min(10, updates.get("max_complexity", 5) + 1)
 
         # 基于质量分数调整
-        avg_quality = metrics.get('avg_quality_score', 0)
+        avg_quality = metrics.get("avg_quality_score", 0)
         if avg_quality < 6.0:  # 质量较低
-            updates['require_docstrings'] = True
-            updates['require_type_hints'] = True
-            updates['min_comment_ratio'] = 0.1
+            updates["require_docstrings"] = True
+            updates["require_type_hints"] = True
+            updates["min_comment_ratio"] = 0.1
         elif avg_quality > 8.0:  # 质量较高
-            updates['require_docstrings'] = False
-            updates['require_type_hints'] = False
-            updates['min_comment_ratio'] = 0.05
+            updates["require_docstrings"] = False
+            updates["require_type_hints"] = False
+            updates["min_comment_ratio"] = 0.05
 
         # 基于生成时间调整
-        avg_time = metrics.get('avg_generation_time', 0)
+        avg_time = metrics.get("avg_generation_time", 0)
         if avg_time > 10.0:  # 生成太慢
-            updates['max_tokens'] = max(1000, updates.get('max_tokens', 2000) - 500)
-            updates['simplify_constraints'] = True
+            updates["max_tokens"] = max(1000, updates.get("max_tokens", 2000) - 500)
+            updates["simplify_constraints"] = True
         elif avg_time < 2.0:  # 生成太快，可能质量不足
-            updates['max_tokens'] = min(4000, updates.get('max_tokens', 2000) + 500)
-            updates['add_quality_checks'] = True
+            updates["max_tokens"] = min(4000, updates.get("max_tokens", 2000) + 500)
+            updates["add_quality_checks"] = True
 
         # 分析常见约束违反
         violations = []
         for f in feedback:
-            violations.extend(f.get('constraint_violations', []))
+            violations.extend(f.get("constraint_violations", []))
 
         if violations:
             common_violations = self._find_common_violations(violations)
-            updates['additional_forbidden_patterns'] = common_violations
+            updates["additional_forbidden_patterns"] = common_violations
 
         return updates
 
@@ -278,7 +280,8 @@ class DynamicConstraintUpdater:
         # 返回最常见的违反（出现率>20%）
         total_violations = len(violations)
         common_violations = [
-            violation for violation, count in violation_counts.items()
+            violation
+            for violation, count in violation_counts.items()
             if count / total_violations > 0.2
         ]
 
@@ -296,15 +299,18 @@ class DynamicConstraintUpdater:
         """
         feedback = self.feedback_history.get(language.lower(), [])
         if len(feedback) < self.min_samples:
-            return {'status': 'insufficient_data', 'samples_needed': self.min_samples - len(feedback)}
+            return {
+                "status": "insufficient_data",
+                "samples_needed": self.min_samples - len(feedback),
+            }
 
         metrics = self._calculate_performance_metrics(feedback)
 
         suggestions = {
-            'status': 'ready',
-            'current_metrics': metrics,
-            'suggested_updates': self._generate_constraint_updates(language, feedback, metrics),
-            'confidence': min(1.0, len(feedback) / (self.min_samples * 2))
+            "status": "ready",
+            "current_metrics": metrics,
+            "suggested_updates": self._generate_constraint_updates(language, feedback, metrics),
+            "confidence": min(1.0, len(feedback) / (self.min_samples * 2)),
         }
 
         return suggestions
@@ -321,12 +327,12 @@ class DynamicConstraintUpdater:
         """
         feedback = self.feedback_history.get(language.lower(), [])
         data = {
-            'language': language,
-            'export_time': datetime.now(timezone.utc).isoformat(),
-            'feedback_count': len(feedback),
-            'feedback': feedback,
-            'dynamic_constraints': self.dynamic_constraints.get(language.lower(), {}),
-            'performance_metrics': self.performance_metrics.get(language.lower(), {})
+            "language": language,
+            "export_time": datetime.now(timezone.utc).isoformat(),
+            "feedback_count": len(feedback),
+            "feedback": feedback,
+            "dynamic_constraints": self.dynamic_constraints.get(language.lower(), {}),
+            "performance_metrics": self.performance_metrics.get(language.lower(), {}),
         }
 
         return json.dumps(data, indent=2, default=str)
@@ -340,27 +346,26 @@ class DynamicConstraintUpdater:
         """
         try:
             data = json.loads(json_data)
-            language = data.get('language', 'unknown').lower()
+            language = data.get("language", "unknown").lower()
 
             # 合并反馈历史
             existing_feedback = self.feedback_history[language]
-            imported_feedback = data.get('feedback', [])
+            imported_feedback = data.get("feedback", [])
 
             # 避免重复
-            existing_timestamps = {f['timestamp'] for f in existing_feedback}
+            existing_timestamps = {f["timestamp"] for f in existing_feedback}
             new_feedback = [
-                f for f in imported_feedback
-                if f['timestamp'] not in existing_timestamps
+                f for f in imported_feedback if f["timestamp"] not in existing_timestamps
             ]
 
             self.feedback_history[language].extend(new_feedback)
 
             # 导入约束和指标
-            if 'dynamic_constraints' in data:
-                self.dynamic_constraints[language].update(data['dynamic_constraints'])
+            if "dynamic_constraints" in data:
+                self.dynamic_constraints[language].update(data["dynamic_constraints"])
 
-            if 'performance_metrics' in data:
-                self.performance_metrics[language].update(data['performance_metrics'])
+            if "performance_metrics" in data:
+                self.performance_metrics[language].update(data["performance_metrics"])
 
             logger.info(f"Imported {len(new_feedback)} feedback entries for {language}")
 

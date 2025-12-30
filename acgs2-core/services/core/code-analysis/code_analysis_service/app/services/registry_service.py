@@ -1,25 +1,10 @@
-from fastapi import FastAPI, HTTPException, BackgroundTasks
-from pydantic import BaseModel, Field
-import logging
 import asyncio
-from typing import Any, Dict, Optional
-
-
 import logging
+from typing import Any
 
 # Secure credentials management
-from acgs2.services.shared.security.secure_credentials import (
-    get_credential,
-    get_database_url,
-    get_redis_url,
-    get_api_key,
-    get_jwt_secret
-
-)
 logger = logging.getLogger(__name__)
 
-from pathlib import Path
-from typing import Dict, List, Optional, Union, Any, Tuple
 
 """
 ACGS Code Analysis Engine - Service Registry Client
@@ -27,16 +12,14 @@ Integration with ACGS service registry with constitutional compliance.
 """
 
 # Constitutional Hash: cdd01ef066bc6cf2
-import asyncio
 import contextlib
 import time
 from datetime import datetime, timezone
-from typing import Any
+
 import httpx
 from app.utils.constitutional import (
     CONSTITUTIONAL_HASH,
     ensure_constitutional_compliance,
-
 )
 from app.utils.logging import get_logger, performance_logger
 
@@ -83,7 +66,8 @@ class ServiceRegistryClient:
         # Health check task
         self.health_check_task: asyncio.Task | None = None
 
-        logger.info("Service registry client initialized",
+        logger.info(
+            "Service registry client initialized",
             extra={
                 "registry_url": registry_url,
                 "service_name": service_name,
@@ -99,7 +83,9 @@ class ServiceRegistryClient:
             bool: True if registration successful
         """
         if self.is_registered:
-            logger.warning("Service is already registered", extra={"constitutional_hash": CONSTITUTIONAL_HASH})
+            logger.warning(
+                "Service is already registered", extra={"constitutional_hash": CONSTITUTIONAL_HASH}
+            )
             return True
 
         try:
@@ -120,8 +106,7 @@ class ServiceRegistryClient:
                 "constitutional_hash": CONSTITUTIONAL_HASH,
                 "metadata": {
                     "description": (
-                        "ACGS Code Analysis Engine for semantic code search and"
-                        " analysis"
+                        "ACGS Code Analysis Engine for semantic code search and" " analysis"
                     ),
                     "supported_languages": [
                         "python",
@@ -155,8 +140,9 @@ class ServiceRegistryClient:
                 self.registration_id = result.get("registration_id")
                 self.is_registered = True
 
-                logger.info("Service registered successfully",
-            extra={
+                logger.info(
+                    "Service registered successfully",
+                    extra={
                         "registration_id": self.registration_id,
                         "constitutional_hash": CONSTITUTIONAL_HASH,
                     },
@@ -201,7 +187,9 @@ class ServiceRegistryClient:
             bool: True if deregistration successful
         """
         if not self.is_registered or not self.registration_id:
-            logger.warning("Service is not registered", extra={"constitutional_hash": CONSTITUTIONAL_HASH})
+            logger.warning(
+                "Service is not registered", extra={"constitutional_hash": CONSTITUTIONAL_HASH}
+            )
             return True
 
         try:
@@ -218,8 +206,9 @@ class ServiceRegistryClient:
                 self.is_registered = False
                 self.registration_id = None
 
-                logger.info("Service deregistered successfully",
-            extra={"constitutional_hash": CONSTITUTIONAL_HASH},
+                logger.info(
+                    "Service deregistered successfully",
+                    extra={"constitutional_hash": CONSTITUTIONAL_HASH},
                 )
 
                 return True
@@ -267,7 +256,10 @@ class ServiceRegistryClient:
 
                 # Validate constitutional compliance
                 if not self._validate_service_response(service_info):
-                    logger.warning(f"Service discovery response failed constitutional validation: {service_name}", extra={"constitutional_hash": CONSTITUTIONAL_HASH})
+                    logger.warning(
+                        f"Service discovery response failed constitutional validation: {service_name}",
+                        extra={"constitutional_hash": CONSTITUTIONAL_HASH},
+                    )
                     return None
 
                 logger.info(
@@ -334,9 +326,7 @@ class ServiceRegistryClient:
 
                 # Validate constitutional compliance
                 valid_services = [
-                    service
-                    for service in services
-                    if self._validate_service_response(service)
+                    service for service in services if self._validate_service_response(service)
                 ]
 
                 logger.info(
@@ -391,7 +381,8 @@ class ServiceRegistryClient:
 
         self.health_check_task = asyncio.create_task(self._health_check_loop())
 
-        logger.info("Health check task started",
+        logger.info(
+            "Health check task started",
             extra={
                 "interval_seconds": self.health_check_interval,
                 "constitutional_hash": CONSTITUTIONAL_HASH,
@@ -406,8 +397,9 @@ class ServiceRegistryClient:
                 await self.health_check_task
             self.health_check_task = None
 
-            logger.info("Health check task stopped",
-            extra={"constitutional_hash": CONSTITUTIONAL_HASH},
+            logger.info(
+                "Health check task stopped",
+                extra={"constitutional_hash": CONSTITUTIONAL_HASH},
             )
 
     async def _health_check_loop(self) -> None:
@@ -474,6 +466,7 @@ class ServiceRegistryClient:
         """Get real system metrics for health reporting."""
         try:
             import os
+
             import psutil
 
             # Get current process
@@ -516,11 +509,12 @@ class ServiceRegistryClient:
 
         except ImportError:
             # Fallback if psutil is not available
-            logger.warning("psutil not available, using basic metrics", extra={"constitutional_hash": CONSTITUTIONAL_HASH})
+            logger.warning(
+                "psutil not available, using basic metrics",
+                extra={"constitutional_hash": CONSTITUTIONAL_HASH},
+            )
             return {
-                "uptime_seconds": int(
-                    time.time() - getattr(self, "_start_time", time.time())
-                ),
+                "uptime_seconds": int(time.time() - getattr(self, "_start_time", time.time())),
                 "memory_usage_mb": 0,
                 "cpu_usage_percent": 0,
                 "system_load": 0,
@@ -564,9 +558,7 @@ class ServiceRegistryClient:
                 "service_name": self.service_name,
                 "service_port": self.service_port,
                 "last_health_check": (
-                    self.last_health_check.isoformat()
-                    if self.last_health_check
-                    else None
+                    self.last_health_check.isoformat() if self.last_health_check else None
                 ),
                 "health_check_interval": self.health_check_interval,
             }

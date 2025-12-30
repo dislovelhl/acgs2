@@ -3,20 +3,19 @@ Usage Metering Service Tests
 Constitutional Hash: cdd01ef066bc6cf2
 """
 
-import pytest
 import asyncio
-from datetime import datetime, timezone, timedelta
-
-import sys
 import os
+import sys
+
+import pytest
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app.models import (
-    UsageEvent,
-    MeterableOperation,
-    MeteringTier,
-    MeteringQuota,
     CONSTITUTIONAL_HASH,
+    MeterableOperation,
+    MeteringQuota,
+    MeteringTier,
 )
 from app.service import UsageMeteringService
 

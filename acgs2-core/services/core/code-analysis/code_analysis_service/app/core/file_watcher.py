@@ -7,10 +7,9 @@ Constitutional Hash: cdd01ef066bc6cf2
 
 import asyncio
 import logging
-import time
 from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import List
 
 from watchdog.events import FileSystemEvent, FileSystemEventHandler
 from watchdog.observers import Observer

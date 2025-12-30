@@ -2,15 +2,18 @@
 Bundle Model
 """
 
-from typing import Dict, Any, List, Optional
 from datetime import datetime, timezone
 from enum import Enum
+from typing import Any, Dict, List
+
 from pydantic import BaseModel, Field
+
 
 class BundleStatus(str, Enum):
     ACTIVE = "active"
     DRAFT = "draft"
     REVOKED = "revoked"
+
 
 class Bundle(BaseModel):
     id: str = Field(..., description="Bundle ID (usually digest or name:tag)")

@@ -2,42 +2,63 @@
 ACGS-2 Deliberation Layer - Impact Scorer
 Uses BERT embeddings to calculate impact scores for decision-making.
 Constitutional Hash: cdd01ef066bc6cf2
+
+GPU Acceleration Profiling: Enabled
+- Tracks DistilBERT/ONNX inference latency
+- Monitors CPU utilization during inference
+- Generates GPU vs CPU recommendation
 """
 
 import logging
-import numpy as np
+from contextlib import nullcontext
 from dataclasses import dataclass
-from typing import Dict, Any, Optional
+from typing import Any, ContextManager, Dict, Optional
+
+import numpy as np
 
 logger = logging.getLogger(__name__)
+
+# GPU Acceleration Profiling Integration
 try:
-    from transformers import AutoTokenizer, AutoModel
+    from ..profiling import ModelProfiler, get_global_profiler
+
+    PROFILING_AVAILABLE = True
+except ImportError:
+    PROFILING_AVAILABLE = False
+    ModelProfiler = None  # type: ignore
+try:
     import torch
     from sklearn.metrics.pairwise import cosine_similarity
+    from transformers import AutoModel, AutoTokenizer
+
     TRANSFORMERS_AVAILABLE = True
 except ImportError:
     TRANSFORMERS_AVAILABLE = False
 
 try:
     import onnxruntime as ort
+
     ONNX_AVAILABLE = True
 except ImportError:
     ONNX_AVAILABLE = False
 
 try:
     import mlflow
+
     MLFLOW_AVAILABLE = True
 except ImportError:
     MLFLOW_AVAILABLE = False
 
 try:
-    from ..models import Priority, MessageType, MessagePriority
+    from ..models import MessagePriority, MessageType, Priority
 except ImportError:
     # Fallback if not in package context
-    import sys
     import os
+    import sys
+
     sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    from models import Priority, MessageType, MessagePriority # type: ignore
+    from models import MessagePriority, MessageType, Priority  # type: ignore
+
 
 def cosine_similarity_fallback(a, b):
     """Fallback implementation of cosine similarity using dot product."""
@@ -53,6 +74,7 @@ def cosine_similarity_fallback(a, b):
 @dataclass
 class ScoringConfig:
     """Configuration for impact scoring weights."""
+
     semantic_weight: float = 0.30
     permission_weight: float = 0.20
     volume_weight: float = 0.10
@@ -60,7 +82,7 @@ class ScoringConfig:
     drift_weight: float = 0.15
     priority_weight: float = 0.10
     type_weight: float = 0.05
-    
+
     # Boost thresholds
     critical_priority_boost: float = 0.9
     high_semantic_boost: float = 0.8
@@ -77,7 +99,12 @@ class ImpactScorer:
         config (ScoringConfig): Configuration for scoring weights.
     """
 
-    def __init__(self, model_name: str = 'distilbert-base-uncased', onnx_path: Optional[str] = None, config: Optional[ScoringConfig] = None):
+    def __init__(
+        self,
+        model_name: str = "distilbert-base-uncased",
+        onnx_path: Optional[str] = None,
+        config: Optional[ScoringConfig] = None,
+    ):
         """Initializes the ImpactScorer with a transformer model and configuration.
 
         Args:
@@ -94,7 +121,7 @@ class ImpactScorer:
         if TRANSFORMERS_AVAILABLE:
             try:
                 self.tokenizer = AutoTokenizer.from_pretrained(model_name)
-                
+
                 if ONNX_AVAILABLE and onnx_path:
                     self.session = ort.InferenceSession(onnx_path)
                     self._onnx_enabled = True
@@ -105,7 +132,7 @@ class ImpactScorer:
                     self._bert_enabled = True
             except Exception as e:
                 logger.warning(f"Failed to load AI model: {e}. Falling back to keyword matching.")
-        
+
         if MLFLOW_AVAILABLE:
             # Placeholder for MLflow model versioning
             try:
@@ -116,11 +143,34 @@ class ImpactScorer:
 
         # Pre-defined high-impact keywords for baseline comparison
         self.high_impact_keywords = [
-            "critical", "emergency", "security", "breach", "violation", "danger",
-            "risk", "threat", "attack", "exploit", "vulnerability", "compromise",
-            "governance", "policy", "regulation", "compliance", "legal", "audit",
-            "financial", "transaction", "payment", "transfer", "blockchain", "consensus",
-            "unauthorized", "abnormal", "suspicious", "alert"
+            "critical",
+            "emergency",
+            "security",
+            "breach",
+            "violation",
+            "danger",
+            "risk",
+            "threat",
+            "attack",
+            "exploit",
+            "vulnerability",
+            "compromise",
+            "governance",
+            "policy",
+            "regulation",
+            "compliance",
+            "legal",
+            "audit",
+            "financial",
+            "transaction",
+            "payment",
+            "transfer",
+            "blockchain",
+            "consensus",
+            "unauthorized",
+            "abnormal",
+            "suspicious",
+            "alert",
         ]
 
         # Cache for keyword embeddings
@@ -133,7 +183,7 @@ class ImpactScorer:
         # Behavioral context drift tracking
         self._agent_impact_history: Dict[str, list] = {}
         self._history_window = 20
-        self._drift_threshold = 0.3 # Deviation from mean to trigger anomaly
+        self._drift_threshold = 0.3  # Deviation from mean to trigger anomaly
 
     def _get_embeddings(self, text: str) -> np.ndarray:
         """Retrieves embeddings for the input text.
@@ -143,25 +193,51 @@ class ImpactScorer:
 
         Returns:
             np.ndarray: The resulting embedding vector.
+
+        Note:
+            This method is instrumented for GPU acceleration profiling.
+            Profiling tracks only model inference, not tokenization.
+            Use get_profiling_report() to see inference metrics.
         """
         if not (self._bert_enabled or self._onnx_enabled):
-            return np.zeros((1, 768)) # Dummy embedding
+            return np.zeros((1, 768))  # Dummy embedding for fallback mode
 
+        # Select inference backend and run with optional profiling
         if self._onnx_enabled:
-            # ONNX inference path
-            inputs = self.tokenizer(text, return_tensors='np', truncation=True,
-                                   padding=True, max_length=512)
-            onnx_inputs = {k: v.astype(np.int64) for k, v in inputs.items()}
+            return self._infer_onnx(text)
+        return self._infer_distilbert(text)
+
+    def _get_profiling_context(self, model_name: str) -> ContextManager:
+        """Get profiling context manager or nullcontext if profiling unavailable."""
+        if PROFILING_AVAILABLE:
+            return get_global_profiler().track(model_name)
+        return nullcontext()
+
+    def _infer_onnx(self, text: str) -> np.ndarray:
+        """ONNX Runtime inference path."""
+        # Tokenization (not profiled - CPU-bound, not GPU-acceleratable)
+        inputs = self.tokenizer(
+            text, return_tensors="np", truncation=True, padding=True, max_length=512
+        )
+        onnx_inputs = {k: v.astype(np.int64) for k, v in inputs.items()}
+
+        # Model inference (profiled - GPU candidate)
+        with self._get_profiling_context("impact_scorer_onnx"):
             outputs = self.session.run(None, onnx_inputs)
-            # Use mean pooling of last hidden state (assumed to be the first output)
-            embeddings = outputs[0].mean(axis=1)
-        else:
-            # PyTorch inference path
-            inputs = self.tokenizer(text, return_tensors='pt', truncation=True,
-                                   padding=True, max_length=512)
+
+        return outputs[0].mean(axis=1)
+
+    def _infer_distilbert(self, text: str) -> np.ndarray:
+        """PyTorch DistilBERT inference path - primary GPU acceleration candidate."""
+        # Tokenization (not profiled - CPU-bound, not GPU-acceleratable)
+        inputs = self.tokenizer(
+            text, return_tensors="pt", truncation=True, padding=True, max_length=512
+        )
+
+        # Model inference (profiled - GPU candidate)
+        with self._get_profiling_context("impact_scorer_distilbert"):
             with torch.no_grad():
                 outputs = self.model(**inputs)
-                # Use mean pooling of last hidden state
                 embeddings = outputs.last_hidden_state.mean(dim=1).numpy()
 
         return embeddings
@@ -174,7 +250,9 @@ class ImpactScorer:
 
         return self._keyword_embeddings
 
-    def calculate_impact_score(self, message_content: Dict[str, Any], context: Optional[Dict[str, Any]] = None) -> float:
+    def calculate_impact_score(
+        self, message_content: Dict[str, Any], context: Optional[Dict[str, Any]] = None
+    ) -> float:
         """
         Calculate multi-dimensional impact score.
 
@@ -190,23 +268,27 @@ class ImpactScorer:
         semantic_score = 0.0
         if text_content:
             if self._bert_enabled or self._onnx_enabled:
-                 message_embedding = self._get_embeddings(text_content)
-                 keyword_embedding = self._get_keyword_embeddings()
-                 if TRANSFORMERS_AVAILABLE:
-                     semantic_score = float(cosine_similarity(message_embedding, keyword_embedding)[0][0])
-                 else:
-                     semantic_score = float(cosine_similarity_fallback(message_embedding, keyword_embedding))
+                message_embedding = self._get_embeddings(text_content)
+                keyword_embedding = self._get_keyword_embeddings()
+                if TRANSFORMERS_AVAILABLE:
+                    semantic_score = float(
+                        cosine_similarity(message_embedding, keyword_embedding)[0][0]
+                    )
+                else:
+                    semantic_score = float(
+                        cosine_similarity_fallback(message_embedding, keyword_embedding)
+                    )
             else:
-                 # Fallback: simple keyword matching
-                 hits = sum(1 for kw in self.high_impact_keywords if kw in text_content.lower())
-                 # logical scoring: 1 hit = 0.3, 2 hits = 0.6, 3+ = 0.9
-                 semantic_score = min(0.9, hits * 0.3)
+                # Fallback: simple keyword matching
+                hits = sum(1 for kw in self.high_impact_keywords if kw in text_content.lower())
+                # logical scoring: 1 hit = 0.3, 2 hits = 0.6, 3+ = 0.9
+                semantic_score = min(0.9, hits * 0.3)
 
         # 2. Permission Score
         permission_score = self._calculate_permission_score(message_content)
 
         # 3. Volume Score
-        agent_id = context.get('agent_id', 'unknown') if context else 'unknown'
+        agent_id = context.get("agent_id", "unknown") if context else "unknown"
         volume_score = self._calculate_volume_score(agent_id)
 
         # 4. Context/History Score (Simplified)
@@ -221,35 +303,35 @@ class ImpactScorer:
 
         # Weighted combination using config
         combined_score = (
-            (semantic_score * self.config.semantic_weight) +
-            (permission_score * self.config.permission_weight) +
-            (volume_score * self.config.volume_weight) +
-            (context_score * self.config.context_weight) +
-            (drift_score * self.config.drift_weight) +
-            (priority_factor * self.config.priority_weight) +
-            (type_factor * self.config.type_weight)
+            (semantic_score * self.config.semantic_weight)
+            + (permission_score * self.config.permission_weight)
+            + (volume_score * self.config.volume_weight)
+            + (context_score * self.config.context_weight)
+            + (drift_score * self.config.drift_weight)
+            + (priority_factor * self.config.priority_weight)
+            + (type_factor * self.config.type_weight)
         )
 
         # Normalize total weight in case customized weights don't sum to 1.0
         total_weight = (
-            self.config.semantic_weight +
-            self.config.permission_weight +
-            self.config.volume_weight + 
-            self.config.context_weight +
-            self.config.drift_weight +
-            self.config.priority_weight +
-            self.config.type_weight
+            self.config.semantic_weight
+            + self.config.permission_weight
+            + self.config.volume_weight
+            + self.config.context_weight
+            + self.config.drift_weight
+            + self.config.priority_weight
+            + self.config.type_weight
         )
-        
+
         if total_weight > 0:
             combined_score = combined_score / total_weight
 
         # Non-linear boost: Critical priority or high semantic relevance
         boosted_score = combined_score
-        
-        if priority_factor >= 1.0: # Critical
+
+        if priority_factor >= 1.0:  # Critical
             boosted_score = max(boosted_score, self.config.critical_priority_boost)
-            
+
         if semantic_score > 0.8:
             boosted_score = max(boosted_score, self.config.high_semantic_boost)
 
@@ -257,44 +339,46 @@ class ImpactScorer:
 
     def _calculate_permission_score(self, message_content: Dict[str, Any]) -> float:
         """Calculate score based on requested tool permissions."""
-        requested_tools = message_content.get('tools', [])
+        requested_tools = message_content.get("tools", [])
         if not requested_tools:
             return 0.1
 
         # High-risk tool patterns
-        high_risk_tools = ['admin', 'delete', 'transfer', 'execute', 'blockchain', 'payment']
-        
+        high_risk_tools = ["admin", "delete", "transfer", "execute", "blockchain", "payment"]
+
         max_risk = 0.1
         for tool in requested_tools:
-            tool_name = tool.get('name', '').lower() if isinstance(tool, dict) else str(tool).lower()
+            tool_name = (
+                tool.get("name", "").lower() if isinstance(tool, dict) else str(tool).lower()
+            )
             if any(pattern in tool_name for pattern in high_risk_tools):
                 max_risk = max(max_risk, 0.9)
-            elif 'read' in tool_name or 'get' in tool_name:
+            elif "read" in tool_name or "get" in tool_name:
                 max_risk = max(max_risk, 0.2)
             else:
                 max_risk = max(max_risk, 0.5)
-        
+
         return max_risk
 
     def _calculate_volume_score(self, agent_id: str) -> float:
         """Calculate score based on request volume/rate."""
         import time
+
         now = time.time()
-        
+
         if agent_id not in self._agent_request_rates:
             self._agent_request_rates[agent_id] = []
-        
+
         # Add current request
         self._agent_request_rates[agent_id].append(now)
-        
+
         # Clean up old requests
         self._agent_request_rates[agent_id] = [
-            t for t in self._agent_request_rates[agent_id]
-            if now - t < self._rate_window_seconds
+            t for t in self._agent_request_rates[agent_id] if now - t < self._rate_window_seconds
         ]
-        
+
         rate = len(self._agent_request_rates[agent_id])
-        
+
         # Thresholds: 10 req/min is normal, 100 req/min is high risk
         if rate < 10:
             return 0.1
@@ -305,24 +389,27 @@ class ImpactScorer:
         else:
             return 1.0
 
-    def _calculate_context_score(self, message_content: Dict[str, Any], context: Optional[Dict[str, Any]]) -> float:
+    def _calculate_context_score(
+        self, message_content: Dict[str, Any], context: Optional[Dict[str, Any]]
+    ) -> float:
         """Calculate score based on historical context and anomalies."""
         # Simplified: check for unusual hours or tenant-specific risks
         import datetime
+
         now = datetime.datetime.now()
-        
+
         score = 0.2
-        
+
         # Night time anomaly (e.g., 1 AM to 5 AM)
         if 1 <= now.hour <= 5:
             score += 0.3
-            
+
         # Check for large transactions in content
-        payload = message_content.get('payload', {})
-        amount = payload.get('amount', 0)
+        payload = message_content.get("payload", {})
+        amount = payload.get("amount", 0)
         if isinstance(amount, (int, float)) and amount > 10000:
             score += 0.4
-            
+
         return min(1.0, score)
 
     def _calculate_drift_score(self, agent_id: str, combined_baseline: float) -> float:
@@ -330,8 +417,8 @@ class ImpactScorer:
         Detects behavioral drift by comparing current baseline score to historical mean.
         Identifies deviations from established 'safety envelopes'.
         """
-        if agent_id == 'unknown' or agent_id not in self._agent_impact_history:
-            if agent_id != 'unknown':
+        if agent_id == "unknown" or agent_id not in self._agent_impact_history:
+            if agent_id != "unknown":
                 self._agent_impact_history[agent_id] = [combined_baseline]
             return 0.0
 
@@ -348,7 +435,9 @@ class ImpactScorer:
 
         # Drift is high if deviation exceeds threshold
         if deviation > self._drift_threshold:
-            logger.warning(f"Behavioral context drift detected for agent {agent_id}: deviation={deviation:.2f}")
+            logger.warning(
+                f"Behavioral context drift detected for agent {agent_id}: deviation={deviation:.2f}"
+            )
             return min(1.0, (deviation / self._drift_threshold) * 0.5)
 
         return 0.0
@@ -358,7 +447,17 @@ class ImpactScorer:
         text_parts = []
 
         # Extract from common fields
-        for field in ['content', 'payload', 'description', 'reason', 'details', 'action', 'type', 'title', 'subject']:
+        for field in [
+            "content",
+            "payload",
+            "description",
+            "reason",
+            "details",
+            "action",
+            "type",
+            "title",
+            "subject",
+        ]:
             if field in message_content:
                 value = message_content[field]
                 if isinstance(value, str):
@@ -369,17 +468,19 @@ class ImpactScorer:
 
         return " ".join(text_parts)
 
-    def _calculate_priority_factor(self, message_content: Dict[str, Any], context: Optional[Dict[str, Any]] = None) -> float:
+    def _calculate_priority_factor(
+        self, message_content: Dict[str, Any], context: Optional[Dict[str, Any]] = None
+    ) -> float:
         """Calculate priority-based factor using Priority enum."""
-        priority_val = message_content.get('priority')
-        
+        priority_val = message_content.get("priority")
+
         # Check context if not in content
         if priority_val is None and context:
-            priority_val = context.get('priority')
-        
+            priority_val = context.get("priority")
+
         # Map Priority enum or its value/name to 0.0-1.0
         p = Priority.MEDIUM
-        
+
         # Use name/value comparison to avoid identity issues with different imports
         priority_name = ""
         if hasattr(priority_val, "name"):
@@ -396,7 +497,7 @@ class ImpactScorer:
                 "HIGH": Priority.HIGH,
                 "NORMAL": Priority.MEDIUM,
                 "MEDIUM": Priority.MEDIUM,
-                "LOW": Priority.LOW
+                "LOW": Priority.LOW,
             }
             p = conversion.get(priority_name, Priority.MEDIUM)
         elif isinstance(priority_val, int):
@@ -423,20 +524,22 @@ class ImpactScorer:
         priority_map = {
             Priority.LOW: 0.1,
             Priority.MEDIUM: 0.3,
-            Priority.NORMAL: 0.3, # Alias
+            Priority.NORMAL: 0.3,  # Alias
             Priority.HIGH: 0.7,
-            Priority.CRITICAL: 1.0
+            Priority.CRITICAL: 1.0,
         }
 
         return priority_map.get(p, 0.3)
 
-    def _calculate_type_factor(self, message_content: Dict[str, Any], context: Optional[Dict[str, Any]] = None) -> float:
+    def _calculate_type_factor(
+        self, message_content: Dict[str, Any], context: Optional[Dict[str, Any]] = None
+    ) -> float:
         """Calculate message type-based factor using MessageType enum."""
-        msg_type_val = message_content.get('message_type')
+        msg_type_val = message_content.get("message_type")
 
         # Check context if not in content
         if msg_type_val is None and context:
-            msg_type_val = context.get('message_type')
+            msg_type_val = context.get("message_type")
 
         if isinstance(msg_type_val, MessageType):
             mt = msg_type_val
@@ -452,13 +555,14 @@ class ImpactScorer:
         high_impact_types = [
             MessageType.GOVERNANCE_REQUEST,
             MessageType.CONSTITUTIONAL_VALIDATION,
-            MessageType.TASK_REQUEST # Sometimes critical
+            MessageType.TASK_REQUEST,  # Sometimes critical
         ]
 
         return 0.8 if mt in high_impact_types else 0.2
 
-
-    def validate_with_baseline(self, message_content: Dict[str, Any], baseline_scorer: 'ImpactScorer') -> bool:
+    def validate_with_baseline(
+        self, message_content: Dict[str, Any], baseline_scorer: "ImpactScorer"
+    ) -> bool:
         """Compares current score with a baseline scorer for validation.
 
         Args:
@@ -476,7 +580,12 @@ class ImpactScorer:
 # Global scorer instance
 _impact_scorer = None
 
-def get_impact_scorer(model_name: str = 'distilbert-base-uncased', onnx_path: Optional[str] = None, config: Optional[ScoringConfig] = None) -> ImpactScorer:
+
+def get_impact_scorer(
+    model_name: str = "distilbert-base-uncased",
+    onnx_path: Optional[str] = None,
+    config: Optional[ScoringConfig] = None,
+) -> ImpactScorer:
     """Get or create global impact scorer instance.
 
     Args:
@@ -488,6 +597,7 @@ def get_impact_scorer(model_name: str = 'distilbert-base-uncased', onnx_path: Op
     if _impact_scorer is None:
         _impact_scorer = ImpactScorer(model_name=model_name, onnx_path=onnx_path, config=config)
     return _impact_scorer
+
 
 def calculate_message_impact(message_content: Dict[str, Any]) -> float:
     """
@@ -501,3 +611,53 @@ def calculate_message_impact(message_content: Dict[str, Any]) -> float:
     """
     scorer = get_impact_scorer()
     return scorer.calculate_impact_score(message_content)
+
+
+# ============================================================================
+# GPU Acceleration Profiling API
+# ============================================================================
+
+
+def get_profiling_report() -> str:
+    """
+    Get GPU acceleration profiling report for impact scorer.
+
+    Returns:
+        Human-readable report with GPU recommendation.
+
+    Example:
+        >>> report = get_profiling_report()
+        >>> print(report)
+        Model: impact_scorer_distilbert
+        P99 Latency: 2.45ms
+        CPU Usage: 45%
+        GPU Recommendation: Compute-bound, consider TensorRT
+    """
+    if not PROFILING_AVAILABLE:
+        return "Profiling not available. Install profiling module."
+
+    profiler = get_global_profiler()
+    return profiler.generate_report()
+
+
+def get_gpu_decision_matrix() -> Dict[str, Any]:
+    """
+    Get structured GPU decision data for programmatic use.
+
+    Returns:
+        Dictionary with model metrics and GPU recommendations.
+    """
+    if not PROFILING_AVAILABLE:
+        return {"error": "Profiling not available"}
+
+    profiler = get_global_profiler()
+    all_metrics = profiler.get_all_metrics()
+
+    return {model_name: metrics.to_dict() for model_name, metrics in all_metrics.items()}
+
+
+def reset_profiling() -> None:
+    """Reset all profiling data."""
+    if PROFILING_AVAILABLE:
+        profiler = get_global_profiler()
+        profiler.reset()

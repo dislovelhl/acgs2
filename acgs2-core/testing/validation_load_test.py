@@ -24,9 +24,9 @@ import os
 import statistics
 import sys
 import time
+from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
-from typing import Dict, List, Any, Optional
-from dataclasses import dataclass, asdict
+from typing import Dict, List
 
 # Add project root to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -34,9 +34,9 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 try:
     from shared.constants import (
         CONSTITUTIONAL_HASH,
-        P99_LATENCY_TARGET_MS,
-        MIN_THROUGHPUT_RPS,
         MIN_CACHE_HIT_RATE,
+        MIN_THROUGHPUT_RPS,
+        P99_LATENCY_TARGET_MS,
     )
 except ImportError:
     # Fallback for standalone usage
@@ -47,17 +47,18 @@ except ImportError:
 
 # Baseline metrics from previous testing (Phase 1)
 BASELINE_METRICS = {
-    'p99_latency_ms': 0.328,
-    'throughput_rps': 2605,
-    'cache_hit_rate': 0.95,
-    'test_date': '2025-12-23',
-    'phase': 'Phase 1 Baseline',
+    "p99_latency_ms": 0.328,
+    "throughput_rps": 2605,
+    "cache_hit_rate": 0.95,
+    "test_date": "2025-12-23",
+    "phase": "Phase 1 Baseline",
 }
 
 
 @dataclass
 class PerformanceResult:
     """Performance test result."""
+
     test_name: str
     iterations: int
     successful: int
@@ -77,27 +78,29 @@ class PerformanceResult:
     def meets_targets(self) -> bool:
         """Check if results meet performance targets."""
         return (
-            self.p99_latency_ms < P99_LATENCY_TARGET_MS and
-            self.throughput_rps >= MIN_THROUGHPUT_RPS and
-            self.success_rate >= 0.95
+            self.p99_latency_ms < P99_LATENCY_TARGET_MS
+            and self.throughput_rps >= MIN_THROUGHPUT_RPS
+            and self.success_rate >= 0.95
         )
 
     def vs_baseline(self) -> Dict[str, float]:
         """Compare against baseline metrics."""
         p99_improvement = (
-            (BASELINE_METRICS['p99_latency_ms'] - self.p99_latency_ms) /
-            BASELINE_METRICS['p99_latency_ms'] * 100
+            (BASELINE_METRICS["p99_latency_ms"] - self.p99_latency_ms)
+            / BASELINE_METRICS["p99_latency_ms"]
+            * 100
         )
         throughput_improvement = (
-            (self.throughput_rps - BASELINE_METRICS['throughput_rps']) /
-            BASELINE_METRICS['throughput_rps'] * 100
+            (self.throughput_rps - BASELINE_METRICS["throughput_rps"])
+            / BASELINE_METRICS["throughput_rps"]
+            * 100
         )
 
         return {
-            'p99_latency_improvement_pct': p99_improvement,
-            'throughput_improvement_pct': throughput_improvement,
-            'p99_vs_baseline': f"{'+' if p99_improvement >= 0 else ''}{p99_improvement:.1f}%",
-            'throughput_vs_baseline': f"{'+' if throughput_improvement >= 0 else ''}{throughput_improvement:.1f}%",
+            "p99_latency_improvement_pct": p99_improvement,
+            "throughput_improvement_pct": throughput_improvement,
+            "p99_vs_baseline": f"{'+' if p99_improvement >= 0 else ''}{p99_improvement:.1f}%",
+            "throughput_vs_baseline": f"{'+' if throughput_improvement >= 0 else ''}{throughput_improvement:.1f}%",
         }
 
 
@@ -111,7 +114,7 @@ class MessageProcessingBenchmark:
     async def run(self, iterations: int = 1000) -> PerformanceResult:
         """Run message processing benchmark."""
         print(f"\n{'='*60}")
-        print(f"Message Processing Performance Benchmark")
+        print("Message Processing Performance Benchmark")
         print(f"Iterations: {iterations}")
         print(f"Constitutional Hash: {CONSTITUTIONAL_HASH}")
         print(f"{'='*60}\n")
@@ -185,13 +188,13 @@ class MessageProcessingBenchmark:
     def _print_result(self, result: PerformanceResult):
         """Print test result summary."""
         print(f"\n{'-'*60}")
-        print(f"Results:")
+        print("Results:")
         print(f"{'-'*60}")
         print(f"Iterations:     {result.iterations}")
         print(f"Successful:     {result.successful} ({result.success_rate:.1%})")
         print(f"Failed:         {result.failed}")
         print(f"Throughput:     {result.throughput_rps:.2f} RPS")
-        print(f"\nLatency (ms):")
+        print("\nLatency (ms):")
         print(f"  Min:          {result.min_latency_ms:.3f}")
         print(f"  Mean:         {result.mean_latency_ms:.3f}")
         print(f"  Median:       {result.median_latency_ms:.3f}")
@@ -201,7 +204,7 @@ class MessageProcessingBenchmark:
         print(f"  Max:          {result.max_latency_ms:.3f}")
 
         print(f"\n{'-'*60}")
-        print(f"Target Validation:")
+        print("Target Validation:")
         print(f"{'-'*60}")
 
         meets_targets = result.meets_targets()
@@ -212,35 +215,41 @@ class MessageProcessingBenchmark:
         throughput_pass = result.throughput_rps >= MIN_THROUGHPUT_RPS
         success_pass = result.success_rate >= 0.95
 
-        print(f"P99 Latency:    {'✓' if p99_pass else '✗'} {result.p99_latency_ms:.3f}ms (target: <{P99_LATENCY_TARGET_MS}ms)")
-        print(f"Throughput:     {'✓' if throughput_pass else '✗'} {result.throughput_rps:.0f} RPS (target: >{MIN_THROUGHPUT_RPS} RPS)")
-        print(f"Success Rate:   {'✓' if success_pass else '✗'} {result.success_rate:.1%} (target: >95%)")
+        print(
+            f"P99 Latency:    {'✓' if p99_pass else '✗'} {result.p99_latency_ms:.3f}ms (target: <{P99_LATENCY_TARGET_MS}ms)"
+        )
+        print(
+            f"Throughput:     {'✓' if throughput_pass else '✗'} {result.throughput_rps:.0f} RPS (target: >{MIN_THROUGHPUT_RPS} RPS)"
+        )
+        print(
+            f"Success Rate:   {'✓' if success_pass else '✗'} {result.success_rate:.1%} (target: >95%)"
+        )
 
         print(f"\n{'-'*60}")
-        print(f"Baseline Comparison:")
+        print("Baseline Comparison:")
         print(f"{'-'*60}")
         print(f"Baseline ({BASELINE_METRICS['phase']}):")
         print(f"  P99 Latency:  {BASELINE_METRICS['p99_latency_ms']}ms")
         print(f"  Throughput:   {BASELINE_METRICS['throughput_rps']} RPS")
 
         vs_baseline = result.vs_baseline()
-        print(f"\nCurrent vs Baseline:")
+        print("\nCurrent vs Baseline:")
         print(f"  P99 Latency:  {vs_baseline['p99_vs_baseline']}")
         print(f"  Throughput:   {vs_baseline['throughput_vs_baseline']}")
 
         # Determine if optimization was successful
-        latency_improved = vs_baseline['p99_latency_improvement_pct'] > 0
-        throughput_improved = vs_baseline['throughput_improvement_pct'] > 0
+        latency_improved = vs_baseline["p99_latency_improvement_pct"] > 0
+        throughput_improved = vs_baseline["throughput_improvement_pct"] > 0
 
-        print(f"\nOptimization Status:")
+        print("\nOptimization Status:")
         if latency_improved and throughput_improved:
-            print(f"  ✓ Both latency and throughput improved")
+            print("  ✓ Both latency and throughput improved")
         elif latency_improved:
-            print(f"  ~ Latency improved but throughput regressed")
+            print("  ~ Latency improved but throughput regressed")
         elif throughput_improved:
-            print(f"  ~ Throughput improved but latency regressed")
+            print("  ~ Throughput improved but latency regressed")
         else:
-            print(f"  ✗ Performance regressed compared to baseline")
+            print("  ✗ Performance regressed compared to baseline")
 
 
 class ValidationReport:
@@ -319,7 +328,10 @@ by comparing current performance against baseline metrics.
 """
         if self.result.meets_targets():
             report += "✓ **All performance targets met.** System is production-ready.\n\n"
-            if vs_baseline['p99_latency_improvement_pct'] > 0 and vs_baseline['throughput_improvement_pct'] > 0:
+            if (
+                vs_baseline["p99_latency_improvement_pct"] > 0
+                and vs_baseline["throughput_improvement_pct"] > 0
+            ):
                 report += "✓ **Optimizations successful.** Both latency and throughput improved vs baseline.\n\n"
         else:
             report += "⚠ **Performance targets not met.** Further optimization required.\n\n"
@@ -353,12 +365,9 @@ by comparing current performance against baseline metrics.
             timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
             filename = f"performance_validation_report_{timestamp}.md"
 
-        filepath = os.path.join(
-            os.path.dirname(__file__),
-            filename
-        )
+        filepath = os.path.join(os.path.dirname(__file__), filename)
 
-        with open(filepath, 'w') as f:
+        with open(filepath, "w") as f:
             f.write(self.generate_markdown())
 
         print(f"\nMarkdown report saved to: {filepath}")
@@ -370,20 +379,17 @@ by comparing current performance against baseline metrics.
             timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
             filename = f"performance_validation_report_{timestamp}.json"
 
-        filepath = os.path.join(
-            os.path.dirname(__file__),
-            filename
-        )
+        filepath = os.path.join(os.path.dirname(__file__), filename)
 
         report_data = {
             **asdict(self.result),
-            'timestamp': self.result.timestamp.isoformat(),
-            'vs_baseline': self.result.vs_baseline(),
-            'meets_targets': self.result.meets_targets(),
-            'baseline_metrics': BASELINE_METRICS,
+            "timestamp": self.result.timestamp.isoformat(),
+            "vs_baseline": self.result.vs_baseline(),
+            "meets_targets": self.result.meets_targets(),
+            "baseline_metrics": BASELINE_METRICS,
         }
 
-        with open(filepath, 'w') as f:
+        with open(filepath, "w") as f:
             json.dump(report_data, f, indent=2)
 
         print(f"JSON report saved to: {filepath}")
@@ -394,30 +400,20 @@ async def main():
     """Main entry point."""
     import argparse
 
-    parser = argparse.ArgumentParser(
-        description="ACGS-2 Performance Validation Load Test"
-    )
+    parser = argparse.ArgumentParser(description="ACGS-2 Performance Validation Load Test")
     parser.add_argument(
-        '--iterations',
+        "--iterations",
         type=int,
         default=10000,
-        help='Number of messages to process (default: 10000)'
+        help="Number of messages to process (default: 10000)",
     )
-    parser.add_argument(
-        '--markdown-output',
-        type=str,
-        help='Markdown report filename'
-    )
-    parser.add_argument(
-        '--json-output',
-        type=str,
-        help='JSON report filename'
-    )
+    parser.add_argument("--markdown-output", type=str, help="Markdown report filename")
+    parser.add_argument("--json-output", type=str, help="JSON report filename")
 
     args = parser.parse_args()
 
     print(f"\n{'#'*60}")
-    print(f"# ACGS-2 Performance Validation Load Test")
+    print("# ACGS-2 Performance Validation Load Test")
     print(f"# Constitutional Hash: {CONSTITUTIONAL_HASH}")
     print(f"# Start Time: {datetime.now(timezone.utc).isoformat()}")
     print(f"{'#'*60}\n")
@@ -432,7 +428,7 @@ async def main():
     report.save_json(args.json_output)
 
     print(f"\n{'='*60}")
-    print(f"Performance Validation Complete")
+    print("Performance Validation Complete")
     print(f"{'='*60}\n")
 
     # Exit with appropriate code
@@ -444,5 +440,5 @@ async def main():
         sys.exit(1)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     asyncio.run(main())

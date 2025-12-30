@@ -10,14 +10,12 @@ Comprehensive test coverage for CryptoService including:
 - Agent JWT token issuance and verification
 """
 
-import pytest
 import base64
-import json
-import time
-from datetime import datetime, timezone, timedelta
-from unittest.mock import patch, MagicMock
+from datetime import datetime, timedelta, timezone
+from unittest.mock import patch
 
 import jwt
+import pytest
 from cryptography.hazmat.primitives.asymmetric import ed25519
 
 # Constitutional hash constant
@@ -28,10 +26,12 @@ CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
 # Fixtures
 # =============================================================================
 
+
 @pytest.fixture
 def crypto_service():
     """Create a CryptoService instance."""
     from app.services.crypto_service import CryptoService
+
     return CryptoService()
 
 
@@ -39,6 +39,7 @@ def crypto_service():
 def keypair():
     """Generate a key pair for testing."""
     from app.services.crypto_service import CryptoService
+
     return CryptoService.generate_keypair()
 
 
@@ -50,12 +51,9 @@ def sample_policy_content():
         "version": "1.0.0",
         "rules": [
             {"action": "allow", "resource": "read:*"},
-            {"action": "deny", "resource": "write:admin"}
+            {"action": "deny", "resource": "write:admin"},
         ],
-        "metadata": {
-            "author": "test-user",
-            "description": "Test policy for unit tests"
-        }
+        "metadata": {"author": "test-user", "description": "Test policy for unit tests"},
     }
 
 
@@ -63,22 +61,17 @@ def sample_policy_content():
 def sample_complex_content():
     """Complex nested policy content."""
     return {
-        "nested": {
-            "deep": {
-                "value": 123,
-                "list": [1, 2, 3],
-                "unicode": "こんにちは"
-            }
-        },
+        "nested": {"deep": {"value": 123, "list": [1, 2, 3], "unicode": "こんにちは"}},
         "boolean": True,
         "null_value": None,
-        "numbers": [1.5, -2, 0, 1000000]
+        "numbers": [1.5, -2, 0, 1000000],
     }
 
 
 # =============================================================================
 # Key Pair Generation Tests
 # =============================================================================
+
 
 class TestKeyPairGeneration:
     """Tests for Ed25519 key pair generation."""
@@ -134,6 +127,7 @@ class TestKeyPairGeneration:
 # Policy Signing Tests
 # =============================================================================
 
+
 class TestPolicySigning:
     """Tests for policy content signing."""
 
@@ -141,10 +135,7 @@ class TestPolicySigning:
         """Test signing policy content."""
         public_key, private_key = keypair
 
-        signature = crypto_service.sign_policy_content(
-            sample_policy_content,
-            private_key
-        )
+        signature = crypto_service.sign_policy_content(sample_policy_content, private_key)
 
         assert isinstance(signature, str)
         # Signature should be base64 decodable
@@ -174,10 +165,7 @@ class TestPolicySigning:
         """Test signing complex nested content."""
         public_key, private_key = keypair
 
-        signature = crypto_service.sign_policy_content(
-            sample_complex_content,
-            private_key
-        )
+        signature = crypto_service.sign_policy_content(sample_complex_content, private_key)
 
         assert isinstance(signature, str)
         assert len(base64.b64decode(signature)) == 64
@@ -195,6 +183,7 @@ class TestPolicySigning:
 # Signature Verification Tests
 # =============================================================================
 
+
 class TestSignatureVerification:
     """Tests for signature verification."""
 
@@ -202,15 +191,10 @@ class TestSignatureVerification:
         """Test verifying a valid signature."""
         public_key, private_key = keypair
 
-        signature = crypto_service.sign_policy_content(
-            sample_policy_content,
-            private_key
-        )
+        signature = crypto_service.sign_policy_content(sample_policy_content, private_key)
 
         result = crypto_service.verify_policy_signature(
-            sample_policy_content,
-            signature,
-            public_key
+            sample_policy_content, signature, public_key
         )
 
         assert result is True
@@ -223,9 +207,7 @@ class TestSignatureVerification:
         invalid_signature = base64.b64encode(b"x" * 64).decode()
 
         result = crypto_service.verify_policy_signature(
-            sample_policy_content,
-            invalid_signature,
-            public_key
+            sample_policy_content, invalid_signature, public_key
         )
 
         assert result is False
@@ -234,20 +216,13 @@ class TestSignatureVerification:
         """Test verification fails with tampered content."""
         public_key, private_key = keypair
 
-        signature = crypto_service.sign_policy_content(
-            sample_policy_content,
-            private_key
-        )
+        signature = crypto_service.sign_policy_content(sample_policy_content, private_key)
 
         # Tamper with content
         tampered_content = sample_policy_content.copy()
         tampered_content["name"] = "tampered-policy"
 
-        result = crypto_service.verify_policy_signature(
-            tampered_content,
-            signature,
-            public_key
-        )
+        result = crypto_service.verify_policy_signature(tampered_content, signature, public_key)
 
         assert result is False
 
@@ -256,15 +231,10 @@ class TestSignatureVerification:
         public_key, private_key = keypair
         wrong_public, _ = crypto_service.generate_keypair()
 
-        signature = crypto_service.sign_policy_content(
-            sample_policy_content,
-            private_key
-        )
+        signature = crypto_service.sign_policy_content(sample_policy_content, private_key)
 
         result = crypto_service.verify_policy_signature(
-            sample_policy_content,
-            signature,
-            wrong_public
+            sample_policy_content, signature, wrong_public
         )
 
         assert result is False
@@ -274,9 +244,7 @@ class TestSignatureVerification:
         public_key, _ = keypair
 
         result = crypto_service.verify_policy_signature(
-            sample_policy_content,
-            "not-valid-base64!@#$",
-            public_key
+            sample_policy_content, "not-valid-base64!@#$", public_key
         )
 
         assert result is False
@@ -285,15 +253,10 @@ class TestSignatureVerification:
         """Test verification handles malformed public key gracefully."""
         _, private_key = keypair
 
-        signature = crypto_service.sign_policy_content(
-            sample_policy_content,
-            private_key
-        )
+        signature = crypto_service.sign_policy_content(sample_policy_content, private_key)
 
         result = crypto_service.verify_policy_signature(
-            sample_policy_content,
-            signature,
-            "invalid-key"
+            sample_policy_content, signature, "invalid-key"
         )
 
         assert result is False
@@ -302,6 +265,7 @@ class TestSignatureVerification:
 # =============================================================================
 # Fingerprint Tests
 # =============================================================================
+
 
 class TestFingerprint:
     """Tests for key fingerprint generation."""
@@ -341,6 +305,7 @@ class TestFingerprint:
 # Policy Signature Creation Tests
 # =============================================================================
 
+
 class TestPolicySignatureCreation:
     """Tests for policy signature object creation."""
 
@@ -353,7 +318,7 @@ class TestPolicySignatureCreation:
             version="1.0.0",
             content=sample_policy_content,
             private_key_b64=private_key,
-            public_key_b64=public_key
+            public_key_b64=public_key,
         )
 
         assert policy_sig.policy_id == "policy-123"
@@ -371,19 +336,19 @@ class TestPolicySignatureCreation:
             version="1.0.0",
             content=sample_policy_content,
             private_key_b64=private_key,
-            public_key_b64=public_key
+            public_key_b64=public_key,
         )
 
         # Verify the signature
         is_valid = crypto_service.verify_policy_signature(
-            sample_policy_content,
-            policy_sig.signature,
-            policy_sig.public_key
+            sample_policy_content, policy_sig.signature, policy_sig.public_key
         )
 
         assert is_valid is True
 
-    def test_policy_signature_fingerprint_matches(self, crypto_service, keypair, sample_policy_content):
+    def test_policy_signature_fingerprint_matches(
+        self, crypto_service, keypair, sample_policy_content
+    ):
         """Test that signature fingerprint matches public key."""
         public_key, private_key = keypair
 
@@ -392,7 +357,7 @@ class TestPolicySignatureCreation:
             version="1.0.0",
             content=sample_policy_content,
             private_key_b64=private_key,
-            public_key_b64=public_key
+            public_key_b64=public_key,
         )
 
         expected_fingerprint = crypto_service.generate_fingerprint(public_key)
@@ -403,10 +368,13 @@ class TestPolicySignatureCreation:
 # Signature Integrity Validation Tests
 # =============================================================================
 
+
 class TestSignatureIntegrityValidation:
     """Tests for signature integrity validation."""
 
-    def test_validate_signature_integrity_valid(self, crypto_service, keypair, sample_policy_content):
+    def test_validate_signature_integrity_valid(
+        self, crypto_service, keypair, sample_policy_content
+    ):
         """Test integrity validation for valid signature."""
         public_key, private_key = keypair
 
@@ -415,13 +383,15 @@ class TestSignatureIntegrityValidation:
             version="1.0.0",
             content=sample_policy_content,
             private_key_b64=private_key,
-            public_key_b64=public_key
+            public_key_b64=public_key,
         )
 
         is_valid = crypto_service.validate_signature_integrity(policy_sig)
         assert is_valid is True
 
-    def test_validate_signature_integrity_invalid_fingerprint(self, crypto_service, keypair, sample_policy_content):
+    def test_validate_signature_integrity_invalid_fingerprint(
+        self, crypto_service, keypair, sample_policy_content
+    ):
         """Test integrity validation fails with wrong fingerprint."""
         public_key, private_key = keypair
 
@@ -430,7 +400,7 @@ class TestSignatureIntegrityValidation:
             version="1.0.0",
             content=sample_policy_content,
             private_key_b64=private_key,
-            public_key_b64=public_key
+            public_key_b64=public_key,
         )
 
         # Tamper with fingerprint
@@ -444,6 +414,7 @@ class TestSignatureIntegrityValidation:
 # Agent Token Tests
 # =============================================================================
 
+
 class TestAgentTokenIssuance:
     """Tests for agent JWT token issuance."""
 
@@ -456,12 +427,12 @@ class TestAgentTokenIssuance:
             tenant_id="tenant-456",
             capabilities=["read", "write"],
             private_key_b64=private_key,
-            ttl_hours=24
+            ttl_hours=24,
         )
 
         assert isinstance(token, str)
         # JWT has 3 parts separated by dots
-        assert len(token.split('.')) == 3
+        assert len(token.split(".")) == 3
 
     def test_issue_agent_token_custom_ttl(self, crypto_service, keypair):
         """Test issuing token with custom TTL."""
@@ -472,7 +443,7 @@ class TestAgentTokenIssuance:
             tenant_id="tenant-456",
             capabilities=["read"],
             private_key_b64=private_key,
-            ttl_hours=1
+            ttl_hours=1,
         )
 
         # Decode without verification to check claims
@@ -491,7 +462,7 @@ class TestAgentTokenIssuance:
             agent_id="agent-123",
             tenant_id="tenant-456",
             capabilities=["read"],
-            private_key_b64=private_key
+            private_key_b64=private_key,
         )
 
         unverified = jwt.decode(token, options={"verify_signature": False})
@@ -506,7 +477,7 @@ class TestAgentTokenIssuance:
             agent_id="agent-123",
             tenant_id="tenant-456",
             capabilities=["read"],
-            private_key_b64=private_key
+            private_key_b64=private_key,
         )
 
         unverified = jwt.decode(token, options={"verify_signature": False})
@@ -519,6 +490,7 @@ class TestAgentTokenIssuance:
 # Agent Token Verification Tests
 # =============================================================================
 
+
 class TestAgentTokenVerification:
     """Tests for agent token verification."""
 
@@ -530,7 +502,7 @@ class TestAgentTokenVerification:
             agent_id="agent-123",
             tenant_id="tenant-456",
             capabilities=["read", "write"],
-            private_key_b64=private_key
+            private_key_b64=private_key,
         )
 
         payload = crypto_service.verify_agent_token(token, public_key)
@@ -544,7 +516,7 @@ class TestAgentTokenVerification:
         public_key, private_key = keypair
 
         # Issue token that expires immediately
-        with patch('app.services.crypto_service.datetime') as mock_dt:
+        with patch("app.services.crypto_service.datetime") as mock_dt:
             # Set time to 2 hours ago
             past_time = datetime.now(timezone.utc) - timedelta(hours=2)
             mock_dt.now.return_value = past_time
@@ -555,7 +527,7 @@ class TestAgentTokenVerification:
                 tenant_id="tenant-456",
                 capabilities=["read"],
                 private_key_b64=private_key,
-                ttl_hours=1
+                ttl_hours=1,
             )
 
         # Now verify (will be expired)
@@ -571,7 +543,7 @@ class TestAgentTokenVerification:
             agent_id="agent-123",
             tenant_id="tenant-456",
             capabilities=["read"],
-            private_key_b64=private_key
+            private_key_b64=private_key,
         )
 
         with pytest.raises(ValueError, match="Invalid token"):
@@ -592,14 +564,14 @@ class TestAgentTokenVerification:
             agent_id="agent-123",
             tenant_id="tenant-456",
             capabilities=["read"],
-            private_key_b64=private_key
+            private_key_b64=private_key,
         )
 
         # Tamper with the token
-        parts = token.split('.')
+        parts = token.split(".")
         # Modify the payload
         parts[1] = parts[1] + "tampered"
-        tampered_token = '.'.join(parts)
+        tampered_token = ".".join(parts)
 
         with pytest.raises(ValueError):
             crypto_service.verify_agent_token(tampered_token, public_key)
@@ -608,6 +580,7 @@ class TestAgentTokenVerification:
 # =============================================================================
 # Edge Case Tests
 # =============================================================================
+
 
 class TestEdgeCases:
     """Tests for edge cases and boundary conditions."""
@@ -620,16 +593,12 @@ class TestEdgeCases:
             "japanese": "こんにちは",
             "emoji": "🔐🔑",
             "arabic": "مرحبا",
-            "chinese": "你好"
+            "chinese": "你好",
         }
 
         signature = crypto_service.sign_policy_content(unicode_content, private_key)
 
-        is_valid = crypto_service.verify_policy_signature(
-            unicode_content,
-            signature,
-            public_key
-        )
+        is_valid = crypto_service.verify_policy_signature(unicode_content, signature, public_key)
 
         assert is_valid is True
 
@@ -641,16 +610,12 @@ class TestEdgeCases:
             "quotes": 'He said "hello"',
             "backslash": "path\\to\\file",
             "newline": "line1\nline2",
-            "tab": "col1\tcol2"
+            "tab": "col1\tcol2",
         }
 
         signature = crypto_service.sign_policy_content(special_content, private_key)
 
-        is_valid = crypto_service.verify_policy_signature(
-            special_content,
-            signature,
-            public_key
-        )
+        is_valid = crypto_service.verify_policy_signature(special_content, signature, public_key)
 
         assert is_valid is True
 
@@ -658,18 +623,11 @@ class TestEdgeCases:
         """Test signing large content."""
         public_key, private_key = keypair
 
-        large_content = {
-            "rules": [f"rule-{i}" for i in range(1000)],
-            "data": "x" * 10000
-        }
+        large_content = {"rules": [f"rule-{i}" for i in range(1000)], "data": "x" * 10000}
 
         signature = crypto_service.sign_policy_content(large_content, private_key)
 
-        is_valid = crypto_service.verify_policy_signature(
-            large_content,
-            signature,
-            public_key
-        )
+        is_valid = crypto_service.verify_policy_signature(large_content, signature, public_key)
 
         assert is_valid is True
 
@@ -683,7 +641,7 @@ class TestEdgeCases:
             agent_id="agent-123",
             tenant_id="tenant-456",
             capabilities=capabilities,
-            private_key_b64=private_key
+            private_key_b64=private_key,
         )
 
         payload = crypto_service.verify_agent_token(token, public_key)
@@ -693,6 +651,7 @@ class TestEdgeCases:
 # =============================================================================
 # Constitutional Compliance Tests
 # =============================================================================
+
 
 class TestConstitutionalCompliance:
     """Tests for constitutional compliance."""
@@ -709,7 +668,7 @@ class TestConstitutionalCompliance:
             agent_id="agent-123",
             tenant_id="tenant-456",
             capabilities=["read"],
-            private_key_b64=private_key
+            private_key_b64=private_key,
         )
 
         payload = crypto_service.verify_agent_token(token, public_key)
@@ -718,17 +677,18 @@ class TestConstitutionalCompliance:
     def test_crypto_service_module_exists(self):
         """Test that crypto service module can be imported."""
         from app.services.crypto_service import CryptoService
+
         assert CryptoService is not None
 
     def test_all_static_methods_available(self):
         """Test that all expected static methods are available."""
         from app.services.crypto_service import CryptoService
 
-        assert hasattr(CryptoService, 'generate_keypair')
-        assert hasattr(CryptoService, 'sign_policy_content')
-        assert hasattr(CryptoService, 'verify_policy_signature')
-        assert hasattr(CryptoService, 'generate_fingerprint')
-        assert hasattr(CryptoService, 'create_policy_signature')
-        assert hasattr(CryptoService, 'validate_signature_integrity')
-        assert hasattr(CryptoService, 'issue_agent_token')
-        assert hasattr(CryptoService, 'verify_agent_token')
+        assert hasattr(CryptoService, "generate_keypair")
+        assert hasattr(CryptoService, "sign_policy_content")
+        assert hasattr(CryptoService, "verify_policy_signature")
+        assert hasattr(CryptoService, "generate_fingerprint")
+        assert hasattr(CryptoService, "create_policy_signature")
+        assert hasattr(CryptoService, "validate_signature_integrity")
+        assert hasattr(CryptoService, "issue_agent_token")
+        assert hasattr(CryptoService, "verify_agent_token")

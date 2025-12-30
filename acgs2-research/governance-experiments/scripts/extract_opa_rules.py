@@ -2,13 +2,15 @@ import os
 import re
 from pathlib import Path
 
+
 def extract_rules_from_rego(rego_content):
     """Simple regex-based extraction of rules from Rego files."""
     rules = []
     # Match rule definitions like 'allow { ... }' or 'deny[msg] { ... }'
-    pattern = re.compile(r'^(\w+(?:\[\w+\])?)\s*\{', re.MULTILINE)
+    pattern = re.compile(r"^(\w+(?:\[\w+\])?)\s*\{", re.MULTILINE)
     matches = pattern.findall(rego_content)
     return matches
+
 
 def generate_markdown_table(policies):
     """Generates a Markdown table of policies and their rules."""
@@ -23,6 +25,7 @@ def generate_markdown_table(policies):
 
     return md
 
+
 def main():
     policy_dir = Path("/home/dislove/document/acgs2/acgs2-core/policies/rego")
     output_file = Path("/home/dislove/document/acgs2/docs/summaries/rego_rules.md")
@@ -34,7 +37,7 @@ def main():
         return
 
     for rego_file in policy_dir.glob("**/*.rego"):
-        with open(rego_file, 'r') as f:
+        with open(rego_file, "r") as f:
             content = f.read()
             rules = extract_rules_from_rego(content)
             if rules:
@@ -43,11 +46,12 @@ def main():
 
     if policies:
         os.makedirs(output_file.parent, exist_ok=True)
-        with open(output_file, 'w') as f:
+        with open(output_file, "w") as f:
             f.write(generate_markdown_table(policies))
         print(f"Successfully extracted rules to {output_file}")
     else:
         print("No Rego rules found.")
+
 
 if __name__ == "__main__":
     main()

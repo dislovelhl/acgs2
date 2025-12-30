@@ -8,9 +8,10 @@ Comprehensive test coverage for API endpoints including:
 - Error handling and validation
 """
 
-import pytest
 from datetime import datetime, timezone
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
+
+import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
@@ -22,8 +23,10 @@ CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
 # Mock Services for Testing
 # =============================================================================
 
+
 class MockCryptoService:
     """Mock crypto service for testing."""
+
     pass
 
 
@@ -42,7 +45,7 @@ class MockCacheService:
             "local_cache_size": 50,
             "redis_available": True,
             "redis_connected_clients": 3,
-            "redis_used_memory": "10MB"
+            "redis_used_memory": "10MB",
         }
 
 
@@ -65,10 +68,7 @@ class MockNotificationService:
 
     async def get_connection_count(self):
         # Return fields matching actual NotificationService implementation
-        return {
-            "websocket_connections": 3,
-            "kafka_available": True
-        }
+        return {"websocket_connections": 3, "kafka_available": True}
 
 
 class MockPolicyService:
@@ -84,6 +84,7 @@ class MockPolicyService:
 
     async def create_policy(self, tenant_id, name, description, format_type, metadata=None):
         from app.models import Policy, PolicyStatus
+
         policy = Policy(
             policy_id=f"policy-{len(self._policies) + 1}",
             tenant_id=tenant_id,
@@ -115,6 +116,7 @@ class MockAuditClient:
 # =============================================================================
 # Fixtures
 # =============================================================================
+
 
 @pytest.fixture
 def mock_crypto_service():
@@ -160,7 +162,6 @@ def app_with_mocks(
     mock_settings,
 ):
     """Create FastAPI app with mocked dependencies."""
-    from fastapi import FastAPI
     from app.api.v1 import health, policies
 
     app = FastAPI()
@@ -194,15 +195,15 @@ def client(app_with_mocks):
 # Health Endpoint Tests
 # =============================================================================
 
+
 class TestHealthEndpoints:
     """Tests for health check endpoints."""
 
     def test_policy_health_endpoint(self, mock_settings):
         """Test policy health endpoint returns correct data."""
-        from fastapi import FastAPI
-        from fastapi.testclient import TestClient
-        from app.api.v1 import health
         from app.api.dependencies import get_policy_service
+        from app.api.v1 import health
+        from fastapi.testclient import TestClient
 
         # Create mock policy service with policies
         mock_policy_svc = MockPolicyService()
@@ -227,10 +228,9 @@ class TestHealthEndpoints:
 
     def test_cache_health_endpoint(self, mock_settings):
         """Test cache health endpoint returns stats."""
-        from fastapi import FastAPI
-        from fastapi.testclient import TestClient
-        from app.api.v1 import health
         from app.api.dependencies import get_cache_service
+        from app.api.v1 import health
+        from fastapi.testclient import TestClient
 
         mock_cache_svc = MockCacheService()
 
@@ -252,10 +252,9 @@ class TestHealthEndpoints:
 
     def test_connection_health_endpoint(self, mock_settings):
         """Test connection health endpoint returns connection counts."""
-        from fastapi import FastAPI
-        from fastapi.testclient import TestClient
-        from app.api.v1 import health
         from app.api.dependencies import get_notification_service
+        from app.api.v1 import health
+        from fastapi.testclient import TestClient
 
         mock_notification_svc = MockNotificationService()
 
@@ -280,13 +279,12 @@ class TestHealthEndpoints:
 # Policy Creation Tests
 # =============================================================================
 
+
 class TestPolicyCreation:
     """Tests for policy creation endpoints."""
 
     def test_create_policy_endpoint_structure(self, mock_settings):
         """Test that policy creation endpoint is properly structured."""
-        from fastapi import FastAPI
-        from fastapi.testclient import TestClient
         from app.api.v1 import policies
 
         app = FastAPI()
@@ -301,14 +299,14 @@ class TestPolicyCreation:
 # Error Handling Tests
 # =============================================================================
 
+
 class TestErrorHandling:
     """Tests for API error handling."""
 
     def test_404_for_nonexistent_endpoint(self, mock_settings):
         """Test that nonexistent endpoints return 404."""
-        from fastapi import FastAPI
-        from fastapi.testclient import TestClient
         from app.api.v1 import health
+        from fastapi.testclient import TestClient
 
         app = FastAPI()
         app.include_router(health.router, prefix="/health")
@@ -321,10 +319,9 @@ class TestErrorHandling:
 
     def test_method_not_allowed(self, mock_settings):
         """Test that wrong HTTP methods return 405."""
-        from fastapi import FastAPI
-        from fastapi.testclient import TestClient
-        from app.api.v1 import health
         from app.api.dependencies import get_policy_service
+        from app.api.v1 import health
+        from fastapi.testclient import TestClient
 
         mock_policy_svc = MockPolicyService()
 
@@ -346,15 +343,15 @@ class TestErrorHandling:
 # Response Format Tests
 # =============================================================================
 
+
 class TestResponseFormat:
     """Tests for API response format."""
 
     def test_health_response_is_json(self, mock_settings):
         """Test that health endpoints return valid JSON."""
-        from fastapi import FastAPI
-        from fastapi.testclient import TestClient
-        from app.api.v1 import health
         from app.api.dependencies import get_cache_service
+        from app.api.v1 import health
+        from fastapi.testclient import TestClient
 
         mock_cache_svc = MockCacheService()
 
@@ -375,10 +372,9 @@ class TestResponseFormat:
 
     def test_policy_list_response_structure(self, mock_settings):
         """Test that policy list response has correct structure."""
-        from fastapi import FastAPI
-        from fastapi.testclient import TestClient
-        from app.api.v1 import health
         from app.api.dependencies import get_policy_service
+        from app.api.v1 import health
+        from fastapi.testclient import TestClient
 
         mock_policy_svc = MockPolicyService()
 
@@ -406,15 +402,15 @@ class TestResponseFormat:
 # Constitutional Compliance Tests
 # =============================================================================
 
+
 class TestConstitutionalCompliance:
     """Tests for constitutional compliance in API responses."""
 
     def test_health_endpoint_available(self, mock_settings):
         """Test that health endpoints are available for monitoring."""
-        from fastapi import FastAPI
-        from fastapi.testclient import TestClient
-        from app.api.v1 import health
         from app.api.dependencies import get_cache_service
+        from app.api.v1 import health
+        from fastapi.testclient import TestClient
 
         mock_cache_svc = MockCacheService()
 
@@ -435,15 +431,19 @@ class TestConstitutionalCompliance:
 # Integration-style Tests (Unit with FastAPI TestClient)
 # =============================================================================
 
+
 class TestAPIIntegration:
     """Integration-style tests for API endpoints."""
 
     def test_multiple_health_endpoints_work(self, mock_settings):
         """Test that multiple health endpoints work together."""
-        from fastapi import FastAPI
-        from fastapi.testclient import TestClient
+        from app.api.dependencies import (
+            get_cache_service,
+            get_notification_service,
+            get_policy_service,
+        )
         from app.api.v1 import health
-        from app.api.dependencies import get_policy_service, get_cache_service, get_notification_service
+        from fastapi.testclient import TestClient
 
         mock_policy_svc = MockPolicyService()
         mock_cache_svc = MockCacheService()
@@ -472,10 +472,9 @@ class TestAPIIntegration:
 
     def test_health_endpoints_return_numeric_metrics(self, mock_settings):
         """Test that health endpoints return numeric metrics."""
-        from fastapi import FastAPI
-        from fastapi.testclient import TestClient
-        from app.api.v1 import health
         from app.api.dependencies import get_cache_service
+        from app.api.v1 import health
+        from fastapi.testclient import TestClient
 
         mock_cache_svc = MockCacheService()
 

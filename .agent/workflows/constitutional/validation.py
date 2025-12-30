@@ -6,17 +6,14 @@ Core validation workflow for constitutional compliance.
 Implements multi-stage validation with audit trail.
 """
 
-import asyncio
 import hashlib
 import logging
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
 from enum import Enum
-import uuid
+from typing import Any, Dict, List, Optional
 
-from ..base.context import WorkflowContext
-from ..base.result import WorkflowResult, WorkflowStatus
+from ..base.result import WorkflowResult
 from ..base.workflow import BaseWorkflow
 
 try:
@@ -30,6 +27,7 @@ logger = logging.getLogger(__name__)
 
 class ValidationStage(Enum):
     """Stages of constitutional validation."""
+
     HASH_CHECK = "hash_check"
     INTEGRITY_CHECK = "integrity_check"
     POLICY_CHECK = "policy_check"
@@ -40,6 +38,7 @@ class ValidationStage(Enum):
 @dataclass
 class ValidationResult:
     """Result of a validation stage."""
+
     stage: ValidationStage
     passed: bool
     message: str
@@ -60,6 +59,7 @@ class ValidationResult:
 @dataclass
 class ConstitutionalValidationInput:
     """Input for constitutional validation workflow."""
+
     content: str
     content_hash: Optional[str] = None
     provided_constitutional_hash: Optional[str] = None
@@ -140,7 +140,9 @@ class ConstitutionalValidationWorkflow(BaseWorkflow):
             # Stage 2: Integrity Check
             integrity_result = await self._check_integrity(validation_input)
             validation_results.append(integrity_result)
-            self.context.set_step_result(ValidationStage.INTEGRITY_CHECK.value, integrity_result.to_dict())
+            self.context.set_step_result(
+                ValidationStage.INTEGRITY_CHECK.value, integrity_result.to_dict()
+            )
 
             if not integrity_result.passed:
                 all_passed = False
@@ -151,23 +153,31 @@ class ConstitutionalValidationWorkflow(BaseWorkflow):
             if not validation_input.skip_policy_check:
                 policy_result = await self._check_policies(validation_input)
                 validation_results.append(policy_result)
-                self.context.set_step_result(ValidationStage.POLICY_CHECK.value, policy_result.to_dict())
+                self.context.set_step_result(
+                    ValidationStage.POLICY_CHECK.value, policy_result.to_dict()
+                )
 
                 if not policy_result.passed:
                     all_passed = False
                     if validation_input.require_strict_compliance:
-                        return self._create_failure_result(validation_results, "Policy check failed")
+                        return self._create_failure_result(
+                            validation_results, "Policy check failed"
+                        )
 
             # Stage 4: Compliance Check
             compliance_result = await self._check_compliance(validation_input, validation_results)
             validation_results.append(compliance_result)
-            self.context.set_step_result(ValidationStage.COMPLIANCE_CHECK.value, compliance_result.to_dict())
+            self.context.set_step_result(
+                ValidationStage.COMPLIANCE_CHECK.value, compliance_result.to_dict()
+            )
 
             if not compliance_result.passed:
                 all_passed = False
 
             # Stage 5: Audit Record
-            audit_result = await self._record_audit(validation_input, validation_results, all_passed)
+            audit_result = await self._record_audit(
+                validation_input, validation_results, all_passed
+            )
             validation_results.append(audit_result)
             self.context.set_step_result(ValidationStage.AUDIT_RECORD.value, audit_result.to_dict())
 
@@ -196,8 +206,7 @@ class ConstitutionalValidationWorkflow(BaseWorkflow):
         )
 
     async def _check_constitutional_hash(
-        self,
-        input: ConstitutionalValidationInput
+        self, input: ConstitutionalValidationInput
     ) -> ValidationResult:
         """Check constitutional hash validity."""
         provided = input.provided_constitutional_hash or ""
@@ -221,10 +230,7 @@ class ConstitutionalValidationWorkflow(BaseWorkflow):
                 },
             )
 
-    async def _check_integrity(
-        self,
-        input: ConstitutionalValidationInput
-    ) -> ValidationResult:
+    async def _check_integrity(self, input: ConstitutionalValidationInput) -> ValidationResult:
         """Check content integrity."""
         if not input.content_hash:
             # No hash provided, compute one
@@ -237,7 +243,9 @@ class ConstitutionalValidationWorkflow(BaseWorkflow):
             )
 
         # Verify provided hash
-        computed_hash = hashlib.sha256(input.content.encode()).hexdigest()[:len(input.content_hash)]
+        computed_hash = hashlib.sha256(input.content.encode()).hexdigest()[
+            : len(input.content_hash)
+        ]
 
         if computed_hash == input.content_hash:
             return ValidationResult(
@@ -258,10 +266,7 @@ class ConstitutionalValidationWorkflow(BaseWorkflow):
                 },
             )
 
-    async def _check_policies(
-        self,
-        input: ConstitutionalValidationInput
-    ) -> ValidationResult:
+    async def _check_policies(self, input: ConstitutionalValidationInput) -> ValidationResult:
         """Check against OPA policies."""
         if not self.opa_client:
             return ValidationResult(
@@ -279,7 +284,7 @@ class ConstitutionalValidationWorkflow(BaseWorkflow):
                     "content": input.content,
                     "metadata": input.metadata,
                     "constitutional_hash": self.constitutional_hash,
-                }
+                },
             )
 
             return ValidationResult(
@@ -299,9 +304,7 @@ class ConstitutionalValidationWorkflow(BaseWorkflow):
             )
 
     async def _check_compliance(
-        self,
-        input: ConstitutionalValidationInput,
-        prior_results: List[ValidationResult]
+        self, input: ConstitutionalValidationInput, prior_results: List[ValidationResult]
     ) -> ValidationResult:
         """Check overall constitutional compliance."""
         # Count passed/failed stages
@@ -334,7 +337,7 @@ class ConstitutionalValidationWorkflow(BaseWorkflow):
         self,
         input: ConstitutionalValidationInput,
         results: List[ValidationResult],
-        all_passed: bool
+        all_passed: bool,
     ) -> ValidationResult:
         """Record validation in audit trail."""
         audit_record = {
@@ -373,9 +376,7 @@ class ConstitutionalValidationWorkflow(BaseWorkflow):
             )
 
     def _create_result(
-        self,
-        validation_results: List[ValidationResult],
-        all_passed: bool
+        self, validation_results: List[ValidationResult], all_passed: bool
     ) -> WorkflowResult:
         """Create workflow result from validation results."""
         steps_completed = [r.stage.value for r in validation_results if r.passed]
@@ -402,9 +403,7 @@ class ConstitutionalValidationWorkflow(BaseWorkflow):
             )
 
     def _create_failure_result(
-        self,
-        validation_results: List[ValidationResult],
-        reason: str
+        self, validation_results: List[ValidationResult], reason: str
     ) -> WorkflowResult:
         """Create early failure result."""
         return WorkflowResult.failure(

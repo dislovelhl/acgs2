@@ -6,14 +6,14 @@ Examples of using the OPA client for policy evaluation and authorization.
 """
 
 import asyncio
-import sys
 import os
+import sys
 
 # Add parent directory to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from opa_client import OPAClient, initialize_opa_client, close_opa_client
-from models import AgentMessage, MessageType, CONSTITUTIONAL_HASH
+from models import CONSTITUTIONAL_HASH
+from opa_client import OPAClient, close_opa_client, initialize_opa_client
 
 
 async def example_basic_usage():
@@ -26,13 +26,10 @@ async def example_basic_usage():
             "agent_id": "agent_001",
             "action": "read",
             "resource": "document_123",
-            "constitutional_hash": CONSTITUTIONAL_HASH
+            "constitutional_hash": CONSTITUTIONAL_HASH,
         }
 
-        result = await client.evaluate_policy(
-            input_data,
-            policy_path="data.acgs.allow"
-        )
+        result = await client.evaluate_policy(input_data, policy_path="data.acgs.allow")
 
         print(f"Policy evaluation result: {result['allowed']}")
         print(f"Reason: {result['reason']}")
@@ -51,7 +48,7 @@ async def example_constitutional_validation():
             "to_agent": "agent_receiver",
             "message_type": "command",
             "content": {"action": "process_data", "data": [1, 2, 3]},
-            "constitutional_hash": CONSTITUTIONAL_HASH
+            "constitutional_hash": CONSTITUTIONAL_HASH,
         }
 
         # Validate the message
@@ -77,8 +74,8 @@ async def example_agent_authorization():
             context={
                 "role": "analyst",
                 "clearance_level": 3,
-                "constitutional_hash": CONSTITUTIONAL_HASH
-            }
+                "constitutional_hash": CONSTITUTIONAL_HASH,
+            },
         )
 
         print(f"Agent can read: {can_read}")
@@ -91,8 +88,8 @@ async def example_agent_authorization():
             context={
                 "role": "analyst",
                 "clearance_level": 3,
-                "constitutional_hash": CONSTITUTIONAL_HASH
-            }
+                "constitutional_hash": CONSTITUTIONAL_HASH,
+            },
         )
 
         print(f"Agent can write: {can_write}")
@@ -102,17 +99,10 @@ async def example_with_caching():
     """Example 4: Policy evaluation with caching."""
     print("\n=== Example 4: Caching Performance ===")
 
-    client = OPAClient(
-        mode="fallback",
-        enable_cache=True,
-        cache_ttl=300  # 5 minutes
-    )
+    client = OPAClient(mode="fallback", enable_cache=True, cache_ttl=300)  # 5 minutes
     await client.initialize()
 
-    input_data = {
-        "agent_id": "agent_001",
-        "constitutional_hash": CONSTITUTIONAL_HASH
-    }
+    input_data = {"agent_id": "agent_001", "constitutional_hash": CONSTITUTIONAL_HASH}
 
     import time
 
@@ -142,11 +132,7 @@ async def example_http_mode():
     print("\n=== Example 5: HTTP Mode (requires OPA server) ===")
 
     # This example requires an OPA server running at localhost:8181
-    client = OPAClient(
-        opa_url="http://localhost:8181",
-        mode="http",
-        timeout=5.0
-    )
+    client = OPAClient(opa_url="http://localhost:8181", mode="http", timeout=5.0)
 
     try:
         await client.initialize()
@@ -155,18 +141,15 @@ async def example_http_mode():
         health = await client.health_check()
         print(f"OPA server health: {health['status']}")
 
-        if health['status'] == 'healthy':
+        if health["status"] == "healthy":
             # Evaluate a policy
             input_data = {
                 "agent_id": "agent_001",
                 "action": "read",
-                "constitutional_hash": CONSTITUTIONAL_HASH
+                "constitutional_hash": CONSTITUTIONAL_HASH,
             }
 
-            result = await client.evaluate_policy(
-                input_data,
-                policy_path="data.acgs.allow"
-            )
+            result = await client.evaluate_policy(input_data, policy_path="data.acgs.allow")
 
             print(f"Policy result: {result['allowed']}")
         else:
@@ -183,10 +166,7 @@ async def example_load_policy():
     """Example 6: Loading a policy into OPA."""
     print("\n=== Example 6: Loading Policy (HTTP mode) ===")
 
-    client = OPAClient(
-        opa_url="http://localhost:8181",
-        mode="http"
-    )
+    client = OPAClient(opa_url="http://localhost:8181", mode="http")
 
     try:
         await client.initialize()
@@ -217,15 +197,9 @@ async def example_load_policy():
             print("Policy loaded successfully")
 
             # Test the policy
-            input_data = {
-                "action": "read",
-                "constitutional_hash": CONSTITUTIONAL_HASH
-            }
+            input_data = {"action": "read", "constitutional_hash": CONSTITUTIONAL_HASH}
 
-            result = await client.evaluate_policy(
-                input_data,
-                policy_path="data.acgs.example.allow"
-            )
+            result = await client.evaluate_policy(input_data, policy_path="data.acgs.example.allow")
 
             print(f"Policy evaluation: {result['allowed']}")
         else:
@@ -242,20 +216,14 @@ async def example_global_client():
     print("\n=== Example 7: Global Client Singleton ===")
 
     # Initialize global client
-    await initialize_opa_client(
-        opa_url="http://localhost:8181",
-        mode="fallback"
-    )
+    await initialize_opa_client(opa_url="http://localhost:8181", mode="fallback")
 
     # Import and use global client functions
     from opa_client import get_opa_client
 
     client = get_opa_client()
 
-    input_data = {
-        "agent_id": "agent_001",
-        "constitutional_hash": CONSTITUTIONAL_HASH
-    }
+    input_data = {"agent_id": "agent_001", "constitutional_hash": CONSTITUTIONAL_HASH}
 
     result = await client.evaluate_policy(input_data, "data.acgs.allow")
     print(f"Evaluation result: {result['allowed']}")
@@ -277,7 +245,7 @@ async def example_batch_evaluations():
                 agent_id=agent,
                 action="read",
                 resource="document_123",
-                context={"constitutional_hash": CONSTITUTIONAL_HASH}
+                context={"constitutional_hash": CONSTITUTIONAL_HASH},
             )
             for agent in agents
         ]
@@ -300,7 +268,7 @@ async def example_error_handling():
             "message_id": "msg_002",
             "from_agent": "agent_sender",
             "to_agent": "agent_receiver",
-            "constitutional_hash": "invalid_hash_123"
+            "constitutional_hash": "invalid_hash_123",
         }
 
         validation_result = await client.validate_constitutional(invalid_message)
@@ -311,10 +279,7 @@ async def example_error_handling():
 
         # The client should handle errors gracefully
         try:
-            result = await client.evaluate_policy(
-                invalid_message,
-                policy_path="data.acgs.allow"
-            )
+            result = await client.evaluate_policy(invalid_message, policy_path="data.acgs.allow")
             print(f"Evaluation with invalid hash: {result['allowed']}")
             print(f"Reason: {result['reason']}")
         except Exception as e:
@@ -330,7 +295,7 @@ async def example_statistics():
         for i in range(5):
             await client.evaluate_policy(
                 {"agent_id": f"agent_{i}", "constitutional_hash": CONSTITUTIONAL_HASH},
-                "data.acgs.allow"
+                "data.acgs.allow",
             )
 
         # Get statistics

@@ -4,21 +4,21 @@ Constitutional Hash: cdd01ef066bc6cf2
 """
 
 import asyncio
-import pytest
 from dataclasses import dataclass
 from typing import Optional
 
+import pytest
+
 from ..base import (
+    CONSTITUTIONAL_HASH,
     ACLAdapter,
+    AdapterCircuitOpenError,
     AdapterConfig,
-    AdapterResult,
     AdapterState,
     AdapterTimeoutError,
-    AdapterCircuitOpenError,
     RateLimitExceededError,
     SimpleCircuitBreaker,
     TokenBucketRateLimiter,
-    CONSTITUTIONAL_HASH,
 )
 
 
@@ -39,8 +39,9 @@ class MockResponse:
 class MockableAdapter(ACLAdapter[MockRequest, MockResponse]):
     """Testable adapter implementation."""
 
-    def __init__(self, name: str = "test", config: AdapterConfig = None,
-                 provide_fallback: bool = True):
+    def __init__(
+        self, name: str = "test", config: AdapterConfig = None, provide_fallback: bool = True
+    ):
         super().__init__(name, config or AdapterConfig())
         self.execute_count = 0
         self.provide_fallback = provide_fallback
@@ -104,6 +105,7 @@ class TestSimpleCircuitBreaker:
 
         # Wait for recovery
         import time
+
         time.sleep(0.15)
 
         assert cb.state == AdapterState.HALF_OPEN
@@ -116,6 +118,7 @@ class TestSimpleCircuitBreaker:
 
         cb.record_failure()
         import time
+
         time.sleep(0.02)
         assert cb.state == AdapterState.HALF_OPEN
 
@@ -130,6 +133,7 @@ class TestSimpleCircuitBreaker:
 
         cb.record_failure()
         import time
+
         time.sleep(0.02)
         assert cb.state == AdapterState.HALF_OPEN
 

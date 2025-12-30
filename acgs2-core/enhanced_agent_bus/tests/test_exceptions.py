@@ -5,55 +5,56 @@ Constitutional Hash: cdd01ef066bc6cf2
 Comprehensive tests for all custom exception types.
 """
 
-import pytest
-import sys
 import os
+import sys
+
+import pytest
 
 # Add parent directory to path for local imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from exceptions import (
     CONSTITUTIONAL_HASH,
+    AgentAlreadyRegisteredError,
     AgentBusError,
+    AgentCapabilityError,
+    # Agent
+    AgentError,
+    AgentNotRegisteredError,
+    BusAlreadyStartedError,
+    BusNotStartedError,
+    # Bus Operations
+    BusOperationError,
+    # Configuration
+    ConfigurationError,
     # Constitutional
     ConstitutionalError,
     ConstitutionalHashMismatchError,
     ConstitutionalValidationError,
+    # Deliberation
+    DeliberationError,
+    DeliberationTimeoutError,
+    HandlerExecutionError,
+    MessageDeliveryError,
     # Message
     MessageError,
-    MessageValidationError,
-    MessageDeliveryError,
-    MessageTimeoutError,
     MessageRoutingError,
-    # Agent
-    AgentError,
-    AgentNotRegisteredError,
-    AgentAlreadyRegisteredError,
-    AgentCapabilityError,
+    MessageTimeoutError,
+    MessageValidationError,
+    OPAConnectionError,
+    OPANotInitializedError,
     # Policy/OPA
     PolicyError,
     PolicyEvaluationError,
     PolicyNotFoundError,
-    OPAConnectionError,
-    OPANotInitializedError,
-    # Deliberation
-    DeliberationError,
-    DeliberationTimeoutError,
-    SignatureCollectionError,
     ReviewConsensusError,
-    # Bus Operations
-    BusOperationError,
-    BusNotStartedError,
-    BusAlreadyStartedError,
-    HandlerExecutionError,
-    # Configuration
-    ConfigurationError,
+    SignatureCollectionError,
 )
-
 
 # ============================================================================
 # Constitutional Compliance Tests
 # ============================================================================
+
 
 class TestConstitutionalHash:
     """Test constitutional hash compliance."""
@@ -66,6 +67,7 @@ class TestConstitutionalHash:
 # ============================================================================
 # Base AgentBusError Tests
 # ============================================================================
+
 
 class TestAgentBusError:
     """Test base exception class."""
@@ -117,6 +119,7 @@ class TestAgentBusError:
 # Constitutional Error Tests
 # ============================================================================
 
+
 class TestConstitutionalError:
     """Test constitutional base exception."""
 
@@ -138,10 +141,7 @@ class TestConstitutionalHashMismatchError:
 
     def test_basic_instantiation(self):
         """Test hash mismatch error creation."""
-        err = ConstitutionalHashMismatchError(
-            expected_hash="expected123",
-            actual_hash="actual456"
-        )
+        err = ConstitutionalHashMismatchError(expected_hash="expected123", actual_hash="actual456")
         # Error message shows sanitized (truncated) hash prefixes for security
         assert "expected..." in str(err)
         assert "actual45..." in str(err)
@@ -152,9 +152,7 @@ class TestConstitutionalHashMismatchError:
     def test_with_context(self):
         """Test hash mismatch with context."""
         err = ConstitutionalHashMismatchError(
-            expected_hash="exp",
-            actual_hash="act",
-            context="policy validation"
+            expected_hash="exp", actual_hash="act", context="policy validation"
         )
         assert "policy validation" in str(err)
         assert err.details["context"] == "policy validation"
@@ -190,9 +188,7 @@ class TestConstitutionalValidationError:
     def test_with_agent_and_action(self):
         """Test with agent ID and action type."""
         err = ConstitutionalValidationError(
-            validation_errors=["Invalid action"],
-            agent_id="agent-001",
-            action_type="deploy"
+            validation_errors=["Invalid action"], agent_id="agent-001", action_type="deploy"
         )
         assert err.agent_id == "agent-001"
         assert err.action_type == "deploy"
@@ -202,6 +198,7 @@ class TestConstitutionalValidationError:
 # ============================================================================
 # Message Error Tests
 # ============================================================================
+
 
 class TestMessageError:
     """Test message base exception."""
@@ -217,10 +214,7 @@ class TestMessageValidationError:
 
     def test_basic_instantiation(self):
         """Test basic message validation error."""
-        err = MessageValidationError(
-            message_id="msg-123",
-            errors=["Invalid format"]
-        )
+        err = MessageValidationError(message_id="msg-123", errors=["Invalid format"])
         assert "msg-123" in str(err)
         assert err.message_id == "msg-123"
         assert err.errors == ["Invalid format"]
@@ -229,9 +223,7 @@ class TestMessageValidationError:
     def test_with_warnings(self):
         """Test with warnings included."""
         err = MessageValidationError(
-            message_id="msg-456",
-            errors=["Error 1"],
-            warnings=["Warning 1", "Warning 2"]
+            message_id="msg-456", errors=["Error 1"], warnings=["Warning 1", "Warning 2"]
         )
         assert err.warnings == ["Warning 1", "Warning 2"]
         assert err.details["warnings"] == ["Warning 1", "Warning 2"]
@@ -243,9 +235,7 @@ class TestMessageDeliveryError:
     def test_instantiation(self):
         """Test delivery error creation."""
         err = MessageDeliveryError(
-            message_id="msg-001",
-            target_agent="agent-A",
-            reason="Connection refused"
+            message_id="msg-001", target_agent="agent-A", reason="Connection refused"
         )
         assert "msg-001" in str(err)
         assert "agent-A" in str(err)
@@ -260,21 +250,14 @@ class TestMessageTimeoutError:
 
     def test_basic_timeout(self):
         """Test basic timeout error."""
-        err = MessageTimeoutError(
-            message_id="msg-timeout",
-            timeout_ms=5000
-        )
+        err = MessageTimeoutError(message_id="msg-timeout", timeout_ms=5000)
         assert "msg-timeout" in str(err)
         assert "5000" in str(err)
         assert err.timeout_ms == 5000
 
     def test_with_operation(self):
         """Test timeout with operation context."""
-        err = MessageTimeoutError(
-            message_id="msg-op",
-            timeout_ms=3000,
-            operation="validation"
-        )
+        err = MessageTimeoutError(message_id="msg-op", timeout_ms=3000, operation="validation")
         assert "validation" in str(err)
         assert err.operation == "validation"
 
@@ -288,7 +271,7 @@ class TestMessageRoutingError:
             message_id="msg-route",
             source_agent="source-A",
             target_agent="target-B",
-            reason="No route available"
+            reason="No route available",
         )
         assert "msg-route" in str(err)
         assert "source-A" in str(err)
@@ -300,6 +283,7 @@ class TestMessageRoutingError:
 # ============================================================================
 # Agent Error Tests
 # ============================================================================
+
 
 class TestAgentError:
     """Test agent base exception."""
@@ -322,10 +306,7 @@ class TestAgentNotRegisteredError:
 
     def test_with_operation(self):
         """Test with operation context."""
-        err = AgentNotRegisteredError(
-            agent_id="agent-x",
-            operation="message sending"
-        )
+        err = AgentNotRegisteredError(agent_id="agent-x", operation="message sending")
         assert "message sending" in str(err)
         assert err.operation == "message sending"
 
@@ -349,7 +330,7 @@ class TestAgentCapabilityError:
         err = AgentCapabilityError(
             agent_id="agent-caps",
             required_capabilities=["read", "write", "admin"],
-            available_capabilities=["read"]
+            available_capabilities=["read"],
         )
         assert err.agent_id == "agent-caps"
         assert err.required_capabilities == ["read", "write", "admin"]
@@ -360,9 +341,7 @@ class TestAgentCapabilityError:
     def test_missing_capabilities_in_details(self):
         """Test that missing capabilities are calculated correctly."""
         err = AgentCapabilityError(
-            agent_id="test",
-            required_capabilities=["a", "b", "c"],
-            available_capabilities=["a"]
+            agent_id="test", required_capabilities=["a", "b", "c"], available_capabilities=["a"]
         )
         missing = err.details["missing_capabilities"]
         assert set(missing) == {"b", "c"}
@@ -371,6 +350,7 @@ class TestAgentCapabilityError:
 # ============================================================================
 # Policy and OPA Error Tests
 # ============================================================================
+
 
 class TestPolicyError:
     """Test policy base exception."""
@@ -386,10 +366,7 @@ class TestPolicyEvaluationError:
 
     def test_basic_instantiation(self):
         """Test basic evaluation error."""
-        err = PolicyEvaluationError(
-            policy_path="data.acgs.allow",
-            reason="Undefined result"
-        )
+        err = PolicyEvaluationError(policy_path="data.acgs.allow", reason="Undefined result")
         assert "data.acgs.allow" in str(err)
         assert "Undefined result" in str(err)
         assert err.policy_path == "data.acgs.allow"
@@ -400,9 +377,7 @@ class TestPolicyEvaluationError:
         """Test with input data included."""
         input_data = {"action": "deploy", "resource": "db"}
         err = PolicyEvaluationError(
-            policy_path="data.auth.check",
-            reason="Access denied",
-            input_data=input_data
+            policy_path="data.auth.check", reason="Access denied", input_data=input_data
         )
         assert err.input_data == input_data
         assert err.details["input_data"] == input_data
@@ -423,10 +398,7 @@ class TestOPAConnectionError:
 
     def test_instantiation(self):
         """Test connection error creation."""
-        err = OPAConnectionError(
-            opa_url="http://localhost:8181",
-            reason="Connection refused"
-        )
+        err = OPAConnectionError(opa_url="http://localhost:8181", reason="Connection refused")
         assert "localhost:8181" in str(err)
         assert "Connection refused" in str(err)
         assert err.opa_url == "http://localhost:8181"
@@ -447,6 +419,7 @@ class TestOPANotInitializedError:
 # Deliberation Error Tests
 # ============================================================================
 
+
 class TestDeliberationError:
     """Test deliberation base exception."""
 
@@ -461,10 +434,7 @@ class TestDeliberationTimeoutError:
 
     def test_basic_instantiation(self):
         """Test basic timeout error."""
-        err = DeliberationTimeoutError(
-            decision_id="dec-001",
-            timeout_seconds=60
-        )
+        err = DeliberationTimeoutError(decision_id="dec-001", timeout_seconds=60)
         assert "dec-001" in str(err)
         assert "60" in str(err)
         assert err.decision_id == "dec-001"
@@ -475,10 +445,7 @@ class TestDeliberationTimeoutError:
     def test_with_pending_items(self):
         """Test with pending reviews and signatures."""
         err = DeliberationTimeoutError(
-            decision_id="dec-002",
-            timeout_seconds=120,
-            pending_reviews=3,
-            pending_signatures=2
+            decision_id="dec-002", timeout_seconds=120, pending_reviews=3, pending_signatures=2
         )
         assert err.pending_reviews == 3
         assert err.pending_signatures == 2
@@ -494,7 +461,7 @@ class TestSignatureCollectionError:
             decision_id="dec-sig",
             required_signers=["signer-A", "signer-B", "signer-C"],
             collected_signers=["signer-A"],
-            reason="Timeout waiting for signatures"
+            reason="Timeout waiting for signatures",
         )
         assert "dec-sig" in str(err)
         assert "Timeout waiting for signatures" in str(err)
@@ -507,10 +474,7 @@ class TestReviewConsensusError:
     def test_instantiation(self):
         """Test consensus error creation."""
         err = ReviewConsensusError(
-            decision_id="dec-consensus",
-            approval_count=2,
-            rejection_count=2,
-            escalation_count=1
+            decision_id="dec-consensus", approval_count=2, rejection_count=2, escalation_count=1
         )
         assert "dec-consensus" in str(err)
         assert "2 approvals" in str(err)
@@ -524,6 +488,7 @@ class TestReviewConsensusError:
 # ============================================================================
 # Bus Operation Error Tests
 # ============================================================================
+
 
 class TestBusOperationError:
     """Test bus operation base exception."""
@@ -562,9 +527,7 @@ class TestHandlerExecutionError:
         """Test handler execution error."""
         original = ValueError("Invalid input")
         err = HandlerExecutionError(
-            handler_name="process_message",
-            message_id="msg-handler",
-            original_error=original
+            handler_name="process_message", message_id="msg-handler", original_error=original
         )
         assert "process_message" in str(err)
         assert "msg-handler" in str(err)
@@ -579,15 +542,13 @@ class TestHandlerExecutionError:
 # Configuration Error Tests
 # ============================================================================
 
+
 class TestConfigurationError:
     """Test configuration error."""
 
     def test_instantiation(self):
         """Test configuration error creation."""
-        err = ConfigurationError(
-            config_key="redis_url",
-            reason="Invalid URL format"
-        )
+        err = ConfigurationError(config_key="redis_url", reason="Invalid URL format")
         assert "redis_url" in str(err)
         assert "Invalid URL format" in str(err)
         assert err.config_key == "redis_url"
@@ -597,6 +558,7 @@ class TestConfigurationError:
 # ============================================================================
 # Module Export Tests (using already imported exceptions)
 # ============================================================================
+
 
 class TestModuleExports:
     """Test that all exceptions are properly exported (verified via imports at top)."""
@@ -656,6 +618,7 @@ class TestModuleExports:
 # ============================================================================
 # Exception Catching Tests
 # ============================================================================
+
 
 class TestExceptionCatching:
     """Test exception catching behavior."""

@@ -1,9 +1,12 @@
 """
 Diagnostic script to understand test failures
 """
+
 import asyncio
-from models import AgentMessage, MessageType, MessageStatus, CONSTITUTIONAL_HASH
+
 from message_processor import MessageProcessor
+from models import AgentMessage, MessageType
+
 
 async def main():
     # Create processor
@@ -90,6 +93,7 @@ async def main():
     print("=" * 60)
     print(f"Processed count: {processor.processed_count}")
     print(f"Failed count: {processor.failed_count}")
+
 
 if __name__ == "__main__":
     asyncio.run(main())

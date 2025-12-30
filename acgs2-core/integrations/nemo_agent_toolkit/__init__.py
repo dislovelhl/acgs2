@@ -6,21 +6,21 @@ Bridges ACGS-2 constitutional governance with NVIDIA NeMo-Agent-Toolkit
 for enterprise-grade AI agent deployment with constitutional compliance.
 """
 
+from nemo_agent_toolkit.agent_wrapper import (
+    ConstitutionalAgentWrapper,
+    wrap_crewai_agent,
+    wrap_langchain_agent,
+    wrap_llamaindex_agent,
+)
 from nemo_agent_toolkit.constitutional_guardrails import (
     ConstitutionalGuardrails,
     GuardrailConfig,
     GuardrailResult,
 )
 from nemo_agent_toolkit.mcp_bridge import (
-    ACGS2MCPServer,
     ACGS2MCPClient,
+    ACGS2MCPServer,
     ConstitutionalMCPTool,
-)
-from nemo_agent_toolkit.agent_wrapper import (
-    ConstitutionalAgentWrapper,
-    wrap_langchain_agent,
-    wrap_llamaindex_agent,
-    wrap_crewai_agent,
 )
 from nemo_agent_toolkit.profiler import (
     ConstitutionalProfiler,

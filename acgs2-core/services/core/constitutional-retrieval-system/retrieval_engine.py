@@ -6,15 +6,14 @@ constitutional precedents and documents to enhance decision making.
 """
 
 import logging
-from typing import List, Dict, Any, Optional, TYPE_CHECKING
 from datetime import timezone
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
-from vector_database import VectorDatabaseManager
 from document_processor import DocumentProcessor
+from vector_database import VectorDatabaseManager
 
 if TYPE_CHECKING:
-    from llm_reasoner import LLMReasoner
-    from feedback_loop import FeedbackLoop
+    pass
 
 logger = logging.getLogger(__name__)
 
@@ -84,8 +83,9 @@ class RetrievalEngine:
             logger.error(f"Failed to index documents: {e}")
             return False
 
-    async def retrieve_similar_documents(self, query: str, limit: int = 5,
-                                       filters: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
+    async def retrieve_similar_documents(
+        self, query: str, limit: int = 5, filters: Optional[Dict[str, Any]] = None
+    ) -> List[Dict[str, Any]]:
         """
         Retrieve similar documents using semantic search.
 
@@ -110,24 +110,24 @@ class RetrievalEngine:
             enhanced_results = []
             for result in results:
                 enhanced_result = result.copy()
-                enhanced_result["relevance_score"] = self._calculate_relevance_score(
-                    query, result
-                )
+                enhanced_result["relevance_score"] = self._calculate_relevance_score(query, result)
                 enhanced_results.append(enhanced_result)
 
             # Sort by relevance score
             enhanced_results.sort(key=lambda x: x["relevance_score"], reverse=True)
 
-            logger.info(f"Retrieved {len(enhanced_results)} similar documents for query: {query[:50]}...")
+            logger.info(
+                f"Retrieved {len(enhanced_results)} similar documents for query: {query[:50]}..."
+            )
             return enhanced_results
 
         except Exception as e:
             logger.error(f"Failed to retrieve similar documents: {e}")
             return []
 
-    async def retrieve_precedents_for_case(self, case_description: str,
-                                         legal_domain: Optional[str] = None,
-                                         limit: int = 10) -> List[Dict[str, Any]]:
+    async def retrieve_precedents_for_case(
+        self, case_description: str, legal_domain: Optional[str] = None, limit: int = 10
+    ) -> List[Dict[str, Any]]:
         """
         Retrieve relevant legal precedents for a case description.
 
@@ -146,9 +146,7 @@ class RetrievalEngine:
                 filters["legal_domain"] = legal_domain
 
             # Retrieve similar precedents
-            precedents = await self.retrieve_similar_documents(
-                case_description, limit, filters
-            )
+            precedents = await self.retrieve_similar_documents(case_description, limit, filters)
 
             # Enhance with precedent-specific analysis
             for precedent in precedents:
@@ -166,9 +164,9 @@ class RetrievalEngine:
             logger.error(f"Failed to retrieve precedents: {e}")
             return []
 
-    async def retrieve_constitutional_provisions(self, query: str,
-                                               constitutional_rights: Optional[List[str]] = None,
-                                               limit: int = 5) -> List[Dict[str, Any]]:
+    async def retrieve_constitutional_provisions(
+        self, query: str, constitutional_rights: Optional[List[str]] = None, limit: int = 5
+    ) -> List[Dict[str, Any]]:
         """
         Retrieve relevant constitutional provisions.
 
@@ -203,9 +201,14 @@ class RetrievalEngine:
             logger.error(f"Failed to retrieve constitutional provisions: {e}")
             return []
 
-    async def hybrid_search(self, query: str, keyword_filters: Optional[List[str]] = None,
-                          semantic_weight: float = 0.7, keyword_weight: float = 0.3,
-                          limit: int = 10) -> List[Dict[str, Any]]:
+    async def hybrid_search(
+        self,
+        query: str,
+        keyword_filters: Optional[List[str]] = None,
+        semantic_weight: float = 0.7,
+        keyword_weight: float = 0.3,
+        limit: int = 10,
+    ) -> List[Dict[str, Any]]:
         """
         Perform hybrid search combining semantic and keyword-based retrieval.
 
@@ -238,8 +241,7 @@ class RetrievalEngine:
                 keyword_score = self._calculate_keyword_score(query, result, keyword_filters)
 
                 result["hybrid_score"] = (
-                    semantic_weight * semantic_score +
-                    keyword_weight * keyword_score
+                    semantic_weight * semantic_score + keyword_weight * keyword_score
                 )
 
             # Sort by hybrid score and limit results
@@ -262,7 +264,7 @@ class RetrievalEngine:
         boost_factors = {
             "doc_type": {"constitution": 1.2, "precedent": 1.1},
             "recency": self._calculate_recency_boost(payload.get("date")),
-            "authority": self._calculate_authority_boost(payload)
+            "authority": self._calculate_authority_boost(payload),
         }
 
         total_boost = 1.0
@@ -281,7 +283,7 @@ class RetrievalEngine:
             return 1.0
 
         try:
-            doc_date = datetime.fromisoformat(date_str.replace('Z', '+00:00'))
+            doc_date = datetime.fromisoformat(date_str.replace("Z", "+00:00"))
             current_date = datetime.now(timezone.utc)
             days_diff = (current_date - doc_date).days
 
@@ -292,7 +294,7 @@ class RetrievalEngine:
                 return 1.1
             else:
                 return 0.9
-        except (ValueError, TypeError, AttributeError) as e:
+        except (ValueError, TypeError, AttributeError):
             # Date parsing failed, return neutral boost
             return 1.0
 
@@ -313,7 +315,9 @@ class RetrievalEngine:
 
         return boost
 
-    def _analyze_precedent_relevance(self, case_description: str, precedent: Dict[str, Any]) -> float:
+    def _analyze_precedent_relevance(
+        self, case_description: str, precedent: Dict[str, Any]
+    ) -> float:
         """Analyze how relevant a precedent is to the current case."""
         # Simple relevance analysis - could be enhanced with ML
         case_lower = case_description.lower()
@@ -331,8 +335,9 @@ class RetrievalEngine:
 
         return overlap / total_words
 
-    def _calculate_keyword_score(self, query: str, result: Dict[str, Any],
-                               keyword_filters: Optional[List[str]] = None) -> float:
+    def _calculate_keyword_score(
+        self, query: str, result: Dict[str, Any], keyword_filters: Optional[List[str]] = None
+    ) -> float:
         """Calculate keyword-based relevance score."""
         content = result.get("payload", {}).get("content", "").lower()
         query_lower = query.lower()
@@ -358,5 +363,5 @@ class RetrievalEngine:
         return {
             "collection_name": self.collection_name,
             "vector_dimension": self.doc_processor.vector_dim,
-            "status": "active"
+            "status": "active",
         }

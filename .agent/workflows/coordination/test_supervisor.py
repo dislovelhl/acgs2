@@ -4,10 +4,10 @@ Constitutional Hash: cdd01ef066bc6cf2
 """
 
 import pytest
-import asyncio
-from workflows.cyclic.state_schema import GlobalState
-from workflows.cyclic.actor_core import StateGraph
+
 from workflows.coordination.supervisor import SupervisorNode, WorkerNode
+from workflows.cyclic.actor_core import StateGraph
+from workflows.cyclic.state_schema import GlobalState
 
 
 @pytest.mark.asyncio

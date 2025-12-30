@@ -1,27 +1,20 @@
-import asyncio
-import pytest
-import uuid
-import os
 import shutil
 from pathlib import Path
-from datetime import datetime, timezone
-from typing import Dict, Any, List
-from unittest.mock import MagicMock, AsyncMock
+from unittest.mock import AsyncMock, MagicMock
 
+import pytest
 from enhanced_agent_bus.deliberation_layer.workflows.constitutional_saga import (
     ConstitutionalSagaWorkflow,
-    SagaStep,
-    SagaCompensation,
     FileSagaPersistenceProvider,
-    SagaContext,
-    SagaStatus
+    SagaStatus,
+    SagaStep,
 )
 from enhanced_agent_bus.deliberation_layer.workflows.deliberation_workflow import (
     DeliberationWorkflow,
     DeliberationWorkflowInput,
     Vote,
-    WorkflowStatus
 )
+
 
 @pytest.fixture
 def persistence_path():
@@ -32,6 +25,7 @@ def persistence_path():
     yield path
     if path.exists():
         shutil.rmtree("test_storage")
+
 
 @pytest.mark.asyncio
 async def test_saga_persistence_and_resume(persistence_path):
@@ -82,6 +76,7 @@ async def test_saga_persistence_and_resume(persistence_path):
     assert resumed_saga.saga_id == saga_id + "-interrupted"
     assert "step_1" in resumed_saga._completed_steps
 
+
 @pytest.mark.asyncio
 async def test_weighted_voting_consensus():
     """Test that weighted voting correctly influences consensus."""
@@ -97,7 +92,7 @@ async def test_weighted_voting_consensus():
         priority="medium",
         required_votes=3,
         consensus_threshold=0.6,
-        agent_weights={"v1": 1.0, "v2": 1.0, "v3": 1.0}
+        agent_weights={"v1": 1.0, "v2": 1.0, "v3": 1.0},
     )
 
     workflow = DeliberationWorkflow(workflow_id)
@@ -120,11 +115,12 @@ async def test_weighted_voting_consensus():
         priority="medium",
         required_votes=3,
         consensus_threshold=0.6,
-        agent_weights={"v1": 10.0, "v2": 1.0, "v3": 1.0} # v1 is the "boss"
+        agent_weights={"v1": 10.0, "v2": 1.0, "v3": 1.0},  # v1 is the "boss"
     )
 
     # v1 approves, v2 and v3 reject. 10/(10+1+1) = 10/12 = 0.833 > 0.6. Should pass.
     assert workflow._check_consensus(votes_fail, 3, 0.6, input_weighted.agent_weights) is True
+
 
 @pytest.mark.asyncio
 async def test_workflow_versioning_propagation():
@@ -136,7 +132,7 @@ async def test_workflow_versioning_propagation():
         to_agent="b",
         message_type="test",
         priority="medium",
-        version="2.0.0"
+        version="2.0.0",
     )
 
     # Mocking activities to skip real logic
@@ -151,6 +147,7 @@ async def test_workflow_versioning_propagation():
     result = await workflow.run(input_v2)
 
     assert result.version == "2.0.0"
+
 
 if __name__ == "__main__":
     pytest.main([__file__])

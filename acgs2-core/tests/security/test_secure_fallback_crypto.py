@@ -12,27 +12,26 @@ Tests verify:
 
 import base64
 import os
-import pytest
-from datetime import datetime, timezone
 
 # Set up path for imports
 import sys
+
+import pytest
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../.."))
 
 from services.policy_registry.app.services.secure_fallback_crypto import (
-    SecureFallbackCrypto,
-    SecureFallbackConfig,
-    EncryptedPayload,
-    FallbackCryptoError,
-    KeyDerivationError,
-    EncryptionError,
-    DecryptionError,
-    CiphertextFormatError,
-    KeyDerivationAlgorithm,
-    is_secure_fallback_ciphertext,
-    is_legacy_local_ciphertext,
-    CRYPTOGRAPHY_AVAILABLE,
     CONSTITUTIONAL_HASH,
+    CRYPTOGRAPHY_AVAILABLE,
+    CiphertextFormatError,
+    DecryptionError,
+    EncryptedPayload,
+    EncryptionError,
+    KeyDerivationAlgorithm,
+    SecureFallbackConfig,
+    SecureFallbackCrypto,
+    is_legacy_local_ciphertext,
+    is_secure_fallback_ciphertext,
 )
 
 
@@ -102,7 +101,10 @@ class TestSecureFallbackCrypto:
             crypto.decrypt("wrong-key", ciphertext)
 
         # Should be authentication error
-        assert "authentication" in str(exc_info.value).lower() or "failed" in str(exc_info.value).lower()
+        assert (
+            "authentication" in str(exc_info.value).lower()
+            or "failed" in str(exc_info.value).lower()
+        )
 
     def test_tampered_ciphertext_fails(self, crypto):
         """Tampering with ciphertext should be detected."""
@@ -294,8 +296,9 @@ class TestCryptographyDependency:
 
     def test_aesgcm_operations(self):
         """Test direct AESGCM operations."""
-        from cryptography.hazmat.primitives.ciphers.aead import AESGCM
         import secrets
+
+        from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
         key = secrets.token_bytes(32)
         nonce = secrets.token_bytes(12)

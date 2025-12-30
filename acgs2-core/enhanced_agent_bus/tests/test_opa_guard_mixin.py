@@ -5,16 +5,16 @@ Constitutional Hash: cdd01ef066bc6cf2
 Comprehensive tests for the OPAGuardMixin class.
 """
 
-import pytest
+from typing import Any, Optional
 from unittest.mock import AsyncMock, MagicMock
-from typing import Dict, Any, List, Optional
 
+import pytest
 from enhanced_agent_bus.deliberation_layer.opa_guard_mixin import OPAGuardMixin
-
 
 # =============================================================================
 # Test Class Implementation
 # =============================================================================
+
 
 class TestableOPAGuardMixin(OPAGuardMixin):
     """Testable implementation of OPAGuardMixin."""
@@ -27,6 +27,7 @@ class TestableOPAGuardMixin(OPAGuardMixin):
 # =============================================================================
 # Fixtures
 # =============================================================================
+
 
 @pytest.fixture
 def mock_opa_guard() -> MagicMock:
@@ -58,6 +59,7 @@ def mixin_without_guard() -> TestableOPAGuardMixin:
 # =============================================================================
 # verify_action Tests
 # =============================================================================
+
 
 class TestVerifyAction:
     """Tests for verify_action method."""
@@ -118,6 +120,7 @@ class TestVerifyAction:
 # collect_signatures Tests
 # =============================================================================
 
+
 class TestCollectSignatures:
     """Tests for collect_signatures method."""
 
@@ -176,6 +179,7 @@ class TestCollectSignatures:
 # submit_signature Tests
 # =============================================================================
 
+
 class TestSubmitSignature:
     """Tests for submit_signature method."""
 
@@ -215,6 +219,7 @@ class TestSubmitSignature:
 # =============================================================================
 # submit_for_review Tests
 # =============================================================================
+
 
 class TestSubmitForReview:
     """Tests for submit_for_review method."""
@@ -276,6 +281,7 @@ class TestSubmitForReview:
 # =============================================================================
 # submit_critic_review Tests
 # =============================================================================
+
 
 class TestSubmitCriticReview:
     """Tests for submit_critic_review method."""
@@ -342,6 +348,7 @@ class TestSubmitCriticReview:
 # register_critic_agent Tests
 # =============================================================================
 
+
 class TestRegisterCriticAgent:
     """Tests for register_critic_agent method."""
 
@@ -381,6 +388,7 @@ class TestRegisterCriticAgent:
 # unregister_critic_agent Tests
 # =============================================================================
 
+
 class TestUnregisterCriticAgent:
     """Tests for unregister_critic_agent method."""
 
@@ -403,6 +411,7 @@ class TestUnregisterCriticAgent:
 # =============================================================================
 # get_guard_audit_log Tests
 # =============================================================================
+
 
 class TestGetGuardAuditLog:
     """Tests for get_guard_audit_log method."""
@@ -452,13 +461,12 @@ class TestGetGuardAuditLog:
 # Integration Tests
 # =============================================================================
 
+
 class TestOPAGuardMixinIntegration:
     """Integration tests for OPAGuardMixin."""
 
     @pytest.mark.asyncio
-    async def test_full_verification_workflow(
-        self, mock_opa_guard: MagicMock
-    ) -> None:
+    async def test_full_verification_workflow(self, mock_opa_guard: MagicMock) -> None:
         """Test complete verification workflow."""
         mixin = TestableOPAGuardMixin(opa_guard=mock_opa_guard, deliberation_timeout=30)
 

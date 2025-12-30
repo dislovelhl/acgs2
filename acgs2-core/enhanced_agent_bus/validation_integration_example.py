@@ -5,36 +5,35 @@ Constitutional Hash: cdd01ef066bc6cf2
 Demonstrates integrated validation system combining standard and governance validators.
 """
 
+import re
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from enum import Enum
-from typing import Any, Dict, List, Optional, Callable
-import re
+from typing import Any, Dict, List
 
 from .models import (
+    CONSTITUTIONAL_HASH,
     AgentMessage,
     MessageType,
     Priority,
-    RoutingContext,
     ValidationStatus,
-    CONSTITUTIONAL_HASH,
 )
 
 # Dangerous pattern detection for security validation
 DANGEROUS_PATTERNS = [
-    r"<script",                    # Script tag opening
-    r"</script>",                  # Script tag closing
-    r"javascript:",                # JavaScript protocol
-    r"on\w+\s*=",                  # Event handlers
-    r"eval\s*\(",                  # Eval function
-    r"document\.cookie",           # Cookie access
-    r"<iframe",                    # IFrame tag
+    r"<script",  # Script tag opening
+    r"</script>",  # Script tag closing
+    r"javascript:",  # JavaScript protocol
+    r"on\w+\s*=",  # Event handlers
+    r"eval\s*\(",  # Eval function
+    r"document\.cookie",  # Cookie access
+    r"<iframe",  # IFrame tag
 ]
 
 
 @dataclass
 class ValidationResult:
     """Result of a validation operation."""
+
     validator_name: str
     status: ValidationStatus = ValidationStatus.VALID
     errors: List[str] = field(default_factory=list)
@@ -58,7 +57,9 @@ class ValidationResult:
         )
 
     @classmethod
-    def failure(cls, validator_name: str, errors: List[str], message: str = "Validation failed") -> "ValidationResult":
+    def failure(
+        cls, validator_name: str, errors: List[str], message: str = "Validation failed"
+    ) -> "ValidationResult":
         """Create a failed validation result."""
         return cls(
             validator_name=validator_name,
@@ -68,7 +69,12 @@ class ValidationResult:
         )
 
     @classmethod
-    def warning(cls, validator_name: str, warnings: List[str], message: str = "Validation passed with warnings") -> "ValidationResult":
+    def warning(
+        cls,
+        validator_name: str,
+        warnings: List[str],
+        message: str = "Validation passed with warnings",
+    ) -> "ValidationResult":
         """Create a validation result with warnings."""
         return cls(
             validator_name=validator_name,
@@ -105,7 +111,9 @@ class StructureValidator(BaseValidator):
             errors.append("Required field is empty: sender_id")
 
         if errors:
-            return ValidationResult.failure("StructureValidator", errors, "Structure validation failed")
+            return ValidationResult.failure(
+                "StructureValidator", errors, "Structure validation failed"
+            )
         return ValidationResult.success("StructureValidator", "Structure validation passed")
 
 
@@ -118,7 +126,7 @@ class SecurityValidator(BaseValidator):
         if isinstance(value, str):
             for pattern in DANGEROUS_PATTERNS:
                 if re.search(pattern, value, re.IGNORECASE | re.DOTALL):
-                    errors.append(f"Dangerous pattern detected in payload")
+                    errors.append("Dangerous pattern detected in payload")
                     if self.fail_fast:
                         return errors
         elif isinstance(value, dict):
@@ -137,13 +145,17 @@ class SecurityValidator(BaseValidator):
         errors = []
 
         # Check payload for dangerous patterns
-        if hasattr(message, 'payload') and message.payload:
+        if hasattr(message, "payload") and message.payload:
             errors.extend(self._check_dangerous_patterns(message.payload))
             if self.fail_fast and errors:
-                return ValidationResult.failure("SecurityValidator", errors, "Security validation failed")
+                return ValidationResult.failure(
+                    "SecurityValidator", errors, "Security validation failed"
+                )
 
         if errors:
-            return ValidationResult.failure("SecurityValidator", errors, "Security validation failed")
+            return ValidationResult.failure(
+                "SecurityValidator", errors, "Security validation failed"
+            )
         return ValidationResult.success("SecurityValidator", "Security validation passed")
 
 
@@ -154,8 +166,10 @@ class ConstitutionalHashValidator(BaseValidator):
         if message.constitutional_hash != CONSTITUTIONAL_HASH:
             return ValidationResult.failure(
                 "ConstitutionalHashValidator",
-                [f"Constitutional hash mismatch: expected {CONSTITUTIONAL_HASH}, got {message.constitutional_hash}"],
-                "Constitutional hash validation failed"
+                [
+                    f"Constitutional hash mismatch: expected {CONSTITUTIONAL_HASH}, got {message.constitutional_hash}"
+                ],
+                "Constitutional hash validation failed",
             )
         return ValidationResult.success("ConstitutionalHashValidator", "Constitutional hash valid")
 
@@ -168,7 +182,7 @@ class RoutingValidator(BaseValidator):
             return ValidationResult.failure(
                 "RoutingValidator",
                 ["Message requires routing configuration"],
-                "Routing validation failed"
+                "Routing validation failed",
             )
         return ValidationResult.success("RoutingValidator", "Routing validation passed")
 
@@ -185,12 +199,14 @@ class PriorityValidator(BaseValidator):
 
         if self.require_justification_for_high:
             if message.priority in [Priority.HIGH, Priority.CRITICAL]:
-                headers = getattr(message, 'headers', {}) or {}
-                if 'priority_justification' not in headers:
+                headers = getattr(message, "headers", {}) or {}
+                if "priority_justification" not in headers:
                     warnings.append("High priority message without justification")
 
         if warnings:
-            return ValidationResult.warning("PriorityValidator", warnings, "Priority validation passed with warnings")
+            return ValidationResult.warning(
+                "PriorityValidator", warnings, "Priority validation passed with warnings"
+            )
         return ValidationResult.success("PriorityValidator", "Priority validation passed")
 
 
@@ -213,13 +229,17 @@ class CompositeValidator(BaseValidator):
             all_warnings.extend(result.warnings)
 
             if self.fail_fast and not result.is_valid():
-                return ValidationResult.failure(validator_name, all_errors, "Validation failed (fail-fast)")
+                return ValidationResult.failure(
+                    validator_name, all_errors, "Validation failed (fail-fast)"
+                )
 
         if all_errors:
             return ValidationResult.failure(validator_name, all_errors, "Validation failed")
 
         if all_warnings:
-            return ValidationResult.warning(validator_name, all_warnings, "Validation passed with warnings")
+            return ValidationResult.warning(
+                validator_name, all_warnings, "Validation passed with warnings"
+            )
 
         return ValidationResult.success(validator_name, "All validations passed")
 
@@ -256,6 +276,7 @@ class GovernanceValidator(CompositeValidator):
 @dataclass
 class ValidationHistoryEntry:
     """Entry in validation history."""
+
     message_id: str
     validator_name: str
     status: ValidationStatus
@@ -296,14 +317,19 @@ class IntegratedValidationSystem:
         if message.constitutional_hash != self.constitutional_hash:
             result = ValidationResult.failure(
                 "SystemIntegrity",
-                [f"Message constitutional hash {message.constitutional_hash} does not match system hash {self.constitutional_hash}"],
-                "System integrity check failed"
+                [
+                    f"Message constitutional hash {message.constitutional_hash} does not match system hash {self.constitutional_hash}"
+                ],
+                "System integrity check failed",
             )
             self._record_validation(message, result)
             return result
 
         # Select validator based on message type
-        if message.message_type in [MessageType.GOVERNANCE_REQUEST, MessageType.GOVERNANCE_RESPONSE]:
+        if message.message_type in [
+            MessageType.GOVERNANCE_REQUEST,
+            MessageType.GOVERNANCE_RESPONSE,
+        ]:
             if self.governance_validator:
                 result = self.governance_validator.validate(message)
                 # Update validator name to indicate governance
@@ -328,7 +354,7 @@ class IntegratedValidationSystem:
 
         # Trim history if exceeds limit
         if len(self.validation_history) > self._history_limit:
-            self.validation_history = self.validation_history[-self._history_limit:]
+            self.validation_history = self.validation_history[-self._history_limit :]
 
     def get_system_status(self) -> Dict[str, Any]:
         """Get comprehensive system status."""

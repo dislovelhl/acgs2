@@ -4,8 +4,8 @@ Uses LangChain and GPT-4 to provide decision reasoning and analysis.
 """
 
 import logging
-from typing import Dict, Any, List, Optional
 from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional
 
 try:
     from shared.constants import CONSTITUTIONAL_HASH
@@ -13,9 +13,9 @@ except ImportError:
     CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
 
 try:
-    from langchain_openai import ChatOpenAI
-    from langchain_core.prompts import ChatPromptTemplate
     from langchain_core.output_parsers import JsonOutputParser
+    from langchain_core.prompts import ChatPromptTemplate
+    from langchain_openai import ChatOpenAI
 except ImportError:
     # Fallback if langchain not available
     ChatOpenAI = None
@@ -51,11 +51,13 @@ class LLMAssistant:
                 self.llm = ChatOpenAI(
                     model_name=model_name,
                     temperature=0.1,  # Low temperature for consistent reasoning
-                    openai_api_key=openai_api_key
+                    openai_api_key=openai_api_key,
                 )
                 logger.info(f"Initialized LLM assistant with {model_name}")
             except (ValueError, TypeError) as e:
-                logger.warning(f"Failed to initialize LLM assistant due to configuration error: {e}")
+                logger.warning(
+                    f"Failed to initialize LLM assistant due to configuration error: {e}"
+                )
             except (ImportError, ModuleNotFoundError) as e:
                 logger.warning(f"Failed to initialize LLM assistant due to missing dependency: {e}")
             except OSError as e:
@@ -78,7 +80,8 @@ class LLMAssistant:
             content_summary = self._extract_message_summary(message)
 
             # Create analysis prompt with chain-of-thought reasoning
-            prompt = ChatPromptTemplate.from_template("""You are a Constitutional AI Governance Expert specializing in multi-agent system risk assessment.
+            prompt = ChatPromptTemplate.from_template(
+                """You are a Constitutional AI Governance Expert specializing in multi-agent system risk assessment.
 Your role is to analyze agent messages for systemic risk while ensuring constitutional compliance.
 
 CONSTITUTIONAL CONSTRAINT: All analysis must validate against hash {constitutional_hash}
@@ -164,16 +167,21 @@ Provide your response ONLY as valid JSON matching this schema:
     "mitigations": ["mitigation1", "mitigation2", ...],
     "constitutional_hash": "{constitutional_hash}"
 }}
-""")
+"""
+            )
 
             # Format prompt
             formatted_prompt = prompt.format_messages(
                 message_type=message.message_type.value,
-                priority=message.priority.value if hasattr(message.priority, 'value') else str(message.priority),
+                priority=(
+                    message.priority.value
+                    if hasattr(message.priority, "value")
+                    else str(message.priority)
+                ),
                 content=content_summary,
                 from_agent=message.from_agent,
                 to_agent=message.to_agent,
-                constitutional_hash=CONSTITUTIONAL_HASH
+                constitutional_hash=CONSTITUTIONAL_HASH,
             )
 
             # Get LLM response
@@ -184,32 +192,44 @@ Provide your response ONLY as valid JSON matching this schema:
             analysis = parser.parse(response.content)
 
             # Add metadata
-            analysis.update({
-                'analyzed_by': 'llm_assistant',
-                'model': self.model_name,
-                'timestamp': datetime.now(timezone.utc).isoformat(),
-                'message_id': message.message_id
-            })
+            analysis.update(
+                {
+                    "analyzed_by": "llm_assistant",
+                    "model": self.model_name,
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "message_id": message.message_id,
+                }
+            )
 
-            logger.info(f"LLM analysis completed for message {message.message_id}: "
-                       f"risk={analysis.get('risk_level')}, decision={analysis.get('recommended_decision')}")
+            logger.info(
+                f"LLM analysis completed for message {message.message_id}: "
+                f"risk={analysis.get('risk_level')}, decision={analysis.get('recommended_decision')}"
+            )
 
             return analysis
 
         except (ValueError, KeyError, TypeError) as e:
-            logger.error(f"LLM analysis failed for message {message.message_id} due to data error: {type(e).__name__}: {e}")
+            logger.error(
+                f"LLM analysis failed for message {message.message_id} due to data error: {type(e).__name__}: {e}"
+            )
             return self._fallback_analysis(message)
         except (AttributeError, RuntimeError) as e:
-            logger.error(f"LLM analysis failed for message {message.message_id} due to runtime error: {e}")
+            logger.error(
+                f"LLM analysis failed for message {message.message_id} due to runtime error: {e}"
+            )
             return self._fallback_analysis(message)
         except OSError as e:
-            logger.error(f"LLM analysis failed for message {message.message_id} due to I/O error: {e}")
+            logger.error(
+                f"LLM analysis failed for message {message.message_id} due to I/O error: {e}"
+            )
             return self._fallback_analysis(message)
 
-    async def generate_decision_reasoning(self,
-                                        message: AgentMessage,
-                                        votes: List[Dict[str, Any]],
-                                        human_decision: Optional[str] = None) -> Dict[str, Any]:
+    async def generate_decision_reasoning(
+        self,
+        message: AgentMessage,
+        votes: List[Dict[str, Any]],
+        human_decision: Optional[str] = None,
+    ) -> Dict[str, Any]:
         """
         Generate comprehensive reasoning for a deliberation decision.
 
@@ -229,7 +249,8 @@ Provide your response ONLY as valid JSON matching this schema:
             content_summary = self._extract_message_summary(message)
             vote_summary = self._summarize_votes(votes)
 
-            prompt = ChatPromptTemplate.from_template("""You are a Constitutional AI Deliberation Analyst responsible for synthesizing multi-agent voting outcomes.
+            prompt = ChatPromptTemplate.from_template(
+                """You are a Constitutional AI Deliberation Analyst responsible for synthesizing multi-agent voting outcomes.
 Your role is to provide transparent, well-reasoned recommendations that maintain constitutional compliance.
 
 CONSTITUTIONAL CONSTRAINT: Hash {constitutional_hash} must be validated in all governance decisions.
@@ -286,7 +307,8 @@ Provide your analysis as valid JSON only:
     "follow_up_actions": ["Recommended follow-up actions for monitoring"],
     "constitutional_hash": "{constitutional_hash}"
 }}
-""")
+"""
+            )
 
             formatted_prompt = prompt.format_messages(
                 message_type=message.message_type.value,
@@ -294,22 +316,26 @@ Provide your analysis as valid JSON only:
                 content=content_summary,
                 votes=vote_summary,
                 human_decision=human_decision or "pending",
-                constitutional_hash=CONSTITUTIONAL_HASH
+                constitutional_hash=CONSTITUTIONAL_HASH,
             )
 
             response = await self.llm.ainvoke(formatted_prompt)
             parser = JsonOutputParser()
             reasoning = parser.parse(response.content)
 
-            reasoning.update({
-                'generated_by': 'llm_assistant',
-                'timestamp': datetime.now(timezone.utc).isoformat()
-            })
+            reasoning.update(
+                {
+                    "generated_by": "llm_assistant",
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                }
+            )
 
             return reasoning
 
         except (ValueError, KeyError, TypeError) as e:
-            logger.error(f"LLM reasoning generation failed due to data error: {type(e).__name__}: {e}")
+            logger.error(
+                f"LLM reasoning generation failed due to data error: {type(e).__name__}: {e}"
+            )
             return self._fallback_reasoning(message, votes, human_decision)
         except (AttributeError, RuntimeError) as e:
             logger.error(f"LLM reasoning generation failed due to runtime error: {e}")
@@ -349,17 +375,19 @@ Provide your analysis as valid JSON only:
             return "No votes recorded"
 
         summary_parts = []
-        approve_count = sum(1 for v in votes if v.get('vote') == 'approve')
-        reject_count = sum(1 for v in votes if v.get('vote') == 'reject')
-        abstain_count = sum(1 for v in votes if v.get('vote') == 'abstain')
+        approve_count = sum(1 for v in votes if v.get("vote") == "approve")
+        reject_count = sum(1 for v in votes if v.get("vote") == "reject")
+        abstain_count = sum(1 for v in votes if v.get("vote") == "abstain")
 
         summary_parts.append(f"Total votes: {len(votes)}")
-        summary_parts.append(f"Approve: {approve_count}, Reject: {reject_count}, Abstain: {abstain_count}")
+        summary_parts.append(
+            f"Approve: {approve_count}, Reject: {reject_count}, Abstain: {abstain_count}"
+        )
 
         # Add sample reasoning
         if votes:
             sample_vote = votes[0]
-            reasoning = sample_vote.get('reasoning', 'No reasoning provided')
+            reasoning = sample_vote.get("reasoning", "No reasoning provided")
             if len(reasoning) > 100:
                 reasoning = reasoning[:100] + "..."
             summary_parts.append(f"Sample reasoning: {reasoning}")
@@ -374,16 +402,22 @@ Provide your analysis as valid JSON only:
         content_text = self._extract_message_summary(message).lower()
 
         # Multi-tier risk keyword detection
-        critical_keywords = ['breach', 'attack', 'exploit', 'unauthorized', 'critical_failure']
-        high_risk_keywords = ['critical', 'emergency', 'security', 'violation', 'escalate']
-        medium_risk_keywords = ['warning', 'alert', 'review', 'policy', 'governance']
+        critical_keywords = ["breach", "attack", "exploit", "unauthorized", "critical_failure"]
+        high_risk_keywords = ["critical", "emergency", "security", "violation", "escalate"]
+        medium_risk_keywords = ["warning", "alert", "review", "policy", "governance"]
 
         # Security-specific keywords
-        security_keywords = ['authentication', 'authorization', 'credential', 'access', 'permission']
+        security_keywords = [
+            "authentication",
+            "authorization",
+            "credential",
+            "access",
+            "permission",
+        ]
         # Performance-specific keywords
-        performance_keywords = ['timeout', 'latency', 'throughput', 'resource', 'load']
+        performance_keywords = ["timeout", "latency", "throughput", "resource", "load"]
         # Compliance-specific keywords
-        compliance_keywords = ['constitutional', 'policy', 'compliance', 'audit', 'governance']
+        compliance_keywords = ["constitutional", "policy", "compliance", "audit", "governance"]
 
         # Determine risk level with step-by-step analysis
         risk_level = "low"
@@ -394,7 +428,9 @@ Provide your analysis as valid JSON only:
         if any(keyword in content_text for keyword in critical_keywords):
             risk_level = "critical"
             requires_review = True
-            reasoning.append("Step 2a: CRITICAL risk keywords detected - immediate escalation required")
+            reasoning.append(
+                "Step 2a: CRITICAL risk keywords detected - immediate escalation required"
+            )
         elif any(keyword in content_text for keyword in high_risk_keywords):
             risk_level = "high"
             requires_review = True
@@ -406,8 +442,10 @@ Provide your analysis as valid JSON only:
             reasoning.append("Step 2d: No elevated risk indicators found")
 
         # Priority-based escalation
-        priority_value = message.priority.value if hasattr(message.priority, 'value') else str(message.priority)
-        if priority_value in ['CRITICAL', 'critical', '4']:
+        priority_value = (
+            message.priority.value if hasattr(message.priority, "value") else str(message.priority)
+        )
+        if priority_value in ["CRITICAL", "critical", "4"]:
             if risk_level == "low":
                 risk_level = "medium"
             requires_review = True
@@ -416,39 +454,44 @@ Provide your analysis as valid JSON only:
         # Impact area assessment
         impact_areas = {
             "security": "Medium" if any(k in content_text for k in security_keywords) else "Low",
-            "performance": "Medium" if any(k in content_text for k in performance_keywords) else "Low",
-            "compliance": "Medium" if any(k in content_text for k in compliance_keywords) else "Low"
+            "performance": (
+                "Medium" if any(k in content_text for k in performance_keywords) else "Low"
+            ),
+            "compliance": (
+                "Medium" if any(k in content_text for k in compliance_keywords) else "Low"
+            ),
         }
         reasoning.append(f"Step 4: Impact areas assessed - {impact_areas}")
 
         # Self-verification
-        reasoning.append(f"Step 5: Self-verification - Constitutional hash {CONSTITUTIONAL_HASH} validated")
+        reasoning.append(
+            f"Step 5: Self-verification - Constitutional hash {CONSTITUTIONAL_HASH} validated"
+        )
 
         return {
-            'risk_level': risk_level,
-            'requires_human_review': requires_review,
-            'recommended_decision': 'review' if requires_review else 'approve',
-            'confidence': 0.6 if risk_level == "low" else 0.5,
-            'reasoning': reasoning,
-            'impact_areas': impact_areas,
-            'mitigations': ['Monitor execution', 'Enable LLM analysis for improved insights'],
-            'analyzed_by': 'enhanced_fallback_analyzer',
-            'timestamp': datetime.now(timezone.utc).isoformat(),
-            'constitutional_hash': CONSTITUTIONAL_HASH
+            "risk_level": risk_level,
+            "requires_human_review": requires_review,
+            "recommended_decision": "review" if requires_review else "approve",
+            "confidence": 0.6 if risk_level == "low" else 0.5,
+            "reasoning": reasoning,
+            "impact_areas": impact_areas,
+            "mitigations": ["Monitor execution", "Enable LLM analysis for improved insights"],
+            "analyzed_by": "enhanced_fallback_analyzer",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "constitutional_hash": CONSTITUTIONAL_HASH,
         }
 
-    def _fallback_reasoning(self,
-                          message: AgentMessage,
-                          votes: List[Dict[str, Any]],
-                          human_decision: Optional[str]) -> Dict[str, Any]:
+    def _fallback_reasoning(
+        self, message: AgentMessage, votes: List[Dict[str, Any]], human_decision: Optional[str]
+    ) -> Dict[str, Any]:
         """
         Enhanced fallback reasoning when LLM is not available.
         Uses weighted voting analysis and consensus strength assessment.
         """
         # Step 1: Vote counting with categorization
-        approve_votes = sum(1 for v in votes if v.get('vote') == 'approve')
-        reject_votes = sum(1 for v in votes if v.get('vote') == 'reject')
-        abstain_votes = sum(1 for v in votes if v.get('vote') == 'abstain')
+        approve_votes = sum(1 for v in votes if v.get("vote") == "approve")
+        reject_votes = sum(1 for v in votes if v.get("vote") == "reject")
+        abstain_votes = sum(1 for v in votes if v.get("vote") == "abstain")
         total_votes = len(votes)
 
         # Step 2: Consensus strength calculation
@@ -464,54 +507,63 @@ Provide your analysis as valid JSON only:
         # Step 3: Determine recommendation with reasoning
         reasoning_parts = [
             f"Step 1: Vote count - Approve: {approve_votes}, Reject: {reject_votes}, Abstain: {abstain_votes}",
-            f"Step 2: Consensus strength - {consensus_strength:.1%}"
+            f"Step 2: Consensus strength - {consensus_strength:.1%}",
         ]
 
         concerns = []
         if human_decision:
             final_rec = human_decision.lower()
-            reasoning_parts.append(f"Step 3: Human decision '{human_decision}' applied (overrides voting)")
+            reasoning_parts.append(
+                f"Step 3: Human decision '{human_decision}' applied (overrides voting)"
+            )
         elif total_votes == 0:
-            final_rec = 'review'
+            final_rec = "review"
             concerns.append("No votes received - manual review required")
             reasoning_parts.append("Step 3: No votes - defaulting to review")
         elif consensus_strength >= 0.8:
-            final_rec = 'approve' if approval_rate > rejection_rate else 'reject'
-            reasoning_parts.append(f"Step 3: Strong consensus ({consensus_strength:.1%}) - {final_rec}")
+            final_rec = "approve" if approval_rate > rejection_rate else "reject"
+            reasoning_parts.append(
+                f"Step 3: Strong consensus ({consensus_strength:.1%}) - {final_rec}"
+            )
         elif consensus_strength >= 0.6:
-            final_rec = 'approve' if approval_rate > 0.6 else 'review'
-            reasoning_parts.append(f"Step 3: Moderate consensus ({consensus_strength:.1%}) - {final_rec}")
+            final_rec = "approve" if approval_rate > 0.6 else "review"
+            reasoning_parts.append(
+                f"Step 3: Moderate consensus ({consensus_strength:.1%}) - {final_rec}"
+            )
         else:
-            final_rec = 'escalate'
+            final_rec = "escalate"
             concerns.append("Weak consensus - escalation recommended")
-            reasoning_parts.append(f"Step 3: Weak consensus ({consensus_strength:.1%}) - escalating")
+            reasoning_parts.append(
+                f"Step 3: Weak consensus ({consensus_strength:.1%}) - escalating"
+            )
 
         # Step 4: Self-verification
         reasoning_parts.append(f"Step 4: Constitutional hash {CONSTITUTIONAL_HASH} validated")
 
         # Determine follow-up actions based on recommendation
-        follow_up_actions = ['Monitor execution']
-        if final_rec == 'escalate':
-            follow_up_actions.extend(['Request human review', 'Document deliberation outcome'])
+        follow_up_actions = ["Monitor execution"]
+        if final_rec == "escalate":
+            follow_up_actions.extend(["Request human review", "Document deliberation outcome"])
         if abstain_votes > 0:
-            follow_up_actions.append('Investigate abstaining agents\' concerns')
+            follow_up_actions.append("Investigate abstaining agents' concerns")
 
         return {
-            'process_summary': f'Deliberation completed: {total_votes} votes cast '
-                              f'(Approve: {approve_votes}, Reject: {reject_votes}, Abstain: {abstain_votes})',
-            'consensus_analysis': f'Consensus strength: {consensus_strength:.1%}. '
-                                 f'Approval rate: {approval_rate:.1%}, Rejection rate: {rejection_rate:.1%}',
-            'final_recommendation': final_rec,
-            'reasoning': '; '.join(reasoning_parts),
-            'concerns': concerns if concerns else ['No critical concerns identified'],
-            'follow_up_actions': follow_up_actions,
-            'generated_by': 'enhanced_fallback_reasoner',
-            'timestamp': datetime.now(timezone.utc).isoformat(),
-            'constitutional_hash': CONSTITUTIONAL_HASH
+            "process_summary": f"Deliberation completed: {total_votes} votes cast "
+            f"(Approve: {approve_votes}, Reject: {reject_votes}, Abstain: {abstain_votes})",
+            "consensus_analysis": f"Consensus strength: {consensus_strength:.1%}. "
+            f"Approval rate: {approval_rate:.1%}, Rejection rate: {rejection_rate:.1%}",
+            "final_recommendation": final_rec,
+            "reasoning": "; ".join(reasoning_parts),
+            "concerns": concerns if concerns else ["No critical concerns identified"],
+            "follow_up_actions": follow_up_actions,
+            "generated_by": "enhanced_fallback_reasoner",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "constitutional_hash": CONSTITUTIONAL_HASH,
         }
 
-    async def analyze_deliberation_trends(self,
-                                        deliberation_history: List[Dict[str, Any]]) -> Dict[str, Any]:
+    async def analyze_deliberation_trends(
+        self, deliberation_history: List[Dict[str, Any]]
+    ) -> Dict[str, Any]:
         """
         Analyze trends in deliberation decisions for threshold optimization.
 
@@ -528,7 +580,8 @@ Provide your analysis as valid JSON only:
             # Prepare history summary
             history_summary = self._summarize_deliberation_history(deliberation_history)
 
-            prompt = ChatPromptTemplate.from_template("""You are a Constitutional AI Systems Optimizer specializing in adaptive threshold tuning and governance efficiency.
+            prompt = ChatPromptTemplate.from_template(
+                """You are a Constitutional AI Systems Optimizer specializing in adaptive threshold tuning and governance efficiency.
 Your role is to analyze deliberation patterns and recommend optimizations while maintaining constitutional compliance.
 
 ## DELIBERATION HISTORY
@@ -582,7 +635,8 @@ Provide your analysis as valid JSON only:
         "Specific, actionable improvement suggestion 2"
     ]
 }}
-""")
+"""
+            )
 
             formatted_prompt = prompt.format_messages(history=history_summary)
             response = await self.llm.ainvoke(formatted_prompt)
@@ -607,11 +661,11 @@ Provide your analysis as valid JSON only:
             return "No deliberation history available"
 
         total = len(history)
-        approved = sum(1 for h in history if h.get('outcome') == 'approved')
-        rejected = sum(1 for h in history if h.get('outcome') == 'rejected')
-        timed_out = sum(1 for h in history if h.get('outcome') == 'timed_out')
+        approved = sum(1 for h in history if h.get("outcome") == "approved")
+        rejected = sum(1 for h in history if h.get("outcome") == "rejected")
+        timed_out = sum(1 for h in history if h.get("outcome") == "timed_out")
 
-        avg_impact = sum(h.get('impact_score', 0) for h in history) / max(total, 1)
+        avg_impact = sum(h.get("impact_score", 0) for h in history) / max(total, 1)
 
         return f"""
         Total deliberations: {total}
@@ -625,13 +679,13 @@ Provide your analysis as valid JSON only:
         """Fallback trend analysis."""
         if not history:
             return {
-                'patterns': ['No history available'],
-                'threshold_recommendations': 'Maintain current threshold',
-                'human_review_value': 'Unable to analyze',
-                'improvement_suggestions': ['Collect more data']
+                "patterns": ["No history available"],
+                "threshold_recommendations": "Maintain current threshold",
+                "human_review_value": "Unable to analyze",
+                "improvement_suggestions": ["Collect more data"],
             }
 
-        approved = sum(1 for h in history if h.get('outcome') == 'approved')
+        approved = sum(1 for h in history if h.get("outcome") == "approved")
         total = len(history)
         approval_rate = approved / total
 
@@ -639,18 +693,21 @@ Provide your analysis as valid JSON only:
         if approval_rate > 0.8:
             recommendations = "Consider lowering threshold to reduce deliberation load"
         elif approval_rate < 0.3:
-            recommendations = "Consider raising threshold to ensure important decisions are reviewed"
+            recommendations = (
+                "Consider raising threshold to ensure important decisions are reviewed"
+            )
 
         return {
-            'patterns': [f'Approval rate: {approval_rate:.2f}'],
-            'threshold_recommendations': recommendations,
-            'human_review_value': 'Basic statistical analysis',
-            'improvement_suggestions': ['Enable LLM analysis for better insights']
+            "patterns": [f"Approval rate: {approval_rate:.2f}"],
+            "threshold_recommendations": recommendations,
+            "human_review_value": "Basic statistical analysis",
+            "improvement_suggestions": ["Enable LLM analysis for better insights"],
         }
 
 
 # Global assistant instance
 _llm_assistant = None
+
 
 def get_llm_assistant() -> LLMAssistant:
     """Get or create global LLM assistant instance."""

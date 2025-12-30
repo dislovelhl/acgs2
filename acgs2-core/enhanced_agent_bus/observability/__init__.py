@@ -6,26 +6,24 @@ Unified OpenTelemetry instrumentation for the enhanced agent bus
 and breakthrough architecture layers.
 """
 
-from .telemetry import (
-    configure_telemetry,
-    get_tracer,
-    get_meter,
-    TracingContext,
-    MetricsRegistry,
-    CONSTITUTIONAL_HASH,
-    OTEL_AVAILABLE,
-)
-
 from .decorators import (
-    traced,
     metered,
     timed,
+    traced,
 )
-
+from .telemetry import (
+    CONSTITUTIONAL_HASH,
+    OTEL_AVAILABLE,
+    MetricsRegistry,
+    TracingContext,
+    configure_telemetry,
+    get_meter,
+    get_tracer,
+)
 from .timeout_budget import (
     LayerTimeoutBudget,
-    TimeoutBudgetManager,
     LayerTimeoutError,
+    TimeoutBudgetManager,
 )
 
 __all__ = [

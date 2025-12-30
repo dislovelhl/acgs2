@@ -5,15 +5,16 @@ Constitutional Hash: cdd01ef066bc6cf2
 Comprehensive tests for OPA guard data models.
 """
 
+import importlib.util
 import os
 import sys
-import importlib.util
+
 import pytest
-from datetime import datetime, timezone, timedelta
 
 # Load module directly to work with conftest module isolation
 _parent_dir = os.path.dirname(os.path.dirname(__file__))
 _models_path = os.path.join(_parent_dir, "deliberation_layer", "opa_guard_models.py")
+
 
 def _load_module(name: str, path: str):
     """Load a module directly from path."""
@@ -22,6 +23,7 @@ def _load_module(name: str, path: str):
     sys.modules[name] = module
     spec.loader.exec_module(module)
     return module
+
 
 _opa_models = _load_module("_opa_guard_models", _models_path)
 
@@ -41,6 +43,7 @@ ReviewResult = _opa_models.ReviewResult
 # Constitutional Hash Tests
 # ============================================================================
 
+
 class TestConstitutionalHash:
     """Test constitutional hash compliance."""
 
@@ -52,6 +55,7 @@ class TestConstitutionalHash:
 # ============================================================================
 # GuardDecision Enum Tests
 # ============================================================================
+
 
 class TestGuardDecision:
     """Test GuardDecision enum."""
@@ -73,6 +77,7 @@ class TestGuardDecision:
 # SignatureStatus Enum Tests
 # ============================================================================
 
+
 class TestSignatureStatus:
     """Test SignatureStatus enum."""
 
@@ -87,6 +92,7 @@ class TestSignatureStatus:
 # ============================================================================
 # ReviewStatus Enum Tests
 # ============================================================================
+
 
 class TestReviewStatus:
     """Test ReviewStatus enum."""
@@ -103,6 +109,7 @@ class TestReviewStatus:
 # ============================================================================
 # GuardResult Tests
 # ============================================================================
+
 
 class TestGuardResult:
     """Test GuardResult dataclass."""
@@ -134,7 +141,7 @@ class TestGuardResult:
             action_type="deploy",
             constitutional_valid=True,
             risk_level="low",
-            risk_score=0.15
+            risk_score=0.15,
         )
         assert result.decision == GuardDecision.ALLOW
         assert result.is_allowed is True
@@ -149,7 +156,7 @@ class TestGuardResult:
         result = GuardResult(
             decision=GuardDecision.DENY,
             validation_errors=["Missing permission", "Invalid agent"],
-            validation_warnings=["Deprecated action"]
+            validation_warnings=["Deprecated action"],
         )
         assert result.decision == GuardDecision.DENY
         assert len(result.validation_errors) == 2
@@ -160,7 +167,7 @@ class TestGuardResult:
         result = GuardResult(
             decision=GuardDecision.REQUIRE_SIGNATURES,
             requires_signatures=True,
-            required_signers=["admin-1", "admin-2", "security-lead"]
+            required_signers=["admin-1", "admin-2", "security-lead"],
         )
         assert result.requires_signatures is True
         assert len(result.required_signers) == 3
@@ -173,7 +180,7 @@ class TestGuardResult:
             action_type="read",
             constitutional_valid=True,
             risk_level="low",
-            risk_score=0.1
+            risk_score=0.1,
         )
         d = result.to_dict()
 
@@ -192,6 +199,7 @@ class TestGuardResult:
 # Signature Tests
 # ============================================================================
 
+
 class TestSignature:
     """Test Signature dataclass."""
 
@@ -206,10 +214,7 @@ class TestSignature:
 
     def test_signature_with_custom_hash(self):
         """Test signature with provided hash."""
-        sig = Signature(
-            signer_id="signer-2",
-            signature_hash="custom_hash_12345"
-        )
+        sig = Signature(signer_id="signer-2", signature_hash="custom_hash_12345")
         assert sig.signature_hash == "custom_hash_12345"
 
     def test_signature_with_details(self):
@@ -218,7 +223,7 @@ class TestSignature:
             signer_id="admin-lead",
             reasoning="Approved after security review",
             confidence=0.95,
-            metadata={"review_type": "security"}
+            metadata={"review_type": "security"},
         )
         assert sig.reasoning == "Approved after security review"
         assert sig.confidence == 0.95
@@ -228,6 +233,7 @@ class TestSignature:
 # ============================================================================
 # SignatureResult Tests
 # ============================================================================
+
 
 class TestSignatureResult:
     """Test SignatureResult dataclass."""
@@ -250,7 +256,7 @@ class TestSignatureResult:
             decision_id="dec-123",
             required_signers=["admin-1", "admin-2"],
             required_count=2,
-            threshold=1.0
+            threshold=1.0,
         )
         assert result.decision_id == "dec-123"
         assert len(result.required_signers) == 2
@@ -260,9 +266,7 @@ class TestSignatureResult:
     def test_add_signature(self):
         """Test adding signatures."""
         result = SignatureResult(
-            decision_id="dec-456",
-            required_signers=["admin-1", "admin-2"],
-            required_count=2
+            decision_id="dec-456", required_signers=["admin-1", "admin-2"], required_count=2
         )
 
         # Add first signature
@@ -284,10 +288,7 @@ class TestSignatureResult:
 
     def test_add_signature_unauthorized_signer(self):
         """Test adding signature from unauthorized signer."""
-        result = SignatureResult(
-            required_signers=["admin-1"],
-            required_count=1
-        )
+        result = SignatureResult(required_signers=["admin-1"], required_count=1)
 
         sig = Signature(signer_id="unauthorized-user")
         success = result.add_signature(sig)
@@ -296,10 +297,7 @@ class TestSignatureResult:
 
     def test_add_duplicate_signature_updates(self):
         """Test that duplicate signatures update existing."""
-        result = SignatureResult(
-            required_signers=["admin-1"],
-            required_count=1
-        )
+        result = SignatureResult(required_signers=["admin-1"], required_count=1)
 
         sig1 = Signature(signer_id="admin-1", reasoning="First approval")
         result.add_signature(sig1)
@@ -313,9 +311,7 @@ class TestSignatureResult:
     def test_signature_rejection(self):
         """Test signature rejection."""
         result = SignatureResult(
-            decision_id="dec-reject",
-            required_signers=["admin-1", "admin-2"],
-            required_count=2
+            decision_id="dec-reject", required_signers=["admin-1", "admin-2"], required_count=2
         )
 
         success = result.reject("admin-1", reason="Security concerns")
@@ -327,10 +323,7 @@ class TestSignatureResult:
 
     def test_reject_unauthorized_signer(self):
         """Test rejection from unauthorized signer."""
-        result = SignatureResult(
-            required_signers=["admin-1"],
-            required_count=1
-        )
+        result = SignatureResult(required_signers=["admin-1"], required_count=1)
 
         success = result.reject("unauthorized-user")
         assert success is False
@@ -339,9 +332,7 @@ class TestSignatureResult:
     def test_signature_result_to_dict(self):
         """Test signature result to_dict serialization."""
         result = SignatureResult(
-            decision_id="dec-dict",
-            required_signers=["admin-1"],
-            required_count=1
+            decision_id="dec-dict", required_signers=["admin-1"], required_count=1
         )
         sig = Signature(signer_id="admin-1")
         result.add_signature(sig)
@@ -359,7 +350,7 @@ class TestSignatureResult:
         result = SignatureResult(
             required_signers=["admin-1", "admin-2", "admin-3"],
             required_count=3,
-            threshold=0.66  # 66% threshold (2/3 = 0.666...)
+            threshold=0.66,  # 66% threshold (2/3 = 0.666...)
         )
 
         # Add 2 of 3 signatures (66.67%)
@@ -373,6 +364,7 @@ class TestSignatureResult:
 # ============================================================================
 # CriticReview Tests
 # ============================================================================
+
 
 class TestCriticReview:
     """Test CriticReview dataclass."""
@@ -396,7 +388,7 @@ class TestCriticReview:
             reasoning="Action meets safety requirements",
             confidence=0.9,
             concerns=["Minor risk noted"],
-            recommendations=["Add monitoring"]
+            recommendations=["Add monitoring"],
         )
         assert review.review_type == "safety"
         assert review.verdict == "approve"
@@ -407,6 +399,7 @@ class TestCriticReview:
 # ============================================================================
 # ReviewResult Tests
 # ============================================================================
+
 
 class TestReviewResult:
     """Test ReviewResult dataclass."""
@@ -426,8 +419,7 @@ class TestReviewResult:
     def test_add_review(self):
         """Test adding reviews."""
         result = ReviewResult(
-            decision_id="dec-review",
-            required_critics=["critic-1", "critic-2", "critic-3"]
+            decision_id="dec-review", required_critics=["critic-1", "critic-2", "critic-3"]
         )
 
         review = CriticReview(
@@ -435,7 +427,7 @@ class TestReviewResult:
             verdict="approve",
             confidence=0.9,
             concerns=["Minor issue"],
-            recommendations=["Monitor closely"]
+            recommendations=["Monitor closely"],
         )
         success = result.add_review(review)
 
@@ -447,8 +439,7 @@ class TestReviewResult:
     def test_consensus_approval(self):
         """Test consensus reached with approval."""
         result = ReviewResult(
-            decision_id="dec-consensus",
-            required_critics=["critic-1", "critic-2", "critic-3"]
+            decision_id="dec-consensus", required_critics=["critic-1", "critic-2", "critic-3"]
         )
 
         # Add 2 approvals (majority of 3)
@@ -463,8 +454,7 @@ class TestReviewResult:
     def test_consensus_rejection(self):
         """Test consensus reached with rejection."""
         result = ReviewResult(
-            decision_id="dec-reject",
-            required_critics=["critic-1", "critic-2", "critic-3"]
+            decision_id="dec-reject", required_critics=["critic-1", "critic-2", "critic-3"]
         )
 
         # Add 2 rejections (majority of 3)
@@ -478,8 +468,7 @@ class TestReviewResult:
     def test_consensus_escalation(self):
         """Test consensus reached with escalation."""
         result = ReviewResult(
-            decision_id="dec-escalate",
-            required_critics=["critic-1", "critic-2", "critic-3"]
+            decision_id="dec-escalate", required_critics=["critic-1", "critic-2", "critic-3"]
         )
 
         # Add 2 escalations (majority of 3)
@@ -494,7 +483,7 @@ class TestReviewResult:
         """Test no consensus with insufficient reviews."""
         result = ReviewResult(
             decision_id="dec-insufficient",
-            required_critics=["c-1", "c-2", "c-3", "c-4", "c-5"]  # 5 required
+            required_critics=["c-1", "c-2", "c-3", "c-4", "c-5"],  # 5 required
         )
 
         # Add only 1 review (need at least 3 for consensus)
@@ -505,10 +494,7 @@ class TestReviewResult:
 
     def test_consensus_confidence_calculation(self):
         """Test consensus confidence is calculated correctly."""
-        result = ReviewResult(
-            decision_id="dec-confidence",
-            required_critics=["c-1", "c-2", "c-3"]
-        )
+        result = ReviewResult(decision_id="dec-confidence", required_critics=["c-1", "c-2", "c-3"])
 
         result.add_review(CriticReview(critic_id="c-1", verdict="approve", confidence=0.8))
         result.add_review(CriticReview(critic_id="c-2", verdict="approve", confidence=0.9))
@@ -520,15 +506,11 @@ class TestReviewResult:
     def test_review_result_to_dict(self):
         """Test review result to_dict serialization."""
         result = ReviewResult(
-            decision_id="dec-dict",
-            required_critics=["critic-1"],
-            review_types=["safety", "ethics"]
+            decision_id="dec-dict", required_critics=["critic-1"], review_types=["safety", "ethics"]
         )
-        result.add_review(CriticReview(
-            critic_id="critic-1",
-            verdict="approve",
-            reasoning="All checks passed"
-        ))
+        result.add_review(
+            CriticReview(critic_id="critic-1", verdict="approve", reasoning="All checks passed")
+        )
 
         d = result.to_dict()
         assert d["decision_id"] == "dec-dict"
@@ -551,6 +533,7 @@ class TestReviewResult:
 # ============================================================================
 # Module Export Tests
 # ============================================================================
+
 
 class TestModuleExports:
     """Test module exports."""

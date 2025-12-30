@@ -24,19 +24,17 @@ import logging
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
+from .vault_http_client import (
+    VaultHttpClient,
+)
+
 # Import from refactored modules
 from .vault_models import (
     CONSTITUTIONAL_HASH,
+    VaultAuditEntry,
     VaultConfig,
     VaultKeyType,
     VaultOperation,
-    VaultAuditEntry,
-)
-from .vault_http_client import (
-    VaultHttpClient,
-    HTTPX_AVAILABLE,
-    AIOHTTP_AVAILABLE,
-    HVAC_AVAILABLE,
 )
 
 # Backward compatibility: re-export httpx for test patching
@@ -44,14 +42,14 @@ try:
     import httpx
 except ImportError:
     httpx = None  # type: ignore
-from .vault_transit import VaultTransitOperations
-from .vault_kv import VaultKVOperations
-from .vault_audit import VaultAuditLogger
-from .vault_cache import VaultCacheManager
+from ..models import PolicySignature
 
 # Local fallback
 from .crypto_service import CryptoService
-from ..models import PolicySignature, KeyPair, KeyAlgorithm, KeyStatus
+from .vault_audit import VaultAuditLogger
+from .vault_cache import VaultCacheManager
+from .vault_kv import VaultKVOperations
+from .vault_transit import VaultTransitOperations
 
 logger = logging.getLogger(__name__)
 
@@ -152,13 +150,10 @@ class VaultCryptoService:
         if self._vault_available:
             # Initialize operation handlers
             self._transit = VaultTransitOperations(
-                self._http_client,
-                transit_mount=self.config.transit_mount
+                self._http_client, transit_mount=self.config.transit_mount
             )
             self._kv = VaultKVOperations(
-                self._http_client,
-                kv_mount=self.config.kv_mount,
-                kv_version=self.config.kv_version
+                self._http_client, kv_mount=self.config.kv_mount, kv_version=self.config.kv_version
             )
 
         result["fallback_available"] = self.fallback_enabled
@@ -395,9 +390,12 @@ class VaultCryptoService:
 
             elif self.fallback_enabled:
                 import secrets
+
                 nonce = secrets.token_bytes(12)
                 key_bytes = hashlib.sha256(key_name.encode()).digest()
-                encrypted = bytes(a ^ b for a, b in zip(plaintext, key_bytes * (len(plaintext) // 32 + 1)))
+                encrypted = bytes(
+                    a ^ b for a, b in zip(plaintext, key_bytes * (len(plaintext) // 32 + 1))
+                )
                 ciphertext = f"local:v1:{base64.b64encode(nonce + encrypted).decode()}"
                 logger.warning("Using insecure local encryption fallback - not for production")
 
@@ -450,7 +448,9 @@ class VaultCryptoService:
                 data = base64.b64decode(encoded)
                 nonce, encrypted = data[:12], data[12:]
                 key_bytes = hashlib.sha256(key_name.encode()).digest()
-                plaintext = bytes(a ^ b for a, b in zip(encrypted, key_bytes * (len(encrypted) // 32 + 1)))
+                plaintext = bytes(
+                    a ^ b for a, b in zip(encrypted, key_bytes * (len(encrypted) // 32 + 1))
+                )
                 logger.warning("Using insecure local decryption fallback - not for production")
 
             elif self._vault_available and self._transit:
@@ -598,8 +598,8 @@ class VaultCryptoService:
             "cache_stats": cache_stats,
             # Backward compatibility - total cache entries
             "cache_entries": (
-                cache_stats.get("public_keys", {}).get("entries", 0) +
-                cache_stats.get("key_info", {}).get("entries", 0)
+                cache_stats.get("public_keys", {}).get("entries", 0)
+                + cache_stats.get("key_info", {}).get("entries", 0)
             ),
             "audit_entries_count": self._audit_logger.entry_count,
             "timestamp": datetime.now(timezone.utc).isoformat(),
@@ -885,6 +885,7 @@ class VaultCryptoService:
 
 
 # Convenience functions
+
 
 async def create_vault_crypto_service(
     vault_addr: Optional[str] = None,

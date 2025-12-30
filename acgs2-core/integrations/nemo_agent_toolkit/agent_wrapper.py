@@ -17,9 +17,9 @@ from typing import TYPE_CHECKING, Any, Callable, Generic, TypeVar
 
 from nemo_agent_toolkit.constitutional_guardrails import (
     ConstitutionalGuardrails,
+    GuardrailAction,
     GuardrailConfig,
     GuardrailResult,
-    GuardrailAction,
 )
 
 if TYPE_CHECKING:
@@ -125,10 +125,7 @@ class ConstitutionalAgentWrapper(Generic[AgentT]):
         start_time = datetime.now(UTC)
 
         # Convert input to string for validation
-        input_str = (
-            input_data if isinstance(input_data, str)
-            else str(input_data)
-        )
+        input_str = input_data if isinstance(input_data, str) else str(input_data)
 
         # Validate input
         input_check = None
@@ -216,7 +213,9 @@ class ConstitutionalAgentWrapper(Generic[AgentT]):
 
         # CrewAI-style kickoff
         if hasattr(agent, "kickoff"):
-            result = agent.kickoff(inputs=input_data if isinstance(input_data, dict) else {"input": input_data})
+            result = agent.kickoff(
+                inputs=input_data if isinstance(input_data, dict) else {"input": input_data}
+            )
             if asyncio.iscoroutine(result):
                 result = await result
             return result
@@ -255,6 +254,7 @@ class ConstitutionalAgentWrapper(Generic[AgentT]):
             return
 
         import hashlib
+
         record = {
             "input_hash": hashlib.sha256(input_str.encode()).hexdigest()[:16],
             "output_hash": hashlib.sha256(output_str.encode()).hexdigest()[:16],
@@ -284,7 +284,8 @@ class ConstitutionalAgentWrapper(Generic[AgentT]):
             }
 
         successful = sum(
-            1 for e in self._execution_history
+            1
+            for e in self._execution_history
             if e.get("input_allowed", True) and e.get("output_allowed", True)
         )
         total_time = sum(e.get("execution_time_ms", 0) for e in self._execution_history)
@@ -294,8 +295,12 @@ class ConstitutionalAgentWrapper(Generic[AgentT]):
             "successful_executions": successful,
             "success_rate": successful / total,
             "average_execution_time_ms": total_time / total,
-            "input_violation_count": sum(e.get("input_violations", 0) for e in self._execution_history),
-            "output_violation_count": sum(e.get("output_violations", 0) for e in self._execution_history),
+            "input_violation_count": sum(
+                e.get("input_violations", 0) for e in self._execution_history
+            ),
+            "output_violation_count": sum(
+                e.get("output_violations", 0) for e in self._execution_history
+            ),
             "constitutional_hash": CONSTITUTIONAL_HASH,
         }
 
@@ -476,9 +481,7 @@ class NeMoAgentIntegration:
             guardrails: Constitutional guardrails instance
             acgs2_client: ACGS-2 SDK client
         """
-        self._guardrails = guardrails or ConstitutionalGuardrails(
-            acgs2_client=acgs2_client
-        )
+        self._guardrails = guardrails or ConstitutionalGuardrails(acgs2_client=acgs2_client)
         self._client = acgs2_client
 
     def create_input_hook(self) -> Callable[[str], str]:
@@ -488,6 +491,7 @@ class NeMoAgentIntegration:
         Returns:
             Hook function for input processing
         """
+
         async def hook(input_text: str) -> str:
             result = await self._guardrails.check_input(input_text)
             if not result.allowed:
@@ -503,6 +507,7 @@ class NeMoAgentIntegration:
         Returns:
             Hook function for output processing
         """
+
         async def hook(output_text: str) -> str:
             result = await self._guardrails.check_output(output_text)
             if result.modified_content:
@@ -520,6 +525,7 @@ class NeMoAgentIntegration:
         Returns:
             Callback function for profiler events
         """
+
         def callback(event: dict[str, Any]) -> None:
             logger.info(f"NeMo profiler event: {event}")
             # Add constitutional hash to events

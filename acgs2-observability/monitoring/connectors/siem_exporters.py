@@ -14,18 +14,16 @@ to enterprise security monitoring platforms.
 
 import asyncio
 import gzip
-import hashlib
 import json
 import logging
 import os
 import socket
-import ssl
 import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
 from urllib.parse import urljoin
 
 import aiohttp
@@ -36,6 +34,7 @@ CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
 
 class EventSeverity(Enum):
     """Standard severity levels for SIEM events."""
+
     DEBUG = "debug"
     INFO = "info"
     WARNING = "warning"
@@ -45,6 +44,7 @@ class EventSeverity(Enum):
 
 class EventCategory(Enum):
     """ACGS-2 event categories for SIEM classification."""
+
     GOVERNANCE_DECISION = "governance_decision"
     CONSTITUTIONAL_VALIDATION = "constitutional_validation"
     POLICY_CHANGE = "policy_change"
@@ -63,6 +63,7 @@ class GovernanceEvent:
 
     Follows OCSF (Open Cybersecurity Schema Framework) compatible structure.
     """
+
     # Required fields
     event_id: str
     timestamp: datetime
@@ -113,7 +114,7 @@ class GovernanceEvent:
             "trace_id": self.trace_id,
             "span_id": self.span_id,
             "parent_span_id": self.parent_span_id,
-            "metadata": self.metadata
+            "metadata": self.metadata,
         }
 
     def to_splunk_event(self) -> Dict[str, Any]:
@@ -124,24 +125,26 @@ class GovernanceEvent:
             "source": "acgs2",
             "sourcetype": f"acgs2:{self.category.value}",
             "index": "acgs2_governance",
-            "event": self.to_dict()
+            "event": self.to_dict(),
         }
 
     def to_datadog_log(self) -> Dict[str, Any]:
         """Convert to Datadog log format."""
         return {
             "ddsource": "acgs2",
-            "ddtags": ",".join([
-                f"category:{self.category.value}",
-                f"tenant:{self.tenant_id or 'default'}",
-                f"constitutional_hash:{self.constitutional_hash}",
-                *[f"compliance:{tag}" for tag in self.compliance_tags]
-            ]),
+            "ddtags": ",".join(
+                [
+                    f"category:{self.category.value}",
+                    f"tenant:{self.tenant_id or 'default'}",
+                    f"constitutional_hash:{self.constitutional_hash}",
+                    *[f"compliance:{tag}" for tag in self.compliance_tags],
+                ]
+            ),
             "hostname": socket.gethostname(),
             "service": "acgs2-governance",
             "status": self.severity.value,
             "message": self.message,
-            **self.to_dict()
+            **self.to_dict(),
         }
 
     def to_elastic_document(self) -> Dict[str, Any]:
@@ -152,7 +155,7 @@ class GovernanceEvent:
         doc["ecs"] = {"version": "8.0.0"}
         doc["labels"] = {
             "constitutional_hash": self.constitutional_hash,
-            "category": self.category.value
+            "category": self.category.value,
         }
         return doc
 
@@ -174,7 +177,7 @@ class SIEMExporter(ABC):
             "events_failed": 0,
             "batches_sent": 0,
             "bytes_sent": 0,
-            "last_send_time": None
+            "last_send_time": None,
         }
 
     @abstractmethod
@@ -256,7 +259,7 @@ class SIEMExporter(ABC):
         return {
             **self._stats,
             "buffer_size": len(self._buffer),
-            "constitutional_hash": CONSTITUTIONAL_HASH
+            "constitutional_hash": CONSTITUTIONAL_HASH,
         }
 
 
@@ -276,14 +279,12 @@ class SplunkHECExporter(SIEMExporter):
         verify_ssl: bool = True,
         batch_size: int = 100,
         flush_interval: float = 5.0,
-        compress: bool = True
+        compress: bool = True,
     ):
         super().__init__(batch_size, flush_interval)
 
         self.hec_url = (
-            hec_url or
-            os.environ.get("SPLUNK_HEC_URL") or
-            "https://splunk.example.com:8088"
+            hec_url or os.environ.get("SPLUNK_HEC_URL") or "https://splunk.example.com:8088"
         )
         self.hec_token = hec_token or os.environ.get("SPLUNK_HEC_TOKEN")
         self.index = index
@@ -298,8 +299,7 @@ class SplunkHECExporter(SIEMExporter):
         if not self._session:
             connector = aiohttp.TCPConnector(ssl=self.verify_ssl)
             self._session = aiohttp.ClientSession(
-                connector=connector,
-                timeout=aiohttp.ClientTimeout(total=30)
+                connector=connector, timeout=aiohttp.ClientTimeout(total=30)
             )
 
     async def close(self):
@@ -326,16 +326,13 @@ class SplunkHECExporter(SIEMExporter):
                 "source": self.source,
                 "sourcetype": f"acgs2:{event.category.value}",
                 "index": self.index,
-                "event": event.to_dict()
+                "event": event.to_dict(),
             }
             hec_events.append(json.dumps(hec_event))
 
         payload = "\n".join(hec_events)
 
-        headers = {
-            "Authorization": f"Splunk {self.hec_token}",
-            "Content-Type": "application/json"
-        }
+        headers = {"Authorization": f"Splunk {self.hec_token}", "Content-Type": "application/json"}
 
         if self.compress:
             payload = gzip.compress(payload.encode())
@@ -373,10 +370,7 @@ class SplunkHECExporter(SIEMExporter):
             return False
 
     async def query_events(
-        self,
-        search_query: str,
-        earliest: str = "-1h",
-        latest: str = "now"
+        self, search_query: str, earliest: str = "-1h", latest: str = "now"
     ) -> List[Dict[str, Any]]:
         """
         Query events from Splunk (requires REST API access).
@@ -403,7 +397,7 @@ class DatadogExporter(SIEMExporter):
         env: str = "production",
         batch_size: int = 100,
         flush_interval: float = 5.0,
-        compress: bool = True
+        compress: bool = True,
     ):
         super().__init__(batch_size, flush_interval)
 
@@ -419,9 +413,7 @@ class DatadogExporter(SIEMExporter):
     async def initialize(self):
         """Initialize HTTP session."""
         if not self._session:
-            self._session = aiohttp.ClientSession(
-                timeout=aiohttp.ClientTimeout(total=30)
-            )
+            self._session = aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=30))
 
     async def close(self):
         """Close HTTP session."""
@@ -443,30 +435,29 @@ class DatadogExporter(SIEMExporter):
         for event in events:
             dd_log = {
                 "ddsource": "acgs2",
-                "ddtags": ",".join([
-                    f"env:{self.env}",
-                    f"service:{self.service}",
-                    f"category:{event.category.value}",
-                    f"tenant:{event.tenant_id or 'default'}",
-                    f"constitutional_hash:{event.constitutional_hash}",
-                    *[f"compliance:{tag}" for tag in event.compliance_tags]
-                ]),
+                "ddtags": ",".join(
+                    [
+                        f"env:{self.env}",
+                        f"service:{self.service}",
+                        f"category:{event.category.value}",
+                        f"tenant:{event.tenant_id or 'default'}",
+                        f"constitutional_hash:{event.constitutional_hash}",
+                        *[f"compliance:{tag}" for tag in event.compliance_tags],
+                    ]
+                ),
                 "hostname": socket.gethostname(),
                 "service": self.service,
                 "status": event.severity.value,
                 "message": event.message,
                 "event_id": event.event_id,
                 "timestamp": int(event.timestamp.timestamp() * 1000),
-                **event.to_dict()
+                **event.to_dict(),
             }
             dd_logs.append(dd_log)
 
         payload = json.dumps(dd_logs)
 
-        headers = {
-            "DD-API-KEY": self.api_key,
-            "Content-Type": "application/json"
-        }
+        headers = {"DD-API-KEY": self.api_key, "Content-Type": "application/json"}
 
         if self.compress:
             payload = gzip.compress(payload.encode())
@@ -475,11 +466,7 @@ class DatadogExporter(SIEMExporter):
             payload = payload.encode()
 
         try:
-            async with self._session.post(
-                self.logs_url,
-                data=payload,
-                headers=headers
-            ) as resp:
+            async with self._session.post(self.logs_url, data=payload, headers=headers) as resp:
                 if resp.status in (200, 202):
                     self._stats["bytes_sent"] += len(payload)
                     logger.debug(f"Sent {len(events)} events to Datadog")
@@ -511,7 +498,7 @@ class DatadogExporter(SIEMExporter):
         metric_name: str,
         value: float,
         tags: Optional[List[str]] = None,
-        metric_type: str = "gauge"
+        metric_type: str = "gauge",
     ):
         """Send a custom metric to Datadog."""
         if not self._session:
@@ -521,31 +508,26 @@ class DatadogExporter(SIEMExporter):
             return
 
         metric_data = {
-            "series": [{
-                "metric": f"acgs2.{metric_name}",
-                "points": [[int(time.time()), value]],
-                "type": metric_type,
-                "host": socket.gethostname(),
-                "tags": [
-                    f"env:{self.env}",
-                    f"service:{self.service}",
-                    f"constitutional_hash:{CONSTITUTIONAL_HASH}",
-                    *(tags or [])
-                ]
-            }]
+            "series": [
+                {
+                    "metric": f"acgs2.{metric_name}",
+                    "points": [[int(time.time()), value]],
+                    "type": metric_type,
+                    "host": socket.gethostname(),
+                    "tags": [
+                        f"env:{self.env}",
+                        f"service:{self.service}",
+                        f"constitutional_hash:{CONSTITUTIONAL_HASH}",
+                        *(tags or []),
+                    ],
+                }
+            ]
         }
 
         try:
             url = f"https://api.{self.site}/api/v1/series"
-            headers = {
-                "DD-API-KEY": self.api_key,
-                "Content-Type": "application/json"
-            }
-            async with self._session.post(
-                url,
-                json=metric_data,
-                headers=headers
-            ) as resp:
+            headers = {"DD-API-KEY": self.api_key, "Content-Type": "application/json"}
+            async with self._session.post(url, json=metric_data, headers=headers) as resp:
                 if resp.status != 202:
                     logger.warning(f"Datadog metric send failed: {resp.status}")
         except Exception as e:
@@ -568,13 +550,11 @@ class ElasticsearchExporter(SIEMExporter):
         password: Optional[str] = None,
         verify_ssl: bool = True,
         batch_size: int = 100,
-        flush_interval: float = 5.0
+        flush_interval: float = 5.0,
     ):
         super().__init__(batch_size, flush_interval)
 
-        self.hosts = hosts or [
-            os.environ.get("ELASTICSEARCH_URL", "https://localhost:9200")
-        ]
+        self.hosts = hosts or [os.environ.get("ELASTICSEARCH_URL", "https://localhost:9200")]
         self.index_prefix = index_prefix
         self.api_key = api_key or os.environ.get("ELASTICSEARCH_API_KEY")
         self.username = username or os.environ.get("ELASTICSEARCH_USERNAME")
@@ -592,9 +572,7 @@ class ElasticsearchExporter(SIEMExporter):
 
             connector = aiohttp.TCPConnector(ssl=self.verify_ssl)
             self._session = aiohttp.ClientSession(
-                connector=connector,
-                auth=auth,
-                timeout=aiohttp.ClientTimeout(total=30)
+                connector=connector, auth=auth, timeout=aiohttp.ClientTimeout(total=30)
             )
 
     async def close(self):
@@ -619,12 +597,7 @@ class ElasticsearchExporter(SIEMExporter):
         bulk_body = []
         for event in events:
             # Action line
-            bulk_body.append(json.dumps({
-                "index": {
-                    "_index": index_name,
-                    "_id": event.event_id
-                }
-            }))
+            bulk_body.append(json.dumps({"index": {"_index": index_name, "_id": event.event_id}}))
             # Document line
             bulk_body.append(json.dumps(event.to_elastic_document()))
 
@@ -636,11 +609,7 @@ class ElasticsearchExporter(SIEMExporter):
 
         try:
             url = f"{self.hosts[0]}/_bulk"
-            async with self._session.post(
-                url,
-                data=payload.encode(),
-                headers=headers
-            ) as resp:
+            async with self._session.post(url, data=payload.encode(), headers=headers) as resp:
                 if resp.status == 200:
                     result = await resp.json()
                     if not result.get("errors", True):
@@ -669,8 +638,7 @@ class ElasticsearchExporter(SIEMExporter):
                 headers["Authorization"] = f"ApiKey {self.api_key}"
 
             async with self._session.get(
-                f"{self.hosts[0]}/_cluster/health",
-                headers=headers
+                f"{self.hosts[0]}/_cluster/health", headers=headers
             ) as resp:
                 if resp.status == 200:
                     health = await resp.json()
@@ -690,12 +658,7 @@ class SIEMExporterManager:
         self._exporters: Dict[str, SIEMExporter] = {}
         self._primary_exporter: Optional[str] = None
 
-    def register_exporter(
-        self,
-        name: str,
-        exporter: SIEMExporter,
-        is_primary: bool = False
-    ):
+    def register_exporter(self, name: str, exporter: SIEMExporter, is_primary: bool = False):
         """Register a SIEM exporter."""
         self._exporters[name] = exporter
         if is_primary or self._primary_exporter is None:
@@ -706,21 +669,17 @@ class SIEMExporterManager:
         """Start all registered exporters."""
         for name, exporter in self._exporters.items():
             await exporter.start()
-            if hasattr(exporter, 'initialize'):
+            if hasattr(exporter, "initialize"):
                 await exporter.initialize()
 
     async def stop_all(self):
         """Stop all registered exporters."""
         for name, exporter in self._exporters.items():
             await exporter.stop()
-            if hasattr(exporter, 'close'):
+            if hasattr(exporter, "close"):
                 await exporter.close()
 
-    async def export(
-        self,
-        event: GovernanceEvent,
-        exporters: Optional[List[str]] = None
-    ):
+    async def export(self, event: GovernanceEvent, exporters: Optional[List[str]] = None):
         """
         Export event to specified exporters (or all if not specified).
         """
@@ -747,10 +706,7 @@ class SIEMExporterManager:
 
     def get_all_stats(self) -> Dict[str, Dict[str, Any]]:
         """Get statistics from all exporters."""
-        return {
-            name: exporter.get_stats()
-            for name, exporter in self._exporters.items()
-        }
+        return {name: exporter.get_stats() for name, exporter in self._exporters.items()}
 
 
 # Convenience singleton
@@ -763,9 +719,7 @@ def get_siem_manager() -> Optional[SIEMExporterManager]:
 
 
 async def initialize_siem_exporters(
-    enable_splunk: bool = True,
-    enable_datadog: bool = True,
-    enable_elasticsearch: bool = False
+    enable_splunk: bool = True, enable_datadog: bool = True, enable_elasticsearch: bool = False
 ) -> SIEMExporterManager:
     """Initialize SIEM exporters based on configuration."""
     global _siem_manager
@@ -808,5 +762,5 @@ __all__ = [
     "SIEMExporterManager",
     "get_siem_manager",
     "initialize_siem_exporters",
-    "shutdown_siem_exporters"
+    "shutdown_siem_exporters",
 ]

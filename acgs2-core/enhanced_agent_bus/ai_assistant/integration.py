@@ -6,15 +6,14 @@ Integration layer between AI Assistant and the Enhanced Agent Bus.
 Handles constitutional validation, message routing, and governance.
 """
 
-import asyncio
 import logging
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any, Callable, Dict, List, Optional
 
-from .context import ConversationContext, ConversationState
+from .context import ConversationContext
+from .dialog import ActionType, DialogAction
 from .nlu import NLUResult
-from .dialog import DialogAction, ActionType
 
 # Import centralized constitutional hash with fallback
 try:
@@ -24,12 +23,13 @@ except ImportError:
 
 # Import from parent package with fallback
 try:
-    from ..models import AgentMessage, MessageType, Priority
-    from ..validators import ValidationResult, validate_constitutional_hash
     from ..exceptions import (
         ConstitutionalValidationError,
         MessageValidationError,
     )
+    from ..models import AgentMessage, MessageType, Priority
+    from ..validators import ValidationResult, validate_constitutional_hash
+
     AGENT_BUS_AVAILABLE = True
 except ImportError:
     AGENT_BUS_AVAILABLE = False
@@ -44,6 +44,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class IntegrationConfig:
     """Configuration for Agent Bus integration."""
+
     agent_id: str = "ai_assistant"
     tenant_id: Optional[str] = None
     enable_governance: bool = True
@@ -69,6 +70,7 @@ class IntegrationConfig:
 @dataclass
 class GovernanceDecision:
     """Result of governance evaluation."""
+
     is_allowed: bool
     requires_review: bool
     impact_score: float
@@ -115,7 +117,8 @@ class AgentBusIntegration:
         return [
             {
                 "id": "high_impact_action",
-                "condition": lambda action: action.action_type in [
+                "condition": lambda action: action.action_type
+                in [
                     ActionType.EXECUTE_TASK,
                     ActionType.ESCALATE,
                 ],
@@ -302,7 +305,7 @@ class AgentBusIntegration:
         }
 
         # Send to audit service if bus available
-        if self.agent_bus and hasattr(self.agent_bus, 'audit'):
+        if self.agent_bus and hasattr(self.agent_bus, "audit"):
             try:
                 await self.agent_bus.audit(audit_entry)
             except Exception as e:
@@ -516,7 +519,7 @@ class AgentBusIntegration:
         }
 
         # Send to metering service if available
-        if self.agent_bus and hasattr(self.agent_bus, 'meter'):
+        if self.agent_bus and hasattr(self.agent_bus, "meter"):
             try:
                 await self.agent_bus.meter(meter_event)
             except Exception as e:
@@ -540,15 +543,15 @@ class AgentBusIntegration:
         impact_score: float = 0.5,
     ) -> None:
         """Add a custom governance rule."""
-        self._governance_rules.append({
-            "id": rule_id,
-            "condition": condition,
-            "requires_review": requires_review,
-            "impact_score": impact_score,
-        })
+        self._governance_rules.append(
+            {
+                "id": rule_id,
+                "condition": condition,
+                "requires_review": requires_review,
+                "impact_score": impact_score,
+            }
+        )
 
     def remove_governance_rule(self, rule_id: str) -> None:
         """Remove a governance rule."""
-        self._governance_rules = [
-            r for r in self._governance_rules if r["id"] != rule_id
-        ]
+        self._governance_rules = [r for r in self._governance_rules if r["id"] != rule_id]

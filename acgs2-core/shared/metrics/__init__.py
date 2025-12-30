@@ -5,20 +5,21 @@ Constitutional Hash: cdd01ef066bc6cf2
 This module provides standardized Prometheus metrics for all ACGS-2 services.
 """
 
-from prometheus_client import (
-    Counter,
-    Histogram,
-    Gauge,
-    Info,
-    generate_latest,
-    CONTENT_TYPE_LATEST,
-    REGISTRY,
-)
 import asyncio
 import time
-from functools import wraps
-from typing import Callable, Optional, Dict, Any
 from datetime import datetime, timezone
+from functools import wraps
+from typing import Any, Callable, Dict, Optional
+
+from prometheus_client import (
+    CONTENT_TYPE_LATEST,
+    REGISTRY,
+    Counter,
+    Gauge,
+    Histogram,
+    Info,
+    generate_latest,
+)
 
 # Constitutional Hash for governance validation
 CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
@@ -41,7 +42,7 @@ def _find_existing_metric(name: str):
 
         # Also check for metric objects by their _name attribute
         for collector in REGISTRY._names_to_collectors.values():
-            if hasattr(collector, '_name') and collector._name == name:
+            if hasattr(collector, "_name") and collector._name == name:
                 return collector
     except Exception:
         pass
@@ -60,9 +61,9 @@ def _get_or_create_histogram(name: str, description: str, labels: list, buckets:
         _METRICS_CACHE[name] = existing
         return existing
 
-    kwargs = {'labelnames': labels}
+    kwargs = {"labelnames": labels}
     if buckets:
-        kwargs['buckets'] = buckets
+        kwargs["buckets"] = buckets
 
     try:
         metric = Histogram(name, description, **kwargs)
@@ -157,22 +158,20 @@ def _get_or_create_info(name: str, description: str):
 # ============================================================================
 
 HTTP_REQUEST_DURATION = _get_or_create_histogram(
-    'http_request_duration_seconds',
-    'HTTP request latency in seconds',
-    ['method', 'endpoint', 'service'],
-    buckets=[.005, .01, .025, .05, .075, .1, .25, .5, .75, 1.0, 2.5, 5.0, 7.5, 10.0]
+    "http_request_duration_seconds",
+    "HTTP request latency in seconds",
+    ["method", "endpoint", "service"],
+    buckets=[0.005, 0.01, 0.025, 0.05, 0.075, 0.1, 0.25, 0.5, 0.75, 1.0, 2.5, 5.0, 7.5, 10.0],
 )
 
 HTTP_REQUESTS_TOTAL = _get_or_create_counter(
-    'http_requests_total',
-    'Total HTTP requests',
-    ['method', 'endpoint', 'service', 'status']
+    "http_requests_total", "Total HTTP requests", ["method", "endpoint", "service", "status"]
 )
 
 HTTP_REQUESTS_IN_PROGRESS = _get_or_create_gauge(
-    'http_requests_in_progress',
-    'Number of HTTP requests currently being processed',
-    ['method', 'endpoint', 'service']
+    "http_requests_in_progress",
+    "Number of HTTP requests currently being processed",
+    ["method", "endpoint", "service"],
 )
 
 # ============================================================================
@@ -180,22 +179,22 @@ HTTP_REQUESTS_IN_PROGRESS = _get_or_create_gauge(
 # ============================================================================
 
 CONSTITUTIONAL_VALIDATIONS_TOTAL = _get_or_create_counter(
-    'constitutional_validations_total',
-    'Total constitutional validation checks',
-    ['service', 'result']
+    "constitutional_validations_total",
+    "Total constitutional validation checks",
+    ["service", "result"],
 )
 
 CONSTITUTIONAL_VIOLATIONS_TOTAL = _get_or_create_counter(
-    'constitutional_violations_total',
-    'Total constitutional violations detected',
-    ['service', 'violation_type']
+    "constitutional_violations_total",
+    "Total constitutional violations detected",
+    ["service", "violation_type"],
 )
 
 CONSTITUTIONAL_VALIDATION_DURATION = _get_or_create_histogram(
-    'constitutional_validation_duration_seconds',
-    'Time spent on constitutional validation',
-    ['service'],
-    buckets=[.001, .005, .01, .025, .05, .1, .25, .5, 1.0]
+    "constitutional_validation_duration_seconds",
+    "Time spent on constitutional validation",
+    ["service"],
+    buckets=[0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0],
 )
 
 # ============================================================================
@@ -203,22 +202,18 @@ CONSTITUTIONAL_VALIDATION_DURATION = _get_or_create_histogram(
 # ============================================================================
 
 MESSAGE_PROCESSING_DURATION = _get_or_create_histogram(
-    'message_processing_duration_seconds',
-    'Message processing time in seconds',
-    ['message_type', 'priority'],
-    buckets=[.001, .005, .01, .025, .05, .1, .25, .5, 1.0, 2.5, 5.0]
+    "message_processing_duration_seconds",
+    "Message processing time in seconds",
+    ["message_type", "priority"],
+    buckets=[0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0],
 )
 
 MESSAGES_TOTAL = _get_or_create_counter(
-    'messages_total',
-    'Total messages processed',
-    ['message_type', 'priority', 'status']
+    "messages_total", "Total messages processed", ["message_type", "priority", "status"]
 )
 
 MESSAGE_QUEUE_DEPTH = _get_or_create_gauge(
-    'message_queue_depth',
-    'Current depth of message queue',
-    ['queue_name', 'priority']
+    "message_queue_depth", "Current depth of message queue", ["queue_name", "priority"]
 )
 
 # ============================================================================
@@ -226,65 +221,51 @@ MESSAGE_QUEUE_DEPTH = _get_or_create_gauge(
 # ============================================================================
 
 CACHE_HITS_TOTAL = _get_or_create_counter(
-    'cache_hits_total',
-    'Total cache hits',
-    ['cache_name', 'operation']
+    "cache_hits_total", "Total cache hits", ["cache_name", "operation"]
 )
 
 CACHE_MISSES_TOTAL = _get_or_create_counter(
-    'cache_misses_total',
-    'Total cache misses',
-    ['cache_name', 'operation']
+    "cache_misses_total", "Total cache misses", ["cache_name", "operation"]
 )
 
-CACHE_SIZE = _get_or_create_gauge(
-    'cache_size_bytes',
-    'Current cache size in bytes',
-    ['cache_name']
-)
+CACHE_SIZE = _get_or_create_gauge("cache_size_bytes", "Current cache size in bytes", ["cache_name"])
 
 # ============================================================================
 # Workflow Metrics
 # ============================================================================
 
 WORKFLOW_EXECUTION_DURATION = _get_or_create_histogram(
-    'workflow_execution_duration_seconds',
-    'Time spent executing a workflow',
-    ['workflow_name', 'status'],
-    buckets=[.01, .05, .1, .25, .5, 1.0, 2.5, 5.0, 10.0, 30.0, 60.0, 300.0]
+    "workflow_execution_duration_seconds",
+    "Time spent executing a workflow",
+    ["workflow_name", "status"],
+    buckets=[0.01, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0, 30.0, 60.0, 300.0],
 )
 
 WORKFLOW_EXECUTIONS_TOTAL = _get_or_create_counter(
-    'workflow_executions_total',
-    'Total workflow executions',
-    ['workflow_name', 'status']
+    "workflow_executions_total", "Total workflow executions", ["workflow_name", "status"]
 )
 
 WORKFLOW_STEP_DURATION = _get_or_create_histogram(
-    'workflow_step_duration_seconds',
-    'Time spent executing a workflow step',
-    ['workflow_name', 'step_name', 'status'],
-    buckets=[.001, .005, .01, .025, .05, .1, .25, .5, 1.0, 2.5, 5.0]
+    "workflow_step_duration_seconds",
+    "Time spent executing a workflow step",
+    ["workflow_name", "step_name", "status"],
+    buckets=[0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0],
 )
 
 WORKFLOW_STEP_RETRIES_TOTAL = _get_or_create_counter(
-    'workflow_step_retries_total',
-    'Total workflow step retries',
-    ['workflow_name', 'step_name']
+    "workflow_step_retries_total", "Total workflow step retries", ["workflow_name", "step_name"]
 )
 
 # ============================================================================
 # Service Info
 # ============================================================================
 
-SERVICE_INFO = _get_or_create_info(
-    'acgs2_service',
-    'ACGS-2 service information'
-)
+SERVICE_INFO = _get_or_create_info("acgs2_service", "ACGS-2 service information")
 
 # ============================================================================
 # Decorators for Easy Instrumentation
 # ============================================================================
+
 
 def _fire_and_forget_metric(metric_fn: Callable, *args, **kwargs):
     """Execute a metric update without blocking the main event loop."""
@@ -311,6 +292,7 @@ def track_request_metrics(service: str, endpoint: str):
         async def validate_endpoint(request):
             ...
     """
+
     def decorator(func: Callable):
         # Pre-bind labels that don't change for this decorator instance
         # method is dynamic, so we can't fully pre-bind everything here easily
@@ -318,7 +300,7 @@ def track_request_metrics(service: str, endpoint: str):
 
         @wraps(func)
         async def async_wrapper(*args, **kwargs):
-            method = kwargs.get('method', 'GET')
+            method = kwargs.get("method", "GET")
 
             # Fire-and-forget increment
             _fire_and_forget_metric(
@@ -328,12 +310,12 @@ def track_request_metrics(service: str, endpoint: str):
             )
 
             start_time = time.perf_counter()
-            status = '200'
+            status = "200"
             try:
                 result = await func(*args, **kwargs)
                 return result
             except Exception:
-                status = '500'
+                status = "500"
                 raise
             finally:
                 duration = time.perf_counter() - start_time
@@ -342,7 +324,7 @@ def track_request_metrics(service: str, endpoint: str):
                     HTTP_REQUEST_DURATION.labels(
                         method=method, endpoint=endpoint, service=service
                     ).observe,
-                    duration
+                    duration,
                 )
                 _fire_and_forget_metric(
                     HTTP_REQUESTS_TOTAL.labels(
@@ -357,7 +339,7 @@ def track_request_metrics(service: str, endpoint: str):
 
         @wraps(func)
         def sync_wrapper(*args, **kwargs):
-            method = kwargs.get('method', 'GET')
+            method = kwargs.get("method", "GET")
 
             # Fire-and-forget increment (sync version)
             _fire_and_forget_metric(
@@ -367,12 +349,12 @@ def track_request_metrics(service: str, endpoint: str):
             )
 
             start_time = time.perf_counter()
-            status = '200'
+            status = "200"
             try:
                 result = func(*args, **kwargs)
                 return result
             except Exception:
-                status = '500'
+                status = "500"
                 raise
             finally:
                 duration = time.perf_counter() - start_time
@@ -380,7 +362,7 @@ def track_request_metrics(service: str, endpoint: str):
                     HTTP_REQUEST_DURATION.labels(
                         method=method, endpoint=endpoint, service=service
                     ).observe,
-                    duration
+                    duration,
                 )
                 _fire_and_forget_metric(
                     HTTP_REQUESTS_TOTAL.labels(
@@ -394,9 +376,11 @@ def track_request_metrics(service: str, endpoint: str):
                 )
 
         import asyncio
+
         if asyncio.iscoroutinefunction(func):
             return async_wrapper
         return sync_wrapper
+
     return decorator
 
 
@@ -404,6 +388,7 @@ def track_constitutional_validation(service: str):
     """
     Decorator to track constitutional validation metrics.
     """
+
     def decorator(func: Callable):
         @wraps(func)
         def wrapper(*args, **kwargs):
@@ -411,16 +396,12 @@ def track_constitutional_validation(service: str):
             try:
                 result = func(*args, **kwargs)
                 _fire_and_forget_metric(
-                    CONSTITUTIONAL_VALIDATIONS_TOTAL.labels(
-                        service=service, result='success'
-                    ).inc
+                    CONSTITUTIONAL_VALIDATIONS_TOTAL.labels(service=service, result="success").inc
                 )
                 return result
             except Exception as e:
                 _fire_and_forget_metric(
-                    CONSTITUTIONAL_VALIDATIONS_TOTAL.labels(
-                        service=service, result='failure'
-                    ).inc
+                    CONSTITUTIONAL_VALIDATIONS_TOTAL.labels(service=service, result="failure").inc
                 )
                 _fire_and_forget_metric(
                     CONSTITUTIONAL_VIOLATIONS_TOTAL.labels(
@@ -431,29 +412,29 @@ def track_constitutional_validation(service: str):
             finally:
                 duration = time.perf_counter() - start_time
                 _fire_and_forget_metric(
-                    CONSTITUTIONAL_VALIDATION_DURATION.labels(
-                        service=service
-                    ).observe,
-                    duration
+                    CONSTITUTIONAL_VALIDATION_DURATION.labels(service=service).observe, duration
                 )
+
         return wrapper
+
     return decorator
 
 
-def track_message_processing(message_type: str, priority: str = 'normal'):
+def track_message_processing(message_type: str, priority: str = "normal"):
     """
     Decorator to track message processing metrics.
     """
+
     def decorator(func: Callable):
         @wraps(func)
         async def async_wrapper(*args, **kwargs):
             start_time = time.perf_counter()
-            status = 'success'
+            status = "success"
             try:
                 result = await func(*args, **kwargs)
                 return result
             except Exception:
-                status = 'error'
+                status = "error"
                 raise
             finally:
                 duration = time.perf_counter() - start_time
@@ -461,7 +442,7 @@ def track_message_processing(message_type: str, priority: str = 'normal'):
                     MESSAGE_PROCESSING_DURATION.labels(
                         message_type=message_type, priority=priority
                     ).observe,
-                    duration
+                    duration,
                 )
                 _fire_and_forget_metric(
                     MESSAGES_TOTAL.labels(
@@ -472,12 +453,12 @@ def track_message_processing(message_type: str, priority: str = 'normal'):
         @wraps(func)
         def sync_wrapper(*args, **kwargs):
             start_time = time.perf_counter()
-            status = 'success'
+            status = "success"
             try:
                 result = func(*args, **kwargs)
                 return result
             except Exception:
-                status = 'error'
+                status = "error"
                 raise
             finally:
                 duration = time.perf_counter() - start_time
@@ -485,7 +466,7 @@ def track_message_processing(message_type: str, priority: str = 'normal'):
                     MESSAGE_PROCESSING_DURATION.labels(
                         message_type=message_type, priority=priority
                     ).observe,
-                    duration
+                    duration,
                 )
                 _fire_and_forget_metric(
                     MESSAGES_TOTAL.labels(
@@ -494,15 +475,18 @@ def track_message_processing(message_type: str, priority: str = 'normal'):
                 )
 
         import asyncio
+
         if asyncio.iscoroutinefunction(func):
             return async_wrapper
         return sync_wrapper
+
     return decorator
 
 
 # ============================================================================
 # Metrics Endpoint Helper
 # ============================================================================
+
 
 def get_metrics() -> bytes:
     """Generate Prometheus metrics output."""
@@ -515,22 +499,23 @@ def get_metrics_content_type() -> str:
 
 
 def set_service_info(
-    service_name: str,
-    version: str,
-    constitutional_hash: str = CONSTITUTIONAL_HASH
+    service_name: str, version: str, constitutional_hash: str = CONSTITUTIONAL_HASH
 ):
     """Set service information metrics."""
-    SERVICE_INFO.info({
-        'service_name': service_name,
-        'version': version,
-        'constitutional_hash': constitutional_hash,
-        'start_time': datetime.now(timezone.utc).isoformat()
-    })
+    SERVICE_INFO.info(
+        {
+            "service_name": service_name,
+            "version": version,
+            "constitutional_hash": constitutional_hash,
+            "start_time": datetime.now(timezone.utc).isoformat(),
+        }
+    )
 
 
 # ============================================================================
 # FastAPI Integration
 # ============================================================================
+
 
 def create_metrics_endpoint():
     """
@@ -546,42 +531,39 @@ def create_metrics_endpoint():
     from fastapi import Response
 
     async def metrics_endpoint():
-        return Response(
-            content=get_metrics(),
-            media_type=get_metrics_content_type()
-        )
+        return Response(content=get_metrics(), media_type=get_metrics_content_type())
 
     return metrics_endpoint
 
 
 __all__ = [
     # Constants
-    'CONSTITUTIONAL_HASH',
+    "CONSTITUTIONAL_HASH",
     # Metrics
-    'HTTP_REQUEST_DURATION',
-    'HTTP_REQUESTS_TOTAL',
-    'HTTP_REQUESTS_IN_PROGRESS',
-    'CONSTITUTIONAL_VALIDATIONS_TOTAL',
-    'CONSTITUTIONAL_VIOLATIONS_TOTAL',
-    'CONSTITUTIONAL_VALIDATION_DURATION',
-    'MESSAGE_PROCESSING_DURATION',
-    'MESSAGES_TOTAL',
-    'MESSAGE_QUEUE_DEPTH',
-    'CACHE_HITS_TOTAL',
-    'CACHE_MISSES_TOTAL',
-    'CACHE_SIZE',
-    'SERVICE_INFO',
-    'WORKFLOW_EXECUTION_DURATION',
-    'WORKFLOW_EXECUTIONS_TOTAL',
-    'WORKFLOW_STEP_DURATION',
-    'WORKFLOW_STEP_RETRIES_TOTAL',
+    "HTTP_REQUEST_DURATION",
+    "HTTP_REQUESTS_TOTAL",
+    "HTTP_REQUESTS_IN_PROGRESS",
+    "CONSTITUTIONAL_VALIDATIONS_TOTAL",
+    "CONSTITUTIONAL_VIOLATIONS_TOTAL",
+    "CONSTITUTIONAL_VALIDATION_DURATION",
+    "MESSAGE_PROCESSING_DURATION",
+    "MESSAGES_TOTAL",
+    "MESSAGE_QUEUE_DEPTH",
+    "CACHE_HITS_TOTAL",
+    "CACHE_MISSES_TOTAL",
+    "CACHE_SIZE",
+    "SERVICE_INFO",
+    "WORKFLOW_EXECUTION_DURATION",
+    "WORKFLOW_EXECUTIONS_TOTAL",
+    "WORKFLOW_STEP_DURATION",
+    "WORKFLOW_STEP_RETRIES_TOTAL",
     # Decorators
-    'track_request_metrics',
-    'track_constitutional_validation',
-    'track_message_processing',
+    "track_request_metrics",
+    "track_constitutional_validation",
+    "track_message_processing",
     # Helpers
-    'get_metrics',
-    'get_metrics_content_type',
-    'set_service_info',
-    'create_metrics_endpoint',
+    "get_metrics",
+    "get_metrics_content_type",
+    "set_service_info",
+    "create_metrics_endpoint",
 ]

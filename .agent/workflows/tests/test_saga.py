@@ -3,16 +3,17 @@ Tests for Saga Implementation
 Constitutional Hash: cdd01ef066bc6cf2
 """
 
-import pytest
 import asyncio
-from typing import Any, Dict, List
+from typing import Any, Dict
 
+import pytest
+
+from ..base.activities import DefaultActivities
 from ..base.context import WorkflowContext
-from ..sagas.base_saga import BaseSaga, SagaStep, SagaResult, SagaStatus
+from ..sagas.base_saga import BaseSaga, SagaResult, SagaStatus, SagaStep
 from ..sagas.distributed_tx import DistributedTransactionSaga
 from ..sagas.policy_update import PolicyUpdateSaga
 from ..sagas.registration import AgentRegistrationSaga
-from ..base.activities import DefaultActivities
 
 try:
     from shared.constants import CONSTITUTIONAL_HASH
@@ -25,6 +26,7 @@ class TestSagaStep:
 
     def test_step_creation(self):
         """Test step creation with defaults."""
+
         async def execute(input: Dict[str, Any]) -> str:
             return "done"
 
@@ -41,6 +43,7 @@ class TestSagaStep:
     @pytest.mark.asyncio
     async def test_step_execution(self):
         """Test step execute function."""
+
         async def execute(input: Dict[str, Any]) -> str:
             return f"processed: {input.get('data')}"
 
@@ -127,11 +130,13 @@ class TestBaseSaga:
         async def make_step(name: str):
             async def execute(input: Dict[str, Any]) -> str:
                 return f"{name}_done"
+
             return execute
 
         async def make_comp(name: str):
             async def compensate(input: Dict[str, Any]) -> None:
                 compensation_order.append(name)
+
             return compensate
 
         async def failing_step(input: Dict[str, Any]) -> str:
@@ -152,6 +157,7 @@ class TestBaseSaga:
     @pytest.mark.asyncio
     async def test_saga_partial_compensation(self):
         """Test saga handles partial compensation failure."""
+
         async def success_step(input: Dict[str, Any]) -> str:
             return "done"
 
@@ -208,6 +214,7 @@ class TestBaseSaga:
     @pytest.mark.asyncio
     async def test_saga_timeout(self):
         """Test saga handles step timeout."""
+
         async def slow_step(input: Dict[str, Any]) -> str:
             await asyncio.sleep(10)
             return "done"
@@ -224,6 +231,7 @@ class TestBaseSaga:
     @pytest.mark.asyncio
     async def test_saga_chaining(self):
         """Test add_step returns self for chaining."""
+
         async def step(input: Dict[str, Any]) -> str:
             return "done"
 
@@ -310,60 +318,57 @@ class TestExtendedSagas:
     @pytest.mark.asyncio
     async def test_distributed_transaction_success(self):
         """Test successful distributed transaction."""
+
         class MockActivities(DefaultActivities):
             async def execute_agent_task(self, agent_id, task_name, payload):
                 return {"status": "ok", "agent_id": agent_id}
 
         ctx = WorkflowContext.create()
-        input_data = {
-            "target_agent": "agent-1",
-            "processor_agent": "agent-2",
-            "amount": 100
-        }
-        
+        input_data = {"target_agent": "agent-1", "processor_agent": "agent-2", "amount": 100}
+
         result = await DistributedTransactionSaga.run_standard_tx(ctx, input_data, MockActivities())
         assert result.status == SagaStatus.COMPLETED
 
     @pytest.mark.asyncio
     async def test_policy_update_success(self):
         """Test successful policy update saga."""
+
         class MockActivities(DefaultActivities):
             async def evaluate_policy(self, workflow_id, policy_path, input_data):
                 return {"allowed": True}
+
             async def record_audit(self, workflow_id, event_type, event_data):
                 return "audit-id"
 
         ctx = WorkflowContext.create()
         saga = PolicyUpdateSaga(constitutional_hash=CONSTITUTIONAL_HASH)
         saga.activities = MockActivities()
-        
-        result = await saga.execute(ctx, {
-            "policy_id": "p1",
-            "new_version": "2.0",
-            "canary_agents": ["a1"]
-        })
-        
+
+        result = await saga.execute(
+            ctx, {"policy_id": "p1", "new_version": "2.0", "canary_agents": ["a1"]}
+        )
+
         assert result.status == SagaStatus.COMPLETED
 
     @pytest.mark.asyncio
     async def test_agent_registration_success(self):
         """Test successful agent registration saga."""
+
         class MockActivities(DefaultActivities):
             async def evaluate_policy(self, workflow_id, policy_path, input_data):
                 return {"allowed": True}
+
             async def record_audit(self, workflow_id, event_type, event_data):
                 return "audit-id"
 
         ctx = WorkflowContext.create()
         saga = AgentRegistrationSaga(constitutional_hash=CONSTITUTIONAL_HASH)
         saga.activities = MockActivities()
-        
-        result = await saga.execute(ctx, {
-            "agent_id": "new-agent",
-            "identity_proof": "proof-data",
-            "capabilities": ["llm"]
-        })
-        
+
+        result = await saga.execute(
+            ctx, {"agent_id": "new-agent", "identity_proof": "proof-data", "capabilities": ["llm"]}
+        )
+
         assert result.status == SagaStatus.COMPLETED
 
     @pytest.mark.asyncio

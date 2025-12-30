@@ -4,16 +4,15 @@ Constitutional Hash: cdd01ef066bc6cf2
 """
 
 import pytest
-from datetime import UTC, datetime
 
 from nemo_agent_toolkit.mcp_bridge import (
-    ACGS2MCPServer,
+    CONSTITUTIONAL_HASH,
     ACGS2MCPClient,
+    ACGS2MCPServer,
+    ConstitutionalMCPTool,
     MCPToolDefinition,
     MCPToolResult,
     MCPToolType,
-    ConstitutionalMCPTool,
-    CONSTITUTIONAL_HASH,
 )
 
 
@@ -88,6 +87,7 @@ class TestConstitutionalMCPTool:
 
     def test_create_tool(self):
         """Test creating a constitutional MCP tool."""
+
         def handler(arg1: str) -> dict:
             return {"result": arg1}
 
@@ -149,6 +149,7 @@ class TestACGS2MCPServer:
 
     def test_register_custom_tool(self, server):
         """Test registering a custom tool."""
+
         def custom_handler(value: str) -> dict:
             return {"processed": value}
 

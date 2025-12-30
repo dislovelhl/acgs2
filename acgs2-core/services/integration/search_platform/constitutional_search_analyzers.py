@@ -9,13 +9,12 @@ import ast
 import asyncio
 import logging
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional, Set, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set
 
 from .constitutional_search_models import (
-    CONSTITUTIONAL_HASH,
-    ConstitutionalViolationType,
-    ConstitutionalViolation,
     ConstitutionalSearchResult,
+    ConstitutionalViolation,
+    ConstitutionalViolationType,
 )
 
 if TYPE_CHECKING:
@@ -44,21 +43,25 @@ class ASTSecurityAnalyzer(ast.NodeVisitor):
         # Taint tracking
         self.tainted_vars: Set[str] = set()
         self.user_inputs = {
-            'input', 'raw_input', 'sys.argv',
-            'request.args', 'request.form', 'request.data'
+            "input",
+            "raw_input",
+            "sys.argv",
+            "request.args",
+            "request.form",
+            "request.data",
         }
 
         # Sensitive operations
         self.sensitive_functions = {
-            'execute': 'SQL injection risk',
-            'eval': 'Code injection risk',
-            'exec': 'Code execution risk',
-            'open': 'File operation risk',
-            'subprocess.call': 'Command injection risk',
-            'subprocess.run': 'Command injection risk',
-            'subprocess.Popen': 'Command injection risk',
-            'os.system': 'Command injection risk',
-            'os.popen': 'Command injection risk',
+            "execute": "SQL injection risk",
+            "eval": "Code injection risk",
+            "exec": "Code execution risk",
+            "open": "File operation risk",
+            "subprocess.call": "Command injection risk",
+            "subprocess.run": "Command injection risk",
+            "subprocess.Popen": "Command injection risk",
+            "os.system": "Command injection risk",
+            "os.popen": "Command injection risk",
         }
 
         # Control flow tracking
@@ -85,28 +88,32 @@ class ASTSecurityAnalyzer(ast.NodeVisitor):
             for arg in node.args:
                 if self._is_tainted_arg(arg):
                     line_content = self._get_line_content(node.lineno)
-                    self.violations.append(ConstitutionalViolation(
-                        violation_type=ConstitutionalViolationType.SECURITY_VIOLATION,
-                        file=self.filename,
-                        line_number=node.lineno,
-                        description=f"Tainted data used in {func_name}: {self.sensitive_functions[func_name]}",
-                        severity="critical",
-                        match_content=line_content,
-                        remediation=f"Avoid using tainted data in {func_name}. Use parameterized queries or input validation.",
-                    ))
+                    self.violations.append(
+                        ConstitutionalViolation(
+                            violation_type=ConstitutionalViolationType.SECURITY_VIOLATION,
+                            file=self.filename,
+                            line_number=node.lineno,
+                            description=f"Tainted data used in {func_name}: {self.sensitive_functions[func_name]}",
+                            severity="critical",
+                            match_content=line_content,
+                            remediation=f"Avoid using tainted data in {func_name}. Use parameterized queries or input validation.",
+                        )
+                    )
 
         # Check for dependency injection risks
         if self._is_dependency_injection_risk(node):
             line_content = self._get_line_content(node.lineno)
-            self.violations.append(ConstitutionalViolation(
-                violation_type=ConstitutionalViolationType.SECURITY_VIOLATION,
-                file=self.filename,
-                line_number=node.lineno,
-                description="Potential dependency injection vulnerability",
-                severity="high",
-                match_content=line_content,
-                remediation="Validate and sanitize dependency configurations",
-            ))
+            self.violations.append(
+                ConstitutionalViolation(
+                    violation_type=ConstitutionalViolationType.SECURITY_VIOLATION,
+                    file=self.filename,
+                    line_number=node.lineno,
+                    description="Potential dependency injection vulnerability",
+                    severity="high",
+                    match_content=line_content,
+                    remediation="Validate and sanitize dependency configurations",
+                )
+            )
 
         self.generic_visit(node)
 
@@ -148,10 +155,10 @@ class ASTSecurityAnalyzer(ast.NodeVisitor):
     def _is_dependency_injection_risk(self, node: ast.Call) -> bool:
         """Check for dependency injection vulnerabilities."""
         func_name = self._get_func_name(node.func)
-        if 'inject' in func_name.lower() or 'resolve' in func_name.lower():
+        if "inject" in func_name.lower() or "resolve" in func_name.lower():
             # Check if arguments are not validated
             for arg in node.args:
-                if isinstance(arg, ast.Str) and ('http' in arg.s or 'file:' in arg.s):
+                if isinstance(arg, ast.Str) and ("http" in arg.s or "file:" in arg.s):
                     return True
         return False
 
@@ -172,17 +179,12 @@ class SemgrepAnalyzer:
 
     def __init__(self):
         self.semgrep_rules = {
-            "python": [
-                "rules/python-security.yaml",
-                "rules/python-best-practices.yaml"
-            ],
+            "python": ["rules/python-security.yaml", "rules/python-best-practices.yaml"],
             "javascript": [
                 "rules/javascript-security.yaml",
-                "rules/javascript-best-practices.yaml"
+                "rules/javascript-best-practices.yaml",
             ],
-            "typescript": [
-                "rules/typescript-security.yaml"
-            ]
+            "typescript": ["rules/typescript-security.yaml"],
         }
 
     async def scan_file(self, file_path: str) -> List[ConstitutionalViolation]:
@@ -196,8 +198,8 @@ class SemgrepAnalyzer:
         if not lang or lang not in self.semgrep_rules:
             return violations
 
-        import subprocess
         import json
+        import subprocess
 
         for rule_file in self.semgrep_rules[lang]:
             try:
@@ -206,21 +208,27 @@ class SemgrepAnalyzer:
                     ["semgrep", "--json", "--config", rule_file, file_path],
                     capture_output=True,
                     text=True,
-                    timeout=30
+                    timeout=30,
                 )
 
                 if result.returncode == 0 and result.stdout:
                     data = json.loads(result.stdout)
                     for finding in data.get("results", []):
-                        violations.append(ConstitutionalViolation(
-                            violation_type=ConstitutionalViolationType.SECURITY_VIOLATION,
-                            file=file_path,
-                            line_number=finding["start"]["line"],
-                            description=f"Semgrep: {finding['check_id']} - {finding.get('extra', {}).get('message', '')}",
-                            severity=self._map_severity(finding.get("extra", {}).get("severity", "medium")),
-                            match_content=finding["lines"],
-                            remediation=finding.get("extra", {}).get("fix", "Review and fix the security issue"),
-                        ))
+                        violations.append(
+                            ConstitutionalViolation(
+                                violation_type=ConstitutionalViolationType.SECURITY_VIOLATION,
+                                file=file_path,
+                                line_number=finding["start"]["line"],
+                                description=f"Semgrep: {finding['check_id']} - {finding.get('extra', {}).get('message', '')}",
+                                severity=self._map_severity(
+                                    finding.get("extra", {}).get("severity", "medium")
+                                ),
+                                match_content=finding["lines"],
+                                remediation=finding.get("extra", {}).get(
+                                    "fix", "Review and fix the security issue"
+                                ),
+                            )
+                        )
 
             except (subprocess.TimeoutExpired, json.JSONDecodeError, FileNotFoundError):
                 # Semgrep not available or rule file missing
@@ -230,11 +238,7 @@ class SemgrepAnalyzer:
 
     def _map_severity(self, semgrep_severity: str) -> str:
         """Map Semgrep severity to our severity levels."""
-        mapping = {
-            "ERROR": "critical",
-            "WARNING": "high",
-            "INFO": "medium"
-        }
+        mapping = {"ERROR": "critical", "WARNING": "high", "INFO": "medium"}
         return mapping.get(semgrep_severity.upper(), "medium")
 
 
@@ -256,9 +260,9 @@ class CodeQLAnalyzer:
         if file_ext not in ["js", "ts"]:
             return violations
 
-        import subprocess
         import json
         import os
+        import subprocess
 
         try:
             # Create CodeQL database if needed
@@ -267,11 +271,17 @@ class CodeQLAnalyzer:
 
                 # Initialize database
                 result = subprocess.run(
-                    ["codeql", "database", "create", self.codeql_db_path,
-                     "--language=javascript", f"--source-root={os.path.dirname(file_path)}"],
+                    [
+                        "codeql",
+                        "database",
+                        "create",
+                        self.codeql_db_path,
+                        "--language=javascript",
+                        f"--source-root={os.path.dirname(file_path)}",
+                    ],
                     capture_output=True,
                     text=True,
-                    timeout=60
+                    timeout=60,
                 )
 
                 if result.returncode != 0:
@@ -283,17 +293,23 @@ class CodeQLAnalyzer:
                 "js/xss.ql",
                 "js/sql-injection.ql",
                 "js/command-injection.ql",
-                "js/path-injection.ql"
+                "js/path-injection.ql",
             ]
 
             for query in security_queries:
                 try:
                     result = subprocess.run(
-                        ["codeql", "query", "run", f"--database={self.codeql_db_path}",
-                         f"--output={query}.bqrs", query],
+                        [
+                            "codeql",
+                            "query",
+                            "run",
+                            f"--database={self.codeql_db_path}",
+                            f"--output={query}.bqrs",
+                            query,
+                        ],
                         capture_output=True,
                         text=True,
-                        timeout=30
+                        timeout=30,
                     )
 
                     if result.returncode == 0:
@@ -301,7 +317,7 @@ class CodeQLAnalyzer:
                         json_result = subprocess.run(
                             ["codeql", "bqrs", "decode", f"{query}.bqrs", "--format=json"],
                             capture_output=True,
-                            text=True
+                            text=True,
                         )
 
                         if json_result.returncode == 0:
@@ -315,15 +331,17 @@ class CodeQLAnalyzer:
                                         if "L" in line_info:
                                             line_num = int(line_info.split("L")[1].split("-")[0])
 
-                                            violations.append(ConstitutionalViolation(
-                                                violation_type=ConstitutionalViolationType.SECURITY_VIOLATION,
-                                                file=file_path,
-                                                line_number=line_num,
-                                                description=f"CodeQL: {query} - {finding.get('message', '')}",
-                                                severity="high",
-                                                match_content=finding.get("message", ""),
-                                                remediation="Review and fix the security vulnerability identified by CodeQL",
-                                            ))
+                                            violations.append(
+                                                ConstitutionalViolation(
+                                                    violation_type=ConstitutionalViolationType.SECURITY_VIOLATION,
+                                                    file=file_path,
+                                                    line_number=line_num,
+                                                    description=f"CodeQL: {query} - {finding.get('message', '')}",
+                                                    severity="high",
+                                                    match_content=finding.get("message", ""),
+                                                    remediation="Review and fix the security vulnerability identified by CodeQL",
+                                                )
+                                            )
 
                 except (subprocess.TimeoutExpired, json.JSONDecodeError, FileNotFoundError):
                     continue
@@ -342,7 +360,9 @@ class FalsePositiveSuppressor:
     """
 
     def __init__(self):
-        self.feedback_db: Dict[str, Dict[str, int]] = {}  # violation_hash -> {"confirmed": count, "false_positive": count}
+        self.feedback_db: Dict[str, Dict[str, int]] = (
+            {}
+        )  # violation_hash -> {"confirmed": count, "false_positive": count}
         self.ml_model = None  # Placeholder for ML model
 
     def should_suppress(self, violation: ConstitutionalViolation) -> bool:
@@ -378,7 +398,10 @@ class FalsePositiveSuppressor:
     def _hash_violation(self, violation: ConstitutionalViolation) -> str:
         """Create a hash for violation deduplication."""
         import hashlib
-        content = f"{violation.violation_type.value}:{violation.description}:{violation.match_content}"
+
+        content = (
+            f"{violation.violation_type.value}:{violation.description}:{violation.match_content}"
+        )
         return hashlib.md5(content.encode()).hexdigest()
 
 
@@ -389,18 +412,16 @@ class RealTimeScanDashboard:
     Constitutional Hash: cdd01ef066bc6cf2
     """
 
-    def __init__(self, service: 'ConstitutionalCodeSearchService'):
+    def __init__(self, service: "ConstitutionalCodeSearchService"):
         self.service = service
         self.scan_results: List[ConstitutionalSearchResult] = []
         self.active_scans: Dict[str, asyncio.Task] = {}
 
     async def start_scan(
-        self,
-        scan_id: str,
-        paths: List[str],
-        file_types: Optional[List[str]] = None
+        self, scan_id: str, paths: List[str], file_types: Optional[List[str]] = None
     ):
         """Start a real-time scan."""
+
         async def scan_task():
             result = await self.service.scan_for_violations(paths, file_types)
             self.scan_results.append(result)
@@ -421,7 +442,7 @@ class RealTimeScanDashboard:
                     "status": "completed",
                     "violations_count": len(result.violations),
                     "critical_violations": len(result.critical_violations),
-                    "duration_ms": result.duration_ms
+                    "duration_ms": result.duration_ms,
                 }
 
         return {"status": "not_found"}
@@ -444,10 +465,10 @@ class RealTimeScanDashboard:
                     "query": r.query,
                     "violations_count": len(r.violations),
                     "duration_ms": r.duration_ms,
-                    "timestamp": r.violations[0].timestamp.isoformat() if r.violations else None
+                    "timestamp": r.violations[0].timestamp.isoformat() if r.violations else None,
                 }
                 for r in recent_scans
-            ]
+            ],
         }
 
 
@@ -465,8 +486,8 @@ class TrivyContainerScanner:
         """Scan a container image with Trivy."""
         violations: List[ConstitutionalViolation] = []
 
-        import subprocess
         import json
+        import subprocess
 
         try:
             # Run Trivy scan
@@ -474,7 +495,7 @@ class TrivyContainerScanner:
                 ["trivy", "image", "--format", "json", "--output", "-", image_name],
                 capture_output=True,
                 text=True,
-                timeout=300  # 5 minutes timeout
+                timeout=300,  # 5 minutes timeout
             )
 
             if result.returncode == 0 and result.stdout:
@@ -487,20 +508,22 @@ class TrivyContainerScanner:
                         # Map Trivy severity to our severity levels
                         our_severity = self._map_trivy_severity(severity)
 
-                        violations.append(ConstitutionalViolation(
-                            violation_type=ConstitutionalViolationType.SECURITY_VIOLATION,
-                            file=image_name,
-                            line_number=0,  # Container images don't have line numbers
-                            description=f"Container vulnerability: {vulnerability.get('VulnerabilityID')} - {vulnerability.get('Title', '')}",
-                            severity=our_severity,
-                            match_content=f"Package: {vulnerability.get('PkgName')} {vulnerability.get('InstalledVersion')} - {vulnerability.get('Description', '')}",
-                            remediation=f"Update to {vulnerability.get('FixedVersion', 'latest version')}",
-                        ))
+                        violations.append(
+                            ConstitutionalViolation(
+                                violation_type=ConstitutionalViolationType.SECURITY_VIOLATION,
+                                file=image_name,
+                                line_number=0,  # Container images don't have line numbers
+                                description=f"Container vulnerability: {vulnerability.get('VulnerabilityID')} - {vulnerability.get('Title', '')}",
+                                severity=our_severity,
+                                match_content=f"Package: {vulnerability.get('PkgName')} {vulnerability.get('InstalledVersion')} - {vulnerability.get('Description', '')}",
+                                remediation=f"Update to {vulnerability.get('FixedVersion', 'latest version')}",
+                            )
+                        )
 
             self.scan_results[image_name] = {
                 "violations_count": len(violations),
                 "scan_time": datetime.now(timezone.utc).isoformat(),
-                "success": True
+                "success": True,
             }
 
         except (subprocess.TimeoutExpired, json.JSONDecodeError, FileNotFoundError) as e:
@@ -508,7 +531,7 @@ class TrivyContainerScanner:
             self.scan_results[image_name] = {
                 "error": str(e),
                 "scan_time": datetime.now(timezone.utc).isoformat(),
-                "success": False
+                "success": False,
             }
 
         return violations
@@ -518,7 +541,7 @@ class TrivyContainerScanner:
         violations: List[ConstitutionalViolation] = []
 
         try:
-            with open(dockerfile_path, 'r') as f:
+            with open(dockerfile_path, "r") as f:
                 content = f.read()
 
             lines = content.splitlines()
@@ -527,39 +550,47 @@ class TrivyContainerScanner:
                 line_lower = line.lower().strip()
 
                 # Check for security issues in Dockerfile
-                if line_lower.startswith('from') and 'latest' in line_lower:
-                    violations.append(ConstitutionalViolation(
-                        violation_type=ConstitutionalViolationType.SECURITY_VIOLATION,
-                        file=dockerfile_path,
-                        line_number=i,
-                        description="Using 'latest' tag in FROM instruction",
-                        severity="medium",
-                        match_content=line,
-                        remediation="Use specific version tags for reproducible builds",
-                    ))
-
-                elif line_lower.startswith('run') and ('apt-get update' in line_lower or 'yum update' in line_lower):
-                    if '&&' not in line_lower or 'rm -rf /var/lib/apt/lists/*' not in line_lower:
-                        violations.append(ConstitutionalViolation(
+                if line_lower.startswith("from") and "latest" in line_lower:
+                    violations.append(
+                        ConstitutionalViolation(
                             violation_type=ConstitutionalViolationType.SECURITY_VIOLATION,
                             file=dockerfile_path,
                             line_number=i,
-                            description="Package manager cache not cleaned after RUN",
-                            severity="low",
+                            description="Using 'latest' tag in FROM instruction",
+                            severity="medium",
                             match_content=line,
-                            remediation="Clean package manager cache to reduce image size and potential security issues",
-                        ))
+                            remediation="Use specific version tags for reproducible builds",
+                        )
+                    )
 
-                elif 'add ' in line_lower and 'http' in line_lower:
-                    violations.append(ConstitutionalViolation(
-                        violation_type=ConstitutionalViolationType.SECURITY_VIOLATION,
-                        file=dockerfile_path,
-                        line_number=i,
-                        description="Using ADD with HTTP URLs",
-                        severity="high",
-                        match_content=line,
-                        remediation="Use COPY for local files or wget/curl in RUN for HTTP URLs",
-                    ))
+                elif line_lower.startswith("run") and (
+                    "apt-get update" in line_lower or "yum update" in line_lower
+                ):
+                    if "&&" not in line_lower or "rm -rf /var/lib/apt/lists/*" not in line_lower:
+                        violations.append(
+                            ConstitutionalViolation(
+                                violation_type=ConstitutionalViolationType.SECURITY_VIOLATION,
+                                file=dockerfile_path,
+                                line_number=i,
+                                description="Package manager cache not cleaned after RUN",
+                                severity="low",
+                                match_content=line,
+                                remediation="Clean package manager cache to reduce image size and potential security issues",
+                            )
+                        )
+
+                elif "add " in line_lower and "http" in line_lower:
+                    violations.append(
+                        ConstitutionalViolation(
+                            violation_type=ConstitutionalViolationType.SECURITY_VIOLATION,
+                            file=dockerfile_path,
+                            line_number=i,
+                            description="Using ADD with HTTP URLs",
+                            severity="high",
+                            match_content=line,
+                            remediation="Use COPY for local files or wget/curl in RUN for HTTP URLs",
+                        )
+                    )
 
         except FileNotFoundError:
             logger.warning(f"Dockerfile not found: {dockerfile_path}")
@@ -573,7 +604,7 @@ class TrivyContainerScanner:
             "high": "high",
             "medium": "medium",
             "low": "low",
-            "unknown": "low"
+            "unknown": "low",
         }
         return mapping.get(trivy_severity.lower(), "low")
 
@@ -587,7 +618,7 @@ class TrivyContainerScanner:
             "total_scans": total_scans,
             "successful_scans": successful_scans,
             "total_violations": total_violations,
-            "scan_results": self.scan_results
+            "scan_results": self.scan_results,
         }
 
 

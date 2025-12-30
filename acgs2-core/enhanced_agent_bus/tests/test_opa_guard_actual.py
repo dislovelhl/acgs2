@@ -6,52 +6,50 @@ Tests for the actual OPAGuard class implementation (not mocks).
 """
 
 import asyncio
+from unittest.mock import AsyncMock, patch
+
 import pytest
-from datetime import datetime, timezone, timedelta
-from unittest.mock import AsyncMock, MagicMock, patch
 
 # Import actual implementation
 try:
     from deliberation_layer.opa_guard import (
+        GUARD_CONSTITUTIONAL_HASH,
         OPAGuard,
+        _opa_guard,
+        close_opa_guard,
         get_opa_guard,
         initialize_opa_guard,
-        close_opa_guard,
-        GUARD_CONSTITUTIONAL_HASH,
-        _opa_guard,
     )
     from deliberation_layer.opa_guard_models import (
+        CriticReview,
         GuardDecision,
         GuardResult,
-        SignatureStatus,
-        SignatureResult,
-        ReviewStatus,
         ReviewResult,
-        CriticReview,
+        ReviewStatus,
         Signature,
+        SignatureResult,
+        SignatureStatus,
     )
 except ImportError:
     from ..deliberation_layer.opa_guard import (
+        GUARD_CONSTITUTIONAL_HASH,
         OPAGuard,
+        close_opa_guard,
         get_opa_guard,
         initialize_opa_guard,
-        close_opa_guard,
-        GUARD_CONSTITUTIONAL_HASH,
-        _opa_guard,
     )
     from ..deliberation_layer.opa_guard_models import (
         GuardDecision,
         GuardResult,
-        SignatureStatus,
-        SignatureResult,
-        ReviewStatus,
         ReviewResult,
-        CriticReview,
-        Signature,
+        ReviewStatus,
+        SignatureResult,
+        SignatureStatus,
     )
 
 
 # === Fixtures ===
+
 
 @pytest.fixture
 def mock_opa_client():
@@ -107,6 +105,7 @@ def critical_risk_action():
 
 
 # === Test Classes ===
+
 
 class TestOPAGuardInitialization:
     """Tests for OPAGuard initialization."""
@@ -310,8 +309,7 @@ class TestRiskFactorIdentification:
         factors = opa_guard._identify_risk_factors(action, context)
         # Check if any factor mentions "delete" or "destructive"
         has_destructive_factor = any(
-            "delete" in f.lower() or "destructive" in f.lower()
-            for f in factors
+            "delete" in f.lower() or "destructive" in f.lower() for f in factors
         )
         assert has_destructive_factor or len(factors) >= 1
 
@@ -321,7 +319,10 @@ class TestRiskFactorIdentification:
         context = {"contains_pii": True}
 
         factors = opa_guard._identify_risk_factors(action, context)
-        assert any("sensitive" in f.lower() or "pii" in f.lower() for f in factors) or len(factors) >= 0
+        assert (
+            any("sensitive" in f.lower() or "pii" in f.lower() for f in factors)
+            or len(factors) >= 0
+        )
 
     def test_production_impact_identified(self, opa_guard):
         """Test production impact is identified."""
@@ -354,7 +355,7 @@ class TestActionVerification:
         # Second call for policy evaluation returns denied
         opa_guard.opa_client.evaluate_policy.side_effect = [
             {"allowed": True},  # Constitutional check
-            {"allowed": False, "reason": "Policy violation"}  # Policy check
+            {"allowed": False, "reason": "Policy violation"},  # Policy check
         ]
 
         result = await opa_guard.verify_action("agent_1", low_risk_action, {})
@@ -363,8 +364,7 @@ class TestActionVerification:
         assert result.is_allowed is False
         # Error message should mention policy
         has_policy_error = any(
-            "policy" in e.lower() or "denied" in e.lower()
-            for e in result.validation_errors
+            "policy" in e.lower() or "denied" in e.lower() for e in result.validation_errors
         )
         assert has_policy_error
 
@@ -421,9 +421,7 @@ class TestCriticAgentManagement:
     def test_register_critic_agent(self, opa_guard):
         """Test registering a critic agent."""
         opa_guard.register_critic_agent(
-            critic_id="ethics_agent",
-            review_types=["ethics", "safety"],
-            metadata={"priority": 1}
+            critic_id="ethics_agent", review_types=["ethics", "safety"], metadata={"priority": 1}
         )
 
         assert "ethics_agent" in opa_guard._critic_agents
@@ -473,10 +471,7 @@ class TestAuditLogging:
         """Test retrieving audit log."""
         # Log multiple decisions
         for i in range(5):
-            await opa_guard.log_decision(
-                {"index": i},
-                {"decision": f"decision_{i}"}
-            )
+            await opa_guard.log_decision({"index": i}, {"decision": f"decision_{i}"})
 
         audit_log = opa_guard.get_audit_log()
         assert len(audit_log) == 5
@@ -503,9 +498,9 @@ class TestSignatureCollection:
                 "test_decision_1",
                 ["signer_1", "signer_2"],
                 threshold=1.0,
-                timeout=1  # 1 second timeout
+                timeout=1,  # 1 second timeout
             ),
-            timeout=5  # Overall test timeout
+            timeout=5,  # Overall test timeout
         )
 
         assert result.status == SignatureStatus.EXPIRED
@@ -525,10 +520,7 @@ class TestSignatureCollection:
 
         # Submit signature - actual API: decision_id, signer_id, reasoning, confidence
         success = await opa_guard.submit_signature(
-            decision_id,
-            "signer_1",
-            reasoning="Approved for testing",
-            confidence=1.0
+            decision_id, "signer_1", reasoning="Approved for testing", confidence=1.0
         )
 
         # Check signature was recorded
@@ -549,9 +541,7 @@ class TestSignatureCollection:
         opa_guard._pending_signatures[decision_id] = signature_result
 
         success = await opa_guard.reject_signature(
-            decision_id,
-            "signer_1",
-            reason="Rejected for testing"
+            decision_id, "signer_1", reason="Rejected for testing"
         )
 
         assert success is True
@@ -570,12 +560,8 @@ class TestReviewSubmission:
         # submit_for_review takes decision (dict), critic_agents (list), review_types, timeout
         decision = {"id": "test_review_1", "action": high_risk_action}
         result = await asyncio.wait_for(
-            opa_guard.submit_for_review(
-                decision=decision,
-                critic_agents=["critic_1"],
-                timeout=1
-            ),
-            timeout=5
+            opa_guard.submit_for_review(decision=decision, critic_agents=["critic_1"], timeout=1),
+            timeout=5,
         )
 
         # Times out and becomes ESCALATED (status on timeout per implementation)
@@ -594,7 +580,7 @@ class TestReviewSubmission:
             "critic_1",
             verdict="approve",
             reasoning="Approved after review",
-            confidence=0.9
+            confidence=0.9,
         )
 
         assert success is True
@@ -644,10 +630,7 @@ class TestConstitutionalHashExport:
 
     def test_guard_result_includes_hash(self, opa_guard, low_risk_action):
         """Test GuardResult includes constitutional hash."""
-        result = GuardResult(
-            agent_id="test_agent",
-            action_type="test_action"
-        )
+        result = GuardResult(agent_id="test_agent", action_type="test_action")
         assert result.constitutional_hash == "cdd01ef066bc6cf2"
 
 
@@ -688,10 +671,7 @@ class TestEdgeCases:
         """Test submitting signature for unknown decision."""
         # Should handle gracefully and return False
         result = await opa_guard.submit_signature(
-            "unknown_decision",
-            "signer_1",
-            reasoning="Test",
-            confidence=1.0
+            "unknown_decision", "signer_1", reasoning="Test", confidence=1.0
         )
         # Returns False for unknown decision
         assert result is False
@@ -700,11 +680,7 @@ class TestEdgeCases:
     async def test_submit_review_unknown_decision(self, opa_guard):
         """Test submitting review for unknown decision."""
         result = await opa_guard.submit_review(
-            "unknown_decision",
-            "critic_1",
-            verdict="approve",
-            reasoning="Test",
-            confidence=0.9
+            "unknown_decision", "critic_1", verdict="approve", reasoning="Test", confidence=0.9
         )
         # Returns False for unknown decision
         assert result is False
@@ -718,15 +694,12 @@ class TestFallbackBehavior:
         """Test fallback mode adds warning to result."""
         opa_guard.opa_client.evaluate_policy.return_value = {
             "allowed": True,
-            "metadata": {"mode": "fallback"}
+            "metadata": {"mode": "fallback"},
         }
 
         result = await opa_guard.verify_action("agent_1", low_risk_action, {})
 
         # Check if fallback warning is added
-        has_fallback_warning = any(
-            "fallback" in w.lower()
-            for w in result.validation_warnings
-        )
+        has_fallback_warning = any("fallback" in w.lower() for w in result.validation_warnings)
         # May or may not have warning depending on policy result structure
         assert result.decision in [GuardDecision.ALLOW, GuardDecision.DENY]

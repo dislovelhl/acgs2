@@ -6,20 +6,21 @@ constitutional documents and historical precedents.
 """
 
 import logging
-from typing import List, Dict, Any, Optional, Union
 from abc import ABC, abstractmethod
-import asyncio
 from datetime import datetime
+from typing import Any, Dict, List, Optional
 
 try:
     from qdrant_client import QdrantClient
     from qdrant_client.http.models import Distance, VectorParams
+
     QDRANT_AVAILABLE = True
 except ImportError:
     QDRANT_AVAILABLE = False
 
 try:
-    from pymilvus import connections, Collection, CollectionSchema, FieldSchema, DataType
+    from pymilvus import Collection, CollectionSchema, DataType, FieldSchema, connections
+
     MILVUS_AVAILABLE = True
 except ImportError:
     MILVUS_AVAILABLE = False
@@ -46,14 +47,24 @@ class VectorDatabaseManager(ABC):
         pass
 
     @abstractmethod
-    async def insert_vectors(self, collection_name: str, vectors: List[List[float]],
-                           payloads: List[Dict[str, Any]], ids: Optional[List[str]] = None) -> bool:
+    async def insert_vectors(
+        self,
+        collection_name: str,
+        vectors: List[List[float]],
+        payloads: List[Dict[str, Any]],
+        ids: Optional[List[str]] = None,
+    ) -> bool:
         """Insert vectors with payloads into collection."""
         pass
 
     @abstractmethod
-    async def search_vectors(self, collection_name: str, query_vector: List[float],
-                           limit: int = 10, filter_dict: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
+    async def search_vectors(
+        self,
+        collection_name: str,
+        query_vector: List[float],
+        limit: int = 10,
+        filter_dict: Optional[Dict[str, Any]] = None,
+    ) -> List[Dict[str, Any]]:
         """Search for similar vectors."""
         pass
 
@@ -63,8 +74,13 @@ class VectorDatabaseManager(ABC):
         pass
 
     @abstractmethod
-    async def update_vectors(self, collection_name: str, ids: List[str],
-                           vectors: List[List[float]], payloads: List[Dict[str, Any]]) -> bool:
+    async def update_vectors(
+        self,
+        collection_name: str,
+        ids: List[str],
+        vectors: List[List[float]],
+        payloads: List[Dict[str, Any]],
+    ) -> bool:
         """Update existing vectors."""
         pass
 
@@ -109,7 +125,7 @@ class QdrantManager(VectorDatabaseManager):
 
             self.client.create_collection(
                 collection_name=collection_name,
-                vectors_config=VectorParams(size=vector_dim, distance=Distance.COSINE)
+                vectors_config=VectorParams(size=vector_dim, distance=Distance.COSINE),
             )
             logger.info(f"Created Qdrant collection: {collection_name}")
             return True
@@ -117,8 +133,13 @@ class QdrantManager(VectorDatabaseManager):
             logger.error(f"Failed to create collection {collection_name}: {e}")
             return False
 
-    async def insert_vectors(self, collection_name: str, vectors: List[List[float]],
-                           payloads: List[Dict[str, Any]], ids: Optional[List[str]] = None) -> bool:
+    async def insert_vectors(
+        self,
+        collection_name: str,
+        vectors: List[List[float]],
+        payloads: List[Dict[str, Any]],
+        ids: Optional[List[str]] = None,
+    ) -> bool:
         """Insert vectors into Qdrant."""
         try:
             if not self.client:
@@ -127,11 +148,7 @@ class QdrantManager(VectorDatabaseManager):
             points = []
             for i, (vector, payload) in enumerate(zip(vectors, payloads)):
                 point_id = ids[i] if ids else str(i)
-                points.append({
-                    "id": point_id,
-                    "vector": vector,
-                    "payload": payload
-                })
+                points.append({"id": point_id, "vector": vector, "payload": payload})
 
             self.client.upsert(collection_name=collection_name, points=points)
             logger.info(f"Inserted {len(points)} vectors into {collection_name}")
@@ -140,8 +157,13 @@ class QdrantManager(VectorDatabaseManager):
             logger.error(f"Failed to insert vectors: {e}")
             return False
 
-    async def search_vectors(self, collection_name: str, query_vector: List[float],
-                           limit: int = 10, filter_dict: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
+    async def search_vectors(
+        self,
+        collection_name: str,
+        query_vector: List[float],
+        limit: int = 10,
+        filter_dict: Optional[Dict[str, Any]] = None,
+    ) -> List[Dict[str, Any]]:
         """Search vectors in Qdrant."""
         try:
             if not self.client:
@@ -151,16 +173,12 @@ class QdrantManager(VectorDatabaseManager):
                 collection_name=collection_name,
                 query_vector=query_vector,
                 limit=limit,
-                query_filter=filter_dict
+                query_filter=filter_dict,
             )
 
             results = []
             for hit in search_result:
-                results.append({
-                    "id": hit.id,
-                    "score": hit.score,
-                    "payload": hit.payload
-                })
+                results.append({"id": hit.id, "score": hit.score, "payload": hit.payload})
 
             return results
         except Exception as e:
@@ -180,8 +198,13 @@ class QdrantManager(VectorDatabaseManager):
             logger.error(f"Failed to delete vectors: {e}")
             return False
 
-    async def update_vectors(self, collection_name: str, ids: List[str],
-                           vectors: List[List[float]], payloads: List[Dict[str, Any]]) -> bool:
+    async def update_vectors(
+        self,
+        collection_name: str,
+        ids: List[str],
+        vectors: List[List[float]],
+        payloads: List[Dict[str, Any]],
+    ) -> bool:
         """Update vectors in Qdrant."""
         try:
             if not self.client:
@@ -189,11 +212,7 @@ class QdrantManager(VectorDatabaseManager):
 
             points = []
             for vector_id, vector, payload in zip(ids, vectors, payloads):
-                points.append({
-                    "id": vector_id,
-                    "vector": vector,
-                    "payload": payload
-                })
+                points.append({"id": vector_id, "vector": vector, "payload": payload})
 
             self.client.upsert(collection_name=collection_name, points=points)
             logger.info(f"Updated {len(points)} vectors in {collection_name}")
@@ -218,11 +237,7 @@ class MilvusManager(VectorDatabaseManager):
                 logger.error("Milvus client not available")
                 return False
 
-            connections.connect(
-                alias=self.connection_alias,
-                host=self.host,
-                port=self.port
-            )
+            connections.connect(alias=self.connection_alias, host=self.host, port=self.port)
             logger.info(f"Connected to Milvus at {self.host}:{self.port}")
             return True
         except Exception as e:
@@ -243,7 +258,7 @@ class MilvusManager(VectorDatabaseManager):
             fields = [
                 FieldSchema(name="id", dtype=DataType.VARCHAR, max_length=100, is_primary=True),
                 FieldSchema(name="vector", dtype=DataType.FLOAT_VECTOR, dim=vector_dim),
-                FieldSchema(name="payload", dtype=DataType.JSON)
+                FieldSchema(name="payload", dtype=DataType.JSON),
             ]
 
             schema = CollectionSchema(fields, description="Constitutional documents and precedents")
@@ -253,7 +268,7 @@ class MilvusManager(VectorDatabaseManager):
             index_params = {
                 "metric_type": "COSINE",
                 "index_type": "IVF_FLAT",
-                "params": {"nlist": 1024}
+                "params": {"nlist": 1024},
             }
             collection.create_index(field_name="vector", index_params=index_params)
 
@@ -263,8 +278,13 @@ class MilvusManager(VectorDatabaseManager):
             logger.error(f"Failed to create collection {collection_name}: {e}")
             return False
 
-    async def insert_vectors(self, collection_name: str, vectors: List[List[float]],
-                           payloads: List[Dict[str, Any]], ids: Optional[List[str]] = None) -> bool:
+    async def insert_vectors(
+        self,
+        collection_name: str,
+        vectors: List[List[float]],
+        payloads: List[Dict[str, Any]],
+        ids: Optional[List[str]] = None,
+    ) -> bool:
         """Insert vectors into Milvus."""
         try:
             collection = Collection(collection_name)
@@ -272,11 +292,7 @@ class MilvusManager(VectorDatabaseManager):
             data = []
             for i, (vector, payload) in enumerate(zip(vectors, payloads)):
                 vector_id = ids[i] if ids else f"vec_{i}_{datetime.now().timestamp()}"
-                data.append({
-                    "id": vector_id,
-                    "vector": vector,
-                    "payload": payload
-                })
+                data.append({"id": vector_id, "vector": vector, "payload": payload})
 
             collection.insert(data)
             collection.flush()
@@ -287,8 +303,13 @@ class MilvusManager(VectorDatabaseManager):
             logger.error(f"Failed to insert vectors: {e}")
             return False
 
-    async def search_vectors(self, collection_name: str, query_vector: List[float],
-                           limit: int = 10, filter_dict: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
+    async def search_vectors(
+        self,
+        collection_name: str,
+        query_vector: List[float],
+        limit: int = 10,
+        filter_dict: Optional[Dict[str, Any]] = None,
+    ) -> List[Dict[str, Any]]:
         """Search vectors in Milvus."""
         try:
             collection = Collection(collection_name)
@@ -304,7 +325,7 @@ class MilvusManager(VectorDatabaseManager):
                     if isinstance(value, str):
                         conditions.append(f'{key} == "{value}"')
                     else:
-                        conditions.append(f'{key} == {value}')
+                        conditions.append(f"{key} == {value}")
                 expr = " and ".join(conditions)
 
             results = collection.search(
@@ -313,17 +334,15 @@ class MilvusManager(VectorDatabaseManager):
                 param=search_params,
                 limit=limit,
                 expr=expr,
-                output_fields=["payload"]
+                output_fields=["payload"],
             )
 
             search_results = []
             for hits in results:
                 for hit in hits:
-                    search_results.append({
-                        "id": hit.id,
-                        "score": hit.score,
-                        "payload": hit.entity.get("payload", {})
-                    })
+                    search_results.append(
+                        {"id": hit.id, "score": hit.score, "payload": hit.entity.get("payload", {})}
+                    )
 
             return search_results
         except Exception as e:
@@ -334,7 +353,7 @@ class MilvusManager(VectorDatabaseManager):
         """Delete vectors from Milvus."""
         try:
             collection = Collection(collection_name)
-            expr = f'id in {ids}'
+            expr = f"id in {ids}"
             collection.delete(expr)
             logger.info(f"Deleted vectors with IDs {ids} from {collection_name}")
             return True
@@ -342,8 +361,13 @@ class MilvusManager(VectorDatabaseManager):
             logger.error(f"Failed to delete vectors: {e}")
             return False
 
-    async def update_vectors(self, collection_name: str, ids: List[str],
-                           vectors: List[List[float]], payloads: List[Dict[str, Any]]) -> bool:
+    async def update_vectors(
+        self,
+        collection_name: str,
+        ids: List[str],
+        vectors: List[List[float]],
+        payloads: List[Dict[str, Any]],
+    ) -> bool:
         """Update vectors in Milvus (delete and re-insert)."""
         try:
             # Delete old vectors
@@ -372,22 +396,28 @@ class MockVectorManager(VectorDatabaseManager):
     async def create_collection(self, collection_name: str, vector_dim: int) -> bool:
         return True
 
-    async def insert_vectors(self, collection_name: str, vectors: List[List[float]],
-                           payloads: List[Dict[str, Any]], ids: Optional[List[str]] = None) -> bool:
+    async def insert_vectors(
+        self,
+        collection_name: str,
+        vectors: List[List[float]],
+        payloads: List[Dict[str, Any]],
+        ids: Optional[List[str]] = None,
+    ) -> bool:
         for i, vector in enumerate(vectors):
             vec_id = ids[i] if ids else f"{len(self.vectors)}"
             self.vectors[vec_id] = {"vector": vector, "payload": payloads[i]}
         return True
 
-    async def search_vectors(self, collection_name: str, query_vector: List[float],
-                           limit: int = 10, filter_dict: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
+    async def search_vectors(
+        self,
+        collection_name: str,
+        query_vector: List[float],
+        limit: int = 10,
+        filter_dict: Optional[Dict[str, Any]] = None,
+    ) -> List[Dict[str, Any]]:
         # Return mock results
         return [
-            {
-                "id": vid,
-                "score": 0.95,
-                "payload": data["payload"]
-            }
+            {"id": vid, "score": 0.95, "payload": data["payload"]}
             for vid, data in list(self.vectors.items())[:limit]
         ]
 
@@ -396,8 +426,13 @@ class MockVectorManager(VectorDatabaseManager):
             self.vectors.pop(vid, None)
         return True
 
-    async def update_vectors(self, collection_name: str, ids: List[str],
-                           vectors: List[List[float]], payloads: List[Dict[str, Any]]) -> bool:
+    async def update_vectors(
+        self,
+        collection_name: str,
+        ids: List[str],
+        vectors: List[List[float]],
+        payloads: List[Dict[str, Any]],
+    ) -> bool:
         await self.insert_vectors(collection_name, vectors, payloads, ids)
         return True
 

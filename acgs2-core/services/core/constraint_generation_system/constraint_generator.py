@@ -4,14 +4,14 @@ ACGS-2 Constraint Generator
 """
 
 import logging
-import json
-from typing import Dict, Any, Optional, List, Union
 from dataclasses import dataclass
 from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional
 
 # 尝试导入约束库，如果不可用则使用fallback
 try:
     import guidance
+
     GUIDANCE_AVAILABLE = True
 except ImportError:
     guidance = None
@@ -19,16 +19,17 @@ except ImportError:
 
 try:
     import outlines
+
     OUTLINES_AVAILABLE = True
 except ImportError:
     outlines = None
     OUTLINES_AVAILABLE = False
 
-from language_constraints import LanguageConstraints
 from dynamic_updater import DynamicConstraintUpdater
-from unit_test_generator import UnitTestGenerator
-from quality_scorer import QualityScorer
 from feedback_loop import FeedbackLoop
+from language_constraints import LanguageConstraints
+from quality_scorer import QualityScorer
+from unit_test_generator import UnitTestGenerator
 
 logger = logging.getLogger(__name__)
 
@@ -36,6 +37,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class GenerationRequest:
     """代码生成请求"""
+
     language: str
     task_description: str
     context: Optional[Dict[str, Any]] = None
@@ -47,6 +49,7 @@ class GenerationRequest:
 @dataclass
 class GenerationResult:
     """代码生成结果"""
+
     code: str
     tests: Optional[str] = None
     quality_score: Optional[float] = None
@@ -65,12 +68,14 @@ class ConstraintGenerator:
     约束生成器 - 使用Guidance/Outlines强制语法正确代码生成
     """
 
-    def __init__(self,
-                 use_guidance: bool = True,
-                 use_outlines: bool = True,
-                 model_name: str = "gpt-4",
-                 enable_dynamic_update: bool = True,
-                 enable_feedback_loop: bool = True):
+    def __init__(
+        self,
+        use_guidance: bool = True,
+        use_outlines: bool = True,
+        model_name: str = "gpt-4",
+        enable_dynamic_update: bool = True,
+        enable_feedback_loop: bool = True,
+    ):
         """
         初始化约束生成器
 
@@ -94,14 +99,16 @@ class ConstraintGenerator:
 
         # 统计信息
         self.stats = {
-            'total_generations': 0,
-            'successful_generations': 0,
-            'syntax_errors_caught': 0,
-            'quality_improvements': 0,
-            'constraint_updates': 0
+            "total_generations": 0,
+            "successful_generations": 0,
+            "syntax_errors_caught": 0,
+            "quality_improvements": 0,
+            "constraint_updates": 0,
         }
 
-        logger.info(f"ConstraintGenerator initialized with Guidance: {self.use_guidance}, Outlines: {self.use_outlines}")
+        logger.info(
+            f"ConstraintGenerator initialized with Guidance: {self.use_guidance}, Outlines: {self.use_outlines}"
+        )
 
     async def generate_code(self, request: GenerationRequest) -> GenerationResult:
         """
@@ -144,7 +151,7 @@ class ConstraintGenerator:
                 tests=tests,
                 quality_score=quality_score,
                 syntax_valid=syntax_valid,
-                generation_time=generation_time
+                generation_time=generation_time,
             )
 
             # 更新统计
@@ -159,8 +166,10 @@ class ConstraintGenerator:
                 feedback_data = await self.feedback_loop.process_feedback(request, result)
                 result.feedback_data = feedback_data
 
-            logger.info(f"Code generation completed: syntax_valid={syntax_valid}, "
-                       f"quality_score={quality_score}, time={generation_time:.2f}s")
+            logger.info(
+                f"Code generation completed: syntax_valid={syntax_valid}, "
+                f"quality_score={quality_score}, time={generation_time:.2f}s"
+            )
 
             return result
 
@@ -172,7 +181,7 @@ class ConstraintGenerator:
                 code="",
                 syntax_valid=False,
                 generation_time=generation_time,
-                constraint_violations=[str(e)]
+                constraint_violations=[str(e)],
             )
 
     def _get_constraints(self, request: GenerationRequest) -> Dict[str, Any]:
@@ -191,9 +200,9 @@ class ConstraintGenerator:
 
         return constraints
 
-    async def _generate_with_constraints(self,
-                                       request: GenerationRequest,
-                                       constraints: Dict[str, Any]) -> str:
+    async def _generate_with_constraints(
+        self, request: GenerationRequest, constraints: Dict[str, Any]
+    ) -> str:
         """使用约束生成代码"""
         prompt = self._build_generation_prompt(request, constraints)
 
@@ -211,10 +220,10 @@ class ConstraintGenerator:
             program = guidance(prompt)
 
             # 应用约束
-            if 'json_schema' in constraints:
-                program = program + guidance.gen(schema=constraints['json_schema'])
-            elif 'grammar' in constraints:
-                program = program + guidance.gen(grammar=constraints['grammar'])
+            if "json_schema" in constraints:
+                program = program + guidance.gen(schema=constraints["json_schema"])
+            elif "grammar" in constraints:
+                program = program + guidance.gen(grammar=constraints["grammar"])
 
             # 执行生成
             result = await program()
@@ -232,10 +241,10 @@ class ConstraintGenerator:
             model = outlines.models.openai(self.model_name)
 
             # 应用约束
-            if 'json_schema' in constraints:
-                generator = outlines.generate.json(model, constraints['json_schema'])
-            elif 'grammar' in constraints:
-                generator = outlines.generate.cfg(model, constraints['grammar'])
+            if "json_schema" in constraints:
+                generator = outlines.generate.json(model, constraints["json_schema"])
+            elif "grammar" in constraints:
+                generator = outlines.generate.cfg(model, constraints["grammar"])
             else:
                 generator = outlines.generate.text(model)
 
@@ -254,9 +263,9 @@ class ConstraintGenerator:
         logger.warning("Using fallback generation without constraints")
 
         # 简单的基于规则的代码生成
-        if constraints.get('language') == 'python':
+        if constraints.get("language") == "python":
             return self._generate_python_fallback(prompt, constraints)
-        elif constraints.get('language') == 'javascript':
+        elif constraints.get("language") == "javascript":
             return self._generate_javascript_fallback(prompt, constraints)
         else:
             return f"# Generated code for {constraints.get('language', 'unknown')}\n# {prompt[:100]}..."
@@ -284,7 +293,7 @@ if __name__ == "__main__":
 
     def _generate_javascript_fallback(self, prompt: str, constraints: Dict[str, Any]) -> str:
         """JavaScript代码fallback生成"""
-        return f'''/**
+        return f"""/**
  * Generated JavaScript code with constraints
  * Task: {prompt[:100]}...
  */
@@ -306,14 +315,16 @@ module.exports = {{ generatedFunction }};
 if (require.main === module) {{
     generatedFunction();
 }}
-'''
+"""
 
-    def _build_generation_prompt(self, request: GenerationRequest, constraints: Dict[str, Any]) -> str:
+    def _build_generation_prompt(
+        self, request: GenerationRequest, constraints: Dict[str, Any]
+    ) -> str:
         """构建生成提示"""
         prompt_parts = [
             f"Generate {request.language} code for the following task:",
             f"Task: {request.task_description}",
-            ""
+            "",
         ]
 
         if request.context:
@@ -325,33 +336,35 @@ if (require.main === module) {{
         if constraints:
             prompt_parts.append("Constraints:")
             for key, value in constraints.items():
-                if key != 'grammar' and key != 'json_schema':  # 这些是技术约束
+                if key != "grammar" and key != "json_schema":  # 这些是技术约束
                     prompt_parts.append(f"- {key}: {value}")
             prompt_parts.append("")
 
-        prompt_parts.extend([
-            "Requirements:",
-            "- Code must be syntactically correct",
-            "- Follow language best practices",
-            "- Include proper error handling",
-            "- Add meaningful comments",
-            ""
-        ])
+        prompt_parts.extend(
+            [
+                "Requirements:",
+                "- Code must be syntactically correct",
+                "- Follow language best practices",
+                "- Include proper error handling",
+                "- Add meaningful comments",
+                "",
+            ]
+        )
 
         return "\n".join(prompt_parts)
 
     def _validate_syntax(self, code: str, language: str) -> bool:
         """验证代码语法"""
         try:
-            if language.lower() == 'python':
-                compile(code, '<string>', 'exec')
+            if language.lower() == "python":
+                compile(code, "<string>", "exec")
                 return True
-            elif language.lower() == 'javascript':
+            elif language.lower() == "javascript":
                 # 简单的JS语法检查
                 return self._validate_javascript_syntax(code)
             else:
                 # 对于其他语言，执行基本检查
-                return len(code.strip()) > 0 and not code.startswith('# Error')
+                return len(code.strip()) > 0 and not code.startswith("# Error")
         except SyntaxError:
             return False
         except Exception:
@@ -362,7 +375,7 @@ if (require.main === module) {{
         # 基本检查
         try:
             # 检查括号匹配
-            brackets = {'(': ')', '[': ']', '{': '}'}
+            brackets = {"(": ")", "[": "]", "{": "}"}
             stack = []
 
             for char in code:
@@ -376,21 +389,21 @@ if (require.main === module) {{
                     stack.pop()
 
             return len(stack) == 0
-        except (KeyError, IndexError, TypeError) as e:
+        except (KeyError, IndexError, TypeError):
             # Bracket matching failed
             return False
 
     def _update_stats(self, result: GenerationResult):
         """更新统计信息"""
-        self.stats['total_generations'] += 1
+        self.stats["total_generations"] += 1
 
         if result.syntax_valid:
-            self.stats['successful_generations'] += 1
+            self.stats["successful_generations"] += 1
         else:
-            self.stats['syntax_errors_caught'] += 1
+            self.stats["syntax_errors_caught"] += 1
 
         if result.quality_score and result.quality_score > 8.0:
-            self.stats['quality_improvements'] += 1
+            self.stats["quality_improvements"] += 1
 
     def get_stats(self) -> Dict[str, int]:
         """获取统计信息"""
@@ -400,4 +413,4 @@ if (require.main === module) {{
         """从反馈更新约束"""
         if self.dynamic_updater:
             await self.dynamic_updater.process_feedback(feedback)
-            self.stats['constraint_updates'] += 1
+            self.stats["constraint_updates"] += 1

@@ -7,17 +7,17 @@ feedback loops, and multi-agent collaboration.
 
 import asyncio
 import logging
-from typing import Dict, Any
-import json
+from typing import Any, Dict
+
 import pytest
+from document_processor import DocumentProcessor
+from feedback_loop import FeedbackLoop
+from llm_reasoner import LLMReasoner
+from multi_agent_coordinator import MultiAgentCoordinator
+from retrieval_engine import RetrievalEngine
 
 # Import system components
 from vector_database import create_vector_db_manager
-from document_processor import DocumentProcessor
-from retrieval_engine import RetrievalEngine
-from llm_reasoner import LLMReasoner
-from feedback_loop import FeedbackLoop
-from multi_agent_coordinator import MultiAgentCoordinator
 
 logger = logging.getLogger(__name__)
 
@@ -85,6 +85,7 @@ class ConstitutionalRetrievalTester:
         try:
             # Initialize components
             from vector_database import QDRANT_AVAILABLE
+
             db_type = "qdrant" if QDRANT_AVAILABLE else "mock"
             logger.info(f"Using {db_type} for vector database in tests")
 
@@ -92,7 +93,9 @@ class ConstitutionalRetrievalTester:
             self.doc_processor = DocumentProcessor()
             self.retrieval_engine = RetrievalEngine(self.vector_db, self.doc_processor)
             self.llm_reasoner = LLMReasoner(self.retrieval_engine)
-            self.feedback_loop = FeedbackLoop(self.vector_db, self.doc_processor, self.retrieval_engine)
+            self.feedback_loop = FeedbackLoop(
+                self.vector_db, self.doc_processor, self.retrieval_engine
+            )
             self.multi_agent_coordinator = MultiAgentCoordinator(
                 self.vector_db, self.retrieval_engine, self.llm_reasoner, self.feedback_loop
             )
@@ -124,13 +127,13 @@ class ConstitutionalRetrievalTester:
             # Process constitutional document
             constitution_chunks = self.doc_processor.process_constitutional_document(
                 self.test_constitution_content,
-                {"title": "宪法", "doc_type": "constitution", "doc_id": "constitution_001"}
+                {"title": "宪法", "doc_type": "constitution", "doc_id": "constitution_001"},
             )
 
             # Process precedent document
             precedent_chunks = self.doc_processor.process_precedent_document(
                 self.test_precedent_content,
-                {"case_id": "wang_v_gov_001", "doc_type": "precedent", "court": "最高人民法院"}
+                {"case_id": "wang_v_gov_001", "doc_type": "precedent", "court": "最高人民法院"},
             )
 
             # Generate embeddings
@@ -144,7 +147,7 @@ class ConstitutionalRetrievalTester:
                 "total_chunks": len(all_chunks),
                 "embeddings_generated": len(embeddings),
                 "embedding_dimension": len(embeddings[0]) if embeddings else 0,
-                "status": "passed"
+                "status": "passed",
             }
 
             logger.info(f"Document processing test passed: {results}")
@@ -163,12 +166,12 @@ class ConstitutionalRetrievalTester:
             test_chunks = [
                 {
                     "content": "全国人民代表大会是最高国家权力机关",
-                    "metadata": {"doc_type": "constitution", "chunk_id": "test_001"}
+                    "metadata": {"doc_type": "constitution", "chunk_id": "test_001"},
                 },
                 {
                     "content": "政府信息公开应当遵循公开为原则",
-                    "metadata": {"doc_type": "precedent", "chunk_id": "test_002"}
-                }
+                    "metadata": {"doc_type": "precedent", "chunk_id": "test_002"},
+                },
             ]
 
             # Generate embeddings
@@ -198,7 +201,7 @@ class ConstitutionalRetrievalTester:
                 "vectors_inserted": len(ids),
                 "search_results": len(search_results),
                 "top_score": search_results[0]["score"] if search_results else 0.0,
-                "status": "passed"
+                "status": "passed",
             }
 
             logger.info(f"Vector database test passed: {results}")
@@ -217,12 +220,12 @@ class ConstitutionalRetrievalTester:
             test_documents = [
                 {
                     "content": "全国人民代表大会行使国家立法权",
-                    "metadata": {"doc_type": "constitution", "title": "立法权"}
+                    "metadata": {"doc_type": "constitution", "title": "立法权"},
                 },
                 {
                     "content": "行政机关应当依法行政，接受监督",
-                    "metadata": {"doc_type": "precedent", "case_id": "admin_supervision"}
-                }
+                    "metadata": {"doc_type": "precedent", "case_id": "admin_supervision"},
+                },
             ]
 
             index_success = await self.retrieval_engine.index_documents(test_documents)
@@ -235,16 +238,14 @@ class ConstitutionalRetrievalTester:
             )
 
             # Test hybrid search
-            hybrid_results = await self.retrieval_engine.hybrid_search(
-                "行政监督", limit=5
-            )
+            hybrid_results = await self.retrieval_engine.hybrid_search("行政监督", limit=5)
 
             results = {
                 "documents_indexed": len(test_documents),
                 "semantic_results": len(semantic_results),
                 "hybrid_results": len(hybrid_results),
                 "semantic_top_score": semantic_results[0]["score"] if semantic_results else 0.0,
-                "status": "passed"
+                "status": "passed",
             }
 
             logger.info(f"RAG retrieval test passed: {results}")
@@ -266,22 +267,20 @@ class ConstitutionalRetrievalTester:
                     "score": 0.9,
                     "payload": {
                         "content": "全国人民代表大会是最高国家权力机关",
-                        "doc_type": "constitution"
-                    }
+                        "doc_type": "constitution",
+                    },
                 }
             ]
 
             # Test reasoning (will use fallback if LLM not available)
             reasoning_result = await self.llm_reasoner.reason_with_context(
-                "如何行使国家立法权？",
-                test_context,
-                {"legal_domain": "constitutional_law"}
+                "如何行使国家立法权？", test_context, {"legal_domain": "constitutional_law"}
             )
 
             # Test consistency check
             consistency_result = await self.llm_reasoner.assess_decision_consistency(
                 {"recommendation": "approve", "confidence": 0.8},
-                [{"recommendation": "approve", "confidence": 0.7}]
+                [{"recommendation": "approve", "confidence": 0.7}],
             )
 
             results = {
@@ -289,7 +288,7 @@ class ConstitutionalRetrievalTester:
                 "consistency_checked": "consistency_score" in consistency_result,
                 "reasoning_confidence": reasoning_result.get("confidence", 0.0),
                 "consistency_score": consistency_result.get("consistency_score", 0.0),
-                "status": "passed"
+                "status": "passed",
             }
 
             logger.info(f"LLM reasoning test passed: {results}")
@@ -309,7 +308,7 @@ class ConstitutionalRetrievalTester:
                 "测试查询",
                 [{"id": "doc_001", "score": 0.8}],
                 {"recommendation": "approve", "confidence": 0.7},
-                {"user_rating": 4}
+                {"user_rating": 4},
             )
 
             # Get metrics
@@ -325,7 +324,7 @@ class ConstitutionalRetrievalTester:
                 "metrics_available": bool(metrics_before),
                 "update_attempted": "status" in update_result,
                 "feedback_count": metrics_after.get("total_feedback_collected", 0),
-                "status": "passed"
+                "status": "passed",
             }
 
             logger.info(f"Feedback loop test passed: {results}")
@@ -346,8 +345,8 @@ class ConstitutionalRetrievalTester:
                 {
                     "agent_type": "constitutional_expert",
                     "capabilities": ["constitutional_analysis", "legal_research"],
-                    "permissions": ["read", "write"]
-                }
+                    "permissions": ["read", "write"],
+                },
             )
 
             agent2_registered = await self.multi_agent_coordinator.register_agent(
@@ -355,8 +354,8 @@ class ConstitutionalRetrievalTester:
                 {
                     "agent_type": "legal_researcher",
                     "capabilities": ["precedent_analysis", "case_law"],
-                    "permissions": ["read"]
-                }
+                    "permissions": ["read"],
+                },
             )
 
             # Start session
@@ -379,7 +378,7 @@ class ConstitutionalRetrievalTester:
                     "query_performed": "results" in query_result,
                     "session_ended": session_ended,
                     "query_results_count": len(query_result.get("results", [])),
-                    "status": "passed"
+                    "status": "passed",
                 }
             else:
                 results = {"status": "failed", "error": "Session creation failed"}
@@ -413,9 +412,9 @@ class ConstitutionalRetrievalTester:
                     "retrieval_accuracy_target": 0.95,
                     "decision_consistency_target": 0.90,
                     "retrieval_accuracy_achieved": 0.0,
-                    "decision_consistency_achieved": 0.0
+                    "decision_consistency_achieved": 0.0,
                 },
-                "detailed_results": test_results
+                "detailed_results": test_results,
             }
 
         # Run individual tests
@@ -427,19 +426,26 @@ class ConstitutionalRetrievalTester:
         test_results["multi_agent"] = await self.test_multi_agent_collaboration()
 
         # Calculate overall results
-        passed_tests = sum(1 for result in test_results.values()
-                          if isinstance(result, dict) and result.get("status") == "passed")
+        passed_tests = sum(
+            1
+            for result in test_results.values()
+            if isinstance(result, dict) and result.get("status") == "passed"
+        )
         total_tests = len(test_results)
 
         # Check specific metrics for success criteria
         retrieval_accuracy = test_results.get("rag_retrieval", {}).get("semantic_top_score", 0.0)
         decision_consistency = test_results.get("llm_reasoning", {}).get("consistency_score", 1.0)
 
-        overall_status = "passed" if (
-            passed_tests == total_tests and
-            retrieval_accuracy >= 0.5 and  # Basic threshold for demo
-            decision_consistency >= 0.5
-        ) else "failed"
+        overall_status = (
+            "passed"
+            if (
+                passed_tests == total_tests
+                and retrieval_accuracy >= 0.5  # Basic threshold for demo
+                and decision_consistency >= 0.5
+            )
+            else "failed"
+        )
 
         final_results = {
             "overall_status": overall_status,
@@ -451,9 +457,9 @@ class ConstitutionalRetrievalTester:
                 "retrieval_accuracy_target": 0.95,  # From requirements
                 "decision_consistency_target": 0.90,  # From requirements
                 "retrieval_accuracy_achieved": retrieval_accuracy,
-                "decision_consistency_achieved": decision_consistency
+                "decision_consistency_achieved": decision_consistency,
             },
-            "detailed_results": test_results
+            "detailed_results": test_results,
         }
 
         logger.info(f"All tests completed. Overall status: {overall_status}")
@@ -483,18 +489,18 @@ async def run_constitutional_retrieval_tests():
         print(f"Overall Status: {results['overall_status']}")
         print(f"Tests Passed: {results['tests_passed']}/{results['total_tests']}")
 
-        print(f"\nPerformance Metrics:")
+        print("\nPerformance Metrics:")
         print(f"- Retrieval Accuracy: {results['retrieval_accuracy']:.3f}")
         print(f"- Decision Consistency: {results['decision_consistency']:.3f}")
 
-        print(f"\nSuccess Criteria:")
-        criteria = results['success_criteria']
+        print("\nSuccess Criteria:")
+        criteria = results["success_criteria"]
         print(f"- Retrieval Accuracy Target: {criteria['retrieval_accuracy_target']}")
         print(f"- Decision Consistency Target: {criteria['decision_consistency_target']}")
         print(f"- Retrieval Accuracy Achieved: {criteria['retrieval_accuracy_achieved']:.3f}")
         print(f"- Decision Consistency Achieved: {criteria['decision_consistency_achieved']:.3f}")
 
-        if results['overall_status'] == 'passed':
+        if results["overall_status"] == "passed":
             print("\n✅ All tests passed! System is ready for deployment.")
         else:
             print("\n❌ Some tests failed. Check detailed results above.")
@@ -509,7 +515,7 @@ async def run_constitutional_retrieval_tests():
 async def test_constitutional_retrieval_system():
     """Pytest wrapper for the constitutional retrieval system tests."""
     results = await run_constitutional_retrieval_tests()
-    assert results['overall_status'] == 'passed'
+    assert results["overall_status"] == "passed"
 
 
 if __name__ == "__main__":

@@ -3,10 +3,10 @@ ACGS-2 Unit Test Generator
 自动为生成的代码生成单元测试
 """
 
-import logging
-from typing import Dict, Any, Optional, List
-import re
 import ast
+import logging
+import re
+from typing import Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -40,15 +40,15 @@ class UnitTestGenerator:
         try:
             language = language.lower()
 
-            if language == 'python':
+            if language == "python":
                 return self._generate_python_tests(code)
-            elif language in ['javascript', 'typescript']:
+            elif language in ["javascript", "typescript"]:
                 return self._generate_javascript_tests(code)
-            elif language == 'java':
+            elif language == "java":
                 return self._generate_java_tests(code)
-            elif language == 'cpp':
+            elif language == "cpp":
                 return self._generate_cpp_tests(code)
-            elif language == 'go':
+            elif language == "go":
                 return self._generate_go_tests(code)
             else:
                 logger.warning(f"Test generation not supported for language: {language}")
@@ -68,7 +68,7 @@ class UnitTestGenerator:
             test_classes = []
 
             for node in ast.walk(tree):
-                if isinstance(node, ast.FunctionDef) and not node.name.startswith('_'):
+                if isinstance(node, ast.FunctionDef) and not node.name.startswith("_"):
                     test_functions.append(self._generate_python_function_test(node))
                 elif isinstance(node, ast.ClassDef):
                     test_classes.append(self._generate_python_class_test(node))
@@ -92,7 +92,7 @@ class UnitTestGenerator:
         # 分析函数参数
         args = []
         for arg in func_node.args.args:
-            if arg.arg != 'self':
+            if arg.arg != "self":
                 args.append(arg.arg)
 
         # 生成测试用例
@@ -100,33 +100,38 @@ class UnitTestGenerator:
 
         # 基本测试用例
         if not args:
-            test_cases.append(f"""
+            test_cases.append(
+                f"""
     def test_{func_name}_basic(self):
         \"\"\"Test basic functionality of {func_name}\"\"\"
         result = {func_name}()
-        self.assertIsNotNone(result)""")
+        self.assertIsNotNone(result)"""
+            )
         else:
             # 带参数的测试
             test_args = []
             for arg in args:
-                if 'str' in arg.lower() or 'name' in arg.lower():
+                if "str" in arg.lower() or "name" in arg.lower():
                     test_args.append(f'"{arg}_test"')
-                elif 'num' in arg.lower() or 'count' in arg.lower() or 'id' in arg.lower():
-                    test_args.append('42')
+                elif "num" in arg.lower() or "count" in arg.lower() or "id" in arg.lower():
+                    test_args.append("42")
                 else:
-                    test_args.append('None')
+                    test_args.append("None")
 
-            args_str = ', '.join(test_args)
+            args_str = ", ".join(test_args)
 
-            test_cases.append(f"""
+            test_cases.append(
+                f"""
     def test_{func_name}_with_args(self):
         \"\"\"Test {func_name} with arguments\"\"\"
         result = {func_name}({args_str})
-        self.assertIsNotNone(result)""")
+        self.assertIsNotNone(result)"""
+            )
 
         # 边界条件测试
         if args:
-            test_cases.append(f"""
+            test_cases.append(
+                f"""
     def test_{func_name}_edge_cases(self):
         \"\"\"Test {func_name} with edge cases\"\"\"
         # Test with None values
@@ -135,9 +140,10 @@ class UnitTestGenerator:
             self.assertIsNotNone(result)
         except (TypeError, ValueError):
             # Expected for invalid inputs
-            pass""")
+            pass"""
+            )
 
-        return '\n'.join(test_cases)
+        return "\n".join(test_cases)
 
     def _generate_python_class_test(self, class_node: ast.ClassDef) -> str:
         """为Python类生成测试"""
@@ -191,7 +197,7 @@ class GeneratedCodeTest(unittest.TestCase):
 
         # 添加测试方法
         all_tests = test_functions + test_classes
-        test_methods = '\n'.join(all_tests)
+        test_methods = "\n".join(all_tests)
 
         main_section = """
 
@@ -203,7 +209,7 @@ if __name__ == '__main__':
     def _generate_javascript_tests(self, code: str) -> Optional[str]:
         """生成JavaScript单元测试"""
         # 提取函数名
-        func_pattern = r'function\s+(\w+)\s*\('
+        func_pattern = r"function\s+(\w+)\s*\("
         functions = re.findall(func_pattern, code)
 
         if not functions:
@@ -243,7 +249,7 @@ describe('Generated Code Tests', function() {
     def _generate_java_tests(self, code: str) -> Optional[str]:
         """生成Java单元测试"""
         # 提取类名和方法名
-        class_pattern = r'public\s+class\s+(\w+)'
+        class_pattern = r"public\s+class\s+(\w+)"
         classes = re.findall(class_pattern, code)
 
         if not classes:
@@ -339,10 +345,10 @@ int main(int argc, char **argv) {
     def _generate_go_tests(self, code: str) -> Optional[str]:
         """生成Go单元测试"""
         # 提取包名和函数名
-        package_pattern = r'package\s+(\w+)'
+        package_pattern = r"package\s+(\w+)"
         packages = re.findall(package_pattern, code)
 
-        func_pattern = r'func\s+(\w+)\s*\('
+        func_pattern = r"func\s+(\w+)\s*\("
         functions = re.findall(func_pattern, code)
 
         if not packages or not functions:
@@ -398,8 +404,8 @@ func TestEdgeCases(t *testing.T) {
     def _load_test_templates(self) -> Dict[str, Dict[str, str]]:
         """加载测试模板"""
         return {
-            'python': {
-                'class_template': """
+            "python": {
+                "class_template": """
 class {class_name}Test(unittest.TestCase):
     def setUp(self):
         self.instance = {class_name}()
@@ -407,25 +413,25 @@ class {class_name}Test(unittest.TestCase):
     def test_basic(self):
         self.assertIsNotNone(self.instance)
 """,
-                'function_template': """
+                "function_template": """
     def test_{func_name}(self):
         result = {func_name}({args})
         self.assertIsNotNone(result)
-"""
+""",
             },
-            'javascript': {
-                'describe_template': """
+            "javascript": {
+                "describe_template": """
 describe('{name}', function() {
     it('should work', function() {
         {test_code}
     });
 });
 """,
-                'test_template': """
+                "test_template": """
         const result = {func_name}({args});
         assert(result !== undefined);
-"""
-            }
+""",
+            },
         }
 
     def get_test_coverage_estimate(self, code: str, test_code: str, language: str) -> float:
@@ -442,18 +448,17 @@ describe('{name}', function() {
         """
         try:
             # 简单的覆盖率估算
-            if language == 'python':
+            if language == "python":
                 # 解析源代码
                 source_tree = ast.parse(code)
                 source_functions = [
-                    node.name for node in ast.walk(source_tree)
-                    if isinstance(node, ast.FunctionDef)
+                    node.name for node in ast.walk(source_tree) if isinstance(node, ast.FunctionDef)
                 ]
 
                 # 检查测试代码中是否调用了这些函数
                 covered_functions = 0
                 for func_name in source_functions:
-                    if f'{func_name}(' in test_code or f'{func_name}()' in test_code:
+                    if f"{func_name}(" in test_code or f"{func_name}()" in test_code:
                         covered_functions += 1
 
                 return covered_functions / len(source_functions) if source_functions else 0
@@ -477,10 +482,10 @@ describe('{name}', function() {
             是否语法正确
         """
         try:
-            if language == 'python':
+            if language == "python":
                 ast.parse(test_code)
                 return True
-            elif language in ['javascript', 'typescript']:
+            elif language in ["javascript", "typescript"]:
                 # 基本检查
                 return self._validate_js_test_syntax(test_code)
             else:
@@ -491,11 +496,11 @@ describe('{name}', function() {
     def _validate_js_test_syntax(self, code: str) -> bool:
         """验证JavaScript测试语法"""
         # 检查基本的describe/it结构
-        if 'describe(' not in code or 'it(' not in code:
+        if "describe(" not in code or "it(" not in code:
             return False
 
         # 检查括号匹配
-        brackets = {'(': ')', '[': ']', '{': '}'}
+        brackets = {"(": ")", "[": "]", "{": "}"}
         stack = []
 
         for char in code:

@@ -5,10 +5,10 @@ Constitutional Hash: cdd01ef066bc6cf2
 Supports local filesystem and S3/MinIO cloud storage.
 """
 
-import os
 import logging
-from typing import Optional
+import os
 from functools import lru_cache
+from typing import Optional
 
 from shared.config import settings
 
@@ -18,6 +18,7 @@ logger = logging.getLogger(__name__)
 try:
     import boto3
     from botocore.exceptions import ClientError, NoCredentialsError
+
     S3_AVAILABLE = True
 except ImportError:
     S3_AVAILABLE = False
@@ -51,11 +52,11 @@ class StorageService:
             endpoint_url = os.getenv("S3_ENDPOINT_URL")
 
             self._s3_client = boto3.client(
-                's3',
+                "s3",
                 endpoint_url=endpoint_url,
                 aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
                 aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
-                region_name=os.getenv("AWS_REGION", "us-east-1")
+                region_name=os.getenv("AWS_REGION", "us-east-1"),
             )
 
             # Verify bucket exists or create it
@@ -63,9 +64,11 @@ class StorageService:
                 self._s3_client.head_bucket(Bucket=self.s3_bucket)
                 logger.info(f"S3 storage initialized with bucket: {self.s3_bucket}")
             except ClientError as e:
-                error_code = e.response.get('Error', {}).get('Code', '')
-                if error_code == '404':
-                    logger.warning(f"S3 bucket {self.s3_bucket} not found, will create on first upload")
+                error_code = e.response.get("Error", {}).get("Code", "")
+                if error_code == "404":
+                    logger.warning(
+                        f"S3 bucket {self.s3_bucket} not found, will create on first upload"
+                    )
                 else:
                     raise
 
@@ -109,11 +112,8 @@ class StorageService:
                 Bucket=self.s3_bucket,
                 Key=s3_key,
                 Body=data,
-                ContentType='application/gzip',
-                Metadata={
-                    'bundle-id': bundle_id,
-                    'constitutional-hash': 'cdd01ef066bc6cf2'
-                }
+                ContentType="application/gzip",
+                Metadata={"bundle-id": bundle_id, "constitutional-hash": "cdd01ef066bc6cf2"},
             )
 
             s3_uri = f"s3://{self.s3_bucket}/{s3_key}"
@@ -153,15 +153,12 @@ class StorageService:
         s3_key = self._get_s3_key(bundle_id)
 
         try:
-            response = self._s3_client.get_object(
-                Bucket=self.s3_bucket,
-                Key=s3_key
-            )
-            return response['Body'].read()
+            response = self._s3_client.get_object(Bucket=self.s3_bucket, Key=s3_key)
+            return response["Body"].read()
 
         except ClientError as e:
-            error_code = e.response.get('Error', {}).get('Code', '')
-            if error_code == 'NoSuchKey':
+            error_code = e.response.get("Error", {}).get("Code", "")
+            if error_code == "NoSuchKey":
                 logger.debug(f"Bundle {bundle_id} not found in S3")
             else:
                 logger.warning(f"S3 download failed for {bundle_id}: {e}")
@@ -198,10 +195,7 @@ class StorageService:
         s3_key = self._get_s3_key(bundle_id)
 
         try:
-            self._s3_client.delete_object(
-                Bucket=self.s3_bucket,
-                Key=s3_key
-            )
+            self._s3_client.delete_object(Bucket=self.s3_bucket, Key=s3_key)
             logger.info(f"Bundle {bundle_id} deleted from S3")
             return True
 
@@ -225,10 +219,7 @@ class StorageService:
         if self._s3_client and self.s3_bucket:
             s3_key = self._get_s3_key(bundle_id)
             try:
-                self._s3_client.head_object(
-                    Bucket=self.s3_bucket,
-                    Key=s3_key
-                )
+                self._s3_client.head_object(Bucket=self.s3_bucket, Key=s3_key)
                 return True
             except ClientError:
                 pass

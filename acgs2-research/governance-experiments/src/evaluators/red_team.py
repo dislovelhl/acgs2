@@ -2,10 +2,11 @@ import json
 import random
 import time
 from pathlib import Path
-from typing import List, Dict, Any
+from typing import Any, Dict
 
-from .metrics import GovernanceEvaluator
 from ..crypto.ledger_helper import ExperimentLedger
+from .metrics import GovernanceEvaluator
+
 
 class RedTeamSimulator:
     """
@@ -16,7 +17,7 @@ class RedTeamSimulator:
     def __init__(self, experiment_id: str, task_template_path: str):
         self.experiment_id = experiment_id
         self.ledger = ExperimentLedger(experiment_id)
-        with open(task_template_path, 'r') as f:
+        with open(task_template_path, "r") as f:
             self.tasks = json.load(f)
 
     def mock_governance_layer(self, task: Dict[str, Any]) -> str:
@@ -53,14 +54,12 @@ class RedTeamSimulator:
                 latency_ms = (time.time() - start_time) * 1000
 
                 self.ledger.record_event(
-                    task_id=task["id"],
-                    task_type=task["type"],
-                    action=action,
-                    latency_ms=latency_ms
+                    task_id=task["id"], task_type=task["type"], action=action, latency_ms=latency_ms
                 )
 
         print(f"Experiment {self.experiment_id} completed.")
         return self.ledger
+
 
 if __name__ == "__main__":
     # Ensure relative imports work if run as script
@@ -77,7 +76,7 @@ if __name__ == "__main__":
     ledger.export_logs(str(export_path))
 
     # Calculate initial metrics
-    with open(export_path, 'r') as f:
+    with open(export_path, "r") as f:
         logs = json.load(f)
     evaluator = GovernanceEvaluator(logs)
     print(evaluator.generate_summary())

@@ -6,10 +6,10 @@ Implement Text-to-SQL with Schema Reflection and Self-Correction Loop.
 """
 
 import logging
-import traceback
-from typing import List, Dict, Any, Optional, Tuple
+from typing import Any, Dict, List
 
 logger = logging.getLogger(__name__)
+
 
 class SQLAgent:
     """
@@ -23,14 +23,14 @@ class SQLAgent:
 
     async def execute_query(self, natural_query: str) -> Dict[str, Any]:
         """
-        Process a natural language query: 
+        Process a natural language query:
         Reflect -> Generate -> Execute -> (Error -> Correct -> Retry).
         """
         logger.info(f"Processing Text-to-SQL: {natural_query}")
 
         # 1. Schema Reflection (Mandate: reading system tables)
         schema_context = await self._reflect_schema()
-        
+
         current_query = natural_query
         generated_sql = ""
         last_error = ""
@@ -38,7 +38,7 @@ class SQLAgent:
         for attempt in range(self.max_retries):
             # 2. Generate SQL
             generated_sql = await self._generate_sql(current_query, schema_context, last_error)
-            
+
             # 3. Execute with Self-Correction Loop
             try:
                 results = await self._run_sql(generated_sql)
@@ -46,19 +46,19 @@ class SQLAgent:
                     "status": "success",
                     "sql": generated_sql,
                     "results": results,
-                    "attempts": attempt + 1
+                    "attempts": attempt + 1,
                 }
             except Exception as e:
                 logger.warning(f"SQL execution failed (attempt {attempt+1}): {e}")
                 last_error = str(e)
                 # Feed the traceback back for repair
                 current_query = f"The previous SQL resulted in an error: {last_error}. Natural Query: {natural_query}"
-        
+
         return {
             "status": "error",
             "last_sql": generated_sql,
             "error": last_error,
-            "attempts": self.max_retries
+            "attempts": self.max_retries,
         }
 
     async def _reflect_schema(self) -> str:
@@ -85,5 +85,6 @@ class SQLAgent:
         if "SUM" in sql:
             raise ValueError("Aggregations require GROUP BY or check schema")
         return [{"sum": 1200.50}]
+
 
 __all__ = ["SQLAgent"]

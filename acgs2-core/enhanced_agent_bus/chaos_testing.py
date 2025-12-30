@@ -15,20 +15,19 @@ Safety Features:
 
 import asyncio
 import logging
-import time
-from contextlib import asynccontextmanager, contextmanager
+import random
+import threading
+from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
 from functools import wraps
-from typing import Any, Callable, Dict, List, Optional, Set, Union
-import random
-import threading
+from typing import Any, Callable, Dict, List, Optional, Set
 
 # Import centralized constitutional hash from shared module
 try:
-    from shared.constants import CONSTITUTIONAL_HASH
     from shared.circuit_breaker import get_circuit_breaker
+    from shared.constants import CONSTITUTIONAL_HASH
 except ImportError:
     # Fallback for standalone usage
     CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
@@ -44,7 +43,6 @@ except ImportError:
     from exceptions import (  # type: ignore
         AgentBusError,
         ConstitutionalHashMismatchError,
-        MessageTimeoutError,
     )
 
 logger = logging.getLogger(__name__)
@@ -52,6 +50,7 @@ logger = logging.getLogger(__name__)
 
 class ChaosType(Enum):
     """Types of chaos scenarios that can be injected."""
+
     LATENCY = "latency"
     ERROR = "error"
     CIRCUIT_BREAKER = "circuit_breaker"
@@ -62,6 +61,7 @@ class ChaosType(Enum):
 
 class ResourceType(Enum):
     """Types of resources that can be exhausted."""
+
     CPU = "cpu"
     MEMORY = "memory"
     CONNECTIONS = "connections"
@@ -76,6 +76,7 @@ class ChaosScenario:
 
     Constitutional Hash: cdd01ef066bc6cf2
     """
+
     name: str
     chaos_type: ChaosType
     target: str  # Service/component to affect
@@ -116,14 +117,16 @@ class ChaosScenario:
 
         # Validate resource level
         if not 0.0 <= self.resource_level <= 1.0:
-            raise ValueError(f"resource_level must be between 0.0 and 1.0, got {self.resource_level}")
+            raise ValueError(
+                f"resource_level must be between 0.0 and 1.0, got {self.resource_level}"
+            )
 
         # Validate constitutional hash if required
         if self.require_hash_validation and self.constitutional_hash != CONSTITUTIONAL_HASH:
             raise ConstitutionalHashMismatchError(
                 expected_hash=CONSTITUTIONAL_HASH,
                 actual_hash=self.constitutional_hash,
-                context=f"ChaosScenario '{self.name}'"
+                context=f"ChaosScenario '{self.name}'",
             )
 
         # Add target to blast radius if not specified
@@ -173,7 +176,7 @@ class ChaosEngine:
             raise ConstitutionalHashMismatchError(
                 expected_hash=CONSTITUTIONAL_HASH,
                 actual_hash=constitutional_hash,
-                context="ChaosEngine initialization"
+                context="ChaosEngine initialization",
             )
 
         self.constitutional_hash = constitutional_hash
@@ -240,11 +243,7 @@ class ChaosEngine:
         }
 
     async def inject_latency(
-        self,
-        target: str,
-        delay_ms: int,
-        duration_s: float,
-        blast_radius: Optional[Set[str]] = None
+        self, target: str, delay_ms: int, duration_s: float, blast_radius: Optional[Set[str]] = None
     ) -> ChaosScenario:
         """
         Inject latency into target component.
@@ -276,7 +275,7 @@ class ChaosEngine:
         error_rate: float,
         error_type: type = Exception,
         duration_s: float = 10.0,
-        blast_radius: Optional[Set[str]] = None
+        blast_radius: Optional[Set[str]] = None,
     ) -> ChaosScenario:
         """
         Inject random errors into target component.
@@ -305,10 +304,7 @@ class ChaosEngine:
         return await self._activate_scenario(scenario)
 
     async def force_circuit_open(
-        self,
-        breaker_name: str,
-        duration_s: float,
-        blast_radius: Optional[Set[str]] = None
+        self, breaker_name: str, duration_s: float, blast_radius: Optional[Set[str]] = None
     ) -> ChaosScenario:
         """
         Force a circuit breaker to open state.
@@ -354,7 +350,7 @@ class ChaosEngine:
         level: float,
         target: str = "system",
         duration_s: float = 10.0,
-        blast_radius: Optional[Set[str]] = None
+        blast_radius: Optional[Set[str]] = None,
     ) -> ChaosScenario:
         """
         Simulate resource exhaustion.
@@ -387,7 +383,7 @@ class ChaosEngine:
         if self._emergency_stop:
             raise AgentBusError(
                 "Cannot activate chaos scenario: emergency stop is active",
-                constitutional_hash=self.constitutional_hash
+                constitutional_hash=self.constitutional_hash,
             )
 
         with self._lock:
@@ -402,9 +398,7 @@ class ChaosEngine:
         )
 
         # Schedule automatic cleanup
-        cleanup_task = asyncio.create_task(
-            self._schedule_cleanup(scenario)
-        )
+        cleanup_task = asyncio.create_task(self._schedule_cleanup(scenario))
         self._cleanup_tasks[scenario.name] = cleanup_task
 
         return scenario
@@ -416,8 +410,7 @@ class ChaosEngine:
             await self.deactivate_scenario(scenario.name)
         except asyncio.CancelledError:
             logger.info(
-                f"[{self.constitutional_hash}] Cleanup cancelled for "
-                f"scenario: {scenario.name}"
+                f"[{self.constitutional_hash}] Cleanup cancelled for " f"scenario: {scenario.name}"
             )
         except Exception as e:
             logger.error(
@@ -464,10 +457,7 @@ class ChaosEngine:
                     task.cancel()
                 del self._cleanup_tasks[scenario_name]
 
-        logger.info(
-            f"[{self.constitutional_hash}] Deactivated chaos scenario: "
-            f"{scenario_name}"
-        )
+        logger.info(f"[{self.constitutional_hash}] Deactivated chaos scenario: " f"{scenario_name}")
 
     def get_active_scenarios(self) -> List[ChaosScenario]:
         """Get list of active chaos scenarios."""
@@ -484,9 +474,11 @@ class ChaosEngine:
             return 0
 
         for scenario in self._active_scenarios.values():
-            if (scenario.active and
-                scenario.chaos_type == ChaosType.LATENCY and
-                scenario.is_target_allowed(target)):
+            if (
+                scenario.active
+                and scenario.chaos_type == ChaosType.LATENCY
+                and scenario.is_target_allowed(target)
+            ):
                 self._metrics["total_latency_injected_ms"] += scenario.delay_ms
                 return scenario.delay_ms
 
@@ -503,9 +495,11 @@ class ChaosEngine:
             return None
 
         for scenario in self._active_scenarios.values():
-            if (scenario.active and
-                scenario.chaos_type == ChaosType.ERROR and
-                scenario.is_target_allowed(target)):
+            if (
+                scenario.active
+                and scenario.chaos_type == ChaosType.ERROR
+                and scenario.is_target_allowed(target)
+            ):
                 if random.random() < scenario.error_rate:
                     self._metrics["total_errors_injected"] += 1
                     return scenario.error_type
@@ -551,11 +545,7 @@ def reset_chaos_engine():
 
 
 # Decorator for chaos testing
-def chaos_test(
-    scenario_type: str = "latency",
-    target: str = "message_processor",
-    **kwargs
-):
+def chaos_test(scenario_type: str = "latency", target: str = "message_processor", **kwargs):
     """
     Pytest decorator for easy chaos test creation.
 
@@ -565,6 +555,7 @@ def chaos_test(
             # Test runs with latency injection
             ...
     """
+
     def decorator(func: Callable):
         @wraps(func)
         async def async_wrapper(*args, **kwargs_inner):
@@ -600,11 +591,10 @@ def chaos_test(
 
         @wraps(func)
         def sync_wrapper(*args, **kwargs_inner):
-            raise RuntimeError(
-                "chaos_test decorator only supports async functions"
-            )
+            raise RuntimeError("chaos_test decorator only supports async functions")
 
         import asyncio
+
         if asyncio.iscoroutinefunction(func):
             return async_wrapper
         return sync_wrapper

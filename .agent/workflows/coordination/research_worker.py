@@ -6,19 +6,22 @@ A specialized worker that uses the RetrievalTriad for cognitive data gathering.
 """
 
 import logging
-from typing import Any, Dict, Optional
+from typing import Any, Optional
+
 from ..cyclic.state_schema import GlobalState
 from .supervisor import WorkerNode
 
 # Attempt to import RetrievalTriad
 try:
-    from enhanced_agent_bus.retrieval_triad import RetrievalTriad
     from enhanced_agent_bus.graph_database import create_graph_db_manager
+    from enhanced_agent_bus.retrieval_triad import RetrievalTriad
+
     HAS_TRIAD = True
 except ImportError:
     HAS_TRIAD = False
 
 logger = logging.getLogger(__name__)
+
 
 class ResearchWorker(WorkerNode):
     """
@@ -48,15 +51,16 @@ class ResearchWorker(WorkerNode):
             state.context[f"{self.name}_result"] = {
                 "status": "success",
                 "results": results,
-                "summary": f"Found {len(results)} relevant items via RetrievalTriad."
+                "summary": f"Found {len(results)} relevant items via RetrievalTriad.",
             }
         else:
             state.context[f"{self.name}_result"] = {
                 "status": "success",
                 "results": [],
-                "summary": "RetrievalTriad not available, returning empty results."
+                "summary": "RetrievalTriad not available, returning empty results.",
             }
 
         return state
+
 
 __all__ = ["ResearchWorker"]

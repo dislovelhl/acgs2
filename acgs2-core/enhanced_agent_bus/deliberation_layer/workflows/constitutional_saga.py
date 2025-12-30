@@ -22,16 +22,15 @@ Reference: https://temporal.io/blog/saga-pattern-made-easy
 """
 
 import asyncio
-import logging
 import json
-import os
-from pathlib import Path
-from dataclasses import dataclass, field, asdict
+import logging
+import uuid
+from abc import ABC, abstractmethod
+from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional, Awaitable, TypeVar, Generic, Union
-from abc import ABC, abstractmethod
-import uuid
+from pathlib import Path
+from typing import Any, Awaitable, Callable, Dict, Generic, List, Optional, TypeVar, Union
 
 try:
     from shared.constants import CONSTITUTIONAL_HASH
@@ -40,11 +39,12 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 class SagaStatus(Enum):
     """Status of the saga execution."""
+
     PENDING = "pending"
     EXECUTING = "executing"
     COMPLETED = "completed"
@@ -56,6 +56,7 @@ class SagaStatus(Enum):
 
 class StepStatus(Enum):
     """Status of individual saga step."""
+
     PENDING = "pending"
     EXECUTING = "executing"
     COMPLETED = "completed"
@@ -79,6 +80,7 @@ class SagaCompensation:
         description: Human-readable description
         idempotency_key: Key for deduplication
     """
+
     name: str
     execute: Callable[[Dict[str, Any]], Awaitable[bool]]
     description: str = ""
@@ -105,6 +107,7 @@ class SagaStep(Generic[T]):
         compensation: Compensation to run if this or later steps fail
         description: Human-readable description
     """
+
     name: str
     execute: Callable[[Dict[str, Any]], Awaitable[T]]
     compensation: Optional[SagaCompensation] = None
@@ -131,6 +134,7 @@ class SagaContext:
 
     Accumulates results from each step and provides shared state.
     """
+
     saga_id: str
     constitutional_hash: str = CONSTITUTIONAL_HASH
     tenant_id: Optional[str] = None
@@ -152,6 +156,7 @@ class SagaContext:
 @dataclass
 class SagaResult:
     """Result of saga execution."""
+
     saga_id: str
     status: SagaStatus
     completed_steps: List[str]
@@ -184,6 +189,7 @@ class SagaResult:
 @dataclass
 class SagaState:
     """Serializable state of a saga for persistence."""
+
     saga_id: str
     status: SagaStatus
     completed_steps: List[str]
@@ -197,16 +203,16 @@ class SagaState:
     def to_json(self) -> str:
         """Serialize to JSON string."""
         data = asdict(self)
-        data['status'] = self.status.value
-        data['updated_at'] = self.updated_at.isoformat()
+        data["status"] = self.status.value
+        data["updated_at"] = self.updated_at.isoformat()
         return json.dumps(data)
 
     @classmethod
-    def from_json(cls, json_str: str) -> 'SagaState':
+    def from_json(cls, json_str: str) -> "SagaState":
         """Deserialize from JSON string."""
         data = json.loads(json_str)
-        data['status'] = SagaStatus(data['status'])
-        data['updated_at'] = datetime.fromisoformat(data['updated_at'])
+        data["status"] = SagaStatus(data["status"])
+        data["updated_at"] = datetime.fromisoformat(data["updated_at"])
         return cls(**data)
 
 
@@ -241,14 +247,14 @@ class FileSagaPersistenceProvider(SagaPersistenceProvider):
 
     async def save_state(self, state: SagaState) -> None:
         path = self._get_path(state.saga_id)
-        with open(path, 'w') as f:
+        with open(path, "w") as f:
             f.write(state.to_json())
 
     async def load_state(self, saga_id: str) -> Optional[SagaState]:
         path = self._get_path(saga_id)
         if not path.exists():
             return None
-        with open(path, 'r') as f:
+        with open(path, "r") as f:
             return SagaState.from_json(f.read())
 
     async def delete_state(self, saga_id: str) -> None:
@@ -265,100 +271,69 @@ class SagaActivities(ABC):
 
     @abstractmethod
     async def reserve_capacity(
-        self,
-        saga_id: str,
-        resource_type: str,
-        amount: int
+        self, saga_id: str, resource_type: str, amount: int
     ) -> Dict[str, Any]:
         """Reserve capacity for the operation."""
         pass
 
     @abstractmethod
-    async def release_capacity(
-        self,
-        saga_id: str,
-        reservation_id: str
-    ) -> bool:
+    async def release_capacity(self, saga_id: str, reservation_id: str) -> bool:
         """Release previously reserved capacity (compensation)."""
         pass
 
     @abstractmethod
     async def validate_constitutional_compliance(
-        self,
-        saga_id: str,
-        data: Dict[str, Any],
-        constitutional_hash: str
+        self, saga_id: str, data: Dict[str, Any], constitutional_hash: str
     ) -> Dict[str, Any]:
         """Validate data against constitutional requirements."""
         pass
 
     @abstractmethod
-    async def log_validation_failure(
-        self,
-        saga_id: str,
-        validation_id: str,
-        reason: str
-    ) -> bool:
+    async def log_validation_failure(self, saga_id: str, validation_id: str, reason: str) -> bool:
         """Log validation failure for audit (compensation)."""
         pass
 
     @abstractmethod
     async def apply_policy_decision(
-        self,
-        saga_id: str,
-        policy_path: str,
-        decision_data: Dict[str, Any]
+        self, saga_id: str, policy_path: str, decision_data: Dict[str, Any]
     ) -> Dict[str, Any]:
         """Apply policy decision to system state."""
         pass
 
     @abstractmethod
-    async def revert_policy_decision(
-        self,
-        saga_id: str,
-        decision_id: str
-    ) -> bool:
+    async def revert_policy_decision(self, saga_id: str, decision_id: str) -> bool:
         """Revert policy decision (compensation)."""
         pass
 
     @abstractmethod
     async def record_audit_entry(
-        self,
-        saga_id: str,
-        entry_type: str,
-        entry_data: Dict[str, Any]
+        self, saga_id: str, entry_type: str, entry_data: Dict[str, Any]
     ) -> str:
         """Record entry to audit trail."""
         pass
 
     @abstractmethod
-    async def mark_audit_failed(
-        self,
-        saga_id: str,
-        audit_id: str,
-        reason: str
-    ) -> bool:
+    async def mark_audit_failed(self, saga_id: str, audit_id: str, reason: str) -> bool:
         """Mark audit entry as failed (compensation)."""
         pass
 
     @abstractmethod
     async def deliver_to_target(
-        self,
-        saga_id: str,
-        target_id: str,
-        payload: Dict[str, Any]
+        self, saga_id: str, target_id: str, payload: Dict[str, Any]
     ) -> Dict[str, Any]:
         """Deliver payload to target."""
         pass
 
     @abstractmethod
-    async def recall_from_target(
-        self,
-        saga_id: str,
-        delivery_id: str,
-        target_id: str
-    ) -> bool:
+    async def recall_from_target(self, saga_id: str, delivery_id: str, target_id: str) -> bool:
         """Recall/revoke delivery from target (compensation)."""
+        pass
+
+    @abstractmethod
+    async def audit_llm_reasoning(
+        self, saga_id: str, reasoning: str, constitutional_hash: str
+    ) -> Dict[str, Any]:
+        """Audit LLM thinking traces for constitutional compliance."""
         pass
 
 
@@ -366,33 +341,25 @@ class DefaultSagaActivities(SagaActivities):
     """Default implementation of saga activities."""
 
     async def reserve_capacity(
-        self,
-        saga_id: str,
-        resource_type: str,
-        amount: int
+        self, saga_id: str, resource_type: str, amount: int
     ) -> Dict[str, Any]:
         reservation_id = str(uuid.uuid4())
-        logger.info(f"Saga {saga_id}: Reserved {amount} {resource_type} (reservation: {reservation_id})")
+        logger.info(
+            f"Saga {saga_id}: Reserved {amount} {resource_type} (reservation: {reservation_id})"
+        )
         return {
             "reservation_id": reservation_id,
             "resource_type": resource_type,
             "amount": amount,
-            "timestamp": datetime.now(timezone.utc).isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }
 
-    async def release_capacity(
-        self,
-        saga_id: str,
-        reservation_id: str
-    ) -> bool:
+    async def release_capacity(self, saga_id: str, reservation_id: str) -> bool:
         logger.info(f"Saga {saga_id}: Released reservation {reservation_id}")
         return True
 
     async def validate_constitutional_compliance(
-        self,
-        saga_id: str,
-        data: Dict[str, Any],
-        constitutional_hash: str
+        self, saga_id: str, data: Dict[str, Any], constitutional_hash: str
     ) -> Dict[str, Any]:
         is_valid = data.get("constitutional_hash") == constitutional_hash
         validation_id = str(uuid.uuid4())
@@ -400,23 +367,15 @@ class DefaultSagaActivities(SagaActivities):
             "validation_id": validation_id,
             "is_valid": is_valid,
             "errors": [] if is_valid else ["Constitutional hash mismatch"],
-            "timestamp": datetime.now(timezone.utc).isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }
 
-    async def log_validation_failure(
-        self,
-        saga_id: str,
-        validation_id: str,
-        reason: str
-    ) -> bool:
+    async def log_validation_failure(self, saga_id: str, validation_id: str, reason: str) -> bool:
         logger.warning(f"Saga {saga_id}: Validation {validation_id} failed - {reason}")
         return True
 
     async def apply_policy_decision(
-        self,
-        saga_id: str,
-        policy_path: str,
-        decision_data: Dict[str, Any]
+        self, saga_id: str, policy_path: str, decision_data: Dict[str, Any]
     ) -> Dict[str, Any]:
         decision_id = str(uuid.uuid4())
         logger.info(f"Saga {saga_id}: Applied policy {policy_path} (decision: {decision_id})")
@@ -424,41 +383,26 @@ class DefaultSagaActivities(SagaActivities):
             "decision_id": decision_id,
             "policy_path": policy_path,
             "applied": True,
-            "timestamp": datetime.now(timezone.utc).isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }
 
-    async def revert_policy_decision(
-        self,
-        saga_id: str,
-        decision_id: str
-    ) -> bool:
+    async def revert_policy_decision(self, saga_id: str, decision_id: str) -> bool:
         logger.info(f"Saga {saga_id}: Reverted policy decision {decision_id}")
         return True
 
     async def record_audit_entry(
-        self,
-        saga_id: str,
-        entry_type: str,
-        entry_data: Dict[str, Any]
+        self, saga_id: str, entry_type: str, entry_data: Dict[str, Any]
     ) -> str:
         audit_id = str(uuid.uuid4())
         logger.info(f"Saga {saga_id}: Recorded audit entry {audit_id} ({entry_type})")
         return audit_id
 
-    async def mark_audit_failed(
-        self,
-        saga_id: str,
-        audit_id: str,
-        reason: str
-    ) -> bool:
+    async def mark_audit_failed(self, saga_id: str, audit_id: str, reason: str) -> bool:
         logger.warning(f"Saga {saga_id}: Marked audit {audit_id} as failed - {reason}")
         return True
 
     async def deliver_to_target(
-        self,
-        saga_id: str,
-        target_id: str,
-        payload: Dict[str, Any]
+        self, saga_id: str, target_id: str, payload: Dict[str, Any]
     ) -> Dict[str, Any]:
         delivery_id = str(uuid.uuid4())
         logger.info(f"Saga {saga_id}: Delivered to {target_id} (delivery: {delivery_id})")
@@ -466,17 +410,25 @@ class DefaultSagaActivities(SagaActivities):
             "delivery_id": delivery_id,
             "target_id": target_id,
             "delivered": True,
-            "timestamp": datetime.now(timezone.utc).isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }
 
-    async def recall_from_target(
-        self,
-        saga_id: str,
-        delivery_id: str,
-        target_id: str
-    ) -> bool:
+    async def recall_from_target(self, saga_id: str, delivery_id: str, target_id: str) -> bool:
         logger.warning(f"Saga {saga_id}: Recalled delivery {delivery_id} from {target_id}")
         return True
+
+    async def audit_llm_reasoning(
+        self, saga_id: str, reasoning: str, constitutional_hash: str
+    ) -> Dict[str, Any]:
+        audit_id = str(uuid.uuid4())
+        # Simulated reasoning audit
+        is_safe = "ignore previous instructions" not in reasoning.lower()
+        logger.info(f"Saga {saga_id}: Audited reasoning trace {audit_id} (Safe: {is_safe})")
+        return {
+            "audit_id": audit_id,
+            "is_safe": is_safe,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        }
 
 
 class ConstitutionalSagaWorkflow:
@@ -518,7 +470,7 @@ class ConstitutionalSagaWorkflow:
         saga_id: str,
         activities: Optional[SagaActivities] = None,
         persistence_provider: Optional[SagaPersistenceProvider] = None,
-        version: str = "1.0.0"
+        version: str = "1.0.0",
     ):
         self.saga_id = saga_id
         self.activities = activities or DefaultSagaActivities()
@@ -550,7 +502,7 @@ class ConstitutionalSagaWorkflow:
                 compensated_steps=self._compensated_steps.copy(),
                 failed_compensations=self._failed_compensations.copy(),
                 context=context.step_results.copy(),
-                version=self.version
+                version=self.version,
             )
             await self.persistence_provider.save_state(state)
 
@@ -602,11 +554,7 @@ class ConstitutionalSagaWorkflow:
 
         return self._build_result(context)
 
-    async def _execute_step(
-        self,
-        step: SagaStep,
-        context: SagaContext
-    ) -> bool:
+    async def _execute_step(self, step: SagaStep, context: SagaContext) -> bool:
         """Execute a single saga step with retries."""
         step.status = StepStatus.EXECUTING
         step.started_at = datetime.now(timezone.utc)
@@ -629,8 +577,7 @@ class ConstitutionalSagaWorkflow:
 
                 # Execute with timeout
                 result = await asyncio.wait_for(
-                    step.execute(step_input),
-                    timeout=step.timeout_seconds
+                    step.execute(step_input), timeout=step.timeout_seconds
                 )
 
                 step.result = result
@@ -657,8 +604,7 @@ class ConstitutionalSagaWorkflow:
             except asyncio.TimeoutError:
                 step.error = f"Timeout after {step.timeout_seconds}s"
                 logger.warning(
-                    f"Saga {self.saga_id}: Step '{step.name}' timed out "
-                    f"(attempt {attempt + 1})"
+                    f"Saga {self.saga_id}: Step '{step.name}' timed out " f"(attempt {attempt + 1})"
                 )
 
             except Exception as e:
@@ -694,9 +640,7 @@ class ConstitutionalSagaWorkflow:
             await self._save_current_state(context)
 
     async def _execute_compensation(
-        self,
-        compensation: SagaCompensation,
-        context: SagaContext
+        self, compensation: SagaCompensation, context: SagaContext
     ) -> bool:
         """Execute a single compensation with retries."""
         logger.info(f"Saga {self.saga_id}: Running compensation '{compensation.name}'")
@@ -709,7 +653,8 @@ class ConstitutionalSagaWorkflow:
                     "compensation_name": compensation.name,
                     "attempt": attempt + 1,
                     "context": context.step_results.copy(),
-                    "idempotency_key": compensation.idempotency_key or f"{self.saga_id}:{compensation.name}",
+                    "idempotency_key": compensation.idempotency_key
+                    or f"{self.saga_id}:{compensation.name}",
                 }
 
                 result = await compensation.execute(comp_input)
@@ -741,9 +686,7 @@ class ConstitutionalSagaWorkflow:
         """Build saga result from current state."""
         execution_time = 0.0
         if self._start_time:
-            execution_time = (
-                datetime.now(timezone.utc) - self._start_time
-            ).total_seconds() * 1000
+            execution_time = (datetime.now(timezone.utc) - self._start_time).total_seconds() * 1000
 
         return SagaResult(
             saga_id=self.saga_id,
@@ -763,7 +706,7 @@ class ConstitutionalSagaWorkflow:
     async def resume(
         saga_id: str,
         persistence_provider: SagaPersistenceProvider,
-        activities: Optional[SagaActivities] = None
+        activities: Optional[SagaActivities] = None,
     ) -> Optional["ConstitutionalSagaWorkflow"]:
         """
         Resume a saga from persistent storage.
@@ -779,7 +722,7 @@ class ConstitutionalSagaWorkflow:
             saga_id=saga_id,
             activities=activities,
             persistence_provider=persistence_provider,
-            version=state.version
+            version=state.version,
         )
 
         saga._status = state.status
@@ -796,8 +739,7 @@ class ConstitutionalSagaWorkflow:
 
 
 def create_constitutional_validation_saga(
-    saga_id: str,
-    activities: Optional[SagaActivities] = None
+    saga_id: str, activities: Optional[SagaActivities] = None
 ) -> ConstitutionalSagaWorkflow:
     """
     Factory function to create a standard constitutional validation saga.
@@ -817,35 +759,34 @@ def create_constitutional_validation_saga(
     # Step 1: Reserve capacity
     async def reserve_capacity(input: Dict[str, Any]) -> Dict[str, Any]:
         return await acts.reserve_capacity(
-            saga_id=input["saga_id"],
-            resource_type="validation_slots",
-            amount=1
+            saga_id=input["saga_id"], resource_type="validation_slots", amount=1
         )
 
     async def release_capacity(input: Dict[str, Any]) -> bool:
         reservation = input["context"].get("reserve_capacity", {})
         return await acts.release_capacity(
-            saga_id=input["saga_id"],
-            reservation_id=reservation.get("reservation_id", "unknown")
+            saga_id=input["saga_id"], reservation_id=reservation.get("reservation_id", "unknown")
         )
 
-    saga.add_step(SagaStep(
-        name="reserve_capacity",
-        description="Reserve validation capacity",
-        execute=reserve_capacity,
-        compensation=SagaCompensation(
-            name="release_capacity",
-            description="Release reserved capacity",
-            execute=release_capacity
+    saga.add_step(
+        SagaStep(
+            name="reserve_capacity",
+            description="Reserve validation capacity",
+            execute=reserve_capacity,
+            compensation=SagaCompensation(
+                name="release_capacity",
+                description="Release reserved capacity",
+                execute=release_capacity,
+            ),
         )
-    ))
+    )
 
     # Step 2: Validate constitutional compliance
     async def validate_compliance(input: Dict[str, Any]) -> Dict[str, Any]:
         return await acts.validate_constitutional_compliance(
             saga_id=input["saga_id"],
             data=input["context"],
-            constitutional_hash=input["constitutional_hash"]
+            constitutional_hash=input["constitutional_hash"],
         )
 
     async def log_validation_failure(input: Dict[str, Any]) -> bool:
@@ -853,71 +794,93 @@ def create_constitutional_validation_saga(
         return await acts.log_validation_failure(
             saga_id=input["saga_id"],
             validation_id=validation.get("validation_id", "unknown"),
-            reason="Saga compensated"
+            reason="Saga compensated",
         )
 
-    saga.add_step(SagaStep(
-        name="validate_compliance",
-        description="Validate constitutional compliance",
-        execute=validate_compliance,
-        compensation=SagaCompensation(
-            name="log_validation_failure",
-            description="Log validation as failed",
-            execute=log_validation_failure
+    saga.add_step(
+        SagaStep(
+            name="validate_compliance",
+            description="Validate constitutional compliance",
+            execute=validate_compliance,
+            compensation=SagaCompensation(
+                name="log_validation_failure",
+                description="Log validation as failed",
+                execute=log_validation_failure,
+            ),
         )
-    ))
+    )
+
+    # Step 2.5: Audit Reasoning Trace
+    async def audit_reasoning(input: Dict[str, Any]) -> Dict[str, Any]:
+        reasoning = input["context"].get("llm_reasoning", "")
+        if not reasoning:
+            return {"audit_id": "none", "is_safe": True, "skipped": True}
+
+        return await acts.audit_llm_reasoning(
+            saga_id=input["saga_id"],
+            reasoning=reasoning,
+            constitutional_hash=input["constitutional_hash"],
+        )
+
+    saga.add_step(
+        SagaStep(
+            name="audit_reasoning",
+            description="Audit LLM thinking traces",
+            execute=audit_reasoning,
+            is_optional=True,
+        )
+    )
 
     # Step 3: Apply policy decision
     async def apply_policy(input: Dict[str, Any]) -> Dict[str, Any]:
         return await acts.apply_policy_decision(
             saga_id=input["saga_id"],
             policy_path="acgs/constitutional/allow",
-            decision_data=input["context"]
+            decision_data=input["context"],
         )
 
     async def revert_policy(input: Dict[str, Any]) -> bool:
         decision = input["context"].get("apply_policy", {})
         return await acts.revert_policy_decision(
-            saga_id=input["saga_id"],
-            decision_id=decision.get("decision_id", "unknown")
+            saga_id=input["saga_id"], decision_id=decision.get("decision_id", "unknown")
         )
 
-    saga.add_step(SagaStep(
-        name="apply_policy",
-        description="Apply policy decision",
-        execute=apply_policy,
-        compensation=SagaCompensation(
-            name="revert_policy",
-            description="Revert policy decision",
-            execute=revert_policy
+    saga.add_step(
+        SagaStep(
+            name="apply_policy",
+            description="Apply policy decision",
+            execute=apply_policy,
+            compensation=SagaCompensation(
+                name="revert_policy", description="Revert policy decision", execute=revert_policy
+            ),
         )
-    ))
+    )
 
     # Step 4: Record audit entry
     async def record_audit(input: Dict[str, Any]) -> str:
         return await acts.record_audit_entry(
             saga_id=input["saga_id"],
             entry_type="constitutional_validation",
-            entry_data=input["context"]
+            entry_data=input["context"],
         )
 
     async def mark_audit_failed(input: Dict[str, Any]) -> bool:
         audit_id = input["context"].get("record_audit", "unknown")
         return await acts.mark_audit_failed(
-            saga_id=input["saga_id"],
-            audit_id=audit_id,
-            reason="Saga compensated"
+            saga_id=input["saga_id"], audit_id=audit_id, reason="Saga compensated"
         )
 
-    saga.add_step(SagaStep(
-        name="record_audit",
-        description="Record to audit trail",
-        execute=record_audit,
-        compensation=SagaCompensation(
-            name="mark_audit_failed",
-            description="Mark audit as failed",
-            execute=mark_audit_failed
+    saga.add_step(
+        SagaStep(
+            name="record_audit",
+            description="Record to audit trail",
+            execute=record_audit,
+            compensation=SagaCompensation(
+                name="mark_audit_failed",
+                description="Mark audit as failed",
+                execute=mark_audit_failed,
+            ),
         )
-    ))
+    )
 
     return saga

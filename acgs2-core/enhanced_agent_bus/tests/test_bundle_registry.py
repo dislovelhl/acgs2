@@ -5,49 +5,50 @@ Constitutional Hash: cdd01ef066bc6cf2
 Tests for OCI bundle registry client and distribution service.
 """
 
-import asyncio
-import json
 import os
 import tempfile
+from unittest.mock import AsyncMock, patch
+
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch, PropertyMock
 
 # Skip if dependencies not available
 aiohttp = pytest.importorskip("aiohttp", reason="aiohttp required for bundle_registry")
-cryptography = pytest.importorskip("cryptography", reason="cryptography required for bundle_registry")
+cryptography = pytest.importorskip(
+    "cryptography", reason="cryptography required for bundle_registry"
+)
 jsonschema = pytest.importorskip("jsonschema", reason="jsonschema required for bundle_registry")
 
 try:
     from bundle_registry import (
         CONSTITUTIONAL_HASH,
-        RegistryType,
-        BundleStatus,
-        BundleManifest,
-        BundleArtifact,
-        RegistryAuthProvider,
-        BasicAuthProvider,
         AWSECRAuthProvider,
-        OCIRegistryClient,
+        BasicAuthProvider,
+        BundleArtifact,
         BundleDistributionService,
+        BundleManifest,
+        BundleStatus,
+        OCIRegistryClient,
+        RegistryAuthProvider,
+        RegistryType,
+        close_distribution_service,
         get_distribution_service,
         initialize_distribution_service,
-        close_distribution_service,
     )
 except ImportError:
     from ..bundle_registry import (
         CONSTITUTIONAL_HASH,
-        RegistryType,
-        BundleStatus,
-        BundleManifest,
-        BundleArtifact,
-        RegistryAuthProvider,
-        BasicAuthProvider,
         AWSECRAuthProvider,
-        OCIRegistryClient,
+        BasicAuthProvider,
+        BundleArtifact,
         BundleDistributionService,
+        BundleManifest,
+        BundleStatus,
+        OCIRegistryClient,
+        RegistryAuthProvider,
+        RegistryType,
+        close_distribution_service,
         get_distribution_service,
         initialize_distribution_service,
-        close_distribution_service,
     )
 
 
@@ -132,10 +133,7 @@ class TestBundleManifest:
 
     def test_create_manifest(self):
         """Create a basic manifest."""
-        manifest = BundleManifest(
-            version="1.0.0",
-            revision="a" * 40  # 40-char git SHA
-        )
+        manifest = BundleManifest(version="1.0.0", revision="a" * 40)  # 40-char git SHA
         assert manifest.version == "1.0.0"
         assert manifest.revision == "a" * 40
         assert manifest.constitutional_hash == CONSTITUTIONAL_HASH
@@ -164,19 +162,12 @@ class TestBundleManifest:
     def test_invalid_constitutional_hash_raises(self):
         """Invalid constitutional hash raises ValueError."""
         with pytest.raises(ValueError, match="Invalid constitutional hash"):
-            BundleManifest(
-                version="1.0.0",
-                revision="a" * 40,
-                constitutional_hash="invalid"
-            )
+            BundleManifest(version="1.0.0", revision="a" * 40, constitutional_hash="invalid")
 
     def test_to_dict(self):
         """to_dict returns correct dictionary."""
         manifest = BundleManifest(
-            version="1.0.0",
-            revision="a" * 40,
-            roots=["root1", "root2"],
-            metadata={"key": "value"}
+            version="1.0.0", revision="a" * 40, roots=["root1", "root2"], metadata={"key": "value"}
         )
         result = manifest.to_dict()
 
@@ -195,7 +186,7 @@ class TestBundleManifest:
             "revision": "b" * 40,
             "roots": ["r1"],
             "signatures": [{"keyid": "key12345", "sig": "a" * 64, "alg": "ed25519"}],
-            "metadata": {"test": True}
+            "metadata": {"test": True},
         }
         manifest = BundleManifest.from_dict(data)
 
@@ -228,14 +219,10 @@ class TestBundleManifest:
     def test_compute_digest_deterministic(self):
         """compute_digest returns same value for same content."""
         manifest1 = BundleManifest(
-            version="1.0.0",
-            revision="a" * 40,
-            timestamp="2025-01-01T00:00:00Z"
+            version="1.0.0", revision="a" * 40, timestamp="2025-01-01T00:00:00Z"
         )
         manifest2 = BundleManifest(
-            version="1.0.0",
-            revision="a" * 40,
-            timestamp="2025-01-01T00:00:00Z"
+            version="1.0.0", revision="a" * 40, timestamp="2025-01-01T00:00:00Z"
         )
 
         assert manifest1.compute_digest() == manifest2.compute_digest()
@@ -260,10 +247,7 @@ class TestBundleArtifact:
 
     def test_create_artifact(self):
         """Create a basic artifact."""
-        artifact = BundleArtifact(
-            digest="sha256:abc123",
-            size=1024
-        )
+        artifact = BundleArtifact(digest="sha256:abc123", size=1024)
         assert artifact.digest == "sha256:abc123"
         assert artifact.size == 1024
         assert artifact.media_type == "application/vnd.opa.bundle.layer.v1+gzip"
@@ -271,20 +255,12 @@ class TestBundleArtifact:
     def test_artifact_with_manifest(self):
         """Create artifact with manifest."""
         manifest = BundleManifest(version="1.0.0", revision="a" * 40)
-        artifact = BundleArtifact(
-            digest="sha256:abc123",
-            size=1024,
-            manifest=manifest
-        )
+        artifact = BundleArtifact(digest="sha256:abc123", size=1024, manifest=manifest)
         assert artifact.manifest is manifest
 
     def test_artifact_annotations(self):
         """Create artifact with annotations."""
-        artifact = BundleArtifact(
-            digest="sha256:abc123",
-            size=1024,
-            annotations={"key": "value"}
-        )
+        artifact = BundleArtifact(digest="sha256:abc123", size=1024, annotations={"key": "value"})
         assert artifact.annotations == {"key": "value"}
 
     def test_artifact_default_annotations(self):
@@ -320,6 +296,7 @@ class TestBasicAuthProvider:
     async def test_get_token(self):
         """get_token returns base64 encoded credentials."""
         import base64
+
         provider = BasicAuthProvider("user", "pass")
         token = await provider.get_token()
 
@@ -398,26 +375,17 @@ class TestOCIRegistryClient:
     def test_client_with_auth_provider(self):
         """Client accepts auth provider."""
         auth = BasicAuthProvider("user", "pass")
-        client = OCIRegistryClient(
-            "https://registry.example.com",
-            auth_provider=auth
-        )
+        client = OCIRegistryClient("https://registry.example.com", auth_provider=auth)
         assert client.auth_provider is auth
 
     def test_client_with_registry_type(self):
         """Client accepts registry type."""
-        client = OCIRegistryClient(
-            "https://ecr.aws.com",
-            registry_type=RegistryType.ECR
-        )
+        client = OCIRegistryClient("https://ecr.aws.com", registry_type=RegistryType.ECR)
         assert client.registry_type == RegistryType.ECR
 
     def test_client_ssl_disabled(self):
         """Client can disable SSL verification."""
-        client = OCIRegistryClient(
-            "https://registry.example.com",
-            verify_ssl=False
-        )
+        client = OCIRegistryClient("https://registry.example.com", verify_ssl=False)
         assert client.verify_ssl is False
 
     def test_from_url_https(self):
@@ -449,10 +417,7 @@ class TestOCIRegistryClient:
 
     def test_stats_with_ecr_type(self):
         """Stats include correct registry type."""
-        client = OCIRegistryClient(
-            "https://ecr.aws.com",
-            registry_type=RegistryType.ECR
-        )
+        client = OCIRegistryClient("https://ecr.aws.com", registry_type=RegistryType.ECR)
         stats = client.get_stats()
         assert stats["type"] == "ecr"
 
@@ -500,10 +465,7 @@ class TestBundleDistributionService:
         fallback1 = OCIRegistryClient("https://fallback1.example.com")
         fallback2 = OCIRegistryClient("https://fallback2.example.com")
 
-        service = BundleDistributionService(
-            primary,
-            fallback_registries=[fallback1, fallback2]
-        )
+        service = BundleDistributionService(primary, fallback_registries=[fallback1, fallback2])
 
         assert len(service.fallbacks) == 2
         assert service.fallbacks[0] is fallback1
@@ -543,6 +505,7 @@ class TestModuleFunctions:
         """get_distribution_service returns None initially."""
         # Reset global state
         import bundle_registry
+
         bundle_registry._distribution_service = None
 
         result = get_distribution_service()
@@ -552,13 +515,12 @@ class TestModuleFunctions:
     async def test_initialize_distribution_service(self):
         """initialize_distribution_service creates service."""
         import bundle_registry
+
         bundle_registry._distribution_service = None
 
         # Mock the initialize to avoid actual HTTP
-        with patch.object(OCIRegistryClient, 'initialize', new_callable=AsyncMock):
-            service = await initialize_distribution_service(
-                "https://registry.example.com"
-            )
+        with patch.object(OCIRegistryClient, "initialize", new_callable=AsyncMock):
+            service = await initialize_distribution_service("https://registry.example.com")
 
             assert service is not None
             assert service.primary is not None
@@ -570,15 +532,14 @@ class TestModuleFunctions:
     @pytest.mark.asyncio
     async def test_close_distribution_service(self):
         """close_distribution_service cleans up properly."""
-        import bundle_registry
 
         # Setup mock service
-        with patch.object(OCIRegistryClient, 'initialize', new_callable=AsyncMock):
+        with patch.object(OCIRegistryClient, "initialize", new_callable=AsyncMock):
             await initialize_distribution_service("https://registry.example.com")
 
             assert get_distribution_service() is not None
 
-            with patch.object(OCIRegistryClient, 'close', new_callable=AsyncMock):
+            with patch.object(OCIRegistryClient, "close", new_callable=AsyncMock):
                 await close_distribution_service()
 
             assert get_distribution_service() is None
@@ -593,7 +554,7 @@ class TestManifestRoundTrip:
             version="1.2.3",
             revision="c" * 40,
             roots=["policies/main"],
-            metadata={"env": "prod", "count": 42}
+            metadata={"env": "prod", "count": 42},
         )
         original.add_signature("key12345", "a" * 64, "ed25519")
 
@@ -619,9 +580,9 @@ class TestAuthProviderAbstract:
         assert issubclass(RegistryAuthProvider, abc.ABC)
 
         # Check abstract methods
-        abstract_methods = getattr(RegistryAuthProvider, '__abstractmethods__', set())
-        assert 'get_token' in abstract_methods
-        assert 'refresh_token' in abstract_methods
+        abstract_methods = getattr(RegistryAuthProvider, "__abstractmethods__", set())
+        assert "get_token" in abstract_methods
+        assert "refresh_token" in abstract_methods
 
     def test_cannot_instantiate_directly(self):
         """Cannot instantiate RegistryAuthProvider directly."""
@@ -650,10 +611,7 @@ class TestClientHeaders:
     async def test_headers_with_basic_auth(self):
         """Headers with basic auth provider."""
         auth = BasicAuthProvider("user", "pass")
-        client = OCIRegistryClient(
-            "https://registry.example.com",
-            auth_provider=auth
-        )
+        client = OCIRegistryClient("https://registry.example.com", auth_provider=auth)
         await client.initialize()
 
         headers = await client._get_headers()
@@ -671,9 +629,7 @@ class TestClientHeaders:
         auth._token = "test_token"  # Mock token
 
         client = OCIRegistryClient(
-            "https://ecr.aws.com",
-            auth_provider=auth,
-            registry_type=RegistryType.ECR
+            "https://ecr.aws.com", auth_provider=auth, registry_type=RegistryType.ECR
         )
         await client.initialize()
 

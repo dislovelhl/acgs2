@@ -38,7 +38,7 @@ def fix_kwarg_type_hints(content: str) -> Tuple[str, int]:
     # Pattern for keyword args with simple types
     pattern1 = re.compile(
         r'(\s+)(\w+):\s*(?:str|int|float|bool)\s*=\s*("(?:[^"\\]|\\.)*"|\'(?:[^\'\\]|\\.)*\'|[\d.]+|True|False|None)(,?\s*(?:#[^\n]*)?\n)',
-        re.MULTILINE
+        re.MULTILINE,
     )
 
     # Only replace if we're inside a function call (preceded by ( or , on a previous line)
@@ -47,7 +47,7 @@ def fix_kwarg_type_hints(content: str) -> Tuple[str, int]:
         name = match.group(2)
         value = match.group(3)
         trailing = match.group(4)
-        return f'{indent}{name}={value}{trailing}'
+        return f"{indent}{name}={value}{trailing}"
 
     # Find all matches and check context
     new_content = content
@@ -55,35 +55,39 @@ def fix_kwarg_type_hints(content: str) -> Tuple[str, int]:
         # Check if this looks like a function call context
         # Look backward for opening paren or previous argument
         start = match.start()
-        context = content[max(0, start-200):start]
+        context = content[max(0, start - 200) : start]
 
         # If we see a class definition or dataclass, skip
-        if re.search(r'@dataclass|class\s+\w+.*:\s*$', context, re.MULTILINE):
+        if re.search(r"@dataclass|class\s+\w+.*:\s*$", context, re.MULTILINE):
             # Check if this is at class level (field definition)
-            lines_before = context.split('\n')
-            if lines_before and not any('(' in line for line in lines_before[-3:]):
+            lines_before = context.split("\n")
+            if lines_before and not any("(" in line for line in lines_before[-3:]):
                 continue
 
         # If we see an opening paren in recent lines, it's likely a function call
-        if '(' in context.split('\n')[-1] or any('(' in line and ')' not in line for line in context.split('\n')[-5:]):
-            new_content = new_content[:match.start()] + replace_kwarg(match) + new_content[match.end():]
+        if "(" in context.split("\n")[-1] or any(
+            "(" in line and ")" not in line for line in context.split("\n")[-5:]
+        ):
+            new_content = (
+                new_content[: match.start()] + replace_kwarg(match) + new_content[match.end() :]
+            )
             fixes += 1
 
     # Simpler approach: target specific patterns in function calls
     # Pattern: inside parentheses with multiple arguments
-    lines = new_content.split('\n')
+    lines = new_content.split("\n")
     new_lines = []
     in_call = 0
 
     for i, line in enumerate(lines):
         # Track parentheses depth
-        in_call += line.count('(') - line.count(')')
+        in_call += line.count("(") - line.count(")")
 
         # If we're inside a call (paren depth > 0), fix type-hinted kwargs
         if in_call > 0:
             # Match kwarg with type hint
             kwarg_pattern = re.compile(
-                r'^(\s*)(\w+):\s*(?:str|int|float|bool|dict|list|Any|Optional)(?:\[[^\]]*\])?\s*=\s*(.+)$'
+                r"^(\s*)(\w+):\s*(?:str|int|float|bool|dict|list|Any|Optional)(?:\[[^\]]*\])?\s*=\s*(.+)$"
             )
             match = kwarg_pattern.match(line)
             if match:
@@ -91,15 +95,15 @@ def fix_kwarg_type_hints(content: str) -> Tuple[str, int]:
                 name = match.group(2)
                 value = match.group(3)
                 # Only fix if it looks like a function argument (not a field default)
-                if not line.strip().startswith('@') and '(' not in line[:line.find('=')]:
-                    new_line = f'{indent}{name}={value}'
+                if not line.strip().startswith("@") and "(" not in line[: line.find("=")]:
+                    new_line = f"{indent}{name}={value}"
                     new_lines.append(new_line)
                     fixes += 1
                     continue
 
         new_lines.append(line)
 
-    return '\n'.join(new_lines), fixes
+    return "\n".join(new_lines), fixes
 
 
 def fix_double_type_annotations(content: str) -> Tuple[str, int]:
@@ -111,11 +115,11 @@ def fix_double_type_annotations(content: str) -> Tuple[str, int]:
 
     # Pattern: param: Type[...]: Type
     pattern = re.compile(
-        r'(\w+:\s*(?:dict|list|Optional|Union|Any|Callable)\[[^\]]+\]):\s*(?:Any|str|int|float|bool|None|Self)'
+        r"(\w+:\s*(?:dict|list|Optional|Union|Any|Callable)\[[^\]]+\]):\s*(?:Any|str|int|float|bool|None|Self)"
     )
 
     while pattern.search(content):
-        content = pattern.sub(r'\1', content)
+        content = pattern.sub(r"\1", content)
         fixes += 1
 
     return content, fixes
@@ -128,10 +132,10 @@ def fix_self_type_hint(content: str) -> Tuple[str, int]:
     fixes = 0
 
     # Pattern: (self, or (self)
-    pattern = re.compile(r'\(self:\s*Self([,)])')
+    pattern = re.compile(r"\(self:\s*Self([,)])")
 
     while pattern.search(content):
-        content = pattern.sub(r'(self\1', content)
+        content = pattern.sub(r"(self\1", content)
         fixes += 1
 
     return content, fixes
@@ -140,7 +144,7 @@ def fix_self_type_hint(content: str) -> Tuple[str, int]:
 def process_file(filepath: Path, dry_run: bool = False) -> Tuple[bool, int]:
     """Process a single file."""
     try:
-        content = filepath.read_text(encoding='utf-8')
+        content = filepath.read_text(encoding="utf-8")
     except Exception as e:
         print(f"  Error reading {filepath}: {e}")
         return False, 0
@@ -159,7 +163,7 @@ def process_file(filepath: Path, dry_run: bool = False) -> Tuple[bool, int]:
 
     if total_fixes > 0:
         if not dry_run:
-            filepath.write_text(content, encoding='utf-8')
+            filepath.write_text(content, encoding="utf-8")
         return True, total_fixes
 
     return False, 0
@@ -169,15 +173,15 @@ def main():
     import argparse
 
     parser = argparse.ArgumentParser(
-        description='Fix keyword argument type hints in ACGS-2 codebase'
+        description="Fix keyword argument type hints in ACGS-2 codebase"
     )
-    parser.add_argument('paths', nargs='*', default=['.'])
-    parser.add_argument('--dry-run', action='store_true')
-    parser.add_argument('--verbose', '-v', action='store_true')
+    parser.add_argument("paths", nargs="*", default=["."])
+    parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument("--verbose", "-v", action="store_true")
 
     args = parser.parse_args()
 
-    print(f"ACGS-2 Keyword Argument Type Hint Repair Tool")
+    print("ACGS-2 Keyword Argument Type Hint Repair Tool")
     print(f"Constitutional Hash: {CONSTITUTIONAL_HASH}")
     print()
 
@@ -188,15 +192,15 @@ def main():
     for path_str in args.paths:
         path = Path(path_str)
 
-        if path.is_file() and path.suffix == '.py':
+        if path.is_file() and path.suffix == ".py":
             files = [path]
         elif path.is_dir():
-            files = list(path.rglob('*.py'))
+            files = list(path.rglob("*.py"))
         else:
             continue
 
         for filepath in files:
-            skip_dirs = ['__pycache__', '.git', 'node_modules', '.venv']
+            skip_dirs = ["__pycache__", ".git", "node_modules", ".venv"]
             if any(skip_dir in str(filepath) for skip_dir in skip_dirs):
                 continue
 
@@ -210,7 +214,7 @@ def main():
                     action = "Would fix" if args.dry_run else "Fixed"
                     print(f"  {action} {fixes} patterns in {filepath}")
 
-    print(f"Summary:")
+    print("Summary:")
     print(f"  Files scanned: {total_files}")
     print(f"  Files modified: {modified_files}")
     print(f"  Total fixes: {total_fixes}")
@@ -218,5 +222,5 @@ def main():
     return 0
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     sys.exit(main())

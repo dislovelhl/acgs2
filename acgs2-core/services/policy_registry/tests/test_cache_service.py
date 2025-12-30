@@ -11,12 +11,13 @@ Comprehensive test coverage for CacheService including:
 - Cache statistics
 """
 
-import pytest
 import asyncio
-import time
 import json
+import time
 from datetime import datetime, timezone
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
+
+import pytest
 
 # Constitutional hash constant
 CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
@@ -26,15 +27,14 @@ CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
 # Fixtures
 # =============================================================================
 
+
 @pytest.fixture
 def cache_service():
     """Create a fresh CacheService instance for testing."""
     from app.services.cache_service import CacheService
+
     return CacheService(
-        redis_url="redis://localhost:6379",
-        local_cache_size=100,
-        redis_ttl=3600,
-        local_ttl=300
+        redis_url="redis://localhost:6379", local_cache_size=100, redis_ttl=3600, local_ttl=300
     )
 
 
@@ -42,11 +42,12 @@ def cache_service():
 def cache_service_short_ttl():
     """Create a CacheService with very short TTL for expiration testing."""
     from app.services.cache_service import CacheService
+
     return CacheService(
         redis_url="redis://localhost:6379",
         local_cache_size=10,
         redis_ttl=1,
-        local_ttl=1  # 1 second TTL for testing expiration
+        local_ttl=1,  # 1 second TTL for testing expiration
     )
 
 
@@ -59,10 +60,7 @@ def mock_redis_client():
     mock.get = AsyncMock(return_value=None)
     mock.delete = AsyncMock(return_value=1)
     mock.close = AsyncMock()
-    mock.info = AsyncMock(return_value={
-        "connected_clients": 5,
-        "used_memory_human": "10MB"
-    })
+    mock.info = AsyncMock(return_value={"connected_clients": 5, "used_memory_human": "10MB"})
     return mock
 
 
@@ -73,10 +71,7 @@ def sample_policy_data():
         "name": "test-policy",
         "version": "1.0.0",
         "rules": ["rule1", "rule2"],
-        "metadata": {
-            "author": "test",
-            "created_at": datetime.now(timezone.utc).isoformat()
-        }
+        "metadata": {"author": "test", "created_at": datetime.now(timezone.utc).isoformat()},
     }
 
 
@@ -84,12 +79,14 @@ def sample_policy_data():
 # Initialization Tests
 # =============================================================================
 
+
 class TestCacheServiceInitialization:
     """Tests for CacheService initialization."""
 
     def test_init_default_values(self):
         """Test initialization with default values."""
         from app.services.cache_service import CacheService
+
         service = CacheService()
 
         assert service.redis_url == "redis://localhost:6379"
@@ -101,11 +98,9 @@ class TestCacheServiceInitialization:
     def test_init_custom_values(self):
         """Test initialization with custom values."""
         from app.services.cache_service import CacheService
+
         service = CacheService(
-            redis_url="redis://custom:6380",
-            local_cache_size=50,
-            redis_ttl=7200,
-            local_ttl=600
+            redis_url="redis://custom:6380", local_cache_size=50, redis_ttl=7200, local_ttl=600
         )
 
         assert service.redis_url == "redis://custom:6380"
@@ -117,6 +112,7 @@ class TestCacheServiceInitialization:
         """Test initialization when Redis is not available."""
         with patch("app.services.cache_service.redis", None):
             from app.services.cache_service import CacheService
+
             service = CacheService()
             await service.initialize()
             assert service.redis_client is None
@@ -148,6 +144,7 @@ class TestCacheServiceInitialization:
 # =============================================================================
 # Local Cache Tests
 # =============================================================================
+
 
 class TestLocalCacheOperations:
     """Tests for local cache operations without Redis."""
@@ -211,11 +208,14 @@ class TestLocalCacheOperations:
 # Redis Integration Tests (Mocked)
 # =============================================================================
 
+
 class TestRedisIntegration:
     """Tests for Redis integration."""
 
     @pytest.mark.asyncio
-    async def test_set_policy_with_redis(self, cache_service, mock_redis_client, sample_policy_data):
+    async def test_set_policy_with_redis(
+        self, cache_service, mock_redis_client, sample_policy_data
+    ):
         """Test setting policy stores in both Redis and local cache."""
         cache_service.redis_client = mock_redis_client
 
@@ -231,15 +231,14 @@ class TestRedisIntegration:
         assert "policy:policy-1:v1" in cache_service._local_cache
 
     @pytest.mark.asyncio
-    async def test_get_policy_from_redis_fallback(self, cache_service, mock_redis_client, sample_policy_data):
+    async def test_get_policy_from_redis_fallback(
+        self, cache_service, mock_redis_client, sample_policy_data
+    ):
         """Test getting policy from Redis when not in local cache."""
         cache_service.redis_client = mock_redis_client
 
         # Simulate Redis returning cached data
-        cached_data = {
-            "data": sample_policy_data,
-            "timestamp": time.time()
-        }
+        cached_data = {"data": sample_policy_data, "timestamp": time.time()}
         mock_redis_client.get.return_value = json.dumps(cached_data)
 
         result = await cache_service.get_policy("policy-1", "v1")
@@ -249,7 +248,9 @@ class TestRedisIntegration:
         assert "policy:policy-1:v1" in cache_service._local_cache
 
     @pytest.mark.asyncio
-    async def test_redis_set_failure_graceful(self, cache_service, mock_redis_client, sample_policy_data):
+    async def test_redis_set_failure_graceful(
+        self, cache_service, mock_redis_client, sample_policy_data
+    ):
         """Test that Redis set failure doesn't break local caching."""
         cache_service.redis_client = mock_redis_client
         mock_redis_client.setex.side_effect = Exception("Redis error")
@@ -273,6 +274,7 @@ class TestRedisIntegration:
 # =============================================================================
 # Cache Invalidation Tests
 # =============================================================================
+
 
 class TestCacheInvalidation:
     """Tests for cache invalidation."""
@@ -310,7 +312,9 @@ class TestCacheInvalidation:
         assert await cache_service.get_policy("policy-2", "v1") is not None
 
     @pytest.mark.asyncio
-    async def test_invalidate_with_redis(self, cache_service, mock_redis_client, sample_policy_data):
+    async def test_invalidate_with_redis(
+        self, cache_service, mock_redis_client, sample_policy_data
+    ):
         """Test invalidation removes from both local and Redis."""
         cache_service.redis_client = mock_redis_client
 
@@ -331,6 +335,7 @@ class TestCacheInvalidation:
 # =============================================================================
 # Public Key Caching Tests
 # =============================================================================
+
 
 class TestPublicKeyCaching:
     """Tests for public key caching."""
@@ -388,10 +393,7 @@ class TestPublicKeyCaching:
         """Test getting public key from Redis when not in local cache."""
         cache_service.redis_client = mock_redis_client
 
-        cached_data = {
-            "public_key": "redis-stored-key",
-            "timestamp": time.time()
-        }
+        cached_data = {"public_key": "redis-stored-key", "timestamp": time.time()}
         mock_redis_client.get.return_value = json.dumps(cached_data)
 
         result = await cache_service.get_public_key("key-1")
@@ -402,6 +404,7 @@ class TestPublicKeyCaching:
 # =============================================================================
 # Cache Statistics Tests
 # =============================================================================
+
 
 class TestCacheStatistics:
     """Tests for cache statistics."""
@@ -456,6 +459,7 @@ class TestCacheStatistics:
 # LRU Cache Tests
 # =============================================================================
 
+
 class TestLRUCache:
     """Tests for LRU cache functionality."""
 
@@ -464,7 +468,7 @@ class TestLRUCache:
         cache_key = "policy:test:v1"
         cache_service._local_cache[cache_key] = {
             "data": sample_policy_data,
-            "timestamp": time.time()
+            "timestamp": time.time(),
         }
 
         result = cache_service._get_cached_policy_impl("test", "v1")
@@ -476,7 +480,7 @@ class TestLRUCache:
         cache_key = "policy:test:v1"
         service._local_cache[cache_key] = {
             "data": sample_policy_data,
-            "timestamp": time.time() - 10  # 10 seconds ago (expired)
+            "timestamp": time.time() - 10,  # 10 seconds ago (expired)
         }
 
         result = service._get_cached_policy_impl("test", "v1")
@@ -491,6 +495,7 @@ class TestLRUCache:
 # =============================================================================
 # Edge Case Tests
 # =============================================================================
+
 
 class TestEdgeCases:
     """Tests for edge cases and boundary conditions."""
@@ -523,7 +528,7 @@ class TestEdgeCases:
 
         large_data = {
             "rules": ["rule"] * 1000,
-            "metadata": {f"key_{i}": f"value_{i}" for i in range(100)}
+            "metadata": {f"key_{i}": f"value_{i}" for i in range(100)},
         }
 
         await cache_service.set_policy("large-policy", "v1", large_data)
@@ -560,6 +565,7 @@ class TestEdgeCases:
 # Constitutional Compliance Tests
 # =============================================================================
 
+
 class TestConstitutionalCompliance:
     """Tests for constitutional compliance."""
 
@@ -570,6 +576,7 @@ class TestConstitutionalCompliance:
     def test_service_module_exists(self):
         """Test that the cache service module can be imported."""
         from app.services.cache_service import CacheService
+
         assert CacheService is not None
 
     @pytest.mark.asyncio

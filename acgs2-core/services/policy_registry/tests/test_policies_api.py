@@ -12,11 +12,12 @@ Comprehensive test coverage for policy management API endpoints:
 - A/B testing
 """
 
-import pytest
 from datetime import datetime, timezone
-from unittest.mock import AsyncMock, MagicMock, patch
-from typing import Dict, Any, List, Optional
-from fastapi import FastAPI, HTTPException
+from typing import Any, Dict
+from unittest.mock import patch
+
+import pytest
+from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 # Constitutional hash constant
@@ -26,6 +27,7 @@ CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
 # =============================================================================
 # Mock Models
 # =============================================================================
+
 
 class MockPolicy:
     """Mock Policy model for testing."""
@@ -38,7 +40,7 @@ class MockPolicy:
         content: Dict[str, Any],
         format: str = "json",
         description: str = None,
-        status: str = "draft"
+        status: str = "draft",
     ):
         self.policy_id = policy_id
         self.tenant_id = tenant_id
@@ -62,7 +64,7 @@ class MockPolicy:
             "status": self.status,
             "created_at": self.created_at.isoformat(),
             "updated_at": self.updated_at.isoformat(),
-            "constitutional_hash": self.constitutional_hash
+            "constitutional_hash": self.constitutional_hash,
         }
 
 
@@ -75,7 +77,7 @@ class MockPolicyVersion:
         version: str,
         content: Dict[str, Any],
         signature: str = None,
-        ab_test_group: str = None
+        ab_test_group: str = None,
     ):
         self.policy_id = policy_id
         self.version = version
@@ -93,13 +95,14 @@ class MockPolicyVersion:
             "signature": self.signature,
             "ab_test_group": self.ab_test_group,
             "created_at": self.created_at.isoformat(),
-            "is_active": self.is_active
+            "is_active": self.is_active,
         }
 
 
 # =============================================================================
 # Mock Services
 # =============================================================================
+
 
 class MockPolicyService:
     """Mock policy service for testing."""
@@ -128,7 +131,7 @@ class MockPolicyService:
             name=name,
             content=content,
             format=format,
-            description=description
+            description=description,
         )
         self._policies[policy_id] = policy
         return policy
@@ -142,13 +145,7 @@ class MockPolicyService:
         return self._versions.get(policy_id, [])
 
     async def create_policy_version(
-        self,
-        policy_id,
-        content,
-        version,
-        private_key_b64,
-        public_key_b64,
-        ab_test_group=None
+        self, policy_id, content, version, private_key_b64, public_key_b64, ab_test_group=None
     ):
         """Create a new policy version."""
         if policy_id not in self._policies:
@@ -159,7 +156,7 @@ class MockPolicyService:
             version=version,
             content=content,
             signature="mock_signature",
-            ab_test_group=ab_test_group.value if ab_test_group else None
+            ab_test_group=ab_test_group.value if ab_test_group else None,
         )
 
         if policy_id not in self._versions:
@@ -201,12 +198,14 @@ class MockPolicyService:
 
 class MockCryptoService:
     """Mock crypto service for testing."""
+
     pass
 
 
 # =============================================================================
 # Fixtures
 # =============================================================================
+
 
 @pytest.fixture
 def mock_policy_service():
@@ -228,7 +227,7 @@ def mock_user_admin():
         "tenant_id": "tenant-abc",
         "role": "system_admin",
         "capabilities": ["read", "write", "admin"],
-        "constitutional_hash": CONSTITUTIONAL_HASH
+        "constitutional_hash": CONSTITUTIONAL_HASH,
     }
 
 
@@ -240,7 +239,7 @@ def mock_user_viewer():
         "tenant_id": "tenant-abc",
         "role": "viewer",
         "capabilities": ["read"],
-        "constitutional_hash": CONSTITUTIONAL_HASH
+        "constitutional_hash": CONSTITUTIONAL_HASH,
     }
 
 
@@ -250,20 +249,22 @@ def sample_policy_content():
     return {
         "rules": [
             {"action": "allow", "resource": "documents"},
-            {"action": "deny", "resource": "admin"}
+            {"action": "deny", "resource": "admin"},
         ],
-        "version": "1.0.0"
+        "version": "1.0.0",
     }
 
 
 @pytest.fixture
 def mock_opa_service():
     """Create mock OPA service."""
+
     class MockOPA:
         async def check_authorization(self, user, action, resource):
             if user.get("role") in ["system_admin", "tenant_admin", "auditor"]:
                 return True
             return False
+
     return MockOPA()
 
 
@@ -271,13 +272,14 @@ def mock_opa_service():
 # List Policies Tests
 # =============================================================================
 
+
 class TestListPolicies:
     """Tests for GET /policies endpoint."""
 
     def test_list_policies_empty(self, mock_policy_service, mock_user_admin, mock_opa_service):
         """Test listing policies returns empty list."""
-        from app.api.v1 import policies
         from app.api.dependencies import get_policy_service
+        from app.api.v1 import policies
         from app.api.v1.auth import get_current_user
 
         app = FastAPI()
@@ -292,19 +294,20 @@ class TestListPolicies:
         assert response.status_code == 200
         assert response.json() == []
 
-    def test_list_policies_returns_policies(self, mock_policy_service, mock_user_admin, sample_policy_content):
+    def test_list_policies_returns_policies(
+        self, mock_policy_service, mock_user_admin, sample_policy_content
+    ):
         """Test listing policies returns existing policies."""
-        from app.api.v1 import policies
-        from app.api.dependencies import get_policy_service
-        from app.api.v1.auth import get_current_user
         import asyncio
+
+        from app.api.dependencies import get_policy_service
+        from app.api.v1 import policies
+        from app.api.v1.auth import get_current_user
 
         # Add some policies
         asyncio.get_event_loop().run_until_complete(
             mock_policy_service.create_policy(
-                name="Test Policy",
-                tenant_id="tenant-abc",
-                content=sample_policy_content
+                name="Test Policy", tenant_id="tenant-abc", content=sample_policy_content
             )
         )
 
@@ -322,26 +325,25 @@ class TestListPolicies:
         assert len(data) == 1
         assert data[0]["name"] == "Test Policy"
 
-    def test_list_policies_filters_by_tenant(self, mock_policy_service, mock_user_admin, sample_policy_content):
+    def test_list_policies_filters_by_tenant(
+        self, mock_policy_service, mock_user_admin, sample_policy_content
+    ):
         """Test that policies are filtered by tenant."""
-        from app.api.v1 import policies
-        from app.api.dependencies import get_policy_service
-        from app.api.v1.auth import get_current_user
         import asyncio
+
+        from app.api.dependencies import get_policy_service
+        from app.api.v1 import policies
+        from app.api.v1.auth import get_current_user
 
         # Add policies for different tenants
         asyncio.get_event_loop().run_until_complete(
             mock_policy_service.create_policy(
-                name="Tenant A Policy",
-                tenant_id="tenant-abc",
-                content=sample_policy_content
+                name="Tenant A Policy", tenant_id="tenant-abc", content=sample_policy_content
             )
         )
         asyncio.get_event_loop().run_until_complete(
             mock_policy_service.create_policy(
-                name="Tenant B Policy",
-                tenant_id="tenant-xyz",
-                content=sample_policy_content
+                name="Tenant B Policy", tenant_id="tenant-xyz", content=sample_policy_content
             )
         )
 
@@ -365,19 +367,16 @@ class TestListPolicies:
 # Create Policy Tests
 # =============================================================================
 
+
 class TestCreatePolicy:
     """Tests for POST /policies endpoint."""
 
     def test_create_policy_success(
-        self,
-        mock_policy_service,
-        mock_user_admin,
-        sample_policy_content,
-        mock_opa_service
+        self, mock_policy_service, mock_user_admin, sample_policy_content, mock_opa_service
     ):
         """Test successful policy creation."""
-        from app.api.v1 import policies
         from app.api.dependencies import get_policy_service
+        from app.api.v1 import policies
         from app.api.v1.auth import check_role
 
         app = FastAPI()
@@ -389,20 +388,23 @@ class TestCreatePolicy:
         async def mock_check():
             return mock_user_admin
 
-        with patch('app.services.OPAService', return_value=mock_opa_service):
-            app.dependency_overrides[check_role(["tenant_admin", "system_admin"], action="create", resource="policy")] = mock_check
+        with patch("app.services.OPAService", return_value=mock_opa_service):
+            app.dependency_overrides[
+                check_role(["tenant_admin", "system_admin"], action="create", resource="policy")
+            ] = mock_check
 
             client = TestClient(app)
 
             # Due to dependency injection complexity, we verify model creation directly
             import asyncio
+
             policy = asyncio.get_event_loop().run_until_complete(
                 mock_policy_service.create_policy(
                     name="New Policy",
                     tenant_id="tenant-abc",
                     content=sample_policy_content,
                     format="json",
-                    description="Test policy"
+                    description="Test policy",
                 )
             )
 
@@ -417,7 +419,7 @@ class TestCreatePolicy:
             name="Test Policy",
             content=sample_policy_content,
             format="json",
-            description="Test description"
+            description="Test description",
         )
 
         assert policy.policy_id == "policy-1"
@@ -429,21 +431,21 @@ class TestCreatePolicy:
 # Get Policy Tests
 # =============================================================================
 
+
 class TestGetPolicy:
     """Tests for GET /policies/{policy_id} endpoint."""
 
     def test_get_policy_success(self, mock_policy_service, sample_policy_content):
         """Test successful policy retrieval."""
-        from app.api.v1 import policies
-        from app.api.dependencies import get_policy_service
         import asyncio
+
+        from app.api.dependencies import get_policy_service
+        from app.api.v1 import policies
 
         # Create policy first
         asyncio.get_event_loop().run_until_complete(
             mock_policy_service.create_policy(
-                name="Test Policy",
-                tenant_id="tenant-abc",
-                content=sample_policy_content
+                name="Test Policy", tenant_id="tenant-abc", content=sample_policy_content
             )
         )
 
@@ -462,8 +464,8 @@ class TestGetPolicy:
 
     def test_get_policy_not_found(self, mock_policy_service):
         """Test 404 when policy not found."""
-        from app.api.v1 import policies
         from app.api.dependencies import get_policy_service
+        from app.api.v1 import policies
 
         app = FastAPI()
         app.include_router(policies.router, prefix="/policies")
@@ -481,21 +483,21 @@ class TestGetPolicy:
 # Policy Versions Tests
 # =============================================================================
 
+
 class TestPolicyVersions:
     """Tests for policy version endpoints."""
 
     def test_list_versions_empty(self, mock_policy_service, sample_policy_content):
         """Test listing versions returns empty list."""
-        from app.api.v1 import policies
-        from app.api.dependencies import get_policy_service
         import asyncio
+
+        from app.api.dependencies import get_policy_service
+        from app.api.v1 import policies
 
         # Create policy
         asyncio.get_event_loop().run_until_complete(
             mock_policy_service.create_policy(
-                name="Test Policy",
-                tenant_id="tenant-abc",
-                content=sample_policy_content
+                name="Test Policy", tenant_id="tenant-abc", content=sample_policy_content
             )
         )
 
@@ -512,16 +514,15 @@ class TestPolicyVersions:
 
     def test_get_version_not_found(self, mock_policy_service, sample_policy_content):
         """Test 404 when version not found."""
-        from app.api.v1 import policies
-        from app.api.dependencies import get_policy_service
         import asyncio
+
+        from app.api.dependencies import get_policy_service
+        from app.api.v1 import policies
 
         # Create policy
         asyncio.get_event_loop().run_until_complete(
             mock_policy_service.create_policy(
-                name="Test Policy",
-                tenant_id="tenant-abc",
-                content=sample_policy_content
+                name="Test Policy", tenant_id="tenant-abc", content=sample_policy_content
             )
         )
 
@@ -540,21 +541,21 @@ class TestPolicyVersions:
 # Policy Content Tests
 # =============================================================================
 
+
 class TestPolicyContent:
     """Tests for GET /policies/{policy_id}/content endpoint."""
 
     def test_get_policy_content_success(self, mock_policy_service, sample_policy_content):
         """Test successful policy content retrieval."""
-        from app.api.v1 import policies
-        from app.api.dependencies import get_policy_service
         import asyncio
+
+        from app.api.dependencies import get_policy_service
+        from app.api.v1 import policies
 
         # Create policy
         asyncio.get_event_loop().run_until_complete(
             mock_policy_service.create_policy(
-                name="Test Policy",
-                tenant_id="tenant-abc",
-                content=sample_policy_content
+                name="Test Policy", tenant_id="tenant-abc", content=sample_policy_content
             )
         )
 
@@ -572,8 +573,8 @@ class TestPolicyContent:
 
     def test_get_policy_content_not_found(self, mock_policy_service):
         """Test 404 when policy content not found."""
-        from app.api.v1 import policies
         from app.api.dependencies import get_policy_service
+        from app.api.v1 import policies
 
         app = FastAPI()
         app.include_router(policies.router, prefix="/policies")
@@ -587,16 +588,15 @@ class TestPolicyContent:
 
     def test_get_policy_content_with_client_id(self, mock_policy_service, sample_policy_content):
         """Test policy content retrieval with client ID for A/B testing."""
-        from app.api.v1 import policies
-        from app.api.dependencies import get_policy_service
         import asyncio
+
+        from app.api.dependencies import get_policy_service
+        from app.api.v1 import policies
 
         # Create policy
         asyncio.get_event_loop().run_until_complete(
             mock_policy_service.create_policy(
-                name="Test Policy",
-                tenant_id="tenant-abc",
-                content=sample_policy_content
+                name="Test Policy", tenant_id="tenant-abc", content=sample_policy_content
             )
         )
 
@@ -617,6 +617,7 @@ class TestPolicyContent:
 # Mock Service Tests
 # =============================================================================
 
+
 class TestMockPolicyService:
     """Tests for mock policy service functionality."""
 
@@ -624,14 +625,10 @@ class TestMockPolicyService:
     async def test_create_and_list_policies(self, mock_policy_service, sample_policy_content):
         """Test creating and listing policies."""
         await mock_policy_service.create_policy(
-            name="Policy 1",
-            tenant_id="tenant-abc",
-            content=sample_policy_content
+            name="Policy 1", tenant_id="tenant-abc", content=sample_policy_content
         )
         await mock_policy_service.create_policy(
-            name="Policy 2",
-            tenant_id="tenant-abc",
-            content=sample_policy_content
+            name="Policy 2", tenant_id="tenant-abc", content=sample_policy_content
         )
 
         policies = await mock_policy_service.list_policies()
@@ -642,9 +639,7 @@ class TestMockPolicyService:
     async def test_create_and_get_version(self, mock_policy_service, sample_policy_content):
         """Test creating and getting policy version."""
         await mock_policy_service.create_policy(
-            name="Test Policy",
-            tenant_id="tenant-abc",
-            content=sample_policy_content
+            name="Test Policy", tenant_id="tenant-abc", content=sample_policy_content
         )
 
         version = await mock_policy_service.create_policy_version(
@@ -652,7 +647,7 @@ class TestMockPolicyService:
             content=sample_policy_content,
             version="v1.0.0",
             private_key_b64="dummy_private_key",
-            public_key_b64="dummy_public_key"
+            public_key_b64="dummy_public_key",
         )
 
         assert version.version == "v1.0.0"
@@ -662,9 +657,7 @@ class TestMockPolicyService:
     async def test_activate_version(self, mock_policy_service, sample_policy_content):
         """Test activating policy version."""
         await mock_policy_service.create_policy(
-            name="Test Policy",
-            tenant_id="tenant-abc",
-            content=sample_policy_content
+            name="Test Policy", tenant_id="tenant-abc", content=sample_policy_content
         )
 
         await mock_policy_service.create_policy_version(
@@ -672,7 +665,7 @@ class TestMockPolicyService:
             content=sample_policy_content,
             version="v1.0.0",
             private_key_b64="dummy_private_key",
-            public_key_b64="dummy_public_key"
+            public_key_b64="dummy_public_key",
         )
 
         await mock_policy_service.activate_version("policy-1", "v1.0.0")
@@ -684,9 +677,7 @@ class TestMockPolicyService:
     async def test_verify_signature(self, mock_policy_service, sample_policy_content):
         """Test signature verification."""
         await mock_policy_service.create_policy(
-            name="Test Policy",
-            tenant_id="tenant-abc",
-            content=sample_policy_content
+            name="Test Policy", tenant_id="tenant-abc", content=sample_policy_content
         )
 
         await mock_policy_service.create_policy_version(
@@ -694,7 +685,7 @@ class TestMockPolicyService:
             content=sample_policy_content,
             version="v1.0.0",
             private_key_b64="dummy_private_key",
-            public_key_b64="dummy_public_key"
+            public_key_b64="dummy_public_key",
         )
 
         is_valid = await mock_policy_service.verify_policy_signature("policy-1", "v1.0.0")
@@ -708,6 +699,7 @@ class TestMockPolicyService:
 # =============================================================================
 # Constitutional Compliance Tests
 # =============================================================================
+
 
 class TestConstitutionalCompliance:
     """Tests for constitutional compliance."""
@@ -724,7 +716,7 @@ class TestConstitutionalCompliance:
             policy_id="policy-1",
             tenant_id="tenant-abc",
             name="Test Policy",
-            content=sample_policy_content
+            content=sample_policy_content,
         )
 
         assert policy.constitutional_hash == CONSTITUTIONAL_HASH
@@ -735,13 +727,14 @@ class TestConstitutionalCompliance:
 # Authorization Tests
 # =============================================================================
 
+
 class TestPolicyAuthorization:
     """Tests for policy endpoint authorization."""
 
     def test_list_policies_requires_auth(self, mock_policy_service):
         """Test that listing policies requires authentication."""
-        from app.api.v1 import policies
         from app.api.dependencies import get_policy_service
+        from app.api.v1 import policies
 
         app = FastAPI()
         app.include_router(policies.router, prefix="/policies")
@@ -757,15 +750,14 @@ class TestPolicyAuthorization:
 
     def test_get_policy_no_auth_required(self, mock_policy_service, sample_policy_content):
         """Test that getting policy by ID doesn't require special auth."""
-        from app.api.v1 import policies
-        from app.api.dependencies import get_policy_service
         import asyncio
+
+        from app.api.dependencies import get_policy_service
+        from app.api.v1 import policies
 
         asyncio.get_event_loop().run_until_complete(
             mock_policy_service.create_policy(
-                name="Test Policy",
-                tenant_id="tenant-abc",
-                content=sample_policy_content
+                name="Test Policy", tenant_id="tenant-abc", content=sample_policy_content
             )
         )
 
@@ -785,6 +777,7 @@ class TestPolicyAuthorization:
 # Edge Cases Tests
 # =============================================================================
 
+
 class TestEdgeCases:
     """Tests for edge cases and error handling."""
 
@@ -795,9 +788,7 @@ class TestEdgeCases:
         # Service should handle empty name
         policy = asyncio.get_event_loop().run_until_complete(
             mock_policy_service.create_policy(
-                name="",
-                tenant_id="tenant-abc",
-                content=sample_policy_content
+                name="", tenant_id="tenant-abc", content=sample_policy_content
             )
         )
 
@@ -814,28 +805,28 @@ class TestEdgeCases:
                     "resource": "documents",
                     "conditions": {
                         "time": {"start": "09:00", "end": "17:00"},
-                        "roles": ["admin", "editor"]
-                    }
+                        "roles": ["admin", "editor"],
+                    },
                 }
             ],
             "metadata": {
                 "version": "2.0.0",
                 "author": "test-user",
-                "tags": ["governance", "access-control"]
-            }
+                "tags": ["governance", "access-control"],
+            },
         }
 
         policy = asyncio.get_event_loop().run_until_complete(
             mock_policy_service.create_policy(
-                name="Complex Policy",
-                tenant_id="tenant-abc",
-                content=complex_content
+                name="Complex Policy", tenant_id="tenant-abc", content=complex_content
             )
         )
 
         assert policy.content == complex_content
 
-    def test_policy_with_special_characters_in_name(self, mock_policy_service, sample_policy_content):
+    def test_policy_with_special_characters_in_name(
+        self, mock_policy_service, sample_policy_content
+    ):
         """Test policy with special characters in name."""
         import asyncio
 
@@ -843,7 +834,7 @@ class TestEdgeCases:
             mock_policy_service.create_policy(
                 name="Policy with 特殊字符 & symbols!",
                 tenant_id="tenant-abc",
-                content=sample_policy_content
+                content=sample_policy_content,
             )
         )
 
@@ -854,6 +845,7 @@ class TestEdgeCases:
 # Policy Status Tests
 # =============================================================================
 
+
 class TestPolicyStatus:
     """Tests for policy status handling."""
 
@@ -863,7 +855,7 @@ class TestPolicyStatus:
             policy_id="policy-1",
             tenant_id="tenant-abc",
             name="Test Policy",
-            content=sample_policy_content
+            content=sample_policy_content,
         )
 
         assert policy.status == "draft"
@@ -875,7 +867,7 @@ class TestPolicyStatus:
             tenant_id="tenant-abc",
             name="Test Policy",
             content=sample_policy_content,
-            status="active"
+            status="active",
         )
 
         policy_dict = policy.dict()
@@ -886,6 +878,7 @@ class TestPolicyStatus:
 # Timestamp Tests
 # =============================================================================
 
+
 class TestTimestamps:
     """Tests for timestamp handling."""
 
@@ -895,7 +888,7 @@ class TestTimestamps:
             policy_id="policy-1",
             tenant_id="tenant-abc",
             name="Test Policy",
-            content=sample_policy_content
+            content=sample_policy_content,
         )
 
         assert policy.created_at is not None
@@ -906,9 +899,7 @@ class TestTimestamps:
     def test_version_has_timestamp(self, sample_policy_content):
         """Test that policy versions have timestamps."""
         version = MockPolicyVersion(
-            policy_id="policy-1",
-            version="v1.0.0",
-            content=sample_policy_content
+            policy_id="policy-1", version="v1.0.0", content=sample_policy_content
         )
 
         assert version.created_at is not None

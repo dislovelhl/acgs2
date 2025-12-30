@@ -5,17 +5,18 @@ Constitutional Hash: cdd01ef066bc6cf2
 Alert management with severity levels and status tracking.
 """
 
+import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from enum import Enum
 from typing import Any, Dict, Optional
-import uuid
 
 CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
 
 
 class AlertSeverity(Enum):
     """Alert severity levels."""
+
     CRITICAL = "critical"
     ERROR = "error"
     WARNING = "warning"
@@ -24,6 +25,7 @@ class AlertSeverity(Enum):
 
 class AlertStatus(Enum):
     """Alert status values."""
+
     TRIGGERED = "triggered"
     ACKNOWLEDGED = "acknowledged"
     RESOLVED = "resolved"
@@ -32,6 +34,7 @@ class AlertStatus(Enum):
 @dataclass
 class Alert:
     """Alert data class with lifecycle management."""
+
     title: str
     description: str = ""
     severity: AlertSeverity = AlertSeverity.INFO

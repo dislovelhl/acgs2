@@ -25,11 +25,11 @@ Reference: https://docs.temporal.io/workflows
 
 import asyncio
 import logging
+from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from enum import Enum
-from typing import Any, Dict, List, Optional, Callable, Awaitable
-from abc import ABC, abstractmethod
+from typing import Any, Awaitable, Callable, Dict, List, Optional
 
 try:
     from shared.constants import CONSTITUTIONAL_HASH
@@ -41,6 +41,7 @@ logger = logging.getLogger(__name__)
 
 class WorkflowStatus(Enum):
     """Status of the deliberation workflow."""
+
     PENDING = "pending"
     SCORING = "scoring"
     VALIDATING = "validating"
@@ -56,6 +57,7 @@ class WorkflowStatus(Enum):
 @dataclass
 class DeliberationWorkflowInput:
     """Input parameters for the deliberation workflow."""
+
     message_id: str
     content: str
     from_agent: str
@@ -79,6 +81,7 @@ class DeliberationWorkflowInput:
 @dataclass
 class DeliberationWorkflowResult:
     """Result of the deliberation workflow."""
+
     workflow_id: str
     message_id: str
     status: WorkflowStatus
@@ -127,6 +130,7 @@ class DeliberationWorkflowResult:
 @dataclass
 class Vote:
     """Represents a vote from an agent."""
+
     agent_id: str
     decision: str  # "approve", "reject", "abstain"
     reasoning: str
@@ -145,10 +149,7 @@ class DeliberationActivities(ABC):
 
     @abstractmethod
     async def validate_constitutional_hash(
-        self,
-        message_id: str,
-        provided_hash: str,
-        expected_hash: str = CONSTITUTIONAL_HASH
+        self, message_id: str, provided_hash: str, expected_hash: str = CONSTITUTIONAL_HASH
     ) -> Dict[str, Any]:
         """
         Validate constitutional hash compliance.
@@ -160,10 +161,7 @@ class DeliberationActivities(ABC):
 
     @abstractmethod
     async def calculate_impact_score(
-        self,
-        message_id: str,
-        content: str,
-        context: Optional[Dict[str, Any]] = None
+        self, message_id: str, content: str, context: Optional[Dict[str, Any]] = None
     ) -> float:
         """
         Calculate impact score using DistilBERT model.
@@ -178,7 +176,7 @@ class DeliberationActivities(ABC):
         self,
         message_id: str,
         message_data: Dict[str, Any],
-        policy_path: str = "acgs/deliberation/allow"
+        policy_path: str = "acgs/deliberation/allow",
     ) -> Dict[str, Any]:
         """
         Evaluate OPA policy for the message.
@@ -190,10 +188,7 @@ class DeliberationActivities(ABC):
 
     @abstractmethod
     async def request_agent_votes(
-        self,
-        message_id: str,
-        voting_agents: List[str],
-        deadline: datetime
+        self, message_id: str, voting_agents: List[str], deadline: datetime
     ) -> str:
         """
         Send vote requests to participating agents.
@@ -205,10 +200,7 @@ class DeliberationActivities(ABC):
 
     @abstractmethod
     async def collect_votes(
-        self,
-        message_id: str,
-        request_id: str,
-        timeout_seconds: int
+        self, message_id: str, request_id: str, timeout_seconds: int
     ) -> List[Vote]:
         """
         Collect votes from agents (polls until deadline or all votes received).
@@ -220,10 +212,7 @@ class DeliberationActivities(ABC):
 
     @abstractmethod
     async def notify_human_reviewer(
-        self,
-        message_id: str,
-        reviewer_id: Optional[str],
-        notification_channel: str = "slack"
+        self, message_id: str, reviewer_id: Optional[str], notification_channel: str = "slack"
     ) -> str:
         """
         Send notification to human reviewer.
@@ -234,11 +223,7 @@ class DeliberationActivities(ABC):
         pass
 
     @abstractmethod
-    async def record_audit_trail(
-        self,
-        message_id: str,
-        workflow_result: Dict[str, Any]
-    ) -> str:
+    async def record_audit_trail(self, message_id: str, workflow_result: Dict[str, Any]) -> str:
         """
         Record workflow result to blockchain-anchored audit trail.
 
@@ -248,12 +233,7 @@ class DeliberationActivities(ABC):
         pass
 
     @abstractmethod
-    async def deliver_message(
-        self,
-        message_id: str,
-        to_agent: str,
-        content: str
-    ) -> bool:
+    async def deliver_message(self, message_id: str, to_agent: str, content: str) -> bool:
         """
         Deliver approved message to target agent.
 
@@ -275,29 +255,28 @@ class DefaultDeliberationActivities(DeliberationActivities):
         self._audit_client = None
 
     async def validate_constitutional_hash(
-        self,
-        message_id: str,
-        provided_hash: str,
-        expected_hash: str = CONSTITUTIONAL_HASH
+        self, message_id: str, provided_hash: str, expected_hash: str = CONSTITUTIONAL_HASH
     ) -> Dict[str, Any]:
         """Validate constitutional hash using validators module."""
         is_valid = provided_hash == expected_hash
         return {
             "is_valid": is_valid,
-            "errors": [] if is_valid else [f"Hash mismatch: expected {expected_hash}, got {provided_hash}"],
+            "errors": (
+                []
+                if is_valid
+                else [f"Hash mismatch: expected {expected_hash}, got {provided_hash}"]
+            ),
             "validation_timestamp": datetime.now(timezone.utc).isoformat(),
             "message_id": message_id,
         }
 
     async def calculate_impact_score(
-        self,
-        message_id: str,
-        content: str,
-        context: Optional[Dict[str, Any]] = None
+        self, message_id: str, content: str, context: Optional[Dict[str, Any]] = None
     ) -> float:
         """Calculate impact score using ImpactScorer."""
         try:
             from ..impact_scorer import get_impact_scorer
+
             scorer = get_impact_scorer()
             return scorer.calculate_impact_score(content, context)
         except ImportError:
@@ -311,11 +290,12 @@ class DefaultDeliberationActivities(DeliberationActivities):
         self,
         message_id: str,
         message_data: Dict[str, Any],
-        policy_path: str = "acgs/deliberation/allow"
+        policy_path: str = "acgs/deliberation/allow",
     ) -> Dict[str, Any]:
         """Evaluate OPA policy using OPA client."""
         try:
             from ..opa_guard import OPAGuard
+
             guard = OPAGuard()
             result = await guard.evaluate(message_data, policy_path)
             return {
@@ -326,25 +306,26 @@ class DefaultDeliberationActivities(DeliberationActivities):
         except ImportError:
             # Fallback: allow by default with warning
             logger.warning(f"OPA client not available, allowing message {message_id}")
-            return {"allowed": True, "reasons": ["OPA not configured"], "policy_version": "fallback"}
+            return {
+                "allowed": True,
+                "reasons": ["OPA not configured"],
+                "policy_version": "fallback",
+            }
 
     async def request_agent_votes(
-        self,
-        message_id: str,
-        voting_agents: List[str],
-        deadline: datetime
+        self, message_id: str, voting_agents: List[str], deadline: datetime
     ) -> str:
         """Send vote requests to agents."""
         import uuid
+
         request_id = str(uuid.uuid4())
-        logger.info(f"Vote request {request_id} sent to {len(voting_agents)} agents for message {message_id}")
+        logger.info(
+            f"Vote request {request_id} sent to {len(voting_agents)} agents for message {message_id}"
+        )
         return request_id
 
     async def collect_votes(
-        self,
-        message_id: str,
-        request_id: str,
-        timeout_seconds: int
+        self, message_id: str, request_id: str, timeout_seconds: int
     ) -> List[Vote]:
         """Collect votes from agents with timeout."""
         # In production, this would poll a vote collection service
@@ -353,41 +334,36 @@ class DefaultDeliberationActivities(DeliberationActivities):
         return []
 
     async def notify_human_reviewer(
-        self,
-        message_id: str,
-        reviewer_id: Optional[str],
-        notification_channel: str = "slack"
+        self, message_id: str, reviewer_id: Optional[str], notification_channel: str = "slack"
     ) -> str:
         """Send notification to human reviewer."""
         import uuid
+
         notification_id = str(uuid.uuid4())
-        logger.info(f"Human review notification {notification_id} sent via {notification_channel} for message {message_id}")
+        logger.info(
+            f"Human review notification {notification_id} sent via {notification_channel} for message {message_id}"
+        )
         return notification_id
 
-    async def record_audit_trail(
-        self,
-        message_id: str,
-        workflow_result: Dict[str, Any]
-    ) -> str:
+    async def record_audit_trail(self, message_id: str, workflow_result: Dict[str, Any]) -> str:
         """Record to audit trail."""
         try:
             from ...audit_client import AuditClient
+
             client = AuditClient()
             return await client.record(message_id, workflow_result)
         except ImportError:
             # Fallback: log only
             import hashlib
             import json
-            audit_hash = hashlib.sha256(json.dumps(workflow_result, default=str).encode()).hexdigest()[:16]
+
+            audit_hash = hashlib.sha256(
+                json.dumps(workflow_result, default=str).encode()
+            ).hexdigest()[:16]
             logger.info(f"Audit recorded (mock): {audit_hash}")
             return audit_hash
 
-    async def deliver_message(
-        self,
-        message_id: str,
-        to_agent: str,
-        content: str
-    ) -> bool:
+    async def deliver_message(self, message_id: str, to_agent: str, content: str) -> bool:
         """Deliver message to target agent."""
         logger.info(f"Message {message_id} delivered to {to_agent}")
         return True
@@ -410,11 +386,7 @@ class DeliberationWorkflow:
     Workflow logic must be deterministic.
     """
 
-    def __init__(
-        self,
-        workflow_id: str,
-        activities: Optional[DeliberationActivities] = None
-    ):
+    def __init__(self, workflow_id: str, activities: Optional[DeliberationActivities] = None):
         self.workflow_id = workflow_id
         self.activities = activities or DefaultDeliberationActivities()
 
@@ -443,15 +415,13 @@ class DeliberationWorkflow:
 
         try:
             # Step 1: Constitutional validation (register compensation first)
-            self._register_compensation(
-                lambda: self._compensate_validation(input.message_id)
-            )
+            self._register_compensation(lambda: self._compensate_validation(input.message_id))
 
             self._status = WorkflowStatus.VALIDATING
             validation_result = await self.activities.validate_constitutional_hash(
                 message_id=input.message_id,
                 provided_hash=input.constitutional_hash,
-                expected_hash=CONSTITUTIONAL_HASH
+                expected_hash=CONSTITUTIONAL_HASH,
             )
 
             if not validation_result["is_valid"]:
@@ -461,7 +431,7 @@ class DeliberationWorkflow:
                     status=WorkflowStatus.REJECTED,
                     approved=False,
                     validation_passed=False,
-                    reasoning="Constitutional hash validation failed"
+                    reasoning="Constitutional hash validation failed",
                 )
 
             # Step 2: Calculate impact score if not provided
@@ -469,9 +439,7 @@ class DeliberationWorkflow:
             impact_score = input.impact_score
             if impact_score is None:
                 impact_score = await self.activities.calculate_impact_score(
-                    message_id=input.message_id,
-                    content=input.content,
-                    context=input.metadata
+                    message_id=input.message_id, content=input.content, context=input.metadata
                 )
 
             # Step 3: OPA policy evaluation
@@ -488,7 +456,7 @@ class DeliberationWorkflow:
                     "to_agent": input.to_agent,
                     "impact_score": impact_score,
                     "tenant_id": input.tenant_id,
-                }
+                },
             )
 
             if not policy_result["allowed"]:
@@ -498,7 +466,7 @@ class DeliberationWorkflow:
                     approved=False,
                     validation_passed=True,
                     impact_score=impact_score,
-                    reasoning=f"OPA policy denied: {policy_result['reasons']}"
+                    reasoning=f"OPA policy denied: {policy_result['reasons']}",
                 )
 
             # Step 4: Multi-agent voting (if required)
@@ -512,31 +480,31 @@ class DeliberationWorkflow:
                 request_id = await self.activities.request_agent_votes(
                     message_id=input.message_id,
                     voting_agents=self._get_voting_agents(input),
-                    deadline=deadline
+                    deadline=deadline,
                 )
 
                 # Wait for votes with timeout
                 self._votes = await self._wait_for_votes(
-                    input=input,
-                    request_id=request_id,
-                    deadline=deadline
+                    input=input, request_id=request_id, deadline=deadline
                 )
 
                 consensus_reached = self._check_consensus(
                     votes=self._votes,
                     required_votes=input.required_votes,
                     threshold=input.consensus_threshold,
-                    agent_weights=input.agent_weights
+                    agent_weights=input.agent_weights,
                 )
 
             # Step 5: Human review (if required or no consensus)
-            if input.require_human_review or (input.require_multi_agent_vote and not consensus_reached):
+            if input.require_human_review or (
+                input.require_multi_agent_vote and not consensus_reached
+            ):
                 self._status = WorkflowStatus.AWAITING_HUMAN
 
                 await self.activities.notify_human_reviewer(
                     message_id=input.message_id,
                     reviewer_id=None,  # Will be assigned
-                    notification_channel="slack"
+                    notification_channel="slack",
                 )
 
                 # Wait for human decision signal
@@ -552,7 +520,7 @@ class DeliberationWorkflow:
                         validation_passed=True,
                         impact_score=impact_score,
                         consensus_reached=consensus_reached,
-                        reasoning="Human review timed out"
+                        reasoning="Human review timed out",
                     )
 
                 self._human_decision = human_result["decision"]
@@ -562,7 +530,7 @@ class DeliberationWorkflow:
             approved = self._determine_approval(
                 consensus_reached=consensus_reached,
                 human_decision=self._human_decision,
-                require_human=input.require_human_review
+                require_human=input.require_human_review,
             )
 
             final_status = WorkflowStatus.APPROVED if approved else WorkflowStatus.REJECTED
@@ -575,9 +543,7 @@ class DeliberationWorkflow:
                 )
 
                 await self.activities.deliver_message(
-                    message_id=input.message_id,
-                    to_agent=input.to_agent,
-                    content=input.content
+                    message_id=input.message_id, to_agent=input.to_agent, content=input.content
                 )
 
             # Step 8: Record audit trail
@@ -588,12 +554,11 @@ class DeliberationWorkflow:
                 validation_passed=True,
                 impact_score=impact_score,
                 consensus_reached=consensus_reached,
-                reasoning=self._build_reasoning()
+                reasoning=self._build_reasoning(),
             )
 
             audit_hash = await self.activities.record_audit_trail(
-                message_id=input.message_id,
-                workflow_result=result.to_dict()
+                message_id=input.message_id, workflow_result=result.to_dict()
             )
             result.audit_hash = audit_hash
 
@@ -611,7 +576,7 @@ class DeliberationWorkflow:
                 status=WorkflowStatus.FAILED,
                 approved=False,
                 validation_passed=False,
-                reasoning=f"Workflow failed: {e}"
+                reasoning=f"Workflow failed: {e}",
             )
 
     def _register_compensation(self, compensation: Callable[[], Awaitable[None]]):
@@ -651,10 +616,7 @@ class DeliberationWorkflow:
         return [f"voter_{i}" for i in range(input.required_votes)]
 
     async def _wait_for_votes(
-        self,
-        input: DeliberationWorkflowInput,
-        request_id: str,
-        deadline: datetime
+        self, input: DeliberationWorkflowInput, request_id: str, deadline: datetime
     ) -> List[Vote]:
         """Wait for votes with polling and timeout."""
         votes = []
@@ -664,7 +626,7 @@ class DeliberationWorkflow:
             new_votes = await self.activities.collect_votes(
                 message_id=input.message_id,
                 request_id=request_id,
-                timeout_seconds=min(int(remaining_time), 30)
+                timeout_seconds=min(int(remaining_time), 30),
             )
             votes.extend(new_votes)
             remaining_time = (deadline - datetime.now(timezone.utc)).total_seconds()
@@ -681,7 +643,7 @@ class DeliberationWorkflow:
         votes: List[Vote],
         required_votes: int,
         threshold: float,
-        agent_weights: Optional[Dict[str, float]] = None
+        agent_weights: Optional[Dict[str, float]] = None,
     ) -> bool:
         """
         Check if consensus threshold is reached, considering agent weights.
@@ -708,20 +670,11 @@ class DeliberationWorkflow:
 
         return (approved_weight / total_weight) >= threshold
 
-    async def _wait_for_human_decision(
-        self,
-        timeout_seconds: int
-    ) -> Optional[Dict[str, Any]]:
+    async def _wait_for_human_decision(self, timeout_seconds: int) -> Optional[Dict[str, Any]]:
         """Wait for human decision signal with timeout."""
         try:
-            await asyncio.wait_for(
-                self._human_decision_signal.wait(),
-                timeout=timeout_seconds
-            )
-            return {
-                "decision": self._human_decision,
-                "reviewer": self._human_reviewer
-            }
+            await asyncio.wait_for(self._human_decision_signal.wait(), timeout=timeout_seconds)
+            return {"decision": self._human_decision, "reviewer": self._human_reviewer}
         except asyncio.TimeoutError:
             return None
 
@@ -737,10 +690,7 @@ class DeliberationWorkflow:
         self._vote_signal_received.set()
 
     def _determine_approval(
-        self,
-        consensus_reached: bool,
-        human_decision: Optional[str],
-        require_human: bool
+        self, consensus_reached: bool, human_decision: Optional[str], require_human: bool
     ) -> bool:
         """Determine final approval based on votes and human decision."""
         if require_human:
@@ -775,7 +725,7 @@ class DeliberationWorkflow:
         validation_passed: bool,
         impact_score: float = 0.0,
         consensus_reached: bool = False,
-        reasoning: str = ""
+        reasoning: str = "",
     ) -> DeliberationWorkflowResult:
         """Build workflow result object."""
         processing_time = 0.0

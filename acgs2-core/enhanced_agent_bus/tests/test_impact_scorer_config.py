@@ -5,10 +5,9 @@ Constitutional Hash: cdd01ef066bc6cf2
 Tests for the configurable ImpactScorer.
 """
 
-import pytest
-import sys
-import os
 import importlib.util
+import os
+import sys
 
 # Add enhanced_agent_bus directory to path for standalone execution
 enhanced_agent_bus_dir = os.path.dirname(os.path.dirname(__file__))
@@ -27,13 +26,14 @@ def _load_module(name, path):
 
 # Load base modules first
 _models = _load_module(
-    "_test_models_scorer_config",
-    os.path.join(enhanced_agent_bus_dir, "models.py")
+    "_test_models_scorer_config", os.path.join(enhanced_agent_bus_dir, "models.py")
 )
+
 
 # Create a mock parent package for relative imports
 class MockPackage:
     pass
+
 
 mock_parent = MockPackage()
 mock_parent.models = _models
@@ -41,9 +41,9 @@ mock_parent.AgentMessage = _models.AgentMessage
 mock_parent.MessageType = _models.MessageType
 
 # Patch sys.modules for both direct and relative imports
-sys.modules['models'] = _models
-sys.modules['enhanced_agent_bus'] = mock_parent
-sys.modules['enhanced_agent_bus.models'] = _models
+sys.modules["models"] = _models
+sys.modules["enhanced_agent_bus"] = mock_parent
+sys.modules["enhanced_agent_bus.models"] = _models
 
 # Import from loaded models
 Priority = _models.Priority
@@ -52,8 +52,7 @@ Priority = _models.Priority
 delib_dir = os.path.join(enhanced_agent_bus_dir, "deliberation_layer")
 
 _impact_scorer = _load_module(
-    "_test_impact_scorer_module",
-    os.path.join(delib_dir, "impact_scorer.py")
+    "_test_impact_scorer_module", os.path.join(delib_dir, "impact_scorer.py")
 )
 
 ImpactScorer = _impact_scorer.ImpactScorer
@@ -78,7 +77,7 @@ class TestImpactScorerConfig:
             volume_weight=0.0,
             context_weight=0.0,
             drift_weight=0.0,
-            type_weight=0.0
+            type_weight=0.0,
         )
         scorer = ImpactScorer(config=config)
 
@@ -110,8 +109,7 @@ class TestImpactScorerConfig:
     def test_priority_boost(self):
         """Test critical priority boost configuration."""
         config = ScoringConfig(
-            priority_weight=0.1,  # Low weight
-            critical_priority_boost=0.95  # High boost
+            priority_weight=0.1, critical_priority_boost=0.95  # Low weight  # High boost
         )
         scorer = ImpactScorer(config=config)
 
@@ -133,12 +131,10 @@ class TestImpactScorerConfig:
 
             def _get_keyword_embeddings(self):
                 import numpy as np
+
                 return np.array([[1.0] * 768])
 
-        config = ScoringConfig(
-            semantic_weight=0.1,  # Low weight
-            high_semantic_boost=0.85
-        )
+        config = ScoringConfig(semantic_weight=0.1, high_semantic_boost=0.85)  # Low weight
         scorer = MockSemanticScorer(config=config)
         # Mock BERT enabled
         scorer._bert_enabled = True

@@ -8,10 +8,10 @@ DeliberationLayer class, implementing the VERIFY-BEFORE-ACT pattern
 with multi-signature collection and critic agent reviews.
 """
 
-from typing import Dict, Any, Optional, Callable, List, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional
 
 if TYPE_CHECKING:
-    from .opa_guard import GuardResult, SignatureResult, ReviewResult, OPAGuard
+    from .opa_guard import GuardResult, OPAGuard, ReviewResult, SignatureResult
 
 
 class OPAGuardMixin:
@@ -28,10 +28,7 @@ class OPAGuardMixin:
     deliberation_timeout: int
 
     async def verify_action(
-        self,
-        agent_id: str,
-        action: Dict[str, Any],
-        context: Optional[Dict[str, Any]] = None
+        self, agent_id: str, action: Dict[str, Any], context: Optional[Dict[str, Any]] = None
     ) -> Optional["GuardResult"]:
         """
         Verify an action using OPA Guard (VERIFY-BEFORE-ACT pattern).
@@ -58,7 +55,7 @@ class OPAGuardMixin:
         decision_id: str,
         required_signers: List[str],
         threshold: float = 1.0,
-        timeout: Optional[int] = None
+        timeout: Optional[int] = None,
     ) -> Optional["SignatureResult"]:
         """
         Collect multi-signatures for a decision.
@@ -83,11 +80,7 @@ class OPAGuardMixin:
         )
 
     async def submit_signature(
-        self,
-        decision_id: str,
-        signer_id: str,
-        reasoning: str = "",
-        confidence: float = 1.0
+        self, decision_id: str, signer_id: str, reasoning: str = "", confidence: float = 1.0
     ) -> bool:
         """
         Submit a signature for a pending decision.
@@ -116,7 +109,7 @@ class OPAGuardMixin:
         decision: Dict[str, Any],
         critic_agents: List[str],
         review_types: Optional[List[str]] = None,
-        timeout: Optional[int] = None
+        timeout: Optional[int] = None,
     ) -> Optional["ReviewResult"]:
         """
         Submit a decision for critic agent review.
@@ -148,7 +141,7 @@ class OPAGuardMixin:
         reasoning: str = "",
         concerns: Optional[List[str]] = None,
         recommendations: Optional[List[str]] = None,
-        confidence: float = 1.0
+        confidence: float = 1.0,
     ) -> bool:
         """
         Submit a critic review for a pending decision.
@@ -183,7 +176,7 @@ class OPAGuardMixin:
         critic_id: str,
         review_types: List[str],
         callback: Optional[Callable] = None,
-        metadata: Optional[Dict[str, Any]] = None
+        metadata: Optional[Dict[str, Any]] = None,
     ):
         """
         Register a critic agent for reviews.
@@ -208,10 +201,7 @@ class OPAGuardMixin:
             self.opa_guard.unregister_critic_agent(critic_id)
 
     def get_guard_audit_log(
-        self,
-        limit: int = 100,
-        offset: int = 0,
-        agent_id: Optional[str] = None
+        self, limit: int = 100, offset: int = 0, agent_id: Optional[str] = None
     ) -> List[Dict[str, Any]]:
         """
         Get OPA guard audit log entries.

@@ -8,19 +8,19 @@ Extended tests for registry classes.
 import pytest
 
 try:
+    from enhanced_agent_bus.models import CONSTITUTIONAL_HASH, AgentMessage
     from enhanced_agent_bus.registry import (
-        InMemoryAgentRegistry,
-        DirectMessageRouter,
         CapabilityBasedRouter,
+        DirectMessageRouter,
+        InMemoryAgentRegistry,
     )
-    from enhanced_agent_bus.models import AgentMessage, CONSTITUTIONAL_HASH
 except ImportError:
+    from models import AgentMessage
     from registry import (
-        InMemoryAgentRegistry,
-        DirectMessageRouter,
         CapabilityBasedRouter,
+        DirectMessageRouter,
+        InMemoryAgentRegistry,
     )
-    from models import AgentMessage, CONSTITUTIONAL_HASH
 
 
 class TestInMemoryAgentRegistryExtended:
@@ -205,9 +205,7 @@ class TestDirectMessageRouter:
         """Route fails when tenant IDs don't match."""
         # Register agent with tenant_id in metadata
         await registry.register(
-            "tenant_agent",
-            {"type": "worker"},
-            metadata={"tenant_id": "tenant_1"}
+            "tenant_agent", {"type": "worker"}, metadata={"tenant_id": "tenant_1"}
         )
         msg = AgentMessage(
             content={"action": "test"},
@@ -223,9 +221,7 @@ class TestDirectMessageRouter:
         """Route succeeds when tenant IDs match."""
         # Register agent with tenant_id in metadata
         await registry.register(
-            "tenant_agent",
-            {"type": "worker"},
-            metadata={"tenant_id": "tenant_1"}
+            "tenant_agent", {"type": "worker"}, metadata={"tenant_id": "tenant_1"}
         )
         msg = AgentMessage(
             content={"action": "test"},
@@ -266,8 +262,7 @@ class TestCapabilityBasedRouter:
     async def test_route_by_capabilities(self, router, registry):
         """Route by required capabilities."""
         await registry.register(
-            "capable_agent",
-            capabilities={"translate": True, "summarize": True}
+            "capable_agent", capabilities={"translate": True, "summarize": True}
         )
         msg = AgentMessage(
             content={
@@ -283,10 +278,7 @@ class TestCapabilityBasedRouter:
     @pytest.mark.asyncio
     async def test_route_no_matching_capabilities(self, router, registry):
         """Route fails when no agent has required capabilities."""
-        await registry.register(
-            "limited_agent",
-            capabilities={"translate": True}
-        )
+        await registry.register("limited_agent", capabilities={"translate": True})
         msg = AgentMessage(
             content={
                 "action": "test",
@@ -313,18 +305,9 @@ class TestCapabilityBasedRouter:
     @pytest.mark.asyncio
     async def test_broadcast_with_capabilities(self, router, registry):
         """Broadcast filters by capabilities."""
-        await registry.register(
-            "capable_a",
-            capabilities={"translate": True}
-        )
-        await registry.register(
-            "capable_b",
-            capabilities={"translate": True, "extra": True}
-        )
-        await registry.register(
-            "incapable",
-            capabilities={"other": True}
-        )
+        await registry.register("capable_a", capabilities={"translate": True})
+        await registry.register("capable_b", capabilities={"translate": True, "extra": True})
+        await registry.register("incapable", capabilities={"other": True})
 
         msg = AgentMessage(
             content={

@@ -5,12 +5,12 @@ Constitutional Hash: cdd01ef066bc6cf2
 Provides health check endpoints for all ACGS-2 services with real-time monitoring.
 """
 
+import asyncio
+import logging
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
-import asyncio
-import json
-import logging
+
 import aiohttp
 from aiohttp import web
 
@@ -23,6 +23,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class HealthStatus:
     """Health status data class."""
+
     service: str
     status: str  # "healthy", "unhealthy", "degraded"
     timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
@@ -65,7 +66,7 @@ class HealthChecker:
                             data = await response.json()
                             status = "healthy"
                             details = data
-                        except (ValueError, TypeError, aiohttp.ContentTypeError) as e:
+                        except (ValueError, TypeError, aiohttp.ContentTypeError):
                             # JSON decode failed, but HTTP 200 means healthy
                             status = "healthy"
                             details = {"status": "ok"}
@@ -88,25 +89,32 @@ class HealthChecker:
             service=service_name,
             status=status,
             response_time_ms=response_time,
-            error_message=error_message if 'error_message' in locals() else None,
-            details=details
+            error_message=error_message if "error_message" in locals() else None,
+            details=details,
         )
 
     async def check_all_services(self) -> List[HealthStatus]:
         """Check health of all services concurrently."""
         tasks = [
-            self.check_service_health(name, endpoint)
-            for name, endpoint in self.services.items()
+            self.check_service_health(name, endpoint) for name, endpoint in self.services.items()
         ]
         return await asyncio.gather(*tasks, return_exceptions=True)
 
     def get_overall_health(self, service_statuses: List[HealthStatus]) -> Dict[str, Any]:
         """Calculate overall system health."""
-        healthy_count = sum(1 for s in service_statuses if isinstance(s, HealthStatus) and s.status == "healthy")
-        unhealthy_count = sum(1 for s in service_statuses if isinstance(s, HealthStatus) and s.status == "unhealthy")
+        healthy_count = sum(
+            1 for s in service_statuses if isinstance(s, HealthStatus) and s.status == "healthy"
+        )
+        unhealthy_count = sum(
+            1 for s in service_statuses if isinstance(s, HealthStatus) and s.status == "unhealthy"
+        )
         total_count = len(service_statuses)
 
-        overall_status = "healthy" if unhealthy_count == 0 else "degraded" if unhealthy_count < total_count / 2 else "unhealthy"
+        overall_status = (
+            "healthy"
+            if unhealthy_count == 0
+            else "degraded" if unhealthy_count < total_count / 2 else "unhealthy"
+        )
 
         return {
             "constitutional_hash": CONSTITUTIONAL_HASH,
@@ -121,9 +129,11 @@ class HealthChecker:
                     "status": s.status,
                     "response_time_ms": s.response_time_ms,
                     "error_message": s.error_message,
-                    "timestamp": s.timestamp.isoformat()
-                } for s in service_statuses if isinstance(s, HealthStatus)
-            ]
+                    "timestamp": s.timestamp.isoformat(),
+                }
+                for s in service_statuses
+                if isinstance(s, HealthStatus)
+            ],
         }
 
 
@@ -155,10 +165,7 @@ class HealthCheckServer:
         service_name = request.match_info.get("service")
 
         if service_name not in self.health_checker.services:
-            return web.json_response(
-                {"error": f"Unknown service: {service_name}"},
-                status=404
-            )
+            return web.json_response({"error": f"Unknown service: {service_name}"}, status=404)
 
         endpoint = self.health_checker.services[service_name]
         health_status = await self.health_checker.check_service_health(service_name, endpoint)
@@ -172,9 +179,9 @@ class HealthCheckServer:
                 "error_message": health_status.error_message,
                 "details": health_status.details,
                 "timestamp": health_status.timestamp.isoformat(),
-                "constitutional_hash": health_status.constitutional_hash
+                "constitutional_hash": health_status.constitutional_hash,
             },
-            status=status_code
+            status=status_code,
         )
 
     async def readiness_endpoint(self, request):
@@ -184,8 +191,10 @@ class HealthCheckServer:
         service_statuses = await self.health_checker.check_all_services()
 
         critical_healthy = all(
-            any(s.service == name and isinstance(s, HealthStatus) and s.status == "healthy"
-                for s in service_statuses)
+            any(
+                s.service == name and isinstance(s, HealthStatus) and s.status == "healthy"
+                for s in service_statuses
+            )
             for name in critical_services
         )
 
@@ -194,9 +203,9 @@ class HealthCheckServer:
             {
                 "status": "ready" if critical_healthy else "not ready",
                 "timestamp": datetime.now(timezone.utc).isoformat(),
-                "constitutional_hash": CONSTITUTIONAL_HASH
+                "constitutional_hash": CONSTITUTIONAL_HASH,
             },
-            status=status_code
+            status=status_code,
         )
 
     async def liveness_endpoint(self, request):
@@ -205,7 +214,7 @@ class HealthCheckServer:
             {
                 "status": "alive",
                 "timestamp": datetime.now(timezone.utc).isoformat(),
-                "constitutional_hash": CONSTITUTIONAL_HASH
+                "constitutional_hash": CONSTITUTIONAL_HASH,
             }
         )
 

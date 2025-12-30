@@ -5,34 +5,33 @@ Constitutional Hash: cdd01ef066bc6cf2
 Extended tests to increase message_processor.py coverage.
 """
 
+from unittest.mock import AsyncMock, MagicMock
+
 import pytest
-from unittest.mock import MagicMock, AsyncMock, patch
-from typing import Optional
 
 try:
     from enhanced_agent_bus.message_processor import (
+        PROMPT_INJECTION_PATTERNS,
         LRUCache,
         MessageProcessor,
-        PROMPT_INJECTION_PATTERNS,
     )
     from enhanced_agent_bus.models import (
+        CONSTITUTIONAL_HASH,
         AgentMessage,
         MessageType,
         Priority,
-        CONSTITUTIONAL_HASH,
     )
     from enhanced_agent_bus.validators import ValidationResult
 except ImportError:
     from message_processor import (
+        PROMPT_INJECTION_PATTERNS,
         LRUCache,
         MessageProcessor,
-        PROMPT_INJECTION_PATTERNS,
     )
     from models import (
+        CONSTITUTIONAL_HASH,
         AgentMessage,
         MessageType,
-        Priority,
-        CONSTITUTIONAL_HASH,
     )
     from validators import ValidationResult
 
@@ -438,8 +437,8 @@ class TestProcessingStrategy:
         processor = MessageProcessor()
         strategy = processor._auto_select_strategy()
         assert strategy is not None
-        assert hasattr(strategy, 'process')
-        assert hasattr(strategy, 'get_name')
+        assert hasattr(strategy, "process")
+        assert hasattr(strategy, "get_name")
 
 
 class TestPromptInjectionPatterns:
@@ -538,10 +537,14 @@ class TestMessageProcessorProcessingStrategy:
         processor = MessageProcessor(isolated_mode=True)
         strategy = processor.processing_strategy
         assert strategy is not None
-        assert hasattr(strategy, 'get_name')
+        assert hasattr(strategy, "get_name")
 
     def test_isolated_mode_uses_python_strategy(self):
         """Isolated mode uses Python processing strategy."""
         processor = MessageProcessor(isolated_mode=True)
         strategy_name = processor.processing_strategy.get_name()
-        assert "python" in strategy_name.lower() or "isolated" in strategy_name.lower() or strategy_name is not None
+        assert (
+            "python" in strategy_name.lower()
+            or "isolated" in strategy_name.lower()
+            or strategy_name is not None
+        )

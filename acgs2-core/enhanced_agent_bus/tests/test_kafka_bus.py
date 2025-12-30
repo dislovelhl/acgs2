@@ -5,23 +5,22 @@ Constitutional Hash: cdd01ef066bc6cf2
 Comprehensive tests for KafkaEventBus, Orchestrator, and Blackboard classes.
 """
 
-import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
-from typing import Dict, Any, List
+from unittest.mock import AsyncMock
 
+import pytest
+from exceptions import MessageDeliveryError
 from kafka_bus import (
+    KAFKA_AVAILABLE,
+    Blackboard,
     KafkaEventBus,
     Orchestrator,
-    Blackboard,
-    KAFKA_AVAILABLE,
 )
-from models import AgentMessage, MessageType, Priority, CONSTITUTIONAL_HASH
-from exceptions import MessageDeliveryError
-
+from models import CONSTITUTIONAL_HASH, AgentMessage, MessageType, Priority
 
 # =============================================================================
 # Fixtures
 # =============================================================================
+
 
 @pytest.fixture
 def kafka_bus() -> KafkaEventBus:
@@ -47,6 +46,7 @@ def valid_message() -> AgentMessage:
 # =============================================================================
 # KafkaEventBus Initialization Tests
 # =============================================================================
+
 
 class TestKafkaEventBusInitialization:
     """Tests for KafkaEventBus initialization."""
@@ -79,6 +79,7 @@ class TestKafkaEventBusInitialization:
 # =============================================================================
 # Topic Naming Tests
 # =============================================================================
+
 
 class TestTopicNaming:
     """Tests for topic name generation."""
@@ -113,6 +114,7 @@ class TestTopicNaming:
 # Start/Stop Tests (Without Kafka Available)
 # =============================================================================
 
+
 class TestKafkaEventBusLifecycle:
     """Tests for KafkaEventBus start/stop lifecycle."""
 
@@ -121,6 +123,7 @@ class TestKafkaEventBusLifecycle:
         """Test start when aiokafka is not available."""
         # Import the module to patch its constant
         import kafka_bus as kb_module
+
         original_value = kb_module.KAFKA_AVAILABLE
         try:
             kb_module.KAFKA_AVAILABLE = False
@@ -166,6 +169,7 @@ class TestKafkaEventBusLifecycle:
 # =============================================================================
 # Send Message Tests
 # =============================================================================
+
 
 class TestSendMessage:
     """Tests for send_message method."""
@@ -266,6 +270,7 @@ class TestSendMessage:
 # Subscribe Tests
 # =============================================================================
 
+
 class TestSubscribe:
     """Tests for subscribe method."""
 
@@ -276,6 +281,7 @@ class TestSubscribe:
 
         # Import the module to patch its constant
         import kafka_bus as kb_module
+
         original_value = kb_module.KAFKA_AVAILABLE
         try:
             kb_module.KAFKA_AVAILABLE = False
@@ -293,6 +299,7 @@ class TestSubscribe:
 # =============================================================================
 # Orchestrator Tests
 # =============================================================================
+
 
 class TestOrchestrator:
     """Tests for Orchestrator class."""
@@ -338,6 +345,7 @@ class TestOrchestrator:
 # =============================================================================
 # Blackboard Tests
 # =============================================================================
+
 
 class TestBlackboard:
     """Tests for Blackboard class."""
@@ -424,6 +432,7 @@ class TestBlackboard:
 # KAFKA_AVAILABLE Flag Tests
 # =============================================================================
 
+
 class TestKafkaAvailableFlag:
     """Tests for KAFKA_AVAILABLE flag behavior."""
 
@@ -436,13 +445,12 @@ class TestKafkaAvailableFlag:
 # Integration Tests
 # =============================================================================
 
+
 class TestKafkaEventBusIntegration:
     """Integration tests for KafkaEventBus components."""
 
     @pytest.mark.asyncio
-    async def test_orchestrator_blackboard_workflow(
-        self, kafka_bus: KafkaEventBus
-    ) -> None:
+    async def test_orchestrator_blackboard_workflow(self, kafka_bus: KafkaEventBus) -> None:
         """Test workflow with orchestrator and blackboard."""
         mock_producer = AsyncMock()
         kafka_bus.producer = mock_producer
@@ -490,4 +498,3 @@ class TestKafkaEventBusIntegration:
         topics = [call.args[0] for call in calls]
         assert "acgs.tenant.tenant-a.task_request" in topics
         assert "acgs.tenant.tenant-b.task_request" in topics
-

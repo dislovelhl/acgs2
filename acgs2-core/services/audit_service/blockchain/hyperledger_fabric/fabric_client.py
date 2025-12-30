@@ -4,9 +4,9 @@ Hyperledger Fabric 区块链客户端
 """
 
 import json
-import time
-from typing import Dict, List, Optional, Any
 import logging
+import time
+from typing import Any, Dict, List, Optional
 
 # 注意：实际部署时需要安装hyperledger-fabric SDK
 # pip install hyperledger-fabric
@@ -55,7 +55,9 @@ class FabricClient:
             # self.client = Client(net_profile=self.config['network_config'])
             # self.client.new_channel(self.config['channel_name'])
 
-            logger.info(f"Connected to Fabric network: {self.config.get('channel_name', 'unknown')}")
+            logger.info(
+                f"Connected to Fabric network: {self.config.get('channel_name', 'unknown')}"
+            )
             self.connected = True
             return True
         except Exception as e:
@@ -98,7 +100,7 @@ class FabricClient:
                 "timestamp": batch_data["timestamp"],
                 "entries_hashes": json.dumps(batch_data["entries_hashes"]),
                 "blockchain_type": "hyperledger_fabric",
-                "submitted_at": int(time.time())
+                "submitted_at": int(time.time()),
             }
 
             # 实际实现：
@@ -110,7 +112,9 @@ class FabricClient:
 
             # 模拟交易ID
             transaction_id = f"fabric_tx_{batch_data['batch_id']}_{int(time.time())}"
-            logger.info(f"Submitted audit batch {batch_data['batch_id']} to Fabric, TX: {transaction_id}")
+            logger.info(
+                f"Submitted audit batch {batch_data['batch_id']} to Fabric, TX: {transaction_id}"
+            )
 
             return transaction_id
 
@@ -147,7 +151,7 @@ class FabricClient:
                 "entry_count": 100,
                 "timestamp": int(time.time()),
                 "blockchain_type": "hyperledger_fabric",
-                "status": "confirmed"
+                "status": "confirmed",
             }
 
             logger.info(f"Queried audit batch {batch_id} from Fabric")
@@ -186,7 +190,7 @@ class FabricClient:
             "connected": self.connected,
             "channel": self.config.get("channel_name", "unknown"),
             "chaincode": self.config.get("chaincode_name", "unknown"),
-            "organization": self.config.get("org", "unknown")
+            "organization": self.config.get("org", "unknown"),
         }
 
     def is_connected(self) -> bool:
@@ -210,8 +214,9 @@ class FabricAuditContract:
         pass
 
     @staticmethod
-    def verify_audit_proof(contract, batch_id: str, entry_hash: str,
-                          merkle_proof: List[tuple]) -> bool:
+    def verify_audit_proof(
+        contract, batch_id: str, entry_hash: str, merkle_proof: List[tuple]
+    ) -> bool:
         """验证审计证明的合约方法"""
         # 实际的链码实现会在这里
         pass

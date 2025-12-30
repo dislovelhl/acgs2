@@ -5,14 +5,11 @@ Unit tests for settings configuration.
 Constitutional Hash: cdd01ef066bc6cf2
 """
 
-import os
 import pytest
-from unittest.mock import patch
-
 from code_analysis_service.config.settings import (
+    CONSTITUTIONAL_HASH,
     Settings,
     get_settings,
-    CONSTITUTIONAL_HASH,
 )
 
 

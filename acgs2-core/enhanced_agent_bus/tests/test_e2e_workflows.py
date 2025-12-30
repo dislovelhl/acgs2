@@ -11,56 +11,55 @@ Comprehensive E2E tests for workflow patterns:
 """
 
 import asyncio
-import pytest
 import uuid
-from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
+
+import pytest
 
 # Import workflow components
 try:
     from enhanced_agent_bus.agent_bus import EnhancedAgentBus
     from enhanced_agent_bus.models import (
+        CONSTITUTIONAL_HASH,
         AgentMessage,
+        MessageStatus,
         MessageType,
         Priority,
-        MessageStatus,
-        CONSTITUTIONAL_HASH,
     )
-    from enhanced_agent_bus.validators import ValidationResult
     from enhanced_agent_bus.processing_strategies import (
-        PythonProcessingStrategy,
         CompositeProcessingStrategy as CompositeProcessing,
     )
-    from enhanced_agent_bus.validation_strategies import (
-        StaticHashValidationStrategy,
-        CompositeValidationStrategy,
+    from enhanced_agent_bus.processing_strategies import (
+        PythonProcessingStrategy,
     )
+    from enhanced_agent_bus.validation_strategies import (
+        CompositeValidationStrategy,
+        StaticHashValidationStrategy,
+    )
+    from enhanced_agent_bus.validators import ValidationResult
 except ImportError:
     import sys
+
     sys.path.insert(0, "/home/dislove/document/acgs2")
     from enhanced_agent_bus.agent_bus import EnhancedAgentBus
     from enhanced_agent_bus.models import (
+        CONSTITUTIONAL_HASH,
         AgentMessage,
         MessageType,
         Priority,
-        MessageStatus,
-        CONSTITUTIONAL_HASH,
-    )
-    from enhanced_agent_bus.validators import ValidationResult
-    from enhanced_agent_bus.processing_strategies import (
-        PythonProcessingStrategy,
-        CompositeProcessingStrategy as CompositeProcessing,
     )
     from enhanced_agent_bus.validation_strategies import (
-        StaticHashValidationStrategy,
         CompositeValidationStrategy,
+        StaticHashValidationStrategy,
     )
+    from enhanced_agent_bus.validators import ValidationResult
 
 
 # =============================================================================
 # HELPER CLASSES FOR WORKFLOW TESTING
 # =============================================================================
+
 
 class WorkflowContext:
     """Context for workflow execution tracking."""
@@ -137,7 +136,9 @@ class MockDAGNode:
         self.executed = False
         self.execution_order: Optional[int] = None
 
-    async def execute(self, context: WorkflowContext, execution_counter: Dict[str, int]) -> Dict[str, Any]:
+    async def execute(
+        self, context: WorkflowContext, execution_counter: Dict[str, int]
+    ) -> Dict[str, Any]:
         await asyncio.sleep(self.execution_delay)
         context.log_execution(self.node_id)
 
@@ -155,6 +156,7 @@ class MockDAGNode:
 # =============================================================================
 # SAGA PATTERN E2E TESTS
 # =============================================================================
+
 
 class TestSagaPatternE2E:
     """End-to-end tests for Saga orchestration pattern."""
@@ -276,6 +278,7 @@ class TestSagaPatternE2E:
 # DAG EXECUTION E2E TESTS
 # =============================================================================
 
+
 class TestDAGExecutionE2E:
     """End-to-end tests for DAG execution with parallelism."""
 
@@ -391,10 +394,7 @@ class TestDAGExecutionE2E:
         execution_counter = {"count": 0}
 
         # All independent nodes
-        nodes = [
-            MockDAGNode(f"node_{i}", execution_delay=0.01 * (i + 1))
-            for i in range(5)
-        ]
+        nodes = [MockDAGNode(f"node_{i}", execution_delay=0.01 * (i + 1)) for i in range(5)]
 
         async def execute_node(node: MockDAGNode):
             result = await node.execute(context, execution_counter)
@@ -419,6 +419,7 @@ class TestDAGExecutionE2E:
 # =============================================================================
 # CONSTITUTIONAL VALIDATION E2E TESTS
 # =============================================================================
+
 
 class TestConstitutionalValidationE2E:
     """End-to-end tests for constitutional validation across boundaries."""
@@ -522,6 +523,7 @@ class TestConstitutionalValidationE2E:
 # =============================================================================
 # MULTI-AGENT COORDINATION E2E TESTS
 # =============================================================================
+
 
 class TestMultiAgentCoordinationE2E:
     """End-to-end tests for multi-agent coordination."""
@@ -663,6 +665,7 @@ class TestMultiAgentCoordinationE2E:
 # =============================================================================
 # INTEGRATION WORKFLOW E2E TESTS
 # =============================================================================
+
 
 class TestIntegrationWorkflowE2E:
     """End-to-end tests for complete integration workflows."""

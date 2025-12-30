@@ -8,8 +8,6 @@ Comprehensive tests for validation utilities including:
 - Message content validation
 """
 
-import pytest
-from datetime import datetime, timezone
 from typing import Any, Dict
 
 try:
@@ -21,6 +19,7 @@ try:
     )
 except ImportError:
     import sys
+
     sys.path.insert(0, "/home/dislove/document/acgs2")
     from enhanced_agent_bus.validators import (
         CONSTITUTIONAL_HASH,
@@ -33,6 +32,7 @@ except ImportError:
 # =============================================================================
 # CONSTITUTIONAL HASH CONSTANT TESTS
 # =============================================================================
+
 
 class TestConstitutionalHashConstant:
     """Tests for the CONSTITUTIONAL_HASH constant."""
@@ -57,6 +57,7 @@ class TestConstitutionalHashConstant:
 # =============================================================================
 # VALIDATION RESULT DATACLASS TESTS
 # =============================================================================
+
 
 class TestValidationResultInit:
     """Tests for ValidationResult initialization."""
@@ -319,6 +320,7 @@ class TestValidationResultToDict:
 # VALIDATE CONSTITUTIONAL HASH FUNCTION TESTS
 # =============================================================================
 
+
 class TestValidateConstitutionalHash:
     """Tests for validate_constitutional_hash function."""
 
@@ -382,6 +384,7 @@ class TestValidateConstitutionalHash:
 # =============================================================================
 # VALIDATE MESSAGE CONTENT FUNCTION TESTS
 # =============================================================================
+
 
 class TestValidateMessageContent:
     """Tests for validate_message_content function."""
@@ -454,14 +457,7 @@ class TestValidateMessageContent:
 
     def test_nested_dict_passes(self):
         """Nested dictionary content passes."""
-        content = {
-            "action": "test",
-            "nested": {
-                "level2": {
-                    "level3": "value"
-                }
-            }
-        }
+        content = {"action": "test", "nested": {"level2": {"level3": "value"}}}
         result = validate_message_content(content)
 
         assert result.is_valid is True
@@ -490,6 +486,7 @@ class TestValidateMessageContent:
 # =============================================================================
 # INTEGRATION TESTS
 # =============================================================================
+
 
 class TestValidatorsIntegration:
     """Integration tests combining multiple validators."""
@@ -547,6 +544,7 @@ class TestValidatorsIntegration:
 # EDGE CASES AND BOUNDARY TESTS
 # =============================================================================
 
+
 class TestEdgeCases:
     """Edge case and boundary tests."""
 
@@ -571,9 +569,7 @@ class TestEdgeCases:
 
     def test_special_characters_in_metadata(self):
         """Special characters in metadata."""
-        result = ValidationResult(
-            metadata={"key<>&\"'": "value<>&\"'"}
-        )
+        result = ValidationResult(metadata={"key<>&\"'": "value<>&\"'"})
 
         d = result.to_dict()
         assert d["metadata"]["key<>&\"'"] == "value<>&\"'"

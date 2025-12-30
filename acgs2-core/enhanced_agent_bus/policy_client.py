@@ -2,12 +2,12 @@
 Policy Registry Client for dynamic constitutional validation
 """
 
-import asyncio
-import os
 import logging
+import os
 import time
 from collections import OrderedDict
-from typing import Dict, Any, Optional, List
+from typing import Any, Dict, Optional
+
 import httpx
 
 from .models import AgentMessage
@@ -61,11 +61,11 @@ class PolicyRegistryClient:
             headers = {}
             if self.api_key:
                 headers["X-Internal-API-Key"] = self.api_key
-                
+
             self._http_client = httpx.AsyncClient(
                 timeout=self.timeout,
                 limits=httpx.Limits(max_keepalive_connections=10, max_connections=20),
-                headers=headers
+                headers=headers,
             )
 
     async def close(self):
@@ -75,17 +75,15 @@ class PolicyRegistryClient:
             self._http_client = None
 
     async def get_policy_content(
-        self, 
-        policy_id: str, 
-        client_id: Optional[str] = None
+        self, policy_id: str, client_id: Optional[str] = None
     ) -> Optional[Dict[str, Any]]:
         """
         Get policy content from registry
-        
+
         Args:
             policy_id: Policy identifier
             client_id: Client identifier for A/B testing
-            
+
         Returns:
             Policy content dict or None
         """
@@ -105,8 +103,7 @@ class PolicyRegistryClient:
         try:
             params = {"client_id": client_id} if client_id else {}
             response = await self._http_client.get(
-                f"{self.registry_url}/api/v1/policies/{policy_id}/content",
-                params=params
+                f"{self.registry_url}/api/v1/policies/{policy_id}/content", params=params
             )
             response.raise_for_status()
             content = response.json()
@@ -117,13 +114,10 @@ class PolicyRegistryClient:
                 self._cache.popitem(last=False)
 
             # Cache the result
-            self._cache[cache_key] = {
-                "content": content,
-                "timestamp": time.monotonic()
-            }
+            self._cache[cache_key] = {"content": content, "timestamp": time.monotonic()}
 
             return content
-            
+
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 404:
                 logger.warning(f"Policy {policy_id} not found")
@@ -141,92 +135,77 @@ class PolicyRegistryClient:
             logger.error(f"Data parsing error for policy {policy_id}: {e}")
             raise
 
-    async def validate_message_signature(
-        self, 
-        message: AgentMessage
-    ) -> ValidationResult:
+    async def validate_message_signature(self, message: AgentMessage) -> ValidationResult:
         """
         Validate message against current constitutional policy
-        
+
         Args:
             message: AgentMessage to validate
-            
+
         Returns:
             ValidationResult
         """
         try:
             # Get current constitutional policy
             policy_content = await self.get_policy_content("constitutional_ai_safety")
-            
+
             if not policy_content:
                 if self.fail_closed:
                     return ValidationResult(
-                        is_valid=False,
-                        errors=["Policy registry unavailable or policy not found"]
+                        is_valid=False, errors=["Policy registry unavailable or policy not found"]
                     )
                 return ValidationResult(
-                    is_valid=True,
-                    warnings=["Policy registry unavailable, using basic validation"]
+                    is_valid=True, warnings=["Policy registry unavailable, using basic validation"]
                 )
-            
+
             # Perform validation based on policy rules
             errors = []
             warnings = []
-            
+
             # Check message length
             max_length = policy_content.get("max_response_length", 10000)
             if len(str(message.content)) > max_length:
                 errors.append(f"Message exceeds maximum length of {max_length}")
-            
+
             # Check allowed topics
             allowed_topics = policy_content.get("allowed_topics", [])
             if allowed_topics:
                 message_topics = message.content.get("topics", [])
                 if not any(topic in allowed_topics for topic in message_topics):
                     warnings.append("Message topic not in allowed list")
-            
+
             # Check prohibited content
             prohibited = policy_content.get("prohibited_content", [])
             message_text = str(message.content).lower()
             for prohibited_item in prohibited:
                 if prohibited_item.lower() in message_text:
                     errors.append(f"Message contains prohibited content: {prohibited_item}")
-            
-            return ValidationResult(
-                is_valid=len(errors) == 0,
-                errors=errors,
-                warnings=warnings
-            )
-            
+
+            return ValidationResult(is_valid=len(errors) == 0, errors=errors, warnings=warnings)
+
         except (httpx.TimeoutException, httpx.ConnectError) as e:
             logger.error(f"Network error validating message: {e}")
             if self.fail_closed:
                 return ValidationResult(
-                    is_valid=False,
-                    errors=[f"Policy validation network error: {str(e)}"]
+                    is_valid=False, errors=[f"Policy validation network error: {str(e)}"]
                 )
             return ValidationResult(
-                is_valid=True,
-                warnings=[f"Policy validation network error: {str(e)}"]
+                is_valid=True, warnings=[f"Policy validation network error: {str(e)}"]
             )
         except (ValueError, KeyError, TypeError) as e:
             logger.error(f"Data error validating message: {e}")
             if self.fail_closed:
                 return ValidationResult(
-                    is_valid=False,
-                    errors=[f"Policy validation data error: {str(e)}"]
+                    is_valid=False, errors=[f"Policy validation data error: {str(e)}"]
                 )
             return ValidationResult(
-                is_valid=True,
-                warnings=[f"Policy validation data error: {str(e)}"]
+                is_valid=True, warnings=[f"Policy validation data error: {str(e)}"]
             )
 
     async def get_current_public_key(self) -> Optional[str]:
         """Get current public key for signature verification"""
         try:
-            response = await self._http_client.get(
-                f"{self.registry_url}/api/v1/public-keys"
-            )
+            response = await self._http_client.get(f"{self.registry_url}/api/v1/public-keys")
             response.raise_for_status()
             data = response.json()
             return data.get("current_public_key")
@@ -243,26 +222,15 @@ class PolicyRegistryClient:
     async def health_check(self) -> Dict[str, Any]:
         """Check registry service health"""
         try:
-            response = await self._http_client.get(
-                f"{self.registry_url}/health/ready"
-            )
+            response = await self._http_client.get(f"{self.registry_url}/health/ready")
             response.raise_for_status()
             return response.json()
         except httpx.HTTPStatusError as e:
-            return {
-                "status": "unhealthy",
-                "error": f"HTTP error: {e.response.status_code}"
-            }
+            return {"status": "unhealthy", "error": f"HTTP error: {e.response.status_code}"}
         except (httpx.TimeoutException, httpx.ConnectError) as e:
-            return {
-                "status": "unhealthy",
-                "error": f"Network error: {type(e).__name__}"
-            }
+            return {"status": "unhealthy", "error": f"Network error: {type(e).__name__}"}
         except ValueError as e:
-            return {
-                "status": "unhealthy",
-                "error": f"Response parsing error: {e}"
-            }
+            return {"status": "unhealthy", "error": f"Response parsing error: {e}"}
 
 
 # Global client instance
@@ -274,11 +242,17 @@ def get_policy_client(fail_closed: Optional[bool] = None) -> PolicyRegistryClien
     global _policy_client
     if _policy_client is None:
         # Use settings for default configuration
-        api_key = settings.security.api_key_internal.get_secret_value() if settings.security.api_key_internal else None
+        api_key = (
+            settings.security.api_key_internal.get_secret_value()
+            if settings.security.api_key_internal
+            else None
+        )
         _policy_client = PolicyRegistryClient(
-            registry_url=os.getenv("POLICY_REGISTRY_URL"), # Or another fallback
+            registry_url=os.getenv("POLICY_REGISTRY_URL"),  # Or another fallback
             api_key=api_key,
-            fail_closed=fail_closed if fail_closed is not None else True,  # SECURITY: fail-closed default
+            fail_closed=(
+                fail_closed if fail_closed is not None else True
+            ),  # SECURITY: fail-closed default
         )
     elif fail_closed is not None:
         _policy_client.fail_closed = fail_closed
@@ -287,7 +261,7 @@ def get_policy_client(fail_closed: Optional[bool] = None) -> PolicyRegistryClien
 
 async def initialize_policy_client(
     registry_url: str = "http://localhost:8000",
-    fail_closed: bool = True  # SECURITY: Default to fail-closed for safety
+    fail_closed: bool = True,  # SECURITY: Default to fail-closed for safety
 ):
     """Initialize global policy client"""
     global _policy_client

@@ -14,24 +14,24 @@ from datetime import datetime, timezone
 from typing import List, Optional, Set
 
 from .client import SearchPlatformClient, SearchPlatformConfig
-from .models import SearchMatch
+from .constitutional_search_analyzers import (
+    ASTSecurityAnalyzer,
+    CodeQLAnalyzer,
+    FalsePositiveSuppressor,
+    RealTimeScanDashboard,
+    SemgrepAnalyzer,
+    TrivyContainerScanner,
+)
 
 # Import from extracted modules
 from .constitutional_search_models import (
     CONSTITUTIONAL_HASH,
-    ConstitutionalViolationType,
-    ConstitutionalViolation,
-    ConstitutionalSearchResult,
     ConstitutionalPattern,
+    ConstitutionalSearchResult,
+    ConstitutionalViolation,
+    ConstitutionalViolationType,
 )
-from .constitutional_search_analyzers import (
-    ASTSecurityAnalyzer,
-    SemgrepAnalyzer,
-    CodeQLAnalyzer,
-    FalsePositiveSuppressor,
-    RealTimeScanDashboard,
-    TrivyContainerScanner,
-)
+from .models import SearchMatch
 
 logger = logging.getLogger(__name__)
 
@@ -71,7 +71,7 @@ class ConstitutionalCodeSearchService:
         ),
         ConstitutionalPattern(
             name="eval_usage",
-            pattern=r'\beval\s*\(',
+            pattern=r"\beval\s*\(",
             violation_type=ConstitutionalViolationType.UNSAFE_PATTERN,
             severity="high",
             description="Use of eval() can lead to code injection",
@@ -80,7 +80,7 @@ class ConstitutionalCodeSearchService:
         ),
         ConstitutionalPattern(
             name="missing_constitutional_hash",
-            pattern=r'^(?!.*Constitutional Hash:).*$',
+            pattern=r"^(?!.*Constitutional Hash:).*$",
             violation_type=ConstitutionalViolationType.MISSING_HASH,
             severity="medium",
             description="File missing constitutional hash marker",
@@ -89,7 +89,7 @@ class ConstitutionalCodeSearchService:
         ),
         ConstitutionalPattern(
             name="unsafe_deserialization",
-            pattern=r'pickle\.loads?\s*\(|yaml\.load\s*\([^,]+\)(?!.*Loader)',
+            pattern=r"pickle\.loads?\s*\(|yaml\.load\s*\([^,]+\)(?!.*Loader)",
             violation_type=ConstitutionalViolationType.SECURITY_VIOLATION,
             severity="critical",
             description="Unsafe deserialization detected",
@@ -98,7 +98,7 @@ class ConstitutionalCodeSearchService:
         ),
         ConstitutionalPattern(
             name="subprocess_shell",
-            pattern=r'subprocess\.\w+\([^)]*shell\s*=\s*True',
+            pattern=r"subprocess\.\w+\([^)]*shell\s*=\s*True",
             violation_type=ConstitutionalViolationType.SECURITY_VIOLATION,
             severity="high",
             description="Subprocess with shell=True can be dangerous",
@@ -367,7 +367,7 @@ class ConstitutionalCodeSearchService:
             pattern=r"^FROM\s+",  # Dockerfile FROM instructions
             paths=paths,
             file_types=["dockerfile", "Dockerfile"],
-            max_results=100
+            max_results=100,
         )
 
         dockerfiles = list(set(m.file for m in dockerfile_response.results))
@@ -435,9 +435,7 @@ class ConstitutionalCodeSearchService:
     def remove_pattern(self, name: str) -> bool:
         """Remove a violation pattern by name."""
         initial_count = len(self.violation_patterns)
-        self.violation_patterns = [
-            p for p in self.violation_patterns if p.name != name
-        ]
+        self.violation_patterns = [p for p in self.violation_patterns if p.name != name]
         return len(self.violation_patterns) < initial_count
 
     async def _scan_ast_violations(self, paths: List[str]) -> List[ConstitutionalViolation]:
@@ -457,7 +455,7 @@ class ConstitutionalCodeSearchService:
         for file_path in py_files:
             try:
                 # Read file content
-                with open(file_path, 'r', encoding='utf-8') as f:
+                with open(file_path, "r", encoding="utf-8") as f:
                     source_code = f.read()
 
                 # Parse AST
@@ -485,8 +483,7 @@ class ConstitutionalCodeSearchService:
 
         # Filter out false positives
         violations = [
-            v for v in violations
-            if not self.false_positive_suppressor.should_suppress(v)
+            v for v in violations if not self.false_positive_suppressor.should_suppress(v)
         ]
 
         return violations

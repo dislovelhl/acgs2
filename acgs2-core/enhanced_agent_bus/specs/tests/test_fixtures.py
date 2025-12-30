@@ -5,70 +5,61 @@ Constitutional Hash: cdd01ef066bc6cf2
 Comprehensive tests for all executable specification fixtures.
 """
 
+from datetime import datetime, timedelta, timezone
+
 import pytest
-import asyncio
-from datetime import datetime, timezone, timedelta
+
+from ..fixtures.architecture import (
+    ArchitecturalLayer,
+    ComponentState,
+    SpecArchitectureContext,
+    SpecLayerContext,
+)
 
 # Import all fixture modules using relative imports
 from ..fixtures.constitutional import (
-    ConstitutionalHashValidator,
-    HashValidationResult,
     CONSTITUTIONAL_HASH,
-)
-from ..fixtures.temporal import (
-    SpecTimeline,
-    CausalValidator,
-    TemporalEvent,
-    TemporalViolation,
-    TemporalViolationType,
+    ConstitutionalHashValidator,
 )
 from ..fixtures.governance import (
+    ConsensusType,
+    PolicyEnforcement,
     SpecConsensusChecker,
     SpecPolicyVerifier,
     VoteType,
-    ConsensusType,
-    PolicyScope,
-    PolicyEnforcement,
-    Vote,
-    ConsensusResult,
-    PolicyRule,
 )
-from ..fixtures.architecture import (
-    SpecArchitectureContext,
-    SpecLayerContext,
-    ArchitecturalLayer,
-    ComponentState,
-    LayerConfig,
-    ComponentInfo,
-    LayerTransition,
+from ..fixtures.observability import (
+    Layer,
+    SpecMetricsRegistry,
+    SpecTimeoutBudgetManager,
+)
+from ..fixtures.resilience import (
+    CircuitState,
+    FailureType,
+    SpecChaosController,
+    SpecCircuitBreaker,
+    SpecSagaManager,
+)
+from ..fixtures.temporal import (
+    CausalValidator,
+    SpecTimeline,
+    TemporalViolation,
+    TemporalViolationType,
 )
 from ..fixtures.verification import (
-    MACIFramework,
     MACIAgent,
+    MACIFramework,
     MACIRole,
-    SelfValidationError,
     RoleViolationError,
+    SelfValidationError,
     SpecZ3SolverContext,
     Z3Result,
 )
-from ..fixtures.resilience import (
-    SpecCircuitBreaker,
-    SpecChaosController,
-    SpecSagaManager,
-    CircuitState,
-    FailureType,
-)
-from ..fixtures.observability import (
-    SpecTimeoutBudgetManager,
-    SpecMetricsRegistry,
-    Layer,
-    LatencyMeasurement,
-)
-
 
 # =============================================================================
 # Constitutional Hash Fixture Tests
 # =============================================================================
+
 
 class TestConstitutionalHashValidator:
     """Tests for ConstitutionalHashValidator fixture."""
@@ -149,6 +140,7 @@ class TestConstitutionalHashValidator:
 # Temporal Fixture Tests
 # =============================================================================
 
+
 class TestSpecTimeline:
     """Tests for SpecTimeline fixture."""
 
@@ -163,7 +155,9 @@ class TestSpecTimeline:
         """Test temporal ordering."""
         timeline = SpecTimeline()
         timeline.record("A")
-        import time; time.sleep(0.001)  # Ensure different timestamps
+        import time
+
+        time.sleep(0.001)  # Ensure different timestamps
         timeline.record("B")
         assert timeline.happened_before("A", "B")
         assert not timeline.happened_before("B", "A")
@@ -181,7 +175,9 @@ class TestSpecTimeline:
         """Test getting events sorted by time."""
         timeline = SpecTimeline()
         timeline.record("A")
-        import time; time.sleep(0.001)
+        import time
+
+        time.sleep(0.001)
         timeline.record("B")
 
         sorted_events = timeline.get_sorted_events()
@@ -204,7 +200,9 @@ class TestCausalValidator:
         """Test causality validation."""
         timeline = SpecTimeline()
         timeline.record("cause")
-        import time; time.sleep(0.001)
+        import time
+
+        time.sleep(0.001)
         timeline.record("effect")
 
         validator = CausalValidator(timeline)
@@ -228,7 +226,9 @@ class TestCausalValidator:
         """Test causal chain validation."""
         timeline = SpecTimeline()
         for i, name in enumerate(["A", "B", "C"]):
-            import time; time.sleep(0.001)
+            import time
+
+            time.sleep(0.001)
             timeline.record(name)
 
         validator = CausalValidator(timeline)
@@ -240,7 +240,9 @@ class TestCausalValidator:
         """Test event ordering validation."""
         timeline = SpecTimeline()
         for name in ["first", "second", "third"]:
-            import time; time.sleep(0.001)
+            import time
+
+            time.sleep(0.001)
             timeline.record(name)
 
         validator = CausalValidator(timeline)
@@ -250,12 +252,14 @@ class TestCausalValidator:
         """Test validator reset."""
         timeline = SpecTimeline()
         validator = CausalValidator(timeline)
-        validator.violations.append(TemporalViolation(
-            violation_type=TemporalViolationType.CAUSALITY,
-            event_a="a",
-            event_b="b",
-            message="test"
-        ))
+        validator.violations.append(
+            TemporalViolation(
+                violation_type=TemporalViolationType.CAUSALITY,
+                event_a="a",
+                event_b="b",
+                message="test",
+            )
+        )
         validator.reset()
         assert validator.is_valid()
 
@@ -263,6 +267,7 @@ class TestCausalValidator:
 # =============================================================================
 # Governance Fixture Tests
 # =============================================================================
+
 
 class TestSpecConsensusChecker:
     """Tests for SpecConsensusChecker fixture."""
@@ -280,7 +285,7 @@ class TestSpecConsensusChecker:
 
         result = checker.check_consensus()
         assert result.reached
-        assert result.approval_ratio == 2/3
+        assert result.approval_ratio == 2 / 3
 
     def test_supermajority_consensus(self):
         """Test supermajority (2/3) consensus."""
@@ -403,6 +408,7 @@ class TestSpecPolicyVerifier:
 # Architecture Fixture Tests
 # =============================================================================
 
+
 class TestSpecArchitectureContext:
     """Tests for SpecArchitectureContext fixture."""
 
@@ -486,6 +492,7 @@ class TestSpecLayerContext:
 # =============================================================================
 # MACI Framework Tests
 # =============================================================================
+
 
 class TestMACIFramework:
     """Tests for MACI role separation enforcement."""
@@ -581,6 +588,7 @@ class TestSpecZ3SolverContext:
 # =============================================================================
 # Resilience Fixture Tests
 # =============================================================================
+
 
 class TestSpecCircuitBreaker:
     """Tests for SpecCircuitBreaker fixture."""
@@ -705,6 +713,7 @@ class TestSpecSagaManager:
 # =============================================================================
 # Observability Fixture Tests
 # =============================================================================
+
 
 class TestSpecTimeoutBudgetManager:
     """Tests for SpecTimeoutBudgetManager fixture."""

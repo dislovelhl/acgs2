@@ -4,11 +4,12 @@ Constitutional Hash: cdd01ef066bc6cf2
 """
 
 import pytest
-import asyncio
-from workflows.cyclic.state_schema import GlobalState
-from workflows.cyclic.actor_core import StateGraph
-from workflows.coordination.supervisor import SupervisorNode, WorkerNode
+
 from workflows.coordination.research_worker import ResearchWorker
+from workflows.coordination.supervisor import SupervisorNode, WorkerNode
+from workflows.cyclic.actor_core import StateGraph
+from workflows.cyclic.state_schema import GlobalState
+
 
 @pytest.mark.asyncio
 async def test_supervisor_planning_and_delegation():
@@ -53,6 +54,7 @@ async def test_supervisor_planning_and_delegation():
     if len(research_res.get("results", [])) > 0:
         assert any("Graph Context" in r["content"] for r in research_res["results"])
 
+
 @pytest.mark.asyncio
 async def test_supervisor_critique_loop():
     """Test that supervisor detects failure and re-runs worker."""
@@ -84,6 +86,8 @@ async def test_supervisor_critique_loop():
     # Verify
     assert final_state.is_finished
     # Should have a critique 'fail' event in history
-    critique_events = [h for h in final_state.history if h.get("data", {}).get("action") == "critique"]
+    critique_events = [
+        h for h in final_state.history if h.get("data", {}).get("action") == "critique"
+    ]
     assert any(c["data"]["status"] == "fail" for c in critique_events)
     assert final_state.context["retried"] is True

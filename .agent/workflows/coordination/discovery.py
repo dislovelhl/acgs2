@@ -5,10 +5,9 @@ Constitutional Hash: cdd01ef066bc6cf2
 Workflow for finding suitable agents based on capabilities, availability, and reputation.
 """
 
-import asyncio
 import logging
-from typing import Any, Dict, List, Optional
 import uuid
+from typing import Any, Dict, Optional
 
 from ..base.result import WorkflowResult
 from ..base.workflow import BaseWorkflow
@@ -66,16 +65,14 @@ class AgentDiscoveryWorkflow(BaseWorkflow):
         try:
             # Step 1: Query agent directory
             agents = await self.activities.list_agents(
-                capabilities=required_capabilities,
-                status=status
+                capabilities=required_capabilities, status=status
             )
             self._completed_steps.append("query_directory")
 
             # Step 2: Filter and score results
             # In a real implementation, this could be more complex (ML scoring, etc.)
             qualified_agents = [
-                a for a in agents
-                if a.get("reputation_score", 1.0) >= min_reputation
+                a for a in agents if a.get("reputation_score", 1.0) >= min_reputation
             ]
             self._completed_steps.append("filter_results")
 
@@ -93,7 +90,7 @@ class AgentDiscoveryWorkflow(BaseWorkflow):
                 "status": "success",
                 "agents": results,
                 "count": len(results),
-                "total_found": len(agents)
+                "total_found": len(agents),
             }
 
             return await self.complete(output)

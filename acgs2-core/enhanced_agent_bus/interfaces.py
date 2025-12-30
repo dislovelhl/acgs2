@@ -6,7 +6,7 @@ Abstract protocol definitions for dependency injection support.
 These protocols enable loose coupling and testability.
 """
 
-from typing import Any, Callable, Dict, List, Optional, Protocol, runtime_checkable
+from typing import Any, Dict, List, Optional, Protocol, runtime_checkable
 
 try:
     from .models import AgentMessage
@@ -26,7 +26,7 @@ class AgentRegistry(Protocol):
         self,
         agent_id: str,
         capabilities: Optional[Dict[str, Any]] = None,
-        metadata: Optional[Dict[str, Any]] = None
+        metadata: Optional[Dict[str, Any]] = None,
     ) -> bool:
         """Register an agent with the bus.
 
@@ -81,11 +81,7 @@ class AgentRegistry(Protocol):
         """
         ...
 
-    async def update_metadata(
-        self,
-        agent_id: str,
-        metadata: Dict[str, Any]
-    ) -> bool:
+    async def update_metadata(self, agent_id: str, metadata: Dict[str, Any]) -> bool:
         """Update agent metadata.
 
         Args:
@@ -106,11 +102,7 @@ class MessageRouter(Protocol):
     Constitutional Hash: cdd01ef066bc6cf2
     """
 
-    async def route(
-        self,
-        message: AgentMessage,
-        registry: AgentRegistry
-    ) -> Optional[str]:
+    async def route(self, message: AgentMessage, registry: AgentRegistry) -> Optional[str]:
         """Determine the target agent for a message.
 
         Args:
@@ -123,10 +115,7 @@ class MessageRouter(Protocol):
         ...
 
     async def broadcast(
-        self,
-        message: AgentMessage,
-        registry: AgentRegistry,
-        exclude: Optional[List[str]] = None
+        self, message: AgentMessage, registry: AgentRegistry, exclude: Optional[List[str]] = None
     ) -> List[str]:
         """Get list of agents to broadcast a message to.
 
@@ -149,10 +138,7 @@ class ValidationStrategy(Protocol):
     Constitutional Hash: cdd01ef066bc6cf2
     """
 
-    async def validate(
-        self,
-        message: AgentMessage
-    ) -> tuple[bool, Optional[str]]:
+    async def validate(self, message: AgentMessage) -> tuple[bool, Optional[str]]:
         """Validate a message.
 
         Args:
@@ -174,9 +160,7 @@ class ProcessingStrategy(Protocol):
     """
 
     async def process(
-        self,
-        message: AgentMessage,
-        handlers: Dict[Any, List[Any]]
+        self, message: AgentMessage, handlers: Dict[Any, List[Any]]
     ) -> Any:  # Returns ValidationResult
         """Process a message through validation and handlers.
 
@@ -214,10 +198,7 @@ class MessageHandler(Protocol):
     Constitutional Hash: cdd01ef066bc6cf2
     """
 
-    async def handle(
-        self,
-        message: AgentMessage
-    ) -> Optional[AgentMessage]:
+    async def handle(self, message: AgentMessage) -> Optional[AgentMessage]:
         """Handle a message.
 
         Args:
@@ -249,10 +230,7 @@ class MetricsCollector(Protocol):
     """
 
     def record_message_processed(
-        self,
-        message_type: str,
-        duration_ms: float,
-        success: bool
+        self, message_type: str, duration_ms: float, success: bool
     ) -> None:
         """Record a processed message metric.
 

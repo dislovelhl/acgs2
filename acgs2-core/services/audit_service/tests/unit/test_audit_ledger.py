@@ -1,7 +1,6 @@
-import asyncio
 import pytest
-import time
 from services.audit_service.core.audit_ledger import AuditLedger, ValidationResult
+
 
 @pytest.fixture
 async def ledger(tmp_path):
@@ -19,6 +18,7 @@ async def ledger(tmp_path):
     await l.start()
     yield l
     await l.stop()
+
 
 @pytest.mark.asyncio
 class TestAsyncAuditLedger:
@@ -58,8 +58,7 @@ class TestAsyncAuditLedger:
         """测试批次提交"""
         # 添加足够条目触发批次提交
         for i in range(3):
-            vr = ValidationResult(is_valid=True,
-                                metadata={"index": i})
+            vr = ValidationResult(is_valid=True, metadata={"index": i})
             await ledger.add_validation_result(vr)
 
         # 等待后台处理完所有任务
@@ -127,8 +126,7 @@ class TestAsyncAuditLedger:
         # 添加多个批次的条目
         for batch in range(2):
             for i in range(2):
-                vr = ValidationResult(is_valid=True,
-                                    metadata={"batch": batch, "index": i})
+                vr = ValidationResult(is_valid=True, metadata={"batch": batch, "index": i})
                 await ledger.add_validation_result(vr)
 
             # 等待处理
@@ -150,8 +148,7 @@ class TestAsyncAuditLedger:
         """测试账本统计"""
         # 添加一些条目
         for i in range(5):
-            vr = ValidationResult(is_valid=(i % 2 == 0),
-                                metadata={"index": i})
+            vr = ValidationResult(is_valid=(i % 2 == 0), metadata={"index": i})
             await ledger.add_validation_result(vr)
 
         # 等待处理完成

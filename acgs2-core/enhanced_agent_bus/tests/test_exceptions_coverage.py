@@ -9,74 +9,74 @@ import pytest
 
 try:
     from enhanced_agent_bus.exceptions import (
+        AgentAlreadyRegisteredError,
         AgentBusError,
+        AgentCapabilityError,
+        AgentError,
+        AgentNotRegisteredError,
+        BusAlreadyStartedError,
+        BusNotStartedError,
+        BusOperationError,
+        ConfigurationError,
         ConstitutionalError,
         ConstitutionalHashMismatchError,
         ConstitutionalValidationError,
-        MessageError,
-        MessageValidationError,
+        DeliberationError,
+        DeliberationTimeoutError,
+        HandlerExecutionError,
+        MACICrossRoleValidationError,
+        MACIError,
+        MACIRoleNotAssignedError,
+        MACIRoleViolationError,
+        MACISelfValidationError,
         MessageDeliveryError,
-        MessageTimeoutError,
+        MessageError,
         MessageRoutingError,
-        AgentError,
-        AgentNotRegisteredError,
-        AgentAlreadyRegisteredError,
-        AgentCapabilityError,
+        MessageTimeoutError,
+        MessageValidationError,
+        OPAConnectionError,
+        OPANotInitializedError,
         PolicyError,
         PolicyEvaluationError,
         PolicyNotFoundError,
-        OPAConnectionError,
-        OPANotInitializedError,
-        DeliberationError,
-        DeliberationTimeoutError,
-        SignatureCollectionError,
         ReviewConsensusError,
-        BusOperationError,
-        BusNotStartedError,
-        BusAlreadyStartedError,
-        HandlerExecutionError,
-        ConfigurationError,
-        MACIError,
-        MACIRoleViolationError,
-        MACISelfValidationError,
-        MACICrossRoleValidationError,
-        MACIRoleNotAssignedError,
+        SignatureCollectionError,
     )
     from enhanced_agent_bus.models import CONSTITUTIONAL_HASH
 except ImportError:
     from exceptions import (
+        AgentAlreadyRegisteredError,
         AgentBusError,
+        AgentCapabilityError,
+        AgentError,
+        AgentNotRegisteredError,
+        BusAlreadyStartedError,
+        BusNotStartedError,
+        BusOperationError,
+        ConfigurationError,
         ConstitutionalError,
         ConstitutionalHashMismatchError,
         ConstitutionalValidationError,
-        MessageError,
-        MessageValidationError,
+        DeliberationError,
+        DeliberationTimeoutError,
+        HandlerExecutionError,
+        MACICrossRoleValidationError,
+        MACIError,
+        MACIRoleNotAssignedError,
+        MACIRoleViolationError,
+        MACISelfValidationError,
         MessageDeliveryError,
-        MessageTimeoutError,
+        MessageError,
         MessageRoutingError,
-        AgentError,
-        AgentNotRegisteredError,
-        AgentAlreadyRegisteredError,
-        AgentCapabilityError,
+        MessageTimeoutError,
+        MessageValidationError,
+        OPAConnectionError,
+        OPANotInitializedError,
         PolicyError,
         PolicyEvaluationError,
         PolicyNotFoundError,
-        OPAConnectionError,
-        OPANotInitializedError,
-        DeliberationError,
-        DeliberationTimeoutError,
-        SignatureCollectionError,
         ReviewConsensusError,
-        BusOperationError,
-        BusNotStartedError,
-        BusAlreadyStartedError,
-        HandlerExecutionError,
-        ConfigurationError,
-        MACIError,
-        MACIRoleViolationError,
-        MACISelfValidationError,
-        MACICrossRoleValidationError,
-        MACIRoleNotAssignedError,
+        SignatureCollectionError,
     )
     from models import CONSTITUTIONAL_HASH
 
@@ -130,8 +130,7 @@ class TestConstitutionalHashMismatchError:
     def test_basic_creation(self):
         """Create mismatch error with hashes."""
         err = ConstitutionalHashMismatchError(
-            expected_hash="expected123456789",
-            actual_hash="actual987654321"
+            expected_hash="expected123456789", actual_hash="actual987654321"
         )
         assert err.expected_hash == "expected123456789"
         assert err.actual_hash == "actual987654321"
@@ -139,8 +138,7 @@ class TestConstitutionalHashMismatchError:
     def test_sanitize_hash_long(self):
         """Long hashes are sanitized in message."""
         err = ConstitutionalHashMismatchError(
-            expected_hash="abcdefghijklmnop",
-            actual_hash="1234567890abcdef"
+            expected_hash="abcdefghijklmnop", actual_hash="1234567890abcdef"
         )
         assert "..." in err.message
 
@@ -162,9 +160,7 @@ class TestConstitutionalHashMismatchError:
     def test_with_context(self):
         """Error includes context in message."""
         err = ConstitutionalHashMismatchError(
-            expected_hash="abc",
-            actual_hash="xyz",
-            context="During message validation"
+            expected_hash="abc", actual_hash="xyz", context="During message validation"
         )
         assert "During message validation" in err.message
         assert err.details["context"] == "During message validation"
@@ -181,18 +177,14 @@ class TestConstitutionalValidationError:
 
     def test_basic_creation(self):
         """Create validation error."""
-        err = ConstitutionalValidationError(
-            validation_errors=["Rule 1 failed", "Rule 2 failed"]
-        )
+        err = ConstitutionalValidationError(validation_errors=["Rule 1 failed", "Rule 2 failed"])
         assert "Rule 1 failed" in err.message
         assert err.validation_errors == ["Rule 1 failed", "Rule 2 failed"]
 
     def test_with_agent_and_action(self):
         """Error with agent and action info."""
         err = ConstitutionalValidationError(
-            validation_errors=["policy violation"],
-            agent_id="agent123",
-            action_type="send_message"
+            validation_errors=["policy violation"], agent_id="agent123", action_type="send_message"
         )
         assert err.agent_id == "agent123"
         assert err.action_type == "send_message"
@@ -205,8 +197,7 @@ class TestMessageValidationError:
     def test_basic_creation(self):
         """Create message validation error."""
         err = MessageValidationError(
-            message_id="msg123",
-            errors=["Invalid content", "Missing field"]
+            message_id="msg123", errors=["Invalid content", "Missing field"]
         )
         assert "msg123" in err.message
         assert err.message_id == "msg123"
@@ -215,9 +206,7 @@ class TestMessageValidationError:
     def test_with_warnings(self):
         """Error with warnings list."""
         err = MessageValidationError(
-            message_id="msg456",
-            errors=["error1"],
-            warnings=["warning1", "warning2"]
+            message_id="msg456", errors=["error1"], warnings=["warning1", "warning2"]
         )
         assert err.warnings == ["warning1", "warning2"]
 
@@ -234,9 +223,7 @@ class TestMessageDeliveryError:
     def test_basic_creation(self):
         """Create delivery error."""
         err = MessageDeliveryError(
-            message_id="msg123",
-            target_agent="agent456",
-            reason="agent offline"
+            message_id="msg123", target_agent="agent456", reason="agent offline"
         )
         assert "msg123" in err.message
         assert "agent456" in err.message
@@ -249,21 +236,14 @@ class TestMessageTimeoutError:
 
     def test_basic_creation(self):
         """Create timeout error."""
-        err = MessageTimeoutError(
-            message_id="msg123",
-            timeout_ms=5000
-        )
+        err = MessageTimeoutError(message_id="msg123", timeout_ms=5000)
         assert "msg123" in err.message
         assert "5000" in err.message
         assert err.timeout_ms == 5000
 
     def test_with_operation(self):
         """Error with operation info."""
-        err = MessageTimeoutError(
-            message_id="msg789",
-            timeout_ms=3000,
-            operation="validation"
-        )
+        err = MessageTimeoutError(message_id="msg789", timeout_ms=3000, operation="validation")
         assert "validation" in err.message
         assert err.operation == "validation"
 
@@ -277,7 +257,7 @@ class TestMessageRoutingError:
             message_id="msg123",
             source_agent="sender",
             target_agent="receiver",
-            reason="no route found"
+            reason="no route found",
         )
         assert "msg123" in err.message
         assert err.source_agent == "sender"
@@ -318,7 +298,7 @@ class TestAgentCapabilityError:
         err = AgentCapabilityError(
             agent_id="agent123",
             required_capabilities=["translate", "summarize"],
-            available_capabilities=["translate"]
+            available_capabilities=["translate"],
         )
         assert "agent123" in err.message
         assert "summarize" in err.message
@@ -331,10 +311,7 @@ class TestPolicyEvaluationError:
 
     def test_basic_creation(self):
         """Create policy evaluation error."""
-        err = PolicyEvaluationError(
-            policy_path="governance/rate_limit",
-            reason="request denied"
-        )
+        err = PolicyEvaluationError(policy_path="governance/rate_limit", reason="request denied")
         assert "governance/rate_limit" in err.message
         assert err.policy_path == "governance/rate_limit"
         assert err.reason == "request denied"
@@ -342,9 +319,7 @@ class TestPolicyEvaluationError:
     def test_with_input_data(self):
         """Error with input data."""
         err = PolicyEvaluationError(
-            policy_path="test/policy",
-            reason="evaluation failed",
-            input_data={"key": "value"}
+            policy_path="test/policy", reason="evaluation failed", input_data={"key": "value"}
         )
         assert err.input_data == {"key": "value"}
 
@@ -369,10 +344,7 @@ class TestOPAConnectionError:
 
     def test_basic_creation(self):
         """Create OPA connection error."""
-        err = OPAConnectionError(
-            opa_url="http://opa:8181",
-            reason="Connection refused"
-        )
+        err = OPAConnectionError(opa_url="http://opa:8181", reason="Connection refused")
         assert "opa:8181" in err.message
         assert err.opa_url == "http://opa:8181"
         assert err.reason == "Connection refused"
@@ -393,10 +365,7 @@ class TestDeliberationTimeoutError:
 
     def test_basic_creation(self):
         """Create deliberation timeout error."""
-        err = DeliberationTimeoutError(
-            decision_id="dec123",
-            timeout_seconds=30
-        )
+        err = DeliberationTimeoutError(decision_id="dec123", timeout_seconds=30)
         assert "dec123" in err.message
         assert err.decision_id == "dec123"
         assert err.timeout_seconds == 30
@@ -404,10 +373,7 @@ class TestDeliberationTimeoutError:
     def test_with_pending_counts(self):
         """Error with pending reviews and signatures."""
         err = DeliberationTimeoutError(
-            decision_id="dec456",
-            timeout_seconds=60,
-            pending_reviews=2,
-            pending_signatures=3
+            decision_id="dec456", timeout_seconds=60, pending_reviews=2, pending_signatures=3
         )
         assert err.pending_reviews == 2
         assert err.pending_signatures == 3
@@ -427,7 +393,7 @@ class TestSignatureCollectionError:
             decision_id="dec123",
             required_signers=["agent_a", "agent_b", "agent_c"],
             collected_signers=["agent_a"],
-            reason="timeout"
+            reason="timeout",
         )
         assert "dec123" in err.message
         assert err.decision_id == "dec123"
@@ -441,10 +407,7 @@ class TestReviewConsensusError:
     def test_basic_creation(self):
         """Create consensus error."""
         err = ReviewConsensusError(
-            decision_id="dec123",
-            approval_count=2,
-            rejection_count=3,
-            escalation_count=1
+            decision_id="dec123", approval_count=2, rejection_count=3, escalation_count=1
         )
         assert "dec123" in err.message
         assert err.approval_count == 2
@@ -483,9 +446,7 @@ class TestHandlerExecutionError:
         """Create handler execution error."""
         original = TypeError("missing arg")
         err = HandlerExecutionError(
-            handler_name="MyHandler",
-            message_id="msg123",
-            original_error=original
+            handler_name="MyHandler", message_id="msg123", original_error=original
         )
         assert "MyHandler" in err.message
         assert "msg123" in err.message
@@ -498,10 +459,7 @@ class TestConfigurationError:
 
     def test_basic_creation(self):
         """Create configuration error."""
-        err = ConfigurationError(
-            config_key="REDIS_URL",
-            reason="Missing required configuration"
-        )
+        err = ConfigurationError(config_key="REDIS_URL", reason="Missing required configuration")
         assert "REDIS_URL" in err.message
         assert err.config_key == "REDIS_URL"
         assert err.reason == "Missing required configuration"
@@ -512,11 +470,7 @@ class TestMACIRoleViolationError:
 
     def test_basic_creation(self):
         """Create role violation error."""
-        err = MACIRoleViolationError(
-            agent_id="agent123",
-            role="executive",
-            action="validate"
-        )
+        err = MACIRoleViolationError(agent_id="agent123", role="executive", action="validate")
         assert "agent123" in err.message
         assert "executive" in err.message
         assert "validate" in err.message
@@ -527,10 +481,7 @@ class TestMACIRoleViolationError:
     def test_with_allowed_roles(self):
         """Error with allowed roles list."""
         err = MACIRoleViolationError(
-            agent_id="agent123",
-            role="executive",
-            action="audit",
-            allowed_roles=["judicial"]
+            agent_id="agent123", role="executive", action="audit", allowed_roles=["judicial"]
         )
         assert err.allowed_roles == ["judicial"]
         assert "judicial" in err.message
@@ -546,10 +497,7 @@ class TestMACISelfValidationError:
 
     def test_basic_creation(self):
         """Create self validation error."""
-        err = MACISelfValidationError(
-            agent_id="agent123",
-            action="self-approve"
-        )
+        err = MACISelfValidationError(agent_id="agent123", action="self-approve")
         assert "agent123" in err.message
         assert "Gödel" in err.message or "godel" in err.message.lower()
         assert err.agent_id == "agent123"
@@ -557,11 +505,7 @@ class TestMACISelfValidationError:
 
     def test_with_output_id(self):
         """Error with output ID."""
-        err = MACISelfValidationError(
-            agent_id="agent123",
-            action="validate",
-            output_id="output456"
-        )
+        err = MACISelfValidationError(agent_id="agent123", action="validate", output_id="output456")
         assert err.output_id == "output456"
         assert "output456" in err.message
 
@@ -576,7 +520,7 @@ class TestMACICrossRoleValidationError:
             validator_role="executive",
             target_agent="target456",
             target_role="judicial",
-            reason="role conflict"
+            reason="role conflict",
         )
         assert err.validator_agent == "validator123"
         assert err.validator_role == "executive"
@@ -590,10 +534,7 @@ class TestMACIRoleNotAssignedError:
 
     def test_basic_creation(self):
         """Create role not assigned error."""
-        err = MACIRoleNotAssignedError(
-            agent_id="agent123",
-            operation="validate"
-        )
+        err = MACIRoleNotAssignedError(agent_id="agent123", operation="validate")
         assert "agent123" in err.message
         assert err.agent_id == "agent123"
         assert err.operation == "validate"

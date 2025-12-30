@@ -8,18 +8,16 @@ Tests for configuration-based MACI role management.
 import json
 import os
 import tempfile
-from pathlib import Path
 
 import pytest
-
 from enhanced_agent_bus.maci_enforcement import (
-    MACIRole,
+    CONSTITUTIONAL_HASH,
     MACIAgentRoleConfig,
     MACIConfig,
     MACIConfigLoader,
+    MACIRole,
     MACIRoleRegistry,
     apply_maci_config,
-    CONSTITUTIONAL_HASH,
 )
 
 
@@ -201,9 +199,7 @@ class TestMACIConfigLoader:
             ],
         }
 
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".json", delete=False
-        ) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             json.dump(config_dict, f)
             temp_path = f.name
 
@@ -234,9 +230,7 @@ agents:
       - audit
 """
 
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".yaml", delete=False
-        ) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
             f.write(yaml_content)
             temp_path = f.name
 
@@ -297,9 +291,7 @@ agents:
 
         config_dict = {"agents": [{"agent_id": "auto", "role": "executive"}]}
 
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".json", delete=False
-        ) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             json.dump(config_dict, f)
             temp_path = f.name
 
@@ -318,9 +310,7 @@ agents:
 
         yaml_content = "agents:\n  - agent_id: auto-yaml\n    role: legislative\n"
 
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".yml", delete=False
-        ) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".yml", delete=False) as f:
             f.write(yaml_content)
             temp_path = f.name
 

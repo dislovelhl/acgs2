@@ -9,14 +9,13 @@ automatic rollback on failure.
 
 import asyncio
 import logging
+import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Any, Awaitable, Callable, Dict, List, Optional
 from enum import Enum
-import uuid
+from typing import Any, Awaitable, Callable, Dict, List, Optional
 
 from ..base.context import WorkflowContext
-from ..base.step import StepCompensation
 
 try:
     from shared.constants import CONSTITUTIONAL_HASH
@@ -27,16 +26,20 @@ except ImportError:
 try:
     from enhanced_agent_bus.exceptions import ConstitutionalHashMismatchError
 except ImportError:
+
     class ConstitutionalHashMismatchError(Exception):
         """Constitutional hash validation failed."""
+
         def __init__(self, expected: str, actual: str):
             self.expected = expected
             self.actual = actual
             super().__init__(f"Constitutional hash mismatch: expected {expected}, got {actual}")
 
+
 # Metrics integration
 try:
     from shared import metrics
+
     HAS_METRICS = True
 except ImportError:
     HAS_METRICS = False
@@ -47,6 +50,7 @@ logger = logging.getLogger(__name__)
 
 class SagaStatus(Enum):
     """Status of saga execution."""
+
     PENDING = "pending"
     EXECUTING = "executing"
     COMPLETED = "completed"
@@ -68,6 +72,7 @@ class SagaStep:
         timeout_seconds: Maximum execution time
         is_critical: If True, failure stops saga (default True)
     """
+
     name: str
     execute: Callable[[Dict[str, Any]], Awaitable[Any]]
     compensate: Optional[Callable[[Dict[str, Any]], Awaitable[None]]] = None
@@ -85,6 +90,7 @@ class SagaStep:
 @dataclass
 class SagaResult:
     """Result of saga execution."""
+
     saga_id: str
     status: SagaStatus
     steps_completed: List[str]
@@ -174,11 +180,7 @@ class BaseSaga:
         self._steps.append(step)
         return self
 
-    async def execute(
-        self,
-        context: WorkflowContext,
-        input: Dict[str, Any]
-    ) -> SagaResult:
+    async def execute(self, context: WorkflowContext, input: Dict[str, Any]) -> SagaResult:
         """
         Execute the saga with all steps.
 
@@ -250,21 +252,18 @@ class BaseSaga:
 
         # Determine final status
         status = self._determine_status(
-            steps_completed, steps_failed,
-            compensations_executed, compensations_failed
+            steps_completed, steps_failed, compensations_executed, compensations_failed
         )
 
         # Emit saga metrics
         if HAS_METRICS:
             try:
                 metrics.WORKFLOW_EXECUTION_DURATION.labels(
-                    workflow_name=f"saga:{self.saga_id.split(':')[0]}",
-                    status=status.value
+                    workflow_name=f"saga:{self.saga_id.split(':')[0]}", status=status.value
                 ).observe(execution_time / 1000.0)
 
                 metrics.WORKFLOW_EXECUTIONS_TOTAL.labels(
-                    workflow_name=f"saga:{self.saga_id.split(':')[0]}",
-                    status=status.value
+                    workflow_name=f"saga:{self.saga_id.split(':')[0]}", status=status.value
                 ).inc()
             except Exception as me:
                 logger.debug(f"Failed to emit saga metrics: {me}")
@@ -320,8 +319,7 @@ class BaseSaga:
             if self._fail_closed:
                 logger.error(error_msg)
                 raise ConstitutionalHashMismatchError(
-                    expected=self.constitutional_hash,
-                    actual=context_hash
+                    expected=self.constitutional_hash, actual=context_hash
                 )
             else:
                 logger.warning(
@@ -332,10 +330,7 @@ class BaseSaga:
         return is_valid
 
     async def _execute_step(
-        self,
-        step: SagaStep,
-        context: WorkflowContext,
-        input: Dict[str, Any]
+        self, step: SagaStep, context: WorkflowContext, input: Dict[str, Any]
     ) -> bool:
         """
         Execute a single saga step.
@@ -347,10 +342,14 @@ class BaseSaga:
         # BEFORE executing the step to prevent unvalidated flows
         try:
             self._validate_constitutional_hash(context)
-            logger.debug(f"Saga {self.saga_id}: Step '{step.name}' constitutional validation passed")
+            logger.debug(
+                f"Saga {self.saga_id}: Step '{step.name}' constitutional validation passed"
+            )
         except ConstitutionalHashMismatchError as e:
             step.error = str(e)
-            logger.error(f"Saga {self.saga_id}: Step '{step.name}' failed constitutional validation")
+            logger.error(
+                f"Saga {self.saga_id}: Step '{step.name}' failed constitutional validation"
+            )
             return False
 
         logger.debug(f"Saga {self.saga_id}: Executing step '{step.name}'")
@@ -364,10 +363,7 @@ class BaseSaga:
         }
 
         try:
-            result = await asyncio.wait_for(
-                step.execute(step_input),
-                timeout=step.timeout_seconds
-            )
+            result = await asyncio.wait_for(step.execute(step_input), timeout=step.timeout_seconds)
             step.result = result
             step.executed_at = datetime.now(timezone.utc)
             context.set_step_result(step.name, result)
@@ -377,11 +373,13 @@ class BaseSaga:
             # Emit step metrics
             if HAS_METRICS:
                 try:
-                    duration_ms = (datetime.now(timezone.utc) - step.executed_at).total_seconds() * 1000 if step.executed_at else 0
+                    duration_ms = (
+                        (datetime.now(timezone.utc) - step.executed_at).total_seconds() * 1000
+                        if step.executed_at
+                        else 0
+                    )
                     metrics.WORKFLOW_STEP_DURATION.labels(
-                        workflow_name="saga",
-                        step_name=step.name,
-                        status="success"
+                        workflow_name="saga", step_name=step.name, status="success"
                     ).observe(duration_ms / 1000.0)
                 except Exception as me:
                     logger.debug(f"Failed to emit saga step metrics: {me}")
@@ -398,11 +396,7 @@ class BaseSaga:
             logger.warning(f"Saga {self.saga_id}: Step '{step.name}' failed: {e}")
             return False
 
-    async def _run_compensations(
-        self,
-        context: WorkflowContext,
-        input: Dict[str, Any]
-    ) -> tuple:
+    async def _run_compensations(self, context: WorkflowContext, input: Dict[str, Any]) -> tuple:
         """
         Run compensations in LIFO order.
 
@@ -415,9 +409,7 @@ class BaseSaga:
         if not self._compensation_stack:
             return executed, failed
 
-        logger.info(
-            f"Saga {self.saga_id}: Running {len(self._compensation_stack)} compensations"
-        )
+        logger.info(f"Saga {self.saga_id}: Running {len(self._compensation_stack)} compensations")
 
         # LIFO order - reverse the stack
         for step in reversed(self._compensation_stack):
@@ -434,10 +426,7 @@ class BaseSaga:
         return executed, failed
 
     async def _execute_compensation(
-        self,
-        step: SagaStep,
-        context: WorkflowContext,
-        input: Dict[str, Any]
+        self, step: SagaStep, context: WorkflowContext, input: Dict[str, Any]
     ) -> bool:
         """
         Execute compensation for a step with retries.
@@ -457,10 +446,7 @@ class BaseSaga:
 
         for attempt in range(self.max_compensation_retries):
             try:
-                await asyncio.wait_for(
-                    step.compensate(comp_input),
-                    timeout=step.timeout_seconds
-                )
+                await asyncio.wait_for(step.compensate(comp_input), timeout=step.timeout_seconds)
                 step.compensated_at = datetime.now(timezone.utc)
 
                 logger.info(f"Saga {self.saga_id}: Compensation '{step.name}' completed")
@@ -489,14 +475,11 @@ class BaseSaga:
         completed: List[str],
         failed: List[str],
         comp_executed: List[str],
-        comp_failed: List[str]
+        comp_failed: List[str],
     ) -> SagaStatus:
         """Determine final saga status."""
         # Check if any critical steps failed
-        critical_failed = any(
-            step.name in failed and step.is_critical
-            for step in self._steps
-        )
+        critical_failed = any(step.name in failed and step.is_critical for step in self._steps)
 
         if not critical_failed:
             return SagaStatus.COMPLETED

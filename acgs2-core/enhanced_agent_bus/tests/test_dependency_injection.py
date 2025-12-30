@@ -6,27 +6,25 @@ Tests for DI pattern implementation including interfaces, registries, and core i
 """
 
 import pytest
-from datetime import datetime, timezone
-
-from models import AgentMessage, MessageType, Priority, CONSTITUTIONAL_HASH
+from core import EnhancedAgentBus, MessageProcessor
 from interfaces import (
     AgentRegistry,
     MessageRouter,
     ValidationStrategy,
 )
+from models import CONSTITUTIONAL_HASH, AgentMessage
 from registry import (
-    InMemoryAgentRegistry,
-    DirectMessageRouter,
     CapabilityBasedRouter,
-    StaticHashValidationStrategy,
     CompositeValidationStrategy,
+    DirectMessageRouter,
+    InMemoryAgentRegistry,
+    StaticHashValidationStrategy,
 )
-from core import EnhancedAgentBus, MessageProcessor
-
 
 # ============================================================================
 # InMemoryAgentRegistry Tests
 # ============================================================================
+
 
 class TestInMemoryAgentRegistry:
     """Test InMemoryAgentRegistry implementation."""
@@ -40,9 +38,7 @@ class TestInMemoryAgentRegistry:
     async def test_register_agent(self, registry):
         """Test agent registration."""
         result = await registry.register(
-            "agent-1",
-            capabilities={"search": True},
-            metadata={"version": "1.0"}
+            "agent-1", capabilities={"search": True}, metadata={"version": "1.0"}
         )
         assert result is True
         assert await registry.exists("agent-1")
@@ -72,9 +68,7 @@ class TestInMemoryAgentRegistry:
     async def test_get_agent(self, registry):
         """Test getting agent info."""
         await registry.register(
-            "agent-1",
-            capabilities={"search": True},
-            metadata={"version": "1.0"}
+            "agent-1", capabilities={"search": True}, metadata={"version": "1.0"}
         )
         info = await registry.get("agent-1")
 
@@ -138,6 +132,7 @@ class TestInMemoryAgentRegistry:
 # ============================================================================
 # DirectMessageRouter Tests
 # ============================================================================
+
 
 class TestDirectMessageRouter:
     """Test DirectMessageRouter implementation."""
@@ -211,6 +206,7 @@ class TestDirectMessageRouter:
 # CapabilityBasedRouter Tests
 # ============================================================================
 
+
 class TestCapabilityBasedRouter:
     """Test CapabilityBasedRouter implementation."""
 
@@ -230,9 +226,7 @@ class TestCapabilityBasedRouter:
         await registry.register("agent-1", capabilities={"search": True})
         await registry.register("agent-2", capabilities={"compute": True})
 
-        message = AgentMessage(
-            content={"required_capabilities": ["search"]}
-        )
+        message = AgentMessage(content={"required_capabilities": ["search"]})
         target = await router.route(message, registry)
 
         assert target == "agent-1"
@@ -243,10 +237,7 @@ class TestCapabilityBasedRouter:
         await registry.register("agent-1", capabilities={"search": True})
         await registry.register("agent-2", capabilities={"compute": True})
 
-        message = AgentMessage(
-            to_agent="agent-2",
-            content={"required_capabilities": ["search"]}
-        )
+        message = AgentMessage(to_agent="agent-2", content={"required_capabilities": ["search"]})
         target = await router.route(message, registry)
 
         assert target == "agent-2"
@@ -278,10 +269,7 @@ class TestStaticHashValidationStrategy:
     @pytest.mark.asyncio
     async def test_validate_strict_mode_valid_hash(self, strict_validator):
         """Test strict validation with correct hash."""
-        message = AgentMessage(
-            content={"action": "test"},
-            constitutional_hash=CONSTITUTIONAL_HASH
-        )
+        message = AgentMessage(content={"action": "test"}, constitutional_hash=CONSTITUTIONAL_HASH)
         is_valid, error = await strict_validator.validate(message)
 
         assert is_valid is True
@@ -302,15 +290,14 @@ class TestStaticHashValidationStrategy:
 # CompositeValidationStrategy Tests
 # ============================================================================
 
+
 class TestCompositeValidationStrategy:
     """Test CompositeValidationStrategy implementation."""
 
     @pytest.mark.asyncio
     async def test_validate_all_pass(self):
         """Test composite validation with all strategies passing."""
-        composite = CompositeValidationStrategy([
-            StaticHashValidationStrategy()
-        ])
+        composite = CompositeValidationStrategy([StaticHashValidationStrategy()])
 
         message = AgentMessage(content={"action": "test"})
         is_valid, error = await composite.validate(message)
@@ -333,6 +320,7 @@ class TestCompositeValidationStrategy:
 # ============================================================================
 # EnhancedAgentBus DI Integration Tests
 # ============================================================================
+
 
 class TestEnhancedAgentBusDI:
     """Test EnhancedAgentBus with dependency injection."""
@@ -391,9 +379,7 @@ class TestEnhancedAgentBusDI:
 
         # Old-style agent registration still works
         result = await bus.register_agent(
-            "test-agent",
-            agent_type="worker",
-            capabilities=["search"]
+            "test-agent", agent_type="worker", capabilities=["search"]
         )
         assert result is True
 
@@ -412,11 +398,7 @@ class TestEnhancedAgentBusDI:
         validator = StaticHashValidationStrategy()
 
         # Inject into bus
-        bus = EnhancedAgentBus(
-            registry=registry,
-            router=router,
-            validator=validator
-        )
+        bus = EnhancedAgentBus(registry=registry, router=router, validator=validator)
 
         await bus.start()
 
@@ -435,6 +417,7 @@ class TestEnhancedAgentBusDI:
 # ============================================================================
 # Protocol Compliance Tests
 # ============================================================================
+
 
 class TestProtocolCompliance:
     """Test that implementations comply with protocols."""

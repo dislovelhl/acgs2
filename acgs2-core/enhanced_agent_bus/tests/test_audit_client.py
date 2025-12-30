@@ -5,21 +5,22 @@ Constitutional Hash: cdd01ef066bc6cf2
 Comprehensive tests for the AuditClient class.
 """
 
-import pytest
+from dataclasses import dataclass
+from typing import Any, Dict
 from unittest.mock import AsyncMock, MagicMock, patch
-from dataclasses import dataclass, asdict
-from typing import Dict, Any
 
+import pytest
 from audit_client import AuditClient
-
 
 # =============================================================================
 # Test Data Classes
 # =============================================================================
 
+
 @dataclass
 class MockValidationResult:
     """Mock validation result with to_dict method."""
+
     is_valid: bool
     message_id: str
     constitutional_hash: str
@@ -41,6 +42,7 @@ class MockValidationResult:
 @dataclass
 class PlainDataclass:
     """Plain dataclass without to_dict method."""
+
     field1: str
     field2: int
 
@@ -48,6 +50,7 @@ class PlainDataclass:
 # =============================================================================
 # Initialization Tests
 # =============================================================================
+
 
 class TestAuditClientInitialization:
     """Tests for AuditClient initialization."""
@@ -73,6 +76,7 @@ class TestAuditClientInitialization:
 # =============================================================================
 # report_validation Tests
 # =============================================================================
+
 
 class TestReportValidation:
     """Tests for report_validation method."""
@@ -195,6 +199,7 @@ class TestReportValidation:
 # get_stats Tests
 # =============================================================================
 
+
 class TestGetStats:
     """Tests for get_stats method."""
 
@@ -279,6 +284,7 @@ class TestGetStats:
 # close Tests
 # =============================================================================
 
+
 class TestClose:
     """Tests for close method."""
 
@@ -307,6 +313,7 @@ class TestClose:
 # =============================================================================
 # Integration Tests
 # =============================================================================
+
 
 class TestAuditClientIntegration:
     """Integration tests for AuditClient."""
@@ -349,10 +356,7 @@ class TestAuditClientIntegration:
         """Test reporting multiple validations."""
         client = AuditClient()
 
-        results = [
-            MockValidationResult(True, f"msg-{i}", "cdd01ef066bc6cf2")
-            for i in range(5)
-        ]
+        results = [MockValidationResult(True, f"msg-{i}", "cdd01ef066bc6cf2") for i in range(5)]
 
         mock_post_response = MagicMock()
         mock_post_response.status_code = 200
@@ -399,4 +403,3 @@ class TestAuditClientIntegration:
 
         assert valid_hash == "mixed_test_hash"
         assert invalid_hash == "mixed_test_hash"
-

@@ -6,12 +6,10 @@ Production-grade OCI registry integration for policy bundle distribution.
 Supports Harbor, AWS ECR, GCR, and generic OCI-compliant registries.
 """
 
-import asyncio
 import hashlib
 import json
 import logging
 import os
-import tarfile
 import tempfile
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
@@ -22,8 +20,8 @@ from urllib.parse import urlparse
 
 import aiohttp
 import jsonschema
-from cryptography.hazmat.primitives.asymmetric import ed25519
 from cryptography.exceptions import InvalidSignature
+from cryptography.hazmat.primitives.asymmetric import ed25519
 
 # Import centralized constitutional hash from shared module
 try:
@@ -37,6 +35,7 @@ logger = logging.getLogger(__name__)
 
 class RegistryType(Enum):
     """Supported OCI registry types."""
+
     HARBOR = "harbor"
     ECR = "ecr"
     GCR = "gcr"
@@ -46,6 +45,7 @@ class RegistryType(Enum):
 
 class BundleStatus(Enum):
     """Bundle lifecycle status."""
+
     DRAFT = "draft"
     PENDING_REVIEW = "pending_review"
     APPROVED = "approved"
@@ -61,6 +61,7 @@ class BundleManifest:
 
     Conforms to: policies/schema/bundle-manifest.schema.json
     """
+
     version: str
     revision: str  # 40-char git SHA
     constitutional_hash: str = CONSTITUTIONAL_HASH
@@ -82,14 +83,15 @@ class BundleManifest:
         """Validate manifest against JSON schema."""
         if not self._schema:
             schema_path = os.path.join(
-                os.path.dirname(__file__),
-                "../policies/schema/bundle-manifest.schema.json"
+                os.path.dirname(__file__), "../policies/schema/bundle-manifest.schema.json"
             )
             if os.path.exists(schema_path):
                 with open(schema_path) as f:
                     self._schema = json.load(f)
             else:
-                logger.warning(f"Schema file not found at {schema_path}, skipping strict validation")
+                logger.warning(
+                    f"Schema file not found at {schema_path}, skipping strict validation"
+                )
                 return
 
         try:
@@ -106,7 +108,7 @@ class BundleManifest:
             "constitutional_hash": self.constitutional_hash,
             "roots": self.roots,
             "signatures": self.signatures,
-            "metadata": self.metadata
+            "metadata": self.metadata,
         }
 
     @classmethod
@@ -119,17 +121,19 @@ class BundleManifest:
             timestamp=data.get("timestamp", datetime.now(timezone.utc).isoformat()),
             roots=data.get("roots", []),
             signatures=data.get("signatures", []),
-            metadata=data.get("metadata", {})
+            metadata=data.get("metadata", {}),
         )
 
     def add_signature(self, keyid: str, signature: str, algorithm: str = "ed25519"):
         """Add a signature to the manifest."""
-        self.signatures.append({
-            "keyid": keyid,
-            "sig": signature,
-            "alg": algorithm,
-            "timestamp": datetime.now(timezone.utc).isoformat()
-        })
+        self.signatures.append(
+            {
+                "keyid": keyid,
+                "sig": signature,
+                "alg": algorithm,
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            }
+        )
 
     def verify_signature(self, public_key_hex: str) -> bool:
         """
@@ -141,9 +145,7 @@ class BundleManifest:
             return False
 
         try:
-            public_key = ed25519.Ed25519PublicKey.from_public_bytes(
-                bytes.fromhex(public_key_hex)
-            )
+            public_key = ed25519.Ed25519PublicKey.from_public_bytes(bytes.fromhex(public_key_hex))
         except Exception as e:
             logger.error(f"Invalid public key format: {e}")
             return False
@@ -177,6 +179,7 @@ class BundleManifest:
 @dataclass
 class BundleArtifact:
     """Represents an OCI artifact containing a policy bundle."""
+
     digest: str
     size: int
     media_type: str = "application/vnd.opa.bundle.layer.v1+gzip"
@@ -208,8 +211,8 @@ class BasicAuthProvider(RegistryAuthProvider):
 
     def __init__(self, username: str, password: str):
         # Import Fernet for credential encryption
+
         from cryptography.fernet import Fernet
-        import base64
 
         # Generate a session-specific encryption key
         # This key lives only in memory and changes each instantiation
@@ -238,6 +241,7 @@ class BasicAuthProvider(RegistryAuthProvider):
     async def get_token(self) -> str:
         if not self._token:
             import base64
+
             # Decrypt credentials only when needed
             credentials = f"{self.username}:{self.password}"
             self._token = base64.b64encode(credentials.encode()).decode()
@@ -265,11 +269,12 @@ class AWSECRAuthProvider(RegistryAuthProvider):
     async def refresh_token(self) -> str:
         try:
             import boto3
+
             session = boto3.Session(profile_name=self.profile) if self.profile else boto3.Session()
-            ecr = session.client('ecr', region_name=self.region)
+            ecr = session.client("ecr", region_name=self.region)
             response = ecr.get_authorization_token()
-            auth_data = response['authorizationData'][0]
-            self._token = auth_data['authorizationToken']
+            auth_data = response["authorizationData"][0]
+            self._token = auth_data["authorizationToken"]
             # ECR tokens are valid for 12 hours, refresh at 11 hours
             self._expiry = datetime.now(timezone.utc).replace(hour=11)
             return self._token
@@ -296,7 +301,7 @@ class OCIRegistryClient:
         auth_provider: Optional[RegistryAuthProvider] = None,
         registry_type: RegistryType = RegistryType.GENERIC,
         verify_ssl: bool = True,
-        timeout: int = 30
+        timeout: int = 30,
     ):
         self.registry_url = registry_url.rstrip("/")
         self.auth_provider = auth_provider
@@ -311,12 +316,7 @@ class OCIRegistryClient:
         self.scheme = parsed.scheme or "https"
 
         # Stats tracking
-        self._stats = {
-            "pushes": 0,
-            "pulls": 0,
-            "errors": 0,
-            "bytes_transferred": 0
-        }
+        self._stats = {"pushes": 0, "pulls": 0, "errors": 0, "bytes_transferred": 0}
 
     @classmethod
     def from_url(cls, url: str, **kwargs) -> "OCIRegistryClient":
@@ -330,7 +330,6 @@ class OCIRegistryClient:
 
         return cls(registry_url=url, **kwargs)
 
-
     async def __aenter__(self):
         await self.initialize()
         return self
@@ -342,10 +341,7 @@ class OCIRegistryClient:
         """Initialize the client session."""
         if not self._session:
             connector = aiohttp.TCPConnector(ssl=self.verify_ssl)
-            self._session = aiohttp.ClientSession(
-                timeout=self.timeout,
-                connector=connector
-            )
+            self._session = aiohttp.ClientSession(timeout=self.timeout, connector=connector)
 
     async def close(self):
         """Close the client session."""
@@ -357,7 +353,7 @@ class OCIRegistryClient:
         """Get request headers with authentication."""
         headers = {
             "Accept": "application/vnd.oci.image.manifest.v1+json",
-            "Content-Type": "application/vnd.oci.image.manifest.v1+json"
+            "Content-Type": "application/vnd.oci.image.manifest.v1+json",
         }
         if self.auth_provider:
             token = await self.auth_provider.get_token()
@@ -379,11 +375,7 @@ class OCIRegistryClient:
             return False
 
     async def push_bundle(
-        self,
-        repository: str,
-        tag: str,
-        bundle_path: str,
-        manifest: BundleManifest
+        self, repository: str, tag: str, bundle_path: str, manifest: BundleManifest
     ) -> Tuple[str, BundleArtifact]:
         """
         Push a policy bundle to the registry.
@@ -433,9 +425,7 @@ class OCIRegistryClient:
                 upload_headers = {**headers, "Content-Type": "application/octet-stream"}
                 upload_target = f"{location}&digest={digest}"
                 async with self._session.put(
-                    upload_target,
-                    data=bundle_data,
-                    headers=upload_headers
+                    upload_target, data=bundle_data, headers=upload_headers
                 ) as resp:
                     if resp.status not in (200, 201):
                         raise Exception(f"Blob upload failed: {resp.status}")
@@ -447,7 +437,7 @@ class OCIRegistryClient:
                 "config": {
                     "mediaType": "application/vnd.opa.config.v1+json",
                     "digest": f"sha256:{manifest.compute_digest()}",
-                    "size": len(json.dumps(manifest.to_dict()))
+                    "size": len(json.dumps(manifest.to_dict())),
                 },
                 "layers": [
                     {
@@ -458,22 +448,18 @@ class OCIRegistryClient:
                             "org.opencontainers.image.title": f"{repository}:{tag}",
                             "io.acgs.constitutional_hash": CONSTITUTIONAL_HASH,
                             "io.acgs.version": manifest.version,
-                            "io.acgs.revision": manifest.revision
-                        }
+                            "io.acgs.revision": manifest.revision,
+                        },
                     }
                 ],
                 "annotations": {
                     "org.opencontainers.image.created": manifest.timestamp,
-                    "io.acgs.signatures": json.dumps(manifest.signatures)
-                }
+                    "io.acgs.signatures": json.dumps(manifest.signatures),
+                },
             }
 
             manifest_url = f"{self.scheme}://{self.host}/v2/{repository}/manifests/{tag}"
-            async with self._session.put(
-                manifest_url,
-                json=oci_manifest,
-                headers=headers
-            ) as resp:
+            async with self._session.put(manifest_url, json=oci_manifest, headers=headers) as resp:
                 if resp.status not in (200, 201):
                     raise Exception(f"Manifest push failed: {resp.status}")
                 manifest_digest = resp.headers.get("Docker-Content-Digest", digest)
@@ -485,7 +471,7 @@ class OCIRegistryClient:
                 digest=digest,
                 size=size,
                 manifest=manifest,
-                annotations=oci_manifest["layers"][0]["annotations"]
+                annotations=oci_manifest["layers"][0]["annotations"],
             )
 
             logger.info(f"Successfully pushed {repository}:{tag} ({digest})")
@@ -501,7 +487,7 @@ class OCIRegistryClient:
         repository: str,
         reference: str,
         output_path: str,
-        public_key_hex: Optional[str] = None
+        public_key_hex: Optional[str] = None,
     ) -> Tuple[BundleManifest, str]:
         """
         Pull a policy bundle from the registry.
@@ -554,7 +540,7 @@ class OCIRegistryClient:
                 revision=layer.get("annotations", {}).get("io.acgs.revision", "unknown"),
                 constitutional_hash=layer_hash,
                 timestamp=annotations.get("org.opencontainers.image.created"),
-                signatures=signatures
+                signatures=signatures,
             )
 
             # Step 3.5: Verify signature if public key provided
@@ -574,16 +560,22 @@ class OCIRegistryClient:
 
                 logger.info(f"Downloading layer {i+1}/{len(layers)}: {blob_digest}")
 
-                async with self._session.get(blob_url, headers=headers, allow_redirects=True) as resp:
+                async with self._session.get(
+                    blob_url, headers=headers, allow_redirects=True
+                ) as resp:
                     if resp.status != 200:
-                        raise Exception(f"Blob download failed for layer {blob_digest}: {resp.status}")
+                        raise Exception(
+                            f"Blob download failed for layer {blob_digest}: {resp.status}"
+                        )
 
                     layer_data = await resp.read()
 
                     # Step 5: Verify layer digest
                     computed_digest = f"sha256:{hashlib.sha256(layer_data).hexdigest()}"
                     if computed_digest != blob_digest:
-                        raise ValueError(f"Digest mismatch for layer {i}: {computed_digest} != {blob_digest}")
+                        raise ValueError(
+                            f"Digest mismatch for layer {i}: {computed_digest} != {blob_digest}"
+                        )
 
                     all_bundle_data.extend(layer_data)
 
@@ -636,7 +628,7 @@ class OCIRegistryClient:
         src_client: "OCIRegistryClient",
         repository: str,
         reference: str,
-        target_tag: Optional[str] = None
+        target_tag: Optional[str] = None,
     ) -> str:
         """
         Replicate a bundle from another registry to this one.
@@ -660,11 +652,7 @@ class OCIRegistryClient:
                 os.unlink(tmp_path)
 
     async def sign_manifest(
-        self,
-        repository: str,
-        tag: str,
-        manifest_digest: str,
-        private_key_hex: str
+        self, repository: str, tag: str, manifest_digest: str, private_key_hex: str
     ) -> str:
         """
         Create a Cosign-compatible signature artifact and push it.
@@ -690,14 +678,16 @@ class OCIRegistryClient:
             logger.info(f"Signing manifest {manifest_digest} for {repository}:{tag}")
 
             # Push signature as a small blob
-            sig_data = json.dumps({
-                "critical": {
-                    "identity": {"docker-reference": f"{self.host}/{repository}"},
-                    "image": {"docker-manifest-digest": manifest_digest},
-                    "type": "cosign artifact"
-                },
-                "optional": {"signature": sig_hex}
-            }).encode()
+            sig_data = json.dumps(
+                {
+                    "critical": {
+                        "identity": {"docker-reference": f"{self.host}/{repository}"},
+                        "image": {"docker-manifest-digest": manifest_digest},
+                        "type": "cosign artifact",
+                    },
+                    "optional": {"signature": sig_hex},
+                }
+            ).encode()
 
             with tempfile.NamedTemporaryFile(suffix=".sig", delete=False) as tmp:
                 tmp_path = tmp.name
@@ -722,13 +712,7 @@ class OCIRegistryClient:
             logger.error(f"Signing failed: {e}")
             raise
 
-    async def copy_bundle(
-        self,
-        src_repo: str,
-        src_ref: str,
-        dst_repo: str,
-        dst_tag: str
-    ) -> str:
+    async def copy_bundle(self, src_repo: str, src_ref: str, dst_repo: str, dst_tag: str) -> str:
         """Copy a bundle between repositories (same registry)."""
         with tempfile.NamedTemporaryFile(suffix=".tar.gz", delete=False) as tmp:
             tmp_path = tmp.name
@@ -743,11 +727,7 @@ class OCIRegistryClient:
 
     def get_stats(self) -> Dict[str, Any]:
         """Get client statistics."""
-        return {
-            **self._stats,
-            "registry": self.host,
-            "type": self.registry_type.value
-        }
+        return {**self._stats, "registry": self.host, "type": self.registry_type.value}
 
 
 class BundleDistributionService:
@@ -765,7 +745,7 @@ class BundleDistributionService:
         self,
         primary_registry: OCIRegistryClient,
         fallback_registries: Optional[List[OCIRegistryClient]] = None,
-        cache_dir: str = "runtime/bundle_cache"
+        cache_dir: str = "runtime/bundle_cache",
     ):
         self.primary = primary_registry
         self.fallbacks = fallback_registries or []
@@ -781,7 +761,7 @@ class BundleDistributionService:
         tag: str,
         bundle_path: str,
         manifest: BundleManifest,
-        replicate: bool = True
+        replicate: bool = True,
     ) -> Dict[str, Any]:
         """
         Publish a bundle to primary and optionally replicate to fallbacks.
@@ -789,9 +769,7 @@ class BundleDistributionService:
         results = {"primary": None, "replicas": []}
 
         # Push to primary
-        digest, artifact = await self.primary.push_bundle(
-            repository, tag, bundle_path, manifest
-        )
+        digest, artifact = await self.primary.push_bundle(repository, tag, bundle_path, manifest)
         results["primary"] = {"digest": digest, "registry": self.primary.host}
 
         # Replicate to fallbacks
@@ -801,32 +779,24 @@ class BundleDistributionService:
                     fb_digest, _ = await fallback.push_bundle(
                         repository, tag, bundle_path, manifest
                     )
-                    results["replicas"].append({
-                        "digest": fb_digest,
-                        "registry": fallback.host,
-                        "status": "success"
-                    })
+                    results["replicas"].append(
+                        {"digest": fb_digest, "registry": fallback.host, "status": "success"}
+                    )
                 except Exception as e:
-                    results["replicas"].append({
-                        "registry": fallback.host,
-                        "status": "failed",
-                        "error": str(e)
-                    })
+                    results["replicas"].append(
+                        {"registry": fallback.host, "status": "failed", "error": str(e)}
+                    )
 
         return results
 
     async def fetch(
-        self,
-        repository: str,
-        reference: str,
-        use_cache: bool = True
+        self, repository: str, reference: str, use_cache: bool = True
     ) -> Tuple[BundleManifest, str]:
         """
         Fetch a bundle with automatic failover and caching.
         """
         cache_path = os.path.join(
-            self.cache_dir,
-            f"{repository.replace('/', '_')}_{reference}.tar.gz"
+            self.cache_dir, f"{repository.replace('/', '_')}_{reference}.tar.gz"
         )
 
         # Check cache first
@@ -840,9 +810,7 @@ class BundleDistributionService:
 
         # Try primary
         try:
-            manifest, path = await self.primary.pull_bundle(
-                repository, reference, cache_path
-            )
+            manifest, path = await self.primary.pull_bundle(repository, reference, cache_path)
             # Cache manifest
             with open(cache_path + ".manifest.json", "w") as f:
                 json.dump(manifest.to_dict(), f)
@@ -858,9 +826,7 @@ class BundleDistributionService:
         # Try fallbacks
         for fallback in self.fallbacks:
             try:
-                manifest, path = await fallback.pull_bundle(
-                    repository, reference, cache_path
-                )
+                manifest, path = await fallback.pull_bundle(repository, reference, cache_path)
                 with open(cache_path + ".manifest.json", "w") as f:
                     json.dump(manifest.to_dict(), f)
                 return manifest, path
@@ -875,11 +841,7 @@ class BundleDistributionService:
         raise Exception("All registries failed and no LKG available")
 
     async def get_ab_test_bundle(
-        self,
-        repository: str,
-        base_tag: str,
-        experiment_id: str,
-        variant: str
+        self, repository: str, base_tag: str, experiment_id: str, variant: str
     ) -> Tuple[BundleManifest, str]:
         """
         Fetch a bundle for A/B testing based on experiment configuration.
@@ -906,15 +868,13 @@ def get_distribution_service() -> Optional[BundleDistributionService]:
 async def initialize_distribution_service(
     registry_url: str,
     auth_provider: Optional[RegistryAuthProvider] = None,
-    registry_type: RegistryType = RegistryType.GENERIC
+    registry_type: RegistryType = RegistryType.GENERIC,
 ) -> BundleDistributionService:
     """Initialize the global distribution service."""
     global _distribution_service
 
     primary = OCIRegistryClient(
-        registry_url=registry_url,
-        auth_provider=auth_provider,
-        registry_type=registry_type
+        registry_url=registry_url, auth_provider=auth_provider, registry_type=registry_type
     )
     await primary.initialize()
 
@@ -945,5 +905,5 @@ __all__ = [
     "BundleDistributionService",
     "get_distribution_service",
     "initialize_distribution_service",
-    "close_distribution_service"
+    "close_distribution_service",
 ]

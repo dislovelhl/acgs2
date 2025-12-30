@@ -3,29 +3,30 @@ ACGS-2 AI Assistant - Dialog Manager Tests
 Constitutional Hash: cdd01ef066bc6cf2
 """
 
-import pytest
-from typing import Dict, Any, List
-
-import sys
 import os
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
+import sys
+from typing import List
 
-from enhanced_agent_bus.ai_assistant.dialog import (
-    DialogManager,
-    DialogAction,
-    ActionType,
-    DialogPolicy,
-    RuleBasedDialogPolicy,
-    ConversationFlow,
-    FlowNode,
+import pytest
+
+sys.path.insert(
+    0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 )
+
 from enhanced_agent_bus.ai_assistant.context import (
     ConversationContext,
     ConversationState,
-    Message,
-    MessageRole,
 )
-from enhanced_agent_bus.ai_assistant.nlu import NLUResult, Intent, Entity
+from enhanced_agent_bus.ai_assistant.dialog import (
+    ActionType,
+    ConversationFlow,
+    DialogAction,
+    DialogManager,
+    DialogPolicy,
+    FlowNode,
+    RuleBasedDialogPolicy,
+)
+from enhanced_agent_bus.ai_assistant.nlu import Entity, Intent, NLUResult
 
 # Import centralized constitutional hash with fallback
 try:
@@ -240,7 +241,11 @@ class TestRuleBasedDialogPolicy:
 
         assert isinstance(action, DialogAction)
         # Should ask for clarification with low confidence
-        assert action.action_type in [ActionType.CLARIFY, ActionType.RESPOND, ActionType.ASK_QUESTION]
+        assert action.action_type in [
+            ActionType.CLARIFY,
+            ActionType.RESPOND,
+            ActionType.ASK_QUESTION,
+        ]
 
     @pytest.mark.asyncio
     async def test_select_action_missing_slot(self):
@@ -277,7 +282,11 @@ class TestRuleBasedDialogPolicy:
 
         assert isinstance(action, DialogAction)
         # Policy may return various actions depending on implementation
-        assert action.action_type in [ActionType.END_CONVERSATION, ActionType.RESPOND, ActionType.CLARIFY]
+        assert action.action_type in [
+            ActionType.END_CONVERSATION,
+            ActionType.RESPOND,
+            ActionType.CLARIFY,
+        ]
 
 
 class TestDialogManager:
@@ -397,6 +406,7 @@ class TestDialogManagerWithCustomPolicy:
     @pytest.mark.asyncio
     async def test_custom_policy(self):
         """Test using a custom dialog policy."""
+
         class MockPolicy(DialogPolicy):
             async def select_action(
                 self,

@@ -5,12 +5,13 @@ Constitutional Hash: cdd01ef066bc6cf2
 Tests for Deliberation Layer Feedback Loop integration.
 """
 
-import pytest
-import sys
-import os
-from datetime import datetime, timezone
-from unittest.mock import AsyncMock, Mock, patch
 import importlib.util
+import os
+import sys
+from datetime import datetime, timezone
+from unittest.mock import AsyncMock, Mock
+
+import pytest
 
 # Add enhanced_agent_bus directory to path for standalone execution
 enhanced_agent_bus_dir = os.path.dirname(os.path.dirname(__file__))
@@ -28,14 +29,13 @@ def _load_module(name, path):
 
 
 # Load base modules first
-_models = _load_module(
-    "_test_models_feedback",
-    os.path.join(enhanced_agent_bus_dir, "models.py")
-)
+_models = _load_module("_test_models_feedback", os.path.join(enhanced_agent_bus_dir, "models.py"))
+
 
 # Create a mock parent package for relative imports
 class MockPackage:
     pass
+
 
 mock_parent = MockPackage()
 mock_parent.models = _models
@@ -44,9 +44,9 @@ mock_parent.MessageType = _models.MessageType
 mock_parent.CONSTITUTIONAL_HASH = _models.CONSTITUTIONAL_HASH
 
 # Patch sys.modules for both direct and relative imports
-sys.modules['models'] = _models
-sys.modules['enhanced_agent_bus'] = mock_parent
-sys.modules['enhanced_agent_bus.models'] = _models
+sys.modules["models"] = _models
+sys.modules["enhanced_agent_bus"] = mock_parent
+sys.modules["enhanced_agent_bus.models"] = _models
 
 # Import from loaded models
 AgentMessage = _models.AgentMessage
@@ -58,13 +58,9 @@ CONSTITUTIONAL_HASH = _models.CONSTITUTIONAL_HASH
 delib_dir = os.path.join(enhanced_agent_bus_dir, "deliberation_layer")
 
 _deliberation_queue = _load_module(
-    "_test_delib_queue_fb",
-    os.path.join(delib_dir, "deliberation_queue.py")
+    "_test_delib_queue_fb", os.path.join(delib_dir, "deliberation_queue.py")
 )
-_integration = _load_module(
-    "_test_integration_fb",
-    os.path.join(delib_dir, "integration.py")
-)
+_integration = _load_module("_test_integration_fb", os.path.join(delib_dir, "integration.py"))
 
 DeliberationLayer = _integration.DeliberationLayer
 DeliberationTask = _deliberation_queue.DeliberationTask
@@ -85,7 +81,7 @@ class TestDeliberationFeedback:
             impact_scorer=mock_scorer,
             adaptive_router=mock_router,
             deliberation_queue=mock_queue,
-            enable_redis=False
+            enable_redis=False,
         )
 
         # Mock task data
@@ -94,12 +90,10 @@ class TestDeliberationFeedback:
             message_type=MessageType.TASK_REQUEST,
             from_agent="tester",
             to_agent="system",
-            priority=Priority.HIGH
+            priority=Priority.HIGH,
         )
         task = DeliberationTask(
-            task_id="task-123",
-            message=message,
-            created_at=datetime.now(timezone.utc)
+            task_id="task-123", message=message, created_at=datetime.now(timezone.utc)
         )
 
         # Configure queue mock
@@ -107,11 +101,7 @@ class TestDeliberationFeedback:
         mock_queue.get_task = Mock(return_value=task)
 
         # Action: Resolve item
-        await layer.resolve_deliberation_item(
-            item_id="task-123",
-            approved=True,
-            feedback_score=0.9
-        )
+        await layer.resolve_deliberation_item(item_id="task-123", approved=True, feedback_score=0.9)
 
         # Assertions
         # 1. Queue should be resolved
@@ -123,7 +113,7 @@ class TestDeliberationFeedback:
         assert call_args is not None
         _, kwargs = call_args
 
-        assert kwargs['message_id'] == message.message_id
-        assert kwargs['actual_outcome'] == 'approved'
-        assert kwargs['feedback_score'] == 0.9
-        assert 'processing_time' in kwargs
+        assert kwargs["message_id"] == message.message_id
+        assert kwargs["actual_outcome"] == "approved"
+        assert kwargs["feedback_score"] == 0.9
+        assert "processing_time" in kwargs

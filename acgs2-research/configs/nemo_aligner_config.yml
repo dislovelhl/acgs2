@@ -1,0 +1,32 @@
+# NeMo Aligner Configuration for ACGS-2 Constitutional AI
+# Constitutional Hash: cdd01ef066bc6cf2
+
+model:
+  name: "nvidia/nemotron-3-8b-steerlm"
+  type: "causal_lm"
+
+alignment:
+  method: "CAI" # Constitutional AI
+  stages:
+    - stage: "SL-CAI"
+      description: "Supervised Learning with Constitutional Feedback"
+      constitution_path: "policies/constitutional_principles.txt"
+      critique_revised_dataset: "data/cai_feedback_dataset.jsonl"
+      epochs: 3
+    - stage: "RL-CAI"
+      description: "Reinforcement Learning with AI Feedback (RLAIF)"
+      reward_model:
+        type: "cai_reward_model"
+        base_model: "nvidia/nemotron-3-reward"
+      ppo_config:
+        learning_rate: 1.0e-6
+        batch_size: 64
+        kl_coeff: 0.1
+
+governance:
+  compliance_hash: "cdd01ef066bc6cf2"
+  enforce_harmlessness: true
+  enforce_transparency: true
+  monitoring:
+    capture_reasoning: true
+    audit_frequency: "real-time"

@@ -5,8 +5,6 @@ Constitutional Hash: cdd01ef066bc6cf2
 Tests to ensure imports module and availability flags are properly covered.
 """
 
-import pytest
-
 
 class TestImportsAvailability:
     """Tests for feature availability flags and imports."""
@@ -14,17 +12,17 @@ class TestImportsAvailability:
     def test_feature_flags_defined(self):
         """Feature availability flags are defined."""
         from imports import (
-            METRICS_ENABLED,
-            OTEL_ENABLED,
-            CIRCUIT_BREAKER_ENABLED,
-            POLICY_CLIENT_AVAILABLE,
-            DELIBERATION_AVAILABLE,
-            CRYPTO_AVAILABLE,
-            CONFIG_AVAILABLE,
             AUDIT_CLIENT_AVAILABLE,
-            OPA_CLIENT_AVAILABLE,
-            USE_RUST,
+            CIRCUIT_BREAKER_ENABLED,
+            CONFIG_AVAILABLE,
+            CRYPTO_AVAILABLE,
+            DELIBERATION_AVAILABLE,
             METERING_AVAILABLE,
+            METRICS_ENABLED,
+            OPA_CLIENT_AVAILABLE,
+            OTEL_ENABLED,
+            POLICY_CLIENT_AVAILABLE,
+            USE_RUST,
         )
 
         # All flags should be boolean
@@ -44,39 +42,36 @@ class TestImportsAvailability:
         """Optional module references can be None if unavailable."""
         from imports import (
             MESSAGE_QUEUE_DEPTH,
+            meter,
             set_service_info,
             tracer,
-            meter,
-            QUEUE_DEPTH,
-            get_circuit_breaker,
-            circuit_breaker_health_check,
-            initialize_core_circuit_breakers,
-            CircuitBreakerConfig,
-            PolicyClient,
         )
 
         # These should either be None or valid objects
-        assert MESSAGE_QUEUE_DEPTH is None or callable(getattr(MESSAGE_QUEUE_DEPTH, 'labels', None))
+        assert MESSAGE_QUEUE_DEPTH is None or callable(getattr(MESSAGE_QUEUE_DEPTH, "labels", None))
         assert set_service_info is None or callable(set_service_info)
-        assert tracer is None or hasattr(tracer, 'start_span')
-        assert meter is None or hasattr(meter, 'create_counter')
+        assert tracer is None or hasattr(tracer, "start_span")
+        assert meter is None or hasattr(meter, "create_counter")
 
     def test_constitutional_hash_present(self):
         """Constitutional hash is accessible from imports module."""
         import imports
+
         # Module should have CONSTITUTIONAL_HASH attribute
-        assert hasattr(imports, 'CONSTITUTIONAL_HASH') or True  # May not export it
+        assert hasattr(imports, "CONSTITUTIONAL_HASH") or True  # May not export it
 
     def test_safe_import_pattern(self):
         """Verify the module uses safe import patterns."""
         import imports
+
         # Module loaded without exceptions means safe imports work
         assert imports is not None
 
     def test_logging_configured(self):
         """Logger is configured in imports module."""
         import imports
-        assert hasattr(imports, 'logger')
+
+        assert hasattr(imports, "logger")
 
 
 class TestCircuitBreakerImports:
@@ -86,8 +81,8 @@ class TestCircuitBreakerImports:
         """Circuit breaker flag reflects actual availability."""
         from imports import (
             CIRCUIT_BREAKER_ENABLED,
-            get_circuit_breaker,
             CircuitBreakerConfig,
+            get_circuit_breaker,
         )
 
         if CIRCUIT_BREAKER_ENABLED:
@@ -107,8 +102,6 @@ class TestMeteringImports:
             METERING_AVAILABLE,
             MeteringConfig,
             MeteringHooks,
-            get_metering_hooks,
-            get_metering_queue,
         )
 
         if METERING_AVAILABLE:
@@ -152,19 +145,23 @@ class TestOptionalImport:
     def test_optional_import_existing(self):
         """optional_import returns existing module attribute."""
         from imports import optional_import
+
         result = optional_import("os", "path")
         import os
+
         assert result is os.path
 
     def test_optional_import_nonexistent_module(self):
         """optional_import returns default for nonexistent module."""
         from imports import optional_import
+
         result = optional_import("nonexistent_module_xyz123", "foo", default="fallback")
         assert result == "fallback"
 
     def test_optional_import_nonexistent_attr(self):
         """optional_import returns default for nonexistent attribute."""
         from imports import optional_import
+
         result = optional_import("os", "nonexistent_attr_xyz", default=None)
         assert result is None
 
@@ -175,16 +172,19 @@ class TestImportFunctionsExist:
     def test_try_relative_import_exists(self):
         """try_relative_import function is available."""
         from imports import try_relative_import
+
         assert callable(try_relative_import)
 
     def test_try_import_exists(self):
         """try_import function is available."""
         from imports import try_import
+
         assert callable(try_import)
 
     def test_initialize_all_imports_exists(self):
         """initialize_all_imports function is available."""
         from imports import initialize_all_imports
+
         assert callable(initialize_all_imports)
 
 
@@ -194,20 +194,21 @@ class TestImportWithFallback:
     def test_import_with_fallback_primary(self):
         """import_with_fallback returns from first available module."""
         from imports import import_with_fallback
+
         result = import_with_fallback(
             ["os"],
             ["path"],
         )
         import os
+
         assert result["path"] is os.path
 
     def test_import_with_fallback_uses_defaults(self):
         """import_with_fallback uses defaults when all fail."""
         from imports import import_with_fallback
+
         result = import_with_fallback(
-            ["nonexistent_xyz123"],
-            ["foo"],
-            default_values={"foo": "default_value"}
+            ["nonexistent_xyz123"], ["foo"], default_values={"foo": "default_value"}
         )
         assert result["foo"] == "default_value"
 
@@ -218,12 +219,14 @@ class TestGetImportStatus:
     def test_import_status_returns_dict(self):
         """get_import_status returns dictionary."""
         from imports import get_import_status
+
         status = get_import_status()
         assert isinstance(status, dict)
 
     def test_import_status_has_features(self):
         """get_import_status includes feature flags."""
         from imports import get_import_status
+
         status = get_import_status()
         assert "metrics_enabled" in status
         assert "otel_enabled" in status
@@ -232,6 +235,7 @@ class TestGetImportStatus:
     def test_import_status_values_are_bool(self):
         """get_import_status feature values are booleans."""
         from imports import get_import_status
+
         status = get_import_status()
         assert isinstance(status.get("metrics_enabled"), bool)
         assert isinstance(status.get("otel_enabled"), bool)
@@ -275,7 +279,6 @@ class TestDeliberationImports:
             DELIBERATION_AVAILABLE,
             VotingService,
             VotingStrategy,
-            DeliberationQueue,
         )
 
         if DELIBERATION_AVAILABLE:

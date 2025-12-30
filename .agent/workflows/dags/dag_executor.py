@@ -8,11 +8,11 @@ Executes independent nodes concurrently using asyncio.as_completed.
 
 import asyncio
 import logging
+import uuid
+from collections import deque
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any, Awaitable, Callable, Dict, List, Optional, Set
-from collections import deque
-import uuid
 
 from ..base.context import WorkflowContext
 from ..base.step import StepCompensation
@@ -26,8 +26,10 @@ except ImportError:
 try:
     from enhanced_agent_bus.exceptions import ConstitutionalHashMismatchError
 except ImportError:
+
     class ConstitutionalHashMismatchError(Exception):
         """Constitutional hash validation failed."""
+
         def __init__(self, expected: str, actual: str):
             self.expected = expected
             self.actual = actual
@@ -52,6 +54,7 @@ class DAGNode:
         is_optional: If True, failure doesn't stop DAG execution
         cache_key: Optional key for result caching. If provided, result is cached.
     """
+
     id: str
     name: str
     execute: Callable[[WorkflowContext], Awaitable[Any]]
@@ -82,6 +85,7 @@ class DAGNode:
 @dataclass
 class DAGResult:
     """Result of DAG execution."""
+
     dag_id: str
     status: str  # "completed", "failed", "partially_completed"
     node_results: Dict[str, Any]
@@ -197,8 +201,7 @@ class DAGExecutor:
             if self._fail_closed:
                 logger.error(error_msg)
                 raise ConstitutionalHashMismatchError(
-                    expected=self.constitutional_hash,
-                    actual=context_hash
+                    expected=self.constitutional_hash, actual=context_hash
                 )
             else:
                 logger.warning(
@@ -227,7 +230,9 @@ class DAGExecutor:
         for dep_id in node.dependencies:
             if dep_id not in self._nodes and dep_id != node.id:
                 # Dependency might be added later, just warn
-                logger.debug(f"DAG {self.dag_id}: Node '{node.id}' depends on '{dep_id}' (not yet added)")
+                logger.debug(
+                    f"DAG {self.dag_id}: Node '{node.id}' depends on '{dep_id}' (not yet added)"
+                )
 
         self._nodes[node.id] = node
 
@@ -362,7 +367,7 @@ class DAGExecutor:
         # Sort by priority descending (smart scheduling)
         ready.sort(key=lambda n: n.priority, reverse=True)
 
-        return ready[:self.max_parallel_nodes]
+        return ready[: self.max_parallel_nodes]
 
     async def execute(self, context: WorkflowContext) -> DAGResult:
         """
@@ -461,11 +466,7 @@ class DAGExecutor:
             errors=self._errors.copy(),
         )
 
-    async def _execute_node(
-        self,
-        node: DAGNode,
-        context: WorkflowContext
-    ) -> tuple:
+    async def _execute_node(self, node: DAGNode, context: WorkflowContext) -> tuple:
         """
         Execute a single DAG node.
 
@@ -494,7 +495,9 @@ class DAGExecutor:
 
         # Check cache if key is present
         if node.cache_key and node.cache_key in self._external_cache:
-            logger.info(f"DAG {self.dag_id}: Cache hit for node '{node.id}' (key: {node.cache_key})")
+            logger.info(
+                f"DAG {self.dag_id}: Cache hit for node '{node.id}' (key: {node.cache_key})"
+            )
             node.result = self._external_cache[node.cache_key]
             node.completed_at = datetime.now(timezone.utc)
             node.execution_time_ms = 0.0
@@ -506,17 +509,12 @@ class DAGExecutor:
 
         try:
             # Execute with timeout
-            result = await asyncio.wait_for(
-                node.execute(context),
-                timeout=node.timeout_seconds
-            )
+            result = await asyncio.wait_for(node.execute(context), timeout=node.timeout_seconds)
 
             # Update state
             node.result = result
             node.completed_at = datetime.now(timezone.utc)
-            node.execution_time_ms = (
-                node.completed_at - node.started_at
-            ).total_seconds() * 1000
+            node.execution_time_ms = (node.completed_at - node.started_at).total_seconds() * 1000
 
             # Cache result
             if node.cache_key:
@@ -552,7 +550,8 @@ class DAGExecutor:
                     "dag_id": self.dag_id,
                     "compensation_name": compensation.name,
                     "context": context.step_results,
-                    "idempotency_key": compensation.idempotency_key or f"{self.dag_id}:{compensation.name}",
+                    "idempotency_key": compensation.idempotency_key
+                    or f"{self.dag_id}:{compensation.name}",
                 }
 
                 await compensation.execute(comp_input)

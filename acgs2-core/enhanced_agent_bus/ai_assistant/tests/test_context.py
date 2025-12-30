@@ -3,17 +3,18 @@ ACGS-2 AI Assistant - Context Management Tests
 Constitutional Hash: cdd01ef066bc6cf2
 """
 
-import pytest
-from datetime import datetime, timezone
-from typing import Dict, Any
-
-import sys
 import os
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
+import sys
+
+import pytest
+
+sys.path.insert(
+    0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+)
 
 from enhanced_agent_bus.ai_assistant.context import (
-    ConversationContext,
     ContextManager,
+    ConversationContext,
     ConversationState,
     Message,
     MessageRole,

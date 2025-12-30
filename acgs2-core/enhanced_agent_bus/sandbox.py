@@ -6,13 +6,14 @@ Implement secure execution environments for CEOS agents.
 Focuses on Firecracker MicroVMs and Wasm runtimes with default-deny networking.
 """
 
-import logging
 import asyncio
+import logging
 import time
-from typing import List, Dict, Any, Optional
 from abc import ABC, abstractmethod
+from typing import Any, Dict
 
 logger = logging.getLogger(__name__)
+
 
 class SandboxProvider(ABC):
     """
@@ -20,7 +21,9 @@ class SandboxProvider(ABC):
     """
 
     @abstractmethod
-    async def execute_code(self, code: str, language: str = "python", timeout_ms: int = 5000) -> Dict[str, Any]:
+    async def execute_code(
+        self, code: str, language: str = "python", timeout_ms: int = 5000
+    ) -> Dict[str, Any]:
         """Execute code in a sandboxed environment."""
         pass
 
@@ -44,32 +47,34 @@ class FirecrackerSandbox(SandboxProvider):
     def __init__(self, api_url: str = "http://localhost:8001"):
         self.api_url = api_url
 
-    async def execute_code(self, code: str, language: str = "python", timeout_ms: int = 5000) -> Dict[str, Any]:
+    async def execute_code(
+        self, code: str, language: str = "python", timeout_ms: int = 5000
+    ) -> Dict[str, Any]:
         """
         Executes code via Firecracker API.
         """
         start_time = time.time()
         logger.info(f"Invoking Firecracker MicroVM for {language} execution")
-        
+
         # In practice, this would involve:
         # 1. PUT /machine-config
         # 2. PUT /boot-source
         # 3. PUT /drives
         # 4. START machine
         # For this prototype, we simulate the 150ms cold start target
-        
+
         # Simulate network latency and VM boot
-        await asyncio.sleep(0.12) # 120ms "cold start"
-        
+        await asyncio.sleep(0.12)  # 120ms "cold start"
+
         execution_time = (time.time() - start_time) * 1000
         logger.info(f"Firecracker execution completed in {execution_time:.2f}ms")
-        
+
         return {
             "status": "success",
             "output": f"Executed {language} code successfully",
             "duration_ms": execution_time,
             "isolation": "MicroVM (Firecracker)",
-            "network": "DENY_ALL"
+            "network": "DENY_ALL",
         }
 
     async def spawn_instance(self, metadata: Dict[str, Any]) -> str:
@@ -84,8 +89,10 @@ class WasmSandbox(SandboxProvider):
     WebAssembly local runtime implementation.
     Useful for edge execution and lightweight transformations.
     """
-    
-    async def execute_code(self, code: str, language: str = "wasm", timeout_ms: int = 1000) -> Dict[str, Any]:
+
+    async def execute_code(
+        self, code: str, language: str = "wasm", timeout_ms: int = 1000
+    ) -> Dict[str, Any]:
         logger.info("Executing logic in WASM sandbox")
         # Simulating sub-millisecond execution
         await asyncio.sleep(0.01)
@@ -94,7 +101,7 @@ class WasmSandbox(SandboxProvider):
             "output": "WASM Result",
             "duration_ms": 10.0,
             "isolation": "Wasmtime/Runtime",
-            "network": "NONE"
+            "network": "NONE",
         }
 
     async def spawn_instance(self, metadata: Dict[str, Any]) -> str:

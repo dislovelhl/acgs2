@@ -5,23 +5,24 @@ Constitutional Hash: cdd01ef066bc6cf2
 Extended tests to increase validation_strategies.py coverage.
 """
 
+from unittest.mock import AsyncMock, MagicMock
+
 import pytest
-from unittest.mock import MagicMock, AsyncMock
 
 try:
+    from enhanced_agent_bus.models import CONSTITUTIONAL_HASH, AgentMessage
     from enhanced_agent_bus.validation_strategies import (
-        StaticHashValidationStrategy,
         DynamicPolicyValidationStrategy,
         RustValidationStrategy,
+        StaticHashValidationStrategy,
     )
-    from enhanced_agent_bus.models import AgentMessage, CONSTITUTIONAL_HASH
 except ImportError:
+    from models import AgentMessage
     from validation_strategies import (
-        StaticHashValidationStrategy,
         DynamicPolicyValidationStrategy,
         RustValidationStrategy,
+        StaticHashValidationStrategy,
     )
-    from models import AgentMessage, CONSTITUTIONAL_HASH
 
 
 class TestStaticHashValidationStrategy:
@@ -219,9 +220,7 @@ class TestRustValidationStrategy:
     async def test_rust_processor_exception(self):
         """Rust processor exception is handled securely."""
         mock_processor = MagicMock()
-        mock_processor.validate_message = AsyncMock(
-            side_effect=RuntimeError("Rust crash")
-        )
+        mock_processor.validate_message = AsyncMock(side_effect=RuntimeError("Rust crash"))
 
         strategy = RustValidationStrategy(rust_processor=mock_processor)
         msg = AgentMessage(

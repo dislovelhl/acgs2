@@ -9,7 +9,7 @@ import asyncio
 import os
 import sys
 from datetime import datetime, timezone
-from typing import Any, AsyncGenerator, Generator
+from typing import Any, Generator
 
 import pytest
 
@@ -86,12 +86,6 @@ def pytest_configure(config: pytest.Config) -> None:
     config.addinivalue_line(
         "markers", "constitutional: marks tests as constitutional compliance tests"
     )
-    config.addinivalue_line(
-        "markers", "integration: marks tests as integration tests"
-    )
-    config.addinivalue_line(
-        "markers", "unit: marks tests as unit tests"
-    )
-    config.addinivalue_line(
-        "markers", "slow: marks tests as slow running"
-    )
+    config.addinivalue_line("markers", "integration: marks tests as integration tests")
+    config.addinivalue_line("markers", "unit: marks tests as unit tests")
+    config.addinivalue_line("markers", "slow: marks tests as slow running")

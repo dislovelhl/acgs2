@@ -15,10 +15,10 @@ import logging
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Callable, TypeVar
+from typing import TYPE_CHECKING, Any, Callable
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator
+    pass
 
 CONSTITUTIONAL_HASH: str = "cdd01ef066bc6cf2"
 
@@ -108,162 +108,174 @@ class ACGS2MCPServer:
     def _register_default_tools(self) -> None:
         """Register default ACGS-2 MCP tools."""
         # Validate Constitutional tool
-        self.register_tool(ConstitutionalMCPTool(
-            definition=MCPToolDefinition(
-                name="acgs2_validate_constitutional",
-                description="Validate an action against ACGS-2 constitutional principles",
-                input_schema={
-                    "type": "object",
-                    "properties": {
-                        "agent_id": {
-                            "type": "string",
-                            "description": "ID of the agent performing the action",
+        self.register_tool(
+            ConstitutionalMCPTool(
+                definition=MCPToolDefinition(
+                    name="acgs2_validate_constitutional",
+                    description="Validate an action against ACGS-2 constitutional principles",
+                    input_schema={
+                        "type": "object",
+                        "properties": {
+                            "agent_id": {
+                                "type": "string",
+                                "description": "ID of the agent performing the action",
+                            },
+                            "action": {
+                                "type": "string",
+                                "description": "The action to validate",
+                            },
+                            "context": {
+                                "type": "object",
+                                "description": "Context for the validation",
+                            },
                         },
-                        "action": {
-                            "type": "string",
-                            "description": "The action to validate",
-                        },
-                        "context": {
-                            "type": "object",
-                            "description": "Context for the validation",
-                        },
+                        "required": ["agent_id", "action"],
                     },
-                    "required": ["agent_id", "action"],
-                },
-            ),
-            handler=self._handle_validate_constitutional,
-        ))
+                ),
+                handler=self._handle_validate_constitutional,
+            )
+        )
 
         # Check Compliance tool
-        self.register_tool(ConstitutionalMCPTool(
-            definition=MCPToolDefinition(
-                name="acgs2_check_compliance",
-                description="Check if an action complies with active policies",
-                input_schema={
-                    "type": "object",
-                    "properties": {
-                        "policy_id": {
-                            "type": "string",
-                            "description": "ID of the policy to check against",
+        self.register_tool(
+            ConstitutionalMCPTool(
+                definition=MCPToolDefinition(
+                    name="acgs2_check_compliance",
+                    description="Check if an action complies with active policies",
+                    input_schema={
+                        "type": "object",
+                        "properties": {
+                            "policy_id": {
+                                "type": "string",
+                                "description": "ID of the policy to check against",
+                            },
+                            "context": {
+                                "type": "object",
+                                "description": "Context for compliance check",
+                            },
                         },
-                        "context": {
-                            "type": "object",
-                            "description": "Context for compliance check",
-                        },
+                        "required": ["context"],
                     },
-                    "required": ["context"],
-                },
-            ),
-            handler=self._handle_check_compliance,
-        ))
+                ),
+                handler=self._handle_check_compliance,
+            )
+        )
 
         # Audit Action tool
-        self.register_tool(ConstitutionalMCPTool(
-            definition=MCPToolDefinition(
-                name="acgs2_audit_action",
-                description="Record an action in the ACGS-2 audit trail",
-                input_schema={
-                    "type": "object",
-                    "properties": {
-                        "action": {
-                            "type": "string",
-                            "description": "The action performed",
+        self.register_tool(
+            ConstitutionalMCPTool(
+                definition=MCPToolDefinition(
+                    name="acgs2_audit_action",
+                    description="Record an action in the ACGS-2 audit trail",
+                    input_schema={
+                        "type": "object",
+                        "properties": {
+                            "action": {
+                                "type": "string",
+                                "description": "The action performed",
+                            },
+                            "actor": {
+                                "type": "string",
+                                "description": "Who performed the action",
+                            },
+                            "resource": {
+                                "type": "string",
+                                "description": "Resource affected",
+                            },
+                            "outcome": {
+                                "type": "string",
+                                "enum": ["success", "failure", "pending"],
+                                "description": "Outcome of the action",
+                            },
+                            "details": {
+                                "type": "object",
+                                "description": "Additional details",
+                            },
                         },
-                        "actor": {
-                            "type": "string",
-                            "description": "Who performed the action",
-                        },
-                        "resource": {
-                            "type": "string",
-                            "description": "Resource affected",
-                        },
-                        "outcome": {
-                            "type": "string",
-                            "enum": ["success", "failure", "pending"],
-                            "description": "Outcome of the action",
-                        },
-                        "details": {
-                            "type": "object",
-                            "description": "Additional details",
-                        },
+                        "required": ["action", "actor", "resource", "outcome"],
                     },
-                    "required": ["action", "actor", "resource", "outcome"],
-                },
-            ),
-            handler=self._handle_audit_action,
-        ))
+                ),
+                handler=self._handle_audit_action,
+            )
+        )
 
         # Get Policies tool
-        self.register_tool(ConstitutionalMCPTool(
-            definition=MCPToolDefinition(
-                name="acgs2_get_policies",
-                description="Get active policies from ACGS-2",
-                input_schema={
-                    "type": "object",
-                    "properties": {
-                        "tags": {
-                            "type": "array",
-                            "items": {"type": "string"},
-                            "description": "Filter by tags",
-                        },
-                        "status": {
-                            "type": "string",
-                            "enum": ["active", "inactive", "draft"],
-                            "description": "Filter by status",
+        self.register_tool(
+            ConstitutionalMCPTool(
+                definition=MCPToolDefinition(
+                    name="acgs2_get_policies",
+                    description="Get active policies from ACGS-2",
+                    input_schema={
+                        "type": "object",
+                        "properties": {
+                            "tags": {
+                                "type": "array",
+                                "items": {"type": "string"},
+                                "description": "Filter by tags",
+                            },
+                            "status": {
+                                "type": "string",
+                                "enum": ["active", "inactive", "draft"],
+                                "description": "Filter by status",
+                            },
                         },
                     },
-                },
-            ),
-            handler=self._handle_get_policies,
-        ))
+                ),
+                handler=self._handle_get_policies,
+            )
+        )
 
         # Submit Approval tool
-        self.register_tool(ConstitutionalMCPTool(
-            definition=MCPToolDefinition(
-                name="acgs2_submit_approval",
-                description="Submit an approval request for governance review",
-                input_schema={
-                    "type": "object",
-                    "properties": {
-                        "request_type": {
-                            "type": "string",
-                            "description": "Type of approval request",
+        self.register_tool(
+            ConstitutionalMCPTool(
+                definition=MCPToolDefinition(
+                    name="acgs2_submit_approval",
+                    description="Submit an approval request for governance review",
+                    input_schema={
+                        "type": "object",
+                        "properties": {
+                            "request_type": {
+                                "type": "string",
+                                "description": "Type of approval request",
+                            },
+                            "payload": {
+                                "type": "object",
+                                "description": "Request payload",
+                            },
+                            "risk_score": {
+                                "type": "number",
+                                "minimum": 0,
+                                "maximum": 100,
+                                "description": "Risk score (0-100)",
+                            },
                         },
-                        "payload": {
-                            "type": "object",
-                            "description": "Request payload",
-                        },
-                        "risk_score": {
-                            "type": "number",
-                            "minimum": 0,
-                            "maximum": 100,
-                            "description": "Risk score (0-100)",
-                        },
+                        "required": ["request_type", "payload"],
                     },
-                    "required": ["request_type", "payload"],
-                },
-            ),
-            handler=self._handle_submit_approval,
-            requires_approval=True,
-        ))
+                ),
+                handler=self._handle_submit_approval,
+                requires_approval=True,
+            )
+        )
 
         # Check Governance tool
-        self.register_tool(ConstitutionalMCPTool(
-            definition=MCPToolDefinition(
-                name="acgs2_check_governance",
-                description="Check governance status and metrics",
-                input_schema={
-                    "type": "object",
-                    "properties": {
-                        "include_metrics": {
-                            "type": "boolean",
-                            "description": "Include governance metrics",
+        self.register_tool(
+            ConstitutionalMCPTool(
+                definition=MCPToolDefinition(
+                    name="acgs2_check_governance",
+                    description="Check governance status and metrics",
+                    input_schema={
+                        "type": "object",
+                        "properties": {
+                            "include_metrics": {
+                                "type": "boolean",
+                                "description": "Include governance metrics",
+                            },
                         },
                     },
-                },
-            ),
-            handler=self._handle_check_governance,
-        ))
+                ),
+                handler=self._handle_check_governance,
+            )
+        )
 
     def register_tool(self, tool: ConstitutionalMCPTool) -> None:
         """Register an MCP tool."""
@@ -304,9 +316,9 @@ class ACGS2MCPServer:
             )
 
         tool = self._tools[name]
-        trace_id = hashlib.sha256(
-            f"{name}-{datetime.now(UTC).isoformat()}".encode()
-        ).hexdigest()[:16]
+        trace_id = hashlib.sha256(f"{name}-{datetime.now(UTC).isoformat()}".encode()).hexdigest()[
+            :16
+        ]
 
         try:
             # Validate constitutional hash in arguments if required
@@ -375,6 +387,7 @@ class ACGS2MCPServer:
         if self._client:
             try:
                 from acgs2_sdk import GovernanceService
+
                 governance = GovernanceService(self._client)
                 result = await governance.validate_constitutional(
                     agent_id=agent_id,
@@ -403,14 +416,18 @@ class ACGS2MCPServer:
         if self._client:
             try:
                 from acgs2_sdk import ComplianceService
+
                 compliance = ComplianceService(self._client)
 
                 if policy_id:
                     from acgs2_sdk import ValidateComplianceRequest
-                    result = await compliance.validate(ValidateComplianceRequest(
-                        policy_id=policy_id,
-                        context=context,
-                    ))
+
+                    result = await compliance.validate(
+                        ValidateComplianceRequest(
+                            policy_id=policy_id,
+                            context=context,
+                        )
+                    )
                     return result.model_dump()
                 else:
                     result = await compliance.validate_action(
@@ -441,6 +458,7 @@ class ACGS2MCPServer:
         if self._client:
             try:
                 from acgs2_sdk import AuditService, EventCategory, EventSeverity
+
                 audit = AuditService(self._client)
                 event = await audit.record(
                     category=EventCategory.AGENT,
@@ -473,6 +491,7 @@ class ACGS2MCPServer:
         if self._client:
             try:
                 from acgs2_sdk import PolicyService
+
                 policies = PolicyService(self._client)
                 result = await policies.list(tags=tags, status=status)
                 return {
@@ -497,7 +516,8 @@ class ACGS2MCPServer:
         """Handle approval submission."""
         if self._client:
             try:
-                from acgs2_sdk import GovernanceService, CreateApprovalRequest
+                from acgs2_sdk import CreateApprovalRequest, GovernanceService
+
                 governance = GovernanceService(self._client)
                 approval = await governance.create_approval_request(
                     CreateApprovalRequest(
@@ -538,6 +558,7 @@ class ACGS2MCPServer:
         if self._client:
             try:
                 from acgs2_sdk import GovernanceService
+
                 governance = GovernanceService(self._client)
                 if include_metrics:
                     metrics = await governance.get_metrics()

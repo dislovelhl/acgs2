@@ -7,6 +7,7 @@ Example demonstrating how to use the health aggregator service.
 
 import asyncio
 import logging
+
 from enhanced_agent_bus.health_aggregator import (
     HealthAggregator,
     HealthAggregatorConfig,
@@ -16,8 +17,7 @@ from enhanced_agent_bus.health_aggregator import (
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
@@ -148,14 +148,14 @@ async def example_with_custom_breakers():
     breaker2 = MockCircuitBreaker(pybreaker.STATE_HALF_OPEN)
     breaker3 = MockCircuitBreaker(pybreaker.STATE_OPEN)
 
-    aggregator.register_circuit_breaker('database_service', breaker1)
-    aggregator.register_circuit_breaker('cache_service', breaker2)
-    aggregator.register_circuit_breaker('api_gateway', breaker3)
+    aggregator.register_circuit_breaker("database_service", breaker1)
+    aggregator.register_circuit_breaker("cache_service", breaker2)
+    aggregator.register_circuit_breaker("api_gateway", breaker3)
 
     # Get health report
     health = aggregator.get_system_health()
 
-    logger.info(f"System health with custom breakers:")
+    logger.info("System health with custom breakers:")
     logger.info(f"  Status: {health.status.value}")
     logger.info(f"  Health score: {health.health_score:.2f}")
     logger.info(f"  Circuit details: {health.circuit_details}")
@@ -185,10 +185,10 @@ async def example_singleton_usage():
     logger.info("Global health aggregator stopped")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     logger.info("=" * 60)
     logger.info("ACGS-2 Health Aggregator Examples")
-    logger.info(f"Constitutional Hash: cdd01ef066bc6cf2")
+    logger.info("Constitutional Hash: cdd01ef066bc6cf2")
     logger.info("=" * 60)
 
     # Run main example

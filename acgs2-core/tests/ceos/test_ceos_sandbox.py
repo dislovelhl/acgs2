@@ -4,8 +4,8 @@ Constitutional Hash: cdd01ef066bc6cf2
 """
 
 import pytest
-import asyncio
 from enhanced_agent_bus.sandbox import get_sandbox_provider
+
 
 @pytest.mark.asyncio
 async def test_firecracker_cold_start_simulation():
@@ -15,9 +15,10 @@ async def test_firecracker_cold_start_simulation():
     result = await provider.execute_code("print('Isolation check')", "python")
 
     assert result["status"] == "success"
-    assert result["duration_ms"] < 150 # CEOS Mandate
+    assert result["duration_ms"] < 150  # CEOS Mandate
     assert result["isolation"] == "MicroVM (Firecracker)"
     assert result["network"] == "DENY_ALL"
+
 
 @pytest.mark.asyncio
 async def test_wasm_sandbox_execution():

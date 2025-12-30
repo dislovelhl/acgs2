@@ -11,44 +11,44 @@ Comprehensive tests for the chaos testing framework including:
 """
 
 import asyncio
-import pytest
 import time
-from datetime import datetime, timezone
-from typing import Optional
+
+import pytest
 
 # Import chaos testing framework
 try:
     from enhanced_agent_bus.chaos_testing import (
+        CONSTITUTIONAL_HASH,
         ChaosEngine,
         ChaosScenario,
         ChaosType,
         ResourceType,
+        chaos_test,
         get_chaos_engine,
         reset_chaos_engine,
-        chaos_test,
-        CONSTITUTIONAL_HASH,
     )
     from enhanced_agent_bus.exceptions import (
-        ConstitutionalHashMismatchError,
         AgentBusError,
+        ConstitutionalHashMismatchError,
     )
 except ImportError:
-    import sys
     import os
+    import sys
+
     sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
     from chaos_testing import (
+        CONSTITUTIONAL_HASH,
         ChaosEngine,
         ChaosScenario,
         ChaosType,
         ResourceType,
+        chaos_test,
         get_chaos_engine,
         reset_chaos_engine,
-        chaos_test,
-        CONSTITUTIONAL_HASH,
     )
     from exceptions import (
-        ConstitutionalHashMismatchError,
         AgentBusError,
+        ConstitutionalHashMismatchError,
     )
 
 
@@ -440,10 +440,7 @@ class TestLatencyInjection:
     async def test_latency_not_injected_outside_blast_radius(self, engine):
         """Test latency is not injected for targets outside blast radius."""
         scenario = await engine.inject_latency(
-            target="allowed_target",
-            delay_ms=100,
-            duration_s=2.0,
-            blast_radius={"allowed_target"}
+            target="allowed_target", delay_ms=100, duration_s=2.0, blast_radius={"allowed_target"}
         )
 
         # Should inject for allowed target
@@ -509,8 +506,9 @@ class TestErrorInjection:
         actual_rate = errors_injected / samples
 
         # Should be close to target rate (within 10%)
-        assert abs(actual_rate - error_rate) < 0.1, \
-            f"Expected ~{error_rate} error rate, got {actual_rate}"
+        assert (
+            abs(actual_rate - error_rate) < 0.1
+        ), f"Expected ~{error_rate} error rate, got {actual_rate}"
 
         await engine.deactivate_scenario(scenario.name)
 
@@ -537,7 +535,7 @@ class TestErrorInjection:
             error_rate=1.0,
             error_type=ValueError,
             duration_s=2.0,
-            blast_radius={"allowed_target"}
+            blast_radius={"allowed_target"},
         )
 
         # Should inject for allowed target
@@ -701,10 +699,7 @@ class TestSafetyControls:
         """Test blast radius limits chaos injection."""
         blast_radius = {"service1", "service2"}
         scenario = await engine.inject_latency(
-            target="service1",
-            delay_ms=100,
-            duration_s=2.0,
-            blast_radius=blast_radius
+            target="service1", delay_ms=100, duration_s=2.0, blast_radius=blast_radius
         )
 
         # Should inject for allowed targets

@@ -7,10 +7,12 @@ try:
 except ImportError:
     # Fallback to standard subprocess if internal module missing (common in this repo state)
     import subprocess
+
     async def execute_command(cmd, **kwargs):
-        # detailed mock implementation not strictly needed for syntax fix, 
+        # detailed mock implementation not strictly needed for syntax fix,
         # but to make it runnable without erroring on import
         return subprocess.run(cmd, **kwargs)
+
 
 """
 ACGS Code Analysis Engine - Phase 5 Production Monitoring Setup
@@ -21,17 +23,19 @@ Service URL: http://localhost:8107
 Monitoring Ports: Prometheus 9190, Grafana 3100
 """
 
-from datetime import datetime
 import json
 import logging
 import sys
 import time
-from typing import Any, Dict, List
+from datetime import datetime
+from typing import Any, Dict
+
 import requests
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
 
 class ProductionMonitoringSetup:
     """Phase 5 Production Monitoring Setup for ACGS Code Analysis Engine"""
@@ -66,15 +70,14 @@ class ProductionMonitoringSetup:
                     "process_resident_memory_bytes",
                 ]
 
-                found_metrics = [
-                    metric for metric in expected_metrics if metric in metrics_content
-                ]
+                found_metrics = [metric for metric in expected_metrics if metric in metrics_content]
 
                 # Check Prometheus scraping (if accessible)
                 prometheus_accessible = False
                 try:
                     prometheus_response = requests.get(
-                        f"{self.prometheus_url}/api/v1/targets", timeout=5,
+                        f"{self.prometheus_url}/api/v1/targets",
+                        timeout=5,
                     )
                     if prometheus_response.status_code == 200:
                         prometheus_accessible = True
@@ -93,9 +96,7 @@ class ProductionMonitoringSetup:
                 }
             return {
                 "status": "failed",
-                "error": (
-                    f"Metrics endpoint returned HTTP {metrics_response.status_code}"
-                ),
+                "error": (f"Metrics endpoint returned HTTP {metrics_response.status_code}"),
             }
 
         except Exception as e:
@@ -111,7 +112,8 @@ class ProductionMonitoringSetup:
 
             try:
                 grafana_response = requests.get(
-                    f"{self.grafana_url}/api/health", timeout=5,
+                    f"{self.grafana_url}/api/health",
+                    timeout=5,
                 )
                 if grafana_response.status_code == 200:
                     grafana_accessible = True
@@ -217,12 +219,10 @@ class ProductionMonitoringSetup:
                                 },
                                 "annotations": {
                                     "summary": (
-                                        "High latency detected in ACGS Code Analysis"
-                                        " Engine"
+                                        "High latency detected in ACGS Code Analysis" " Engine"
                                     ),
                                     "description": (
-                                        "P99 latency is above 10ms for more than 2"
-                                        " minutes"
+                                        "P99 latency is above 10ms for more than 2" " minutes"
                                     ),
                                 },
                             },
@@ -235,12 +235,9 @@ class ProductionMonitoringSetup:
                                     "service": "acgs-code-analysis-engine",
                                 },
                                 "annotations": {
-                                    "summary": (
-                                        "Low throughput in ACGS Code Analysis Engine"
-                                    ),
+                                    "summary": ("Low throughput in ACGS Code Analysis Engine"),
                                     "description": (
-                                        "Request rate is below 10 RPS for more than 5"
-                                        " minutes"
+                                        "Request rate is below 10 RPS for more than 5" " minutes"
                                     ),
                                 },
                             },
@@ -253,6 +250,7 @@ class ProductionMonitoringSetup:
             alerting_file = "prometheus_alerting_rules.yml"
             try:
                 import yaml
+
                 with open(alerting_file, "w", encoding="utf-8") as f:
                     yaml.dump(alerting_rules, f, default_flow_style=False)
             except ImportError:
@@ -272,7 +270,7 @@ class ProductionMonitoringSetup:
                 "status": "success",
                 "alerting_rules_file": alerting_file,
                 "total_rules": len(alerting_rules["groups"][0]["rules"]),
-                "critical_alerts": 0, # Based on simplified example above
+                "critical_alerts": 0,  # Based on simplified example above
                 "warning_alerts": 2,
             }
 
@@ -416,7 +414,9 @@ Generated: {datetime.now().isoformat()}
                     if response.status_code == 200:
                         validation_results["health_checks"] += 1
                         response_time = (end_time - start_time) * 1000
-                        validation_results["response_times"] = validation_results.get("response_times", []) + [response_time]
+                        validation_results["response_times"] = validation_results.get(
+                            "response_times", []
+                        ) + [response_time]
 
                         # Check constitutional compliance
                         data = response.json()
@@ -433,7 +433,9 @@ Generated: {datetime.now().isoformat()}
             # Calculate metrics
             avg_response_time = 0.0
             if validation_results["response_times"]:
-                 avg_response_time = sum(validation_results["response_times"]) / len(validation_results["response_times"])
+                avg_response_time = sum(validation_results["response_times"]) / len(
+                    validation_results["response_times"]
+                )
 
             compliance_rate = validation_results["constitutional_compliance"] / 10
             success_rate = validation_results["health_checks"] / 10
@@ -464,13 +466,15 @@ Generated: {datetime.now().isoformat()}
 
         # Execute monitoring setup tasks
         try:
-            self.monitoring_results["prometheus_metrics_collection"] = self.verify_prometheus_metrics_collection()
+            self.monitoring_results["prometheus_metrics_collection"] = (
+                self.verify_prometheus_metrics_collection()
+            )
             self.monitoring_results["grafana_dashboards"] = self.setup_grafana_dashboards()
             self.monitoring_results["alerting_rules"] = self.configure_alerting_rules()
             self.monitoring_results["log_aggregation"] = await self.establish_log_aggregation()
             self.monitoring_results["operational_runbooks"] = self.create_operational_runbooks()
             self.monitoring_results["monitoring_validation"] = self.conduct_monitoring_validation()
-            
+
         except Exception as e:
             logger.error(f"Error running monitoring setup: {e}")
 
@@ -502,7 +506,7 @@ Generated: {datetime.now().isoformat()}
             "operational_runbooks",
             "monitoring_validation",
         ]
-        
+
         # Check if core components exist and are success
         core_working = True
         for component in core_components:
@@ -516,12 +520,13 @@ Generated: {datetime.now().isoformat()}
         return {
             "setup_successful": setup_successful,
             "overall_status": overall_status,
-            "constitutional_compliance": True, 
+            "constitutional_compliance": True,
             "components_configured": len(self.monitoring_results) - len(failed_tasks),
             "failed_components": len(failed_tasks),
             "core_components_working": core_working,
             "execution_time_seconds": execution_time,
         }
+
 
 async def main() -> None:
     """Main function to run Phase 5 monitoring setup"""
@@ -544,6 +549,8 @@ async def main() -> None:
     except Exception:
         sys.exit(1)
 
+
 if __name__ == "__main__":
     import asyncio
+
     asyncio.run(main())

@@ -6,13 +6,14 @@ Tests for BusConfiguration dataclass with builder pattern.
 """
 
 import os
-import pytest
 from unittest.mock import patch
 
+import pytest
+
 try:
-    from config import BusConfiguration, CONSTITUTIONAL_HASH, DEFAULT_REDIS_URL
+    from config import CONSTITUTIONAL_HASH, DEFAULT_REDIS_URL, BusConfiguration
 except ImportError:
-    from ..config import BusConfiguration, CONSTITUTIONAL_HASH, DEFAULT_REDIS_URL
+    from ..config import CONSTITUTIONAL_HASH, DEFAULT_REDIS_URL, BusConfiguration
 
 
 class TestBusConfigurationDefaults:
@@ -148,20 +149,23 @@ class TestBusConfigurationFromEnvironment:
             config = BusConfiguration.from_environment()
             assert config.audit_service_url == "http://audit:8001"
 
-    @pytest.mark.parametrize("env_value,expected", [
-        ("true", True),
-        ("True", True),
-        ("TRUE", True),
-        ("1", True),
-        ("yes", True),
-        ("on", True),
-        ("false", False),
-        ("False", False),
-        ("0", False),
-        ("no", False),
-        ("off", False),
-        ("random", False),
-    ])
+    @pytest.mark.parametrize(
+        "env_value,expected",
+        [
+            ("true", True),
+            ("True", True),
+            ("TRUE", True),
+            ("1", True),
+            ("yes", True),
+            ("on", True),
+            ("false", False),
+            ("False", False),
+            ("0", False),
+            ("no", False),
+            ("off", False),
+            ("random", False),
+        ],
+    )
     def test_from_environment_bool_parsing(self, env_value, expected):
         """Test boolean parsing for environment variables."""
         with patch.dict(os.environ, {"USE_DYNAMIC_POLICY": env_value}, clear=True):
@@ -286,11 +290,7 @@ class TestBusConfigurationBuilderMethods:
         mock_registry = object()
         mock_validator = object()
 
-        config = (
-            BusConfiguration()
-            .with_registry(mock_registry)
-            .with_validator(mock_validator)
-        )
+        config = BusConfiguration().with_registry(mock_registry).with_validator(mock_validator)
 
         assert config.registry is mock_registry
         assert config.validator is mock_validator

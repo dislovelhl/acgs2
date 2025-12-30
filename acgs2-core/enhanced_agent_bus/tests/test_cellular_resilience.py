@@ -1,11 +1,11 @@
 import asyncio
 import time
-import pytest
-from unittest.mock import AsyncMock, patch
+from unittest.mock import patch
 
+import pytest
 from core import EnhancedAgentBus, MessageProcessor
-from models import AgentMessage, MessageType, CONSTITUTIONAL_HASH, Priority
-from validators import ValidationResult
+from models import CONSTITUTIONAL_HASH, AgentMessage, MessageType
+
 
 class TestCellularResilience:
     """
@@ -16,24 +16,26 @@ class TestCellularResilience:
     @pytest.mark.asyncio
     async def test_degraded_mode_on_processor_failure(self):
         """
-        Verify that a failure in the MessageProcessor's primary path 
+        Verify that a failure in the MessageProcessor's primary path
         triggers a fallback to local 'DEGRADED' mode in the AgentBus.
         """
         # MACI is disabled for these legacy tests to isolate cellular resilience testing
         bus = EnhancedAgentBus(enable_maci=False)
 
         # Mock the processor to raise an exception, simulating a crash/hang
-        with patch.object(bus._processor, 'process', side_effect=Exception("Infrastructure Crash simulated")):
+        with patch.object(
+            bus._processor, "process", side_effect=Exception("Infrastructure Crash simulated")
+        ):
             message = AgentMessage(
                 message_type=MessageType.COMMAND,
                 content={"action": "reboot"},
                 from_agent="tester",
                 to_agent="worker",
-                constitutional_hash=CONSTITUTIONAL_HASH
+                constitutional_hash=CONSTITUTIONAL_HASH,
             )
-            
+
             result = await bus.send_message(message)
-            
+
             # Should still be valid because of DEGRADED mode fallback (StaticHashValidationStrategy)
             assert result.is_valid
             assert result.metadata.get("governance_mode") == "DEGRADED"
@@ -46,26 +48,26 @@ class TestCellularResilience:
         """
         # Initialize processor in isolated mode (MACI disabled for isolated testing)
         processor = MessageProcessor(isolated_mode=True, enable_maci=False)
-        
+
         message = AgentMessage(
             message_type=MessageType.COMMAND,
             content={"action": "test"},
             from_agent="governor",
             to_agent="agent",
-            constitutional_hash=CONSTITUTIONAL_HASH
+            constitutional_hash=CONSTITUTIONAL_HASH,
         )
-        
+
         # Warm up
         await processor.process(message)
-        
+
         start_time = time.perf_counter()
         for _ in range(100):
             await processor.process(message)
         end_time = time.perf_counter()
-        
+
         avg_latency_ms = ((end_time - start_time) / 100) * 1000
         print(f"\n[Performance] Avg Isolated Processor Latency: {avg_latency_ms:.4f}ms")
-        
+
         # Requirement: Sub-5ms
         assert avg_latency_ms < 5.0
 
@@ -96,7 +98,7 @@ class TestCellularResilience:
                 raise Exception("Transient Deliberation Outage")
             return await original_process(msg)
 
-        with patch.object(bus._processor, 'process', side_effect=flaky_process):
+        with patch.object(bus._processor, "process", side_effect=flaky_process):
             tasks = []
             for i in range(50):
                 msg = AgentMessage(
@@ -104,7 +106,7 @@ class TestCellularResilience:
                     content={"id": i},
                     from_agent="tester",
                     to_agent="worker",
-                    constitutional_hash=CONSTITUTIONAL_HASH
+                    constitutional_hash=CONSTITUTIONAL_HASH,
                 )
                 tasks.append(bus.send_message(msg))
 
@@ -115,9 +117,13 @@ class TestCellularResilience:
                 assert res.is_valid
 
             # Verify we actually hit DEGRADED mode for half of them
-            degraded_count = sum(1 for r in results if r.metadata.get("governance_mode") == "DEGRADED")
+            degraded_count = sum(
+                1 for r in results if r.metadata.get("governance_mode") == "DEGRADED"
+            )
             assert degraded_count == 25
-            print(f"\n[Stress] 50 requests processed: 25 normal, 25 DEGRADED. Zero constitutional breaches.")
+            print(
+                "\n[Stress] 50 requests processed: 25 normal, 25 DEGRADED. Zero constitutional breaches."
+            )
 
     @pytest.mark.asyncio
     async def test_isolated_mode_dependency_decoupling(self):
@@ -130,14 +136,21 @@ class TestCellularResilience:
 
         # Test 1: Isolated mode always disables dynamic policy regardless of setting
         # MACI is disabled for these legacy tests to isolate policy decoupling testing
-        proc_isolated = MessageProcessor(use_dynamic_policy=True, isolated_mode=True, enable_maci=False)
-        assert proc_isolated._use_dynamic_policy == False, "Isolated mode should always disable dynamic policy"
+        proc_isolated = MessageProcessor(
+            use_dynamic_policy=True, isolated_mode=True, enable_maci=False
+        )
+        assert (
+            proc_isolated._use_dynamic_policy == False
+        ), "Isolated mode should always disable dynamic policy"
         assert proc_isolated._isolated_mode == True, "Isolated mode flag should be True"
 
         # Test 2: Isolated mode = False respects POLICY_CLIENT_AVAILABLE
         # (If POLICY_CLIENT_AVAILABLE is False, _use_dynamic_policy remains False)
-        proc_normal = MessageProcessor(use_dynamic_policy=True, isolated_mode=False, enable_maci=False)
+        proc_normal = MessageProcessor(
+            use_dynamic_policy=True, isolated_mode=False, enable_maci=False
+        )
         expected_dynamic = message_processor.POLICY_CLIENT_AVAILABLE
-        assert proc_normal._use_dynamic_policy == expected_dynamic, \
-            f"Non-isolated mode with use_dynamic_policy=True should match POLICY_CLIENT_AVAILABLE={expected_dynamic}"
+        assert (
+            proc_normal._use_dynamic_policy == expected_dynamic
+        ), f"Non-isolated mode with use_dynamic_policy=True should match POLICY_CLIENT_AVAILABLE={expected_dynamic}"
         assert proc_normal._isolated_mode == False, "Non-isolated mode flag should be False"

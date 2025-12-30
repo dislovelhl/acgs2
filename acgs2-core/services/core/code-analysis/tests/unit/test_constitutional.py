@@ -5,18 +5,17 @@ Unit tests for constitutional compliance utilities.
 Constitutional Hash: cdd01ef066bc6cf2
 """
 
-import pytest
 from datetime import datetime, timezone
 
+import pytest
 from code_analysis_service.app.utils.constitutional import (
     CONSTITUTIONAL_HASH,
-    validate_constitutional_hash,
-    ensure_constitutional_compliance,
-    create_constitutional_metadata,
-    verify_constitutional_compliance,
-    generate_content_hash,
-    log_constitutional_operation,
     ConstitutionalValidator,
+    create_constitutional_metadata,
+    ensure_constitutional_compliance,
+    generate_content_hash,
+    validate_constitutional_hash,
+    verify_constitutional_compliance,
 )
 
 
@@ -212,7 +211,7 @@ class TestConstitutionalValidator:
         assert stats["validations_performed"] == 3
         assert stats["validations_passed"] == 2
         assert stats["validations_failed"] == 1
-        assert stats["compliance_rate"] == pytest.approx(2/3, rel=0.01)
+        assert stats["compliance_rate"] == pytest.approx(2 / 3, rel=0.01)
 
     @pytest.mark.constitutional
     def test_compliance_rate_no_validations(self, validator: ConstitutionalValidator) -> None:

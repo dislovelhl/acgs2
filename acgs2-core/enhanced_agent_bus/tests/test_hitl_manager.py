@@ -5,20 +5,22 @@ Constitutional Hash: cdd01ef066bc6cf2
 Comprehensive tests for the HITLManager class.
 """
 
-import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
 from dataclasses import dataclass, field
-from typing import Dict, Any, List
 from datetime import datetime, timezone
 from enum import Enum
+from typing import Dict
+from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
 
 # =============================================================================
 # Mock Classes for Testing
 # =============================================================================
 
+
 class MockDeliberationStatus(Enum):
     """Mock deliberation status enum."""
+
     PENDING = "PENDING"
     UNDER_REVIEW = "UNDER_REVIEW"
     APPROVED = "APPROVED"
@@ -27,6 +29,7 @@ class MockDeliberationStatus(Enum):
 
 class MockMessageType(Enum):
     """Mock message type enum."""
+
     COMMAND = "COMMAND"
     QUERY = "QUERY"
 
@@ -34,6 +37,7 @@ class MockMessageType(Enum):
 @dataclass
 class MockMessage:
     """Mock message for testing."""
+
     from_agent: str = "test-agent"
     impact_score: float = 0.85
     message_type: MockMessageType = MockMessageType.COMMAND
@@ -43,6 +47,7 @@ class MockMessage:
 @dataclass
 class MockQueueItem:
     """Mock queue item for testing."""
+
     id: str = "item-123"
     message: MockMessage = field(default_factory=MockMessage)
     status: MockDeliberationStatus = MockDeliberationStatus.PENDING
@@ -71,6 +76,7 @@ class MockAuditLedger:
 # Fixtures
 # =============================================================================
 
+
 @pytest.fixture
 def mock_queue() -> MockDeliberationQueue:
     """Create a mock deliberation queue."""
@@ -90,30 +96,36 @@ def mock_audit_ledger() -> MockAuditLedger:
 # Import and Test HITLManager
 # =============================================================================
 
+
 # We need to patch the imports before importing HITLManager
 @pytest.fixture
 def hitl_manager_class():
     """Get HITLManager class with mocked dependencies."""
-    with patch.dict('sys.modules', {
-        'deliberation_queue': MagicMock(),
-    }):
+    with patch.dict(
+        "sys.modules",
+        {
+            "deliberation_queue": MagicMock(),
+        },
+    ):
         # Create mock modules
         mock_deliberation_queue = MagicMock()
         mock_deliberation_queue.DeliberationStatus = MockDeliberationStatus
         mock_deliberation_queue.DeliberationQueue = MockDeliberationQueue
 
         with patch.object(
-            __import__('sys'), 'modules',
-            {**__import__('sys').modules,
-             'deliberation_queue': mock_deliberation_queue}
+            __import__("sys"),
+            "modules",
+            {**__import__("sys").modules, "deliberation_queue": mock_deliberation_queue},
         ):
             from deliberation_layer.hitl_manager import HITLManager
+
             return HITLManager
 
 
 # =============================================================================
 # Direct Import Tests (Using Mock Classes)
 # =============================================================================
+
 
 class TestHITLManagerImports:
     """Test HITLManager can be imported."""
@@ -122,6 +134,7 @@ class TestHITLManagerImports:
         """Test that HITLManager can be imported."""
         try:
             from deliberation_layer.hitl_manager import HITLManager
+
             assert HITLManager is not None
         except ImportError:
             # Expected in isolated test environment
@@ -132,11 +145,13 @@ class TestHITLManagerImports:
 # HITLManager Tests Using Mocks
 # =============================================================================
 
+
 class TestHITLManagerInitialization:
     """Tests for HITLManager initialization."""
 
     def test_initialization_with_defaults(self, mock_queue: MockDeliberationQueue) -> None:
         """Test initialization with default parameters."""
+
         # Create a simple HITLManager-like class for testing
         class TestableHITLManager:
             def __init__(self, deliberation_queue, audit_ledger=None):
@@ -151,6 +166,7 @@ class TestHITLManagerInitialization:
         self, mock_queue: MockDeliberationQueue, mock_audit_ledger: MockAuditLedger
     ) -> None:
         """Test initialization with custom audit ledger."""
+
         class TestableHITLManager:
             def __init__(self, deliberation_queue, audit_ledger=None):
                 self.queue = deliberation_queue
@@ -164,14 +180,14 @@ class TestHITLManagerInitialization:
 # Request Approval Tests
 # =============================================================================
 
+
 class TestRequestApproval:
     """Tests for request_approval method."""
 
     @pytest.mark.asyncio
-    async def test_request_approval_valid_item(
-        self, mock_queue: MockDeliberationQueue
-    ) -> None:
+    async def test_request_approval_valid_item(self, mock_queue: MockDeliberationQueue) -> None:
         """Test request_approval with a valid queue item."""
+
         class TestableHITLManager:
             def __init__(self, deliberation_queue, audit_ledger=None):
                 self.queue = deliberation_queue
@@ -191,10 +207,9 @@ class TestRequestApproval:
         assert result.status == MockDeliberationStatus.UNDER_REVIEW
 
     @pytest.mark.asyncio
-    async def test_request_approval_missing_item(
-        self, mock_queue: MockDeliberationQueue
-    ) -> None:
+    async def test_request_approval_missing_item(self, mock_queue: MockDeliberationQueue) -> None:
         """Test request_approval with a missing queue item."""
+
         class TestableHITLManager:
             def __init__(self, deliberation_queue, audit_ledger=None):
                 self.queue = deliberation_queue
@@ -213,10 +228,9 @@ class TestRequestApproval:
         assert result is None
 
     @pytest.mark.asyncio
-    async def test_request_approval_teams_channel(
-        self, mock_queue: MockDeliberationQueue
-    ) -> None:
+    async def test_request_approval_teams_channel(self, mock_queue: MockDeliberationQueue) -> None:
         """Test request_approval with Teams channel."""
+
         class TestableHITLManager:
             def __init__(self, deliberation_queue, audit_ledger=None):
                 self.queue = deliberation_queue
@@ -240,6 +254,7 @@ class TestRequestApproval:
 # Process Approval Tests
 # =============================================================================
 
+
 class TestProcessApproval:
     """Tests for process_approval method."""
 
@@ -248,6 +263,7 @@ class TestProcessApproval:
         self, mock_queue: MockDeliberationQueue, mock_audit_ledger: MockAuditLedger
     ) -> None:
         """Test process_approval with approve decision."""
+
         class TestableHITLManager:
             def __init__(self, deliberation_queue, audit_ledger=None):
                 self.queue = deliberation_queue
@@ -262,10 +278,7 @@ class TestProcessApproval:
                     status = MockDeliberationStatus.REJECTED
 
                 success = await self.queue.submit_human_decision(
-                    item_id=item_id,
-                    reviewer=reviewer_id,
-                    decision=status,
-                    reasoning=reasoning
+                    item_id=item_id, reviewer=reviewer_id, decision=status, reasoning=reasoning
                 )
 
                 if success:
@@ -284,7 +297,7 @@ class TestProcessApproval:
             item_id="item-123",
             reviewer_id="reviewer-1",
             decision="approve",
-            reasoning="Looks good to me"
+            reasoning="Looks good to me",
         )
 
         assert result is True
@@ -296,6 +309,7 @@ class TestProcessApproval:
         self, mock_queue: MockDeliberationQueue, mock_audit_ledger: MockAuditLedger
     ) -> None:
         """Test process_approval with reject decision."""
+
         class TestableHITLManager:
             def __init__(self, deliberation_queue, audit_ledger=None):
                 self.queue = deliberation_queue
@@ -310,10 +324,7 @@ class TestProcessApproval:
                     status = MockDeliberationStatus.REJECTED
 
                 success = await self.queue.submit_human_decision(
-                    item_id=item_id,
-                    reviewer=reviewer_id,
-                    decision=status,
-                    reasoning=reasoning
+                    item_id=item_id, reviewer=reviewer_id, decision=status, reasoning=reasoning
                 )
 
                 if success:
@@ -332,7 +343,7 @@ class TestProcessApproval:
             item_id="item-123",
             reviewer_id="reviewer-1",
             decision="reject",
-            reasoning="Security concerns"
+            reasoning="Security concerns",
         )
 
         assert result is True
@@ -360,10 +371,7 @@ class TestProcessApproval:
                     status = MockDeliberationStatus.REJECTED
 
                 success = await self.queue.submit_human_decision(
-                    item_id=item_id,
-                    reviewer=reviewer_id,
-                    decision=status,
-                    reasoning=reasoning
+                    item_id=item_id, reviewer=reviewer_id, decision=status, reasoning=reasoning
                 )
 
                 if success:
@@ -379,10 +387,7 @@ class TestProcessApproval:
 
         manager = TestableHITLManager(mock_queue, mock_audit_ledger)
         result = await manager.process_approval(
-            item_id="item-123",
-            reviewer_id="reviewer-1",
-            decision="approve",
-            reasoning="Approved"
+            item_id="item-123", reviewer_id="reviewer-1", decision="approve", reasoning="Approved"
         )
 
         assert result is False
@@ -394,6 +399,7 @@ class TestProcessApproval:
 # Integration Tests
 # =============================================================================
 
+
 class TestHITLManagerIntegration:
     """Integration tests for HITLManager."""
 
@@ -402,6 +408,7 @@ class TestHITLManagerIntegration:
         self, mock_queue: MockDeliberationQueue, mock_audit_ledger: MockAuditLedger
     ) -> None:
         """Test complete approval workflow."""
+
         class TestableHITLManager:
             def __init__(self, deliberation_queue, audit_ledger=None):
                 self.queue = deliberation_queue
@@ -423,10 +430,7 @@ class TestHITLManagerIntegration:
                     status = MockDeliberationStatus.REJECTED
 
                 success = await self.queue.submit_human_decision(
-                    item_id=item_id,
-                    reviewer=reviewer_id,
-                    decision=status,
-                    reasoning=reasoning
+                    item_id=item_id, reviewer=reviewer_id, decision=status, reasoning=reasoning
                 )
 
                 if success:
@@ -446,7 +450,7 @@ class TestHITLManagerIntegration:
             item_id="item-123",
             reviewer_id="senior-reviewer",
             decision="approve",
-            reasoning="All security checks passed"
+            reasoning="All security checks passed",
         )
         assert result is True
 
@@ -455,6 +459,7 @@ class TestHITLManagerIntegration:
         self, mock_queue: MockDeliberationQueue, mock_audit_ledger: MockAuditLedger
     ) -> None:
         """Test complete rejection workflow."""
+
         class TestableHITLManager:
             def __init__(self, deliberation_queue, audit_ledger=None):
                 self.queue = deliberation_queue
@@ -476,10 +481,7 @@ class TestHITLManagerIntegration:
                     status = MockDeliberationStatus.REJECTED
 
                 success = await self.queue.submit_human_decision(
-                    item_id=item_id,
-                    reviewer=reviewer_id,
-                    decision=status,
-                    reasoning=reasoning
+                    item_id=item_id, reviewer=reviewer_id, decision=status, reasoning=reasoning
                 )
 
                 if success:
@@ -498,7 +500,7 @@ class TestHITLManagerIntegration:
             item_id="item-123",
             reviewer_id="security-reviewer",
             decision="reject",
-            reasoning="Potential security vulnerability detected"
+            reasoning="Potential security vulnerability detected",
         )
         assert result is True
 
@@ -506,6 +508,7 @@ class TestHITLManagerIntegration:
 # =============================================================================
 # Notification Payload Tests
 # =============================================================================
+
 
 class TestNotificationPayload:
     """Tests for notification payload generation."""
@@ -526,10 +529,10 @@ class TestNotificationPayload:
                     "callback_id": "item-123",
                     "actions": [
                         {"name": "approve", "text": "Approve", "type": "button"},
-                        {"name": "reject", "text": "Reject", "type": "button"}
-                    ]
+                        {"name": "reject", "text": "Reject", "type": "button"},
+                    ],
                 }
-            ]
+            ],
         }
 
         assert payload["text"] == "High-Risk Agent Action Detected"
@@ -553,6 +556,7 @@ class TestNotificationPayload:
 # Audit Record Tests
 # =============================================================================
 
+
 class TestAuditRecords:
     """Tests for audit record generation."""
 
@@ -565,8 +569,8 @@ class TestAuditRecords:
                 "reviewer": "reviewer-1",
                 "decision": "approve",
                 "reasoning": "All checks passed",
-                "timestamp": datetime.now(timezone.utc).isoformat()
-            }
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            },
         }
 
         assert audit_record["is_valid"] is True
@@ -582,8 +586,8 @@ class TestAuditRecords:
                 "reviewer": "reviewer-2",
                 "decision": "reject",
                 "reasoning": "Security concerns",
-                "timestamp": datetime.now(timezone.utc).isoformat()
-            }
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            },
         }
 
         assert audit_record["is_valid"] is False
@@ -594,6 +598,7 @@ class TestAuditRecords:
 # Actual HITLManager Tests (Integration with Real Module)
 # =============================================================================
 
+
 class TestActualHITLManager:
     """Tests for the actual HITLManager implementation."""
 
@@ -601,6 +606,7 @@ class TestActualHITLManager:
     async def real_queue(self):
         """Create a real DeliberationQueue."""
         from enhanced_agent_bus.deliberation_layer.deliberation_queue import DeliberationQueue
+
         queue = DeliberationQueue()
         yield queue
         await queue.stop()
@@ -609,6 +615,7 @@ class TestActualHITLManager:
     async def real_hitl_manager(self, real_queue):
         """Create a real HITLManager instance."""
         from enhanced_agent_bus.deliberation_layer.hitl_manager import HITLManager
+
         manager = HITLManager(real_queue)
         return manager
 
@@ -625,6 +632,7 @@ class TestActualHITLManager:
     async def test_real_request_approval_with_message(self, real_queue, caplog):
         """Test request_approval with a real AgentMessage."""
         import logging
+
         from enhanced_agent_bus.deliberation_layer.hitl_manager import HITLManager
         from enhanced_agent_bus.models import AgentMessage, MessageType
 
@@ -647,6 +655,7 @@ class TestActualHITLManager:
 
         # Verify status changed
         from enhanced_agent_bus.deliberation_layer.deliberation_queue import DeliberationStatus
+
         task = real_queue.get_task(item_id)
         assert task.status == DeliberationStatus.UNDER_REVIEW
 
@@ -654,6 +663,7 @@ class TestActualHITLManager:
     async def test_real_request_approval_item_not_found(self, real_queue, caplog):
         """Test request_approval when item doesn't exist."""
         import logging
+
         from enhanced_agent_bus.deliberation_layer.hitl_manager import HITLManager
 
         manager = HITLManager(real_queue)
@@ -667,6 +677,7 @@ class TestActualHITLManager:
     async def test_real_request_approval_teams_channel(self, real_queue, caplog):
         """Test request_approval with Teams channel."""
         import logging
+
         from enhanced_agent_bus.deliberation_layer.hitl_manager import HITLManager
         from enhanced_agent_bus.models import AgentMessage, MessageType
 
@@ -690,8 +701,8 @@ class TestActualHITLManager:
     async def test_real_process_approval_approve(self, real_queue, caplog):
         """Test process_approval with approve decision."""
         import logging
+
         from enhanced_agent_bus.deliberation_layer.hitl_manager import HITLManager
-        from enhanced_agent_bus.deliberation_layer.deliberation_queue import DeliberationStatus
         from enhanced_agent_bus.models import AgentMessage, MessageType
 
         manager = HITLManager(real_queue)
@@ -712,7 +723,7 @@ class TestActualHITLManager:
                 item_id=item_id,
                 reviewer_id="reviewer-001",
                 decision="approve",
-                reasoning="Action is compliant"
+                reasoning="Action is compliant",
             )
 
         assert result is True
@@ -723,6 +734,7 @@ class TestActualHITLManager:
     async def test_real_process_approval_reject(self, real_queue, caplog):
         """Test process_approval with reject decision."""
         import logging
+
         from enhanced_agent_bus.deliberation_layer.hitl_manager import HITLManager
         from enhanced_agent_bus.models import AgentMessage, MessageType
 
@@ -743,7 +755,7 @@ class TestActualHITLManager:
                 item_id=item_id,
                 reviewer_id="security-reviewer",
                 decision="reject",
-                reasoning="Violates security policy"
+                reasoning="Violates security policy",
             )
 
         assert result is True
@@ -756,10 +768,7 @@ class TestActualHITLManager:
         manager = HITLManager(real_queue)
 
         result = await manager.process_approval(
-            item_id="invalid-item",
-            reviewer_id="reviewer",
-            decision="approve",
-            reasoning="test"
+            item_id="invalid-item", reviewer_id="reviewer", decision="approve", reasoning="test"
         )
 
         assert result is False
@@ -783,10 +792,7 @@ class TestActualHITLManager:
         # Don't call request_approval - item is PENDING not UNDER_REVIEW
 
         result = await manager.process_approval(
-            item_id=item_id,
-            reviewer_id="reviewer",
-            decision="approve",
-            reasoning="test"
+            item_id=item_id, reviewer_id="reviewer", decision="approve", reasoning="test"
         )
 
         assert result is False
@@ -798,6 +804,7 @@ class TestHITLManagerWithCustomAuditLedger:
     @pytest.fixture
     async def custom_audit_ledger(self):
         """Create a custom audit ledger that tracks calls."""
+
         class TrackingAuditLedger:
             def __init__(self):
                 self.results = []
@@ -811,8 +818,8 @@ class TestHITLManagerWithCustomAuditLedger:
     @pytest.mark.asyncio
     async def test_custom_audit_ledger_receives_results(self, custom_audit_ledger):
         """Test that custom audit ledger receives validation results."""
-        from enhanced_agent_bus.deliberation_layer.hitl_manager import HITLManager
         from enhanced_agent_bus.deliberation_layer.deliberation_queue import DeliberationQueue
+        from enhanced_agent_bus.deliberation_layer.hitl_manager import HITLManager
         from enhanced_agent_bus.models import AgentMessage, MessageType
 
         queue = DeliberationQueue()
@@ -829,10 +836,7 @@ class TestHITLManagerWithCustomAuditLedger:
         await manager.request_approval(item_id)
 
         await manager.process_approval(
-            item_id=item_id,
-            reviewer_id="reviewer",
-            decision="approve",
-            reasoning="Approved"
+            item_id=item_id, reviewer_id="reviewer", decision="approve", reasoning="Approved"
         )
 
         assert len(custom_audit_ledger.results) == 1
@@ -846,9 +850,9 @@ class TestHITLManagerWithCustomAuditLedger:
     @pytest.mark.asyncio
     async def test_audit_records_constitutional_hash(self, custom_audit_ledger):
         """Test that audit records include constitutional hash."""
-        from enhanced_agent_bus.deliberation_layer.hitl_manager import HITLManager
         from enhanced_agent_bus.deliberation_layer.deliberation_queue import DeliberationQueue
-        from enhanced_agent_bus.models import AgentMessage, MessageType, CONSTITUTIONAL_HASH
+        from enhanced_agent_bus.deliberation_layer.hitl_manager import HITLManager
+        from enhanced_agent_bus.models import CONSTITUTIONAL_HASH, AgentMessage, MessageType
 
         queue = DeliberationQueue()
         manager = HITLManager(queue, audit_ledger=custom_audit_ledger)
@@ -864,10 +868,7 @@ class TestHITLManagerWithCustomAuditLedger:
         await manager.request_approval(item_id)
 
         await manager.process_approval(
-            item_id=item_id,
-            reviewer_id="reviewer",
-            decision="approve",
-            reasoning="Test"
+            item_id=item_id, reviewer_id="reviewer", decision="approve", reasoning="Test"
         )
 
         audit = custom_audit_ledger.results[0]
@@ -922,14 +923,15 @@ class TestValidationResultFallback:
 
     def test_validation_result_with_custom_metadata(self):
         """Test ValidationResult with custom metadata."""
-        from enhanced_agent_bus.deliberation_layer.hitl_manager import ValidationResult
         from datetime import datetime, timezone
+
+        from enhanced_agent_bus.deliberation_layer.hitl_manager import ValidationResult
 
         metadata = {
             "item_id": "item-123",
             "reviewer": "admin",
             "decision": "approve",
-            "timestamp": datetime.now(timezone.utc).isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }
 
         result = ValidationResult(
@@ -960,13 +962,11 @@ class TestFallbackAuditLedgerClass:
     async def test_mock_audit_ledger_logs_result(self, caplog):
         """Test that mock audit ledger logs the result."""
         import logging
+
         from enhanced_agent_bus.deliberation_layer.hitl_manager import AuditLedger, ValidationResult
 
         ledger = AuditLedger()
-        result = ValidationResult(
-            is_valid=True,
-            metadata={"test": "data"}
-        )
+        result = ValidationResult(is_valid=True, metadata={"test": "data"})
 
         with caplog.at_level(logging.DEBUG):
             await ledger.add_validation_result(result)
@@ -981,8 +981,11 @@ class TestEdgeCasesAndErrorHandling:
     @pytest.mark.asyncio
     async def test_empty_content_message(self):
         """Test handling of message with empty content."""
+        from enhanced_agent_bus.deliberation_layer.deliberation_queue import (
+            DeliberationQueue,
+            DeliberationStatus,
+        )
         from enhanced_agent_bus.deliberation_layer.hitl_manager import HITLManager
-        from enhanced_agent_bus.deliberation_layer.deliberation_queue import DeliberationQueue, DeliberationStatus
         from enhanced_agent_bus.models import AgentMessage, MessageType
 
         queue = DeliberationQueue()
@@ -1006,8 +1009,8 @@ class TestEdgeCasesAndErrorHandling:
     @pytest.mark.asyncio
     async def test_special_characters_in_reasoning(self):
         """Test special characters in reasoning field."""
-        from enhanced_agent_bus.deliberation_layer.hitl_manager import HITLManager
         from enhanced_agent_bus.deliberation_layer.deliberation_queue import DeliberationQueue
+        from enhanced_agent_bus.deliberation_layer.hitl_manager import HITLManager
         from enhanced_agent_bus.models import AgentMessage, MessageType
 
         class TrackingLedger:
@@ -1035,10 +1038,7 @@ class TestEdgeCasesAndErrorHandling:
         special_reasoning = "<script>alert('xss')</script> & 'quotes' \"double\" emoji: 🚨"
 
         result = await manager.process_approval(
-            item_id=item_id,
-            reviewer_id="reviewer",
-            decision="approve",
-            reasoning=special_reasoning
+            item_id=item_id, reviewer_id="reviewer", decision="approve", reasoning=special_reasoning
         )
 
         assert result is True
@@ -1050,8 +1050,12 @@ class TestEdgeCasesAndErrorHandling:
     async def test_concurrent_approval_requests(self):
         """Test concurrent approval requests don't interfere."""
         import asyncio
+
+        from enhanced_agent_bus.deliberation_layer.deliberation_queue import (
+            DeliberationQueue,
+            DeliberationStatus,
+        )
         from enhanced_agent_bus.deliberation_layer.hitl_manager import HITLManager
-        from enhanced_agent_bus.deliberation_layer.deliberation_queue import DeliberationQueue, DeliberationStatus
         from enhanced_agent_bus.models import AgentMessage, MessageType
 
         queue = DeliberationQueue()
@@ -1070,10 +1074,7 @@ class TestEdgeCasesAndErrorHandling:
             item_ids.append(item_id)
 
         # Request approvals concurrently
-        await asyncio.gather(*[
-            manager.request_approval(item_id)
-            for item_id in item_ids
-        ])
+        await asyncio.gather(*[manager.request_approval(item_id) for item_id in item_ids])
 
         # Verify all items are under review
         for item_id in item_ids:
@@ -1086,8 +1087,9 @@ class TestEdgeCasesAndErrorHandling:
     async def test_long_content_truncation(self, caplog):
         """Test that long content is truncated in notification."""
         import logging
-        from enhanced_agent_bus.deliberation_layer.hitl_manager import HITLManager
+
         from enhanced_agent_bus.deliberation_layer.deliberation_queue import DeliberationQueue
+        from enhanced_agent_bus.deliberation_layer.hitl_manager import HITLManager
         from enhanced_agent_bus.models import AgentMessage, MessageType
 
         queue = DeliberationQueue()
@@ -1120,9 +1122,9 @@ class TestConstitutionalCompliance:
     @pytest.mark.constitutional
     async def test_constitutional_hash_in_audit_trail(self):
         """Verify constitutional hash is maintained in audit trail."""
-        from enhanced_agent_bus.deliberation_layer.hitl_manager import HITLManager
         from enhanced_agent_bus.deliberation_layer.deliberation_queue import DeliberationQueue
-        from enhanced_agent_bus.models import AgentMessage, MessageType, CONSTITUTIONAL_HASH
+        from enhanced_agent_bus.deliberation_layer.hitl_manager import HITLManager
+        from enhanced_agent_bus.models import CONSTITUTIONAL_HASH, AgentMessage, MessageType
 
         class TrackingLedger:
             def __init__(self):
@@ -1151,7 +1153,7 @@ class TestConstitutionalCompliance:
             item_id=item_id,
             reviewer_id="reviewer",
             decision="approve",
-            reasoning="Compliant with constitutional principles"
+            reasoning="Compliant with constitutional principles",
         )
 
         # Verify constitutional hash in audit
@@ -1164,10 +1166,11 @@ class TestConstitutionalCompliance:
     @pytest.mark.constitutional
     async def test_all_decisions_include_timestamp(self):
         """Verify all decisions include proper timestamps."""
-        from enhanced_agent_bus.deliberation_layer.hitl_manager import HITLManager
-        from enhanced_agent_bus.deliberation_layer.deliberation_queue import DeliberationQueue
-        from enhanced_agent_bus.models import AgentMessage, MessageType
         from datetime import datetime
+
+        from enhanced_agent_bus.deliberation_layer.deliberation_queue import DeliberationQueue
+        from enhanced_agent_bus.deliberation_layer.hitl_manager import HITLManager
+        from enhanced_agent_bus.models import AgentMessage, MessageType
 
         class TrackingLedger:
             def __init__(self):
@@ -1192,10 +1195,7 @@ class TestConstitutionalCompliance:
         await manager.request_approval(item_id)
 
         await manager.process_approval(
-            item_id=item_id,
-            reviewer_id="reviewer",
-            decision="approve",
-            reasoning="test"
+            item_id=item_id, reviewer_id="reviewer", decision="approve", reasoning="test"
         )
 
         audit_result = ledger.results[0]
@@ -1228,10 +1228,7 @@ class TestFallbackImportPaths:
         """Test ValidationResult interface from hitl_manager."""
         from enhanced_agent_bus.deliberation_layer.hitl_manager import ValidationResult
 
-        result = ValidationResult(
-            is_valid=True,
-            constitutional_hash="cdd01ef066bc6cf2"
-        )
+        result = ValidationResult(is_valid=True, constitutional_hash="cdd01ef066bc6cf2")
         assert result.is_valid is True
         assert result.constitutional_hash == "cdd01ef066bc6cf2"
 
@@ -1239,11 +1236,7 @@ class TestFallbackImportPaths:
         """Test ValidationResult has to_dict method."""
         from enhanced_agent_bus.deliberation_layer.hitl_manager import ValidationResult
 
-        result = ValidationResult(
-            is_valid=False,
-            errors=["Test error"],
-            metadata={"key": "value"}
-        )
+        result = ValidationResult(is_valid=False, errors=["Test error"], metadata={"key": "value"})
 
         result_dict = result.to_dict()
         assert "is_valid" in result_dict
@@ -1284,8 +1277,8 @@ class TestHITLManagerAdditionalScenarios:
     @pytest.mark.asyncio
     async def test_process_approval_with_various_decisions(self):
         """Test process_approval with different decision types."""
-        from enhanced_agent_bus.deliberation_layer.hitl_manager import HITLManager
         from enhanced_agent_bus.deliberation_layer.deliberation_queue import DeliberationQueue
+        from enhanced_agent_bus.deliberation_layer.hitl_manager import HITLManager
         from enhanced_agent_bus.models import AgentMessage, MessageType
 
         queue = DeliberationQueue()
@@ -1307,7 +1300,7 @@ class TestHITLManagerAdditionalScenarios:
             item_id=item_id,
             reviewer_id="reviewer-123",
             decision="deny",
-            reasoning="Denied for testing"
+            reasoning="Denied for testing",
         )
 
         assert result is True
@@ -1317,8 +1310,9 @@ class TestHITLManagerAdditionalScenarios:
     async def test_request_approval_logs_correctly(self, caplog):
         """Test that request_approval logs notification correctly."""
         import logging
-        from enhanced_agent_bus.deliberation_layer.hitl_manager import HITLManager
+
         from enhanced_agent_bus.deliberation_layer.deliberation_queue import DeliberationQueue
+        from enhanced_agent_bus.deliberation_layer.hitl_manager import HITLManager
         from enhanced_agent_bus.models import AgentMessage, MessageType
 
         with caplog.at_level(logging.INFO):
@@ -1330,7 +1324,7 @@ class TestHITLManagerAdditionalScenarios:
                 to_agent="recipient",
                 message_type=MessageType.COMMAND,
                 content={"action": "test_logging"},
-                impact_score=0.95
+                impact_score=0.95,
             )
 
             item_id = await queue.enqueue_for_deliberation(message)
@@ -1345,8 +1339,9 @@ class TestHITLManagerAdditionalScenarios:
     async def test_process_approval_logs_decision(self, caplog):
         """Test that process_approval logs the decision."""
         import logging
-        from enhanced_agent_bus.deliberation_layer.hitl_manager import HITLManager
+
         from enhanced_agent_bus.deliberation_layer.deliberation_queue import DeliberationQueue
+        from enhanced_agent_bus.deliberation_layer.hitl_manager import HITLManager
         from enhanced_agent_bus.models import AgentMessage, MessageType
 
         with caplog.at_level(logging.INFO):
@@ -1367,20 +1362,22 @@ class TestHITLManagerAdditionalScenarios:
                 item_id=item_id,
                 reviewer_id="reviewer",
                 decision="approve",
-                reasoning="Approved for testing"
+                reasoning="Approved for testing",
             )
 
             # Check that decision was logged
-            assert any("Decision for" in record.message and "recorded" in record.message
-                      for record in caplog.records)
+            assert any(
+                "Decision for" in record.message and "recorded" in record.message
+                for record in caplog.records
+            )
 
             await queue.stop()
 
     @pytest.mark.asyncio
     async def test_multiple_sequential_approvals(self):
         """Test handling multiple sequential approval workflows."""
-        from enhanced_agent_bus.deliberation_layer.hitl_manager import HITLManager
         from enhanced_agent_bus.deliberation_layer.deliberation_queue import DeliberationQueue
+        from enhanced_agent_bus.deliberation_layer.hitl_manager import HITLManager
         from enhanced_agent_bus.models import AgentMessage, MessageType
 
         queue = DeliberationQueue()
@@ -1403,7 +1400,7 @@ class TestHITLManagerAdditionalScenarios:
                 item_id=item_id,
                 reviewer_id=f"reviewer-{i}",
                 decision=decision,
-                reasoning=f"Decision {i}"
+                reasoning=f"Decision {i}",
             )
             assert result is True
 

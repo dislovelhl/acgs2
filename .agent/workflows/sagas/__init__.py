@@ -8,7 +8,7 @@ Saga pattern implementations for distributed transactions:
 - PolicyUpdateSaga: Policy version management with rollback
 """
 
-from .base_saga import BaseSaga, SagaStep, SagaResult
+from .base_saga import BaseSaga, SagaResult, SagaStep
 from .distributed_tx import DistributedTransactionSaga
 from .policy_update import PolicyUpdateSaga
 from .registration import AgentRegistrationSaga

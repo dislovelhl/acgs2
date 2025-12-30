@@ -7,23 +7,24 @@ Provides high-throughput, multi-tenant isolated messaging.
 import asyncio
 import json
 import logging
-from typing import Dict, Any, Optional, List, Callable
-from datetime import datetime, timezone
+from typing import Any, Callable, Dict, List, Optional
 
 try:
-    from aiokafka import AIOKafkaProducer, AIOKafkaConsumer
+    from aiokafka import AIOKafkaConsumer, AIOKafkaProducer
+
     KAFKA_AVAILABLE = True
 except ImportError:
     KAFKA_AVAILABLE = False
 
 try:
-    from .models import AgentMessage, MessageStatus, MessageType
     from .exceptions import MessageDeliveryError
+    from .models import AgentMessage, MessageStatus, MessageType
 except ImportError:
-    from models import AgentMessage, MessageStatus, MessageType  # type: ignore
     from exceptions import MessageDeliveryError  # type: ignore
+    from models import AgentMessage, MessageType  # type: ignore
 
 logger = logging.getLogger(__name__)
+
 
 class KafkaEventBus:
     """
@@ -47,9 +48,9 @@ class KafkaEventBus:
         self.producer = AIOKafkaProducer(
             bootstrap_servers=self.bootstrap_servers,
             client_id=self.client_id,
-            value_serializer=lambda v: json.dumps(v, default=str).encode('utf-8'),
-            acks="all", # Ensure durability for production
-            retry_backoff_ms=500
+            value_serializer=lambda v: json.dumps(v, default=str).encode("utf-8"),
+            acks="all",  # Ensure durability for production
+            retry_backoff_ms=500,
         )
         await self.producer.start()
         self._running = True
@@ -59,7 +60,7 @@ class KafkaEventBus:
         """Stop the Kafka producer and all consumers."""
         self._running = False
         if self.producer:
-            await self.producer.flush() # Ensure all messages are sent
+            await self.producer.flush()  # Ensure all messages are sent
             await self.producer.stop()
         for consumer in self._consumers.values():
             await consumer.stop()
@@ -83,19 +84,15 @@ class KafkaEventBus:
             )
 
         topic = self._get_topic_name(message.tenant_id, message.message_type.name)
-        
+
         # Use conversation_id as partition key to ensure ordering within a session
-        key = message.conversation_id.encode('utf-8') if message.conversation_id else None
-        
+        key = message.conversation_id.encode("utf-8") if message.conversation_id else None
+
         try:
             # Re-convert to dict ensuring all fields are present
             msg_dict = message.to_dict_raw()
-            
-            await self.producer.send_and_wait(
-                topic,
-                value=msg_dict,
-                key=key
-            )
+
+            await self.producer.send_and_wait(topic, value=msg_dict, key=key)
             logger.debug(f"Message {message.message_id} sent to topic {topic}")
             return True
         except Exception as e:
@@ -109,17 +106,17 @@ class KafkaEventBus:
 
         topics = [self._get_topic_name(tenant_id, mt.name) for mt in message_types]
         consumer_id = f"{tenant_id}-{''.join([mt.name for mt in message_types])}"
-        
+
         consumer = AIOKafkaConsumer(
             *topics,
             bootstrap_servers=self.bootstrap_servers,
             group_id=f"{self.client_id}-group-{tenant_id}",
-            value_deserializer=lambda v: json.loads(v.decode('utf-8'))
+            value_deserializer=lambda v: json.loads(v.decode("utf-8")),
         )
-        
+
         self._consumers[consumer_id] = consumer
         await consumer.start()
-        
+
         async def consume_loop():
             try:
                 async for msg in consumer:
@@ -139,10 +136,12 @@ class KafkaEventBus:
         asyncio.create_task(consume_loop())
         logger.info(f"Subscribed to topics: {topics}")
 
+
 class Orchestrator:
     """
     Base class for Orchestrator-Worker pattern.
     """
+
     def __init__(self, bus: KafkaEventBus, tenant_id: str):
         self.bus = bus
         self.tenant_id = tenant_id
@@ -153,14 +152,16 @@ class Orchestrator:
             message_type=MessageType.TASK_REQUEST,
             content=task_data,
             tenant_id=self.tenant_id,
-            to_agent=f"worker-{worker_type}"
+            to_agent=f"worker-{worker_type}",
         )
         await self.bus.send_message(message)
+
 
 class Blackboard:
     """
     Implementation of the Blackboard pattern using Kafka Compacted Topics.
     """
+
     def __init__(self, bus: KafkaEventBus, tenant_id: str, board_name: str):
         self.bus = bus
         self.tenant_id = tenant_id
@@ -173,7 +174,7 @@ class Blackboard:
             message_type=MessageType.EVENT,
             content={"key": key, "value": value},
             tenant_id=self.tenant_id,
-            payload={"blackboard_update": True}
+            payload={"blackboard_update": True},
         )
         # In a real implementation, we'd use a specific Kafka key for compaction
         await self.bus.send_message(message)

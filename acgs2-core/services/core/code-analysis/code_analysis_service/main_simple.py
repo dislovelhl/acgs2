@@ -10,12 +10,12 @@ Service Port: 8007
 import logging
 import os
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any
 
+import uvicorn
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-import uvicorn
 
 # Constitutional hash constant
 CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"

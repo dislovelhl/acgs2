@@ -9,9 +9,9 @@
 """
 
 import json
-import time
-from typing import Dict, List, Optional, Any, Tuple
 import logging
+import time
+from typing import Any, Dict, List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -62,8 +62,9 @@ class ZKPClient:
             logger.error(f"Failed to compile circuit: {e}")
             return False
 
-    def generate_proof(self, inputs: Dict[str, Any],
-                      witness_path: Optional[str] = None) -> Optional[Dict[str, Any]]:
+    def generate_proof(
+        self, inputs: Dict[str, Any], witness_path: Optional[str] = None
+    ) -> Optional[Dict[str, Any]]:
         """
         生成零知识证明
 
@@ -91,20 +92,21 @@ class ZKPClient:
             # 模拟证明生成
             proof_data = {
                 "pi_a": [self._mock_field_element(), self._mock_field_element()],
-                "pi_b": [[self._mock_field_element(), self._mock_field_element()],
-                        [self._mock_field_element(), self._mock_field_element()]],
+                "pi_b": [
+                    [self._mock_field_element(), self._mock_field_element()],
+                    [self._mock_field_element(), self._mock_field_element()],
+                ],
                 "pi_c": [self._mock_field_element(), self._mock_field_element()],
                 "protocol": "groth16",
-                "curve": "bn128"
+                "curve": "bn128",
             }
 
-            public_signals = [inputs.get('merkleRoot', '0x0'),
-                            inputs.get('expectedHash', '0x0')]
+            public_signals = [inputs.get("merkleRoot", "0x0"), inputs.get("expectedHash", "0x0")]
 
             result = {
                 "proof": proof_data,
                 "publicSignals": public_signals,
-                "generated_at": int(time.time())
+                "generated_at": int(time.time()),
             }
 
             logger.info("Generated ZKP proof")
@@ -114,8 +116,7 @@ class ZKPClient:
             logger.error(f"Failed to generate proof: {e}")
             return None
 
-    def verify_proof(self, proof: Dict[str, Any],
-                    public_signals: List[str]) -> bool:
+    def verify_proof(self, proof: Dict[str, Any], public_signals: List[str]) -> bool:
         """
         验证零知识证明
 
@@ -140,8 +141,9 @@ class ZKPClient:
             logger.error(f"Failed to verify proof: {e}")
             return False
 
-    def generate_audit_proof(self, audit_data: Dict[str, Any],
-                           merkle_proof: List[Tuple[str, bool]]) -> Optional[Dict[str, Any]]:
+    def generate_audit_proof(
+        self, audit_data: Dict[str, Any], merkle_proof: List[Tuple[str, bool]]
+    ) -> Optional[Dict[str, Any]]:
         """
         生成审计数据的零知识证明
 
@@ -161,7 +163,7 @@ class ZKPClient:
                 "maxValue": audit_data.get("max_value", 1000),
                 "dataValue": audit_data.get("data_value", 500),
                 "pathElements": [elem for elem, _ in merkle_proof],
-                "pathIndices": [1 if is_left else 0 for _, is_left in merkle_proof]
+                "pathIndices": [1 if is_left else 0 for _, is_left in merkle_proof],
             }
 
             return self.generate_proof(inputs)
@@ -170,7 +172,9 @@ class ZKPClient:
             logger.error(f"Failed to generate audit proof: {e}")
             return None
 
-    def batch_generate_proofs(self, audit_batch: List[Dict[str, Any]]) -> List[Optional[Dict[str, Any]]]:
+    def batch_generate_proofs(
+        self, audit_batch: List[Dict[str, Any]]
+    ) -> List[Optional[Dict[str, Any]]]:
         """
         批量生成证明
 
@@ -182,8 +186,7 @@ class ZKPClient:
         """
         proofs = []
         for audit_data in audit_batch:
-            proof = self.generate_audit_proof(audit_data,
-                                            audit_data.get("merkle_proof", []))
+            proof = self.generate_audit_proof(audit_data, audit_data.get("merkle_proof", []))
             proofs.append(proof)
 
         logger.info(f"Generated {len(proofs)} ZKP proofs in batch")
@@ -192,6 +195,7 @@ class ZKPClient:
     def _mock_field_element(self) -> str:
         """生成模拟的有限域元素"""
         import random
+
         return hex(random.randint(1, 2**256 - 1))
 
     def get_proof_stats(self) -> Dict[str, Any]:
@@ -207,7 +211,7 @@ class ZKPClient:
             "protocol": "groth16",
             "curve": "bn128",
             "estimated_proof_time": "< 10ms",  # 目标性能
-            "proof_size": "~128 bytes"
+            "proof_size": "~128 bytes",
         }
 
     def export_verification_key(self, output_path: str) -> bool:
@@ -228,17 +232,25 @@ class ZKPClient:
                 "curve": "bn128",
                 "nPublic": 2,
                 "vk_alpha_1": [self._mock_field_element(), self._mock_field_element()],
-                "vk_beta_2": [[self._mock_field_element(), self._mock_field_element()],
-                             [self._mock_field_element(), self._mock_field_element()]],
-                "vk_gamma_2": [[self._mock_field_element(), self._mock_field_element()],
-                              [self._mock_field_element(), self._mock_field_element()]],
-                "vk_delta_2": [[self._mock_field_element(), self._mock_field_element()],
-                              [self._mock_field_element(), self._mock_field_element()]],
-                "vk_alphabeta_12": [[self._mock_field_element(), self._mock_field_element()],
-                                   [self._mock_field_element(), self._mock_field_element()]]
+                "vk_beta_2": [
+                    [self._mock_field_element(), self._mock_field_element()],
+                    [self._mock_field_element(), self._mock_field_element()],
+                ],
+                "vk_gamma_2": [
+                    [self._mock_field_element(), self._mock_field_element()],
+                    [self._mock_field_element(), self._mock_field_element()],
+                ],
+                "vk_delta_2": [
+                    [self._mock_field_element(), self._mock_field_element()],
+                    [self._mock_field_element(), self._mock_field_element()],
+                ],
+                "vk_alphabeta_12": [
+                    [self._mock_field_element(), self._mock_field_element()],
+                    [self._mock_field_element(), self._mock_field_element()],
+                ],
             }
 
-            with open(output_path, 'w') as f:
+            with open(output_path, "w") as f:
                 json.dump(mock_vk, f, indent=2)
 
             logger.info(f"Exported verification key to {output_path}")

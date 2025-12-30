@@ -6,47 +6,43 @@ Message processing with constitutional validation, multi-strategy support,
 comprehensive metrics instrumentation, and production billing metering.
 """
 
-import asyncio
 import hashlib
 import logging
 import re
 import time
 from collections import OrderedDict
-from datetime import datetime, timezone
 from typing import Any, Callable, Dict, List, Optional
 
 # Import Prometheus metrics with fallback
 try:
     from shared.metrics import (
-        MESSAGE_PROCESSING_DURATION,
-        MESSAGES_TOTAL,
-        MESSAGE_QUEUE_DEPTH,
+        CONSTITUTIONAL_VALIDATION_DURATION,
         CONSTITUTIONAL_VALIDATIONS_TOTAL,
         CONSTITUTIONAL_VIOLATIONS_TOTAL,
-        CONSTITUTIONAL_VALIDATION_DURATION,
+        MESSAGE_PROCESSING_DURATION,
+        MESSAGE_QUEUE_DEPTH,
+        MESSAGES_TOTAL,
     )
+
     METRICS_ENABLED = True
 except ImportError:
     METRICS_ENABLED = False
 
 # Import OpenTelemetry with fallback
 try:
-    from opentelemetry import trace, metrics
+    from opentelemetry import metrics, trace
     from opentelemetry.trace import Status, StatusCode
+
     OTEL_ENABLED = True
     tracer = trace.get_tracer(__name__)
     meter = metrics.get_meter(__name__)
 
     DECISION_COUNTER = meter.create_counter(
-        "acgs2.decisions.total",
-        description="Total number of agent decisions",
-        unit="1"
+        "acgs2.decisions.total", description="Total number of agent decisions", unit="1"
     )
 
     MESSAGE_LATENCY = meter.create_histogram(
-        "acgs2.message.latency",
-        description="Message processing latency",
-        unit="ms"
+        "acgs2.message.latency", description="Message processing latency", unit="ms"
     )
 except ImportError:
     OTEL_ENABLED = False
@@ -59,56 +55,65 @@ try:
         get_circuit_breaker,
         with_circuit_breaker,
     )
+
     CIRCUIT_BREAKER_ENABLED = True
 except ImportError:
     CIRCUIT_BREAKER_ENABLED = False
 
 try:
-    from .models import (
-        AgentMessage,
-        MessageType,
-        Priority,
-        CONSTITUTIONAL_HASH,
-        DecisionLog,
-    )
-    from .validators import ValidationResult
     from .exceptions import ConstitutionalHashMismatchError
     from .interfaces import ProcessingStrategy
-    from .registry import (
-        StaticHashValidationStrategy,
-        DynamicPolicyValidationStrategy,
-        RustValidationStrategy,
-        PythonProcessingStrategy,
-        RustProcessingStrategy,
-        OPAProcessingStrategy,
-        OPAValidationStrategy,
-        CompositeProcessingStrategy,
-    )
-except ImportError:
-    from models import (
+    from .models import (
+        CONSTITUTIONAL_HASH,
         AgentMessage,
+        DecisionLog,
         MessageType,
         Priority,
-        CONSTITUTIONAL_HASH,
-        DecisionLog,
     )
-    from validators import ValidationResult
-    from exceptions import ConstitutionalHashMismatchError
-    from interfaces import ProcessingStrategy
-    from registry import (
-        StaticHashValidationStrategy,
+    from .registry import (
+        CompositeProcessingStrategy,
         DynamicPolicyValidationStrategy,
-        RustValidationStrategy,
-        PythonProcessingStrategy,
-        RustProcessingStrategy,
         OPAProcessingStrategy,
         OPAValidationStrategy,
-        CompositeProcessingStrategy,
+        PythonProcessingStrategy,
+        RustProcessingStrategy,
+        RustValidationStrategy,
+        StaticHashValidationStrategy,
     )
+    from .validators import ValidationResult
+except ImportError:
+    from interfaces import ProcessingStrategy
+    from models import (
+        CONSTITUTIONAL_HASH,
+        AgentMessage,
+        DecisionLog,
+        MessageType,
+        Priority,
+    )
+    from registry import (
+        CompositeProcessingStrategy,
+        OPAProcessingStrategy,
+        OPAValidationStrategy,
+        PythonProcessingStrategy,
+        RustProcessingStrategy,
+        RustValidationStrategy,
+        StaticHashValidationStrategy,
+    )
+    from validators import ValidationResult
+
+# Import intent classification for SDPC
+from .deliberation_layer.intent_classifier import IntentClassifier, IntentType
+
+# Import SDPC Phase 2 verifiers
+from .sdpc.asc_verifier import ASCVerifier
+from .sdpc.evolution_controller import EvolutionController
+from .sdpc.graph_check import GraphCheckVerifier
+from .sdpc.pacar_verifier import PACARVerifier
 
 # Import policy client for dynamic validation
 try:
-    from .policy_client import get_policy_client, PolicyClient
+    from .policy_client import PolicyClient, get_policy_client
+
     POLICY_CLIENT_AVAILABLE = True
 except ImportError:
     POLICY_CLIENT_AVAILABLE = False
@@ -117,18 +122,24 @@ except ImportError:
     def get_policy_client(fail_closed: Optional[bool] = None):
         return None
 
+
 # Import OPA client
 try:
-    from .opa_client import get_opa_client, OPAClient
+    from .opa_client import OPAClient, get_opa_client
+
     OPA_CLIENT_AVAILABLE = True
 except ImportError:
     OPA_CLIENT_AVAILABLE = False
     OPAClient = None
-    def get_opa_client(): return None
+
+    def get_opa_client():
+        return None
+
 
 # Import Rust implementation
 try:
     import enhanced_agent_bus_rust as rust_bus
+
     USE_RUST = True
 except ImportError:
     USE_RUST = False
@@ -137,10 +148,12 @@ except ImportError:
 # Import Audit Client
 try:
     from shared.audit_client import AuditClient
+
     AUDIT_CLIENT_AVAILABLE = True
 except ImportError:
     try:
         from .audit_client import AuditClient
+
         AUDIT_CLIENT_AVAILABLE = True
     except ImportError:
         AUDIT_CLIENT_AVAILABLE = False
@@ -149,20 +162,20 @@ except ImportError:
 # Import Metering Integration
 try:
     from .metering_integration import (
-        MeteringHooks,
-        MeteringConfig,
-        AsyncMeteringQueue,
-        get_metering_hooks,
         METERING_AVAILABLE,
+        AsyncMeteringQueue,
+        MeteringConfig,
+        MeteringHooks,
+        get_metering_hooks,
     )
 except ImportError:
     try:
         from metering_integration import (
-            MeteringHooks,
-            MeteringConfig,
-            AsyncMeteringQueue,
-            get_metering_hooks,
             METERING_AVAILABLE,
+            AsyncMeteringQueue,
+            MeteringConfig,
+            MeteringHooks,
+            get_metering_hooks,
         )
     except ImportError:
         METERING_AVAILABLE = False
@@ -190,6 +203,7 @@ _INJECTION_RE = re.compile("|".join(PROMPT_INJECTION_PATTERNS), re.IGNORECASE)
 
 class LRUCache:
     """Simple LRU cache for validation results."""
+
     def __init__(self, maxsize: int = 1000):
         self._cache = OrderedDict()
         self._maxsize = maxsize
@@ -206,6 +220,10 @@ class LRUCache:
         self._cache[key] = value
         if len(self._cache) > self._maxsize:
             self._cache.popitem(last=False)
+
+    def clear(self) -> None:
+        """Clears all items from the cache."""
+        self._cache.clear()
 
 
 class MessageProcessor:
@@ -233,7 +251,7 @@ class MessageProcessor:
         audit_client: Optional[AuditClient] = None,
         use_rust: bool = True,
         isolated_mode: bool = False,
-        metering_hooks: Optional['MeteringHooks'] = None,
+        metering_hooks: Optional["MeteringHooks"] = None,
         enable_metering: bool = True,
         # SECURITY FIX (audit finding 2025-12): MACI enabled by default
         enable_maci: bool = True,
@@ -258,7 +276,9 @@ class MessageProcessor:
             maci_strict_mode: If True, fail-closed on MACI errors.
         """
         self._isolated_mode = isolated_mode
-        self._use_dynamic_policy = use_dynamic_policy and POLICY_CLIENT_AVAILABLE and not isolated_mode
+        self._use_dynamic_policy = (
+            use_dynamic_policy and POLICY_CLIENT_AVAILABLE and not isolated_mode
+        )
         self._policy_fail_closed = policy_fail_closed
         self._use_rust = use_rust
         self._handlers: Dict[MessageType, List[Callable]] = {}
@@ -305,6 +325,16 @@ class MessageProcessor:
         # Persistence (Audit Client)
         self._audit_client = audit_client
 
+        # SDPC Components (Phase 1, 2, & 3)
+        self.evolution_controller = EvolutionController()
+        self.intent_classifier = IntentClassifier()
+        from .sdpc.ampo_engine import AMPOEngine
+
+        self.ampo_engine = AMPOEngine(evolution_controller=self.evolution_controller)
+        self.asc_verifier = ASCVerifier()
+        self.graph_check = GraphCheckVerifier()
+        self.pacar_verifier = PACARVerifier()
+
         # Performance: Validation Cache
         self._validation_cache = LRUCache(maxsize=1000)
 
@@ -327,12 +357,12 @@ class MessageProcessor:
             self._handlers[message_type].remove(handler)
             return True
         return False
+
     def _auto_select_strategy(self) -> ProcessingStrategy:
         """Auto-select the appropriate processing strategy based on configuration."""
         py_val_strategy = StaticHashValidationStrategy(strict=True)
         py_proc_strategy = PythonProcessingStrategy(
-            validation_strategy=py_val_strategy,
-            metrics_enabled=METRICS_ENABLED
+            validation_strategy=py_val_strategy, metrics_enabled=METRICS_ENABLED
         )
 
         if self._isolated_mode:
@@ -347,7 +377,7 @@ class MessageProcessor:
             rust_proc_strategy = RustProcessingStrategy(
                 rust_processor=self._rust_processor,
                 rust_bus=rust_bus,
-                validation_strategy=rust_val_strategy
+                validation_strategy=rust_val_strategy,
             )
             strategies.append(rust_proc_strategy)
 
@@ -355,8 +385,7 @@ class MessageProcessor:
         if self._use_dynamic_policy and self._opa_client is not None:
             opa_val_strategy = OPAValidationStrategy(opa_client=self._opa_client)
             opa_proc_strategy = OPAProcessingStrategy(
-                opa_client=self._opa_client,
-                validation_strategy=opa_val_strategy
+                opa_client=self._opa_client, validation_strategy=opa_val_strategy
             )
             strategies.append(opa_proc_strategy)
 
@@ -373,6 +402,7 @@ class MessageProcessor:
         if self._enable_maci:
             try:
                 from .processing_strategies import MACIProcessingStrategy
+
                 logger.info("Wrapping strategy with MACI role separation enforcement")
                 return MACIProcessingStrategy(
                     inner_strategy=base_strategy,
@@ -395,28 +425,34 @@ class MessageProcessor:
                     "tenant.id": message.tenant_id or "default",
                     "message.type": message.message_type.value,
                     "message.priority": message.priority.value,
-                    "constitutional.hash": message.constitutional_hash
-                }
+                    "constitutional.hash": message.constitutional_hash,
+                },
             ) as span:
                 start_time = time.perf_counter()
 
                 result = await self._do_process(message)
 
                 latency_ms = (time.perf_counter() - start_time) * 1000
-                MESSAGE_LATENCY.record(latency_ms, {
-                    "tenant_id": message.tenant_id or "default",
-                    "message_type": message.message_type.value
-                })
+                MESSAGE_LATENCY.record(
+                    latency_ms,
+                    {
+                        "tenant_id": message.tenant_id or "default",
+                        "message_type": message.message_type.value,
+                    },
+                )
 
                 span.set_attribute("decision.valid", result.is_valid)
                 if not result.is_valid:
                     span.set_status(Status(StatusCode.ERROR, ", ".join(result.errors)))
 
-                DECISION_COUNTER.add(1, {
-                    "tenant_id": message.tenant_id or "default",
-                    "decision": "ALLOW" if result.is_valid else "DENY",
-                    "message_type": message.message_type.value
-                })
+                DECISION_COUNTER.add(
+                    1,
+                    {
+                        "tenant_id": message.tenant_id or "default",
+                        "decision": "ALLOW" if result.is_valid else "DENY",
+                        "message_type": message.message_type.value,
+                    },
+                )
 
                 self._log_decision(message, result, span)
 
@@ -445,7 +481,9 @@ class MessageProcessor:
         cached_result = self._validation_cache.get(cache_key)
         if cached_result:
             # Update processing latency for metadata
-            cached_result.metadata["processing_latency_ms"] = (time.perf_counter() - process_start) * 1000
+            cached_result.metadata["processing_latency_ms"] = (
+                time.perf_counter() - process_start
+            ) * 1000
             cached_result.metadata["cache_hit"] = True
             return cached_result
 
@@ -463,6 +501,10 @@ class MessageProcessor:
 
         # 4. Impact Scoring
         self._apply_impact_scoring(message, result)
+
+        # SDPC Phase 2: Verification Layer
+        if result.is_valid:
+            await self._verify_sdpc_phase2(message, result)
 
         if result.is_valid:
             self._processed_count += 1
@@ -492,14 +534,14 @@ class MessageProcessor:
 
         try:
             self._metering_hooks.on_constitutional_validation(
-                tenant_id=message.tenant_id or 'default',
+                tenant_id=message.tenant_id or "default",
                 agent_id=message.from_agent,
                 is_valid=is_valid,
                 latency_ms=latency_ms,
                 metadata={
-                    'message_type': message.message_type.value,
-                    'priority': message.priority.value,
-                    'constitutional_hash': self.constitutional_hash,
+                    "message_type": message.message_type.value,
+                    "priority": message.priority.value,
+                    "constitutional_hash": self.constitutional_hash,
                 },
             )
         except Exception as e:
@@ -547,8 +589,8 @@ class MessageProcessor:
                 metadata={
                     "rejection_reason": "prompt_injection",
                     "pattern_matched": "consolidated_regex",
-                    "constitutional_hash": self.constitutional_hash
-                }
+                    "constitutional_hash": self.constitutional_hash,
+                },
             )
         return None
 
@@ -575,8 +617,8 @@ class MessageProcessor:
             metadata={
                 "message_id": message.message_id,
                 "message_type": message.message_type.value,
-                **result.metadata
-            }
+                **result.metadata,
+            },
         )
 
         if span:
@@ -614,7 +656,8 @@ class MessageProcessor:
         metrics = {
             "processed_count": self._processed_count,
             "failed_count": self._failed_count,
-            "success_rate": self._processed_count / max(1, self._processed_count + self._failed_count),
+            "success_rate": self._processed_count
+            / max(1, self._processed_count + self._failed_count),
             "rust_enabled": self._rust_processor is not None,
             "dynamic_policy_enabled": self._use_dynamic_policy,
             "opa_enabled": self._opa_client is not None,
@@ -623,7 +666,7 @@ class MessageProcessor:
         }
 
         # Include metering queue metrics if available
-        if self._metering_hooks and hasattr(self._metering_hooks, '_queue'):
+        if self._metering_hooks and hasattr(self._metering_hooks, "_queue"):
             metrics["metering_metrics"] = self._metering_hooks._queue.get_metrics()
 
         return metrics
@@ -632,3 +675,57 @@ class MessageProcessor:
     def processing_strategy(self) -> ProcessingStrategy:
         """Get the processing strategy."""
         return self._processing_strategy
+
+    async def _verify_sdpc_phase2(self, message: AgentMessage, result: ValidationResult) -> None:
+        """
+        Execute SDPC Phase 2 multi-layer verification.
+        Adds verification metadata to the processing result.
+
+        Constitutional Hash: cdd01ef066bc6cf2
+        """
+        try:
+            content_str = str(message.content)
+
+            # 1. Intent Classification (Phase 1)
+            intent = self.intent_classifier.classify(content_str)
+            result.metadata["sdpc_intent"] = intent.value
+
+            # 2. Layer 1: Atomic Self-Consistency (ASC)
+            # Only for FACTUAL and REASONING intents
+            asc_result = await self.asc_verifier.verify(content_str, intent)
+            result.metadata["sdpc_asc_valid"] = asc_result.get("is_valid", True)
+            result.metadata["sdpc_asc_confidence"] = asc_result.get("confidence", 0.0)
+
+            # 3. Layer 2: Knowledge Graph Grounding (GraphCheck)
+            # Only for high-impact or factual messages
+            impact_score = message.impact_score or result.metadata.get("impact_score", 0.0)
+            if intent == IntentType.FACTUAL or (impact_score and impact_score > 0.7):
+                graph_result = await self.graph_check.verify_entities(content_str)
+                result.metadata["sdpc_graph_grounded"] = graph_result.get("is_valid", True)
+                result.metadata["sdpc_graph_results"] = graph_result.get("results", [])
+
+            # 4. Layer 3: Agentic Verification (PACAR)
+            # Only for high-impact messages (Deliberation Path)
+            if impact_score and impact_score >= 0.8:
+                pacar_result = await self.pacar_verifier.verify(content_str, intent.value)
+                result.metadata["sdpc_pacar_valid"] = pacar_result.get("is_valid", True)
+                result.metadata["sdpc_pacar_confidence"] = pacar_result.get("confidence", 0.0)
+
+                # If PACAR finds critical issues, log warning
+                if not pacar_result.get("is_valid") and pacar_result.get("confidence", 0.0) > 0.8:
+                    logger.warning(
+                        f"CRITICAL: SDPC PACAR verification failed for message {message.message_id}"
+                    )
+                    result.metadata["sdpc_verification_critical_fail"] = True
+
+            # Phase 3: Record feedback for Evolutionary Loop
+            feedback = {
+                "asc": result.metadata.get("sdpc_asc_valid", True),
+                "graph": result.metadata.get("sdpc_graph_grounded", True),
+                "pacar": result.metadata.get("sdpc_pacar_valid", True),
+            }
+            self.evolution_controller.record_feedback(intent, feedback)
+
+        except Exception as e:
+            logger.error(f"SDPC Phase 2 verification failed: {e}")
+            result.metadata["sdpc_verification_error"] = str(e)

@@ -5,14 +5,10 @@ Constitutional Hash: cdd01ef066bc6cf2
 Comprehensive tests for Vault/OpenBao cryptographic service integration.
 """
 
-import asyncio
 import base64
-import hashlib
-import json
 import os
 import sys
-from datetime import datetime, timezone
-from typing import Any, Dict
+from datetime import datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -27,13 +23,13 @@ if app_dir not in sys.path:
 
 # Import the service
 from app.services.vault_crypto_service import (
-    VaultCryptoService,
+    CONSTITUTIONAL_HASH,
+    VaultAuditEntry,
     VaultConfig,
+    VaultCryptoService,
     VaultKeyType,
     VaultOperation,
-    VaultAuditEntry,
     create_vault_crypto_service,
-    CONSTITUTIONAL_HASH,
 )
 
 
@@ -166,7 +162,9 @@ class TestVaultCryptoServiceInitialize:
         assert result["constitutional_hash"] == CONSTITUTIONAL_HASH
 
     @pytest.mark.asyncio
-    async def test_initialize_with_httpx(self, vault_config, mock_httpx_client, mock_health_response):
+    async def test_initialize_with_httpx(
+        self, vault_config, mock_httpx_client, mock_health_response
+    ):
         """Test initialization with httpx client."""
         service = VaultCryptoService(config=vault_config)
 
@@ -866,6 +864,7 @@ class TestVaultCryptoServiceIntegration:
     async def test_real_vault_key_operations(self, vault_available):
         """Test real Vault key operations."""
         import uuid
+
         key_name = f"integration-test-{uuid.uuid4().hex[:8]}"
 
         service = VaultCryptoService(fallback_enabled=False)

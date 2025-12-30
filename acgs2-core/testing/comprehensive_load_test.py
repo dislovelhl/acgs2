@@ -22,16 +22,16 @@ import os
 import statistics
 import sys
 import time
-from collections import defaultdict
-from datetime import datetime, timezone, timedelta
-from typing import Dict, List, Any, Optional, Tuple
-from dataclasses import dataclass, asdict
+from dataclasses import asdict, dataclass
+from datetime import datetime, timezone
+from typing import Any, Dict, List
 
 # Add project root to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 try:
     import aiohttp
+
     AIOHTTP_AVAILABLE = True
 except ImportError:
     AIOHTTP_AVAILABLE = False
@@ -40,9 +40,9 @@ except ImportError:
 try:
     from shared.constants import (
         CONSTITUTIONAL_HASH,
-        P99_LATENCY_TARGET_MS,
-        MIN_THROUGHPUT_RPS,
         MIN_CACHE_HIT_RATE,
+        MIN_THROUGHPUT_RPS,
+        P99_LATENCY_TARGET_MS,
     )
 except ImportError:
     # Fallback for standalone usage
@@ -53,15 +53,16 @@ except ImportError:
 
 # Baseline metrics from previous testing
 BASELINE_METRICS = {
-    'p99_latency_ms': 0.328,
-    'throughput_rps': 2605,
-    'cache_hit_rate': 0.95,
+    "p99_latency_ms": 0.328,
+    "throughput_rps": 2605,
+    "cache_hit_rate": 0.95,
 }
 
 
 @dataclass
 class LoadTestResult:
     """Individual load test result."""
+
     test_name: str
     component: str
     iterations: int
@@ -83,9 +84,9 @@ class LoadTestResult:
     def meets_targets(self) -> bool:
         """Check if results meet performance targets."""
         return (
-            self.p99_latency_ms < P99_LATENCY_TARGET_MS and
-            self.throughput_rps >= MIN_THROUGHPUT_RPS and
-            self.success_rate >= 0.95
+            self.p99_latency_ms < P99_LATENCY_TARGET_MS
+            and self.throughput_rps >= MIN_THROUGHPUT_RPS
+            and self.success_rate >= 0.95
         )
 
     def vs_baseline(self) -> Dict[str, float]:
@@ -94,20 +95,31 @@ class LoadTestResult:
             return {}
 
         return {
-            'p99_latency_improvement': (
-                (BASELINE_METRICS['p99_latency_ms'] - self.p99_latency_ms) /
-                BASELINE_METRICS['p99_latency_ms'] * 100
-            ) if BASELINE_METRICS.get('p99_latency_ms') else 0,
-            'throughput_improvement': (
-                (self.throughput_rps - BASELINE_METRICS['throughput_rps']) /
-                BASELINE_METRICS['throughput_rps'] * 100
-            ) if BASELINE_METRICS.get('throughput_rps') else 0,
+            "p99_latency_improvement": (
+                (
+                    (BASELINE_METRICS["p99_latency_ms"] - self.p99_latency_ms)
+                    / BASELINE_METRICS["p99_latency_ms"]
+                    * 100
+                )
+                if BASELINE_METRICS.get("p99_latency_ms")
+                else 0
+            ),
+            "throughput_improvement": (
+                (
+                    (self.throughput_rps - BASELINE_METRICS["throughput_rps"])
+                    / BASELINE_METRICS["throughput_rps"]
+                    * 100
+                )
+                if BASELINE_METRICS.get("throughput_rps")
+                else 0
+            ),
         }
 
 
 @dataclass
 class LoadTestReport:
     """Complete load test report."""
+
     test_suite_name: str
     start_time: datetime
     end_time: datetime
@@ -126,19 +138,21 @@ class LoadTestReport:
         all_throughputs = [r.throughput_rps for r in self.results]
 
         return {
-            'total_tests': len(self.results),
-            'total_iterations': total_iterations,
-            'total_successful': total_successful,
-            'total_failed': total_failed,
-            'overall_success_rate': total_successful / total_iterations if total_iterations > 0 else 0,
-            'best_p99_latency_ms': min(all_p99_latencies) if all_p99_latencies else 0,
-            'worst_p99_latency_ms': max(all_p99_latencies) if all_p99_latencies else 0,
-            'avg_p99_latency_ms': statistics.mean(all_p99_latencies) if all_p99_latencies else 0,
-            'best_throughput_rps': max(all_throughputs) if all_throughputs else 0,
-            'worst_throughput_rps': min(all_throughputs) if all_throughputs else 0,
-            'avg_throughput_rps': statistics.mean(all_throughputs) if all_throughputs else 0,
-            'tests_meeting_targets': sum(1 for r in self.results if r.meets_targets()),
-            'tests_failing_targets': sum(1 for r in self.results if not r.meets_targets()),
+            "total_tests": len(self.results),
+            "total_iterations": total_iterations,
+            "total_successful": total_successful,
+            "total_failed": total_failed,
+            "overall_success_rate": (
+                total_successful / total_iterations if total_iterations > 0 else 0
+            ),
+            "best_p99_latency_ms": min(all_p99_latencies) if all_p99_latencies else 0,
+            "worst_p99_latency_ms": max(all_p99_latencies) if all_p99_latencies else 0,
+            "avg_p99_latency_ms": statistics.mean(all_p99_latencies) if all_p99_latencies else 0,
+            "best_throughput_rps": max(all_throughputs) if all_throughputs else 0,
+            "worst_throughput_rps": min(all_throughputs) if all_throughputs else 0,
+            "avg_throughput_rps": statistics.mean(all_throughputs) if all_throughputs else 0,
+            "tests_meeting_targets": sum(1 for r in self.results if r.meets_targets()),
+            "tests_failing_targets": sum(1 for r in self.results if not r.meets_targets()),
         }
 
 
@@ -151,13 +165,11 @@ class EnhancedAgentBusLoadTester:
         self.errors: List[str] = []
 
     async def test_message_processing(
-        self,
-        iterations: int = 1000,
-        concurrent_users: int = 10
+        self, iterations: int = 1000, concurrent_users: int = 10
     ) -> LoadTestResult:
         """Test message processing performance under load."""
         print(f"\n{'='*60}")
-        print(f"Testing Enhanced Agent Bus Message Processing")
+        print("Testing Enhanced Agent Bus Message Processing")
         print(f"Iterations: {iterations}, Concurrent Users: {concurrent_users}")
         print(f"{'='*60}")
 
@@ -167,9 +179,9 @@ class EnhancedAgentBusLoadTester:
 
         # Import here to avoid circular dependencies
         try:
-            sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'enhanced_agent_bus'))
+            sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "enhanced_agent_bus"))
             from core import EnhancedAgentBus
-            from models import AgentMessage, MessageType, MessagePriority
+            from models import AgentMessage, MessagePriority, MessageType
 
             # Create bus instance
             bus = EnhancedAgentBus(
@@ -204,7 +216,7 @@ class EnhancedAgentBusLoadTester:
                     return latency_ms
                 except Exception as e:
                     self.errors.append(str(e))
-                    return float('inf')
+                    return float("inf")
 
             # Run concurrent batches
             batch_size = iterations // concurrent_users
@@ -227,7 +239,7 @@ class EnhancedAgentBusLoadTester:
         duration = end_time - start_time
 
         # Calculate statistics
-        valid_results = [r for r in self.results if r != float('inf')]
+        valid_results = [r for r in self.results if r != float("inf")]
 
         if not valid_results:
             return LoadTestResult(
@@ -280,7 +292,7 @@ class EnhancedAgentBusLoadTester:
         print(f"  Successful: {result.successful} ({result.success_rate:.1%})")
         print(f"  Failed: {result.failed}")
         print(f"  Throughput: {result.throughput_rps:.2f} RPS")
-        print(f"  Latency (ms):")
+        print("  Latency (ms):")
         print(f"    Min:    {result.min_latency_ms:.3f}")
         print(f"    Mean:   {result.mean_latency_ms:.3f}")
         print(f"    Median: {result.median_latency_ms:.3f}")
@@ -294,14 +306,18 @@ class EnhancedAgentBusLoadTester:
 
         if not meets_targets:
             if result.p99_latency_ms >= P99_LATENCY_TARGET_MS:
-                print(f"    ⚠ P99 latency {result.p99_latency_ms:.3f}ms exceeds target {P99_LATENCY_TARGET_MS}ms")
+                print(
+                    f"    ⚠ P99 latency {result.p99_latency_ms:.3f}ms exceeds target {P99_LATENCY_TARGET_MS}ms"
+                )
             if result.throughput_rps < MIN_THROUGHPUT_RPS:
-                print(f"    ⚠ Throughput {result.throughput_rps:.2f} RPS below target {MIN_THROUGHPUT_RPS} RPS")
+                print(
+                    f"    ⚠ Throughput {result.throughput_rps:.2f} RPS below target {MIN_THROUGHPUT_RPS} RPS"
+                )
 
         # Compare with baseline
         vs_baseline = result.vs_baseline()
         if vs_baseline:
-            print(f"  vs Baseline:")
+            print("  vs Baseline:")
             print(f"    P99 Latency: {vs_baseline['p99_latency_improvement']:+.1f}%")
             print(f"    Throughput:  {vs_baseline['throughput_improvement']:+.1f}%")
 
@@ -316,22 +332,18 @@ class DashboardAPILoadTester:
         self.errors: List[str] = []
 
     async def test_overview_endpoint(
-        self,
-        iterations: int = 1000,
-        concurrent_users: int = 10
+        self, iterations: int = 1000, concurrent_users: int = 10
     ) -> LoadTestResult:
         """Test dashboard overview endpoint."""
         print(f"\n{'='*60}")
-        print(f"Testing Dashboard API /overview Endpoint")
+        print("Testing Dashboard API /overview Endpoint")
         print(f"Iterations: {iterations}, Concurrent Users: {concurrent_users}")
         print(f"{'='*60}")
 
         if not AIOHTTP_AVAILABLE:
             print("Warning: aiohttp not available, using mock results")
             return self._generate_mock_result(
-                "Dashboard API /overview",
-                "dashboard_api",
-                iterations
+                "Dashboard API /overview", "dashboard_api", iterations
             )
 
         self.results = []
@@ -350,7 +362,7 @@ class DashboardAPILoadTester:
                     return latency_ms
             except Exception as e:
                 self.errors.append(str(e))
-                return float('inf')
+                return float("inf")
 
         try:
             async with aiohttp.ClientSession() as session:
@@ -365,33 +377,24 @@ class DashboardAPILoadTester:
         except Exception as e:
             print(f"Warning: Dashboard API not available: {e}")
             return self._generate_mock_result(
-                "Dashboard API /overview",
-                "dashboard_api",
-                iterations
+                "Dashboard API /overview", "dashboard_api", iterations
             )
 
         end_time = time.perf_counter()
         duration = end_time - start_time
 
         result = self._calculate_result(
-            "Dashboard API /overview",
-            "dashboard_api",
-            iterations,
-            duration
+            "Dashboard API /overview", "dashboard_api", iterations, duration
         )
 
         self._print_result(result)
         return result
 
     def _calculate_result(
-        self,
-        test_name: str,
-        component: str,
-        iterations: int,
-        duration: float
+        self, test_name: str, component: str, iterations: int, duration: float
     ) -> LoadTestResult:
         """Calculate test result from collected data."""
-        valid_results = [r for r in self.results if r != float('inf')]
+        valid_results = [r for r in self.results if r != float("inf")]
 
         if not valid_results:
             return LoadTestResult(
@@ -435,10 +438,7 @@ class DashboardAPILoadTester:
         )
 
     def _generate_mock_result(
-        self,
-        test_name: str,
-        component: str,
-        iterations: int
+        self, test_name: str, component: str, iterations: int
     ) -> LoadTestResult:
         """Generate mock result for testing when services unavailable."""
         # Simulate realistic results
@@ -471,7 +471,7 @@ class DashboardAPILoadTester:
         print(f"  Successful: {result.successful} ({result.success_rate:.1%})")
         print(f"  Failed: {result.failed}")
         print(f"  Throughput: {result.throughput_rps:.2f} RPS")
-        print(f"  Latency (ms):")
+        print("  Latency (ms):")
         print(f"    Min:    {result.min_latency_ms:.3f}")
         print(f"    Mean:   {result.mean_latency_ms:.3f}")
         print(f"    Median: {result.median_latency_ms:.3f}")
@@ -484,7 +484,7 @@ class DashboardAPILoadTester:
 
         vs_baseline = result.vs_baseline()
         if vs_baseline:
-            print(f"  vs Baseline:")
+            print("  vs Baseline:")
             print(f"    P99 Latency: {vs_baseline['p99_latency_improvement']:+.1f}%")
             print(f"    Throughput:  {vs_baseline['throughput_improvement']:+.1f}%")
 
@@ -497,13 +497,11 @@ class ComprehensiveLoadTestSuite:
         self.results: List[LoadTestResult] = []
 
     async def run_all_tests(
-        self,
-        iterations: int = 1000,
-        concurrent_users: int = 10
+        self, iterations: int = 1000, concurrent_users: int = 10
     ) -> LoadTestReport:
         """Run all load tests."""
         print(f"\n{'#'*60}")
-        print(f"# ACGS-2 Comprehensive Load Test Suite")
+        print("# ACGS-2 Comprehensive Load Test Suite")
         print(f"# Constitutional Hash: {CONSTITUTIONAL_HASH}")
         print(f"# Start Time: {datetime.now(timezone.utc).isoformat()}")
         print(f"{'#'*60}")
@@ -514,16 +512,14 @@ class ComprehensiveLoadTestSuite:
         # Test 1: Enhanced Agent Bus
         bus_tester = EnhancedAgentBusLoadTester()
         bus_result = await bus_tester.test_message_processing(
-            iterations=iterations,
-            concurrent_users=concurrent_users
+            iterations=iterations, concurrent_users=concurrent_users
         )
         self.results.append(bus_result)
 
         # Test 2: Dashboard API Overview
         dashboard_tester = DashboardAPILoadTester()
         overview_result = await dashboard_tester.test_overview_endpoint(
-            iterations=iterations,
-            concurrent_users=concurrent_users
+            iterations=iterations, concurrent_users=concurrent_users
         )
         self.results.append(overview_result)
 
@@ -554,15 +550,16 @@ class ComprehensiveLoadTestSuite:
     def _get_system_info(self) -> Dict[str, Any]:
         """Get system information."""
         info = {
-            'python_version': sys.version,
-            'platform': sys.platform,
-            'timestamp': datetime.now(timezone.utc).isoformat(),
+            "python_version": sys.version,
+            "platform": sys.platform,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }
 
         try:
             import psutil
-            info['cpu_count'] = psutil.cpu_count()
-            info['memory_total_gb'] = psutil.virtual_memory().total / (1024**3)
+
+            info["cpu_count"] = psutil.cpu_count()
+            info["memory_total_gb"] = psutil.virtual_memory().total / (1024**3)
         except ImportError:
             pass
 
@@ -573,14 +570,14 @@ class ComprehensiveLoadTestSuite:
         summary = report.summary()
 
         print(f"\n{'='*60}")
-        print(f"COMPREHENSIVE LOAD TEST REPORT")
+        print("COMPREHENSIVE LOAD TEST REPORT")
         print(f"{'='*60}")
         print(f"Test Suite: {report.test_suite_name}")
         print(f"Duration: {report.total_duration_seconds:.2f}s")
         print(f"Constitutional Hash: {report.constitutional_hash}")
 
         print(f"\n{'='*60}")
-        print(f"SUMMARY STATISTICS")
+        print("SUMMARY STATISTICS")
         print(f"{'='*60}")
         print(f"Total Tests: {summary['total_tests']}")
         print(f"Total Iterations: {summary['total_iterations']}")
@@ -588,31 +585,31 @@ class ComprehensiveLoadTestSuite:
         print(f"Total Failed: {summary['total_failed']}")
         print(f"Overall Success Rate: {summary['overall_success_rate']:.1%}")
 
-        print(f"\nLatency Statistics (ms):")
+        print("\nLatency Statistics (ms):")
         print(f"  Best P99:    {summary['best_p99_latency_ms']:.3f}")
         print(f"  Worst P99:   {summary['worst_p99_latency_ms']:.3f}")
         print(f"  Average P99: {summary['avg_p99_latency_ms']:.3f}")
 
-        print(f"\nThroughput Statistics (RPS):")
+        print("\nThroughput Statistics (RPS):")
         print(f"  Best:    {summary['best_throughput_rps']:.2f}")
         print(f"  Worst:   {summary['worst_throughput_rps']:.2f}")
         print(f"  Average: {summary['avg_throughput_rps']:.2f}")
 
         print(f"\n{'='*60}")
-        print(f"PERFORMANCE TARGET VALIDATION")
+        print("PERFORMANCE TARGET VALIDATION")
         print(f"{'='*60}")
         print(f"Tests Meeting Targets: {summary['tests_meeting_targets']}/{summary['total_tests']}")
         print(f"Tests Failing Targets: {summary['tests_failing_targets']}/{summary['total_tests']}")
 
-        print(f"\nTargets:")
+        print("\nTargets:")
         print(f"  P99 Latency:  < {P99_LATENCY_TARGET_MS}ms")
         print(f"  Throughput:   > {MIN_THROUGHPUT_RPS} RPS")
         print(f"  Cache Hit Rate: > {MIN_CACHE_HIT_RATE:.0%}")
 
         print(f"\n{'='*60}")
-        print(f"BASELINE COMPARISON")
+        print("BASELINE COMPARISON")
         print(f"{'='*60}")
-        print(f"Baseline Metrics:")
+        print("Baseline Metrics:")
         print(f"  P99 Latency: {BASELINE_METRICS['p99_latency_ms']}ms")
         print(f"  Throughput:  {BASELINE_METRICS['throughput_rps']} RPS")
         print(f"  Cache Hit Rate: {BASELINE_METRICS['cache_hit_rate']:.0%}")
@@ -621,13 +618,13 @@ class ComprehensiveLoadTestSuite:
         improvements = [r.vs_baseline() for r in report.results if r.vs_baseline()]
         if improvements:
             avg_latency_improvement = statistics.mean(
-                i['p99_latency_improvement'] for i in improvements
+                i["p99_latency_improvement"] for i in improvements
             )
             avg_throughput_improvement = statistics.mean(
-                i['throughput_improvement'] for i in improvements
+                i["throughput_improvement"] for i in improvements
             )
 
-            print(f"\nAverage Improvements:")
+            print("\nAverage Improvements:")
             print(f"  P99 Latency: {avg_latency_improvement:+.1f}%")
             print(f"  Throughput:  {avg_throughput_improvement:+.1f}%")
 
@@ -637,30 +634,27 @@ class ComprehensiveLoadTestSuite:
             timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
             filename = f"load_test_report_{timestamp}.json"
 
-        filepath = os.path.join(
-            os.path.dirname(__file__),
-            filename
-        )
+        filepath = os.path.join(os.path.dirname(__file__), filename)
 
         # Convert to dict for JSON serialization
         report_dict = {
-            'test_suite_name': report.test_suite_name,
-            'start_time': report.start_time.isoformat(),
-            'end_time': report.end_time.isoformat(),
-            'total_duration_seconds': report.total_duration_seconds,
-            'constitutional_hash': report.constitutional_hash,
-            'system_info': report.system_info,
-            'results': [
+            "test_suite_name": report.test_suite_name,
+            "start_time": report.start_time.isoformat(),
+            "end_time": report.end_time.isoformat(),
+            "total_duration_seconds": report.total_duration_seconds,
+            "constitutional_hash": report.constitutional_hash,
+            "system_info": report.system_info,
+            "results": [
                 {
                     **asdict(r),
-                    'timestamp': r.timestamp.isoformat(),
+                    "timestamp": r.timestamp.isoformat(),
                 }
                 for r in report.results
             ],
-            'summary': report.summary(),
+            "summary": report.summary(),
         }
 
-        with open(filepath, 'w') as f:
+        with open(filepath, "w") as f:
             json.dump(report_dict, f, indent=2)
 
         print(f"\nReport saved to: {filepath}")
@@ -671,34 +665,21 @@ async def main():
     """Main entry point."""
     import argparse
 
-    parser = argparse.ArgumentParser(
-        description="ACGS-2 Comprehensive Load Testing Suite"
+    parser = argparse.ArgumentParser(description="ACGS-2 Comprehensive Load Testing Suite")
+    parser.add_argument(
+        "--iterations", type=int, default=1000, help="Number of iterations per test (default: 1000)"
     )
     parser.add_argument(
-        '--iterations',
-        type=int,
-        default=1000,
-        help='Number of iterations per test (default: 1000)'
+        "--concurrent-users", type=int, default=10, help="Number of concurrent users (default: 10)"
     )
-    parser.add_argument(
-        '--concurrent-users',
-        type=int,
-        default=10,
-        help='Number of concurrent users (default: 10)'
-    )
-    parser.add_argument(
-        '--output',
-        type=str,
-        help='Output filename for JSON report'
-    )
+    parser.add_argument("--output", type=str, help="Output filename for JSON report")
 
     args = parser.parse_args()
 
     # Run comprehensive test suite
     suite = ComprehensiveLoadTestSuite()
     report = await suite.run_all_tests(
-        iterations=args.iterations,
-        concurrent_users=args.concurrent_users
+        iterations=args.iterations, concurrent_users=args.concurrent_users
     )
 
     # Save report
@@ -706,7 +687,7 @@ async def main():
 
     # Exit with appropriate code
     summary = report.summary()
-    if summary['tests_failing_targets'] > 0:
+    if summary["tests_failing_targets"] > 0:
         print("\n⚠ Some tests failed to meet performance targets")
         sys.exit(1)
     else:
@@ -714,5 +695,5 @@ async def main():
         sys.exit(0)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     asyncio.run(main())

@@ -5,10 +5,9 @@ Constitutional Hash: cdd01ef066bc6cf2
 Workflow for auditing and verifying agent actions against constitutional requirements.
 """
 
-import asyncio
 import logging
-from typing import Any, Dict, List, Optional
 from datetime import datetime, timezone
+from typing import Any, Dict, Optional
 
 from ..base.result import WorkflowResult
 from ..base.workflow import BaseWorkflow
@@ -82,13 +81,13 @@ class ComplianceCheckWorkflow(BaseWorkflow):
                 policy_result = await self.activities.evaluate_policy(
                     workflow_id=self.workflow_id,
                     policy_path="acgs/constitutional/allow",
-                    input_data={"message": action, "context": {"agent_id": agent_id}}
+                    input_data={"message": action, "context": {"agent_id": agent_id}},
                 )
 
                 result = {
                     "action_id": action.get("action_id"),
                     "allowed": policy_result.get("allowed", False),
-                    "reasons": policy_result.get("reasons", [])
+                    "reasons": policy_result.get("reasons", []),
                 }
 
                 compliance_results.append(result)
@@ -109,14 +108,14 @@ class ComplianceCheckWorkflow(BaseWorkflow):
                     "total_actions": len(actions),
                     "valid_actions": len(valid_actions),
                     "malformed_actions": len(malformed_actions),
-                    "violations_detected": len(violations)
+                    "violations_detected": len(violations),
                 },
                 "details": {
                     "compliance_results": compliance_results,
                     "violations": violations,
-                    "malformed": malformed_actions
+                    "malformed": malformed_actions,
                 },
-                "constitutional_hash": self.constitutional_hash
+                "constitutional_hash": self.constitutional_hash,
             }
 
             # Step 4: Record audit if violations found
@@ -124,7 +123,7 @@ class ComplianceCheckWorkflow(BaseWorkflow):
                 await self.activities.record_audit(
                     workflow_id=self.workflow_id,
                     event_type="compliance_violation",
-                    event_data=output
+                    event_data=output,
                 )
                 self._completed_steps.append("record_violation_audit")
 

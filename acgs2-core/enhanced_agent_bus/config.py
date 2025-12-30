@@ -7,12 +7,11 @@ Follows the Builder pattern for clean configuration management.
 """
 
 from dataclasses import dataclass, field, replace
-from typing import Any, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Optional
 
 # Import types conditionally to avoid circular imports
 if TYPE_CHECKING:
-    from .interfaces import AgentRegistry, MessageRouter, ValidationStrategy
-    from .message_processor import MessageProcessor
+    pass
 
 
 # Import centralized constitutional hash with fallback
@@ -24,6 +23,7 @@ except ImportError:
 # Default Redis URL with fallback
 try:
     from shared.redis_config import get_redis_url
+
     DEFAULT_REDIS_URL = get_redis_url()
 except ImportError:
     DEFAULT_REDIS_URL = "redis://localhost:6379"
@@ -90,7 +90,7 @@ class BusConfiguration:
             self.constitutional_hash = CONSTITUTIONAL_HASH
 
     @classmethod
-    def from_environment(cls) -> 'BusConfiguration':
+    def from_environment(cls) -> "BusConfiguration":
         """Create configuration from environment variables.
 
         Environment variables:
@@ -109,35 +109,25 @@ class BusConfiguration:
         def _parse_bool(value: Optional[str], default: bool = False) -> bool:
             if value is None:
                 return default
-            return value.lower() in ('true', '1', 'yes', 'on')
+            return value.lower() in ("true", "1", "yes", "on")
 
         return cls(
-            redis_url=os.environ.get('REDIS_URL', DEFAULT_REDIS_URL),
-            kafka_bootstrap_servers=os.environ.get(
-                'KAFKA_BOOTSTRAP_SERVERS', 'localhost:9092'
-            ),
-            audit_service_url=os.environ.get(
-                'AUDIT_SERVICE_URL', 'http://localhost:8001'
-            ),
-            use_dynamic_policy=_parse_bool(
-                os.environ.get('USE_DYNAMIC_POLICY'), False
-            ),
-            policy_fail_closed=_parse_bool(
-                os.environ.get('POLICY_FAIL_CLOSED'), False
-            ),
-            use_kafka=_parse_bool(os.environ.get('USE_KAFKA'), False),
-            use_redis_registry=_parse_bool(
-                os.environ.get('USE_REDIS_REGISTRY'), False
-            ),
-            use_rust=_parse_bool(os.environ.get('USE_RUST_BACKEND'), True),
-            enable_metering=_parse_bool(os.environ.get('METERING_ENABLED'), True),
+            redis_url=os.environ.get("REDIS_URL", DEFAULT_REDIS_URL),
+            kafka_bootstrap_servers=os.environ.get("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092"),
+            audit_service_url=os.environ.get("AUDIT_SERVICE_URL", "http://localhost:8001"),
+            use_dynamic_policy=_parse_bool(os.environ.get("USE_DYNAMIC_POLICY"), False),
+            policy_fail_closed=_parse_bool(os.environ.get("POLICY_FAIL_CLOSED"), False),
+            use_kafka=_parse_bool(os.environ.get("USE_KAFKA"), False),
+            use_redis_registry=_parse_bool(os.environ.get("USE_REDIS_REGISTRY"), False),
+            use_rust=_parse_bool(os.environ.get("USE_RUST_BACKEND"), True),
+            enable_metering=_parse_bool(os.environ.get("METERING_ENABLED"), True),
             # SECURITY FIX: Default to True per audit finding 2025-12
-            enable_maci=_parse_bool(os.environ.get('MACI_ENABLED'), True),
-            maci_strict_mode=_parse_bool(os.environ.get('MACI_STRICT_MODE'), True),
+            enable_maci=_parse_bool(os.environ.get("MACI_ENABLED"), True),
+            maci_strict_mode=_parse_bool(os.environ.get("MACI_STRICT_MODE"), True),
         )
 
     @classmethod
-    def for_testing(cls) -> 'BusConfiguration':
+    def for_testing(cls) -> "BusConfiguration":
         """Create a minimal configuration for unit testing.
 
         Disables all optional features for fast, isolated testing.
@@ -154,7 +144,7 @@ class BusConfiguration:
         )
 
     @classmethod
-    def for_production(cls) -> 'BusConfiguration':
+    def for_production(cls) -> "BusConfiguration":
         """Create a configuration suitable for production use.
 
         Enables all production features with fail-closed security.
@@ -170,7 +160,7 @@ class BusConfiguration:
             maci_strict_mode=True,
         )
 
-    def with_registry(self, registry: Any) -> 'BusConfiguration':
+    def with_registry(self, registry: Any) -> "BusConfiguration":
         """Return a new configuration with the specified registry.
 
         Builder pattern method for fluent configuration.
@@ -178,7 +168,7 @@ class BusConfiguration:
         """
         return replace(self, registry=registry)
 
-    def with_validator(self, validator: Any) -> 'BusConfiguration':
+    def with_validator(self, validator: Any) -> "BusConfiguration":
         """Return a new configuration with the specified validator.
 
         Builder pattern method for fluent configuration.

@@ -10,7 +10,7 @@ import os
 import sys
 from datetime import datetime, timezone
 from typing import Any, Dict
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
@@ -50,6 +50,7 @@ def constitutional_hash() -> str:
 @pytest.fixture
 def mock_vault_response():
     """Create mock Vault API response factory."""
+
     def _make_response(data: Dict[str, Any] = None, errors: list = None):
         response = {
             "request_id": "test-request-id",
@@ -62,66 +63,78 @@ def mock_vault_response():
         if errors:
             response["errors"] = errors
         return response
+
     return _make_response
 
 
 @pytest.fixture
 def mock_transit_key_response(mock_vault_response):
     """Create mock Transit key response."""
-    return mock_vault_response(data={
-        "type": "ed25519",
-        "deletion_allowed": False,
-        "derived": False,
-        "exportable": False,
-        "allow_plaintext_backup": False,
-        "keys": {
-            "1": {
-                "creation_time": "2025-01-15T00:00:00Z",
-                "public_key": "dGVzdC1wdWJsaWMta2V5LWJhc2U2NA==",  # base64 test key
-            }
-        },
-        "min_decryption_version": 1,
-        "min_encryption_version": 0,
-        "name": "test-key",
-        "supports_encryption": True,
-        "supports_decryption": True,
-        "supports_derivation": False,
-        "supports_signing": True,
-        "latest_version": 1,
-    })
+    return mock_vault_response(
+        data={
+            "type": "ed25519",
+            "deletion_allowed": False,
+            "derived": False,
+            "exportable": False,
+            "allow_plaintext_backup": False,
+            "keys": {
+                "1": {
+                    "creation_time": "2025-01-15T00:00:00Z",
+                    "public_key": "dGVzdC1wdWJsaWMta2V5LWJhc2U2NA==",  # base64 test key
+                }
+            },
+            "min_decryption_version": 1,
+            "min_encryption_version": 0,
+            "name": "test-key",
+            "supports_encryption": True,
+            "supports_decryption": True,
+            "supports_derivation": False,
+            "supports_signing": True,
+            "latest_version": 1,
+        }
+    )
 
 
 @pytest.fixture
 def mock_sign_response(mock_vault_response):
     """Create mock Transit sign response."""
-    return mock_vault_response(data={
-        "signature": "vault:v1:dGVzdC1zaWduYXR1cmUtYmFzZTY0",
-    })
+    return mock_vault_response(
+        data={
+            "signature": "vault:v1:dGVzdC1zaWduYXR1cmUtYmFzZTY0",
+        }
+    )
 
 
 @pytest.fixture
 def mock_verify_response(mock_vault_response):
     """Create mock Transit verify response."""
-    return mock_vault_response(data={
-        "valid": True,
-    })
+    return mock_vault_response(
+        data={
+            "valid": True,
+        }
+    )
 
 
 @pytest.fixture
 def mock_encrypt_response(mock_vault_response):
     """Create mock Transit encrypt response."""
-    return mock_vault_response(data={
-        "ciphertext": "vault:v1:dGVzdC1jaXBoZXJ0ZXh0",
-    })
+    return mock_vault_response(
+        data={
+            "ciphertext": "vault:v1:dGVzdC1jaXBoZXJ0ZXh0",
+        }
+    )
 
 
 @pytest.fixture
 def mock_decrypt_response(mock_vault_response):
     """Create mock Transit decrypt response."""
     import base64
-    return mock_vault_response(data={
-        "plaintext": base64.b64encode(b"decrypted-test-data").decode(),
-    })
+
+    return mock_vault_response(
+        data={
+            "plaintext": base64.b64encode(b"decrypted-test-data").decode(),
+        }
+    )
 
 
 @pytest.fixture
@@ -231,6 +244,7 @@ def mock_hvac_client(
 def vault_config():
     """Create test Vault configuration."""
     from app.services.vault_crypto_service import VaultConfig
+
     return VaultConfig(
         address="http://127.0.0.1:8200",
         token="test-token",
@@ -265,9 +279,5 @@ def sample_policy_content() -> Dict[str, Any]:
 
 def pytest_configure(config):
     """Register custom markers."""
-    config.addinivalue_line(
-        "markers", "vault: mark test as requiring Vault connection"
-    )
-    config.addinivalue_line(
-        "markers", "integration: mark test as integration test"
-    )
+    config.addinivalue_line("markers", "vault: mark test as requiring Vault connection")
+    config.addinivalue_line("markers", "integration: mark test as integration test")

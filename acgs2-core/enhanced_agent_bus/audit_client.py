@@ -4,12 +4,13 @@ Constitutional Hash: cdd01ef066bc6cf2
 """
 
 import logging
-import httpx
-import asyncio
-from typing import Dict, Any, List, Optional
 from dataclasses import asdict
+from typing import Any, Dict, Optional
+
+import httpx
 
 logger = logging.getLogger(__name__)
+
 
 class AuditClient:
     """
@@ -35,6 +36,7 @@ class AuditClient:
             else:
                 # Fallback to asdict if it's a dataclass
                 from dataclasses import is_dataclass
+
                 if is_dataclass(validation_result):
                     data = asdict(validation_result)
                 else:
@@ -48,7 +50,9 @@ class AuditClient:
                     logger.info(f"Audit record successful: {audit_hash}")
                     return audit_hash
                 else:
-                    logger.error(f"Audit Service returned error {response.status_code}: {response.text}")
+                    logger.error(
+                        f"Audit Service returned error {response.status_code}: {response.text}"
+                    )
                     return None
             except httpx.RequestError as e:
                 logger.error(f"Network error communicating with Audit Service: {e}")

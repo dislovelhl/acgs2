@@ -9,57 +9,50 @@ critic agent integration, and comprehensive audit logging.
 
 import asyncio
 import logging
+import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
-import uuid
 
 try:
-    from ..models import AgentMessage, CONSTITUTIONAL_HASH, MessageStatus
-    from ..validators import ValidationResult
+    from ..models import CONSTITUTIONAL_HASH, AgentMessage, MessageStatus
     from ..opa_client import OPAClient, get_opa_client
+    from ..validators import ValidationResult
 except ImportError:
     # Fallback for direct execution or testing
-    from models import AgentMessage, CONSTITUTIONAL_HASH, MessageStatus  # type: ignore
-    from validators import ValidationResult  # type: ignore
     from opa_client import OPAClient, get_opa_client  # type: ignore
 
 try:
     from .opa_guard_models import (
         GUARD_CONSTITUTIONAL_HASH,
+        CriticReview,
         GuardDecision,
-        SignatureStatus,
-        ReviewStatus,
         GuardResult,
+        ReviewResult,
+        ReviewStatus,
         Signature,
         SignatureResult,
-        CriticReview,
-        ReviewResult,
+        SignatureStatus,
     )
 except ImportError:
     # Fallback for direct execution or testing
     from opa_guard_models import (  # type: ignore
         GUARD_CONSTITUTIONAL_HASH,
+        CriticReview,
         GuardDecision,
-        SignatureStatus,
-        ReviewStatus,
         GuardResult,
+        ReviewResult,
+        ReviewStatus,
         Signature,
         SignatureResult,
-        CriticReview,
-        ReviewResult,
+        SignatureStatus,
     )
 
 try:
-    from .deliberation_queue import (
-        get_deliberation_queue, DeliberationStatus, VoteType
-    )
     from .adaptive_router import get_adaptive_router
+    from .deliberation_queue import DeliberationStatus, VoteType, get_deliberation_queue
 except ImportError:
     # Fallback for direct execution or testing
-    from deliberation_queue import (  # type: ignore
-        get_deliberation_queue, DeliberationStatus, VoteType
-    )
-    from adaptive_router import get_adaptive_router  # type: ignore
+    pass  # type: ignore
 
 
 logger = logging.getLogger(__name__)
@@ -158,10 +151,7 @@ class OPAGuard:
         logger.info("OPAGuard closed")
 
     async def verify_action(
-        self,
-        agent_id: str,
-        action: Dict[str, Any],
-        context: Dict[str, Any]
+        self, agent_id: str, action: Dict[str, Any], context: Dict[str, Any]
     ) -> GuardResult:
         """
         Pre-action validation using VERIFY-BEFORE-ACT pattern.
@@ -256,7 +246,9 @@ class OPAGuard:
                 result.validation_warnings.append("OPA unavailable, using fallback validation")
 
             # Log the decision
-            await self.log_decision({"action": action, "agent_id": agent_id, "context": context}, result.to_dict())
+            await self.log_decision(
+                {"action": action, "agent_id": agent_id, "context": context}, result.to_dict()
+            )
 
             return result
 
@@ -271,10 +263,7 @@ class OPAGuard:
             return result
 
     def _calculate_risk_score(
-        self,
-        action: Dict[str, Any],
-        context: Dict[str, Any],
-        policy_result: Dict[str, Any]
+        self, action: Dict[str, Any], context: Dict[str, Any], policy_result: Dict[str, Any]
     ) -> float:
         """Calculate risk score for the action."""
         risk_score = 0.0
@@ -313,11 +302,7 @@ class OPAGuard:
         else:
             return "low"
 
-    def _identify_risk_factors(
-        self,
-        action: Dict[str, Any],
-        context: Dict[str, Any]
-    ) -> List[str]:
+    def _identify_risk_factors(self, action: Dict[str, Any], context: Dict[str, Any]) -> List[str]:
         """Identify specific risk factors for the action."""
         factors = []
 
@@ -345,7 +330,7 @@ class OPAGuard:
         decision_id: str,
         required_signers: List[str],
         threshold: float = 1.0,
-        timeout: Optional[int] = None
+        timeout: Optional[int] = None,
     ) -> SignatureResult:
         """
         Collect multi-signatures for high-risk decisions.
@@ -410,11 +395,7 @@ class OPAGuard:
         return signature_result
 
     async def submit_signature(
-        self,
-        decision_id: str,
-        signer_id: str,
-        reasoning: str = "",
-        confidence: float = 1.0
+        self, decision_id: str, signer_id: str, reasoning: str = "", confidence: float = 1.0
     ) -> bool:
         """
         Submit a signature for a pending decision.
@@ -445,12 +426,7 @@ class OPAGuard:
 
         return success
 
-    async def reject_signature(
-        self,
-        decision_id: str,
-        signer_id: str,
-        reason: str = ""
-    ) -> bool:
+    async def reject_signature(self, decision_id: str, signer_id: str, reason: str = "") -> bool:
         """
         Reject signing a decision.
 
@@ -478,7 +454,7 @@ class OPAGuard:
         decision: Dict[str, Any],
         critic_agents: List[str],
         review_types: Optional[List[str]] = None,
-        timeout: Optional[int] = None
+        timeout: Optional[int] = None,
     ) -> ReviewResult:
         """
         Submit a decision for critic agent review.
@@ -553,7 +529,7 @@ class OPAGuard:
         reasoning: str = "",
         concerns: Optional[List[str]] = None,
         recommendations: Optional[List[str]] = None,
-        confidence: float = 1.0
+        confidence: float = 1.0,
     ) -> bool:
         """
         Submit a critic review for a pending decision.
@@ -598,7 +574,7 @@ class OPAGuard:
         critic_id: str,
         review_types: List[str],
         callback: Optional[Any] = None,
-        metadata: Optional[Dict[str, Any]] = None
+        metadata: Optional[Dict[str, Any]] = None,
     ):
         """
         Register a critic agent for reviews.
@@ -623,11 +599,7 @@ class OPAGuard:
             del self._critic_agents[critic_id]
             logger.info(f"Unregistered critic agent {critic_id}")
 
-    async def log_decision(
-        self,
-        decision: Dict[str, Any],
-        result: Dict[str, Any]
-    ):
+    async def log_decision(self, decision: Dict[str, Any], result: Dict[str, Any]):
         """
         Log a decision for audit purposes.
 
@@ -680,8 +652,7 @@ class OPAGuard:
             }
 
             result = await self.opa_client.evaluate_policy(
-                input_data,
-                policy_path="data.acgs.constitutional.validate"
+                input_data, policy_path="data.acgs.constitutional.validate"
             )
 
             # SECURITY: Respect fail_closed setting when result is missing
@@ -696,8 +667,7 @@ class OPAGuard:
             # SECURITY: Respect fail_closed setting on exceptions
             if self.fail_closed:
                 logger.warning(
-                    "Constitutional compliance check failed - denying action "
-                    "(fail_closed=True)"
+                    "Constitutional compliance check failed - denying action " "(fail_closed=True)"
                 )
                 return False
             else:
@@ -719,10 +689,7 @@ class OPAGuard:
         }
 
     def get_audit_log(
-        self,
-        limit: int = 100,
-        offset: int = 0,
-        agent_id: Optional[str] = None
+        self, limit: int = 100, offset: int = 0, agent_id: Optional[str] = None
     ) -> List[Dict[str, Any]]:
         """
         Get audit log entries.
@@ -738,12 +705,9 @@ class OPAGuard:
         logs = self._audit_log
 
         if agent_id:
-            logs = [
-                log for log in logs
-                if log.get("decision", {}).get("agent_id") == agent_id
-            ]
+            logs = [log for log in logs if log.get("decision", {}).get("agent_id") == agent_id]
 
-        return logs[offset:offset + limit]
+        return logs[offset : offset + limit]
 
 
 # Global guard instance

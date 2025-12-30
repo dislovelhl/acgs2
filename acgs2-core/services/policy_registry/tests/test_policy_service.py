@@ -13,15 +13,16 @@ Comprehensive test coverage for PolicyService including:
 
 import hashlib
 import json
-import pytest
 from datetime import datetime, timezone
 from typing import Any, Dict
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
+import pytest
 from app.models import (
-    Policy, PolicyStatus,
-    PolicyVersion, VersionStatus, ABTestGroup,
+    ABTestGroup,
     PolicySignature,
+    PolicyStatus,
+    VersionStatus,
 )
 from app.services.policy_service import PolicyService
 
@@ -33,21 +34,24 @@ CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
 # Fixtures
 # =============================================================================
 
+
 @pytest.fixture
 def mock_crypto_service():
     """Create mock crypto service."""
     mock = MagicMock()
 
     # Mock signature creation
-    mock.create_policy_signature = MagicMock(return_value=PolicySignature(
-        policy_id="test-policy",
-        version="1.0.0",
-        signature="test-signature-base64",
-        public_key="test-public-key-base64",
-        algorithm="ed25519",
-        key_fingerprint="test-fingerprint",
-        signed_at=datetime.now(timezone.utc),
-    ))
+    mock.create_policy_signature = MagicMock(
+        return_value=PolicySignature(
+            policy_id="test-policy",
+            version="1.0.0",
+            signature="test-signature-base64",
+            public_key="test-public-key-base64",
+            algorithm="ed25519",
+            key_fingerprint="test-fingerprint",
+            signed_at=datetime.now(timezone.utc),
+        )
+    )
 
     # Mock signature verification
     mock.verify_policy_signature = MagicMock(return_value=True)
@@ -104,12 +108,14 @@ def mock_notification_service():
     mock.notifications = []
 
     async def mock_notify(policy_id, version, event, data=None):
-        mock.notifications.append({
-            "policy_id": policy_id,
-            "version": version,
-            "event": event,
-            "data": data,
-        })
+        mock.notifications.append(
+            {
+                "policy_id": policy_id,
+                "version": version,
+                "event": event,
+                "data": data,
+            }
+        )
 
     mock.notify_policy_update = mock_notify
     return mock
@@ -129,7 +135,9 @@ def mock_audit_client():
 
 
 @pytest.fixture
-def policy_service(mock_crypto_service, mock_cache_service, mock_notification_service, mock_audit_client):
+def policy_service(
+    mock_crypto_service, mock_cache_service, mock_notification_service, mock_audit_client
+):
     """Create PolicyService instance with all mock dependencies."""
     return PolicyService(
         crypto_service=mock_crypto_service,
@@ -159,13 +167,14 @@ def sample_keys():
     """Sample key pair for signing tests."""
     return {
         "private_key": "dGVzdC1wcml2YXRlLWtleS1iYXNlNjQ=",  # base64 encoded
-        "public_key": "dGVzdC1wdWJsaWMta2V5LWJhc2U2NA==",   # base64 encoded
+        "public_key": "dGVzdC1wdWJsaWMta2V5LWJhc2U2NA==",  # base64 encoded
     }
 
 
 # =============================================================================
 # Policy Creation Tests
 # =============================================================================
+
 
 class TestPolicyCreation:
     """Tests for policy creation functionality."""
@@ -232,13 +241,12 @@ class TestPolicyCreation:
 # Policy Version Tests
 # =============================================================================
 
+
 class TestPolicyVersionCreation:
     """Tests for policy version creation functionality."""
 
     @pytest.mark.asyncio
-    async def test_create_policy_version(
-        self, policy_service, sample_policy_content, sample_keys
-    ):
+    async def test_create_policy_version(self, policy_service, sample_policy_content, sample_keys):
         """Test creating a policy version."""
         # First create a policy
         policy = await policy_service.create_policy(
@@ -281,8 +289,8 @@ class TestPolicyVersionCreation:
         )
 
         # Calculate expected hash
-        content_str = json.dumps(sample_policy_content, sort_keys=True, separators=(',', ':'))
-        expected_hash = hashlib.sha256(content_str.encode('utf-8')).hexdigest()
+        content_str = json.dumps(sample_policy_content, sort_keys=True, separators=(",", ":"))
+        expected_hash = hashlib.sha256(content_str.encode("utf-8")).hexdigest()
 
         assert version.content_hash == expected_hash
 
@@ -370,6 +378,7 @@ class TestPolicyVersionCreation:
 # Policy Retrieval Tests
 # =============================================================================
 
+
 class TestPolicyRetrieval:
     """Tests for policy retrieval functionality."""
 
@@ -393,9 +402,7 @@ class TestPolicyRetrieval:
         assert result is None
 
     @pytest.mark.asyncio
-    async def test_get_policy_version(
-        self, policy_service, sample_policy_content, sample_keys
-    ):
+    async def test_get_policy_version(self, policy_service, sample_policy_content, sample_keys):
         """Test retrieving a specific policy version."""
         policy = await policy_service.create_policy(
             name="Test Policy", tenant_id="tenant-001", content={}
@@ -409,9 +416,7 @@ class TestPolicyRetrieval:
             public_key_b64=sample_keys["public_key"],
         )
 
-        retrieved_version = await policy_service.get_policy_version(
-            policy.policy_id, "1.0.0"
-        )
+        retrieved_version = await policy_service.get_policy_version(policy.policy_id, "1.0.0")
 
         assert retrieved_version is not None
         assert retrieved_version.version == "1.0.0"
@@ -434,13 +439,12 @@ class TestPolicyRetrieval:
 # Version Activation Tests
 # =============================================================================
 
+
 class TestVersionActivation:
     """Tests for policy version activation functionality."""
 
     @pytest.mark.asyncio
-    async def test_activate_version(
-        self, policy_service, sample_policy_content, sample_keys
-    ):
+    async def test_activate_version(self, policy_service, sample_policy_content, sample_keys):
         """Test activating a policy version."""
         policy = await policy_service.create_policy(
             name="Test Policy", tenant_id="tenant-001", content={}
@@ -545,13 +549,12 @@ class TestVersionActivation:
 # Active Version Retrieval Tests
 # =============================================================================
 
+
 class TestActiveVersionRetrieval:
     """Tests for getting active policy version."""
 
     @pytest.mark.asyncio
-    async def test_get_active_version(
-        self, policy_service, sample_policy_content, sample_keys
-    ):
+    async def test_get_active_version(self, policy_service, sample_policy_content, sample_keys):
         """Test getting the active version of a policy."""
         policy = await policy_service.create_policy(
             name="Test Policy", tenant_id="tenant-001", content={}
@@ -625,6 +628,7 @@ class TestActiveVersionRetrieval:
 # Signature Verification Tests
 # =============================================================================
 
+
 class TestSignatureVerification:
     """Tests for policy signature verification."""
 
@@ -647,9 +651,7 @@ class TestSignatureVerification:
 
         mock_crypto_service.verify_policy_signature.return_value = True
 
-        is_valid = await policy_service.verify_policy_signature(
-            policy.policy_id, "1.0.0"
-        )
+        is_valid = await policy_service.verify_policy_signature(policy.policy_id, "1.0.0")
 
         assert is_valid is True
 
@@ -672,18 +674,14 @@ class TestSignatureVerification:
 
         mock_crypto_service.verify_policy_signature.return_value = False
 
-        is_valid = await policy_service.verify_policy_signature(
-            policy.policy_id, "1.0.0"
-        )
+        is_valid = await policy_service.verify_policy_signature(policy.policy_id, "1.0.0")
 
         assert is_valid is False
 
     @pytest.mark.asyncio
     async def test_verify_nonexistent_signature_returns_false(self, policy_service):
         """Test that verifying nonexistent signature returns False."""
-        is_valid = await policy_service.verify_policy_signature(
-            "nonexistent-policy", "1.0.0"
-        )
+        is_valid = await policy_service.verify_policy_signature("nonexistent-policy", "1.0.0")
         assert is_valid is False
 
 
@@ -691,18 +689,15 @@ class TestSignatureVerification:
 # Policy Listing Tests
 # =============================================================================
 
+
 class TestPolicyListing:
     """Tests for policy listing functionality."""
 
     @pytest.mark.asyncio
     async def test_list_policies(self, policy_service):
         """Test listing all policies."""
-        await policy_service.create_policy(
-            name="Policy 1", tenant_id="tenant-001", content={}
-        )
-        await policy_service.create_policy(
-            name="Policy 2", tenant_id="tenant-002", content={}
-        )
+        await policy_service.create_policy(name="Policy 1", tenant_id="tenant-001", content={})
+        await policy_service.create_policy(name="Policy 2", tenant_id="tenant-002", content={})
 
         policies = await policy_service.list_policies()
 
@@ -732,9 +727,7 @@ class TestPolicyListing:
         assert active_policies[0].name == "Active Policy"
 
     @pytest.mark.asyncio
-    async def test_list_policy_versions(
-        self, policy_service, sample_policy_content, sample_keys
-    ):
+    async def test_list_policy_versions(self, policy_service, sample_policy_content, sample_keys):
         """Test listing all versions of a policy."""
         policy = await policy_service.create_policy(
             name="Test Policy", tenant_id="tenant-001", content={}
@@ -766,6 +759,7 @@ class TestPolicyListing:
 # Client Policy Retrieval Tests
 # =============================================================================
 
+
 class TestClientPolicyRetrieval:
     """Tests for getting policy for clients (with A/B testing)."""
 
@@ -792,9 +786,7 @@ class TestClientPolicyRetrieval:
         assert content == sample_policy_content
 
     @pytest.mark.asyncio
-    async def test_get_policy_for_client_uses_cache(
-        self, policy_service, mock_cache_service
-    ):
+    async def test_get_policy_for_client_uses_cache(self, policy_service, mock_cache_service):
         """Test that get_policy_for_client uses cache."""
         policy = await policy_service.create_policy(
             name="Test Policy", tenant_id="tenant-001", content={}
@@ -808,9 +800,7 @@ class TestClientPolicyRetrieval:
         assert content == cached_content
 
     @pytest.mark.asyncio
-    async def test_get_policy_for_client_returns_none_when_no_active(
-        self, policy_service
-    ):
+    async def test_get_policy_for_client_returns_none_when_no_active(self, policy_service):
         """Test that get_policy_for_client returns None when no active version."""
         policy = await policy_service.create_policy(
             name="Test Policy", tenant_id="tenant-001", content={}
@@ -824,6 +814,7 @@ class TestClientPolicyRetrieval:
 # =============================================================================
 # A/B Testing Tests
 # =============================================================================
+
 
 class TestABTesting:
     """Tests for A/B testing functionality."""
@@ -860,13 +851,12 @@ class TestABTesting:
 # Fallback Policy Tests
 # =============================================================================
 
+
 class TestFallbackPolicy:
     """Tests for fallback policy functionality."""
 
     @pytest.mark.asyncio
-    async def test_get_fallback_policy(
-        self, policy_service, sample_policy_content, sample_keys
-    ):
+    async def test_get_fallback_policy(self, policy_service, sample_policy_content, sample_keys):
         """Test getting fallback policy (most recent retired version)."""
         policy = await policy_service.create_policy(
             name="Test Policy", tenant_id="tenant-001", content={}
@@ -922,6 +912,7 @@ class TestFallbackPolicy:
 # =============================================================================
 # Constitutional Compliance Tests
 # =============================================================================
+
 
 @pytest.mark.constitutional
 class TestConstitutionalCompliance:

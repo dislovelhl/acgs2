@@ -7,8 +7,7 @@ Constitutional Hash: cdd01ef066bc6cf2
 
 import logging
 import sys
-from datetime import datetime
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
 
@@ -30,9 +29,7 @@ def get_logger(name: str, level: int = logging.INFO) -> logging.Logger:
         handler = logging.StreamHandler(sys.stdout)
         handler.setLevel(level)
 
-        formatter = ConstitutionalFormatter(
-            "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-        )
+        formatter = ConstitutionalFormatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
         handler.setFormatter(formatter)
         logger.addHandler(handler)
 

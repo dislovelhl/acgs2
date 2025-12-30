@@ -3,12 +3,12 @@ Tests for DAG Executor
 Constitutional Hash: cdd01ef066bc6cf2
 """
 
-import pytest
 import asyncio
-from typing import Any, Dict
+
+import pytest
 
 from ..base.context import WorkflowContext
-from ..dags.dag_executor import DAGNode, DAGExecutor, DAGResult
+from ..dags.dag_executor import DAGExecutor, DAGNode, DAGResult
 
 try:
     from shared.constants import CONSTITUTIONAL_HASH
@@ -21,6 +21,7 @@ class TestDAGNode:
 
     def test_node_creation(self):
         """Test node creation with defaults."""
+
         async def noop(ctx: WorkflowContext) -> str:
             return "done"
 
@@ -38,6 +39,7 @@ class TestDAGNode:
 
     def test_node_equality(self):
         """Test node equality is based on ID."""
+
         async def noop(ctx: WorkflowContext) -> str:
             return "done"
 
@@ -89,6 +91,7 @@ class TestDAGExecutor:
                 await asyncio.sleep(delay)
                 execution_times[name] = asyncio.get_event_loop().time() - start
                 return f"{name}_result"
+
             return step
 
         dag = DAGExecutor("parallel-dag")
@@ -108,6 +111,7 @@ class TestDAGExecutor:
     @pytest.mark.asyncio
     async def test_optional_node_failure(self):
         """Test DAG continues when optional node fails."""
+
         async def success(ctx: WorkflowContext) -> str:
             return "success"
 
@@ -130,6 +134,7 @@ class TestDAGExecutor:
     @pytest.mark.asyncio
     async def test_required_node_failure(self):
         """Test DAG fails when required node fails."""
+
         async def success(ctx: WorkflowContext) -> str:
             return "success"
 
@@ -150,6 +155,7 @@ class TestDAGExecutor:
 
     def test_cycle_detection(self):
         """Test DAG rejects cycles."""
+
         async def noop(ctx: WorkflowContext) -> str:
             return "done"
 
@@ -162,6 +168,7 @@ class TestDAGExecutor:
 
     def test_topological_sort(self):
         """Test topological sort order."""
+
         async def noop(ctx: WorkflowContext) -> str:
             return "done"
 
@@ -183,6 +190,7 @@ class TestDAGExecutor:
     @pytest.mark.asyncio
     async def test_node_timeout(self):
         """Test node timeout handling."""
+
         async def slow(ctx: WorkflowContext) -> str:
             await asyncio.sleep(10)
             return "done"
@@ -199,6 +207,7 @@ class TestDAGExecutor:
     @pytest.mark.asyncio
     async def test_context_sharing(self):
         """Test nodes can share results via context."""
+
         async def producer(ctx: WorkflowContext) -> int:
             return 42
 
@@ -244,6 +253,7 @@ class TestDAGConstitutionalCompliance:
     @pytest.mark.asyncio
     async def test_dag_includes_hash_in_result(self):
         """Test executed DAG includes hash in result."""
+
         async def noop(ctx: WorkflowContext) -> str:
             return "done"
 
@@ -294,6 +304,7 @@ class TestDAGOptimization:
             async def func(ctx):
                 execution_order.append(name)
                 return name
+
             return func
 
         # limit parallelism to 1 to force serialization based on priority

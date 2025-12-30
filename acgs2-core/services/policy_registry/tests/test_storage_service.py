@@ -12,8 +12,9 @@ Comprehensive test coverage for StorageService including:
 
 import os
 import tempfile
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import MagicMock, patch, AsyncMock
 
 # Constitutional hash constant
 CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
@@ -23,8 +24,10 @@ CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
 # Mock settings for testing
 # =============================================================================
 
+
 class MockBundleSettings:
     """Mock bundle settings for testing."""
+
     def __init__(self, storage_path: str, s3_bucket: str = None):
         self.storage_path = storage_path
         self.s3_bucket = s3_bucket
@@ -32,6 +35,7 @@ class MockBundleSettings:
 
 class MockSettings:
     """Mock settings object."""
+
     def __init__(self, storage_path: str, s3_bucket: str = None):
         self.bundle = MockBundleSettings(storage_path, s3_bucket)
 
@@ -39,6 +43,7 @@ class MockSettings:
 # =============================================================================
 # Fixtures
 # =============================================================================
+
 
 @pytest.fixture
 def temp_storage_dir():
@@ -80,6 +85,7 @@ def sample_bundle_data():
 # =============================================================================
 # Local Storage Tests
 # =============================================================================
+
 
 class TestLocalStorage:
     """Tests for local filesystem storage operations."""
@@ -195,6 +201,7 @@ class TestLocalStorage:
 # S3 Storage Tests
 # =============================================================================
 
+
 class TestS3Storage:
     """Tests for S3/MinIO cloud storage operations."""
 
@@ -203,13 +210,16 @@ class TestS3Storage:
         """Test saving a bundle to S3."""
         mock_settings = MockSettings(temp_storage_dir, s3_bucket="test-bucket")
 
-        with patch("app.services.storage_service.settings", mock_settings), \
-             patch("app.services.storage_service.S3_AVAILABLE", True), \
-             patch("app.services.storage_service.boto3") as mock_boto3:
+        with (
+            patch("app.services.storage_service.settings", mock_settings),
+            patch("app.services.storage_service.S3_AVAILABLE", True),
+            patch("app.services.storage_service.boto3") as mock_boto3,
+        ):
 
             mock_boto3.client.return_value = mock_s3_client
 
             from app.services.storage_service import StorageService
+
             service = StorageService()
             service._s3_client = mock_s3_client
 
@@ -233,10 +243,13 @@ class TestS3Storage:
         mock_body.read.return_value = sample_bundle_data
         mock_s3_client.get_object.return_value = {"Body": mock_body}
 
-        with patch("app.services.storage_service.settings", mock_settings), \
-             patch("app.services.storage_service.S3_AVAILABLE", True):
+        with (
+            patch("app.services.storage_service.settings", mock_settings),
+            patch("app.services.storage_service.S3_AVAILABLE", True),
+        ):
 
             from app.services.storage_service import StorageService
+
             service = StorageService()
             service._s3_client = mock_s3_client
             service.s3_bucket = "test-bucket"
@@ -252,10 +265,13 @@ class TestS3Storage:
         """Test deleting a bundle from S3."""
         mock_settings = MockSettings(temp_storage_dir, s3_bucket="test-bucket")
 
-        with patch("app.services.storage_service.settings", mock_settings), \
-             patch("app.services.storage_service.S3_AVAILABLE", True):
+        with (
+            patch("app.services.storage_service.settings", mock_settings),
+            patch("app.services.storage_service.S3_AVAILABLE", True),
+        ):
 
             from app.services.storage_service import StorageService
+
             service = StorageService()
             service._s3_client = mock_s3_client
             service.s3_bucket = "test-bucket"
@@ -271,10 +287,13 @@ class TestS3Storage:
         """Test checking if a bundle exists in S3."""
         mock_settings = MockSettings(temp_storage_dir, s3_bucket="test-bucket")
 
-        with patch("app.services.storage_service.settings", mock_settings), \
-             patch("app.services.storage_service.S3_AVAILABLE", True):
+        with (
+            patch("app.services.storage_service.settings", mock_settings),
+            patch("app.services.storage_service.S3_AVAILABLE", True),
+        ):
 
             from app.services.storage_service import StorageService
+
             service = StorageService()
             service._s3_client = mock_s3_client
             service.s3_bucket = "test-bucket"
@@ -290,6 +309,7 @@ class TestS3Storage:
 # S3 Fallback Tests
 # =============================================================================
 
+
 class TestS3Fallback:
     """Tests for S3 fallback to local storage."""
 
@@ -304,14 +324,16 @@ class TestS3Fallback:
 
         # Make S3 put_object fail
         mock_s3_client.put_object.side_effect = ClientError(
-            {"Error": {"Code": "500", "Message": "Internal error"}},
-            "PutObject"
+            {"Error": {"Code": "500", "Message": "Internal error"}}, "PutObject"
         )
 
-        with patch("app.services.storage_service.settings", mock_settings), \
-             patch("app.services.storage_service.S3_AVAILABLE", True):
+        with (
+            patch("app.services.storage_service.settings", mock_settings),
+            patch("app.services.storage_service.S3_AVAILABLE", True),
+        ):
 
             from app.services.storage_service import StorageService
+
             service = StorageService()
             service._s3_client = mock_s3_client
             service.s3_bucket = "test-bucket"
@@ -334,14 +356,16 @@ class TestS3Fallback:
 
         # Make S3 get_object fail with NoSuchKey
         mock_s3_client.get_object.side_effect = ClientError(
-            {"Error": {"Code": "NoSuchKey", "Message": "Not found"}},
-            "GetObject"
+            {"Error": {"Code": "NoSuchKey", "Message": "Not found"}}, "GetObject"
         )
 
-        with patch("app.services.storage_service.settings", mock_settings), \
-             patch("app.services.storage_service.S3_AVAILABLE", True):
+        with (
+            patch("app.services.storage_service.settings", mock_settings),
+            patch("app.services.storage_service.S3_AVAILABLE", True),
+        ):
 
             from app.services.storage_service import StorageService
+
             service = StorageService()
             service._s3_client = mock_s3_client
             service.s3_bucket = "test-bucket"
@@ -358,6 +382,7 @@ class TestS3Fallback:
 # =============================================================================
 # Path Generation Tests
 # =============================================================================
+
 
 class TestPathGeneration:
     """Tests for storage path generation."""
@@ -414,6 +439,7 @@ class TestPathGeneration:
 # Singleton Pattern Tests
 # =============================================================================
 
+
 class TestSingletonPattern:
     """Tests for the singleton pattern implementation."""
 
@@ -435,6 +461,7 @@ class TestSingletonPattern:
 # Initialization Tests
 # =============================================================================
 
+
 class TestStorageInitialization:
     """Tests for storage service initialization."""
 
@@ -453,14 +480,18 @@ class TestStorageInitialization:
         """Test S3 initialization falls back to local when credentials missing."""
         mock_settings = MockSettings(temp_storage_dir, s3_bucket="test-bucket")
 
-        with patch("app.services.storage_service.settings", mock_settings), \
-             patch("app.services.storage_service.S3_AVAILABLE", True), \
-             patch("app.services.storage_service.boto3") as mock_boto3:
+        with (
+            patch("app.services.storage_service.settings", mock_settings),
+            patch("app.services.storage_service.S3_AVAILABLE", True),
+            patch("app.services.storage_service.boto3") as mock_boto3,
+        ):
 
             from botocore.exceptions import NoCredentialsError
+
             mock_boto3.client.side_effect = NoCredentialsError()
 
             from app.services.storage_service import StorageService
+
             service = StorageService()
 
             # Should fall back to local storage
@@ -472,6 +503,7 @@ class TestStorageInitialization:
 # Constitutional Compliance Tests
 # =============================================================================
 
+
 class TestConstitutionalCompliance:
     """Tests for constitutional compliance in storage operations."""
 
@@ -482,10 +514,13 @@ class TestConstitutionalCompliance:
         """Test that S3 uploads include constitutional hash in metadata."""
         mock_settings = MockSettings(temp_storage_dir, s3_bucket="test-bucket")
 
-        with patch("app.services.storage_service.settings", mock_settings), \
-             patch("app.services.storage_service.S3_AVAILABLE", True):
+        with (
+            patch("app.services.storage_service.settings", mock_settings),
+            patch("app.services.storage_service.S3_AVAILABLE", True),
+        ):
 
             from app.services.storage_service import StorageService
+
             service = StorageService()
             service._s3_client = mock_s3_client
             service.s3_bucket = "test-bucket"

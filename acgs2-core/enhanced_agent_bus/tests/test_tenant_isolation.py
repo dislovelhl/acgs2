@@ -1,7 +1,6 @@
 import pytest
-
 from enhanced_agent_bus.core import EnhancedAgentBus
-from enhanced_agent_bus.models import AgentMessage, MessageType, CONSTITUTIONAL_HASH
+from enhanced_agent_bus.models import CONSTITUTIONAL_HASH, AgentMessage, MessageType
 from enhanced_agent_bus.registry import DirectMessageRouter, InMemoryAgentRegistry
 
 
@@ -26,9 +25,7 @@ class TestTenantIsolation:
         result = await bus.send_message(message)
 
         assert not result.is_valid
-        assert any(
-            "recipient tenant_id 'tenant_B'" in error for error in result.errors
-        )
+        assert any("recipient tenant_id 'tenant_b'" in error.lower() for error in result.errors)
 
     @pytest.mark.asyncio
     async def test_send_message_denies_missing_message_tenant_for_sender(self):
@@ -47,9 +44,7 @@ class TestTenantIsolation:
         result = await bus.send_message(message)
 
         assert not result.is_valid
-        assert any(
-            "sender tenant_id 'tenant_A'" in error for error in result.errors
-        )
+        assert any("sender tenant_id 'tenant_a'" in error.lower() for error in result.errors)
 
     @pytest.mark.asyncio
     async def test_direct_message_router_denies_cross_tenant(self):

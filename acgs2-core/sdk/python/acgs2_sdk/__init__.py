@@ -6,7 +6,6 @@ Constitutional Hash: cdd01ef066bc6cf2
 """
 
 from acgs2_sdk.client import ACGS2Client, create_client
-from acgs2_sdk.governor import Governor
 from acgs2_sdk.config import ACGS2Config, AuthConfig
 from acgs2_sdk.constants import CONSTITUTIONAL_HASH
 from acgs2_sdk.exceptions import (
@@ -19,6 +18,7 @@ from acgs2_sdk.exceptions import (
     TimeoutError,
     ValidationError,
 )
+from acgs2_sdk.governor import Governor
 from acgs2_sdk.models import (
     AgentInfo,
     AgentMessage,

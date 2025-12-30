@@ -5,13 +5,12 @@ Constitutional Hash: cdd01ef066bc6cf2
 Tests Redis integration components with mocking.
 """
 
-import asyncio
 import json
 import os
 import sys
+from unittest.mock import patch
+
 import pytest
-from datetime import datetime, timezone
-from unittest.mock import AsyncMock, MagicMock, patch
 
 # Add enhanced_agent_bus directory to path
 enhanced_agent_bus_dir = os.path.dirname(os.path.dirname(__file__))
@@ -117,14 +116,14 @@ class TestRedisDeliberationQueue:
         # Load redis_integration module
         redis_int = _load_module(
             "_redis_int_test",
-            os.path.join(enhanced_agent_bus_dir, "deliberation_layer", "redis_integration.py")
+            os.path.join(enhanced_agent_bus_dir, "deliberation_layer", "redis_integration.py"),
         )
 
         queue = redis_int.RedisDeliberationQueue()
 
         # Patch the aioredis module
-        with patch.object(redis_int, 'REDIS_AVAILABLE', True):
-            with patch.object(redis_int, 'aioredis') as mock_aioredis:
+        with patch.object(redis_int, "REDIS_AVAILABLE", True):
+            with patch.object(redis_int, "aioredis") as mock_aioredis:
                 mock_aioredis.from_url.return_value = mock_redis
                 result = await queue.connect()
 
@@ -135,12 +134,12 @@ class TestRedisDeliberationQueue:
         """Test connection when Redis is not available."""
         redis_int = _load_module(
             "_redis_int_test2",
-            os.path.join(enhanced_agent_bus_dir, "deliberation_layer", "redis_integration.py")
+            os.path.join(enhanced_agent_bus_dir, "deliberation_layer", "redis_integration.py"),
         )
 
         queue = redis_int.RedisDeliberationQueue()
 
-        with patch.object(redis_int, 'REDIS_AVAILABLE', False):
+        with patch.object(redis_int, "REDIS_AVAILABLE", False):
             result = await queue.connect()
 
         assert result is False
@@ -150,16 +149,14 @@ class TestRedisDeliberationQueue:
         """Test enqueueing a deliberation item."""
         redis_int = _load_module(
             "_redis_int_test3",
-            os.path.join(enhanced_agent_bus_dir, "deliberation_layer", "redis_integration.py")
+            os.path.join(enhanced_agent_bus_dir, "deliberation_layer", "redis_integration.py"),
         )
 
         queue = redis_int.RedisDeliberationQueue()
         queue.redis_client = mock_redis
 
         result = await queue.enqueue_deliberation_item(
-            message=test_message,
-            item_id="test_item_123",
-            metadata={"priority": "high"}
+            message=test_message, item_id="test_item_123", metadata={"priority": "high"}
         )
 
         assert result is True
@@ -170,15 +167,14 @@ class TestRedisDeliberationQueue:
         """Test enqueueing fails without Redis connection."""
         redis_int = _load_module(
             "_redis_int_test4",
-            os.path.join(enhanced_agent_bus_dir, "deliberation_layer", "redis_integration.py")
+            os.path.join(enhanced_agent_bus_dir, "deliberation_layer", "redis_integration.py"),
         )
 
         queue = redis_int.RedisDeliberationQueue()
         queue.redis_client = None
 
         result = await queue.enqueue_deliberation_item(
-            message=test_message,
-            item_id="test_item_123"
+            message=test_message, item_id="test_item_123"
         )
 
         assert result is False
@@ -188,7 +184,7 @@ class TestRedisDeliberationQueue:
         """Test retrieving a deliberation item."""
         redis_int = _load_module(
             "_redis_int_test5",
-            os.path.join(enhanced_agent_bus_dir, "deliberation_layer", "redis_integration.py")
+            os.path.join(enhanced_agent_bus_dir, "deliberation_layer", "redis_integration.py"),
         )
 
         queue = redis_int.RedisDeliberationQueue()
@@ -208,7 +204,7 @@ class TestRedisDeliberationQueue:
         """Test retrieving nonexistent item returns None."""
         redis_int = _load_module(
             "_redis_int_test6",
-            os.path.join(enhanced_agent_bus_dir, "deliberation_layer", "redis_integration.py")
+            os.path.join(enhanced_agent_bus_dir, "deliberation_layer", "redis_integration.py"),
         )
 
         queue = redis_int.RedisDeliberationQueue()
@@ -223,7 +219,7 @@ class TestRedisDeliberationQueue:
         """Test updating deliberation status."""
         redis_int = _load_module(
             "_redis_int_test7",
-            os.path.join(enhanced_agent_bus_dir, "deliberation_layer", "redis_integration.py")
+            os.path.join(enhanced_agent_bus_dir, "deliberation_layer", "redis_integration.py"),
         )
 
         queue = redis_int.RedisDeliberationQueue()
@@ -234,9 +230,7 @@ class TestRedisDeliberationQueue:
         await mock_redis.hset(queue.queue_key, "test_123", json.dumps(test_item))
 
         result = await queue.update_deliberation_status(
-            "test_123",
-            "approved",
-            {"reviewer": "human_1"}
+            "test_123", "approved", {"reviewer": "human_1"}
         )
 
         assert result is True
@@ -250,7 +244,7 @@ class TestRedisDeliberationQueue:
         """Test removing a deliberation item."""
         redis_int = _load_module(
             "_redis_int_test8",
-            os.path.join(enhanced_agent_bus_dir, "deliberation_layer", "redis_integration.py")
+            os.path.join(enhanced_agent_bus_dir, "deliberation_layer", "redis_integration.py"),
         )
 
         queue = redis_int.RedisDeliberationQueue()
@@ -269,7 +263,7 @@ class TestRedisDeliberationQueue:
         """Test getting pending items."""
         redis_int = _load_module(
             "_redis_int_test9",
-            os.path.join(enhanced_agent_bus_dir, "deliberation_layer", "redis_integration.py")
+            os.path.join(enhanced_agent_bus_dir, "deliberation_layer", "redis_integration.py"),
         )
 
         queue = redis_int.RedisDeliberationQueue()
@@ -294,7 +288,7 @@ class TestRedisDeliberationQueue:
         """Test getting stream info."""
         redis_int = _load_module(
             "_redis_int_test10",
-            os.path.join(enhanced_agent_bus_dir, "deliberation_layer", "redis_integration.py")
+            os.path.join(enhanced_agent_bus_dir, "deliberation_layer", "redis_integration.py"),
         )
 
         queue = redis_int.RedisDeliberationQueue()
@@ -321,7 +315,7 @@ class TestRedisVotingSystem:
         """Test submitting a vote."""
         redis_int = _load_module(
             "_redis_vote_test1",
-            os.path.join(enhanced_agent_bus_dir, "deliberation_layer", "redis_integration.py")
+            os.path.join(enhanced_agent_bus_dir, "deliberation_layer", "redis_integration.py"),
         )
 
         voting = redis_int.RedisVotingSystem()
@@ -332,7 +326,7 @@ class TestRedisVotingSystem:
             agent_id="agent_1",
             vote="approve",
             reasoning="Looks good",
-            confidence=0.9
+            confidence=0.9,
         )
 
         assert result is True
@@ -345,17 +339,14 @@ class TestRedisVotingSystem:
         """Test vote submission fails without Redis."""
         redis_int = _load_module(
             "_redis_vote_test2",
-            os.path.join(enhanced_agent_bus_dir, "deliberation_layer", "redis_integration.py")
+            os.path.join(enhanced_agent_bus_dir, "deliberation_layer", "redis_integration.py"),
         )
 
         voting = redis_int.RedisVotingSystem()
         voting.redis_client = None
 
         result = await voting.submit_vote(
-            item_id="item_123",
-            agent_id="agent_1",
-            vote="approve",
-            reasoning="test"
+            item_id="item_123", agent_id="agent_1", vote="approve", reasoning="test"
         )
 
         assert result is False
@@ -365,7 +356,7 @@ class TestRedisVotingSystem:
         """Test getting votes for an item."""
         redis_int = _load_module(
             "_redis_vote_test3",
-            os.path.join(enhanced_agent_bus_dir, "deliberation_layer", "redis_integration.py")
+            os.path.join(enhanced_agent_bus_dir, "deliberation_layer", "redis_integration.py"),
         )
 
         voting = redis_int.RedisVotingSystem()
@@ -384,7 +375,7 @@ class TestRedisVotingSystem:
         """Test getting vote counts."""
         redis_int = _load_module(
             "_redis_vote_test4",
-            os.path.join(enhanced_agent_bus_dir, "deliberation_layer", "redis_integration.py")
+            os.path.join(enhanced_agent_bus_dir, "deliberation_layer", "redis_integration.py"),
         )
 
         voting = redis_int.RedisVotingSystem()
@@ -406,7 +397,7 @@ class TestRedisVotingSystem:
         """Test consensus check with approval."""
         redis_int = _load_module(
             "_redis_vote_test5",
-            os.path.join(enhanced_agent_bus_dir, "deliberation_layer", "redis_integration.py")
+            os.path.join(enhanced_agent_bus_dir, "deliberation_layer", "redis_integration.py"),
         )
 
         voting = redis_int.RedisVotingSystem()
@@ -428,7 +419,7 @@ class TestRedisVotingSystem:
         """Test consensus check with rejection."""
         redis_int = _load_module(
             "_redis_vote_test6",
-            os.path.join(enhanced_agent_bus_dir, "deliberation_layer", "redis_integration.py")
+            os.path.join(enhanced_agent_bus_dir, "deliberation_layer", "redis_integration.py"),
         )
 
         voting = redis_int.RedisVotingSystem()
@@ -450,7 +441,7 @@ class TestRedisVotingSystem:
         """Test consensus check with insufficient votes."""
         redis_int = _load_module(
             "_redis_vote_test7",
-            os.path.join(enhanced_agent_bus_dir, "deliberation_layer", "redis_integration.py")
+            os.path.join(enhanced_agent_bus_dir, "deliberation_layer", "redis_integration.py"),
         )
 
         voting = redis_int.RedisVotingSystem()
@@ -470,7 +461,7 @@ class TestRedisVotingSystem:
         """Test consensus check when threshold is not met."""
         redis_int = _load_module(
             "_redis_vote_test8",
-            os.path.join(enhanced_agent_bus_dir, "deliberation_layer", "redis_integration.py")
+            os.path.join(enhanced_agent_bus_dir, "deliberation_layer", "redis_integration.py"),
         )
 
         voting = redis_int.RedisVotingSystem()
@@ -495,7 +486,7 @@ class TestGlobalInstances:
         """Test getting global deliberation queue instance."""
         redis_int = _load_module(
             "_redis_global_test1",
-            os.path.join(enhanced_agent_bus_dir, "deliberation_layer", "redis_integration.py")
+            os.path.join(enhanced_agent_bus_dir, "deliberation_layer", "redis_integration.py"),
         )
 
         # Reset global
@@ -510,7 +501,7 @@ class TestGlobalInstances:
         """Test getting global voting system instance."""
         redis_int = _load_module(
             "_redis_global_test2",
-            os.path.join(enhanced_agent_bus_dir, "deliberation_layer", "redis_integration.py")
+            os.path.join(enhanced_agent_bus_dir, "deliberation_layer", "redis_integration.py"),
         )
 
         # Reset global

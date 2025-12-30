@@ -5,12 +5,12 @@ Constitutional Hash: cdd01ef066bc6cf2
 Tests for enhanced_agent_bus/policy_client.py
 """
 
+import importlib.util
 import os
 import sys
-import importlib.util
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
 
 # ============================================================================
 # Direct Module Loading (compatible with conftest.py)
@@ -59,21 +59,19 @@ _mock_pkg.AgentMessage = _models.AgentMessage
 _mock_pkg.ValidationResult = _validators.ValidationResult
 
 # Now load policy_client with mocked imports
-sys.modules['.models'] = _mock_pkg
-sys.modules['.validators'] = _mock_pkg
+sys.modules[".models"] = _mock_pkg
+sys.modules[".validators"] = _mock_pkg
 
 # Read the source and modify relative imports
-with open(_policy_client_path, 'r') as f:
+with open(_policy_client_path, "r") as f:
     source = f.read()
 
 # Replace relative imports
 source = source.replace(
-    "from .models import AgentMessage",
-    "AgentMessage = None  # Will be patched"
+    "from .models import AgentMessage", "AgentMessage = None  # Will be patched"
 )
 source = source.replace(
-    "from .validators import ValidationResult",
-    "ValidationResult = None  # Will be patched"
+    "from .validators import ValidationResult", "ValidationResult = None  # Will be patched"
 )
 
 # SECURITY: exec() used intentionally for test module loading
@@ -81,7 +79,7 @@ source = source.replace(
 # 1. Source comes from a known file in the codebase (not user input)
 # 2. Only used in test environment
 # 3. Required for dynamic test fixture generation
-exec(compile(source, _policy_client_path, 'exec'), globals())
+exec(compile(source, _policy_client_path, "exec"), globals())
 
 # Now patch the globals
 AgentMessage = _models.AgentMessage
@@ -89,8 +87,8 @@ ValidationResult = _validators.ValidationResult
 MessageType = _models.MessageType
 
 # Re-assign in module namespace for the tests
-globals()['AgentMessage'] = AgentMessage
-globals()['ValidationResult'] = ValidationResult
+globals()["AgentMessage"] = AgentMessage
+globals()["ValidationResult"] = ValidationResult
 
 # Create our own PolicyRegistryClient class for testing
 CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
@@ -103,7 +101,7 @@ class PolicyRegistryClientForTest:
         self,
         registry_url: str = "http://localhost:8000",
         timeout: float = 5.0,
-        cache_ttl: int = 300
+        cache_ttl: int = 300,
     ):
         self.registry_url = registry_url.rstrip("/")
         self.timeout = timeout
@@ -121,9 +119,10 @@ class PolicyRegistryClientForTest:
     async def initialize(self):
         if not self._http_client:
             import httpx
+
             self._http_client = httpx.AsyncClient(
                 timeout=self.timeout,
-                limits=httpx.Limits(max_keepalive_connections=10, max_connections=20)
+                limits=httpx.Limits(max_keepalive_connections=10, max_connections=20),
             )
 
     async def close(self):
@@ -133,6 +132,7 @@ class PolicyRegistryClientForTest:
 
     async def get_policy_content(self, policy_id: str, client_id=None):
         import asyncio
+
         cache_key = f"{policy_id}:{client_id or 'default'}"
         if cache_key in self._cache:
             cached = self._cache[cache_key]
@@ -144,15 +144,14 @@ class PolicyRegistryClientForTest:
         try:
             params = {"client_id": client_id} if client_id else {}
             response = await self._http_client.get(
-                f"{self.registry_url}/api/v1/policies/{policy_id}/content",
-                params=params
+                f"{self.registry_url}/api/v1/policies/{policy_id}/content", params=params
             )
             response.raise_for_status()
             content = response.json()
 
             self._cache[cache_key] = {
                 "content": content,
-                "timestamp": asyncio.get_event_loop().time()
+                "timestamp": asyncio.get_event_loop().time(),
             }
             return content
 
@@ -165,8 +164,7 @@ class PolicyRegistryClientForTest:
 
             if not policy_content:
                 return _validators.ValidationResult(
-                    is_valid=True,
-                    warnings=["Policy registry unavailable, using basic validation"]
+                    is_valid=True, warnings=["Policy registry unavailable, using basic validation"]
                 )
 
             errors = []
@@ -189,22 +187,17 @@ class PolicyRegistryClientForTest:
                     errors.append(f"Message contains prohibited content: {prohibited_item}")
 
             return _validators.ValidationResult(
-                is_valid=len(errors) == 0,
-                errors=errors,
-                warnings=warnings
+                is_valid=len(errors) == 0, errors=errors, warnings=warnings
             )
 
         except Exception as e:
             return _validators.ValidationResult(
-                is_valid=True,
-                warnings=[f"Policy validation error: {str(e)}"]
+                is_valid=True, warnings=[f"Policy validation error: {str(e)}"]
             )
 
     async def get_current_public_key(self):
         try:
-            response = await self._http_client.get(
-                f"{self.registry_url}/api/v1/public-keys"
-            )
+            response = await self._http_client.get(f"{self.registry_url}/api/v1/public-keys")
             response.raise_for_status()
             data = response.json()
             return data.get("current_public_key")
@@ -213,32 +206,19 @@ class PolicyRegistryClientForTest:
 
     async def health_check(self):
         import httpx
+
         try:
-            response = await self._http_client.get(
-                f"{self.registry_url}/health/ready"
-            )
+            response = await self._http_client.get(f"{self.registry_url}/health/ready")
             response.raise_for_status()
             return response.json()
         except httpx.HTTPStatusError as e:
-            return {
-                "status": "unhealthy",
-                "error": f"HTTP error: {e.response.status_code}"
-            }
+            return {"status": "unhealthy", "error": f"HTTP error: {e.response.status_code}"}
         except httpx.TimeoutException:
-            return {
-                "status": "unhealthy",
-                "error": "Network error: TimeoutException"
-            }
+            return {"status": "unhealthy", "error": "Network error: TimeoutException"}
         except httpx.ConnectError:
-            return {
-                "status": "unhealthy",
-                "error": "Network error: ConnectError"
-            }
+            return {"status": "unhealthy", "error": "Network error: ConnectError"}
         except ValueError as e:
-            return {
-                "status": "unhealthy",
-                "error": f"Response parsing error: {e}"
-            }
+            return {"status": "unhealthy", "error": f"Response parsing error: {e}"}
 
 
 # Use our test-friendly class
@@ -248,6 +228,7 @@ PolicyRegistryClient = PolicyRegistryClientForTest
 # ============================================================================
 # PolicyRegistryClient Tests
 # ============================================================================
+
 
 class TestPolicyRegistryClientInit:
     """Test PolicyRegistryClient initialization."""
@@ -264,9 +245,7 @@ class TestPolicyRegistryClientInit:
     def test_custom_initialization(self):
         """Test custom values on initialization."""
         client = PolicyRegistryClient(
-            registry_url="http://registry.example.com:9000/",
-            timeout=10.0,
-            cache_ttl=600
+            registry_url="http://registry.example.com:9000/", timeout=10.0, cache_ttl=600
         )
         assert client.registry_url == "http://registry.example.com:9000"
         assert client.timeout == 10.0
@@ -284,7 +263,7 @@ class TestPolicyRegistryClientContextManager:
     @pytest.mark.asyncio
     async def test_aenter_initializes_client(self):
         """Test __aenter__ initializes HTTP client."""
-        with patch.object(PolicyRegistryClient, 'initialize', new_callable=AsyncMock) as mock_init:
+        with patch.object(PolicyRegistryClient, "initialize", new_callable=AsyncMock) as mock_init:
             client = PolicyRegistryClient()
             result = await client.__aenter__()
             assert result is client
@@ -293,7 +272,7 @@ class TestPolicyRegistryClientContextManager:
     @pytest.mark.asyncio
     async def test_aexit_closes_client(self):
         """Test __aexit__ closes HTTP client."""
-        with patch.object(PolicyRegistryClient, 'close', new_callable=AsyncMock) as mock_close:
+        with patch.object(PolicyRegistryClient, "close", new_callable=AsyncMock) as mock_close:
             client = PolicyRegistryClient()
             await client.__aexit__(None, None, None)
             mock_close.assert_called_once()
@@ -308,7 +287,7 @@ class TestPolicyRegistryClientInitializeClose:
         client = PolicyRegistryClient()
         assert client._http_client is None
 
-        with patch('httpx.AsyncClient') as mock_client_class:
+        with patch("httpx.AsyncClient") as mock_client_class:
             mock_instance = MagicMock()
             mock_client_class.return_value = mock_instance
 
@@ -322,7 +301,7 @@ class TestPolicyRegistryClientInitializeClose:
         """Test initialize is idempotent."""
         client = PolicyRegistryClient()
 
-        with patch('httpx.AsyncClient') as mock_client_class:
+        with patch("httpx.AsyncClient") as mock_client_class:
             mock_instance = MagicMock()
             mock_client_class.return_value = mock_instance
 
@@ -370,7 +349,7 @@ class TestPolicyRegistryClientGetPolicyContent:
         mock_http.get.return_value = mock_response
         client._http_client = mock_http
 
-        with patch('asyncio.get_event_loop') as mock_loop:
+        with patch("asyncio.get_event_loop") as mock_loop:
             mock_loop.return_value.time.return_value = 1000.0
 
             result = await client.get_policy_content("test_policy")
@@ -388,7 +367,7 @@ class TestPolicyRegistryClientGetPolicyContent:
         mock_http.get.return_value = mock_response
         client._http_client = mock_http
 
-        with patch('asyncio.get_event_loop') as mock_loop:
+        with patch("asyncio.get_event_loop") as mock_loop:
             mock_loop.return_value.time.return_value = 1000.0
 
             result = await client.get_policy_content("test_policy", client_id="client_123")
@@ -404,12 +383,9 @@ class TestPolicyRegistryClientGetPolicyContent:
         mock_http = AsyncMock()
         client._http_client = mock_http
 
-        client._cache["test_policy:default"] = {
-            "content": {"cached": True},
-            "timestamp": 1000.0
-        }
+        client._cache["test_policy:default"] = {"content": {"cached": True}, "timestamp": 1000.0}
 
-        with patch('asyncio.get_event_loop') as mock_loop:
+        with patch("asyncio.get_event_loop") as mock_loop:
             mock_loop.return_value.time.return_value = 1100.0
 
             result = await client.get_policy_content("test_policy")
@@ -427,12 +403,9 @@ class TestPolicyRegistryClientGetPolicyContent:
         mock_http.get.return_value = mock_response
         client._http_client = mock_http
 
-        client._cache["test_policy:default"] = {
-            "content": {"cached": True},
-            "timestamp": 1000.0
-        }
+        client._cache["test_policy:default"] = {"content": {"cached": True}, "timestamp": 1000.0}
 
-        with patch('asyncio.get_event_loop') as mock_loop:
+        with patch("asyncio.get_event_loop") as mock_loop:
             mock_loop.return_value.time.return_value = 1500.0
 
             result = await client.get_policy_content("test_policy")
@@ -449,18 +422,18 @@ class TestPolicyRegistryClientValidateMessageSignature:
         """Test successful message validation."""
         client = PolicyRegistryClient()
 
-        with patch.object(client, 'get_policy_content', new_callable=AsyncMock) as mock_get:
+        with patch.object(client, "get_policy_content", new_callable=AsyncMock) as mock_get:
             mock_get.return_value = {
                 "max_response_length": 10000,
                 "allowed_topics": [],
-                "prohibited_content": []
+                "prohibited_content": [],
             }
 
             message = AgentMessage(
                 message_type=MessageType.COMMAND,
                 sender_id="agent1",
                 content={"action": "test"},
-                constitutional_hash=CONSTITUTIONAL_HASH
+                constitutional_hash=CONSTITUTIONAL_HASH,
             )
 
             result = await client.validate_message_signature(message)
@@ -473,18 +446,18 @@ class TestPolicyRegistryClientValidateMessageSignature:
         """Test validation fails for messages exceeding max length."""
         client = PolicyRegistryClient()
 
-        with patch.object(client, 'get_policy_content', new_callable=AsyncMock) as mock_get:
+        with patch.object(client, "get_policy_content", new_callable=AsyncMock) as mock_get:
             mock_get.return_value = {
                 "max_response_length": 10,
                 "allowed_topics": [],
-                "prohibited_content": []
+                "prohibited_content": [],
             }
 
             message = AgentMessage(
                 message_type=MessageType.COMMAND,
                 sender_id="agent1",
                 content={"action": "this is a very long message content"},
-                constitutional_hash=CONSTITUTIONAL_HASH
+                constitutional_hash=CONSTITUTIONAL_HASH,
             )
 
             result = await client.validate_message_signature(message)
@@ -497,18 +470,18 @@ class TestPolicyRegistryClientValidateMessageSignature:
         """Test validation fails for prohibited content."""
         client = PolicyRegistryClient()
 
-        with patch.object(client, 'get_policy_content', new_callable=AsyncMock) as mock_get:
+        with patch.object(client, "get_policy_content", new_callable=AsyncMock) as mock_get:
             mock_get.return_value = {
                 "max_response_length": 10000,
                 "allowed_topics": [],
-                "prohibited_content": ["forbidden", "banned"]
+                "prohibited_content": ["forbidden", "banned"],
             }
 
             message = AgentMessage(
                 message_type=MessageType.COMMAND,
                 sender_id="agent1",
                 content={"action": "this contains forbidden content"},
-                constitutional_hash=CONSTITUTIONAL_HASH
+                constitutional_hash=CONSTITUTIONAL_HASH,
             )
 
             result = await client.validate_message_signature(message)
@@ -521,18 +494,18 @@ class TestPolicyRegistryClientValidateMessageSignature:
         """Test validation warns about topics not in allowed list."""
         client = PolicyRegistryClient()
 
-        with patch.object(client, 'get_policy_content', new_callable=AsyncMock) as mock_get:
+        with patch.object(client, "get_policy_content", new_callable=AsyncMock) as mock_get:
             mock_get.return_value = {
                 "max_response_length": 10000,
                 "allowed_topics": ["finance", "security"],
-                "prohibited_content": []
+                "prohibited_content": [],
             }
 
             message = AgentMessage(
                 message_type=MessageType.COMMAND,
                 sender_id="agent1",
                 content={"action": "test", "topics": ["health"]},
-                constitutional_hash=CONSTITUTIONAL_HASH
+                constitutional_hash=CONSTITUTIONAL_HASH,
             )
 
             result = await client.validate_message_signature(message)
@@ -545,14 +518,14 @@ class TestPolicyRegistryClientValidateMessageSignature:
         """Test validation fallback when no policy available."""
         client = PolicyRegistryClient()
 
-        with patch.object(client, 'get_policy_content', new_callable=AsyncMock) as mock_get:
+        with patch.object(client, "get_policy_content", new_callable=AsyncMock) as mock_get:
             mock_get.return_value = None
 
             message = AgentMessage(
                 message_type=MessageType.COMMAND,
                 sender_id="agent1",
                 content={"action": "test"},
-                constitutional_hash=CONSTITUTIONAL_HASH
+                constitutional_hash=CONSTITUTIONAL_HASH,
             )
 
             result = await client.validate_message_signature(message)
@@ -618,9 +591,12 @@ class TestPolicyRegistryClientHealthCheck:
         mock_http = AsyncMock()
 
         import httpx
+
         mock_response = MagicMock()
         mock_response.status_code = 503
-        error = httpx.HTTPStatusError("Service unavailable", request=MagicMock(), response=mock_response)
+        error = httpx.HTTPStatusError(
+            "Service unavailable", request=MagicMock(), response=mock_response
+        )
         mock_http.get.side_effect = error
         client._http_client = mock_http
 
@@ -636,6 +612,7 @@ class TestPolicyRegistryClientHealthCheck:
         mock_http = AsyncMock()
 
         import httpx
+
         mock_http.get.side_effect = httpx.TimeoutException("Request timed out")
         client._http_client = mock_http
 
@@ -651,6 +628,7 @@ class TestPolicyRegistryClientHealthCheck:
         mock_http = AsyncMock()
 
         import httpx
+
         mock_http.get.side_effect = httpx.ConnectError("Connection refused")
         client._http_client = mock_http
 

@@ -6,30 +6,26 @@ Main orchestrator class that ties together all AI assistant components:
 NLU, Dialog Management, Response Generation, and Agent Bus Integration.
 """
 
-import asyncio
 import logging
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Any, Callable, Dict, List, Optional, Protocol
 from enum import Enum
+from typing import Any, Dict, List, Optional, Protocol
 
 from .context import (
-    ConversationContext,
     ContextManager,
-    ConversationState,
+    ConversationContext,
     Message,
     MessageRole,
-    UserProfile,
 )
-from .nlu import NLUEngine, NLUResult
-from .dialog import DialogManager, DialogAction, ActionType
+from .dialog import ActionType, DialogAction, DialogManager
+from .integration import AgentBusIntegration, IntegrationConfig
+from .nlu import NLUEngine
 from .response import (
+    ResponseConfig,
     ResponseGenerator,
     TemplateResponseGenerator,
-    HybridResponseGenerator,
-    ResponseConfig,
 )
-from .integration import AgentBusIntegration, IntegrationConfig, GovernanceDecision
 
 # Import centralized constitutional hash with fallback
 try:
@@ -42,6 +38,7 @@ logger = logging.getLogger(__name__)
 
 class AssistantState(Enum):
     """States of the AI assistant."""
+
     INITIALIZED = "initialized"
     READY = "ready"
     PROCESSING = "processing"
@@ -52,6 +49,7 @@ class AssistantState(Enum):
 @dataclass
 class AssistantConfig:
     """Configuration for the AI Assistant."""
+
     name: str = "ACGS-2 Assistant"
     description: str = "Constitutional AI governance assistant"
     max_conversation_turns: int = 100
@@ -81,6 +79,7 @@ class AssistantConfig:
 @dataclass
 class ProcessingResult:
     """Result of processing a user message."""
+
     success: bool
     response_text: str
     intent: Optional[str] = None
@@ -233,7 +232,7 @@ class AIAssistant:
             self._state = AssistantState.READY
             self._start_time = datetime.now(timezone.utc)
 
-            logger.info(f"AI Assistant initialized successfully")
+            logger.info("AI Assistant initialized successfully")
             return True
 
         except Exception as e:
@@ -342,7 +341,9 @@ class AIAssistant:
                     return ProcessingResult(
                         success=False,
                         response_text="I'm sorry, I can't perform that action right now.",
-                        intent=nlu_result.primary_intent.name if nlu_result.primary_intent else None,
+                        intent=(
+                            nlu_result.primary_intent.name if nlu_result.primary_intent else None
+                        ),
                         confidence=nlu_result.confidence,
                         governance_decision=governance_decision.to_dict(),
                         constitutional_hash=self.config.constitutional_hash,
@@ -392,7 +393,11 @@ class AIAssistant:
                 response_text=response_text,
                 intent=nlu_result.primary_intent.name if nlu_result.primary_intent else None,
                 confidence=nlu_result.confidence,
-                entities=nlu_result.entities if isinstance(nlu_result.entities, dict) else {e.type: e.value for e in nlu_result.entities},
+                entities=(
+                    nlu_result.entities
+                    if isinstance(nlu_result.entities, dict)
+                    else {e.type: e.value for e in nlu_result.entities}
+                ),
                 action_taken=action.action_type.value if action else None,
                 governance_decision=governance_decision.to_dict() if governance_decision else None,
                 processing_time_ms=processing_time,
@@ -418,7 +423,7 @@ class AIAssistant:
             self._state = AssistantState.READY
 
             # Notify error listeners
-            if 'context' in locals():
+            if "context" in locals():
                 await self._notify_error(context, e)
 
             return ProcessingResult(
@@ -534,10 +539,7 @@ class AIAssistant:
 
     def get_user_sessions(self, user_id: str) -> List[ConversationContext]:
         """Get all active sessions for a user."""
-        return [
-            ctx for ctx in self._active_sessions.values()
-            if ctx.user_id == user_id
-        ]
+        return [ctx for ctx in self._active_sessions.values() if ctx.user_id == user_id]
 
     def end_session(self, session_id: str) -> bool:
         """End and remove a session."""

@@ -5,11 +5,12 @@ Constitutional Hash: cdd01ef066bc6cf2
 Fixtures for timeout budgets, metrics, and tracing in specification tests.
 """
 
-import pytest
-from typing import Optional, Dict, Any, List
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
+from typing import Any, Dict, List, Optional
+
+import pytest
 
 try:
     from shared.constants import CONSTITUTIONAL_HASH
@@ -18,15 +19,16 @@ except ImportError:
 
 # Try to import from observability module, fallback to local definitions
 try:
-    from enhanced_agent_bus.observability.timeout_budget import (
-        TimeoutBudgetManager,
-        Layer,
-        LayerTimeoutBudget,
-    )
     from enhanced_agent_bus.observability.telemetry import (
         MetricsRegistry,
         TracingContext,
     )
+    from enhanced_agent_bus.observability.timeout_budget import (
+        Layer,
+        LayerTimeoutBudget,
+        TimeoutBudgetManager,
+    )
+
     _OBSERVABILITY_AVAILABLE = True
 except ImportError:
     _OBSERVABILITY_AVAILABLE = False
@@ -34,6 +36,7 @@ except ImportError:
     # Define minimal fallback classes for standalone testing
     class Layer(Enum):
         """Fallback Layer enum for standalone testing."""
+
         LAYER1_VALIDATION = "layer1_validation"
         LAYER2_DELIBERATION = "layer2_deliberation"
         LAYER3_POLICY = "layer3_policy"
@@ -42,6 +45,7 @@ except ImportError:
     @dataclass
     class LayerTimeoutBudget:
         """Fallback budget dataclass."""
+
         layer: Layer
         budget_ms: float
         soft_limit_pct: float = 0.8
@@ -49,6 +53,7 @@ except ImportError:
 
     class TimeoutBudgetManager:
         """Fallback timeout budget manager."""
+
         def __init__(self, total_budget_ms: float = 50.0):
             self.total_budget_ms = total_budget_ms
             self._budgets = {
@@ -63,18 +68,24 @@ except ImportError:
 
     class MetricsRegistry:
         """Fallback metrics registry."""
+
         def __init__(self, service_name: str = "acgs2"):
             self.service_name = service_name
             self._counters: Dict[str, int] = {}
 
-        def increment_counter(self, name: str, amount: int = 1, attributes: Optional[Dict[str, str]] = None) -> None:
+        def increment_counter(
+            self, name: str, amount: int = 1, attributes: Optional[Dict[str, str]] = None
+        ) -> None:
             self._counters[name] = self._counters.get(name, 0) + amount
 
-        def record_latency(self, name: str, value_ms: float, attributes: Optional[Dict[str, str]] = None) -> None:
+        def record_latency(
+            self, name: str, value_ms: float, attributes: Optional[Dict[str, str]] = None
+        ) -> None:
             pass
 
     class TracingContext:
         """Fallback tracing context."""
+
         def __init__(self, operation_name: str):
             self.operation_name = operation_name
 
@@ -276,7 +287,9 @@ class SpecMetricsRegistry(MetricsRegistry):
 
     def get_counter_total(self, name: str) -> int:
         """Get total count for a counter metric."""
-        events = [e for e in self.metric_events if e["metric_name"] == name and e["type"] == "counter"]
+        events = [
+            e for e in self.metric_events if e["metric_name"] == name and e["type"] == "counter"
+        ]
         return sum(int(e["value"]) for e in events)
 
     def clear_events(self) -> None:

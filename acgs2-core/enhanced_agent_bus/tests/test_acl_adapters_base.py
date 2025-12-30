@@ -8,33 +8,34 @@ rate limiter, and abstract base class.
 
 import asyncio
 import time
+
 import pytest
 
 try:
     from acl_adapters.base import (
-        AdapterState,
-        AdapterTimeoutError,
+        CONSTITUTIONAL_HASH,
+        ACLAdapter,
         AdapterCircuitOpenError,
-        RateLimitExceededError,
         AdapterConfig,
         AdapterResult,
+        AdapterState,
+        AdapterTimeoutError,
+        RateLimitExceededError,
         SimpleCircuitBreaker,
         TokenBucketRateLimiter,
-        ACLAdapter,
-        CONSTITUTIONAL_HASH,
     )
 except ImportError:
     from ..acl_adapters.base import (
-        AdapterState,
-        AdapterTimeoutError,
+        CONSTITUTIONAL_HASH,
+        ACLAdapter,
         AdapterCircuitOpenError,
-        RateLimitExceededError,
         AdapterConfig,
         AdapterResult,
+        AdapterState,
+        AdapterTimeoutError,
+        RateLimitExceededError,
         SimpleCircuitBreaker,
         TokenBucketRateLimiter,
-        ACLAdapter,
-        CONSTITUTIONAL_HASH,
     )
 
 

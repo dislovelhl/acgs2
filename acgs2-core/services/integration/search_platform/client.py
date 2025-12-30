@@ -12,7 +12,7 @@ import logging
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from enum import Enum
-from typing import Any, AsyncIterator, Callable, Dict, List, Optional
+from typing import Any, AsyncIterator, Dict, List, Optional
 
 import aiohttp
 from aiohttp import ClientSession, ClientTimeout, TCPConnector
@@ -23,7 +23,6 @@ from .models import (
     SearchDomain,
     SearchEvent,
     SearchEventType,
-    SearchMatch,
     SearchOptions,
     SearchRequest,
     SearchResponse,
@@ -35,6 +34,7 @@ logger = logging.getLogger(__name__)
 
 class CircuitState(Enum):
     """Circuit breaker states."""
+
     CLOSED = "closed"
     OPEN = "open"
     HALF_OPEN = "half_open"
@@ -43,6 +43,7 @@ class CircuitState(Enum):
 @dataclass
 class CircuitBreaker:
     """Circuit breaker for fault tolerance."""
+
     failure_threshold: int = 5
     recovery_timeout: float = 30.0
     half_open_max_calls: int = 3
@@ -95,6 +96,7 @@ class CircuitBreaker:
 @dataclass
 class SearchPlatformConfig:
     """Configuration for the Search Platform client."""
+
     base_url: str = "http://localhost:9080"
     timeout_seconds: float = 30.0
     max_connections: int = 100
@@ -107,6 +109,7 @@ class SearchPlatformConfig:
     def from_env(cls) -> "SearchPlatformConfig":
         """Create config from environment variables."""
         import os
+
         return cls(
             base_url=os.getenv("SEARCH_PLATFORM_URL", "http://localhost:9080"),
             timeout_seconds=float(os.getenv("SEARCH_PLATFORM_TIMEOUT", "30.0")),
@@ -117,6 +120,7 @@ class SearchPlatformConfig:
 
 class SearchPlatformError(Exception):
     """Base exception for Search Platform errors."""
+
     def __init__(self, message: str, status_code: int = 500, error_code: str = "UNKNOWN"):
         super().__init__(message)
         self.status_code = status_code
@@ -227,7 +231,7 @@ class SearchPlatformClient:
                 )
 
                 if attempt < self.config.max_retries - 1:
-                    delay = self.config.retry_delay_seconds * (2 ** attempt)
+                    delay = self.config.retry_delay_seconds * (2**attempt)
                     await asyncio.sleep(delay)
 
         raise SearchPlatformError(
@@ -360,6 +364,7 @@ class SearchPlatformClient:
                         event_type = line[6:].strip()
                     elif line.startswith("data:"):
                         import json
+
                         data = json.loads(line[5:].strip())
                         yield SearchEvent.from_sse(event_type, data)
 

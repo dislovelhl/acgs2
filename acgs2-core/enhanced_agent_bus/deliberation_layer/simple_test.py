@@ -2,17 +2,18 @@
 Simple test for ACGS-2 Deliberation Layer components.
 """
 
-import sys
 import os
+import sys
+
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 # Import models directly
-from models import AgentMessage, MessageType, Priority
+from deliberation_layer.adaptive_router import AdaptiveRouter
+from deliberation_layer.deliberation_queue import DeliberationQueue
 
 # Import deliberation components
 from deliberation_layer.impact_scorer import calculate_message_impact
-from deliberation_layer.adaptive_router import AdaptiveRouter
-from deliberation_layer.deliberation_queue import DeliberationQueue
+from models import AgentMessage, MessageType, Priority
 
 
 def test_impact_scorer():
@@ -20,8 +21,8 @@ def test_impact_scorer():
     print("Testing Impact Scorer...")
 
     # Test messages
-    low_risk = {'action': 'status_check', 'details': 'normal operation'}
-    high_risk = {'action': 'security_breach', 'details': 'unauthorized access detected'}
+    low_risk = {"action": "status_check", "details": "normal operation"}
+    high_risk = {"action": "security_breach", "details": "unauthorized access detected"}
 
     low_score = calculate_message_impact(low_risk)
     high_score = calculate_message_impact(high_risk)
@@ -41,21 +42,22 @@ def test_adaptive_router():
 
     # Create test message
     message = AgentMessage(
-        content={'action': 'critical_update', 'details': 'emergency security patch'},
+        content={"action": "critical_update", "details": "emergency security patch"},
         message_type=MessageType.GOVERNANCE_REQUEST,
         priority=Priority.CRITICAL,
         from_agent="security_agent",
-        to_agent="system_agent"
+        to_agent="system_agent",
     )
 
     # Route message
     import asyncio
+
     result = asyncio.run(router.route_message(message))
 
     print(f"Message routed to: {result.get('lane')}")
     print(f"Impact score: {message.impact_score:.3f}")
 
-    assert result.get('lane') in ['fast', 'deliberation'], "Should route to valid lane"
+    assert result.get("lane") in ["fast", "deliberation"], "Should route to valid lane"
     print("✅ Adaptive router test passed")
 
 
@@ -67,15 +69,16 @@ def test_deliberation_queue():
 
     # Create test message
     message = AgentMessage(
-        content={'action': 'policy_change', 'details': 'modify access rules'},
+        content={"action": "policy_change", "details": "modify access rules"},
         message_type=MessageType.GOVERNANCE_REQUEST,
         priority=Priority.HIGH,
         from_agent="admin_agent",
-        to_agent="policy_agent"
+        to_agent="policy_agent",
     )
 
     # Enqueue for deliberation
     import asyncio
+
     item_id = asyncio.run(queue.enqueue_for_deliberation(message))
 
     print(f"Message enqueued with item ID: {item_id}")
@@ -84,7 +87,7 @@ def test_deliberation_queue():
     status = queue.get_queue_status()
     print(f"Queue size: {status['queue_size']}")
 
-    assert status['queue_size'] > 0, "Should have item in queue"
+    assert status["queue_size"] > 0, "Should have item in queue"
     print("✅ Deliberation queue test passed")
 
 
@@ -97,14 +100,15 @@ def main():
         test_adaptive_router()
         test_deliberation_queue()
 
-        print("\n" + "="*50)
+        print("\n" + "=" * 50)
         print("🎉 All tests passed!")
         print("ACGS-2 Deliberation Layer is functional.")
-        print("="*50)
+        print("=" * 50)
 
     except Exception as e:
         print(f"\n❌ Test failed: {e}")
         import traceback
+
         traceback.print_exc()
 
 

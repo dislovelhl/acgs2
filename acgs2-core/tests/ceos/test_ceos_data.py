@@ -4,10 +4,10 @@ Constitutional Hash: cdd01ef066bc6cf2
 """
 
 import pytest
-import asyncio
 from enhanced_agent_bus.graph_database import create_graph_db_manager
 from enhanced_agent_bus.retrieval_triad import RetrievalTriad
 from enhanced_agent_bus.sql_agent import SQLAgent
+
 
 @pytest.mark.asyncio
 async def test_retrieval_triad_ensemble():
@@ -27,6 +27,7 @@ async def test_retrieval_triad_ensemble():
     assert has_graph
     assert results[0]["triad_score"] > 0
 
+
 @pytest.mark.asyncio
 async def test_sql_agent_self_correction():
     """Test SQL Agent schema reflection and self-correction loop."""
@@ -36,9 +37,10 @@ async def test_sql_agent_self_correction():
     response = await agent.execute_query("Total sales amount")
 
     assert response["status"] == "success"
-    assert response["attempts"] > 1 # Verified self-correction loop ran
+    assert response["attempts"] > 1  # Verified self-correction loop ran
     assert "results" in response
     assert response["results"][0]["sum"] == 1200.50
+
 
 @pytest.mark.asyncio
 async def test_graph_multi_hop():

@@ -8,11 +8,11 @@ Service URL: http://localhost:8107
 """
 
 import asyncio
-from datetime import datetime
 import json
 import logging
 import sys
 import time
+from datetime import datetime
 from typing import Any, Dict, Optional
 
 import aiohttp
@@ -21,6 +21,7 @@ import requests
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
 
 class ACGSCodeAnalysisClient:
     """Client for integrating with ACGS Code Analysis Engine"""
@@ -53,14 +54,13 @@ class ACGSCodeAnalysisClient:
         try:
             if not self.session:
                 raise RuntimeError("Session not initialized. Use async context manager.")
-                
+
             async with self.session.get(f"{self.base_url}/health") as response:
                 data = await response.json()
 
                 if not self.verify_constitutional_compliance(data):
                     msg = (
-                        "Constitutional compliance violation:"
-                        f" {data.get('constitutional_hash')}"
+                        "Constitutional compliance violation:" f" {data.get('constitutional_hash')}"
                     )
                     raise ValueError(msg)
 
@@ -153,10 +153,7 @@ class ACGSCodeAnalysisClient:
             data = response.json()
 
             if not self.verify_constitutional_compliance(data):
-                msg = (
-                    "Constitutional compliance violation:"
-                    f" {data.get('constitutional_hash')}"
-                )
+                msg = "Constitutional compliance violation:" f" {data.get('constitutional_hash')}"
                 raise ValueError(msg)
 
             return {
@@ -232,9 +229,7 @@ class IntegrationExamples:
                             "query": query,
                             "total_results": result["total"],
                             "search_time_ms": search_time,
-                            "constitutional_compliant": result[
-                                "constitutional_compliant"
-                            ],
+                            "constitutional_compliant": result["constitutional_compliant"],
                         },
                     )
 
@@ -305,8 +300,8 @@ class DatabaseManager:
 
                     start_time = time.time()
                     result = await client.analyze_code(
-                         example["code"],
-                         example["language"],
+                        example["code"],
+                        example["language"],
                     )
                     analysis_time = (time.time() - start_time) * 1000
 
@@ -315,9 +310,7 @@ class DatabaseManager:
                             "name": example["name"],
                             "language": example["language"],
                             "analysis_time_ms": analysis_time,
-                            "constitutional_compliant": result[
-                                "constitutional_compliant"
-                            ],
+                            "constitutional_compliant": result["constitutional_compliant"],
                         },
                     )
 
@@ -384,14 +377,11 @@ class DatabaseManager:
         """Generate comprehensive integration summary"""
 
         failed_examples = [
-            name
-            for name, result in self.results.items()
-            if result.get("status") == "failed"
+            name for name, result in self.results.items() if result.get("status") == "failed"
         ]
 
         constitutional_compliant = all(
-            result.get("constitutional_compliant", True)
-            for result in self.results.values()
+            result.get("constitutional_compliant", True) for result in self.results.values()
         )
 
         overall_success = len(failed_examples) == 0

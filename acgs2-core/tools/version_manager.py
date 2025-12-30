@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-import os
 import re
 import sys
 from pathlib import Path
 
 # Constitutional Hash: cdd01ef066bc6cf2
+
 
 def get_version():
     version_file = Path(__file__).parent.parent / "VERSION"
@@ -13,6 +13,7 @@ def get_version():
         return None
     return version_file.read_text().strip()
 
+
 def update_version_in_files(version):
     root_dir = Path(__file__).parent.parent
     files_to_update = [
@@ -20,7 +21,7 @@ def update_version_in_files(version):
         "README.en.md",
         "PROJECT_INDEX.md",
         "docs/api_reference.md",
-        "enhanced_agent_bus/README.md"
+        "enhanced_agent_bus/README.md",
     ]
 
     # Patterns to match:
@@ -29,9 +30,9 @@ def update_version_in_files(version):
     # 3. (v2.2.0)
 
     patterns = [
-        (re.compile(r'(\*\*Version\*\*[:\s]+)[\d\.]+'), r'\g<1>' + version),
-        (re.compile(r'(\*\*Version:\*\*[:\s]+)[\d\.]+'), r'\g<1>' + version),
-        (re.compile(r'\(v[\d\.]+\)'), f"(v{version})")
+        (re.compile(r"(\*\*Version\*\*[:\s]+)[\d\.]+"), r"\g<1>" + version),
+        (re.compile(r"(\*\*Version:\*\*[:\s]+)[\d\.]+"), r"\g<1>" + version),
+        (re.compile(r"\(v[\d\.]+\)"), f"(v{version})"),
     ]
 
     for file_path in files_to_update:
@@ -40,17 +41,18 @@ def update_version_in_files(version):
             print(f"File not found: {file_path}")
             continue
 
-        content = full_path.read_text(encoding='utf-8')
+        content = full_path.read_text(encoding="utf-8")
         new_content = content
 
         for pattern, replacement in patterns:
             new_content = pattern.sub(replacement, new_content)
 
         if new_content != content:
-            full_path.write_text(new_content, encoding='utf-8')
+            full_path.write_text(new_content, encoding="utf-8")
             print(f"Updated version in {file_path} to {version}")
         else:
             print(f"No version string found or already up to date in {file_path}")
+
 
 if __name__ == "__main__":
     version = get_version()

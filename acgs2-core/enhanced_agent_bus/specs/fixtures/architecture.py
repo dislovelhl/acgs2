@@ -5,11 +5,12 @@ Constitutional Hash: cdd01ef066bc6cf2
 Fixtures for architectural layer testing and context management.
 """
 
-import pytest
 from dataclasses import dataclass, field
-from typing import Optional, Dict, Any, List, Set
-from enum import Enum
 from datetime import datetime, timezone
+from enum import Enum
+from typing import Any, Dict, List, Optional, Set
+
+import pytest
 
 try:
     from shared.constants import CONSTITUTIONAL_HASH
@@ -310,10 +311,7 @@ class SpecArchitectureContext:
 
     def get_all_components(self) -> Dict[ArchitecturalLayer, List[ComponentInfo]]:
         """Get all components grouped by layer."""
-        return {
-            layer: list(ctx.components.values())
-            for layer, ctx in self.layers.items()
-        }
+        return {layer: list(ctx.components.values()) for layer, ctx in self.layers.items()}
 
     def get_health_report(self) -> Dict[str, Any]:
         """

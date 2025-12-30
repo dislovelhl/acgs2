@@ -8,14 +8,14 @@ NeMo-Agent-Toolkit's agent optimization pipeline.
 
 from __future__ import annotations
 
-import asyncio
-import hashlib
-import json
 import logging
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import Enum
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable, TypeVar
+
+import httpx
 
 if TYPE_CHECKING:
     from collections.abc import Awaitable
@@ -58,6 +58,7 @@ class GuardrailConfig:
     strict_mode: bool = False
     max_retries: int = 3
     timeout_seconds: float = 5.0
+    colang_version: str = "2.x"  # Support for latest Colang 2.x
     audit_all_requests: bool = True
     block_on_violation: bool = True
     escalation_threshold: float = 0.8
@@ -70,12 +71,24 @@ class GuardrailConfig:
     compliance_enforcement: bool = True
 
     # PII patterns to detect
-    pii_patterns: list[str] = field(default_factory=lambda: [
-        r"\b\d{3}-\d{2}-\d{4}\b",  # SSN
-        r"\b\d{16}\b",  # Credit card
-        r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b",  # Email
-        r"\b\d{3}[-.]?\d{3}[-.]?\d{4}\b",  # Phone
-    ])
+    pii_patterns: list[str] = field(
+        default_factory=lambda: [
+            r"\b\d{3}-\d{2}-\d{4}\b",  # SSN
+            r"\b\d{16}\b",  # Credit card
+            r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b",  # Email
+            r"\b\d{3}[-.]?\d{3}[-.]?\d{4}\b",  # Phone
+        ]
+    )
+
+    # NIM Integration
+    use_nim: bool = False
+    nim_endpoint: str = "http://localhost:8000/v1"
+    nim_model: str = "nvidia/nemotron-3-8b-steerlm"
+    nim_guardrails_enabled: bool = True
+
+    # Bot Reasoning Monitoring
+    monitor_reasoning: bool = True
+    reasoning_validation_threshold: float = 0.9
 
     def validate(self) -> None:
         """Validate configuration."""
@@ -143,15 +156,60 @@ class ConstitutionalGuardrails:
         self._output_validators: list[Callable] = []
         self._audit_log: list[dict[str, Any]] = []
         self._compiled_patterns: list[Any] = []
+        self._colang_flows: dict[str, str] = {}
+        self._reasoning_traces: list[dict[str, Any]] = []
+        self._http_client: httpx.AsyncClient | None = None
 
         self._compile_patterns()
+        self._init_colang_flows()
+
+    async def __aenter__(self):
+        """Async context manager entry."""
+        if self._http_client is None:
+            self._http_client = httpx.AsyncClient(
+                base_url=self.config.nim_endpoint, timeout=self.config.timeout_seconds
+            )
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        """Async context manager exit."""
+        if self._http_client:
+            await self._http_client.aclose()
+            self._http_client = None
+
+    def _init_colang_flows(self) -> None:
+        """Initialize Colang 2.0 flows for constitutional principles."""
+        if self.config.colang_version.startswith("2"):
+            colang_path = Path(__file__).parent / "colang" / "constitutional_principles.co"
+            if colang_path.exists():
+                try:
+                    with open(colang_path, "r") as f:
+                        self._colang_flows["constitutional_principles"] = f.read()
+                    logger.info(f"Loaded external Colang flows from {colang_path}")
+                except Exception as e:
+                    logger.error(f"Failed to load external Colang flows: {e}")
+            else:
+                # Fallback to defaults if file missing
+                self._colang_flows = {
+                    "privacy_flow": """
+flow monitor privacy check
+    when bot said $text
+    if len(regex_findall("pii_patterns", $text)) > 0
+        abort "Constitutional violation: Privacy leak detected."
+                    """,
+                    "safety_flow": """
+flow monitor safety check
+    when bot said $text
+    if contains_unsafe_content($text)
+        abort "Constitutional violation: Unsafe content detected."
+                    """,
+                }
 
     def _compile_patterns(self) -> None:
         """Compile PII detection patterns."""
         import re
-        self._compiled_patterns = [
-            re.compile(pattern) for pattern in self.config.pii_patterns
-        ]
+
+        self._compiled_patterns = [re.compile(pattern) for pattern in self.config.pii_patterns]
 
     def _generate_trace_id(self) -> str:
         """Generate a trace ID for audit purposes."""
@@ -218,6 +276,11 @@ class ConstitutionalGuardrails:
             safety_violations = await self._check_safety(content)
             violations.extend(safety_violations)
 
+        # Delegate to NIM if enabled
+        if self.config.use_nim and self.config.nim_guardrails_enabled:
+            nim_violations = await self._check_with_nim_guardrails(content)
+            violations.extend(nim_violations)
+
         # Run custom validators
         for validator in self._input_validators:
             result = validator(content)
@@ -263,6 +326,7 @@ class ConstitutionalGuardrails:
         self,
         content: str,
         context: dict[str, Any] | None = None,
+        reasoning: str | None = None,
     ) -> GuardrailResult:
         """
         Check output content against constitutional guardrails.
@@ -270,6 +334,7 @@ class ConstitutionalGuardrails:
         Args:
             content: Output content to validate
             context: Optional context for validation
+            reasoning: Optional LLM thinking/reasoning trace to validate
 
         Returns:
             GuardrailResult with validation outcome
@@ -284,6 +349,11 @@ class ConstitutionalGuardrails:
         trace_id = self._generate_trace_id()
         violations: list[dict[str, Any]] = []
         modified_content: str | None = None
+
+        # Validate reasoning trace if provided
+        if reasoning and self.config.monitor_reasoning:
+            reasoning_violations = await self._validate_reasoning(reasoning, trace_id)
+            violations.extend(reasoning_violations)
 
         # Check for PII in output
         if self.config.privacy_protection:
@@ -345,12 +415,14 @@ class ConstitutionalGuardrails:
         for i, pattern in enumerate(self._compiled_patterns):
             matches = pattern.findall(content)
             if matches:
-                violations.append({
-                    "type": ViolationType.PRIVACY.value,
-                    "pattern_index": i,
-                    "match_count": len(matches),
-                    "message": f"PII detected: {len(matches)} potential matches",
-                })
+                violations.append(
+                    {
+                        "type": ViolationType.PRIVACY.value,
+                        "pattern_index": i,
+                        "match_count": len(matches),
+                        "message": f"PII detected: {len(matches)} potential matches",
+                    }
+                )
         return violations
 
     def _redact_pii(self, content: str) -> str:
@@ -372,13 +444,16 @@ class ConstitutionalGuardrails:
         ]
 
         import re
+
         for pattern, violation_type in unsafe_patterns:
             if re.search(pattern, content, re.IGNORECASE):
-                violations.append({
-                    "type": ViolationType.SECURITY.value,
-                    "subtype": violation_type,
-                    "message": f"Safety concern detected: {violation_type}",
-                })
+                violations.append(
+                    {
+                        "type": ViolationType.SECURITY.value,
+                        "subtype": violation_type,
+                        "message": f"Safety concern detected: {violation_type}",
+                    }
+                )
 
         return violations
 
@@ -393,13 +468,89 @@ class ConstitutionalGuardrails:
         ]
 
         import re
+
         for pattern, violation_type in harmful_patterns:
             if re.search(pattern, content, re.IGNORECASE):
-                violations.append({
-                    "type": ViolationType.SAFETY.value,
-                    "subtype": violation_type,
-                    "message": f"Harmful content detected: {violation_type}",
-                })
+                violations.append(
+                    {
+                        "type": ViolationType.SAFETY.value,
+                        "subtype": violation_type,
+                        "message": f"Harmful content detected: {violation_type}",
+                    }
+                )
+
+        return violations
+
+    async def _check_with_nim_guardrails(self, content: str) -> list[dict[str, Any]]:
+        """Check content using NemoGuard NIM microservices."""
+        if not self._http_client:
+            logger.warning("HTTP client not initialized. Call __aenter__ or initialize manually.")
+            return []
+
+        violations = []
+        try:
+            response = await self._http_client.post(
+                "/guardrails",
+                json={
+                    "model": self.config.nim_model,
+                    "text": content,
+                    "guardrails": ["content_safety", "jailbreak_detection"],
+                },
+            )
+            response.raise_for_status()
+            result = response.json()
+
+            if not result.get("allowed", True):
+                violations.append(
+                    {
+                        "type": ViolationType.SAFETY.value,
+                        "message": "NIM Guardrail identified a violation",
+                        "details": result.get("violations", []),
+                    }
+                )
+        except Exception as e:
+            logger.error(f"NIM communication error: {e}")
+            if self.config.strict_mode:
+                violations.append(
+                    {
+                        "type": ViolationType.SECURITY.value,
+                        "message": f"NIM service unavailable: {e}",
+                    }
+                )
+
+        return violations
+
+    async def _validate_reasoning(self, reasoning: str, trace_id: str) -> list[dict[str, Any]]:
+        """Validate LLM thinking/reasoning traces."""
+        violations = []
+
+        # Capture trace for audit
+        self._reasoning_traces.append(
+            {
+                "trace_id": trace_id,
+                "reasoning": reasoning,
+                "timestamp": datetime.now(UTC).isoformat(),
+            }
+        )
+
+        # Check for suspicious patterns in reasoning (e.g., trying to bypass guardrails)
+        bypass_patterns = [
+            r"ignore\s+previous\s+instructions",
+            r"bypass\s+safety",
+            r"constitutional\s+override",
+        ]
+
+        import re
+
+        for pattern in bypass_patterns:
+            if re.search(pattern, reasoning, re.IGNORECASE):
+                violations.append(
+                    {
+                        "type": ViolationType.SECURITY.value,
+                        "subtype": "reasoning_bypass_attempt",
+                        "message": "Potential guardrail bypass attempt detected in reasoning trace",
+                    }
+                )
 
         return violations
 
@@ -417,7 +568,7 @@ class ConstitutionalGuardrails:
 
         try:
             # Use ACGS-2 compliance validation
-            from acgs2_sdk import ComplianceService, ValidateComplianceRequest
+            from acgs2_sdk import ComplianceService
 
             compliance = ComplianceService(self._client)
             result = await compliance.validate_action(
@@ -434,11 +585,13 @@ class ConstitutionalGuardrails:
                 return GuardrailResult(
                     action=GuardrailAction.BLOCK,
                     allowed=False,
-                    violations=[{
-                        "type": ViolationType.COMPLIANCE.value,
-                        "message": "ACGS-2 compliance validation failed",
-                        "details": result,
-                    }],
+                    violations=[
+                        {
+                            "type": ViolationType.COMPLIANCE.value,
+                            "message": "ACGS-2 compliance validation failed",
+                            "details": result,
+                        }
+                    ],
                 )
 
         except Exception as e:
@@ -447,10 +600,12 @@ class ConstitutionalGuardrails:
                 return GuardrailResult(
                     action=GuardrailAction.BLOCK,
                     allowed=False,
-                    violations=[{
-                        "type": ViolationType.COMPLIANCE.value,
-                        "message": f"ACGS-2 validation error: {e}",
-                    }],
+                    violations=[
+                        {
+                            "type": ViolationType.COMPLIANCE.value,
+                            "message": f"ACGS-2 validation error: {e}",
+                        }
+                    ],
                 )
 
         return GuardrailResult(action=GuardrailAction.ALLOW, allowed=True)
@@ -475,7 +630,7 @@ class ConstitutionalGuardrails:
         for v in violations:
             reasons.append(f"- {v.get('type', 'unknown')}: {v.get('message', 'No details')}")
 
-        return f"Constitutional violations detected:\n" + "\n".join(reasons)
+        return "Constitutional violations detected:\n" + "\n".join(reasons)
 
     def _audit(
         self,

@@ -6,15 +6,12 @@ Enterprise Okta integration for federated identity management.
 Supports OIDC authentication, user provisioning, and group synchronization.
 """
 
-import asyncio
 import base64
 import hashlib
-import hmac
-import json
 import logging
 import secrets
 from datetime import datetime, timedelta, timezone
-from typing import Any, Callable, Dict, List, Optional, Set, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple
 from urllib.parse import urlencode, urljoin
 
 import aiohttp
@@ -26,21 +23,21 @@ from .okta_models import (
     CONSTITUTIONAL_HASH,
     # Exceptions
     OktaAuthError,
-    OktaConfigError,
-    OktaProvisioningError,
-    OktaGroupError,
-    # Enums
-    OktaTokenType,
-    OktaGrantType,
-    OktaScope,
-    OktaUserStatus,
+    OktaAuthState,
     # Data classes
     OktaConfig,
-    OktaTokenResponse,
-    OktaUserInfo,
-    OktaUser,
+    OktaConfigError,
+    OktaGrantType,
     OktaGroup,
-    OktaAuthState,
+    OktaGroupError,
+    OktaProvisioningError,
+    OktaScope,
+    OktaTokenResponse,
+    # Enums
+    OktaTokenType,
+    OktaUser,
+    OktaUserInfo,
+    OktaUserStatus,
 )
 
 logger = logging.getLogger(__name__)
@@ -94,7 +91,7 @@ class OktaOIDCConnector:
             extra={
                 "domain": config.domain,
                 "constitutional_hash": CONSTITUTIONAL_HASH,
-            }
+            },
         )
 
     def _validate_config(self) -> None:
@@ -108,9 +105,7 @@ class OktaOIDCConnector:
         if not self.config.redirect_uri:
             raise OktaConfigError("Redirect URI is required")
         if self.config.constitutional_hash != CONSTITUTIONAL_HASH:
-            raise OktaConfigError(
-                f"Constitutional hash mismatch: expected {CONSTITUTIONAL_HASH}"
-            )
+            raise OktaConfigError(f"Constitutional hash mismatch: expected {CONSTITUTIONAL_HASH}")
 
     async def _get_session(self) -> aiohttp.ClientSession:
         """Get or create the HTTP session."""
@@ -131,15 +126,11 @@ class OktaOIDCConnector:
 
         if now > self._rate_limit_reset:
             self._request_count = 0
-            self._rate_limit_reset = now + timedelta(
-                seconds=self.config.rate_limit_window_seconds
-            )
+            self._rate_limit_reset = now + timedelta(seconds=self.config.rate_limit_window_seconds)
 
         if self._request_count >= self.config.rate_limit_requests:
             wait_time = (self._rate_limit_reset - now).total_seconds()
-            raise OktaAuthError(
-                f"Rate limit exceeded. Retry after {wait_time:.0f} seconds"
-            )
+            raise OktaAuthError(f"Rate limit exceeded. Retry after {wait_time:.0f} seconds")
 
         self._request_count += 1
 
@@ -147,13 +138,9 @@ class OktaOIDCConnector:
         """Generate PKCE code verifier and challenge."""
         code_verifier = secrets.token_urlsafe(64)
 
-        code_challenge_digest = hashlib.sha256(
-            code_verifier.encode("utf-8")
-        ).digest()
+        code_challenge_digest = hashlib.sha256(code_verifier.encode("utf-8")).digest()
 
-        code_challenge = base64.urlsafe_b64encode(
-            code_challenge_digest
-        ).decode("utf-8").rstrip("=")
+        code_challenge = base64.urlsafe_b64encode(code_challenge_digest).decode("utf-8").rstrip("=")
 
         return code_verifier, code_challenge
 
@@ -306,7 +293,7 @@ class OktaOIDCConnector:
                 "email": user_info.email,
                 "roles": user_info.acgs_roles,
                 "constitutional_hash": CONSTITUTIONAL_HASH,
-            }
+            },
         )
 
         return token_response, user_info
@@ -344,7 +331,7 @@ class OktaOIDCConnector:
                     "verify_exp": True,
                     "verify_iat": True,
                     "verify_nbf": True,
-                }
+                },
             )
         except jwt.ExpiredSignatureError:
             raise OktaAuthError("ID token has expired")
@@ -657,7 +644,7 @@ class OktaOIDCConnector:
                 "user_id": user.id,
                 "email": email,
                 "constitutional_hash": CONSTITUTIONAL_HASH,
-            }
+            },
         )
 
         return user
@@ -707,7 +694,7 @@ class OktaOIDCConnector:
             extra={
                 "user_id": user_id,
                 "constitutional_hash": CONSTITUTIONAL_HASH,
-            }
+            },
         )
 
         return True
@@ -729,7 +716,7 @@ class OktaOIDCConnector:
             extra={
                 "user_id": user_id,
                 "constitutional_hash": CONSTITUTIONAL_HASH,
-            }
+            },
         )
 
         return True
@@ -806,7 +793,7 @@ class OktaOIDCConnector:
                 "user_id": user_id,
                 "group_id": group_id,
                 "constitutional_hash": CONSTITUTIONAL_HASH,
-            }
+            },
         )
 
         return True
@@ -834,7 +821,7 @@ class OktaOIDCConnector:
                 "user_id": user_id,
                 "group_id": group_id,
                 "constitutional_hash": CONSTITUTIONAL_HASH,
-            }
+            },
         )
 
         return True
@@ -879,9 +866,21 @@ class OktaOIDCConnector:
             id=data["id"],
             status=OktaUserStatus(data["status"]),
             created=datetime.fromisoformat(data["created"].replace("Z", "+00:00")),
-            activated=datetime.fromisoformat(data["activated"].replace("Z", "+00:00")) if data.get("activated") else None,
-            status_changed=datetime.fromisoformat(data["statusChanged"].replace("Z", "+00:00")) if data.get("statusChanged") else None,
-            last_login=datetime.fromisoformat(data["lastLogin"].replace("Z", "+00:00")) if data.get("lastLogin") else None,
+            activated=(
+                datetime.fromisoformat(data["activated"].replace("Z", "+00:00"))
+                if data.get("activated")
+                else None
+            ),
+            status_changed=(
+                datetime.fromisoformat(data["statusChanged"].replace("Z", "+00:00"))
+                if data.get("statusChanged")
+                else None
+            ),
+            last_login=(
+                datetime.fromisoformat(data["lastLogin"].replace("Z", "+00:00"))
+                if data.get("lastLogin")
+                else None
+            ),
             last_updated=datetime.fromisoformat(data["lastUpdated"].replace("Z", "+00:00")),
             profile=data.get("profile", {}),
             credentials=data.get("credentials", {}),
@@ -896,7 +895,9 @@ class OktaOIDCConnector:
             type=data["type"],
             created=datetime.fromisoformat(data["created"].replace("Z", "+00:00")),
             last_updated=datetime.fromisoformat(data["lastUpdated"].replace("Z", "+00:00")),
-            last_membership_updated=datetime.fromisoformat(data["lastMembershipUpdated"].replace("Z", "+00:00")),
+            last_membership_updated=datetime.fromisoformat(
+                data["lastMembershipUpdated"].replace("Z", "+00:00")
+            ),
             profile=data.get("profile", {}),
         )
 
@@ -907,8 +908,7 @@ class OktaOIDCConnector:
         self._jwks_client = None
 
         logger.info(
-            "Closed Okta OIDC connector",
-            extra={"constitutional_hash": CONSTITUTIONAL_HASH}
+            "Closed Okta OIDC connector", extra={"constitutional_hash": CONSTITUTIONAL_HASH}
         )
 
 

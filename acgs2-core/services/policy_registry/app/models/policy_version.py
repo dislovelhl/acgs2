@@ -4,7 +4,7 @@ Policy version data model
 
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional
 from uuid import uuid4
 
 from pydantic import BaseModel, Field
@@ -12,6 +12,7 @@ from pydantic import BaseModel, Field
 
 class VersionStatus(str, Enum):
     """Policy version status enumeration"""
+
     ACTIVE = "active"
     TESTING = "testing"
     RETIRED = "retired"
@@ -20,6 +21,7 @@ class VersionStatus(str, Enum):
 
 class ABTestGroup(str, Enum):
     """A/B testing group enumeration"""
+
     A = "A"
     B = "B"
 
@@ -38,15 +40,12 @@ class PolicyVersion(BaseModel):
     metadata: Dict[str, Any] = Field(default_factory=dict)
 
     # Timestamps
-    created_at: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc)
-    )
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
     class Config:
         """Pydantic configuration"""
-        json_encoders = {
-            datetime: lambda v: v.isoformat()
-        }
+
+        json_encoders = {datetime: lambda v: v.isoformat()}
 
     def __init__(self, **data):
         super().__init__(**data)

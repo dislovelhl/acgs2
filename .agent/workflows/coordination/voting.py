@@ -8,13 +8,12 @@ Supports multiple voting strategies: majority, unanimous, weighted.
 
 import asyncio
 import logging
+import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Any, Callable, Dict, List, Optional, Set
 from enum import Enum
-import uuid
+from typing import Any, Callable, Dict, List, Optional, Set
 
-from ..base.context import WorkflowContext
 from ..base.result import WorkflowResult, WorkflowStatus
 from ..base.workflow import BaseWorkflow
 
@@ -29,15 +28,17 @@ logger = logging.getLogger(__name__)
 
 class VotingStrategy(Enum):
     """Voting strategy types."""
-    MAJORITY = "majority"        # >50% approval
+
+    MAJORITY = "majority"  # >50% approval
     SUPERMAJORITY = "supermajority"  # >66% approval
-    UNANIMOUS = "unanimous"      # 100% approval
-    WEIGHTED = "weighted"        # Weight-based threshold
-    QUORUM = "quorum"            # Minimum participation required
+    UNANIMOUS = "unanimous"  # 100% approval
+    WEIGHTED = "weighted"  # Weight-based threshold
+    QUORUM = "quorum"  # Minimum participation required
 
 
 class VoteDecision(Enum):
     """Individual vote decisions."""
+
     APPROVE = "approve"
     REJECT = "reject"
     ABSTAIN = "abstain"
@@ -46,6 +47,7 @@ class VoteDecision(Enum):
 @dataclass
 class Vote:
     """Individual vote from an agent."""
+
     agent_id: str
     decision: VoteDecision
     weight: float = 1.0
@@ -66,6 +68,7 @@ class Vote:
 @dataclass
 class VotingResult:
     """Result of voting process."""
+
     voting_id: str
     decision: VoteDecision
     strategy: VotingStrategy
@@ -224,17 +227,14 @@ class VotingWorkflow(BaseWorkflow):
                 steps_failed=["vote_collection"],
             )
 
-    async def _collect_votes_external(
-        self,
-        proposal: str,
-        context: Dict[str, Any]
-    ) -> None:
+    async def _collect_votes_external(self, proposal: str, context: Dict[str, Any]) -> None:
         """Collect votes using external vote collector."""
+
         async def collect_single_vote(agent_id: str) -> Optional[Vote]:
             try:
                 result = await asyncio.wait_for(
                     self.vote_collector(agent_id, proposal, context),
-                    timeout=self.voting_timeout / len(self.eligible_agents)
+                    timeout=self.voting_timeout / len(self.eligible_agents),
                 )
                 return Vote(
                     agent_id=agent_id,
@@ -255,11 +255,7 @@ class VotingWorkflow(BaseWorkflow):
                 self._votes.append(vote)
                 self._voted_agents.add(vote.agent_id)
 
-    async def _collect_votes_simulated(
-        self,
-        proposal: str,
-        context: Dict[str, Any]
-    ) -> None:
+    async def _collect_votes_simulated(self, proposal: str, context: Dict[str, Any]) -> None:
         """Simulate vote collection for testing."""
         # In real implementation, this would call agent endpoints
         for agent_id in self.eligible_agents:
@@ -279,7 +275,11 @@ class VotingWorkflow(BaseWorkflow):
         total_voted = len(self._voted_agents)
 
         # Check quorum
-        quorum_met = (total_voted / total_eligible) >= self.quorum_percentage if total_eligible > 0 else False
+        quorum_met = (
+            (total_voted / total_eligible) >= self.quorum_percentage
+            if total_eligible > 0
+            else False
+        )
 
         # Calculate approval rate
         approvals = sum(1 for v in self._votes if v.decision == VoteDecision.APPROVE)
@@ -322,11 +322,7 @@ class VotingWorkflow(BaseWorkflow):
         )
 
     def _apply_strategy(
-        self,
-        approval_rate: float,
-        quorum_met: bool,
-        approvals: int,
-        rejections: int
+        self, approval_rate: float, quorum_met: bool, approvals: int, rejections: int
     ) -> VoteDecision:
         """Apply voting strategy to determine outcome."""
         # Quorum check for QUORUM strategy
@@ -334,13 +330,19 @@ class VotingWorkflow(BaseWorkflow):
             return VoteDecision.REJECT
 
         if self.strategy == VotingStrategy.UNANIMOUS:
-            return VoteDecision.APPROVE if rejections == 0 and approvals > 0 else VoteDecision.REJECT
+            return (
+                VoteDecision.APPROVE if rejections == 0 and approvals > 0 else VoteDecision.REJECT
+            )
 
         if self.strategy == VotingStrategy.SUPERMAJORITY:
             return VoteDecision.APPROVE if approval_rate > 0.66 else VoteDecision.REJECT
 
         if self.strategy == VotingStrategy.WEIGHTED:
-            return VoteDecision.APPROVE if approval_rate >= self.approval_threshold else VoteDecision.REJECT
+            return (
+                VoteDecision.APPROVE
+                if approval_rate >= self.approval_threshold
+                else VoteDecision.REJECT
+            )
 
         # Default: MAJORITY
         return VoteDecision.APPROVE if approval_rate > 0.5 else VoteDecision.REJECT

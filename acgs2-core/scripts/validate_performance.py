@@ -14,7 +14,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 # Constitutional hash for governance compliance
 CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
@@ -22,6 +22,7 @@ CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
 
 class Severity(Enum):
     """Alert severity levels."""
+
     INFO = "info"
     WARNING = "warning"
     CRITICAL = "critical"
@@ -29,6 +30,7 @@ class Severity(Enum):
 
 class Status(Enum):
     """Validation status."""
+
     PASS = "pass"
     WARNING = "warning"
     FAIL = "fail"
@@ -37,6 +39,7 @@ class Status(Enum):
 @dataclass
 class Threshold:
     """Performance threshold definition."""
+
     name: str
     metric: str
     warning: float
@@ -47,6 +50,7 @@ class Threshold:
 @dataclass
 class ValidationResult:
     """Result of a single validation check."""
+
     name: str
     metric: str
     value: float
@@ -63,28 +67,24 @@ PERFORMANCE_THRESHOLDS = [
         metric="p99_latency_ms",
         warning=4.0,
         critical=5.0,
-        comparison="lt"  # Value should be less than threshold
+        comparison="lt",  # Value should be less than threshold
     ),
     Threshold(
         name="Throughput",
         metric="throughput_rps",
         warning=150.0,
         critical=100.0,
-        comparison="gt"  # Value should be greater than threshold
+        comparison="gt",  # Value should be greater than threshold
     ),
     Threshold(
-        name="Error Rate",
-        metric="error_rate_percent",
-        warning=1.0,
-        critical=5.0,
-        comparison="lt"
+        name="Error Rate", metric="error_rate_percent", warning=1.0, critical=5.0, comparison="lt"
     ),
     Threshold(
         name="Cache Hit Rate",
         metric="cache_hit_rate_percent",
         warning=85.0,
         critical=75.0,
-        comparison="gt"
+        comparison="gt",
     ),
 ]
 
@@ -104,7 +104,9 @@ def validate_threshold(value: float, threshold: Threshold) -> ValidationResult:
         # Value should be less than thresholds
         if value >= threshold.critical:
             status = Status.FAIL
-            message = f"{threshold.name} ({value}) exceeds critical threshold ({threshold.critical})"
+            message = (
+                f"{threshold.name} ({value}) exceeds critical threshold ({threshold.critical})"
+            )
         elif value >= threshold.warning:
             status = Status.WARNING
             message = f"{threshold.name} ({value}) exceeds warning threshold ({threshold.warning})"
@@ -130,7 +132,7 @@ def validate_threshold(value: float, threshold: Threshold) -> ValidationResult:
         threshold_warning=threshold.warning,
         threshold_critical=threshold.critical,
         status=status,
-        message=message
+        message=message,
     )
 
 
@@ -162,15 +164,17 @@ def validate_metrics(metrics: Dict[str, Any]) -> List[ValidationResult]:
                 value = metrics["performance"].get(threshold.metric)
 
         if value is None:
-            results.append(ValidationResult(
-                name=threshold.name,
-                metric=threshold.metric,
-                value=0,
-                threshold_warning=threshold.warning,
-                threshold_critical=threshold.critical,
-                status=Status.WARNING,
-                message=f"Metric '{threshold.metric}' not found in input"
-            ))
+            results.append(
+                ValidationResult(
+                    name=threshold.name,
+                    metric=threshold.metric,
+                    value=0,
+                    threshold_warning=threshold.warning,
+                    threshold_critical=threshold.critical,
+                    status=Status.WARNING,
+                    message=f"Metric '{threshold.metric}' not found in input",
+                )
+            )
         else:
             results.append(validate_threshold(float(value), threshold))
 
@@ -191,28 +195,28 @@ def print_results(results: List[ValidationResult], format_type: str = "text") ->
                     "threshold_warning": r.threshold_warning,
                     "threshold_critical": r.threshold_critical,
                     "status": r.status.value,
-                    "message": r.message
+                    "message": r.message,
                 }
                 for r in results
             ],
-            "overall_status": "fail" if any(r.status == Status.FAIL for r in results)
-                              else "warning" if any(r.status == Status.WARNING for r in results)
-                              else "pass"
+            "overall_status": (
+                "fail"
+                if any(r.status == Status.FAIL for r in results)
+                else "warning" if any(r.status == Status.WARNING for r in results) else "pass"
+            ),
         }
         print(json.dumps(output, indent=2))
     else:
-        print(f"\nACGS-2 Performance Validation Report")
+        print("\nACGS-2 Performance Validation Report")
         print(f"Constitutional Hash: {CONSTITUTIONAL_HASH}")
         print(f"Timestamp: {datetime.now(timezone.utc).isoformat()}")
         print("=" * 70)
         print()
 
         for result in results:
-            status_icon = {
-                Status.PASS: "[PASS]",
-                Status.WARNING: "[WARN]",
-                Status.FAIL: "[FAIL]"
-            }[result.status]
+            status_icon = {Status.PASS: "[PASS]", Status.WARNING: "[WARN]", Status.FAIL: "[FAIL]"}[
+                result.status
+            ]
 
             print(f"{status_icon} {result.name}")
             print(f"       Value: {result.value}")
@@ -223,9 +227,11 @@ def print_results(results: List[ValidationResult], format_type: str = "text") ->
 
         print("=" * 70)
 
-        overall_status = "FAIL" if any(r.status == Status.FAIL for r in results) \
-                         else "WARNING" if any(r.status == Status.WARNING for r in results) \
-                         else "PASS"
+        overall_status = (
+            "FAIL"
+            if any(r.status == Status.FAIL for r in results)
+            else "WARNING" if any(r.status == Status.WARNING for r in results) else "PASS"
+        )
         print(f"Overall Status: {overall_status}")
         print()
 
@@ -259,29 +265,20 @@ Examples:
   python validate_performance.py benchmark_results.json
   python validate_performance.py metrics.json --format json
   python validate_performance.py results.json --github-annotations
-        """
+        """,
     )
 
     parser.add_argument(
-        "metrics_file",
-        type=Path,
-        help="Path to JSON file containing performance metrics"
+        "metrics_file", type=Path, help="Path to JSON file containing performance metrics"
     )
     parser.add_argument(
-        "--format",
-        choices=["text", "json"],
-        default="text",
-        help="Output format (default: text)"
+        "--format", choices=["text", "json"], default="text", help="Output format (default: text)"
     )
     parser.add_argument(
-        "--github-annotations",
-        action="store_true",
-        help="Generate GitHub Actions annotations"
+        "--github-annotations", action="store_true", help="Generate GitHub Actions annotations"
     )
     parser.add_argument(
-        "--strict",
-        action="store_true",
-        help="Exit with error on warnings (not just failures)"
+        "--strict", action="store_true", help="Exit with error on warnings (not just failures)"
     )
 
     args = parser.parse_args()

@@ -23,8 +23,7 @@ import os
 import sys
 import time
 from collections import deque
-from dataclasses import dataclass, field
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
 from enum import Enum
 from typing import Any, Callable, Dict, List, Optional, Set
 
@@ -32,10 +31,11 @@ from typing import Any, Callable, Dict, List, Optional, Set
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 try:
-    from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
+    from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
     from fastapi.middleware.cors import CORSMiddleware
     from fastapi.responses import JSONResponse
     from pydantic import BaseModel, Field
+
     FASTAPI_AVAILABLE = True
 except ImportError:
     FASTAPI_AVAILABLE = False
@@ -44,6 +44,7 @@ except ImportError:
 
 try:
     import psutil
+
     PSUTIL_AVAILABLE = True
 except ImportError:
     PSUTIL_AVAILABLE = False
@@ -51,6 +52,7 @@ except ImportError:
 
 try:
     import redis.asyncio as redis
+
     REDIS_AVAILABLE = True
 except ImportError:
     REDIS_AVAILABLE = False
@@ -66,8 +68,10 @@ logger = logging.getLogger(__name__)
 # Pydantic Models for API responses
 # ============================================================================
 
+
 class ServiceHealthStatus(str, Enum):
     """Service health status."""
+
     HEALTHY = "healthy"
     DEGRADED = "degraded"
     UNHEALTHY = "unhealthy"
@@ -76,6 +80,7 @@ class ServiceHealthStatus(str, Enum):
 
 class AlertSeverity(str, Enum):
     """Alert severity levels."""
+
     CRITICAL = "critical"
     ERROR = "error"
     WARNING = "warning"
@@ -84,6 +89,7 @@ class AlertSeverity(str, Enum):
 
 class ServiceHealth(BaseModel):
     """Individual service health model."""
+
     name: str
     status: ServiceHealthStatus
     response_time_ms: Optional[float] = None
@@ -94,6 +100,7 @@ class ServiceHealth(BaseModel):
 
 class SystemMetrics(BaseModel):
     """System performance metrics."""
+
     cpu_percent: float
     memory_percent: float
     memory_used_gb: float
@@ -109,6 +116,7 @@ class SystemMetrics(BaseModel):
 
 class PerformanceMetrics(BaseModel):
     """ACGS-2 performance metrics."""
+
     p99_latency_ms: float
     throughput_rps: float
     cache_hit_rate: float
@@ -121,6 +129,7 @@ class PerformanceMetrics(BaseModel):
 
 class AlertInfo(BaseModel):
     """Alert information."""
+
     alert_id: str
     title: str
     description: str
@@ -133,6 +142,7 @@ class AlertInfo(BaseModel):
 
 class CircuitBreakerInfo(BaseModel):
     """Circuit breaker status."""
+
     name: str
     state: str  # closed, open, half_open
     fail_count: int = 0
@@ -142,6 +152,7 @@ class CircuitBreakerInfo(BaseModel):
 
 class DashboardOverview(BaseModel):
     """Complete dashboard overview response."""
+
     constitutional_hash: str = CONSTITUTIONAL_HASH
     timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
@@ -179,6 +190,7 @@ class DashboardOverview(BaseModel):
 
 class HealthAggregateResponse(BaseModel):
     """Aggregated health response."""
+
     constitutional_hash: str = CONSTITUTIONAL_HASH
     timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     overall_status: ServiceHealthStatus
@@ -189,6 +201,7 @@ class HealthAggregateResponse(BaseModel):
 
 class MetricsResponse(BaseModel):
     """Metrics response."""
+
     constitutional_hash: str = CONSTITUTIONAL_HASH
     timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     system: SystemMetrics
@@ -199,6 +212,7 @@ class MetricsResponse(BaseModel):
 # ============================================================================
 # Metrics Collector
 # ============================================================================
+
 
 class MetricsCollector:
     """Collects system and application metrics."""
@@ -228,9 +242,7 @@ class MetricsCollector:
                 logger.warning(f"Redis connection failed: {e}, using in-memory storage")
                 self._redis_client = None
 
-        self._collection_task = asyncio.create_task(
-            self._collection_loop(collection_interval)
-        )
+        self._collection_task = asyncio.create_task(self._collection_loop(collection_interval))
         logger.info(f"[{CONSTITUTIONAL_HASH}] MetricsCollector started")
 
     async def stop(self) -> None:
@@ -259,8 +271,7 @@ class MetricsCollector:
                 if self._redis_client:
                     try:
                         await self._redis_client.lpush(
-                            "acgs2:metrics:history",
-                            metrics["timestamp"].isoformat()
+                            "acgs2:metrics:history", metrics["timestamp"].isoformat()
                         )
                         await self._redis_client.ltrim("acgs2:metrics:history", 0, 299)
                     except Exception:
@@ -357,7 +368,8 @@ class MetricsCollector:
         """Get metrics history for the last N minutes."""
         cutoff = datetime.now(timezone.utc) - timedelta(minutes=minutes)
         return [
-            m for m in self.metrics_history
+            m
+            for m in self.metrics_history
             if m.get("timestamp", datetime.min.replace(tzinfo=timezone.utc)) >= cutoff
         ]
 
@@ -366,15 +378,20 @@ class MetricsCollector:
 # Service Health Checker
 # ============================================================================
 
+
 class ServiceHealthChecker:
     """Checks health of ACGS-2 services."""
 
     def __init__(self):
         self.services = {
-            "enhanced-agent-bus": os.environ.get("AGENT_BUS_URL", "http://localhost:8000") + "/health",
-            "policy-registry": os.environ.get("POLICY_REGISTRY_URL", "http://localhost:8000") + "/health",
-            "constitutional-ai": os.environ.get("CONSTITUTIONAL_AI_URL", "http://localhost:8001") + "/health",
-            "audit-service": os.environ.get("AUDIT_SERVICE_URL", "http://localhost:8003") + "/health",
+            "enhanced-agent-bus": os.environ.get("AGENT_BUS_URL", "http://localhost:8000")
+            + "/health",
+            "policy-registry": os.environ.get("POLICY_REGISTRY_URL", "http://localhost:8000")
+            + "/health",
+            "constitutional-ai": os.environ.get("CONSTITUTIONAL_AI_URL", "http://localhost:8001")
+            + "/health",
+            "audit-service": os.environ.get("AUDIT_SERVICE_URL", "http://localhost:8003")
+            + "/health",
         }
         self._health_cache: Dict[str, ServiceHealth] = {}
         self._cache_ttl = 5  # seconds
@@ -432,22 +449,21 @@ class ServiceHealthChecker:
 
     async def check_all_services(self) -> List[ServiceHealth]:
         """Check health of all registered services."""
-        tasks = [
-            self.check_service(name, url)
-            for name, url in self.services.items()
-        ]
+        tasks = [self.check_service(name, url) for name, url in self.services.items()]
         results = await asyncio.gather(*tasks, return_exceptions=True)
 
         service_health = []
         for i, result in enumerate(results):
             if isinstance(result, Exception):
                 name = list(self.services.keys())[i]
-                service_health.append(ServiceHealth(
-                    name=name,
-                    status=ServiceHealthStatus.UNKNOWN,
-                    last_check=datetime.now(timezone.utc),
-                    error_message=str(result),
-                ))
+                service_health.append(
+                    ServiceHealth(
+                        name=name,
+                        status=ServiceHealthStatus.UNKNOWN,
+                        last_check=datetime.now(timezone.utc),
+                        error_message=str(result),
+                    )
+                )
             else:
                 service_health.append(result)
 
@@ -457,6 +473,7 @@ class ServiceHealthChecker:
 # ============================================================================
 # Alert Manager
 # ============================================================================
+
 
 class AlertManager:
     """Manages alerts for the dashboard."""
@@ -497,6 +514,7 @@ class AlertManager:
 # ============================================================================
 # Dashboard Service
 # ============================================================================
+
 
 class DashboardService:
     """Main dashboard service orchestrating all monitoring components."""
@@ -665,6 +683,7 @@ class DashboardService:
 # FastAPI Application
 # ============================================================================
 
+
 def create_dashboard_app() -> FastAPI:
     """Create the FastAPI dashboard application."""
     if not FASTAPI_AVAILABLE:
@@ -760,8 +779,7 @@ if __name__ == "__main__":
     import uvicorn
 
     logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+        level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
     )
 
     uvicorn.run(

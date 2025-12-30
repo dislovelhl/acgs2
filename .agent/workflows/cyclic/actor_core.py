@@ -8,7 +8,8 @@ Nodes function strictly as State Reducers: (CurrentState) -> NewState.
 
 import asyncio
 import logging
-from typing import Any, Callable, Dict, List, Optional, Union, Awaitable
+from typing import Awaitable, Callable, Dict, Optional
+
 from .state_schema import GlobalState
 
 logger = logging.getLogger(__name__)
@@ -71,7 +72,9 @@ class StateGraph:
         while not state.is_finished:
             # Check for Interrupts
             if state.interrupt_required:
-                logger.warning(f"Interrupt triggered at node '{current_node_name}'. Pausing execution.")
+                logger.warning(
+                    f"Interrupt triggered at node '{current_node_name}'. Pausing execution."
+                )
                 state.next_node = current_node_name
                 return state
 
@@ -142,7 +145,9 @@ class StateGraph:
                     # No next node defined, stop
                     state.is_finished = True
 
-        logger.info(f"Execution finished: {self.name} | Status: {'error' if state.errors else 'success'}")
+        logger.info(
+            f"Execution finished: {self.name} | Status: {'error' if state.errors else 'success'}"
+        )
         return state
 
 

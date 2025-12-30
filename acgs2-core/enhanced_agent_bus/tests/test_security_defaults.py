@@ -9,20 +9,21 @@ Security Audit Reference: VULN-001, VULN-002 (2025-12)
 """
 
 import os
+from unittest.mock import MagicMock
+
 import pytest
-from unittest.mock import MagicMock, AsyncMock
 
 # Import patterns matching existing test conventions
 try:
-    from policy_client import PolicyRegistryClient, get_policy_client
     from config import BusConfiguration
+    from models import CONSTITUTIONAL_HASH, AgentMessage
+    from policy_client import PolicyRegistryClient, get_policy_client
     from validation_strategies import RustValidationStrategy
-    from models import AgentMessage, CONSTITUTIONAL_HASH
 except ImportError:
-    from ..policy_client import PolicyRegistryClient, get_policy_client
     from ..config import BusConfiguration
+    from ..models import CONSTITUTIONAL_HASH, AgentMessage
+    from ..policy_client import PolicyRegistryClient, get_policy_client
     from ..validation_strategies import RustValidationStrategy
-    from ..models import AgentMessage, CONSTITUTIONAL_HASH
 
 
 class TestPolicyClientSecurityDefaults:
@@ -57,11 +58,14 @@ class TestPolicyClientSecurityDefaults:
         """get_policy_client() MUST return client with fail_closed=True by default."""
         # Import the module to access global client state
         import sys
-        policy_client_module = sys.modules.get('policy_client') or sys.modules.get('enhanced_agent_bus.policy_client')
+
+        policy_client_module = sys.modules.get("policy_client") or sys.modules.get(
+            "enhanced_agent_bus.policy_client"
+        )
         if policy_client_module is None:
             # Module imported via try/except at top - access via direct path
             for name, mod in sys.modules.items():
-                if name.endswith('policy_client') and hasattr(mod, '_policy_client'):
+                if name.endswith("policy_client") and hasattr(mod, "_policy_client"):
                     policy_client_module = mod
                     break
 
@@ -136,9 +140,7 @@ class TestBusConfigurationSecurityDefaults:
     def test_bus_config_from_environment_defaults_secure(self):
         """BusConfiguration.from_environment() MUST default to secure values."""
         # Clear relevant environment variables
-        env_vars_to_clear = [
-            'POLICY_FAIL_CLOSED', 'MACI_ENABLED', 'MACI_STRICT_MODE'
-        ]
+        env_vars_to_clear = ["POLICY_FAIL_CLOSED", "MACI_ENABLED", "MACI_STRICT_MODE"]
         original_values = {}
         for var in env_vars_to_clear:
             original_values[var] = os.environ.pop(var, None)
@@ -146,12 +148,10 @@ class TestBusConfigurationSecurityDefaults:
         try:
             config = BusConfiguration.from_environment()
 
-            assert config.enable_maci is True, (
-                "from_environment() must default enable_maci=True"
-            )
-            assert config.maci_strict_mode is True, (
-                "from_environment() must default maci_strict_mode=True"
-            )
+            assert config.enable_maci is True, "from_environment() must default enable_maci=True"
+            assert (
+                config.maci_strict_mode is True
+            ), "from_environment() must default maci_strict_mode=True"
         finally:
             # Restore environment variables
             for var, value in original_values.items():
@@ -182,10 +182,7 @@ class TestRustValidationStrategySecurityDefaults:
     def test_rust_validation_explicit_fail_open_allowed(self):
         """Explicit fail_closed=False should be allowed for testing."""
         mock_processor = MagicMock()
-        strategy = RustValidationStrategy(
-            rust_processor=mock_processor,
-            fail_closed=False
-        )
+        strategy = RustValidationStrategy(rust_processor=mock_processor, fail_closed=False)
 
         assert strategy._fail_closed is False
 
@@ -199,7 +196,7 @@ class TestRustValidationStrategySecurityDefaults:
             sender_id="test-sender",
             to_agent="test-receiver",
             content={"test": "data"},
-            constitutional_hash=CONSTITUTIONAL_HASH
+            constitutional_hash=CONSTITUTIONAL_HASH,
         )
 
         is_valid, error = await strategy.validate(message)
@@ -218,15 +215,15 @@ class TestRustValidationStrategySecurityDefaults:
             sender_id="test-sender",
             to_agent="test-receiver",
             content={"test": "data"},
-            constitutional_hash=CONSTITUTIONAL_HASH
+            constitutional_hash=CONSTITUTIONAL_HASH,
         )
 
         is_valid, error = await strategy.validate(message)
 
         assert is_valid is False, "Missing validate method must fail validation"
-        assert "fail closed" in error.lower() or "no validation method" in error.lower(), (
-            "Error must indicate fail-closed behavior"
-        )
+        assert (
+            "fail closed" in error.lower() or "no validation method" in error.lower()
+        ), "Error must indicate fail-closed behavior"
 
 
 class TestConstitutionalHashPresence:
@@ -242,9 +239,9 @@ class TestConstitutionalHashPresence:
     def test_config_has_constitutional_hash(self):
         """BusConfiguration MUST have constitutional hash."""
         bus_config = BusConfiguration()
-        assert bus_config.constitutional_hash == "cdd01ef066bc6cf2", (
-            "BusConfiguration must use canonical constitutional hash"
-        )
+        assert (
+            bus_config.constitutional_hash == "cdd01ef066bc6cf2"
+        ), "BusConfiguration must use canonical constitutional hash"
 
     def test_validation_strategies_has_constitutional_hash(self):
         """validation_strategies.py MUST reference constitutional hash."""
@@ -255,9 +252,9 @@ class TestConstitutionalHashPresence:
 
         # Check that strategies use constitutional hash
         strategy = StaticHashValidationStrategy()
-        assert strategy._constitutional_hash == "cdd01ef066bc6cf2", (
-            "StaticHashValidationStrategy must use canonical constitutional hash"
-        )
+        assert (
+            strategy._constitutional_hash == "cdd01ef066bc6cf2"
+        ), "StaticHashValidationStrategy must use canonical constitutional hash"
 
 
 class TestSecurityDocumentation:
@@ -271,19 +268,21 @@ class TestSecurityDocumentation:
     def test_fail_closed_is_documented(self):
         """Verify fail-closed pattern is documented in config comments."""
         import inspect
+
         try:
             from config import BusConfiguration as BC
         except ImportError:
             from ..config import BusConfiguration as BC
 
         source = inspect.getsource(BC)
-        assert "fail" in source.lower() and "closed" in source.lower(), (
-            "BusConfiguration should document fail-closed behavior in comments"
-        )
+        assert (
+            "fail" in source.lower() and "closed" in source.lower()
+        ), "BusConfiguration should document fail-closed behavior in comments"
 
     def test_maci_security_rationale_documented(self):
         """Verify MACI security rationale is documented."""
         import inspect
+
         try:
             from config import BusConfiguration as BC
         except ImportError:
@@ -293,13 +292,11 @@ class TestSecurityDocumentation:
         # Check for security comments about MACI
         has_maci = "maci" in source.lower()
         has_security_context = (
-            "security" in source.lower() or
-            "gödel" in source.lower() or
-            "bypass" in source.lower()
+            "security" in source.lower() or "gödel" in source.lower() or "bypass" in source.lower()
         )
-        assert has_maci and has_security_context, (
-            "BusConfiguration should document MACI security rationale"
-        )
+        assert (
+            has_maci and has_security_context
+        ), "BusConfiguration should document MACI security rationale"
 
 
 # Run tests directly if executed

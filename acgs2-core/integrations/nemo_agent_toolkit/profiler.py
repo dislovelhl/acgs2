@@ -12,14 +12,13 @@ import asyncio
 import logging
 import statistics
 import time
-from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import Enum
 from typing import TYPE_CHECKING, Any, Callable
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator
+    pass
 
 CONSTITUTIONAL_HASH: str = "cdd01ef066bc6cf2"
 
@@ -90,10 +89,10 @@ class GovernanceMetrics:
     def violation_rate(self) -> float:
         """Calculate violation rate."""
         total_violations = (
-            self.privacy_violations +
-            self.safety_violations +
-            self.ethics_violations +
-            self.compliance_violations
+            self.privacy_violations
+            + self.safety_violations
+            + self.ethics_violations
+            + self.compliance_violations
         )
         if self.total_requests == 0:
             return 0.0
@@ -274,10 +273,15 @@ class ConstitutionalProfiler:
             self._latencies.append(latency_ms)
 
         if self._detailed_logging:
-            self._record_event("guardrail_check", direction, latency_ms, {
-                "blocked": blocked,
-                "pii_redacted": pii_redacted,
-            })
+            self._record_event(
+                "guardrail_check",
+                direction,
+                latency_ms,
+                {
+                    "blocked": blocked,
+                    "pii_redacted": pii_redacted,
+                },
+            )
 
     def record_latency(self, latency_ms: float) -> None:
         """Record a latency measurement."""
@@ -316,8 +320,12 @@ class ConstitutionalProfiler:
 
         self._metrics.average_check_latency_ms = statistics.mean(sorted_latencies)
         self._metrics.p50_check_latency_ms = sorted_latencies[int(n * 0.50)]
-        self._metrics.p95_check_latency_ms = sorted_latencies[int(n * 0.95)] if n >= 20 else sorted_latencies[-1]
-        self._metrics.p99_check_latency_ms = sorted_latencies[int(n * 0.99)] if n >= 100 else sorted_latencies[-1]
+        self._metrics.p95_check_latency_ms = (
+            sorted_latencies[int(n * 0.95)] if n >= 20 else sorted_latencies[-1]
+        )
+        self._metrics.p99_check_latency_ms = (
+            sorted_latencies[int(n * 0.99)] if n >= 100 else sorted_latencies[-1]
+        )
 
     def add_callback(self, callback: Callable[[dict[str, Any]], None]) -> None:
         """Add a callback for profiler events."""
@@ -343,8 +351,10 @@ class ConstitutionalProfiler:
 
     def time_operation(self, name: str) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
         """Decorator to time an operation."""
+
         def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
             if asyncio.iscoroutinefunction(func):
+
                 async def async_wrapper(*args: Any, **kwargs: Any) -> Any:
                     start = time.perf_counter()
                     try:
@@ -354,8 +364,10 @@ class ConstitutionalProfiler:
                         self.record_latency(elapsed)
                         if self._detailed_logging:
                             self._record_event("operation", name, elapsed, {})
+
                 return async_wrapper
             else:
+
                 def sync_wrapper(*args: Any, **kwargs: Any) -> Any:
                     start = time.perf_counter()
                     try:
@@ -365,7 +377,9 @@ class ConstitutionalProfiler:
                         self.record_latency(elapsed)
                         if self._detailed_logging:
                             self._record_event("operation", name, elapsed, {})
+
                 return sync_wrapper
+
         return decorator
 
     def get_summary(self) -> str:

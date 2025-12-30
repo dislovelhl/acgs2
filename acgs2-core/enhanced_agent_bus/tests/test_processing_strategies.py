@@ -5,32 +5,29 @@ Constitutional Hash: cdd01ef066bc6cf2
 Comprehensive tests for processing strategy implementations.
 """
 
-import pytest
-import asyncio
-from unittest.mock import AsyncMock, MagicMock, patch
-from typing import Any, Dict, List
+from typing import Dict, List
+from unittest.mock import AsyncMock, MagicMock
 
-from enhanced_agent_bus.processing_strategies import (
-    PythonProcessingStrategy,
-    RustProcessingStrategy,
-    DynamicPolicyProcessingStrategy,
-    OPAProcessingStrategy,
-    CompositeProcessingStrategy,
-    MACIProcessingStrategy,
-)
+import pytest
 from enhanced_agent_bus.models import (
+    CONSTITUTIONAL_HASH,
     AgentMessage,
     MessageType,
-    MessageStatus,
-    Priority,
-    CONSTITUTIONAL_HASH,
+)
+from enhanced_agent_bus.processing_strategies import (
+    CompositeProcessingStrategy,
+    DynamicPolicyProcessingStrategy,
+    MACIProcessingStrategy,
+    OPAProcessingStrategy,
+    PythonProcessingStrategy,
+    RustProcessingStrategy,
 )
 from enhanced_agent_bus.validators import ValidationResult
-
 
 # =============================================================================
 # Fixtures
 # =============================================================================
+
 
 @pytest.fixture
 def valid_message() -> AgentMessage:
@@ -136,6 +133,7 @@ def mock_opa_client() -> AsyncMock:
 # PythonProcessingStrategy Tests
 # =============================================================================
 
+
 class TestPythonProcessingStrategy:
     """Tests for PythonProcessingStrategy."""
 
@@ -163,24 +161,17 @@ class TestPythonProcessingStrategy:
 
     @pytest.mark.asyncio
     async def test_with_custom_validation_strategy(
-        self,
-        valid_message: AgentMessage,
-        mock_handlers: Dict,
-        mock_validation_strategy: AsyncMock
+        self, valid_message: AgentMessage, mock_handlers: Dict, mock_validation_strategy: AsyncMock
     ) -> None:
         """Test processing with custom validation strategy."""
-        strategy = PythonProcessingStrategy(
-            validation_strategy=mock_validation_strategy
-        )
+        strategy = PythonProcessingStrategy(validation_strategy=mock_validation_strategy)
         result = await strategy.process(valid_message, mock_handlers)
 
         assert result.is_valid is True
         mock_validation_strategy.validate.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_handler_execution(
-        self, valid_message: AgentMessage
-    ) -> None:
+    async def test_handler_execution(self, valid_message: AgentMessage) -> None:
         """Test that handlers are executed."""
         sync_handler = MagicMock()
         async_handler = AsyncMock()
@@ -194,10 +185,9 @@ class TestPythonProcessingStrategy:
         async_handler.assert_called_once_with(valid_message)
 
     @pytest.mark.asyncio
-    async def test_handler_error_type_error(
-        self, valid_message: AgentMessage
-    ) -> None:
+    async def test_handler_error_type_error(self, valid_message: AgentMessage) -> None:
         """Test handling of TypeError in handlers."""
+
         def failing_handler(msg):
             raise TypeError("Type error in handler")
 
@@ -210,10 +200,9 @@ class TestPythonProcessingStrategy:
         assert valid_message.status.value == "failed"
 
     @pytest.mark.asyncio
-    async def test_handler_error_value_error(
-        self, valid_message: AgentMessage
-    ) -> None:
+    async def test_handler_error_value_error(self, valid_message: AgentMessage) -> None:
         """Test handling of ValueError in handlers."""
+
         def failing_handler(msg):
             raise ValueError("Value error in handler")
 
@@ -225,10 +214,9 @@ class TestPythonProcessingStrategy:
         assert "ValueError" in result.errors[0]
 
     @pytest.mark.asyncio
-    async def test_handler_runtime_error(
-        self, valid_message: AgentMessage
-    ) -> None:
+    async def test_handler_runtime_error(self, valid_message: AgentMessage) -> None:
         """Test handling of RuntimeError in handlers."""
+
         def failing_handler(msg):
             raise RuntimeError("Runtime error in handler")
 
@@ -250,9 +238,7 @@ class TestPythonProcessingStrategy:
         assert strategy.get_name() == "python"
 
     @pytest.mark.asyncio
-    async def test_no_handlers_for_message_type(
-        self, valid_message: AgentMessage
-    ) -> None:
+    async def test_no_handlers_for_message_type(self, valid_message: AgentMessage) -> None:
         """Test processing when no handlers exist for message type."""
         handlers: Dict = {}
         strategy = PythonProcessingStrategy()
@@ -265,6 +251,7 @@ class TestPythonProcessingStrategy:
 # =============================================================================
 # RustProcessingStrategy Tests
 # =============================================================================
+
 
 class TestRustProcessingStrategy:
     """Tests for RustProcessingStrategy."""
@@ -288,13 +275,13 @@ class TestRustProcessingStrategy:
         mock_handlers: Dict,
         mock_rust_processor: MagicMock,
         mock_rust_bus: MagicMock,
-        mock_validation_strategy: AsyncMock
+        mock_validation_strategy: AsyncMock,
     ) -> None:
         """Test successful processing with Rust backend."""
         strategy = RustProcessingStrategy(
             rust_processor=mock_rust_processor,
             rust_bus=mock_rust_bus,
-            validation_strategy=mock_validation_strategy
+            validation_strategy=mock_validation_strategy,
         )
         result = await strategy.process(valid_message, mock_handlers)
 
@@ -308,13 +295,13 @@ class TestRustProcessingStrategy:
         mock_handlers: Dict,
         mock_rust_processor: MagicMock,
         mock_rust_bus: MagicMock,
-        mock_failing_validation_strategy: AsyncMock
+        mock_failing_validation_strategy: AsyncMock,
     ) -> None:
         """Test processing with failed Rust validation."""
         strategy = RustProcessingStrategy(
             rust_processor=mock_rust_processor,
             rust_bus=mock_rust_bus,
-            validation_strategy=mock_failing_validation_strategy
+            validation_strategy=mock_failing_validation_strategy,
         )
         result = await strategy.process(valid_message, mock_handlers)
 
@@ -327,7 +314,7 @@ class TestRustProcessingStrategy:
         valid_message: AgentMessage,
         mock_handlers: Dict,
         mock_rust_bus: MagicMock,
-        mock_validation_strategy: AsyncMock
+        mock_validation_strategy: AsyncMock,
     ) -> None:
         """Test handling of Rust processing exception."""
         processor = MagicMock()
@@ -336,7 +323,7 @@ class TestRustProcessingStrategy:
         strategy = RustProcessingStrategy(
             rust_processor=processor,
             rust_bus=mock_rust_bus,
-            validation_strategy=mock_validation_strategy
+            validation_strategy=mock_validation_strategy,
         )
         result = await strategy.process(valid_message, mock_handlers)
 
@@ -348,8 +335,7 @@ class TestRustProcessingStrategy:
     ) -> None:
         """Test circuit breaker trips after threshold failures."""
         strategy = RustProcessingStrategy(
-            rust_processor=mock_rust_processor,
-            rust_bus=mock_rust_bus
+            rust_processor=mock_rust_processor, rust_bus=mock_rust_bus
         )
 
         # Simulate max threshold failures
@@ -364,8 +350,7 @@ class TestRustProcessingStrategy:
     ) -> None:
         """Test circuit breaker resets after consecutive successes."""
         strategy = RustProcessingStrategy(
-            rust_processor=mock_rust_processor,
-            rust_bus=mock_rust_bus
+            rust_processor=mock_rust_processor, rust_bus=mock_rust_bus
         )
 
         # Trip the breaker
@@ -380,13 +365,10 @@ class TestRustProcessingStrategy:
         assert strategy._breaker_tripped is False
         assert strategy._failure_count == 0
 
-    def test_get_name(
-        self, mock_rust_processor: MagicMock, mock_rust_bus: MagicMock
-    ) -> None:
+    def test_get_name(self, mock_rust_processor: MagicMock, mock_rust_bus: MagicMock) -> None:
         """Test get_name returns correct name."""
         strategy = RustProcessingStrategy(
-            rust_processor=mock_rust_processor,
-            rust_bus=mock_rust_bus
+            rust_processor=mock_rust_processor, rust_bus=mock_rust_bus
         )
         assert strategy.get_name() == "rust"
 
@@ -396,7 +378,7 @@ class TestRustProcessingStrategy:
         valid_message: AgentMessage,
         mock_handlers: Dict,
         mock_rust_bus: MagicMock,
-        mock_validation_strategy: AsyncMock
+        mock_validation_strategy: AsyncMock,
     ) -> None:
         """Test handling of async Rust process method."""
         processor = MagicMock()
@@ -414,7 +396,7 @@ class TestRustProcessingStrategy:
         strategy = RustProcessingStrategy(
             rust_processor=processor,
             rust_bus=mock_rust_bus,
-            validation_strategy=mock_validation_strategy
+            validation_strategy=mock_validation_strategy,
         )
         proc_result = await strategy.process(valid_message, mock_handlers)
 
@@ -424,6 +406,7 @@ class TestRustProcessingStrategy:
 # =============================================================================
 # DynamicPolicyProcessingStrategy Tests
 # =============================================================================
+
 
 class TestDynamicPolicyProcessingStrategy:
     """Tests for DynamicPolicyProcessingStrategy."""
@@ -447,12 +430,11 @@ class TestDynamicPolicyProcessingStrategy:
         valid_message: AgentMessage,
         mock_handlers: Dict,
         mock_policy_client: AsyncMock,
-        mock_validation_strategy: AsyncMock
+        mock_validation_strategy: AsyncMock,
     ) -> None:
         """Test successful processing with policy client."""
         strategy = DynamicPolicyProcessingStrategy(
-            policy_client=mock_policy_client,
-            validation_strategy=mock_validation_strategy
+            policy_client=mock_policy_client, validation_strategy=mock_validation_strategy
         )
         result = await strategy.process(valid_message, mock_handlers)
 
@@ -464,12 +446,11 @@ class TestDynamicPolicyProcessingStrategy:
         valid_message: AgentMessage,
         mock_handlers: Dict,
         mock_policy_client: AsyncMock,
-        mock_failing_validation_strategy: AsyncMock
+        mock_failing_validation_strategy: AsyncMock,
     ) -> None:
         """Test processing with failed policy validation."""
         strategy = DynamicPolicyProcessingStrategy(
-            policy_client=mock_policy_client,
-            validation_strategy=mock_failing_validation_strategy
+            policy_client=mock_policy_client, validation_strategy=mock_failing_validation_strategy
         )
         result = await strategy.process(valid_message, mock_handlers)
 
@@ -478,44 +459,35 @@ class TestDynamicPolicyProcessingStrategy:
 
     @pytest.mark.asyncio
     async def test_policy_validation_exception(
-        self,
-        valid_message: AgentMessage,
-        mock_handlers: Dict,
-        mock_policy_client: AsyncMock
+        self, valid_message: AgentMessage, mock_handlers: Dict, mock_policy_client: AsyncMock
     ) -> None:
         """Test handling of policy validation exception."""
         failing_strategy = AsyncMock()
         failing_strategy.validate = AsyncMock(side_effect=Exception("Policy error"))
 
         strategy = DynamicPolicyProcessingStrategy(
-            policy_client=mock_policy_client,
-            validation_strategy=failing_strategy
+            policy_client=mock_policy_client, validation_strategy=failing_strategy
         )
         result = await strategy.process(valid_message, mock_handlers)
 
         assert result.is_valid is False
         assert "Policy validation error" in result.errors[0]
 
-    def test_is_available_with_client(
-        self, mock_policy_client: AsyncMock
-    ) -> None:
+    def test_is_available_with_client(self, mock_policy_client: AsyncMock) -> None:
         """Test is_available returns True with policy client."""
-        strategy = DynamicPolicyProcessingStrategy(
-            policy_client=mock_policy_client
-        )
+        strategy = DynamicPolicyProcessingStrategy(policy_client=mock_policy_client)
         assert strategy.is_available() is True
 
     def test_get_name(self, mock_policy_client: AsyncMock) -> None:
         """Test get_name returns correct name."""
-        strategy = DynamicPolicyProcessingStrategy(
-            policy_client=mock_policy_client
-        )
+        strategy = DynamicPolicyProcessingStrategy(policy_client=mock_policy_client)
         assert strategy.get_name() == "dynamic_policy"
 
 
 # =============================================================================
 # OPAProcessingStrategy Tests
 # =============================================================================
+
 
 class TestOPAProcessingStrategy:
     """Tests for OPAProcessingStrategy."""
@@ -538,12 +510,11 @@ class TestOPAProcessingStrategy:
         valid_message: AgentMessage,
         mock_handlers: Dict,
         mock_opa_client: AsyncMock,
-        mock_validation_strategy: AsyncMock
+        mock_validation_strategy: AsyncMock,
     ) -> None:
         """Test successful processing with OPA client."""
         strategy = OPAProcessingStrategy(
-            opa_client=mock_opa_client,
-            validation_strategy=mock_validation_strategy
+            opa_client=mock_opa_client, validation_strategy=mock_validation_strategy
         )
         result = await strategy.process(valid_message, mock_handlers)
 
@@ -555,12 +526,11 @@ class TestOPAProcessingStrategy:
         valid_message: AgentMessage,
         mock_handlers: Dict,
         mock_opa_client: AsyncMock,
-        mock_failing_validation_strategy: AsyncMock
+        mock_failing_validation_strategy: AsyncMock,
     ) -> None:
         """Test processing with failed OPA validation."""
         strategy = OPAProcessingStrategy(
-            opa_client=mock_opa_client,
-            validation_strategy=mock_failing_validation_strategy
+            opa_client=mock_opa_client, validation_strategy=mock_failing_validation_strategy
         )
         result = await strategy.process(valid_message, mock_handlers)
 
@@ -568,27 +538,21 @@ class TestOPAProcessingStrategy:
 
     @pytest.mark.asyncio
     async def test_opa_validation_exception(
-        self,
-        valid_message: AgentMessage,
-        mock_handlers: Dict,
-        mock_opa_client: AsyncMock
+        self, valid_message: AgentMessage, mock_handlers: Dict, mock_opa_client: AsyncMock
     ) -> None:
         """Test handling of OPA validation exception."""
         failing_strategy = AsyncMock()
         failing_strategy.validate = AsyncMock(side_effect=Exception("OPA error"))
 
         strategy = OPAProcessingStrategy(
-            opa_client=mock_opa_client,
-            validation_strategy=failing_strategy
+            opa_client=mock_opa_client, validation_strategy=failing_strategy
         )
         result = await strategy.process(valid_message, mock_handlers)
 
         assert result.is_valid is False
         assert "OPA validation error" in result.errors[0]
 
-    def test_is_available_with_client(
-        self, mock_opa_client: AsyncMock
-    ) -> None:
+    def test_is_available_with_client(self, mock_opa_client: AsyncMock) -> None:
         """Test is_available returns True with OPA client."""
         strategy = OPAProcessingStrategy(opa_client=mock_opa_client)
         assert strategy.is_available() is True
@@ -602,6 +566,7 @@ class TestOPAProcessingStrategy:
 # =============================================================================
 # CompositeProcessingStrategy Tests
 # =============================================================================
+
 
 class TestCompositeProcessingStrategy:
     """Tests for CompositeProcessingStrategy."""
@@ -737,6 +702,7 @@ class TestCompositeProcessingStrategy:
 # MACIProcessingStrategy Tests
 # =============================================================================
 
+
 class TestMACIProcessingStrategy:
     """Tests for MACIProcessingStrategy."""
 
@@ -816,10 +782,7 @@ class TestMACIProcessingStrategy:
         inner.get_name = MagicMock(return_value="inner")
         inner.process = AsyncMock(return_value=ValidationResult(is_valid=True))
 
-        maci = MACIProcessingStrategy(
-            inner_strategy=inner,
-            strict_mode=True
-        )
+        maci = MACIProcessingStrategy(inner_strategy=inner, strict_mode=True)
 
         if maci._maci_available:
             # If MACI is available, it will validate first
@@ -835,13 +798,12 @@ class TestMACIProcessingStrategy:
 # Integration Tests
 # =============================================================================
 
+
 class TestProcessingStrategyIntegration:
     """Integration tests for processing strategies."""
 
     @pytest.mark.asyncio
-    async def test_python_strategy_end_to_end(
-        self, valid_message: AgentMessage
-    ) -> None:
+    async def test_python_strategy_end_to_end(self, valid_message: AgentMessage) -> None:
         """Test complete Python strategy workflow."""
         results = []
 
@@ -851,9 +813,7 @@ class TestProcessingStrategyIntegration:
         def sync_handler(msg):
             results.append(("sync", msg.message_id))
 
-        handlers = {
-            MessageType.COMMAND: [sync_handler, async_handler]
-        }
+        handlers = {MessageType.COMMAND: [sync_handler, async_handler]}
 
         strategy = PythonProcessingStrategy()
         result = await strategy.process(valid_message, handlers)
@@ -863,9 +823,7 @@ class TestProcessingStrategyIntegration:
         assert valid_message.status.value == "delivered"
 
     @pytest.mark.asyncio
-    async def test_composite_with_python_fallback(
-        self, valid_message: AgentMessage
-    ) -> None:
+    async def test_composite_with_python_fallback(self, valid_message: AgentMessage) -> None:
         """Test composite with Python as fallback."""
         unavailable = MagicMock()
         unavailable.is_available = MagicMock(return_value=False)
@@ -873,9 +831,7 @@ class TestProcessingStrategyIntegration:
 
         python_strategy = PythonProcessingStrategy()
 
-        composite = CompositeProcessingStrategy(
-            strategies=[unavailable, python_strategy]
-        )
+        composite = CompositeProcessingStrategy(strategies=[unavailable, python_strategy])
 
         result = await composite.process(valid_message, {})
 
@@ -883,14 +839,11 @@ class TestProcessingStrategyIntegration:
         assert valid_message.status.value == "delivered"
 
     @pytest.mark.asyncio
-    async def test_maci_wrapping_python(
-        self, valid_message: AgentMessage
-    ) -> None:
+    async def test_maci_wrapping_python(self, valid_message: AgentMessage) -> None:
         """Test MACI strategy wrapping Python strategy."""
         python_strategy = PythonProcessingStrategy()
         maci_strategy = MACIProcessingStrategy(
-            inner_strategy=python_strategy,
-            strict_mode=False  # Non-strict for testing
+            inner_strategy=python_strategy, strict_mode=False  # Non-strict for testing
         )
 
         result = await maci_strategy.process(valid_message, {})

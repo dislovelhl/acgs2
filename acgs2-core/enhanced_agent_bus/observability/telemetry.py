@@ -6,12 +6,12 @@ Provides unified telemetry configuration for distributed tracing,
 metrics collection, and constitutional compliance tracking.
 """
 
-import os
 import logging
-from typing import Optional, Dict, Any, Tuple
+import os
+from contextlib import contextmanager
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from contextlib import contextmanager
+from typing import Any, Dict, Optional, Tuple
 
 try:
     from shared.constants import CONSTITUTIONAL_HASH
@@ -26,14 +26,14 @@ tracer_type = None
 meter_type = None
 
 try:
-    from opentelemetry import trace, metrics
-    from opentelemetry.sdk.trace import TracerProvider
-    from opentelemetry.sdk.metrics import MeterProvider
-    from opentelemetry.sdk.resources import Resource
-    from opentelemetry.sdk.trace.export import BatchSpanProcessor, SimpleSpanProcessor
-    from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
-    from opentelemetry.trace import Status, StatusCode, Span
+    from opentelemetry import metrics, trace
     from opentelemetry.propagate import set_global_textmap
+    from opentelemetry.sdk.metrics import MeterProvider
+    from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
+    from opentelemetry.sdk.resources import Resource
+    from opentelemetry.sdk.trace import TracerProvider
+    from opentelemetry.sdk.trace.export import BatchSpanProcessor, SimpleSpanProcessor
+    from opentelemetry.trace import Span, Status, StatusCode
 
     OTEL_AVAILABLE = True
     tracer_type = trace.Tracer
@@ -41,8 +41,7 @@ try:
     logger.info(f"[{CONSTITUTIONAL_HASH}] OpenTelemetry SDK available")
 except ImportError:
     logger.warning(
-        f"[{CONSTITUTIONAL_HASH}] OpenTelemetry not available, "
-        "using no-op implementations"
+        f"[{CONSTITUTIONAL_HASH}] OpenTelemetry not available, " "using no-op implementations"
     )
 
 
@@ -147,9 +146,7 @@ _meters: Dict[str, Any] = {}
 _configured = False
 
 
-def configure_telemetry(
-    config: Optional[TelemetryConfig] = None
-) -> Tuple[Any, Any]:
+def configure_telemetry(config: Optional[TelemetryConfig] = None) -> Tuple[Any, Any]:
     """
     Configure OpenTelemetry for a service.
 
@@ -173,21 +170,22 @@ def configure_telemetry(
 
     if not _configured:
         # Create resource with constitutional hash
-        resource = Resource.create({
-            "service.name": config.service_name,
-            "service.version": config.service_version,
-            "deployment.environment": config.environment,
-            "constitutional.hash": config.constitutional_hash,
-        })
+        resource = Resource.create(
+            {
+                "service.name": config.service_name,
+                "service.version": config.service_version,
+                "deployment.environment": config.environment,
+                "constitutional.hash": config.constitutional_hash,
+            }
+        )
 
         # Configure trace provider
         trace_provider = TracerProvider(resource=resource)
 
         if config.export_traces:
             try:
-                from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import (
-                    OTLPSpanExporter
-                )
+                from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+
                 exporter = OTLPSpanExporter(endpoint=config.otlp_endpoint)
 
                 if config.batch_span_processor:
@@ -214,14 +212,12 @@ def configure_telemetry(
         if config.export_metrics:
             try:
                 from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import (
-                    OTLPMetricExporter
+                    OTLPMetricExporter,
                 )
+
                 metric_exporter = OTLPMetricExporter(endpoint=config.otlp_endpoint)
                 reader = PeriodicExportingMetricReader(metric_exporter)
-                meter_provider = MeterProvider(
-                    resource=resource,
-                    metric_readers=[reader]
-                )
+                meter_provider = MeterProvider(resource=resource, metric_readers=[reader])
                 logger.info(
                     f"[{CONSTITUTIONAL_HASH}] Configured OTLP metric export to "
                     f"{config.otlp_endpoint}"
@@ -237,17 +233,15 @@ def configure_telemetry(
         # Configure propagation (B3 for distributed tracing)
         try:
             from opentelemetry.propagators.b3 import B3MultiFormat
+
             set_global_textmap(B3MultiFormat())
             logger.info(f"[{CONSTITUTIONAL_HASH}] Configured B3 trace propagation")
         except ImportError:
-            logger.warning(
-                f"[{CONSTITUTIONAL_HASH}] B3 propagator not available"
-            )
+            logger.warning(f"[{CONSTITUTIONAL_HASH}] B3 propagator not available")
 
         _configured = True
         logger.info(
-            f"[{CONSTITUTIONAL_HASH}] OpenTelemetry configured for "
-            f"{config.service_name}"
+            f"[{CONSTITUTIONAL_HASH}] OpenTelemetry configured for " f"{config.service_name}"
         )
 
     # Get or create tracer and meter
@@ -283,6 +277,7 @@ def get_tracer(service_name: Optional[str] = None) -> Any:
     name = service_name or "acgs2-agent-bus"
     if name not in _tracers:
         from opentelemetry import trace
+
         _tracers[name] = trace.get_tracer(name)
 
     return _tracers[name]
@@ -311,6 +306,7 @@ def get_meter(service_name: Optional[str] = None) -> Any:
     name = service_name or "acgs2-agent-bus"
     if name not in _meters:
         from opentelemetry import metrics
+
         _meters[name] = metrics.get_meter(name)
 
     return _meters[name]
@@ -357,6 +353,7 @@ class TracingContext:
             self._span.record_exception(exc_val)
             if OTEL_AVAILABLE:
                 from opentelemetry.trace import Status, StatusCode
+
                 self._span.set_status(Status(StatusCode.ERROR, str(exc_val)))
 
         if self._context:

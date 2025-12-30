@@ -1,7 +1,8 @@
-import pytest
-from unittest.mock import MagicMock, AsyncMock, patch
-import sys
 import os
+import sys
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 
 # Add relevant paths to sys.path
 sys.path.append(os.path.abspath("/home/dislove/document/acgs2/acgs2-core"))
@@ -9,14 +10,21 @@ sys.path.append(os.path.abspath("/home/dislove/document/acgs2/acgs2-core/enhance
 
 # Import LLMAssistant
 from enhanced_agent_bus.deliberation_layer.llm_assistant import LLMAssistant
-from shared.constants import CONSTITUTIONAL_HASH
 from enhanced_agent_bus.models import AgentMessage, MessageType, Priority
+from shared.constants import CONSTITUTIONAL_HASH
+
 
 @pytest.mark.asyncio
 async def test_analyze_message_impact_prompt_standardization():
     """Verify that analyze_message_impact uses the standardized prompt template."""
-    with patch('enhanced_agent_bus.deliberation_layer.llm_assistant.ChatPromptTemplate') as mock_prompt_class, \
-         patch('enhanced_agent_bus.deliberation_layer.llm_assistant.JsonOutputParser') as mock_parser_class:
+    with (
+        patch(
+            "enhanced_agent_bus.deliberation_layer.llm_assistant.ChatPromptTemplate"
+        ) as mock_prompt_class,
+        patch(
+            "enhanced_agent_bus.deliberation_layer.llm_assistant.JsonOutputParser"
+        ) as mock_parser_class,
+    ):
 
         # Mock LLM
         mock_llm = AsyncMock()
@@ -42,7 +50,7 @@ async def test_analyze_message_impact_prompt_standardization():
             to_agent="governance",
             content={"summary": "Test content"},
             message_type=MessageType.EVENT,
-            priority=Priority.NORMAL
+            priority=Priority.NORMAL,
         )
 
         await assistant.analyze_message_impact(message)
@@ -52,7 +60,10 @@ async def test_analyze_message_impact_prompt_standardization():
         template_str = args[0]
 
         # Updated assertions for chain-of-thought enhanced prompts
-        assert "CONSTITUTIONAL CONSTRAINT: All analysis must validate against hash {constitutional_hash}" in template_str
+        assert (
+            "CONSTITUTIONAL CONSTRAINT: All analysis must validate against hash {constitutional_hash}"
+            in template_str
+        )
         assert "Security Analysis:" in template_str
         assert "Performance Analysis:" in template_str
         assert "Compliance Analysis:" in template_str
@@ -60,13 +71,20 @@ async def test_analyze_message_impact_prompt_standardization():
 
         # Verify format_messages was called with hash
         args, kwargs = mock_template.format_messages.call_args
-        assert kwargs['constitutional_hash'] == CONSTITUTIONAL_HASH
+        assert kwargs["constitutional_hash"] == CONSTITUTIONAL_HASH
+
 
 @pytest.mark.asyncio
 async def test_generate_decision_reasoning_prompt_standardization():
     """Verify that generate_decision_reasoning uses the standardized prompt template."""
-    with patch('enhanced_agent_bus.deliberation_layer.llm_assistant.ChatPromptTemplate') as mock_prompt_class, \
-         patch('enhanced_agent_bus.deliberation_layer.llm_assistant.JsonOutputParser') as mock_parser_class:
+    with (
+        patch(
+            "enhanced_agent_bus.deliberation_layer.llm_assistant.ChatPromptTemplate"
+        ) as mock_prompt_class,
+        patch(
+            "enhanced_agent_bus.deliberation_layer.llm_assistant.JsonOutputParser"
+        ) as mock_parser_class,
+    ):
 
         mock_llm = AsyncMock()
         mock_response = MagicMock()
@@ -88,7 +106,7 @@ async def test_generate_decision_reasoning_prompt_standardization():
             from_agent="test-agent",
             to_agent="governance",
             content={"summary": "Test content"},
-            message_type=MessageType.GOVERNANCE_REQUEST
+            message_type=MessageType.GOVERNANCE_REQUEST,
         )
 
         await assistant.generate_decision_reasoning(message, [], "approve")
@@ -100,8 +118,11 @@ async def test_generate_decision_reasoning_prompt_standardization():
         # Updated assertions for chain-of-thought enhanced prompts
         assert "**Action Under Review:** {message_type}" in template_str
         assert "DELIBERATION CONTEXT" in template_str
-        assert "CONSTITUTIONAL CONSTRAINT: Hash {constitutional_hash} must be validated" in template_str
+        assert (
+            "CONSTITUTIONAL CONSTRAINT: Hash {constitutional_hash} must be validated"
+            in template_str
+        )
 
         # Verify hash passed
         _, kwargs = mock_template.format_messages.call_args
-        assert kwargs['constitutional_hash'] == CONSTITUTIONAL_HASH
+        assert kwargs["constitutional_hash"] == CONSTITUTIONAL_HASH

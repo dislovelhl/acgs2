@@ -7,15 +7,15 @@ testing following Gojko Adzic's Specification by Example methodology.
 """
 
 from .fixtures import (
-    constitutional_hash,
-    timeout_budget_manager,
-    metrics_registry,
-    circuit_breaker,
-    maci_framework,
-    saga_manager,
-    timeline,
     architecture_context,
     chaos_controller,
+    circuit_breaker,
+    constitutional_hash,
+    maci_framework,
+    metrics_registry,
+    saga_manager,
+    timeline,
+    timeout_budget_manager,
 )
 
 __all__ = [

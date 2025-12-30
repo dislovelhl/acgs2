@@ -5,9 +5,6 @@ Constitutional Hash: cdd01ef066bc6cf2
 Tests for interfaces.py protocol definitions.
 """
 
-import pytest
-from typing import Any, Dict, List, Optional
-
 try:
     from enhanced_agent_bus.interfaces import (
         AgentRegistry,
@@ -17,7 +14,7 @@ try:
         ProcessingStrategy,
         ValidationStrategy,
     )
-    from enhanced_agent_bus.models import AgentMessage, CONSTITUTIONAL_HASH
+    from enhanced_agent_bus.models import CONSTITUTIONAL_HASH, AgentMessage
 except ImportError:
     from interfaces import (
         AgentRegistry,
@@ -27,7 +24,7 @@ except ImportError:
         ProcessingStrategy,
         ValidationStrategy,
     )
-    from models import AgentMessage, CONSTITUTIONAL_HASH
+    from models import CONSTITUTIONAL_HASH, AgentMessage
 
 
 class TestAgentRegistryProtocol:
@@ -40,14 +37,14 @@ class TestAgentRegistryProtocol:
 
     def test_protocol_has_required_methods(self):
         """AgentRegistry has required methods."""
-        assert hasattr(AgentRegistry, 'register')
-        assert hasattr(AgentRegistry, 'unregister')
-        assert hasattr(AgentRegistry, 'get')
-        assert hasattr(AgentRegistry, 'list_agents')
+        assert hasattr(AgentRegistry, "register")
+        assert hasattr(AgentRegistry, "unregister")
+        assert hasattr(AgentRegistry, "get")
+        assert hasattr(AgentRegistry, "list_agents")
 
     def test_protocol_has_exists_method(self):
         """AgentRegistry has exists method."""
-        assert hasattr(AgentRegistry, 'exists')
+        assert hasattr(AgentRegistry, "exists")
 
 
 class TestMessageHandlerProtocol:
@@ -59,11 +56,11 @@ class TestMessageHandlerProtocol:
 
     def test_has_handle_method(self):
         """MessageHandler has handle method."""
-        assert hasattr(MessageHandler, 'handle')
+        assert hasattr(MessageHandler, "handle")
 
     def test_has_can_handle_method(self):
         """MessageHandler has can_handle method."""
-        assert hasattr(MessageHandler, 'can_handle')
+        assert hasattr(MessageHandler, "can_handle")
 
 
 class TestMessageRouterProtocol:
@@ -75,7 +72,7 @@ class TestMessageRouterProtocol:
 
     def test_has_route_method(self):
         """MessageRouter has route method."""
-        assert hasattr(MessageRouter, 'route')
+        assert hasattr(MessageRouter, "route")
 
 
 class TestMetricsCollectorProtocol:
@@ -87,11 +84,11 @@ class TestMetricsCollectorProtocol:
 
     def test_has_record_message_method(self):
         """MetricsCollector has record_message_processed method."""
-        assert hasattr(MetricsCollector, 'record_message_processed')
+        assert hasattr(MetricsCollector, "record_message_processed")
 
     def test_has_get_metrics_method(self):
         """MetricsCollector has get_metrics method."""
-        assert hasattr(MetricsCollector, 'get_metrics')
+        assert hasattr(MetricsCollector, "get_metrics")
 
 
 class TestProcessingStrategyProtocol:
@@ -103,11 +100,11 @@ class TestProcessingStrategyProtocol:
 
     def test_has_process_method(self):
         """ProcessingStrategy has process method."""
-        assert hasattr(ProcessingStrategy, 'process')
+        assert hasattr(ProcessingStrategy, "process")
 
     def test_has_get_name_method(self):
         """ProcessingStrategy has get_name method."""
-        assert hasattr(ProcessingStrategy, 'get_name')
+        assert hasattr(ProcessingStrategy, "get_name")
 
 
 class TestValidationStrategyProtocol:
@@ -119,7 +116,7 @@ class TestValidationStrategyProtocol:
 
     def test_has_validate_method(self):
         """ValidationStrategy has validate method."""
-        assert hasattr(ValidationStrategy, 'validate')
+        assert hasattr(ValidationStrategy, "validate")
 
 
 class TestModelDefaultValues:
@@ -161,11 +158,11 @@ class TestMetricsCollectorProtocol:
 
     def test_has_record_agent_registered(self):
         """MetricsCollector has record_agent_registered method."""
-        assert hasattr(MetricsCollector, 'record_agent_registered')
+        assert hasattr(MetricsCollector, "record_agent_registered")
 
     def test_has_record_agent_unregistered(self):
         """MetricsCollector has record_agent_unregistered method."""
-        assert hasattr(MetricsCollector, 'record_agent_unregistered')
+        assert hasattr(MetricsCollector, "record_agent_unregistered")
 
 
 class TestProcessingStrategyProtocol:
@@ -173,7 +170,7 @@ class TestProcessingStrategyProtocol:
 
     def test_has_is_available_method(self):
         """ProcessingStrategy has is_available method."""
-        assert hasattr(ProcessingStrategy, 'is_available')
+        assert hasattr(ProcessingStrategy, "is_available")
 
 
 class TestInterfacesAllExports:
@@ -185,7 +182,7 @@ class TestInterfacesAllExports:
             from enhanced_agent_bus import interfaces
         except ImportError:
             import interfaces
-        assert hasattr(interfaces, '__all__')
+        assert hasattr(interfaces, "__all__")
         assert len(interfaces.__all__) > 0
 
     def test_all_contains_agent_registry(self):

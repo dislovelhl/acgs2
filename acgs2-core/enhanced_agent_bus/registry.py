@@ -6,51 +6,53 @@ Default implementations of protocol interfaces for agent management.
 """
 
 import asyncio
-import logging
 import json
-import redis.asyncio as redis
+import logging
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
+import redis.asyncio as redis
+
 try:
-    from .interfaces import AgentRegistry, MessageRouter, ValidationStrategy, ProcessingStrategy
-    from .models import AgentMessage, MessageStatus, CONSTITUTIONAL_HASH
+    from .interfaces import AgentRegistry, MessageRouter, ProcessingStrategy, ValidationStrategy
+    from .models import CONSTITUTIONAL_HASH, AgentMessage, MessageStatus
     from .validators import ValidationResult
 except ImportError:
-    from interfaces import AgentRegistry, MessageRouter, ValidationStrategy, ProcessingStrategy  # type: ignore
-    from models import AgentMessage, MessageStatus, CONSTITUTIONAL_HASH  # type: ignore
-    from validators import ValidationResult  # type: ignore
+    from interfaces import (  # type: ignore
+        AgentRegistry,
+    )
+    from models import CONSTITUTIONAL_HASH, AgentMessage  # type: ignore
 
 # Import validation and processing strategies from extracted modules
 try:
+    from .processing_strategies import (
+        CompositeProcessingStrategy,
+        DynamicPolicyProcessingStrategy,
+        OPAProcessingStrategy,
+        PythonProcessingStrategy,
+        RustProcessingStrategy,
+    )
     from .validation_strategies import (
-        StaticHashValidationStrategy,
+        CompositeValidationStrategy,
         DynamicPolicyValidationStrategy,
         OPAValidationStrategy,
         RustValidationStrategy,
-        CompositeValidationStrategy,
-    )
-    from .processing_strategies import (
-        PythonProcessingStrategy,
-        RustProcessingStrategy,
-        DynamicPolicyProcessingStrategy,
-        OPAProcessingStrategy,
-        CompositeProcessingStrategy,
+        StaticHashValidationStrategy,
     )
 except ImportError:
+    from processing_strategies import (  # type: ignore
+        CompositeProcessingStrategy,
+        DynamicPolicyProcessingStrategy,
+        OPAProcessingStrategy,
+        PythonProcessingStrategy,
+        RustProcessingStrategy,
+    )
     from validation_strategies import (  # type: ignore
-        StaticHashValidationStrategy,
+        CompositeValidationStrategy,
         DynamicPolicyValidationStrategy,
         OPAValidationStrategy,
         RustValidationStrategy,
-        CompositeValidationStrategy,
-    )
-    from processing_strategies import (  # type: ignore
-        PythonProcessingStrategy,
-        RustProcessingStrategy,
-        DynamicPolicyProcessingStrategy,
-        OPAProcessingStrategy,
-        CompositeProcessingStrategy,
+        StaticHashValidationStrategy,
     )
 
 logger = logging.getLogger(__name__)
@@ -79,7 +81,7 @@ class InMemoryAgentRegistry:
         self,
         agent_id: str,
         capabilities: Optional[Dict[str, Any]] = None,
-        metadata: Optional[Dict[str, Any]] = None
+        metadata: Optional[Dict[str, Any]] = None,
     ) -> bool:
         """Register an agent with the bus."""
         async with self._lock:
@@ -118,11 +120,7 @@ class InMemoryAgentRegistry:
         async with self._lock:
             return agent_id in self._agents
 
-    async def update_metadata(
-        self,
-        agent_id: str,
-        metadata: Dict[str, Any]
-    ) -> bool:
+    async def update_metadata(self, agent_id: str, metadata: Dict[str, Any]) -> bool:
         """Update agent metadata."""
         async with self._lock:
             if agent_id not in self._agents:
@@ -194,7 +192,7 @@ class RedisAgentRegistry:
         self,
         agent_id: str,
         capabilities: Optional[Dict[str, Any]] = None,
-        metadata: Optional[Dict[str, Any]] = None
+        metadata: Optional[Dict[str, Any]] = None,
     ) -> bool:
         """Register an agent with the bus."""
         client = await self._get_client()
@@ -210,11 +208,7 @@ class RedisAgentRegistry:
         # HSETNX returns 1 if field is new, 0 if it already exists
         # We use a transaction or simply check before setting
         # to ensure we don't overwrite if it exists
-        success = await client.hsetnx(
-            self._key_prefix,
-            agent_id,
-            json.dumps(agent_info)
-        )
+        success = await client.hsetnx(self._key_prefix, agent_id, json.dumps(agent_info))
         return bool(success)
 
     async def unregister(self, agent_id: str) -> bool:
@@ -242,11 +236,7 @@ class RedisAgentRegistry:
         client = await self._get_client()
         return bool(await client.hexists(self._key_prefix, agent_id))
 
-    async def update_metadata(
-        self,
-        agent_id: str,
-        metadata: Dict[str, Any]
-    ) -> bool:
+    async def update_metadata(self, agent_id: str, metadata: Dict[str, Any]) -> bool:
         """Update agent metadata."""
         client = await self._get_client()
 
@@ -317,11 +307,7 @@ class DirectMessageRouter:
             return metadata.get("tenant_id")
         return None
 
-    async def route(
-        self,
-        message: AgentMessage,
-        registry: AgentRegistry
-    ) -> Optional[str]:
+    async def route(self, message: AgentMessage, registry: AgentRegistry) -> Optional[str]:
         """Determine the target agent for a message."""
         target = message.to_agent
         if not target:
@@ -348,10 +334,7 @@ class DirectMessageRouter:
         return target
 
     async def broadcast(
-        self,
-        message: AgentMessage,
-        registry: AgentRegistry,
-        exclude: Optional[List[str]] = None
+        self, message: AgentMessage, registry: AgentRegistry, exclude: Optional[List[str]] = None
     ) -> List[str]:
         """Get list of agents to broadcast a message to."""
         all_agents = await registry.list_agents()
@@ -375,11 +358,7 @@ class CapabilityBasedRouter:
         """Initialize the capability-based router."""
         self._constitutional_hash = CONSTITUTIONAL_HASH
 
-    async def route(
-        self,
-        message: AgentMessage,
-        registry: AgentRegistry
-    ) -> Optional[str]:
+    async def route(self, message: AgentMessage, registry: AgentRegistry) -> Optional[str]:
         """Route based on required capabilities in message content."""
         # Check for explicit target first
         if message.to_agent:
@@ -403,10 +382,7 @@ class CapabilityBasedRouter:
         return None
 
     async def broadcast(
-        self,
-        message: AgentMessage,
-        registry: AgentRegistry,
-        exclude: Optional[List[str]] = None
+        self, message: AgentMessage, registry: AgentRegistry, exclude: Optional[List[str]] = None
     ) -> List[str]:
         """Broadcast to agents with matching capabilities."""
         required_capabilities = message.content.get("required_capabilities", [])

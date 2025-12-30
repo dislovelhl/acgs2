@@ -5,63 +5,61 @@ Constitutional Hash: cdd01ef066bc6cf2
 Tests for core.py backward compatibility facade.
 """
 
-import pytest
-
 try:
     from enhanced_agent_bus import core
     from enhanced_agent_bus.core import (
-        CONSTITUTIONAL_HASH,
-        USE_RUST,
-        DEFAULT_REDIS_URL,
-        METRICS_ENABLED,
         CIRCUIT_BREAKER_ENABLED,
+        CONSTITUTIONAL_HASH,
+        DEFAULT_REDIS_URL,
         METERING_AVAILABLE,
-        MessageProcessor,
-        EnhancedAgentBus,
+        METRICS_ENABLED,
+        USE_RUST,
         AgentMessage,
+        AgentRegistry,
+        CompositeProcessingStrategy,
+        DecisionLog,
+        DirectMessageRouter,
+        EnhancedAgentBus,
+        InMemoryAgentRegistry,
+        MessageProcessor,
+        MessageRouter,
+        MessageStatus,
         MessageType,
         Priority,
-        MessageStatus,
-        DecisionLog,
-        ValidationResult,
-        AgentRegistry,
-        MessageRouter,
-        ValidationStrategy,
         ProcessingStrategy,
-        InMemoryAgentRegistry,
-        DirectMessageRouter,
-        StaticHashValidationStrategy,
         PythonProcessingStrategy,
-        CompositeProcessingStrategy,
+        StaticHashValidationStrategy,
+        ValidationResult,
+        ValidationStrategy,
         get_agent_bus,
         reset_agent_bus,
     )
 except ImportError:
     import core
     from core import (
-        CONSTITUTIONAL_HASH,
-        USE_RUST,
-        DEFAULT_REDIS_URL,
-        METRICS_ENABLED,
         CIRCUIT_BREAKER_ENABLED,
+        CONSTITUTIONAL_HASH,
+        DEFAULT_REDIS_URL,
         METERING_AVAILABLE,
-        MessageProcessor,
-        EnhancedAgentBus,
+        METRICS_ENABLED,
+        USE_RUST,
         AgentMessage,
+        AgentRegistry,
+        CompositeProcessingStrategy,
+        DecisionLog,
+        DirectMessageRouter,
+        EnhancedAgentBus,
+        InMemoryAgentRegistry,
+        MessageProcessor,
+        MessageRouter,
+        MessageStatus,
         MessageType,
         Priority,
-        MessageStatus,
-        DecisionLog,
-        ValidationResult,
-        AgentRegistry,
-        MessageRouter,
-        ValidationStrategy,
         ProcessingStrategy,
-        InMemoryAgentRegistry,
-        DirectMessageRouter,
-        StaticHashValidationStrategy,
         PythonProcessingStrategy,
-        CompositeProcessingStrategy,
+        StaticHashValidationStrategy,
+        ValidationResult,
+        ValidationStrategy,
         get_agent_bus,
         reset_agent_bus,
     )
@@ -158,22 +156,22 @@ class TestCoreProtocolExports:
     def test_agent_registry_protocol(self):
         """AgentRegistry protocol is exported."""
         assert AgentRegistry is not None
-        assert hasattr(AgentRegistry, 'register')
+        assert hasattr(AgentRegistry, "register")
 
     def test_message_router_protocol(self):
         """MessageRouter protocol is exported."""
         assert MessageRouter is not None
-        assert hasattr(MessageRouter, 'route')
+        assert hasattr(MessageRouter, "route")
 
     def test_validation_strategy_protocol(self):
         """ValidationStrategy protocol is exported."""
         assert ValidationStrategy is not None
-        assert hasattr(ValidationStrategy, 'validate')
+        assert hasattr(ValidationStrategy, "validate")
 
     def test_processing_strategy_protocol(self):
         """ProcessingStrategy protocol is exported."""
         assert ProcessingStrategy is not None
-        assert hasattr(ProcessingStrategy, 'process')
+        assert hasattr(ProcessingStrategy, "process")
 
 
 class TestCoreImplementationExports:
@@ -221,7 +219,7 @@ class TestCoreAllExports:
 
     def test_all_defined(self):
         """__all__ is defined in core module."""
-        assert hasattr(core, '__all__')
+        assert hasattr(core, "__all__")
         assert len(core.__all__) > 0
 
     def test_all_contains_constitutional_hash(self):

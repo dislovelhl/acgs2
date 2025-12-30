@@ -6,18 +6,19 @@ Tests for OPA client integration.
 """
 
 import asyncio
+from unittest.mock import AsyncMock, MagicMock
+
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
-import json
+from enhanced_agent_bus.models import CONSTITUTIONAL_HASH
 
-# Import modules using importlib to avoid package conflicts
-import sys
-import os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-
-from opa_client import OPAClient, get_opa_client, initialize_opa_client, close_opa_client
-from models import AgentMessage, MessageType, CONSTITUTIONAL_HASH
-from validators import ValidationResult
+# Use package-relative imports to maintain class identity
+from enhanced_agent_bus.opa_client import (
+    OPAClient,
+    close_opa_client,
+    get_opa_client,
+    initialize_opa_client,
+)
+from enhanced_agent_bus.validators import ValidationResult
 
 
 class TestOPAClient:
@@ -30,7 +31,7 @@ class TestOPAClient:
             opa_url="http://localhost:8181",
             mode="fallback",  # Use fallback mode for testing
             enable_cache=True,
-            timeout=5.0
+            timeout=5.0,
         )
         await client.initialize()
         yield client
@@ -43,7 +44,7 @@ class TestOPAClient:
             opa_url="http://localhost:8181",
             mode="http",
             enable_cache=False,  # Disable cache for testing
-            timeout=5.0
+            timeout=5.0,
         )
         await client.initialize()
         yield client
@@ -73,13 +74,10 @@ class TestOPAClient:
         input_data = {
             "agent_id": "test_agent",
             "action": "read",
-            "constitutional_hash": CONSTITUTIONAL_HASH
+            "constitutional_hash": CONSTITUTIONAL_HASH,
         }
 
-        result = await opa_client.evaluate_policy(
-            input_data,
-            policy_path="data.acgs.allow"
-        )
+        result = await opa_client.evaluate_policy(input_data, policy_path="data.acgs.allow")
 
         assert result is not None
         assert "result" in result
@@ -95,13 +93,10 @@ class TestOPAClient:
         input_data = {
             "agent_id": "test_agent",
             "action": "read",
-            "constitutional_hash": "invalid_hash"
+            "constitutional_hash": "invalid_hash",
         }
 
-        result = await opa_client.evaluate_policy(
-            input_data,
-            policy_path="data.acgs.allow"
-        )
+        result = await opa_client.evaluate_policy(input_data, policy_path="data.acgs.allow")
 
         assert result is not None
         assert result["allowed"] is False
@@ -119,7 +114,7 @@ class TestOPAClient:
             "from_agent": "agent_1",
             "to_agent": "agent_2",
             "content": {"action": "test"},
-            "constitutional_hash": CONSTITUTIONAL_HASH
+            "constitutional_hash": CONSTITUTIONAL_HASH,
         }
 
         result = await opa_client.validate_constitutional(message)
@@ -129,7 +124,9 @@ class TestOPAClient:
         assert result.is_valid is False
         assert result.constitutional_hash == CONSTITUTIONAL_HASH
         assert len(result.errors) > 0
-        assert "fail-closed" in result.errors[0].lower() or "unavailable" in result.errors[0].lower()
+        assert (
+            "fail-closed" in result.errors[0].lower() or "unavailable" in result.errors[0].lower()
+        )
 
     @pytest.mark.asyncio
     async def test_validate_constitutional_invalid(self, opa_client):
@@ -139,7 +136,7 @@ class TestOPAClient:
             "from_agent": "agent_1",
             "to_agent": "agent_2",
             "content": {"action": "test"},
-            "constitutional_hash": "invalid_hash"
+            "constitutional_hash": "invalid_hash",
         }
 
         result = await opa_client.validate_constitutional(message)
@@ -159,7 +156,7 @@ class TestOPAClient:
             agent_id="test_agent",
             action="read",
             resource="test_resource",
-            context={"constitutional_hash": CONSTITUTIONAL_HASH}
+            context={"constitutional_hash": CONSTITUTIONAL_HASH},
         )
 
         # FAIL-CLOSED: Denied when OPA unavailable
@@ -172,7 +169,7 @@ class TestOPAClient:
             agent_id="test_agent",
             action="read",
             resource="test_resource",
-            context={"constitutional_hash": "invalid_hash"}
+            context={"constitutional_hash": "invalid_hash"},
         )
 
         # Invalid hash should deny authorization
@@ -188,10 +185,7 @@ class TestOPAClient:
         client = OPAClient(mode="fallback", enable_cache=True)
         await client.initialize()
 
-        input_data = {
-            "agent_id": "test_agent",
-            "constitutional_hash": CONSTITUTIONAL_HASH
-        }
+        input_data = {"agent_id": "test_agent", "constitutional_hash": CONSTITUTIONAL_HASH}
 
         # First call - cache miss, FAIL-CLOSED
         result1 = await client.evaluate_policy(input_data, "data.acgs.allow")
@@ -231,24 +225,15 @@ class TestOPAClient:
         # Mock the HTTP client - use MagicMock for response since .json() is sync
         mock_response = MagicMock()
         mock_response.json.return_value = {
-            "result": {
-                "allow": True,
-                "reason": "Policy allows action"
-            }
+            "result": {"allow": True, "reason": "Policy allows action"}
         }
         mock_response.raise_for_status = MagicMock()
 
         http_opa_client._http_client.post = AsyncMock(return_value=mock_response)
 
-        input_data = {
-            "agent_id": "test_agent",
-            "constitutional_hash": CONSTITUTIONAL_HASH
-        }
+        input_data = {"agent_id": "test_agent", "constitutional_hash": CONSTITUTIONAL_HASH}
 
-        result = await http_opa_client.evaluate_policy(
-            input_data,
-            policy_path="data.acgs.allow"
-        )
+        result = await http_opa_client.evaluate_policy(input_data, policy_path="data.acgs.allow")
 
         assert result["allowed"] is True
         assert result["metadata"]["mode"] == "http"
@@ -289,10 +274,7 @@ class TestOPAClient:
     @pytest.mark.asyncio
     async def test_initialize_global_client(self):
         """Test global client initialization."""
-        client = await initialize_opa_client(
-            opa_url="http://localhost:8181",
-            mode="fallback"
-        )
+        client = await initialize_opa_client(opa_url="http://localhost:8181", mode="fallback")
 
         assert client is not None
         assert client.mode == "fallback"
@@ -303,19 +285,11 @@ class TestOPAClient:
     async def test_error_handling_network_failure(self, http_opa_client):
         """Test error handling for network failures."""
         # Mock network failure
-        http_opa_client._http_client.post = AsyncMock(
-            side_effect=Exception("Network error")
-        )
+        http_opa_client._http_client.post = AsyncMock(side_effect=Exception("Network error"))
 
-        input_data = {
-            "agent_id": "test_agent",
-            "constitutional_hash": CONSTITUTIONAL_HASH
-        }
+        input_data = {"agent_id": "test_agent", "constitutional_hash": CONSTITUTIONAL_HASH}
 
-        result = await http_opa_client.evaluate_policy(
-            input_data,
-            policy_path="data.acgs.allow"
-        )
+        result = await http_opa_client.evaluate_policy(input_data, policy_path="data.acgs.allow")
 
         # Should return error result
         assert result["allowed"] is False
@@ -344,10 +318,7 @@ class TestOPAClient:
         client = OPAClient(mode="fallback", enable_cache=True, cache_ttl=1)
         await client.initialize()
 
-        input_data = {
-            "agent_id": "test_agent",
-            "constitutional_hash": CONSTITUTIONAL_HASH
-        }
+        input_data = {"agent_id": "test_agent", "constitutional_hash": CONSTITUTIONAL_HASH}
 
         # First call
         result1 = await client.evaluate_policy(input_data, "data.acgs.allow")
@@ -372,14 +343,11 @@ class TestOPAClient:
         context = {
             "user_role": "admin",
             "tenant_id": "tenant_123",
-            "constitutional_hash": CONSTITUTIONAL_HASH
+            "constitutional_hash": CONSTITUTIONAL_HASH,
         }
 
         authorized = await opa_client.check_agent_authorization(
-            agent_id="admin_agent",
-            action="write",
-            resource="sensitive_resource",
-            context=context
+            agent_id="admin_agent", action="write", resource="sensitive_resource", context=context
         )
 
         # FAIL-CLOSED: Denied when OPA unavailable
@@ -388,16 +356,10 @@ class TestOPAClient:
     @pytest.mark.asyncio
     async def test_multiple_concurrent_evaluations(self, opa_client):
         """Test concurrent policy evaluations."""
-        input_data = {
-            "agent_id": "test_agent",
-            "constitutional_hash": CONSTITUTIONAL_HASH
-        }
+        input_data = {"agent_id": "test_agent", "constitutional_hash": CONSTITUTIONAL_HASH}
 
         # Run multiple evaluations concurrently
-        tasks = [
-            opa_client.evaluate_policy(input_data, f"data.acgs.policy_{i}")
-            for i in range(10)
-        ]
+        tasks = [opa_client.evaluate_policy(input_data, f"data.acgs.policy_{i}") for i in range(10)]
 
         results = await asyncio.gather(*tasks)
 
@@ -434,7 +396,7 @@ class TestOPAClientEdgeCases:
             # Create large input
             large_input = {
                 "constitutional_hash": CONSTITUTIONAL_HASH,
-                "data": ["item" + str(i) for i in range(1000)]
+                "data": ["item" + str(i) for i in range(1000)],
             }
             result = await client.evaluate_policy(large_input, "data.acgs.allow")
             assert result is not None
@@ -443,10 +405,7 @@ class TestOPAClientEdgeCases:
     async def test_special_characters_in_input(self):
         """Test with special characters in input."""
         async with OPAClient(mode="fallback") as client:
-            input_data = {
-                "agent_id": "agent<>\"'&123",
-                "constitutional_hash": CONSTITUTIONAL_HASH
-            }
+            input_data = {"agent_id": "agent<>\"'&123", "constitutional_hash": CONSTITUTIONAL_HASH}
             result = await client.evaluate_policy(input_data, "data.acgs.allow")
             assert result is not None
 

@@ -9,7 +9,7 @@ Wraps existing opa_client with additional protections.
 import asyncio
 import hashlib
 import logging
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Optional
 
 from .base import ACLAdapter, AdapterConfig, AdapterResult
@@ -140,9 +140,7 @@ class OPAAdapter(ACLAdapter[OPARequest, OPAResponse]):
                     )
                 )
             except ImportError:
-                logger.warning(
-                    f"[{CONSTITUTIONAL_HASH}] aiohttp not available for OPA adapter"
-                )
+                logger.warning(f"[{CONSTITUTIONAL_HASH}] aiohttp not available for OPA adapter")
         return self._http_client
 
     async def _execute(self, request: OPARequest) -> OPAResponse:
@@ -174,9 +172,7 @@ class OPAAdapter(ACLAdapter[OPARequest, OPAResponse]):
                 headers={"Content-Type": "application/json"},
             ) as resp:
                 if resp.status != 200:
-                    logger.warning(
-                        f"[{CONSTITUTIONAL_HASH}] OPA returned status {resp.status}"
-                    )
+                    logger.warning(f"[{CONSTITUTIONAL_HASH}] OPA returned status {resp.status}")
                     # Fail-closed: deny on error
                     if self.opa_config.fail_closed:
                         return OPAResponse(
@@ -211,9 +207,7 @@ class OPAAdapter(ACLAdapter[OPARequest, OPAResponse]):
                 )
             raise
 
-    def _parse_opa_response(
-        self, data: dict, request: OPARequest
-    ) -> OPAResponse:
+    def _parse_opa_response(self, data: dict, request: OPARequest) -> OPAResponse:
         """Parse OPA response into OPAResponse."""
         result = data.get("result", {})
 
@@ -233,9 +227,7 @@ class OPAAdapter(ACLAdapter[OPARequest, OPAResponse]):
         metrics = data.get("metrics")
 
         # Generate decision ID
-        decision_id = hashlib.sha256(
-            f"{request.trace_id}:{allow}".encode()
-        ).hexdigest()[:16]
+        decision_id = hashlib.sha256(f"{request.trace_id}:{allow}".encode()).hexdigest()[:16]
 
         return OPAResponse(
             allow=allow,

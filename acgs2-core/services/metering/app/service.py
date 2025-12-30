@@ -8,19 +8,18 @@ Designed for transparency and usage-based pricing models.
 
 import asyncio
 import logging
-from datetime import datetime, timezone, timedelta
-from typing import Dict, List, Optional, Any
 from collections import defaultdict
-from uuid import UUID
+from datetime import datetime, timedelta, timezone
+from typing import Any, Dict, List, Optional
 
 from .models import (
-    UsageEvent,
-    UsageAggregation,
-    MeteringQuota,
+    CONSTITUTIONAL_HASH,
     BillingRate,
     MeterableOperation,
+    MeteringQuota,
     MeteringTier,
-    CONSTITUTIONAL_HASH,
+    UsageAggregation,
+    UsageEvent,
 )
 
 logger = logging.getLogger(__name__)
@@ -199,8 +198,7 @@ class UsageMeteringService:
         if quota.monthly_message_limit:
             remaining["messages"] = max(
                 0,
-                quota.monthly_message_limit
-                - usage.get(MeterableOperation.AGENT_MESSAGE.value, 0),
+                quota.monthly_message_limit - usage.get(MeterableOperation.AGENT_MESSAGE.value, 0),
             )
 
         if quota.monthly_total_limit:
@@ -256,12 +254,14 @@ class UsageMeteringService:
             if count > 0:
                 rate = base_rates.get(op, 0.1)
                 amount = int(count * rate)
-                line_items.append({
-                    "operation": op,
-                    "count": count,
-                    "rate_cents": rate,
-                    "amount_cents": amount,
-                })
+                line_items.append(
+                    {
+                        "operation": op,
+                        "count": count,
+                        "rate_cents": rate,
+                        "amount_cents": amount,
+                    }
+                )
                 total_cents += amount
 
         return {
@@ -274,9 +274,7 @@ class UsageMeteringService:
             "constitutional_hash": self.constitutional_hash,
         }
 
-    async def _check_and_update_quota(
-        self, tenant_id: str, operation: MeterableOperation
-    ) -> bool:
+    async def _check_and_update_quota(self, tenant_id: str, operation: MeterableOperation) -> bool:
         """Check if operation is within quota and update usage."""
         quota = self._quotas.get(tenant_id)
         if not quota:
@@ -329,8 +327,7 @@ class UsageMeteringService:
                 self._aggregations[agg_key] = UsageAggregation(
                     tenant_id=tenant_id,
                     period_start=now.replace(minute=0, second=0, microsecond=0),
-                    period_end=now.replace(minute=0, second=0, microsecond=0)
-                    + timedelta(hours=1),
+                    period_end=now.replace(minute=0, second=0, microsecond=0) + timedelta(hours=1),
                 )
 
             agg = self._aggregations[agg_key]
@@ -339,12 +336,8 @@ class UsageMeteringService:
                 op_key = event.operation.value
                 tier_key = event.tier.value
 
-                agg.operation_counts[op_key] = (
-                    agg.operation_counts.get(op_key, 0) + event.units
-                )
-                agg.tier_counts[tier_key] = (
-                    agg.tier_counts.get(tier_key, 0) + event.units
-                )
+                agg.operation_counts[op_key] = agg.operation_counts.get(op_key, 0) + event.units
+                agg.tier_counts[tier_key] = agg.tier_counts.get(tier_key, 0) + event.units
                 agg.total_operations += event.units
                 agg.total_tokens += event.tokens_processed
 

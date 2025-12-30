@@ -10,14 +10,13 @@ Comprehensive test coverage for CompilerService including:
 - Directory and file processing
 """
 
-import pytest
 import os
+import subprocess
 import tarfile
 import tempfile
-import subprocess
-from pathlib import Path
-from unittest.mock import patch, MagicMock, AsyncMock
+from unittest.mock import MagicMock, patch
 
+import pytest
 from app.services.compiler_service import CompilerService
 
 # Constitutional hash constant
@@ -27,6 +26,7 @@ CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
 # =============================================================================
 # Fixtures
 # =============================================================================
+
 
 @pytest.fixture
 def compiler_service():
@@ -46,7 +46,8 @@ def sample_rego_file(temp_dir):
     """Create a sample Rego policy file."""
     file_path = os.path.join(temp_dir, "policy.rego")
     with open(file_path, "w") as f:
-        f.write("""
+        f.write(
+            """
 package test.policy
 
 default allow = false
@@ -54,7 +55,8 @@ default allow = false
 allow {
     input.user == "admin"
 }
-""")
+"""
+        )
     return file_path
 
 
@@ -66,7 +68,8 @@ def sample_rego_directory(temp_dir):
 
     # Create main policy
     with open(os.path.join(policy_dir, "main.rego"), "w") as f:
-        f.write("""
+        f.write(
+            """
 package main
 
 import data.auth
@@ -76,21 +79,25 @@ default allow = false
 allow {
     auth.is_authenticated
 }
-""")
+"""
+        )
 
     # Create auth policy
     with open(os.path.join(policy_dir, "auth.rego"), "w") as f:
-        f.write("""
+        f.write(
+            """
 package auth
 
 is_authenticated {
     input.token != ""
 }
-""")
+"""
+        )
 
     # Create test file
     with open(os.path.join(policy_dir, "test_main.rego"), "w") as f:
-        f.write("""
+        f.write(
+            """
 package main_test
 
 import data.main
@@ -98,7 +105,8 @@ import data.main
 test_allow_authenticated {
     main.allow with input as {"token": "valid"}
 }
-""")
+"""
+        )
 
     return policy_dir
 
@@ -139,6 +147,7 @@ def output_bundle_path(temp_dir):
 # OPA Available Tests
 # =============================================================================
 
+
 class TestOPACompilation:
     """Tests for compilation when OPA is available."""
 
@@ -159,12 +168,11 @@ class TestOPACompilation:
         mock_build.returncode = 0
         mock_build.stderr = ""
 
-        with patch('subprocess.run') as mock_run:
+        with patch("subprocess.run") as mock_run:
             mock_run.side_effect = [mock_version, mock_test, mock_build]
 
             result = await compiler_service.compile_bundle(
-                paths=[sample_rego_file],
-                output_path=output_bundle_path
+                paths=[sample_rego_file], output_path=output_bundle_path
             )
 
             assert result is True
@@ -182,13 +190,11 @@ class TestOPACompilation:
         mock_build.returncode = 0
         mock_build.stderr = ""
 
-        with patch('subprocess.run') as mock_run:
+        with patch("subprocess.run") as mock_run:
             mock_run.side_effect = [mock_version, mock_build]
 
             result = await compiler_service.compile_bundle(
-                paths=[sample_rego_file],
-                output_path=output_bundle_path,
-                run_tests=False
+                paths=[sample_rego_file], output_path=output_bundle_path, run_tests=False
             )
 
             assert result is True
@@ -206,14 +212,14 @@ class TestOPACompilation:
         mock_build.returncode = 0
         mock_build.stderr = ""
 
-        with patch('subprocess.run') as mock_run:
+        with patch("subprocess.run") as mock_run:
             mock_run.side_effect = [mock_version, mock_build]
 
             result = await compiler_service.compile_bundle(
                 paths=[sample_rego_file],
                 output_path=output_bundle_path,
                 entrypoints=["test/policy/allow", "test/policy/deny"],
-                run_tests=False
+                run_tests=False,
             )
 
             assert result is True
@@ -237,12 +243,11 @@ class TestOPACompilation:
         mock_test.stdout = "FAIL: test_allow"
         mock_test.stderr = "Error in test"
 
-        with patch('subprocess.run') as mock_run:
+        with patch("subprocess.run") as mock_run:
             mock_run.side_effect = [mock_version, mock_test]
 
             result = await compiler_service.compile_bundle(
-                paths=[sample_rego_file],
-                output_path=output_bundle_path
+                paths=[sample_rego_file], output_path=output_bundle_path
             )
 
             assert result is False
@@ -266,12 +271,11 @@ class TestOPACompilation:
         mock_build.returncode = 1
         mock_build.stderr = "Build error: invalid syntax"
 
-        with patch('subprocess.run') as mock_run:
+        with patch("subprocess.run") as mock_run:
             mock_run.side_effect = [mock_version, mock_test, mock_build]
 
             result = await compiler_service.compile_bundle(
-                paths=[sample_rego_file],
-                output_path=output_bundle_path
+                paths=[sample_rego_file], output_path=output_bundle_path
             )
 
             assert result is False
@@ -281,6 +285,7 @@ class TestOPACompilation:
 # Mock Compilation Tests (OPA Not Available)
 # =============================================================================
 
+
 class TestMockCompilation:
     """Tests for mock compilation when OPA is not available."""
 
@@ -289,10 +294,9 @@ class TestMockCompilation:
         self, compiler_service, sample_rego_file, output_bundle_path
     ):
         """Test mock compilation of single file."""
-        with patch('subprocess.run', side_effect=FileNotFoundError("opa not found")):
+        with patch("subprocess.run", side_effect=FileNotFoundError("opa not found")):
             result = await compiler_service.compile_bundle(
-                paths=[sample_rego_file],
-                output_path=output_bundle_path
+                paths=[sample_rego_file], output_path=output_bundle_path
             )
 
             assert result is True
@@ -309,10 +313,9 @@ class TestMockCompilation:
         self, compiler_service, sample_rego_directory, output_bundle_path
     ):
         """Test mock compilation of directory."""
-        with patch('subprocess.run', side_effect=FileNotFoundError("opa not found")):
+        with patch("subprocess.run", side_effect=FileNotFoundError("opa not found")):
             result = await compiler_service.compile_bundle(
-                paths=[sample_rego_directory],
-                output_path=output_bundle_path
+                paths=[sample_rego_directory], output_path=output_bundle_path
             )
 
             assert result is True
@@ -331,10 +334,9 @@ class TestMockCompilation:
         self, compiler_service, nested_rego_directory, output_bundle_path
     ):
         """Test mock compilation of nested directory structure."""
-        with patch('subprocess.run', side_effect=FileNotFoundError("opa not found")):
+        with patch("subprocess.run", side_effect=FileNotFoundError("opa not found")):
             result = await compiler_service.compile_bundle(
-                paths=[nested_rego_directory],
-                output_path=output_bundle_path
+                paths=[nested_rego_directory], output_path=output_bundle_path
             )
 
             assert result is True
@@ -353,10 +355,9 @@ class TestMockCompilation:
         self, compiler_service, sample_rego_file, sample_rego_directory, output_bundle_path
     ):
         """Test mock compilation with multiple paths."""
-        with patch('subprocess.run', side_effect=FileNotFoundError("opa not found")):
+        with patch("subprocess.run", side_effect=FileNotFoundError("opa not found")):
             result = await compiler_service.compile_bundle(
-                paths=[sample_rego_file, sample_rego_directory],
-                output_path=output_bundle_path
+                paths=[sample_rego_file, sample_rego_directory], output_path=output_bundle_path
             )
 
             assert result is True
@@ -368,15 +369,16 @@ class TestMockCompilation:
                 assert len(names) == 4
 
     @pytest.mark.asyncio
-    async def test_mock_compile_empty_directory(self, compiler_service, temp_dir, output_bundle_path):
+    async def test_mock_compile_empty_directory(
+        self, compiler_service, temp_dir, output_bundle_path
+    ):
         """Test mock compilation of empty directory."""
         empty_dir = os.path.join(temp_dir, "empty")
         os.makedirs(empty_dir)
 
-        with patch('subprocess.run', side_effect=FileNotFoundError("opa not found")):
+        with patch("subprocess.run", side_effect=FileNotFoundError("opa not found")):
             result = await compiler_service.compile_bundle(
-                paths=[empty_dir],
-                output_path=output_bundle_path
+                paths=[empty_dir], output_path=output_bundle_path
             )
 
             assert result is True
@@ -390,6 +392,7 @@ class TestMockCompilation:
 # =============================================================================
 # OPA Version Check Tests
 # =============================================================================
+
 
 class TestOPAVersionCheck:
     """Tests for OPA availability detection."""
@@ -405,13 +408,11 @@ class TestOPAVersionCheck:
         mock_build = MagicMock()
         mock_build.returncode = 0
 
-        with patch('subprocess.run') as mock_run:
+        with patch("subprocess.run") as mock_run:
             mock_run.side_effect = [mock_version, mock_build]
 
             await compiler_service.compile_bundle(
-                paths=[sample_rego_file],
-                output_path=output_bundle_path,
-                run_tests=False
+                paths=[sample_rego_file], output_path=output_bundle_path, run_tests=False
             )
 
             # First call should be version check
@@ -423,12 +424,11 @@ class TestOPAVersionCheck:
         self, compiler_service, sample_rego_file, output_bundle_path
     ):
         """Test fallback when OPA version command fails."""
-        with patch('subprocess.run') as mock_run:
+        with patch("subprocess.run") as mock_run:
             mock_run.side_effect = subprocess.CalledProcessError(1, "opa")
 
             result = await compiler_service.compile_bundle(
-                paths=[sample_rego_file],
-                output_path=output_bundle_path
+                paths=[sample_rego_file], output_path=output_bundle_path
             )
 
             # Should fall back to mock compilation and succeed
@@ -440,16 +440,16 @@ class TestOPAVersionCheck:
 # Error Handling Tests
 # =============================================================================
 
+
 class TestErrorHandling:
     """Tests for error handling in compilation."""
 
     @pytest.mark.asyncio
     async def test_compile_with_nonexistent_path(self, compiler_service, output_bundle_path):
         """Test compilation with non-existent path."""
-        with patch('subprocess.run', side_effect=FileNotFoundError("opa not found")):
+        with patch("subprocess.run", side_effect=FileNotFoundError("opa not found")):
             result = await compiler_service.compile_bundle(
-                paths=["/nonexistent/path/policy.rego"],
-                output_path=output_bundle_path
+                paths=["/nonexistent/path/policy.rego"], output_path=output_bundle_path
             )
 
             # Should succeed but bundle will be empty
@@ -465,11 +465,10 @@ class TestErrorHandling:
         os.makedirs(readonly_dir)
         output_path = os.path.join(readonly_dir, "subdir", "bundle.tar.gz")
 
-        with patch('subprocess.run', side_effect=FileNotFoundError("opa not found")):
+        with patch("subprocess.run", side_effect=FileNotFoundError("opa not found")):
             # This should fail because the parent directory doesn't exist
             result = await compiler_service.compile_bundle(
-                paths=[sample_rego_file],
-                output_path=output_path
+                paths=[sample_rego_file], output_path=output_path
             )
 
             # Should return False due to error
@@ -480,10 +479,9 @@ class TestErrorHandling:
         self, compiler_service, sample_rego_file, output_bundle_path
     ):
         """Test compilation handles generic exceptions."""
-        with patch('subprocess.run', side_effect=RuntimeError("Unexpected error")):
+        with patch("subprocess.run", side_effect=RuntimeError("Unexpected error")):
             result = await compiler_service.compile_bundle(
-                paths=[sample_rego_file],
-                output_path=output_bundle_path
+                paths=[sample_rego_file], output_path=output_bundle_path
             )
 
             assert result is False
@@ -493,6 +491,7 @@ class TestErrorHandling:
 # Bundle Content Tests
 # =============================================================================
 
+
 class TestBundleContent:
     """Tests for bundle content verification."""
 
@@ -501,10 +500,9 @@ class TestBundleContent:
         self, compiler_service, nested_rego_directory, output_bundle_path
     ):
         """Test mock bundle preserves relative directory structure."""
-        with patch('subprocess.run', side_effect=FileNotFoundError("opa not found")):
+        with patch("subprocess.run", side_effect=FileNotFoundError("opa not found")):
             result = await compiler_service.compile_bundle(
-                paths=[nested_rego_directory],
-                output_path=output_bundle_path
+                paths=[nested_rego_directory], output_path=output_bundle_path
             )
 
             assert result is True
@@ -533,10 +531,9 @@ class TestBundleContent:
         with open(os.path.join(mixed_dir, "script.sh"), "w") as f:
             f.write("#!/bin/bash")
 
-        with patch('subprocess.run', side_effect=FileNotFoundError("opa not found")):
+        with patch("subprocess.run", side_effect=FileNotFoundError("opa not found")):
             result = await compiler_service.compile_bundle(
-                paths=[mixed_dir],
-                output_path=output_bundle_path
+                paths=[mixed_dir], output_path=output_bundle_path
             )
 
             assert result is True
@@ -551,6 +548,7 @@ class TestBundleContent:
 # Command Construction Tests
 # =============================================================================
 
+
 class TestCommandConstruction:
     """Tests for OPA command construction."""
 
@@ -564,13 +562,11 @@ class TestCommandConstruction:
         mock_build = MagicMock()
         mock_build.returncode = 0
 
-        with patch('subprocess.run') as mock_run:
+        with patch("subprocess.run") as mock_run:
             mock_run.side_effect = [mock_version, mock_build]
 
             await compiler_service.compile_bundle(
-                paths=[sample_rego_file],
-                output_path=output_bundle_path,
-                run_tests=False
+                paths=[sample_rego_file], output_path=output_bundle_path, run_tests=False
             )
 
             build_call = mock_run.call_args_list[1]
@@ -588,13 +584,13 @@ class TestCommandConstruction:
         mock_build = MagicMock()
         mock_build.returncode = 0
 
-        with patch('subprocess.run') as mock_run:
+        with patch("subprocess.run") as mock_run:
             mock_run.side_effect = [mock_version, mock_build]
 
             await compiler_service.compile_bundle(
                 paths=[sample_rego_file, sample_rego_directory],
                 output_path=output_bundle_path,
-                run_tests=False
+                run_tests=False,
             )
 
             build_call = mock_run.call_args_list[1]
@@ -616,13 +612,11 @@ class TestCommandConstruction:
         mock_build = MagicMock()
         mock_build.returncode = 0
 
-        with patch('subprocess.run') as mock_run:
+        with patch("subprocess.run") as mock_run:
             mock_run.side_effect = [mock_version, mock_test, mock_build]
 
             await compiler_service.compile_bundle(
-                paths=[sample_rego_file],
-                output_path=output_bundle_path,
-                run_tests=True
+                paths=[sample_rego_file], output_path=output_bundle_path, run_tests=True
             )
 
             test_call = mock_run.call_args_list[1]
@@ -637,17 +631,15 @@ class TestCommandConstruction:
 # Edge Cases Tests
 # =============================================================================
 
+
 class TestEdgeCases:
     """Tests for edge cases and boundary conditions."""
 
     @pytest.mark.asyncio
     async def test_compile_empty_paths_list(self, compiler_service, output_bundle_path):
         """Test compilation with empty paths list."""
-        with patch('subprocess.run', side_effect=FileNotFoundError("opa not found")):
-            result = await compiler_service.compile_bundle(
-                paths=[],
-                output_path=output_bundle_path
-            )
+        with patch("subprocess.run", side_effect=FileNotFoundError("opa not found")):
+            result = await compiler_service.compile_bundle(paths=[], output_path=output_bundle_path)
 
             assert result is True
             # Empty tarball should be created
@@ -664,10 +656,9 @@ class TestEdgeCases:
         with open(file_path, "w") as f:
             f.write("package test")
 
-        with patch('subprocess.run', side_effect=FileNotFoundError("opa not found")):
+        with patch("subprocess.run", side_effect=FileNotFoundError("opa not found")):
             result = await compiler_service.compile_bundle(
-                paths=[space_dir],
-                output_path=output_bundle_path
+                paths=[space_dir], output_path=output_bundle_path
             )
 
             assert result is True
@@ -686,10 +677,9 @@ class TestEdgeCases:
         with open(file_path, "w") as f:
             f.write("package test")
 
-        with patch('subprocess.run', side_effect=FileNotFoundError("opa not found")):
+        with patch("subprocess.run", side_effect=FileNotFoundError("opa not found")):
             result = await compiler_service.compile_bundle(
-                paths=[unicode_dir],
-                output_path=output_bundle_path
+                paths=[unicode_dir], output_path=output_bundle_path
             )
 
             assert result is True
@@ -704,14 +694,14 @@ class TestEdgeCases:
         mock_build = MagicMock()
         mock_build.returncode = 0
 
-        with patch('subprocess.run') as mock_run:
+        with patch("subprocess.run") as mock_run:
             mock_run.side_effect = [mock_version, mock_build]
 
             result = await compiler_service.compile_bundle(
                 paths=[sample_rego_file],
                 output_path=output_bundle_path,
                 entrypoints=None,
-                run_tests=False
+                run_tests=False,
             )
 
             assert result is True
@@ -731,14 +721,14 @@ class TestEdgeCases:
         mock_build = MagicMock()
         mock_build.returncode = 0
 
-        with patch('subprocess.run') as mock_run:
+        with patch("subprocess.run") as mock_run:
             mock_run.side_effect = [mock_version, mock_build]
 
             result = await compiler_service.compile_bundle(
                 paths=[sample_rego_file],
                 output_path=output_bundle_path,
                 entrypoints=[],
-                run_tests=False
+                run_tests=False,
             )
 
             assert result is True
@@ -748,12 +738,14 @@ class TestEdgeCases:
 # Constitutional Compliance Tests
 # =============================================================================
 
+
 class TestConstitutionalCompliance:
     """Tests for constitutional compliance markers."""
 
     def test_module_has_constitutional_hash(self):
         """Test that the module has constitutional hash in docstring."""
         from app.services import compiler_service
+
         assert CONSTITUTIONAL_HASH in compiler_service.__doc__
 
     def test_constitutional_hash_constant(self):
@@ -763,18 +755,21 @@ class TestConstitutionalCompliance:
     def test_compiler_service_class_exists(self):
         """Test CompilerService class exists and is properly defined."""
         from app.services.compiler_service import CompilerService
-        assert hasattr(CompilerService, 'compile_bundle')
+
+        assert hasattr(CompilerService, "compile_bundle")
 
     @pytest.mark.asyncio
     async def test_compiler_service_is_async(self, compiler_service):
         """Test compile_bundle is an async method."""
         import inspect
+
         assert inspect.iscoroutinefunction(compiler_service.compile_bundle)
 
 
 # =============================================================================
 # Integration-style Tests
 # =============================================================================
+
 
 class TestIntegration:
     """Integration-style tests for the compiler service."""
@@ -786,11 +781,10 @@ class TestIntegration:
         """Test complete mock compilation workflow."""
         output_path = os.path.join(temp_dir, "workflow_bundle.tar.gz")
 
-        with patch('subprocess.run', side_effect=FileNotFoundError("opa not found")):
+        with patch("subprocess.run", side_effect=FileNotFoundError("opa not found")):
             # Compile
             result = await compiler_service.compile_bundle(
-                paths=[sample_rego_directory],
-                output_path=output_path
+                paths=[sample_rego_directory], output_path=output_path
             )
 
             assert result is True
@@ -823,12 +817,11 @@ class TestIntegration:
         self, compiler_service, sample_rego_file, temp_dir
     ):
         """Test multiple sequential compilations."""
-        with patch('subprocess.run', side_effect=FileNotFoundError("opa not found")):
+        with patch("subprocess.run", side_effect=FileNotFoundError("opa not found")):
             for i in range(3):
                 output_path = os.path.join(temp_dir, f"bundle_{i}.tar.gz")
                 result = await compiler_service.compile_bundle(
-                    paths=[sample_rego_file],
-                    output_path=output_path
+                    paths=[sample_rego_file], output_path=output_path
                 )
                 assert result is True
                 assert os.path.exists(output_path)

@@ -5,34 +5,31 @@ Constitutional Hash: cdd01ef066bc6cf2
 Comprehensive tests for the MultiApproverWorkflowEngine and related classes.
 """
 
-import pytest
-import asyncio
-from unittest.mock import AsyncMock, MagicMock, patch
-from datetime import datetime, timedelta, timezone
-from typing import Dict, Any, List, Optional
+from datetime import datetime, timedelta
+from typing import List
 
+import pytest
 from deliberation_layer.multi_approver import (
     CONSTITUTIONAL_HASH,
-    ApprovalStatus,
-    ApproverRole,
-    EscalationLevel,
-    Approver,
     ApprovalDecision,
     ApprovalPolicy,
     ApprovalRequest,
-    NotificationChannel,
+    ApprovalStatus,
+    Approver,
+    ApproverRole,
+    EscalationLevel,
+    MultiApproverWorkflowEngine,
     SlackNotificationChannel,
     TeamsNotificationChannel,
-    MultiApproverWorkflowEngine,
     get_workflow_engine,
     initialize_workflow_engine,
     shutdown_workflow_engine,
 )
 
-
 # =============================================================================
 # Fixtures
 # =============================================================================
+
 
 @pytest.fixture
 def sample_approver() -> Approver:
@@ -91,6 +88,7 @@ def workflow_engine() -> MultiApproverWorkflowEngine:
 # Enum Tests
 # =============================================================================
 
+
 class TestApprovalStatus:
     """Tests for ApprovalStatus enum."""
 
@@ -147,6 +145,7 @@ class TestEscalationLevel:
 # Approver Tests
 # =============================================================================
 
+
 class TestApprover:
     """Tests for Approver dataclass."""
 
@@ -185,6 +184,7 @@ class TestApprover:
 # =============================================================================
 # ApprovalDecision Tests
 # =============================================================================
+
 
 class TestApprovalDecision:
     """Tests for ApprovalDecision dataclass."""
@@ -235,6 +235,7 @@ class TestApprovalDecision:
 # ApprovalPolicy Tests
 # =============================================================================
 
+
 class TestApprovalPolicy:
     """Tests for ApprovalPolicy dataclass."""
 
@@ -259,18 +260,20 @@ class TestApprovalPolicy:
         assert policy.auto_approve_low_risk is False
         assert policy.risk_threshold == 0.5
 
-    def test_validate_approvers_min_approvers(self, sample_policy: ApprovalPolicy, sample_approver: Approver) -> None:
+    def test_validate_approvers_min_approvers(
+        self, sample_policy: ApprovalPolicy, sample_approver: Approver
+    ) -> None:
         """Test validation requires minimum approvers."""
         decisions: List[ApprovalDecision] = []
         approvers = {sample_approver.id: sample_approver}
 
-        is_valid, reason = sample_policy.validate_approvers(
-            decisions, approvers, "requester-1"
-        )
+        is_valid, reason = sample_policy.validate_approvers(decisions, approvers, "requester-1")
         assert is_valid is False
         assert "Need 1 approvers" in reason
 
-    def test_validate_approvers_success(self, sample_policy: ApprovalPolicy, sample_approver: Approver) -> None:
+    def test_validate_approvers_success(
+        self, sample_policy: ApprovalPolicy, sample_approver: Approver
+    ) -> None:
         """Test successful validation with sufficient approvers."""
         decisions = [
             ApprovalDecision(
@@ -282,9 +285,7 @@ class TestApprovalPolicy:
         ]
         approvers = {sample_approver.id: sample_approver}
 
-        is_valid, reason = sample_policy.validate_approvers(
-            decisions, approvers, "requester-1"
-        )
+        is_valid, reason = sample_policy.validate_approvers(decisions, approvers, "requester-1")
         assert is_valid is True
         assert reason == "All requirements met"
 
@@ -355,9 +356,7 @@ class TestApprovalPolicy:
         ]
         approvers = {"sec-1": security_approver1, "sec-2": security_approver2}
 
-        is_valid, reason = policy.validate_approvers(
-            decisions, approvers, "requester-1"
-        )
+        is_valid, reason = policy.validate_approvers(decisions, approvers, "requester-1")
         assert is_valid is False
         assert "Missing approvals from roles" in reason
 
@@ -371,28 +370,31 @@ class TestApprovalPolicy:
         )
         approvers = {
             "sec-1": Approver(
-                id="sec-1", name="Security", email="s@t.com",
-                roles=[ApproverRole.SECURITY_TEAM]
+                id="sec-1", name="Security", email="s@t.com", roles=[ApproverRole.SECURITY_TEAM]
             ),
             "comp-1": Approver(
-                id="comp-1", name="Compliance", email="c@t.com",
-                roles=[ApproverRole.COMPLIANCE_TEAM]
+                id="comp-1",
+                name="Compliance",
+                email="c@t.com",
+                roles=[ApproverRole.COMPLIANCE_TEAM],
             ),
         }
         decisions = [
             ApprovalDecision(
-                approver_id="sec-1", approver_name="Security",
-                decision=ApprovalStatus.APPROVED, reasoning="OK"
+                approver_id="sec-1",
+                approver_name="Security",
+                decision=ApprovalStatus.APPROVED,
+                reasoning="OK",
             ),
             ApprovalDecision(
-                approver_id="comp-1", approver_name="Compliance",
-                decision=ApprovalStatus.APPROVED, reasoning="OK"
+                approver_id="comp-1",
+                approver_name="Compliance",
+                decision=ApprovalStatus.APPROVED,
+                reasoning="OK",
             ),
         ]
 
-        is_valid, reason = policy.validate_approvers(
-            decisions, approvers, "requester-1"
-        )
+        is_valid, reason = policy.validate_approvers(decisions, approvers, "requester-1")
         assert is_valid is True
 
     def test_validate_approvers_requires_any_role(self) -> None:
@@ -404,26 +406,26 @@ class TestApprovalPolicy:
             require_all_roles=False,
         )
         approver = Approver(
-            id="sec-1", name="Security", email="s@t.com",
-            roles=[ApproverRole.SECURITY_TEAM]
+            id="sec-1", name="Security", email="s@t.com", roles=[ApproverRole.SECURITY_TEAM]
         )
         decisions = [
             ApprovalDecision(
-                approver_id="sec-1", approver_name="Security",
-                decision=ApprovalStatus.APPROVED, reasoning="OK"
+                approver_id="sec-1",
+                approver_name="Security",
+                decision=ApprovalStatus.APPROVED,
+                reasoning="OK",
             ),
         ]
         approvers = {"sec-1": approver}
 
-        is_valid, reason = policy.validate_approvers(
-            decisions, approvers, "requester-1"
-        )
+        is_valid, reason = policy.validate_approvers(decisions, approvers, "requester-1")
         assert is_valid is True
 
 
 # =============================================================================
 # ApprovalRequest Tests
 # =============================================================================
+
 
 class TestApprovalRequest:
     """Tests for ApprovalRequest dataclass."""
@@ -488,6 +490,7 @@ class TestApprovalRequest:
 # SlackNotificationChannel Tests
 # =============================================================================
 
+
 class TestSlackNotificationChannel:
     """Tests for SlackNotificationChannel."""
 
@@ -501,12 +504,13 @@ class TestSlackNotificationChannel:
 
     @pytest.mark.asyncio
     async def test_send_approval_request(
-        self, slack_channel: SlackNotificationChannel, sample_request: ApprovalRequest, sample_approver: Approver
+        self,
+        slack_channel: SlackNotificationChannel,
+        sample_request: ApprovalRequest,
+        sample_approver: Approver,
     ) -> None:
         """Test sending approval request notification."""
-        result = await slack_channel.send_approval_request(
-            sample_request, [sample_approver]
-        )
+        result = await slack_channel.send_approval_request(sample_request, [sample_approver])
         assert result is True
 
     @pytest.mark.asyncio
@@ -520,9 +524,7 @@ class TestSlackNotificationChannel:
             decision=ApprovalStatus.APPROVED,
             reasoning="OK",
         )
-        result = await slack_channel.send_decision_notification(
-            sample_request, decision
-        )
+        result = await slack_channel.send_decision_notification(sample_request, decision)
         assert result is True
 
     @pytest.mark.asyncio
@@ -548,24 +550,24 @@ class TestSlackNotificationChannel:
 # TeamsNotificationChannel Tests
 # =============================================================================
 
+
 class TestTeamsNotificationChannel:
     """Tests for TeamsNotificationChannel."""
 
     @pytest.fixture
     def teams_channel(self) -> TeamsNotificationChannel:
         """Create a Teams notification channel."""
-        return TeamsNotificationChannel(
-            webhook_url="https://teams.microsoft.com/test"
-        )
+        return TeamsNotificationChannel(webhook_url="https://teams.microsoft.com/test")
 
     @pytest.mark.asyncio
     async def test_send_approval_request(
-        self, teams_channel: TeamsNotificationChannel, sample_request: ApprovalRequest, sample_approver: Approver
+        self,
+        teams_channel: TeamsNotificationChannel,
+        sample_request: ApprovalRequest,
+        sample_approver: Approver,
     ) -> None:
         """Test sending approval request notification."""
-        result = await teams_channel.send_approval_request(
-            sample_request, [sample_approver]
-        )
+        result = await teams_channel.send_approval_request(sample_request, [sample_approver])
         assert result is True
 
     @pytest.mark.asyncio
@@ -579,9 +581,7 @@ class TestTeamsNotificationChannel:
             decision=ApprovalStatus.REJECTED,
             reasoning="Not approved",
         )
-        result = await teams_channel.send_decision_notification(
-            sample_request, decision
-        )
+        result = await teams_channel.send_decision_notification(sample_request, decision)
         assert result is True
 
     @pytest.mark.asyncio
@@ -605,6 +605,7 @@ class TestTeamsNotificationChannel:
 # =============================================================================
 # MultiApproverWorkflowEngine Tests
 # =============================================================================
+
 
 class TestMultiApproverWorkflowEngine:
     """Tests for MultiApproverWorkflowEngine."""
@@ -874,9 +875,7 @@ class TestMultiApproverWorkflowEngine:
         assert "reasoning is required" in message.lower()
 
     @pytest.mark.asyncio
-    async def test_cancel_request(
-        self, workflow_engine: MultiApproverWorkflowEngine
-    ) -> None:
+    async def test_cancel_request(self, workflow_engine: MultiApproverWorkflowEngine) -> None:
         """Test cancelling a request."""
         request = await workflow_engine.create_request(
             request_type="test_request",
@@ -889,9 +888,7 @@ class TestMultiApproverWorkflowEngine:
             payload={},
         )
 
-        result = await workflow_engine.cancel_request(
-            request.id, "No longer needed"
-        )
+        result = await workflow_engine.cancel_request(request.id, "No longer needed")
 
         assert result is True
         assert workflow_engine.get_request(request.id).status == ApprovalStatus.CANCELLED
@@ -901,21 +898,15 @@ class TestMultiApproverWorkflowEngine:
         self, workflow_engine: MultiApproverWorkflowEngine
     ) -> None:
         """Test cancelling nonexistent request."""
-        result = await workflow_engine.cancel_request(
-            "nonexistent", "Reason"
-        )
+        result = await workflow_engine.cancel_request("nonexistent", "Reason")
         assert result is False
 
-    def test_get_request(
-        self, workflow_engine: MultiApproverWorkflowEngine
-    ) -> None:
+    def test_get_request(self, workflow_engine: MultiApproverWorkflowEngine) -> None:
         """Test get_request returns None for nonexistent."""
         assert workflow_engine.get_request("nonexistent") is None
 
     @pytest.mark.asyncio
-    async def test_get_pending_requests(
-        self, workflow_engine: MultiApproverWorkflowEngine
-    ) -> None:
+    async def test_get_pending_requests(self, workflow_engine: MultiApproverWorkflowEngine) -> None:
         """Test getting pending requests."""
         # Create multiple requests
         for i in range(3):
@@ -973,9 +964,7 @@ class TestMultiApproverWorkflowEngine:
         assert stats["registered_policies"] == 4
         assert stats["constitutional_hash"] == CONSTITUTIONAL_HASH
 
-    def test_select_policy_for_risk(
-        self, workflow_engine: MultiApproverWorkflowEngine
-    ) -> None:
+    def test_select_policy_for_risk(self, workflow_engine: MultiApproverWorkflowEngine) -> None:
         """Test policy selection based on risk score."""
         assert workflow_engine._select_policy_for_risk(0.95) == "critical_deployment"
         assert workflow_engine._select_policy_for_risk(0.75) == "high_risk_action"
@@ -998,6 +987,7 @@ class TestMultiApproverWorkflowEngine:
 # Module Function Tests
 # =============================================================================
 
+
 class TestModuleFunctions:
     """Tests for module-level functions."""
 
@@ -1005,6 +995,7 @@ class TestModuleFunctions:
         """Test get_workflow_engine returns None initially."""
         # Reset global state
         import deliberation_layer.multi_approver as ma
+
         ma._workflow_engine = None
 
         assert get_workflow_engine() is None
@@ -1025,6 +1016,7 @@ class TestModuleFunctions:
 # =============================================================================
 # Integration Tests
 # =============================================================================
+
 
 class TestMultiApproverIntegration:
     """Integration tests for multi-approver workflow."""

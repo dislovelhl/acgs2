@@ -4,15 +4,13 @@ Constitutional Hash: cdd01ef066bc6cf2
 """
 
 import pytest
-import asyncio
-from typing import Dict, Any
 
-from ..coordination.voting import VotingWorkflow, VotingStrategy, VoteDecision, Vote
-from ..coordination.handoff import HandoffWorkflow, HandoffStatus
-from ..coordination.discovery import AgentDiscoveryWorkflow
-from ..coordination.swarm import SwarmCoordinationWorkflow
-from ..base.result import WorkflowStatus
 from ..base.activities import DefaultActivities
+from ..base.result import WorkflowStatus
+from ..coordination.discovery import AgentDiscoveryWorkflow
+from ..coordination.handoff import HandoffStatus, HandoffWorkflow
+from ..coordination.swarm import SwarmCoordinationWorkflow
+from ..coordination.voting import VoteDecision, VotingStrategy, VotingWorkflow
 
 try:
     from shared.constants import CONSTITUTIONAL_HASH
@@ -31,13 +29,14 @@ class TestVotingWorkflow:
             "agent-2": {"decision": "approve"},
             "agent-3": {"decision": "reject"},
         }
+
         async def mock_collector(agent_id, proposal, context):
             return mock_votes.get(agent_id, {"decision": "abstain"})
 
         workflow = VotingWorkflow(
             eligible_agents=["agent-1", "agent-2", "agent-3"],
             strategy=VotingStrategy.MAJORITY,
-            vote_collector=mock_collector
+            vote_collector=mock_collector,
         )
 
         result = await workflow.run({"proposal": "Test Proposal"})
@@ -54,13 +53,14 @@ class TestVotingWorkflow:
             "agent-2": {"decision": "reject"},  # 1 approval, 2 rejections
             "agent-3": {"decision": "reject"},
         }
+
         async def mock_collector(agent_id, proposal, context):
             return mock_votes.get(agent_id, {"decision": "abstain"})
 
         workflow = VotingWorkflow(
             eligible_agents=["agent-1", "agent-2", "agent-3"],
             strategy=VotingStrategy.SUPERMAJORITY,
-            vote_collector=mock_collector
+            vote_collector=mock_collector,
         )
 
         result = await workflow.run({"proposal": "Strict Proposal"})
@@ -77,6 +77,7 @@ class TestVotingWorkflow:
             "user-1": {"decision": "reject"},
             "user-2": {"decision": "reject"},
         }
+
         async def mock_collector(agent_id, proposal, context):
             return mock_votes.get(agent_id, {"decision": "abstain"})
 
@@ -85,7 +86,7 @@ class TestVotingWorkflow:
             strategy=VotingStrategy.WEIGHTED,
             agent_weights={"admin": 10.0, "user-1": 1.0, "user-2": 1.0},
             approval_threshold=0.8,
-            vote_collector=mock_collector
+            vote_collector=mock_collector,
         )
 
         result = await workflow.run({"proposal": "Admin Overrule"})
@@ -105,10 +106,12 @@ class TestHandoffWorkflow:
             target_agent_id="agent-tgt",
         )
 
-        result = await workflow.run({
-            "task_id": "task-1",
-            "state": {"data": "foo"},
-        })
+        result = await workflow.run(
+            {
+                "task_id": "task-1",
+                "state": {"data": "foo"},
+            }
+        )
 
         assert result.is_successful
         assert result.output["status"] == HandoffStatus.COMPLETED.value
@@ -120,7 +123,7 @@ class TestHandoffWorkflow:
         """Test handoff fails when source/target are same."""
         workflow = HandoffWorkflow(
             source_agent_id="agent-1",
-            target_agent_id="agent-1", # ERROR: same agent
+            target_agent_id="agent-1",  # ERROR: same agent
         )
 
         result = await workflow.run({"task_id": "task-1"})
@@ -163,8 +166,18 @@ class TestAgentDiscoveryWorkflow:
     async def test_discovery_success(self):
         """Test successful agent discovery."""
         mock_agents = [
-            {"agent_id": "agent-1", "reputation_score": 0.9, "latency_ms": 50, "capabilities": ["vision"]},
-            {"agent_id": "agent-2", "reputation_score": 0.8, "latency_ms": 100, "capabilities": ["vision"]},
+            {
+                "agent_id": "agent-1",
+                "reputation_score": 0.9,
+                "latency_ms": 50,
+                "capabilities": ["vision"],
+            },
+            {
+                "agent_id": "agent-2",
+                "reputation_score": 0.8,
+                "latency_ms": 100,
+                "capabilities": ["vision"],
+            },
         ]
 
         class MockActivities(DefaultActivities):
@@ -174,14 +187,11 @@ class TestAgentDiscoveryWorkflow:
         workflow = AgentDiscoveryWorkflow()
         workflow.activities = MockActivities()
 
-        result = await workflow.run({
-            "required_capabilities": ["vision"],
-            "min_reputation": 0.5
-        })
+        result = await workflow.run({"required_capabilities": ["vision"], "min_reputation": 0.5})
 
         assert result.status == WorkflowStatus.COMPLETED
         assert result.output["count"] == 2
-        assert result.output["agents"][0]["agent_id"] == "agent-1" # Sorted by reputation
+        assert result.output["agents"][0]["agent_id"] == "agent-1"  # Sorted by reputation
 
     @pytest.mark.asyncio
     async def test_discovery_filtering(self):
@@ -198,9 +208,7 @@ class TestAgentDiscoveryWorkflow:
         workflow = AgentDiscoveryWorkflow()
         workflow.activities = MockActivities()
 
-        result = await workflow.run({
-            "min_reputation": 0.8
-        })
+        result = await workflow.run({"min_reputation": 0.8})
 
         assert result.status == WorkflowStatus.COMPLETED
         assert result.output["count"] == 1
@@ -213,6 +221,7 @@ class TestSwarmCoordinationWorkflow:
     @pytest.mark.asyncio
     async def test_swarm_success(self):
         """Test successful swarm execution."""
+
         class MockActivities(DefaultActivities):
             async def execute_agent_task(self, agent_id, task_name, payload):
                 return {"status": "ok", "agent_id": agent_id}
@@ -220,11 +229,13 @@ class TestSwarmCoordinationWorkflow:
         workflow = SwarmCoordinationWorkflow()
         workflow.activities = MockActivities()
 
-        result = await workflow.run({
-            "agent_ids": ["agent-1", "agent-2", "agent-3"],
-            "task_name": "process",
-            "aggregation_strategy": "all"
-        })
+        result = await workflow.run(
+            {
+                "agent_ids": ["agent-1", "agent-2", "agent-3"],
+                "task_name": "process",
+                "aggregation_strategy": "all",
+            }
+        )
 
         assert result.status == WorkflowStatus.COMPLETED
         assert result.output["status"] == "success"
@@ -233,6 +244,7 @@ class TestSwarmCoordinationWorkflow:
     @pytest.mark.asyncio
     async def test_swarm_partial_failure(self):
         """Test swarm partial failure with 'all' strategy."""
+
         class MockActivities(DefaultActivities):
             async def execute_agent_task(self, agent_id, task_name, payload):
                 if agent_id == "agent-fail":
@@ -242,11 +254,13 @@ class TestSwarmCoordinationWorkflow:
         workflow = SwarmCoordinationWorkflow()
         workflow.activities = MockActivities()
 
-        result = await workflow.run({
-            "agent_ids": ["agent-1", "agent-fail"],
-            "task_name": "process",
-            "aggregation_strategy": "all"
-        })
+        result = await workflow.run(
+            {
+                "agent_ids": ["agent-1", "agent-fail"],
+                "task_name": "process",
+                "aggregation_strategy": "all",
+            }
+        )
 
         assert result.status == WorkflowStatus.COMPLETED
         assert result.output["status"] == "partial_failure"

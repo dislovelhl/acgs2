@@ -8,14 +8,13 @@ Ensures constitutional compliance during agent transitions.
 
 import asyncio
 import logging
+import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Any, Callable, Dict, List, Optional
 from enum import Enum
-import uuid
+from typing import Any, Callable, Dict, List, Optional
 
-from ..base.context import WorkflowContext
-from ..base.result import WorkflowResult, WorkflowStatus
+from ..base.result import WorkflowResult
 from ..base.workflow import BaseWorkflow
 
 try:
@@ -29,6 +28,7 @@ logger = logging.getLogger(__name__)
 
 class HandoffStage(Enum):
     """Stages of handoff process."""
+
     VALIDATION = "validation"
     STATE_CAPTURE = "state_capture"
     TARGET_PREPARATION = "target_preparation"
@@ -39,6 +39,7 @@ class HandoffStage(Enum):
 
 class HandoffStatus(Enum):
     """Status of handoff."""
+
     PENDING = "pending"
     IN_PROGRESS = "in_progress"
     COMPLETED = "completed"
@@ -49,6 +50,7 @@ class HandoffStatus(Enum):
 @dataclass
 class HandoffResult:
     """Result of handoff operation."""
+
     handoff_id: str
     status: HandoffStatus
     source_agent_id: str
@@ -224,16 +226,11 @@ class HandoffWorkflow(BaseWorkflow):
 
         logger.debug(f"Handoff {self._handoff_id}: Validation passed")
 
-    async def _capture_state(
-        self,
-        task_id: str,
-        provided_state: Dict[str, Any]
-    ) -> None:
+    async def _capture_state(self, task_id: str, provided_state: Dict[str, Any]) -> None:
         """Capture current state from source agent."""
         if self.state_capturer:
             self._captured_state = await asyncio.wait_for(
-                self.state_capturer(self.source_agent_id, task_id),
-                timeout=self.handoff_timeout / 4
+                self.state_capturer(self.source_agent_id, task_id), timeout=self.handoff_timeout / 4
             )
         else:
             # Use provided state if no capturer
@@ -257,17 +254,12 @@ class HandoffWorkflow(BaseWorkflow):
         """Transfer state to target agent."""
         if self.state_transferrer:
             await asyncio.wait_for(
-                self.state_transferrer(
-                    self.target_agent_id,
-                    self._captured_state
-                ),
-                timeout=self.handoff_timeout / 4
+                self.state_transferrer(self.target_agent_id, self._captured_state),
+                timeout=self.handoff_timeout / 4,
             )
         else:
             # Simulated transfer
-            logger.debug(
-                f"Handoff {self._handoff_id}: State transferred to {self.target_agent_id}"
-            )
+            logger.debug(f"Handoff {self._handoff_id}: State transferred to {self.target_agent_id}")
 
         self.context.set_step_result("state_transferred", True)
 
@@ -275,11 +267,8 @@ class HandoffWorkflow(BaseWorkflow):
         """Verify successful state transfer."""
         if self.verification_callback:
             return await asyncio.wait_for(
-                self.verification_callback(
-                    self.target_agent_id,
-                    self._captured_state
-                ),
-                timeout=self.handoff_timeout / 4
+                self.verification_callback(self.target_agent_id, self._captured_state),
+                timeout=self.handoff_timeout / 4,
             )
 
         # Default verification passes
@@ -292,11 +281,8 @@ class HandoffWorkflow(BaseWorkflow):
         if self.rollback_callback and self._captured_state:
             try:
                 await asyncio.wait_for(
-                    self.rollback_callback(
-                        self.source_agent_id,
-                        self._captured_state
-                    ),
-                    timeout=self.handoff_timeout / 4
+                    self.rollback_callback(self.source_agent_id, self._captured_state),
+                    timeout=self.handoff_timeout / 4,
                 )
                 logger.info(f"Handoff {self._handoff_id}: Rollback completed")
             except Exception as e:

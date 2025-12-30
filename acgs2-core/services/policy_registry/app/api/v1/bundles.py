@@ -5,13 +5,14 @@ Constitutional Hash: cdd01ef066bc6cf2
 
 import hashlib
 from functools import lru_cache
-from typing import Dict, Any, List, Optional
-from fastapi import APIRouter, HTTPException, Depends, Query, UploadFile, File
+from typing import Any, Dict, List, Optional
+
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
 
 from ...models import Bundle, BundleStatus
 from ...services import StorageService
 from ..dependencies import get_policy_service
-from .auth import get_current_user, check_role
+from .auth import check_role
 
 router = APIRouter()
 
@@ -25,8 +26,8 @@ def get_storage_service() -> StorageService:
 @router.get("/", response_model=List[Bundle])
 async def list_bundles(
     status: Optional[BundleStatus] = Query(None),
-    policy_service = Depends(get_policy_service),
-    storage_service = Depends(get_storage_service)
+    policy_service=Depends(get_policy_service),
+    storage_service=Depends(get_storage_service),
 ):
     """List policy bundles (tenant-scoped)"""
     # ... mock for now ...
@@ -36,9 +37,9 @@ async def list_bundles(
 @router.post("/", response_model=Bundle)
 async def upload_bundle(
     file: UploadFile = File(...),
-    policy_service = Depends(get_policy_service),
-    storage_service = Depends(get_storage_service),
-    current_user: Dict[str, Any] = Depends(check_role(["tenant_admin", "system_admin"]))
+    policy_service=Depends(get_policy_service),
+    storage_service=Depends(get_storage_service),
+    current_user: Dict[str, Any] = Depends(check_role(["tenant_admin", "system_admin"])),
 ):
     """Upload a new policy bundle"""
     try:
@@ -58,7 +59,7 @@ async def upload_bundle(
             signatures=[],
             size=len(content),
             digest=digest,
-            metadata={"storage_path": storage_path}
+            metadata={"storage_path": storage_path},
         )
         return bundle
     except Exception as e:
@@ -68,8 +69,8 @@ async def upload_bundle(
 @router.get("/{bundle_id}", response_model=Bundle)
 async def get_bundle(
     bundle_id: str,
-    policy_service = Depends(get_policy_service),
-    storage_service = Depends(get_storage_service)
+    policy_service=Depends(get_policy_service),
+    storage_service=Depends(get_storage_service),
 ):
     """Get bundle by ID"""
     content = await storage_service.get_bundle(bundle_id)
@@ -85,14 +86,13 @@ async def get_bundle(
         roots=["acgs/governance"],
         signatures=[],
         size=len(content),
-        digest=bundle_id
+        digest=bundle_id,
     )
 
 
 @router.get("/active", response_model=Bundle)
 async def get_active_bundle(
-    tenant_id: str = Query(...),
-    policy_service = Depends(get_policy_service)
+    tenant_id: str = Query(...), policy_service=Depends(get_policy_service)
 ):
     """Get the currently active bundle for a tenant"""
     # This is crucial for EnhancedAgentBus to pull the latest policies

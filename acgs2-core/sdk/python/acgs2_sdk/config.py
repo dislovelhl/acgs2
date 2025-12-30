@@ -3,7 +3,7 @@ ACGS-2 SDK Configuration
 Constitutional Hash: cdd01ef066bc6cf2
 """
 
-from typing import Callable
+from collections.abc import Callable
 
 from pydantic import BaseModel, Field, HttpUrl
 

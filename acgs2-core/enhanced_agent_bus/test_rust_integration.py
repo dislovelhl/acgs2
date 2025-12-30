@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
 """
 Test script for Rust MessageProcessor integration
+Constitutional Hash: cdd01ef066bc6cf2
 """
 
 import asyncio
-import sys
 import os
+import sys
+
+import pytest
 
 # Add the enhanced_agent_bus directory to Python path
 current_dir = os.path.dirname(__file__)
@@ -14,6 +17,7 @@ sys.path.insert(0, current_dir)
 # Import modules directly
 import importlib.util
 
+
 def load_module(name, path):
     spec = importlib.util.spec_from_file_location(name, path)
     module = importlib.util.module_from_spec(spec)
@@ -21,14 +25,24 @@ def load_module(name, path):
     spec.loader.exec_module(module)
     return module
 
-# Load modules
+
+# Check if Rust backend is available
+RUST_BACKEND_PATH = os.path.join(current_dir, "core_rust.py")
+RUST_AVAILABLE = os.path.exists(RUST_BACKEND_PATH)
+
+# Skip entire module if Rust backend not available
+if not RUST_AVAILABLE:
+    pytest.skip("Rust backend (core_rust.py) not available", allow_module_level=True)
+
+# Load modules only if Rust is available
 models = load_module("models", os.path.join(current_dir, "models.py"))
 validators = load_module("validators", os.path.join(current_dir, "validators.py"))
-core = load_module("core_rust", os.path.join(current_dir, "core_rust.py"))
+core = load_module("core_rust", RUST_BACKEND_PATH)
 
 MessageProcessor = core.MessageProcessor
 AgentMessage = models.AgentMessage
 MessageType = models.MessageType
+
 
 async def test_rust_processor():
     """Test the Rust MessageProcessor implementation."""
@@ -45,7 +59,7 @@ async def test_rust_processor():
         sender_id="test_sender",
         message_type=MessageType.COMMAND,
         content={"action": "test"},
-        payload={"data": "test_data"}
+        payload={"data": "test_data"},
     )
 
     print(f"Created message: {message.message_id}")
@@ -57,6 +71,7 @@ async def test_rust_processor():
     print(f"Processed count: {processor.processed_count}")
 
     return result.is_valid
+
 
 if __name__ == "__main__":
     success = asyncio.run(test_rust_processor())

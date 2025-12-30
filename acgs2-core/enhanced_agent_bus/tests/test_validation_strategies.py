@@ -5,23 +5,22 @@ Constitutional Hash: cdd01ef066bc6cf2
 Comprehensive tests for validation strategy implementations.
 """
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock
-from typing import Any
 
+import pytest
+from enhanced_agent_bus.models import CONSTITUTIONAL_HASH, AgentMessage
 from enhanced_agent_bus.validation_strategies import (
-    StaticHashValidationStrategy,
+    CompositeValidationStrategy,
     DynamicPolicyValidationStrategy,
     OPAValidationStrategy,
     RustValidationStrategy,
-    CompositeValidationStrategy,
+    StaticHashValidationStrategy,
 )
-from enhanced_agent_bus.models import AgentMessage, CONSTITUTIONAL_HASH
-
 
 # =============================================================================
 # Fixtures
 # =============================================================================
+
 
 @pytest.fixture
 def valid_message() -> AgentMessage:
@@ -69,6 +68,7 @@ def mock_rust_processor() -> MagicMock:
 # =============================================================================
 # StaticHashValidationStrategy Tests
 # =============================================================================
+
 
 class TestStaticHashValidationStrategy:
     """Tests for StaticHashValidationStrategy."""
@@ -135,6 +135,7 @@ class TestStaticHashValidationStrategy:
 # DynamicPolicyValidationStrategy Tests
 # =============================================================================
 
+
 class TestDynamicPolicyValidationStrategy:
     """Tests for DynamicPolicyValidationStrategy."""
 
@@ -197,6 +198,7 @@ class TestDynamicPolicyValidationStrategy:
 # =============================================================================
 # OPAValidationStrategy Tests
 # =============================================================================
+
 
 class TestOPAValidationStrategy:
     """Tests for OPAValidationStrategy."""
@@ -261,6 +263,7 @@ class TestOPAValidationStrategy:
 # RustValidationStrategy Tests
 # =============================================================================
 
+
 class TestRustValidationStrategy:
     """Tests for RustValidationStrategy."""
 
@@ -303,9 +306,7 @@ class TestRustValidationStrategy:
         self, valid_message: AgentMessage, mock_rust_processor: MagicMock
     ) -> None:
         """Test successful validation with dict result."""
-        mock_rust_processor.validate_message = AsyncMock(
-            return_value={"is_valid": True}
-        )
+        mock_rust_processor.validate_message = AsyncMock(return_value={"is_valid": True})
 
         strategy = RustValidationStrategy(rust_processor=mock_rust_processor)
         is_valid, error = await strategy.validate(valid_message)
@@ -351,8 +352,8 @@ class TestRustValidationStrategy:
         # Remove other methods
         del mock_rust_processor.validate_message
         mock_rust_processor.validate = None  # Set to None to not have the attr
-        if hasattr(mock_rust_processor, 'validate'):
-            delattr(mock_rust_processor, 'validate')
+        if hasattr(mock_rust_processor, "validate"):
+            delattr(mock_rust_processor, "validate")
         mock_rust_processor.constitutional_validate = MagicMock(return_value=True)
 
         strategy = RustValidationStrategy(rust_processor=mock_rust_processor)
@@ -362,9 +363,7 @@ class TestRustValidationStrategy:
         assert error is None
 
     @pytest.mark.asyncio
-    async def test_no_validation_method_fails_closed(
-        self, valid_message: AgentMessage
-    ) -> None:
+    async def test_no_validation_method_fails_closed(self, valid_message: AgentMessage) -> None:
         """Test that missing validation methods fail closed."""
         # Create processor with no validation methods
         mock_processor = MagicMock(spec=[])  # Empty spec means no methods
@@ -380,9 +379,7 @@ class TestRustValidationStrategy:
         self, valid_message: AgentMessage, mock_rust_processor: MagicMock
     ) -> None:
         """Test that exceptions fail closed."""
-        mock_rust_processor.validate_message = AsyncMock(
-            side_effect=Exception("Rust panic")
-        )
+        mock_rust_processor.validate_message = AsyncMock(side_effect=Exception("Rust panic"))
 
         strategy = RustValidationStrategy(rust_processor=mock_rust_processor)
         is_valid, error = await strategy.validate(valid_message)
@@ -395,6 +392,7 @@ class TestRustValidationStrategy:
 # =============================================================================
 # CompositeValidationStrategy Tests
 # =============================================================================
+
 
 class TestCompositeValidationStrategy:
     """Tests for CompositeValidationStrategy."""

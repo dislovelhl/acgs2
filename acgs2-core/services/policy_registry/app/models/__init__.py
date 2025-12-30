@@ -2,11 +2,11 @@
 Data models for Policy Registry Service
 """
 
-from .policy import Policy, PolicyStatus
-from .policy_version import PolicyVersion, VersionStatus, ABTestGroup
-from .policy_signature import PolicySignature
-from .key_pair import KeyPair, KeyAlgorithm, KeyStatus
 from .bundle import Bundle, BundleStatus
+from .key_pair import KeyAlgorithm, KeyPair, KeyStatus
+from .policy import Policy, PolicyStatus
+from .policy_signature import PolicySignature
+from .policy_version import ABTestGroup, PolicyVersion, VersionStatus
 
 __all__ = [
     "Policy",

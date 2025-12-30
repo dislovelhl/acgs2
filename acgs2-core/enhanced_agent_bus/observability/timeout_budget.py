@@ -7,11 +7,11 @@ compliance within latency SLAs.
 """
 
 import asyncio
-import time
 import logging
+import time
 from dataclasses import dataclass, field
-from typing import Optional, Dict, Any, Callable, TypeVar, Awaitable
 from enum import Enum
+from typing import Any, Awaitable, Callable, Dict, Optional, TypeVar
 
 try:
     from shared.constants import CONSTITUTIONAL_HASH

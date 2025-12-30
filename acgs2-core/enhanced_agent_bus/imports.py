@@ -7,7 +7,7 @@ This follows the Facade pattern to hide import complexity from the main modules.
 """
 
 import logging
-from typing import Any, Callable, Optional, TYPE_CHECKING
+from typing import Any, Callable, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -83,14 +83,18 @@ get_metering_queue: Optional[Callable] = None
 # Import Resolution Functions
 # =============================================================================
 
+
 def _init_prometheus_metrics() -> None:
     """Initialize Prometheus metrics with fallback."""
     global METRICS_ENABLED, MESSAGE_QUEUE_DEPTH, set_service_info
     try:
         from shared.metrics import (
             MESSAGE_QUEUE_DEPTH as _mqd,
+        )
+        from shared.metrics import (
             set_service_info as _ssi,
         )
+
         MESSAGE_QUEUE_DEPTH = _mqd
         set_service_info = _ssi
         METRICS_ENABLED = True
@@ -102,13 +106,12 @@ def _init_opentelemetry() -> None:
     """Initialize OpenTelemetry with fallback."""
     global OTEL_ENABLED, tracer, meter, QUEUE_DEPTH
     try:
-        from opentelemetry import trace, metrics
+        from opentelemetry import metrics, trace
+
         tracer = trace.get_tracer(__name__)
         meter = metrics.get_meter(__name__)
         QUEUE_DEPTH = meter.create_up_down_counter(
-            "acgs2.queue.depth",
-            description="Current message queue depth",
-            unit="1"
+            "acgs2.queue.depth", description="Current message queue depth", unit="1"
         )
         OTEL_ENABLED = True
     except ImportError:
@@ -125,11 +128,18 @@ def _init_circuit_breaker() -> None:
     global CircuitBreakerConfig
     try:
         from shared.circuit_breaker import (
-            get_circuit_breaker as _gcb,
-            circuit_breaker_health_check as _cbhc,
-            initialize_core_circuit_breakers as _icb,
             CircuitBreakerConfig as _cbc,
         )
+        from shared.circuit_breaker import (
+            circuit_breaker_health_check as _cbhc,
+        )
+        from shared.circuit_breaker import (
+            get_circuit_breaker as _gcb,
+        )
+        from shared.circuit_breaker import (
+            initialize_core_circuit_breakers as _icb,
+        )
+
         get_circuit_breaker = _gcb
         circuit_breaker_health_check = _cbhc
         initialize_core_circuit_breakers = _icb
@@ -144,9 +154,11 @@ def _init_policy_client() -> None:
     global POLICY_CLIENT_AVAILABLE, PolicyClient, get_policy_client
     try:
         try:
-            from .policy_client import get_policy_client as _gpc, PolicyClient as _pc
+            from .policy_client import PolicyClient as _pc
+            from .policy_client import get_policy_client as _gpc
         except ImportError:
-            from policy_client import get_policy_client as _gpc, PolicyClient as _pc
+            from policy_client import PolicyClient as _pc
+            from policy_client import get_policy_client as _gpc
         PolicyClient = _pc
         get_policy_client = _gpc
         POLICY_CLIENT_AVAILABLE = True
@@ -156,6 +168,7 @@ def _init_policy_client() -> None:
 
         def _null_get_policy_client(fail_closed: Optional[bool] = None):
             return None
+
         get_policy_client = _null_get_policy_client
 
 
@@ -164,20 +177,24 @@ def _init_deliberation_layer() -> None:
     global DELIBERATION_AVAILABLE, VotingService, VotingStrategy, DeliberationQueue
     try:
         try:
-            from .deliberation_layer.voting_service import (
-                VotingService as _vs,
-                VotingStrategy as _vst,
-            )
             from .deliberation_layer.deliberation_queue import (
                 DeliberationQueue as _dq,
             )
-        except ImportError:
-            from deliberation_layer.voting_service import (
+            from .deliberation_layer.voting_service import (
                 VotingService as _vs,
+            )
+            from .deliberation_layer.voting_service import (
                 VotingStrategy as _vst,
             )
+        except ImportError:
             from deliberation_layer.deliberation_queue import (
                 DeliberationQueue as _dq,
+            )
+            from deliberation_layer.voting_service import (
+                VotingService as _vs,
+            )
+            from deliberation_layer.voting_service import (
+                VotingStrategy as _vst,
             )
         VotingService = _vs
         VotingStrategy = _vst
@@ -194,11 +211,13 @@ def _init_crypto_service() -> None:
         from services.policy_registry.app.services.crypto_service import (
             CryptoService as _cs,
         )
+
         CryptoService = _cs
         CRYPTO_AVAILABLE = True
     except ImportError:
         try:
             from ..services.crypto_service import CryptoService as _cs
+
             CryptoService = _cs
             CRYPTO_AVAILABLE = True
         except ImportError:
@@ -211,6 +230,7 @@ def _init_settings() -> None:
     global CONFIG_AVAILABLE, settings
     try:
         from shared.config import settings as _s
+
         settings = _s
         CONFIG_AVAILABLE = True
     except ImportError:
@@ -223,6 +243,7 @@ def _init_audit_client() -> None:
     global AUDIT_CLIENT_AVAILABLE, AuditClient
     try:
         from shared.audit_client import AuditClient as _ac
+
         AuditClient = _ac
         AUDIT_CLIENT_AVAILABLE = True
     except ImportError:
@@ -243,9 +264,11 @@ def _init_opa_client() -> None:
     global OPA_CLIENT_AVAILABLE, OPAClient, get_opa_client
     try:
         try:
-            from .opa_client import get_opa_client as _goc, OPAClient as _oc
+            from .opa_client import OPAClient as _oc
+            from .opa_client import get_opa_client as _goc
         except ImportError:
-            from opa_client import get_opa_client as _goc, OPAClient as _oc
+            from opa_client import OPAClient as _oc
+            from opa_client import get_opa_client as _goc
         OPAClient = _oc
         get_opa_client = _goc
         OPA_CLIENT_AVAILABLE = True
@@ -255,6 +278,7 @@ def _init_opa_client() -> None:
 
         def _null_get_opa_client():
             return None
+
         get_opa_client = _null_get_opa_client
 
 
@@ -263,6 +287,7 @@ def _init_rust_backend() -> None:
     global USE_RUST, rust_bus
     try:
         import enhanced_agent_bus_rust as _rb
+
         rust_bus = _rb
         USE_RUST = True
     except ImportError:
@@ -277,21 +302,41 @@ def _init_metering() -> None:
     try:
         try:
             from .metering_integration import (
-                MeteringHooks as _mh,
-                MeteringConfig as _mc,
-                AsyncMeteringQueue as _amq,
-                get_metering_hooks as _gmh,
-                get_metering_queue as _gmq,
                 METERING_AVAILABLE as _ma,
+            )
+            from .metering_integration import (
+                AsyncMeteringQueue as _amq,
+            )
+            from .metering_integration import (
+                MeteringConfig as _mc,
+            )
+            from .metering_integration import (
+                MeteringHooks as _mh,
+            )
+            from .metering_integration import (
+                get_metering_hooks as _gmh,
+            )
+            from .metering_integration import (
+                get_metering_queue as _gmq,
             )
         except ImportError:
             from metering_integration import (
-                MeteringHooks as _mh,
-                MeteringConfig as _mc,
-                AsyncMeteringQueue as _amq,
-                get_metering_hooks as _gmh,
-                get_metering_queue as _gmq,
                 METERING_AVAILABLE as _ma,
+            )
+            from metering_integration import (
+                AsyncMeteringQueue as _amq,
+            )
+            from metering_integration import (
+                MeteringConfig as _mc,
+            )
+            from metering_integration import (
+                MeteringHooks as _mh,
+            )
+            from metering_integration import (
+                get_metering_hooks as _gmh,
+            )
+            from metering_integration import (
+                get_metering_queue as _gmq,
             )
         MeteringHooks = _mh
         MeteringConfig = _mc
@@ -312,6 +357,7 @@ def _init_redis_config() -> str:
     """Initialize Redis config and return default URL."""
     try:
         from shared.redis_config import get_redis_url
+
         return get_redis_url()
     except ImportError:
         return "redis://localhost:6379"
@@ -320,6 +366,7 @@ def _init_redis_config() -> str:
 # =============================================================================
 # Module Initialization
 # =============================================================================
+
 
 def initialize_all_imports() -> None:
     """Initialize all optional imports at module load time.
@@ -347,6 +394,7 @@ initialize_all_imports()
 # =============================================================================
 # Generic Import Utilities (for reducing redundant try/except patterns)
 # =============================================================================
+
 
 def try_import(
     relative_path: str,
@@ -512,6 +560,7 @@ def try_relative_import(
 # =============================================================================
 # Status reporting (useful for debugging and health checks)
 # =============================================================================
+
 
 def get_import_status() -> dict:
     """Return a dict of feature availability for debugging."""

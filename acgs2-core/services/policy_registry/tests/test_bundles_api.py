@@ -10,12 +10,12 @@ Comprehensive test coverage for bundle management API endpoints:
 - Authorization and access control
 """
 
-import pytest
 import hashlib
-from datetime import datetime, timezone
-from unittest.mock import AsyncMock, MagicMock, patch
 from io import BytesIO
-from fastapi import FastAPI, UploadFile
+from unittest.mock import patch
+
+import pytest
+from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 # Constitutional hash constant
@@ -25,6 +25,7 @@ CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
 # =============================================================================
 # Mock Services
 # =============================================================================
+
 
 class MockStorageService:
     """Mock storage service for testing."""
@@ -53,6 +54,7 @@ class MockPolicyService:
 # Fixtures
 # =============================================================================
 
+
 @pytest.fixture
 def mock_storage_service():
     """Create mock storage service."""
@@ -73,7 +75,7 @@ def mock_user_admin():
         "tenant_id": "tenant-abc",
         "role": "system_admin",
         "capabilities": ["read", "write", "admin"],
-        "constitutional_hash": CONSTITUTIONAL_HASH
+        "constitutional_hash": CONSTITUTIONAL_HASH,
     }
 
 
@@ -85,7 +87,7 @@ def mock_user_tenant_admin():
         "tenant_id": "tenant-abc",
         "role": "tenant_admin",
         "capabilities": ["read", "write"],
-        "constitutional_hash": CONSTITUTIONAL_HASH
+        "constitutional_hash": CONSTITUTIONAL_HASH,
     }
 
 
@@ -97,7 +99,7 @@ def mock_user_viewer():
         "tenant_id": "tenant-abc",
         "role": "viewer",
         "capabilities": ["read"],
-        "constitutional_hash": CONSTITUTIONAL_HASH
+        "constitutional_hash": CONSTITUTIONAL_HASH,
     }
 
 
@@ -110,8 +112,8 @@ def sample_bundle_content():
 @pytest.fixture
 def app_with_mocks(mock_storage_service, mock_policy_service):
     """Create FastAPI app with mocked dependencies."""
-    from app.api.v1 import bundles
     from app.api.dependencies import get_policy_service
+    from app.api.v1 import bundles
 
     app = FastAPI()
     app.include_router(bundles.router, prefix="/bundles")
@@ -130,13 +132,14 @@ def app_with_mocks(mock_storage_service, mock_policy_service):
 # List Bundles Tests
 # =============================================================================
 
+
 class TestListBundles:
     """Tests for GET /bundles endpoint."""
 
     def test_list_bundles_returns_empty_list(self, mock_storage_service, mock_policy_service):
         """Test listing bundles returns empty list by default."""
-        from app.api.v1 import bundles
         from app.api.dependencies import get_policy_service
+        from app.api.v1 import bundles
 
         app = FastAPI()
         app.include_router(bundles.router, prefix="/bundles")
@@ -153,8 +156,8 @@ class TestListBundles:
 
     def test_list_bundles_with_status_filter(self, mock_storage_service, mock_policy_service):
         """Test listing bundles with status filter."""
-        from app.api.v1 import bundles
         from app.api.dependencies import get_policy_service
+        from app.api.v1 import bundles
 
         app = FastAPI()
         app.include_router(bundles.router, prefix="/bundles")
@@ -173,19 +176,16 @@ class TestListBundles:
 # Upload Bundle Tests
 # =============================================================================
 
+
 class TestUploadBundle:
     """Tests for POST /bundles endpoint."""
 
     def test_upload_bundle_success(
-        self,
-        mock_storage_service,
-        mock_policy_service,
-        mock_user_admin,
-        sample_bundle_content
+        self, mock_storage_service, mock_policy_service, mock_user_admin, sample_bundle_content
     ):
         """Test successful bundle upload."""
-        from app.api.v1 import bundles
         from app.api.dependencies import get_policy_service
+        from app.api.v1 import bundles
         from app.api.v1.auth import check_role
 
         app = FastAPI()
@@ -204,7 +204,7 @@ class TestUploadBundle:
         client = TestClient(app)
 
         # Patch the auth dependencies
-        with patch('app.api.v1.bundles.check_role') as mock_cr:
+        with patch("app.api.v1.bundles.check_role") as mock_cr:
             mock_cr.return_value = mock_check_role
 
             files = {"file": ("bundle.tar.gz", BytesIO(sample_bundle_content), "application/gzip")}
@@ -223,9 +223,7 @@ class TestUploadBundle:
         assert actual_digest == expected_digest
 
     def test_upload_bundle_stores_in_storage_service(
-        self,
-        mock_storage_service,
-        sample_bundle_content
+        self, mock_storage_service, sample_bundle_content
     ):
         """Test that uploaded bundle is stored in storage service."""
         import asyncio
@@ -259,7 +257,7 @@ class TestUploadBundle:
             signatures=[],
             size=len(sample_bundle_content),
             digest=digest,
-            metadata={"storage_path": f"/storage/bundles/{digest}"}
+            metadata={"storage_path": f"/storage/bundles/{digest}"},
         )
 
         assert bundle.id == digest
@@ -271,14 +269,18 @@ class TestUploadBundle:
 # Get Bundle Tests
 # =============================================================================
 
+
 class TestGetBundle:
     """Tests for GET /bundles/{bundle_id} endpoint."""
 
-    def test_get_bundle_success(self, mock_storage_service, mock_policy_service, sample_bundle_content):
+    def test_get_bundle_success(
+        self, mock_storage_service, mock_policy_service, sample_bundle_content
+    ):
         """Test successful bundle retrieval."""
-        from app.api.v1 import bundles
-        from app.api.dependencies import get_policy_service
         import asyncio
+
+        from app.api.dependencies import get_policy_service
+        from app.api.v1 import bundles
 
         # Store bundle first
         digest = f"sha256:{hashlib.sha256(sample_bundle_content).hexdigest()}"
@@ -303,8 +305,8 @@ class TestGetBundle:
 
     def test_get_bundle_not_found(self, mock_storage_service, mock_policy_service):
         """Test 404 when bundle not found."""
-        from app.api.v1 import bundles
         from app.api.dependencies import get_policy_service
+        from app.api.v1 import bundles
 
         app = FastAPI()
         app.include_router(bundles.router, prefix="/bundles")
@@ -319,11 +321,14 @@ class TestGetBundle:
         assert response.status_code == 404
         assert "not found" in response.json()["detail"].lower()
 
-    def test_get_bundle_returns_correct_size(self, mock_storage_service, mock_policy_service, sample_bundle_content):
+    def test_get_bundle_returns_correct_size(
+        self, mock_storage_service, mock_policy_service, sample_bundle_content
+    ):
         """Test that returned bundle has correct size."""
-        from app.api.v1 import bundles
-        from app.api.dependencies import get_policy_service
         import asyncio
+
+        from app.api.dependencies import get_policy_service
+        from app.api.v1 import bundles
 
         digest = f"sha256:{hashlib.sha256(sample_bundle_content).hexdigest()}"
         asyncio.get_event_loop().run_until_complete(
@@ -348,6 +353,7 @@ class TestGetBundle:
 # Get Active Bundle Tests
 # =============================================================================
 
+
 class TestGetActiveBundle:
     """Tests for GET /bundles/active endpoint.
 
@@ -356,7 +362,9 @@ class TestGetActiveBundle:
     definition should ideally be moved before /{bundle_id} route.
     """
 
-    def test_get_active_bundle_route_ordering_issue(self, mock_storage_service, mock_policy_service):
+    def test_get_active_bundle_route_ordering_issue(
+        self, mock_storage_service, mock_policy_service
+    ):
         """Test that /active is currently caught by /{bundle_id} route.
 
         This documents the current behavior where /bundles/active matches
@@ -364,8 +372,8 @@ class TestGetActiveBundle:
         dedicated /active route. In a future fix, the /active route should
         be defined before /{bundle_id} to fix this routing issue.
         """
-        from app.api.v1 import bundles
         from app.api.dependencies import get_policy_service
+        from app.api.v1 import bundles
 
         app = FastAPI()
         app.include_router(bundles.router, prefix="/bundles")
@@ -387,8 +395,8 @@ class TestGetActiveBundle:
         Due to route ordering, this hits /{bundle_id} route which doesn't
         require tenant_id, resulting in 404 for non-existent "active" bundle.
         """
-        from app.api.v1 import bundles
         from app.api.dependencies import get_policy_service
+        from app.api.v1 import bundles
 
         app = FastAPI()
         app.include_router(bundles.router, prefix="/bundles")
@@ -408,11 +416,14 @@ class TestGetActiveBundle:
 # Storage Service Integration Tests
 # =============================================================================
 
+
 class TestStorageServiceIntegration:
     """Tests for storage service interactions."""
 
     @pytest.mark.asyncio
-    async def test_storage_service_save_and_retrieve(self, mock_storage_service, sample_bundle_content):
+    async def test_storage_service_save_and_retrieve(
+        self, mock_storage_service, sample_bundle_content
+    ):
         """Test save and retrieve cycle."""
         digest = "test-digest-123"
 
@@ -435,7 +446,7 @@ class TestStorageServiceIntegration:
         bundles_data = {
             "bundle-1": b"content-1",
             "bundle-2": b"content-2",
-            "bundle-3": b"content-3"
+            "bundle-3": b"content-3",
         }
 
         for bundle_id, content in bundles_data.items():
@@ -449,6 +460,7 @@ class TestStorageServiceIntegration:
 # =============================================================================
 # Bundle Model Tests
 # =============================================================================
+
 
 class TestBundleModel:
     """Tests for Bundle model."""
@@ -465,7 +477,7 @@ class TestBundleModel:
             roots=["acgs/governance"],
             signatures=[],
             size=1024,
-            digest="sha256:abc123"
+            digest="sha256:abc123",
         )
 
         assert bundle.id == "test-bundle-123"
@@ -478,7 +490,7 @@ class TestBundleModel:
 
         signatures = [
             {"keyid": "key-1", "sig": "signature-1"},
-            {"keyid": "key-2", "sig": "signature-2"}
+            {"keyid": "key-2", "sig": "signature-2"},
         ]
 
         bundle = Bundle(
@@ -489,7 +501,7 @@ class TestBundleModel:
             roots=["acgs/governance"],
             signatures=signatures,
             size=2048,
-            digest="sha256:def456"
+            digest="sha256:def456",
         )
 
         assert len(bundle.signatures) == 2
@@ -502,7 +514,7 @@ class TestBundleModel:
         metadata = {
             "author": "test-author",
             "description": "Test bundle",
-            "storage_path": "/storage/test"
+            "storage_path": "/storage/test",
         }
 
         bundle = Bundle(
@@ -514,7 +526,7 @@ class TestBundleModel:
             signatures=[],
             size=512,
             digest="sha256:ghi789",
-            metadata=metadata
+            metadata=metadata,
         )
 
         assert bundle.metadata["author"] == "test-author"
@@ -532,6 +544,7 @@ class TestBundleModel:
 # =============================================================================
 # Digest Calculation Tests
 # =============================================================================
+
 
 class TestDigestCalculation:
     """Tests for bundle digest calculation."""
@@ -565,13 +578,14 @@ class TestDigestCalculation:
 # Authorization Tests
 # =============================================================================
 
+
 class TestBundleAuthorization:
     """Tests for bundle endpoint authorization."""
 
     def test_list_bundles_no_auth_required(self, mock_storage_service, mock_policy_service):
         """Test listing bundles doesn't require auth."""
-        from app.api.v1 import bundles
         from app.api.dependencies import get_policy_service
+        from app.api.v1 import bundles
 
         app = FastAPI()
         app.include_router(bundles.router, prefix="/bundles")
@@ -586,11 +600,14 @@ class TestBundleAuthorization:
         # Should succeed without auth
         assert response.status_code == 200
 
-    def test_get_bundle_no_auth_required(self, mock_storage_service, mock_policy_service, sample_bundle_content):
+    def test_get_bundle_no_auth_required(
+        self, mock_storage_service, mock_policy_service, sample_bundle_content
+    ):
         """Test getting bundle doesn't require auth."""
-        from app.api.v1 import bundles
-        from app.api.dependencies import get_policy_service
         import asyncio
+
+        from app.api.dependencies import get_policy_service
+        from app.api.v1 import bundles
 
         digest = f"sha256:{hashlib.sha256(sample_bundle_content).hexdigest()}"
         asyncio.get_event_loop().run_until_complete(
@@ -610,10 +627,12 @@ class TestBundleAuthorization:
         # Should succeed without auth
         assert response.status_code == 200
 
-    def test_upload_requires_admin_role(self, mock_storage_service, mock_policy_service, sample_bundle_content):
+    def test_upload_requires_admin_role(
+        self, mock_storage_service, mock_policy_service, sample_bundle_content
+    ):
         """Test upload requires tenant_admin or system_admin role."""
-        from app.api.v1 import bundles
         from app.api.dependencies import get_policy_service
+        from app.api.v1 import bundles
 
         app = FastAPI()
         app.include_router(bundles.router, prefix="/bundles")
@@ -636,6 +655,7 @@ class TestBundleAuthorization:
 # Constitutional Compliance Tests
 # =============================================================================
 
+
 class TestConstitutionalCompliance:
     """Tests for constitutional compliance."""
 
@@ -651,7 +671,7 @@ class TestConstitutionalCompliance:
             roots=["acgs/governance"],
             signatures=[],
             size=100,
-            digest="sha256:test"
+            digest="sha256:test",
         )
 
         assert bundle.constitutional_hash == CONSTITUTIONAL_HASH
@@ -671,21 +691,19 @@ class TestConstitutionalCompliance:
             roots=["acgs/governance"],
             signatures=[],
             size=len(sample_bundle_content),
-            digest=digest
+            digest=digest,
         )
 
         assert bundle.constitutional_hash == CONSTITUTIONAL_HASH
 
     def test_get_bundle_returns_constitutional_hash(
-        self,
-        mock_storage_service,
-        mock_policy_service,
-        sample_bundle_content
+        self, mock_storage_service, mock_policy_service, sample_bundle_content
     ):
         """Test get bundle response includes constitutional hash."""
-        from app.api.v1 import bundles
-        from app.api.dependencies import get_policy_service
         import asyncio
+
+        from app.api.dependencies import get_policy_service
+        from app.api.v1 import bundles
 
         digest = f"sha256:{hashlib.sha256(sample_bundle_content).hexdigest()}"
         asyncio.get_event_loop().run_until_complete(
@@ -709,6 +727,7 @@ class TestConstitutionalCompliance:
 # =============================================================================
 # Edge Cases and Error Handling Tests
 # =============================================================================
+
 
 class TestEdgeCases:
     """Tests for edge cases and error handling."""
@@ -750,8 +769,8 @@ class TestEdgeCases:
 
     def test_special_characters_in_bundle_id(self, mock_storage_service, mock_policy_service):
         """Test bundle ID with special characters."""
-        from app.api.v1 import bundles
         from app.api.dependencies import get_policy_service
+        from app.api.v1 import bundles
 
         app = FastAPI()
         app.include_router(bundles.router, prefix="/bundles")
@@ -794,6 +813,7 @@ class TestEdgeCases:
 # =============================================================================
 # Cache Tests
 # =============================================================================
+
 
 class TestStorageServiceCache:
     """Tests for storage service caching behavior."""

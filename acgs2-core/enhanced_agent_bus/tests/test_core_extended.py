@@ -5,14 +5,13 @@ Constitutional Hash: cdd01ef066bc6cf2
 Extended tests for enhanced_agent_bus/core.py
 """
 
+import asyncio
+import importlib.util
 import os
 import sys
-import importlib.util
-import pytest
-import asyncio
 from datetime import datetime, timezone
-from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
 
 # ============================================================================
 # Direct Module Loading (compatible with conftest.py)
@@ -53,11 +52,13 @@ ValidationResult = _validators.ValidationResult
 # MessageProcessor Extended Tests
 # ============================================================================
 
+
 class TestMessageProcessorExtended:
     """Extended tests for MessageProcessor class."""
 
     def test_unregister_handler_existing(self):
         """Test unregistering an existing handler."""
+
         # Create a simplified MessageProcessor
         class SimpleProcessor:
             def __init__(self):
@@ -85,6 +86,7 @@ class TestMessageProcessorExtended:
 
     def test_unregister_handler_nonexistent(self):
         """Test unregistering a non-existent handler."""
+
         class SimpleProcessor:
             def __init__(self):
                 self._handlers = {}
@@ -103,6 +105,7 @@ class TestMessageProcessorExtended:
 
     def test_get_metrics(self):
         """Test get_metrics returns proper structure."""
+
         class SimpleProcessor:
             def __init__(self):
                 self._processed_count = 10
@@ -136,14 +139,11 @@ class TestMessageProcessorExtended:
             message_type=MessageType.COMMAND,
             sender_id="agent1",
             content={"action": "test"},
-            constitutional_hash="invalid_hash"
+            constitutional_hash="invalid_hash",
         )
 
         # Create validation result
-        result = ValidationResult(
-            is_valid=False,
-            errors=["Constitutional hash mismatch"]
-        )
+        result = ValidationResult(is_valid=False, errors=["Constitutional hash mismatch"])
 
         assert result.is_valid is False
         assert "hash mismatch" in result.errors[0].lower()
@@ -160,7 +160,7 @@ class TestMessageProcessorExtended:
             message_type=MessageType.COMMAND,
             sender_id="agent1",
             content={"action": "test"},
-            constitutional_hash=CONSTITUTIONAL_HASH
+            constitutional_hash=CONSTITUTIONAL_HASH,
         )
 
         # Simulate handler execution
@@ -187,7 +187,7 @@ class TestMessageProcessorExtended:
             message_type=MessageType.COMMAND,
             sender_id="agent1",
             content={"action": "test"},
-            constitutional_hash=CONSTITUTIONAL_HASH
+            constitutional_hash=CONSTITUTIONAL_HASH,
         )
 
         # Simulate handler execution
@@ -206,11 +206,13 @@ class TestMessageProcessorExtended:
 # EnhancedAgentBus Extended Tests
 # ============================================================================
 
+
 class TestEnhancedAgentBusExtended:
     """Extended tests for EnhancedAgentBus class."""
 
     def test_bus_initialization_defaults(self):
         """Test bus initializes with correct defaults."""
+
         # Simulate bus initialization
         class SimpleBus:
             def __init__(self, redis_url="redis://localhost:6379"):
@@ -233,6 +235,7 @@ class TestEnhancedAgentBusExtended:
 
     def test_bus_custom_redis_url(self):
         """Test bus with custom Redis URL."""
+
         class SimpleBus:
             def __init__(self, redis_url="redis://localhost:6379"):
                 self.redis_url = redis_url
@@ -243,6 +246,7 @@ class TestEnhancedAgentBusExtended:
     @pytest.mark.asyncio
     async def test_bus_start_sets_running(self):
         """Test that start sets running flag."""
+
         class SimpleBus:
             def __init__(self):
                 self._running = False
@@ -261,6 +265,7 @@ class TestEnhancedAgentBusExtended:
     @pytest.mark.asyncio
     async def test_bus_stop_clears_running(self):
         """Test that stop clears running flag."""
+
         class SimpleBus:
             def __init__(self):
                 self._running = True
@@ -276,12 +281,14 @@ class TestEnhancedAgentBusExtended:
     @pytest.mark.asyncio
     async def test_register_agent_basic(self):
         """Test basic agent registration."""
+
         class SimpleBus:
             def __init__(self):
                 self._agents = {}
 
-            async def register_agent(self, agent_id, agent_type="default",
-                                     capabilities=None, tenant_id=None):
+            async def register_agent(
+                self, agent_id, agent_type="default", capabilities=None, tenant_id=None
+            ):
                 self._agents[agent_id] = {
                     "agent_id": agent_id,
                     "agent_type": agent_type,
@@ -295,10 +302,7 @@ class TestEnhancedAgentBusExtended:
 
         bus = SimpleBus()
         result = await bus.register_agent(
-            "agent1",
-            agent_type="worker",
-            capabilities=["process", "validate"],
-            tenant_id="tenant1"
+            "agent1", agent_type="worker", capabilities=["process", "validate"], tenant_id="tenant1"
         )
 
         assert result is True
@@ -310,6 +314,7 @@ class TestEnhancedAgentBusExtended:
     @pytest.mark.asyncio
     async def test_unregister_agent(self):
         """Test agent unregistration."""
+
         class SimpleBus:
             def __init__(self):
                 self._agents = {"agent1": {"status": "active"}}
@@ -329,6 +334,7 @@ class TestEnhancedAgentBusExtended:
     @pytest.mark.asyncio
     async def test_unregister_nonexistent_agent(self):
         """Test unregistering non-existent agent."""
+
         class SimpleBus:
             def __init__(self):
                 self._agents = {}
@@ -347,6 +353,7 @@ class TestEnhancedAgentBusExtended:
     @pytest.mark.asyncio
     async def test_send_message_updates_metrics(self):
         """Test that sending message updates metrics."""
+
         class SimpleBus:
             def __init__(self):
                 self._running = True
@@ -364,7 +371,7 @@ class TestEnhancedAgentBusExtended:
             message_type=MessageType.COMMAND,
             sender_id="agent1",
             content={"action": "test"},
-            constitutional_hash=CONSTITUTIONAL_HASH
+            constitutional_hash=CONSTITUTIONAL_HASH,
         )
 
         result = await bus.send(message)
@@ -375,16 +382,14 @@ class TestEnhancedAgentBusExtended:
     @pytest.mark.asyncio
     async def test_receive_message_with_timeout(self):
         """Test message receive with timeout."""
+
         class SimpleBus:
             def __init__(self):
                 self._queue = asyncio.Queue()
 
             async def receive(self, agent_id, timeout=0.1):
                 try:
-                    msg = await asyncio.wait_for(
-                        self._queue.get(),
-                        timeout=timeout
-                    )
+                    msg = await asyncio.wait_for(self._queue.get(), timeout=timeout)
                     return msg
                 except asyncio.TimeoutError:
                     return None
@@ -396,14 +401,11 @@ class TestEnhancedAgentBusExtended:
 
     def test_get_agent_info(self):
         """Test getting agent info."""
+
         class SimpleBus:
             def __init__(self):
                 self._agents = {
-                    "agent1": {
-                        "agent_id": "agent1",
-                        "agent_type": "worker",
-                        "status": "active"
-                    }
+                    "agent1": {"agent_id": "agent1", "agent_type": "worker", "status": "active"}
                 }
 
             def get_agent(self, agent_id):
@@ -417,6 +419,7 @@ class TestEnhancedAgentBusExtended:
 
     def test_get_bus_metrics(self):
         """Test getting bus metrics."""
+
         class SimpleBus:
             def __init__(self):
                 self._agents = {"a1": {}, "a2": {}}
@@ -425,7 +428,7 @@ class TestEnhancedAgentBusExtended:
                     "messages_sent": 100,
                     "messages_received": 95,
                     "messages_failed": 5,
-                    "started_at": "2024-01-01T00:00:00Z"
+                    "started_at": "2024-01-01T00:00:00Z",
                 }
 
             def get_metrics(self):
@@ -449,14 +452,14 @@ class TestEnhancedAgentBusExtended:
 # Validation Result Extended Tests
 # ============================================================================
 
+
 class TestValidationResultExtended:
     """Extended tests for ValidationResult."""
 
     def test_validation_result_with_metadata(self):
         """Test ValidationResult with metadata."""
         result = ValidationResult(
-            is_valid=True,
-            metadata={"processing_time_ms": 1.5, "validator": "python"}
+            is_valid=True, metadata={"processing_time_ms": 1.5, "validator": "python"}
         )
 
         assert result.is_valid is True
@@ -465,20 +468,14 @@ class TestValidationResultExtended:
 
     def test_validation_result_merge(self):
         """Test merging validation results."""
-        result1 = ValidationResult(
-            is_valid=True,
-            warnings=["Warning 1"]
-        )
-        result2 = ValidationResult(
-            is_valid=False,
-            errors=["Error 1"]
-        )
+        result1 = ValidationResult(is_valid=True, warnings=["Warning 1"])
+        result2 = ValidationResult(is_valid=False, errors=["Error 1"])
 
         # Merge operation
         merged = ValidationResult(
             is_valid=result1.is_valid and result2.is_valid,
             errors=result1.errors + result2.errors,
-            warnings=result1.warnings + result2.warnings
+            warnings=result1.warnings + result2.warnings,
         )
 
         assert merged.is_valid is False
@@ -506,6 +503,7 @@ class TestValidationResultExtended:
 # Message Queue Tests
 # ============================================================================
 
+
 class TestMessageQueueOperations:
     """Tests for message queue operations."""
 
@@ -518,7 +516,7 @@ class TestMessageQueueOperations:
             message_type=MessageType.COMMAND,
             sender_id="agent1",
             content={"action": "test"},
-            constitutional_hash=CONSTITUTIONAL_HASH
+            constitutional_hash=CONSTITUTIONAL_HASH,
         )
 
         await queue.put(message)
@@ -536,21 +534,21 @@ class TestMessageQueueOperations:
                 sender_id="agent1",
                 content={"priority": "low"},
                 priority=Priority.LOW,
-                constitutional_hash=CONSTITUTIONAL_HASH
+                constitutional_hash=CONSTITUTIONAL_HASH,
             ),
             AgentMessage(
                 message_type=MessageType.COMMAND,
                 sender_id="agent1",
                 content={"priority": "critical"},
                 priority=Priority.CRITICAL,
-                constitutional_hash=CONSTITUTIONAL_HASH
+                constitutional_hash=CONSTITUTIONAL_HASH,
             ),
             AgentMessage(
                 message_type=MessageType.COMMAND,
                 sender_id="agent1",
                 content={"priority": "normal"},
                 priority=Priority.NORMAL,
-                constitutional_hash=CONSTITUTIONAL_HASH
+                constitutional_hash=CONSTITUTIONAL_HASH,
             ),
         ]
 
@@ -576,6 +574,7 @@ class TestMessageQueueOperations:
 # Error Handling Tests
 # ============================================================================
 
+
 class TestErrorHandling:
     """Tests for error handling scenarios."""
 
@@ -591,7 +590,7 @@ class TestErrorHandling:
             message_type=MessageType.COMMAND,
             sender_id="agent1",
             content={"action": "test"},
-            constitutional_hash=CONSTITUTIONAL_HASH
+            constitutional_hash=CONSTITUTIONAL_HASH,
         )
 
         try:
@@ -637,6 +636,7 @@ class TestErrorHandling:
     @pytest.mark.asyncio
     async def test_cancelled_error_propagates(self):
         """Test that CancelledError is not suppressed."""
+
         async def cancellable_operation():
             raise asyncio.CancelledError()
 
@@ -647,6 +647,7 @@ class TestErrorHandling:
 # ============================================================================
 # Constitutional Hash Validation Tests
 # ============================================================================
+
 
 class TestConstitutionalHashValidation:
     """Tests for constitutional hash validation."""
@@ -661,7 +662,7 @@ class TestConstitutionalHashValidation:
             message_type=MessageType.COMMAND,
             sender_id="agent1",
             content={"action": "test"},
-            constitutional_hash=CONSTITUTIONAL_HASH
+            constitutional_hash=CONSTITUTIONAL_HASH,
         )
 
         assert message.constitutional_hash == CONSTITUTIONAL_HASH
@@ -672,7 +673,7 @@ class TestConstitutionalHashValidation:
             message_type=MessageType.COMMAND,
             sender_id="agent1",
             content={"action": "test"},
-            constitutional_hash="wrong_hash"
+            constitutional_hash="wrong_hash",
         )
 
         is_valid = message.constitutional_hash == CONSTITUTIONAL_HASH
@@ -684,9 +685,10 @@ class TestConstitutionalHashValidation:
             message_type=MessageType.COMMAND,
             sender_id="agent1",
             content={"action": "test"},
-            constitutional_hash=""
+            constitutional_hash="",
         )
 
-        is_valid = bool(message.constitutional_hash) and \
-                   message.constitutional_hash == CONSTITUTIONAL_HASH
+        is_valid = (
+            bool(message.constitutional_hash) and message.constitutional_hash == CONSTITUTIONAL_HASH
+        )
         assert is_valid is False

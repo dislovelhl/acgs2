@@ -9,9 +9,9 @@ import logging
 from typing import Any, Optional
 
 try:
-    from .models import AgentMessage, CONSTITUTIONAL_HASH
+    from .models import CONSTITUTIONAL_HASH, AgentMessage
 except ImportError:
-    from models import AgentMessage, CONSTITUTIONAL_HASH  # type: ignore
+    from models import CONSTITUTIONAL_HASH, AgentMessage  # type: ignore
 
 logger = logging.getLogger(__name__)
 
@@ -32,10 +32,7 @@ class StaticHashValidationStrategy:
         self._constitutional_hash = CONSTITUTIONAL_HASH
         self._strict = strict
 
-    async def validate(
-        self,
-        message: AgentMessage
-    ) -> tuple[bool, Optional[str]]:
+    async def validate(self, message: AgentMessage) -> tuple[bool, Optional[str]]:
         """Validate a message for constitutional compliance."""
         # Check message has content
         if message.content is None:
@@ -64,10 +61,7 @@ class DynamicPolicyValidationStrategy:
         """Initialize with logic client."""
         self._policy_client = policy_client
 
-    async def validate(
-        self,
-        message: AgentMessage
-    ) -> tuple[bool, Optional[str]]:
+    async def validate(self, message: AgentMessage) -> tuple[bool, Optional[str]]:
         """Validate message signature against dynamic policy server."""
         if not self._policy_client:
             return False, "Policy client not available"
@@ -92,10 +86,7 @@ class OPAValidationStrategy:
         """Initialize with OPA client."""
         self._opa_client = opa_client
 
-    async def validate(
-        self,
-        message: AgentMessage
-    ) -> tuple[bool, Optional[str]]:
+    async def validate(self, message: AgentMessage) -> tuple[bool, Optional[str]]:
         """Validate message against OPA constitutional policies."""
         if not self._opa_client:
             return False, "OPA client not available"
@@ -132,10 +123,7 @@ class RustValidationStrategy:
         self._fail_closed = fail_closed
         self._constitutional_hash = CONSTITUTIONAL_HASH
 
-    async def validate(
-        self,
-        message: AgentMessage
-    ) -> tuple[bool, Optional[str]]:
+    async def validate(self, message: AgentMessage) -> tuple[bool, Optional[str]]:
         """Validate message using Rust backend.
 
         SECURITY: Implements fail-closed validation. Only returns True when
@@ -147,38 +135,37 @@ class RustValidationStrategy:
         try:
             # Attempt to use Rust processor's validation method
             # Check for validate_message method (preferred)
-            if hasattr(self._rust_processor, 'validate_message'):
+            if hasattr(self._rust_processor, "validate_message"):
                 result = await self._rust_processor.validate_message(message.to_dict())
                 if isinstance(result, bool):
                     if result:
                         return True, None
                     return False, "Rust validation rejected message"
                 elif isinstance(result, dict):
-                    is_valid = result.get('is_valid', False)
+                    is_valid = result.get("is_valid", False)
                     if is_valid:
                         return True, None
-                    error = result.get('error', 'Rust validation failed')
+                    error = result.get("error", "Rust validation failed")
                     return False, error
 
             # Check for synchronous validate method
-            if hasattr(self._rust_processor, 'validate'):
+            if hasattr(self._rust_processor, "validate"):
                 result = self._rust_processor.validate(message.to_dict())
                 if isinstance(result, bool):
                     if result:
                         return True, None
                     return False, "Rust validation rejected message"
                 elif isinstance(result, dict):
-                    is_valid = result.get('is_valid', False)
+                    is_valid = result.get("is_valid", False)
                     if is_valid:
                         return True, None
-                    error = result.get('error', 'Rust validation failed')
+                    error = result.get("error", "Rust validation failed")
                     return False, error
 
             # Check for constitutional_validate method
-            if hasattr(self._rust_processor, 'constitutional_validate'):
+            if hasattr(self._rust_processor, "constitutional_validate"):
                 result = self._rust_processor.constitutional_validate(
-                    message.constitutional_hash,
-                    self._constitutional_hash
+                    message.constitutional_hash, self._constitutional_hash
                 )
                 if result:
                     return True, None
@@ -213,10 +200,7 @@ class CompositeValidationStrategy:
         """Add a validation strategy."""
         self._strategies.append(strategy)
 
-    async def validate(
-        self,
-        message: AgentMessage
-    ) -> tuple[bool, Optional[str]]:
+    async def validate(self, message: AgentMessage) -> tuple[bool, Optional[str]]:
         """Run all validation strategies."""
         errors = []
 

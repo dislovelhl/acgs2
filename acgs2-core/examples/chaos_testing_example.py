@@ -8,37 +8,21 @@ Enhanced Agent Bus, including resilience validation and recovery testing.
 """
 
 import asyncio
-import time
-from datetime import datetime, timezone
 import logging
+import time
 
 # Import chaos testing framework
 from enhanced_agent_bus.chaos_testing import (
+    CONSTITUTIONAL_HASH,
     ChaosEngine,
     ChaosScenario,
     ChaosType,
-    ResourceType,
     get_chaos_engine,
-    chaos_test,
-    CONSTITUTIONAL_HASH,
 )
 
 # Import agent bus components
-from enhanced_agent_bus.core import (
-    EnhancedAgentBus,
-    MessageProcessor,
-    get_agent_bus,
-)
-from enhanced_agent_bus.models import (
-    AgentMessage,
-    MessageType,
-    Priority,
-)
 
-logging.basicConfig(
-    level=logging.INFO,
-    format='[%(levelname)s] %(message)s'
-)
+logging.basicConfig(level=logging.INFO, format="[%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
 
 
@@ -48,18 +32,14 @@ async def example_1_basic_latency_injection():
 
     Tests system behavior when message processing is slow.
     """
-    logger.info("\n" + "="*60)
+    logger.info("\n" + "=" * 60)
     logger.info("Example 1: Basic Latency Injection")
-    logger.info("="*60)
+    logger.info("=" * 60)
 
     engine = ChaosEngine()
 
     # Inject 200ms latency for 5 seconds
-    scenario = await engine.inject_latency(
-        target="message_processor",
-        delay_ms=200,
-        duration_s=5.0
-    )
+    scenario = await engine.inject_latency(target="message_processor", delay_ms=200, duration_s=5.0)
 
     logger.info(f"Injected {scenario.delay_ms}ms latency for {scenario.duration_s}s")
 
@@ -89,18 +69,15 @@ async def example_2_error_injection_resilience():
 
     Tests system resilience when encountering random failures.
     """
-    logger.info("\n" + "="*60)
+    logger.info("\n" + "=" * 60)
     logger.info("Example 2: Error Injection Resilience Testing")
-    logger.info("="*60)
+    logger.info("=" * 60)
 
     engine = get_chaos_engine()
 
     # Inject errors at 50% rate
     scenario = await engine.inject_errors(
-        target="agent_bus",
-        error_rate=0.5,
-        error_type=ConnectionError,
-        duration_s=10.0
+        target="agent_bus", error_rate=0.5, error_type=ConnectionError, duration_s=10.0
     )
 
     logger.info(f"Injecting errors at {scenario.error_rate*100}% rate")
@@ -142,17 +119,14 @@ async def example_3_circuit_breaker_testing():
 
     Tests system behavior when circuit breakers open and recovery when they close.
     """
-    logger.info("\n" + "="*60)
+    logger.info("\n" + "=" * 60)
     logger.info("Example 3: Circuit Breaker Chaos Testing")
-    logger.info("="*60)
+    logger.info("=" * 60)
 
     engine = get_chaos_engine()
 
     # Force circuit breaker open for 3 seconds
-    scenario = await engine.force_circuit_open(
-        breaker_name="policy_service",
-        duration_s=3.0
-    )
+    scenario = await engine.force_circuit_open(breaker_name="policy_service", duration_s=3.0)
 
     logger.info("Circuit breaker 'policy_service' forced OPEN")
 
@@ -181,9 +155,9 @@ async def example_4_multiple_concurrent_chaos():
 
     Tests system behavior under multiple failure conditions simultaneously.
     """
-    logger.info("\n" + "="*60)
+    logger.info("\n" + "=" * 60)
     logger.info("Example 4: Multiple Concurrent Chaos Scenarios")
-    logger.info("="*60)
+    logger.info("=" * 60)
 
     engine = get_chaos_engine()
 
@@ -226,9 +200,9 @@ async def example_5_chaos_context_manager():
 
     Demonstrates best practice for chaos scenario lifecycle management.
     """
-    logger.info("\n" + "="*60)
+    logger.info("\n" + "=" * 60)
     logger.info("Example 5: Chaos Context Manager Pattern")
-    logger.info("="*60)
+    logger.info("=" * 60)
 
     engine = get_chaos_engine()
 
@@ -264,9 +238,9 @@ async def example_6_gradual_degradation():
 
     Tests system behavior as failure rates increase gradually.
     """
-    logger.info("\n" + "="*60)
+    logger.info("\n" + "=" * 60)
     logger.info("Example 6: Gradual Degradation Testing")
-    logger.info("="*60)
+    logger.info("=" * 60)
 
     engine = get_chaos_engine()
 
@@ -276,10 +250,7 @@ async def example_6_gradual_degradation():
         logger.info(f"\nTesting with {rate*100}% error rate:")
 
         scenario = await engine.inject_errors(
-            target="degradation_test",
-            error_rate=rate,
-            error_type=RuntimeError,
-            duration_s=2.0
+            target="degradation_test", error_rate=rate, error_type=RuntimeError, duration_s=2.0
         )
 
         # Run operations
@@ -302,9 +273,9 @@ async def example_7_recovery_testing():
 
     Tests that system fully recovers after chaos scenarios end.
     """
-    logger.info("\n" + "="*60)
+    logger.info("\n" + "=" * 60)
     logger.info("Example 7: Recovery Testing")
-    logger.info("="*60)
+    logger.info("=" * 60)
 
     engine = get_chaos_engine()
 
@@ -313,7 +284,7 @@ async def example_7_recovery_testing():
         target="recovery_test",
         error_rate=0.8,  # 80% failure rate
         error_type=ConnectionError,
-        duration_s=3.0
+        duration_s=3.0,
     )
 
     logger.info("Phase 1: High error rate (80%)")
@@ -350,9 +321,9 @@ async def example_8_blast_radius_control():
 
     Shows how to limit chaos to specific targets only.
     """
-    logger.info("\n" + "="*60)
+    logger.info("\n" + "=" * 60)
     logger.info("Example 8: Blast Radius Control")
-    logger.info("="*60)
+    logger.info("=" * 60)
 
     engine = get_chaos_engine()
 
@@ -360,10 +331,7 @@ async def example_8_blast_radius_control():
     blast_radius = {"service_a", "service_b"}
 
     scenario = await engine.inject_latency(
-        target="service_a",
-        delay_ms=100,
-        duration_s=5.0,
-        blast_radius=blast_radius
+        target="service_a", delay_ms=100, duration_s=5.0, blast_radius=blast_radius
     )
 
     logger.info(f"Blast radius: {blast_radius}")
@@ -390,9 +358,9 @@ async def example_9_metrics_monitoring():
 
     Demonstrates how to track chaos injection metrics.
     """
-    logger.info("\n" + "="*60)
+    logger.info("\n" + "=" * 60)
     logger.info("Example 9: Chaos Metrics Monitoring")
-    logger.info("="*60)
+    logger.info("=" * 60)
 
     engine = get_chaos_engine()
     engine.reset()  # Reset metrics
@@ -433,9 +401,9 @@ async def example_10_emergency_stop():
 
     Demonstrates immediate shutdown of all chaos injection.
     """
-    logger.info("\n" + "="*60)
+    logger.info("\n" + "=" * 60)
     logger.info("Example 10: Emergency Stop Mechanism")
-    logger.info("="*60)
+    logger.info("=" * 60)
 
     engine = get_chaos_engine()
 
@@ -473,10 +441,10 @@ async def example_10_emergency_stop():
 
 async def run_all_examples():
     """Run all chaos testing examples."""
-    logger.info("\n" + "="*70)
+    logger.info("\n" + "=" * 70)
     logger.info("ACGS-2 Chaos Testing Framework - Comprehensive Examples")
     logger.info(f"Constitutional Hash: {CONSTITUTIONAL_HASH}")
-    logger.info("="*70)
+    logger.info("=" * 70)
 
     examples = [
         ("Basic Latency Injection", example_1_basic_latency_injection),
@@ -504,9 +472,9 @@ async def run_all_examples():
         engine.reset()
         await asyncio.sleep(0.5)
 
-    logger.info("\n" + "="*70)
+    logger.info("\n" + "=" * 70)
     logger.info("All examples completed!")
-    logger.info("="*70)
+    logger.info("=" * 70)
 
 
 if __name__ == "__main__":

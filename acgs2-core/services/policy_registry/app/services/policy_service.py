@@ -6,12 +6,18 @@ import hashlib
 import json
 import logging
 from datetime import datetime, timezone
-from typing import Dict, Any, List, Optional
-from ..models import (
-    Policy, PolicyStatus, PolicyVersion, VersionStatus, 
-    PolicySignature, ABTestGroup
-)
+from typing import Any, Dict, List, Optional
+
 from shared.audit_client import AuditClient
+
+from ..models import (
+    ABTestGroup,
+    Policy,
+    PolicySignature,
+    PolicyStatus,
+    PolicyVersion,
+    VersionStatus,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +25,13 @@ logger = logging.getLogger(__name__)
 class PolicyService:
     """Service for policy management operations"""
 
-    def __init__(self, crypto_service, cache_service, notification_service, audit_client: Optional[AuditClient] = None):
+    def __init__(
+        self,
+        crypto_service,
+        cache_service,
+        notification_service,
+        audit_client: Optional[AuditClient] = None,
+    ):
         self.crypto = crypto_service
         self.cache = cache_service
         self.notification = notification_service
@@ -34,31 +46,26 @@ class PolicyService:
         tenant_id: str,
         content: Dict[str, Any],
         format: str = "json",
-        description: Optional[str] = None
+        description: Optional[str] = None,
     ) -> Policy:
         """
         Create a new policy
-        
+
         Args:
             name: Policy name
             tenant_id: Tenant identifier
             content: Policy content
             format: Content format (json/yaml)
             description: Policy description
-            
+
         Returns:
             Created Policy object
         """
-        policy = Policy(
-            name=name,
-            tenant_id=tenant_id,
-            description=description,
-            format=format
-        )
-        
+        policy = Policy(name=name, tenant_id=tenant_id, description=description, format=format)
+
         self._policies[policy.policy_id] = policy
         self._versions[policy.policy_id] = []
-        
+
         logger.info(f"Created policy: {policy.policy_id}")
         return policy
 
@@ -69,11 +76,11 @@ class PolicyService:
         version: str,
         private_key_b64: str,
         public_key_b64: str,
-        ab_test_group: Optional[ABTestGroup] = None
+        ab_test_group: Optional[ABTestGroup] = None,
     ) -> PolicyVersion:
         """
         Create a new policy version with signature
-        
+
         Args:
             policy_id: Policy identifier
             content: Policy content
@@ -81,53 +88,56 @@ class PolicyService:
             private_key_b64: Private key for signing
             public_key_b64: Public key for verification
             ab_test_group: A/B testing group
-            
+
         Returns:
             Created PolicyVersion object
         """
         if policy_id not in self._policies:
             raise ValueError(f"Policy {policy_id} not found")
-        
+
         # Generate content hash
-        content_str = json.dumps(content, sort_keys=True, separators=(',', ':'))
-        content_hash = hashlib.sha256(content_str.encode('utf-8')).hexdigest()
-        
+        content_str = json.dumps(content, sort_keys=True, separators=(",", ":"))
+        content_hash = hashlib.sha256(content_str.encode("utf-8")).hexdigest()
+
         # Create version
         policy_version = PolicyVersion(
             policy_id=policy_id,
             version=version,
             content=content,
             content_hash=content_hash,
-            ab_test_group=ab_test_group
+            ab_test_group=ab_test_group,
         )
-        
+
         # Create signature
         signature = self.crypto.create_policy_signature(
             policy_id, version, content, private_key_b64, public_key_b64
         )
-        
+
         # Store version and signature
         if policy_id not in self._versions:
             self._versions[policy_id] = []
         self._versions[policy_id].append(policy_version)
         self._signatures[f"{policy_id}:{version}"] = signature
-        
+
         # Cache the version
-        await self.cache.set_policy(policy_id, version, {
-            "content": content,
-            "signature": signature.dict(),
-            "status": policy_version.status.value
-        })
-        
+        await self.cache.set_policy(
+            policy_id,
+            version,
+            {
+                "content": content,
+                "signature": signature.dict(),
+                "status": policy_version.status.value,
+            },
+        )
+
         # Cache public key
         await self.cache.set_public_key(signature.key_fingerprint, public_key_b64)
-        
+
         # Notify subscribers
         await self.notification.notify_policy_update(
-            policy_id, version, "version_created",
-            {"content_hash": content_hash}
+            policy_id, version, "version_created", {"content_hash": content_hash}
         )
-        
+
         logger.info(f"Created policy version: {policy_id}:{version}")
         return policy_version
 
@@ -135,15 +145,11 @@ class PolicyService:
         """Get policy by ID"""
         return self._policies.get(policy_id)
 
-    async def get_policy_version(
-        self, 
-        policy_id: str, 
-        version: str
-    ) -> Optional[PolicyVersion]:
+    async def get_policy_version(self, policy_id: str, version: str) -> Optional[PolicyVersion]:
         """Get specific policy version"""
         if policy_id not in self._versions:
             return None
-            
+
         for pv in self._versions[policy_id]:
             if pv.version == version:
                 return pv
@@ -203,15 +209,13 @@ class PolicyService:
         # Invalidate active version cache
         cache_key = f"active_version:{policy_id}"
         await self.cache.delete(cache_key)
-        
+
         # Update cache
         await self.cache.invalidate_policy(policy_id)
-        
+
         # Notify
-        await self.notification.notify_policy_update(
-            policy_id, version, "version_activated"
-        )
-        
+        await self.notification.notify_policy_update(policy_id, version, "version_activated")
+
         # Audit policy activation
         if self.audit_client:
             audit_record = {
@@ -219,39 +223,34 @@ class PolicyService:
                 "policy_id": policy_id,
                 "version": version,
                 "timestamp": datetime.now(timezone.utc).isoformat(),
-                "status": "success"
+                "status": "success",
             }
             # We wrap this in a task to avoid blocking the API response
             import asyncio
+
             asyncio.create_task(self.audit_client.report_validation(audit_record))
 
         logger.info(f"Activated policy version: {policy_id}:{version}")
 
-    async def verify_policy_signature(
-        self, 
-        policy_id: str, 
-        version: str
-    ) -> bool:
+    async def verify_policy_signature(self, policy_id: str, version: str) -> bool:
         """
         Verify policy signature
-        
+
         Returns:
             True if signature is valid
         """
         signature_key = f"{policy_id}:{version}"
         if signature_key not in self._signatures:
             return False
-            
+
         signature = self._signatures[signature_key]
         version_obj = await self.get_policy_version(policy_id, version)
-        
+
         if not version_obj:
             return False
-            
+
         return self.crypto.verify_policy_signature(
-            version_obj.content,
-            signature.signature,
-            signature.public_key
+            version_obj.content, signature.signature, signature.public_key
         )
 
     async def list_policies(self, status: Optional[PolicyStatus] = None) -> List[Policy]:
@@ -266,17 +265,15 @@ class PolicyService:
         return self._versions.get(policy_id, [])
 
     async def get_policy_for_client(
-        self, 
-        policy_id: str, 
-        client_id: Optional[str] = None
+        self, policy_id: str, client_id: Optional[str] = None
     ) -> Optional[Dict[str, Any]]:
         """
         Get policy content for client (with A/B testing support)
-        
+
         Args:
             policy_id: Policy identifier
             client_id: Client identifier for A/B testing
-            
+
         Returns:
             Policy content dict or None
         """
@@ -284,12 +281,12 @@ class PolicyService:
         cached = await self.cache.get_policy(policy_id, "active")
         if cached:
             return cached
-            
+
         # Get active version
         active_version = await self.get_active_version(policy_id)
         if not active_version:
             return None
-            
+
         # Handle A/B testing
         if active_version.ab_test_group and client_id:
             # Simple A/B routing based on client_id hash
@@ -297,7 +294,7 @@ class PolicyService:
             if test_group != active_version.ab_test_group:
                 # Return previous version or default
                 return await self._get_fallback_policy(policy_id)
-        
+
         # Cache and return
         await self.cache.set_policy(policy_id, "active", active_version.content)
         return active_version.content

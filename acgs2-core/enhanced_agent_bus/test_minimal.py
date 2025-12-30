@@ -2,17 +2,18 @@
 Minimal test to reproduce the issue
 Constitutional Hash: cdd01ef066bc6cf2
 """
+
 import asyncio
-import sys
 import os
+import sys
 
 # Add to path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 # Import directly from the modules
-from models import AgentMessage, MessageType, MessageStatus, CONSTITUTIONAL_HASH
 from message_processor import MessageProcessor
-from validators import ValidationResult
+from models import CONSTITUTIONAL_HASH, AgentMessage, MessageStatus, MessageType
+
 
 async def test_basic():
     """Test basic message processing"""
@@ -35,7 +36,7 @@ async def test_basic():
         payload={"data": "test_data"},
     )
 
-    print(f"\nBefore processing:")
+    print("\nBefore processing:")
     print(f"  Status: {message.status}")
     print(f"  Hash: {message.constitutional_hash}")
     print(f"  Expected: {CONSTITUTIONAL_HASH}")
@@ -44,14 +45,14 @@ async def test_basic():
     # Process message
     result = await processor.process(message)
 
-    print(f"\nAfter processing:")
+    print("\nAfter processing:")
     print(f"  Status: {message.status}")
     print(f"  Result valid: {result.is_valid}")
     print(f"  Result errors: {result.errors}")
     print(f"  Result warnings: {result.warnings}")
 
     # Check expectations
-    print(f"\nExpectations:")
+    print("\nExpectations:")
     print(f"  result.is_valid should be True: {result.is_valid == True}")
     print(f"  message.status should be DELIVERED: {message.status == MessageStatus.DELIVERED}")
 
@@ -61,6 +62,7 @@ async def test_basic():
     else:
         print("\n✗ TEST FAILED")
         return False
+
 
 async def test_invalid_hash():
     """Test invalid hash message"""
@@ -81,14 +83,14 @@ async def test_invalid_hash():
     )
     message.constitutional_hash = "invalid_hash"
 
-    print(f"\nBefore processing:")
+    print("\nBefore processing:")
     print(f"  Status: {message.status}")
     print(f"  Hash: {message.constitutional_hash}")
 
     # Process message
     result = await processor.process(message)
 
-    print(f"\nAfter processing:")
+    print("\nAfter processing:")
     print(f"  Status: {message.status}")
     print(f"  Result valid: {result.is_valid}")
     print(f"  Result errors: {result.errors}")
@@ -98,7 +100,7 @@ async def test_invalid_hash():
     error_text = result.errors[0] if has_error else ""
     has_mismatch = "Constitutional hash mismatch" in error_text if has_error else False
 
-    print(f"\nExpectations:")
+    print("\nExpectations:")
     print(f"  result.is_valid should be False: {result.is_valid == False}")
     print(f"  'Constitutional hash mismatch' in errors: {has_mismatch}")
     print(f"  Error text: {error_text}")
@@ -109,6 +111,7 @@ async def test_invalid_hash():
     else:
         print("\n✗ TEST FAILED")
         return False
+
 
 async def main():
     """Run all tests"""
@@ -127,6 +130,7 @@ async def main():
     else:
         print("\n✗ SOME TESTS FAILED")
         sys.exit(1)
+
 
 if __name__ == "__main__":
     asyncio.run(main())

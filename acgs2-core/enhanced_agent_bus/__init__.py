@@ -16,90 +16,92 @@ except ImportError:
     # Fallback for standalone usage
     CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
 
-from .models import (
-    AgentMessage,
-    MessageType,
-    Priority,
-    MessagePriority,  # DEPRECATED: Use Priority instead (v3.0.0 removal)
-    MessageStatus,
-    ValidationStatus,
-    RoutingContext,
-    CONSTITUTIONAL_HASH as MODEL_HASH,
-)
+# Refactored modules for cleaner architecture
+from .config import BusConfiguration
 from .core import (
     EnhancedAgentBus,
     MessageProcessor,
 )
-from .interfaces import (
-    AgentRegistry,
-    MessageRouter,
-    ValidationStrategy,
-    MessageHandler,
-    MetricsCollector,
-)
-from .registry import (
-    InMemoryAgentRegistry,
-    DirectMessageRouter,
-    CapabilityBasedRouter,
-    StaticHashValidationStrategy,
-    DynamicPolicyValidationStrategy,
-    RustValidationStrategy,
-    CompositeValidationStrategy,
-    RedisAgentRegistry,
-)
-from .validators import (
-    ValidationResult,
-)
-from .validation_integration_example import (
-    IntegratedValidationSystem,
-)
-# Refactored modules for cleaner architecture
-from .config import BusConfiguration
-from .metering_manager import MeteringManager, create_metering_manager
-from .imports import (
-    get_import_status,
-    METRICS_ENABLED,
-    CIRCUIT_BREAKER_ENABLED,
-    DELIBERATION_AVAILABLE,
-    USE_RUST,
-    METERING_AVAILABLE,
-)
 from .exceptions import (
+    AgentAlreadyRegisteredError,
     # Base
     AgentBusError,
+    AgentCapabilityError,
+    # Agent
+    AgentError,
+    AgentNotRegisteredError,
+    BusAlreadyStartedError,
+    BusNotStartedError,
+    # Bus Operations
+    BusOperationError,
+    # Configuration
+    ConfigurationError,
     # Constitutional
     ConstitutionalError,
     ConstitutionalHashMismatchError,
     ConstitutionalValidationError,
+    # Deliberation
+    DeliberationError,
+    DeliberationTimeoutError,
+    HandlerExecutionError,
+    MessageDeliveryError,
     # Message
     MessageError,
-    MessageValidationError,
-    MessageDeliveryError,
-    MessageTimeoutError,
     MessageRoutingError,
-    # Agent
-    AgentError,
-    AgentNotRegisteredError,
-    AgentAlreadyRegisteredError,
-    AgentCapabilityError,
+    MessageTimeoutError,
+    MessageValidationError,
+    OPAConnectionError,
+    OPANotInitializedError,
     # Policy/OPA
     PolicyError,
     PolicyEvaluationError,
     PolicyNotFoundError,
-    OPAConnectionError,
-    OPANotInitializedError,
-    # Deliberation
-    DeliberationError,
-    DeliberationTimeoutError,
-    SignatureCollectionError,
     ReviewConsensusError,
-    # Bus Operations
-    BusOperationError,
-    BusNotStartedError,
-    BusAlreadyStartedError,
-    HandlerExecutionError,
-    # Configuration
-    ConfigurationError,
+    SignatureCollectionError,
+)
+from .imports import (
+    CIRCUIT_BREAKER_ENABLED,
+    DELIBERATION_AVAILABLE,
+    METERING_AVAILABLE,
+    METRICS_ENABLED,
+    USE_RUST,
+    get_import_status,
+)
+from .interfaces import (
+    AgentRegistry,
+    MessageHandler,
+    MessageRouter,
+    MetricsCollector,
+    ValidationStrategy,
+)
+from .metering_manager import MeteringManager, create_metering_manager
+from .models import (
+    CONSTITUTIONAL_HASH as MODEL_HASH,
+)
+from .models import (
+    AgentMessage,
+    MessagePriority,  # DEPRECATED: Use Priority instead (v3.0.0 removal)
+    MessageStatus,
+    MessageType,
+    Priority,
+    RoutingContext,
+    ValidationStatus,
+)
+from .registry import (
+    CapabilityBasedRouter,
+    CompositeValidationStrategy,
+    DirectMessageRouter,
+    DynamicPolicyValidationStrategy,
+    InMemoryAgentRegistry,
+    RedisAgentRegistry,
+    RustValidationStrategy,
+    StaticHashValidationStrategy,
+)
+from .validation_integration_example import (
+    IntegratedValidationSystem,
+)
+from .validators import (
+    ValidationResult,
 )
 
 __all__ = [

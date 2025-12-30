@@ -8,21 +8,21 @@ configurable recovery strategies, and constitutional compliance validation.
 """
 
 import asyncio
+import heapq
 import logging
+from collections import deque
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional, Tuple
-import heapq
-from collections import deque
+from typing import Any, Callable, Dict, List, Optional
 
 # Default maximum history size to prevent unbounded memory growth
 DEFAULT_MAX_HISTORY_SIZE = 100
 
 # Import centralized constitutional hash from shared module
 try:
-    from shared.constants import CONSTITUTIONAL_HASH
     from shared.circuit_breaker import CircuitBreakerRegistry, get_circuit_breaker
+    from shared.constants import CONSTITUTIONAL_HASH
 except ImportError:
     # Fallback for standalone usage
     CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
@@ -35,7 +35,7 @@ try:
         ConstitutionalError,
         ConstitutionalHashMismatchError,
     )
-    from .validators import validate_constitutional_hash, ValidationResult
+    from .validators import ValidationResult, validate_constitutional_hash
 except ImportError:
     # Fallback for standalone usage
     AgentBusError = Exception  # type: ignore
@@ -48,6 +48,7 @@ except ImportError:
 
         Constitutional Hash: cdd01ef066bc6cf2
         """
+
         is_valid: bool = True
         errors: List[str] = field(default_factory=list)
         warnings: List[str] = field(default_factory=list)
@@ -92,6 +93,7 @@ class RecoveryStrategy(Enum):
 
     Constitutional Hash: cdd01ef066bc6cf2
     """
+
     EXPONENTIAL_BACKOFF = "exponential_backoff"  # Delay doubles each attempt
     LINEAR_BACKOFF = "linear_backoff"  # Delay increases linearly
     IMMEDIATE = "immediate"  # Attempt recovery immediately
@@ -103,6 +105,7 @@ class RecoveryState(Enum):
 
     Constitutional Hash: cdd01ef066bc6cf2
     """
+
     IDLE = "idle"  # No recovery in progress
     SCHEDULED = "scheduled"  # Recovery scheduled but not started
     IN_PROGRESS = "in_progress"  # Recovery attempt in progress
@@ -126,6 +129,7 @@ class RecoveryPolicy:
         health_check_fn: Optional function to check service health
         constitutional_hash: Constitutional hash for validation
     """
+
     max_retry_attempts: int = 5
     backoff_multiplier: float = 2.0
     initial_delay_ms: int = 1000
@@ -151,6 +155,7 @@ class RecoveryResult:
 
     Constitutional Hash: cdd01ef066bc6cf2
     """
+
     service_name: str
     success: bool
     attempt_number: int
@@ -186,13 +191,13 @@ class RecoveryTask:
 
     Uses negative priority for min-heap behavior (higher priority = lower number).
     """
+
     priority: int
     service_name: str = field(compare=False)
     strategy: RecoveryStrategy = field(compare=False)
     policy: RecoveryPolicy = field(compare=False)
     scheduled_at: datetime = field(
-        default_factory=lambda: datetime.now(timezone.utc),
-        compare=False
+        default_factory=lambda: datetime.now(timezone.utc), compare=False
     )
     attempt_count: int = field(default=0, compare=False)
     last_attempt_at: Optional[datetime] = field(default=None, compare=False)
@@ -203,6 +208,7 @@ class RecoveryTask:
 
 class RecoveryOrchestratorError(AgentBusError):
     """Base exception for recovery orchestrator errors."""
+
     def __init__(self, message: str = "", **kwargs):
         self.message = message
         super().__init__(message)
@@ -210,6 +216,7 @@ class RecoveryOrchestratorError(AgentBusError):
 
 class RecoveryValidationError(RecoveryOrchestratorError):
     """Raised when recovery validation fails."""
+
     def __init__(self, message: str = "", **kwargs):
         self.message = message
         super().__init__(message)
@@ -217,6 +224,7 @@ class RecoveryValidationError(RecoveryOrchestratorError):
 
 class RecoveryConstitutionalError(ConstitutionalError):
     """Raised when constitutional validation fails during recovery."""
+
     def __init__(self, message: str = "", **kwargs):
         self.message = message
         super().__init__(message)
@@ -300,9 +308,7 @@ class RecoveryOrchestrator:
         self._running = False
         self._recovery_task: Optional[asyncio.Task] = None
 
-        logger.info(
-            f"[{self.constitutional_hash}] Recovery Orchestrator initialized"
-        )
+        logger.info(f"[{self.constitutional_hash}] Recovery Orchestrator initialized")
 
     def _validate_constitutional(self) -> None:
         """
@@ -337,9 +343,7 @@ class RecoveryOrchestrator:
         self._running = True
         self._recovery_task = asyncio.create_task(self._recovery_loop())
 
-        logger.info(
-            f"[{self.constitutional_hash}] Recovery Orchestrator started"
-        )
+        logger.info(f"[{self.constitutional_hash}] Recovery Orchestrator started")
 
     async def stop(self) -> None:
         """Stop the recovery orchestrator."""
@@ -355,9 +359,7 @@ class RecoveryOrchestrator:
             except asyncio.CancelledError:
                 pass
 
-        logger.info(
-            f"[{self.constitutional_hash}] Recovery Orchestrator stopped"
-        )
+        logger.info(f"[{self.constitutional_hash}] Recovery Orchestrator stopped")
 
     def schedule_recovery(
         self,
@@ -381,11 +383,7 @@ class RecoveryOrchestrator:
         self._validate_constitutional()
 
         # Use service-specific policy, provided policy, or default
-        recovery_policy = (
-            policy or
-            self._policies.get(service_name) or
-            self.default_policy
-        )
+        recovery_policy = policy or self._policies.get(service_name) or self.default_policy
 
         # Create recovery task
         task = RecoveryTask(
@@ -508,9 +506,7 @@ class RecoveryOrchestrator:
 
             self._history.append(result)
 
-            logger.error(
-                f"[{self.constitutional_hash}] Recovery failed for '{service_name}': {e}"
-            )
+            logger.error(f"[{self.constitutional_hash}] Recovery failed for '{service_name}': {e}")
 
             return result
 
@@ -536,21 +532,16 @@ class RecoveryOrchestrator:
                     "max_attempts": task.policy.max_retry_attempts,
                     "scheduled_at": task.scheduled_at.isoformat(),
                     "last_attempt_at": (
-                        task.last_attempt_at.isoformat()
-                        if task.last_attempt_at
-                        else None
+                        task.last_attempt_at.isoformat() if task.last_attempt_at else None
                     ),
                     "next_attempt_at": (
-                        task.next_attempt_at.isoformat()
-                        if task.next_attempt_at
-                        else None
+                        task.next_attempt_at.isoformat() if task.next_attempt_at else None
                     ),
                 }
                 for service_name, task in self._active_tasks.items()
             },
             "recent_history": [
-                result.to_dict()
-                for result in list(self._history)[-10:]  # Last 10 results
+                result.to_dict() for result in list(self._history)[-10:]  # Last 10 results
             ],
         }
 
@@ -571,9 +562,7 @@ class RecoveryOrchestrator:
         task.state = RecoveryState.CANCELLED
         del self._active_tasks[service_name]
 
-        logger.info(
-            f"[{self.constitutional_hash}] Cancelled recovery for '{service_name}'"
-        )
+        logger.info(f"[{self.constitutional_hash}] Cancelled recovery for '{service_name}'")
 
         return True
 
@@ -596,9 +585,7 @@ class RecoveryOrchestrator:
 
         self._policies[service_name] = policy
 
-        logger.info(
-            f"[{self.constitutional_hash}] Set recovery policy for '{service_name}'"
-        )
+        logger.info(f"[{self.constitutional_hash}] Set recovery policy for '{service_name}'")
 
     def get_recovery_policy(self, service_name: str) -> RecoveryPolicy:
         """
@@ -644,9 +631,7 @@ class RecoveryOrchestrator:
             except asyncio.CancelledError:
                 break
             except Exception as e:
-                logger.error(
-                    f"[{self.constitutional_hash}] Error in recovery loop: {e}"
-                )
+                logger.error(f"[{self.constitutional_hash}] Error in recovery loop: {e}")
                 await asyncio.sleep(5.0)  # Back off on errors
 
     async def _execute_recovery_attempt(self, task: RecoveryTask) -> bool:
@@ -669,10 +654,11 @@ class RecoveryOrchestrator:
             # Check circuit breaker state
             states = self._circuit_registry.get_all_states()
             if task.service_name in states:
-                state = states[task.service_name]['state']
+                state = states[task.service_name]["state"]
                 # Success if circuit is closed or half-open
                 try:
                     import pybreaker
+
                     return state in [pybreaker.STATE_CLOSED, pybreaker.STATE_HALF_OPEN]
                 except ImportError:
                     # Fallback if pybreaker not available
@@ -698,15 +684,12 @@ class RecoveryOrchestrator:
             delay_ms = 0
         elif task.strategy == RecoveryStrategy.LINEAR_BACKOFF:
             # Linear backoff
-            delay_ms = min(
-                policy.initial_delay_ms * task.attempt_count,
-                policy.max_delay_ms
-            )
+            delay_ms = min(policy.initial_delay_ms * task.attempt_count, policy.max_delay_ms)
         elif task.strategy == RecoveryStrategy.EXPONENTIAL_BACKOFF:
             # Exponential backoff
             delay_ms = min(
                 policy.initial_delay_ms * (policy.backoff_multiplier ** (task.attempt_count - 1)),
-                policy.max_delay_ms
+                policy.max_delay_ms,
             )
         else:  # MANUAL
             # No automatic retry for manual strategy
@@ -715,6 +698,7 @@ class RecoveryOrchestrator:
         # Calculate next attempt time
         now = datetime.now(timezone.utc)
         from datetime import timedelta
+
         return now + timedelta(milliseconds=delay_ms)
 
 

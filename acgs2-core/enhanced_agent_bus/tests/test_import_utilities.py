@@ -5,16 +5,13 @@ Constitutional Hash: cdd01ef066bc6cf2
 Tests for the import utility functions in imports.py.
 """
 
-import pytest
-from typing import Any
-
 # Import the utilities we're testing
 from enhanced_agent_bus.imports import (
-    try_import,
+    get_import_status,
     import_with_fallback,
     optional_import,
+    try_import,
     try_relative_import,
-    get_import_status,
 )
 
 
@@ -130,16 +127,12 @@ class TestTryRelativeImport:
 
     def test_relative_import_success(self) -> None:
         """Test successful relative import."""
-        result = try_relative_import(
-            ".models", "models", "AgentMessage"
-        )
+        result = try_relative_import(".models", "models", "AgentMessage")
         assert result is not None
 
     def test_absolute_import_fallback(self) -> None:
         """Test fallback to absolute import."""
-        result = try_relative_import(
-            ".nonexistent", "os", "path"
-        )
+        result = try_relative_import(".nonexistent", "os", "path")
         assert result is not None
 
     def test_default_on_failure(self) -> None:
@@ -151,9 +144,7 @@ class TestTryRelativeImport:
 
     def test_none_default(self) -> None:
         """Test None returned by default on failure."""
-        result = try_relative_import(
-            ".nonexistent", "also_nonexistent", "Foo"
-        )
+        result = try_relative_import(".nonexistent", "also_nonexistent", "Foo")
         assert result is None
 
 

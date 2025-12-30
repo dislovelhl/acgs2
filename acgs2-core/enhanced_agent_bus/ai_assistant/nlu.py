@@ -10,9 +10,8 @@ import logging
 import re
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional, Tuple, Callable, Union
 from enum import Enum
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 # Import centralized constitutional hash with fallback
 try:
@@ -25,6 +24,7 @@ logger = logging.getLogger(__name__)
 
 class Sentiment(Enum):
     """Sentiment categories."""
+
     VERY_NEGATIVE = -2
     NEGATIVE = -1
     NEUTRAL = 0
@@ -35,6 +35,7 @@ class Sentiment(Enum):
 @dataclass
 class Intent:
     """Represents a detected intent."""
+
     name: str
     confidence: float
     parameters: Dict[str, Any] = field(default_factory=dict)
@@ -52,6 +53,7 @@ class Intent:
 @dataclass
 class Entity:
     """Represents an extracted entity."""
+
     text: str
     type: str
     value: Any
@@ -75,6 +77,7 @@ class Entity:
 @dataclass
 class NLUResult:
     """Complete NLU processing result."""
+
     original_text: str = ""
     processed_text: str = ""
     primary_intent: Optional[Intent] = None
@@ -118,8 +121,14 @@ class NLUResult:
             "processed_text": self.processed_text,
             "primary_intent": self.primary_intent.to_dict() if self.primary_intent else None,
             "secondary_intents": [i.to_dict() for i in self.secondary_intents],
-            "entities": self.entities if isinstance(self.entities, dict) else [e.to_dict() for e in self.entities],
-            "sentiment": self.sentiment.name if hasattr(self.sentiment, 'name') else str(self.sentiment),
+            "entities": (
+                self.entities
+                if isinstance(self.entities, dict)
+                else [e.to_dict() for e in self.entities]
+            ),
+            "sentiment": (
+                self.sentiment.name if hasattr(self.sentiment, "name") else str(self.sentiment)
+            ),
             "sentiment_score": self.sentiment_score,
             "language": self.language,
             "confidence": self.confidence,
@@ -218,10 +227,7 @@ class RuleBasedIntentClassifier(IntentClassifier):
         """Compile regex patterns for efficiency."""
         compiled = {}
         for intent, patterns in self.intent_patterns.items():
-            compiled[intent] = [
-                re.compile(pattern, re.IGNORECASE)
-                for pattern in patterns
-            ]
+            compiled[intent] = [re.compile(pattern, re.IGNORECASE) for pattern in patterns]
         return compiled
 
     async def classify(
@@ -241,14 +247,16 @@ class RuleBasedIntentClassifier(IntentClassifier):
                     match_length = match.end() - match.start()
                     confidence = min(0.95, 0.5 + (match_length / len(text_lower)) * 0.5)
 
-                    intents.append(Intent(
-                        name=intent_name,
-                        confidence=confidence,
-                        parameters={
-                            "matched_pattern": pattern.pattern,
-                            "match_text": match.group(),
-                        },
-                    ))
+                    intents.append(
+                        Intent(
+                            name=intent_name,
+                            confidence=confidence,
+                            parameters={
+                                "matched_pattern": pattern.pattern,
+                                "match_text": match.group(),
+                            },
+                        )
+                    )
                     break  # One match per intent is enough
 
         # Sort by confidence
@@ -262,11 +270,13 @@ class RuleBasedIntentClassifier(IntentClassifier):
 
         # Add fallback if no intents found
         if not intents:
-            intents.append(Intent(
-                name="unknown",
-                confidence=0.5,
-                parameters={"requires_clarification": True},
-            ))
+            intents.append(
+                Intent(
+                    name="unknown",
+                    confidence=0.5,
+                    parameters={"requires_clarification": True},
+                )
+            )
 
         return intents
 
@@ -377,14 +387,47 @@ class BasicSentimentAnalyzer(SentimentAnalyzer):
 
     def __init__(self):
         self.positive_words = {
-            "great", "good", "excellent", "amazing", "wonderful", "fantastic",
-            "love", "like", "best", "happy", "pleased", "satisfied", "thank",
-            "thanks", "helpful", "perfect", "awesome", "brilliant", "superb",
+            "great",
+            "good",
+            "excellent",
+            "amazing",
+            "wonderful",
+            "fantastic",
+            "love",
+            "like",
+            "best",
+            "happy",
+            "pleased",
+            "satisfied",
+            "thank",
+            "thanks",
+            "helpful",
+            "perfect",
+            "awesome",
+            "brilliant",
+            "superb",
         }
         self.negative_words = {
-            "bad", "terrible", "awful", "horrible", "worst", "hate", "angry",
-            "frustrated", "disappointed", "upset", "annoyed", "poor", "problem",
-            "issue", "broken", "wrong", "fail", "failed", "error", "bug",
+            "bad",
+            "terrible",
+            "awful",
+            "horrible",
+            "worst",
+            "hate",
+            "angry",
+            "frustrated",
+            "disappointed",
+            "upset",
+            "annoyed",
+            "poor",
+            "problem",
+            "issue",
+            "broken",
+            "wrong",
+            "fail",
+            "failed",
+            "error",
+            "bug",
         }
         self.intensifiers = {"very", "really", "extremely", "absolutely", "totally"}
         self.negators = {"not", "no", "never", "don't", "doesn't", "didn't", "won't"}
@@ -497,6 +540,7 @@ class NLUEngine:
             NLUResult with intents, entities, sentiment
         """
         import time
+
         start_time = time.perf_counter()
 
         # Preprocess text
@@ -519,7 +563,9 @@ class NLUEngine:
             "neutral": Sentiment.NEUTRAL,
         }
         sentiment = sentiment_map.get(sentiment_str, Sentiment.NEUTRAL)
-        sentiment_score = 0.5 if sentiment_str == "positive" else (-0.5 if sentiment_str == "negative" else 0.0)
+        sentiment_score = (
+            0.5 if sentiment_str == "positive" else (-0.5 if sentiment_str == "negative" else 0.0)
+        )
 
         # Detect language (simplified - just English detection)
         language = self._detect_language(text)
@@ -609,14 +655,10 @@ class NLUEngine:
         """Add or update intent patterns."""
         if isinstance(self.intent_classifier, RuleBasedIntentClassifier):
             self.intent_classifier.intent_patterns[intent_name] = patterns
-            self.intent_classifier._compiled_patterns = (
-                self.intent_classifier._compile_patterns()
-            )
+            self.intent_classifier._compiled_patterns = self.intent_classifier._compile_patterns()
 
     def add_entity_pattern(self, entity_type: str, pattern: str) -> None:
         """Add or update entity pattern."""
         if isinstance(self.entity_extractor, PatternEntityExtractor):
             self.entity_extractor.patterns[entity_type] = pattern
-            self.entity_extractor._compiled_patterns = (
-                self.entity_extractor._compile_patterns()
-            )
+            self.entity_extractor._compiled_patterns = self.entity_extractor._compile_patterns()

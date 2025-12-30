@@ -9,14 +9,13 @@ Comprehensive test coverage for webhook endpoints:
 - Error handling and security
 """
 
-import pytest
-import hmac
 import hashlib
+import hmac
 import json
-from datetime import datetime, timezone
-from unittest.mock import AsyncMock, MagicMock, patch, PropertyMock
-from io import BytesIO
-from fastapi import FastAPI, Request, HTTPException
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.testclient import TestClient
 
 # Constitutional hash constant
@@ -26,6 +25,7 @@ CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
 # =============================================================================
 # Mock Services
 # =============================================================================
+
 
 class MockCompilerService:
     """Mock compiler service for testing."""
@@ -59,8 +59,7 @@ class MockSettings:
     @property
     def bundle(self):
         return MagicMock(
-            github_webhook_secret=self._webhook_secret,
-            registry_url="http://localhost:5000"
+            github_webhook_secret=self._webhook_secret, registry_url="http://localhost:5000"
         )
 
     @property
@@ -81,6 +80,7 @@ class MockSecretStr:
 # =============================================================================
 # Fixtures
 # =============================================================================
+
 
 @pytest.fixture
 def mock_compiler_service():
@@ -122,38 +122,30 @@ def sample_github_payload():
         "ref": "refs/heads/main",
         "before": "abc123",
         "after": "def456",
-        "repository": {
-            "name": "policies",
-            "full_name": "acgs/policies"
-        },
-        "pusher": {
-            "name": "test-user"
-        },
+        "repository": {"name": "policies", "full_name": "acgs/policies"},
+        "pusher": {"name": "test-user"},
         "commits": [
             {
                 "id": "def456",
                 "message": "Update policies",
                 "added": ["policies/new.rego"],
-                "modified": ["policies/main.rego"]
+                "modified": ["policies/main.rego"],
             }
-        ]
+        ],
     }
 
 
 def generate_github_signature(secret: str, payload: dict) -> str:
     """Generate GitHub-style HMAC signature."""
     body = json.dumps(payload).encode()
-    signature = hmac.new(
-        secret.encode(),
-        body,
-        hashlib.sha256
-    ).hexdigest()
+    signature = hmac.new(secret.encode(), body, hashlib.sha256).hexdigest()
     return f"sha256={signature}"
 
 
 # =============================================================================
 # Signature Verification Tests
 # =============================================================================
+
 
 class TestSignatureVerification:
     """Tests for GitHub webhook signature verification."""
@@ -177,7 +169,7 @@ class TestSignatureVerification:
         mock_settings = MagicMock()
         mock_settings.bundle.github_webhook_secret = secret_mock
 
-        with patch.object(webhooks, '_get_settings', return_value=mock_settings):
+        with patch.object(webhooks, "_get_settings", return_value=mock_settings):
             # Should not raise
             await webhooks.verify_github_signature(mock_request, expected_signature)
 
@@ -194,7 +186,7 @@ class TestSignatureVerification:
         mock_settings = MagicMock()
         mock_settings.bundle.github_webhook_secret = secret_mock
 
-        with patch.object(webhooks, '_get_settings', return_value=mock_settings):
+        with patch.object(webhooks, "_get_settings", return_value=mock_settings):
             with pytest.raises(HTTPException) as exc_info:
                 await webhooks.verify_github_signature(mock_request, None)
 
@@ -218,7 +210,7 @@ class TestSignatureVerification:
         mock_settings = MagicMock()
         mock_settings.bundle.github_webhook_secret = secret_mock
 
-        with patch.object(webhooks, '_get_settings', return_value=mock_settings):
+        with patch.object(webhooks, "_get_settings", return_value=mock_settings):
             with pytest.raises(HTTPException) as exc_info:
                 await webhooks.verify_github_signature(mock_request, invalid_signature)
 
@@ -236,7 +228,7 @@ class TestSignatureVerification:
         mock_settings = MagicMock()
         mock_settings.bundle.github_webhook_secret = None
 
-        with patch.object(webhooks, '_get_settings', return_value=mock_settings):
+        with patch.object(webhooks, "_get_settings", return_value=mock_settings):
             # Should not raise, just return
             await webhooks.verify_github_signature(mock_request, None)
 
@@ -245,15 +237,12 @@ class TestSignatureVerification:
 # GitHub Webhook Endpoint Tests
 # =============================================================================
 
+
 class TestGitHubWebhook:
     """Tests for POST /webhooks/github endpoint."""
 
     def test_webhook_triggers_background_task(
-        self,
-        mock_compiler_service,
-        mock_storage_service,
-        sample_github_payload,
-        webhook_secret
+        self, mock_compiler_service, mock_storage_service, sample_github_payload, webhook_secret
     ):
         """Test webhook triggers background processing."""
         from app.api.v1 import webhooks
@@ -273,7 +262,7 @@ class TestGitHubWebhook:
         mock_settings = MagicMock()
         mock_settings.bundle.github_webhook_secret = None
 
-        with patch.object(webhooks, '_get_settings', return_value=mock_settings):
+        with patch.object(webhooks, "_get_settings", return_value=mock_settings):
             client = TestClient(app)
             response = client.post("/webhooks/github", json=sample_github_payload)
 
@@ -283,10 +272,7 @@ class TestGitHubWebhook:
         assert "background" in data["message"].lower()
 
     def test_webhook_returns_commit_info(
-        self,
-        mock_compiler_service,
-        mock_storage_service,
-        sample_github_payload
+        self, mock_compiler_service, mock_storage_service, sample_github_payload
     ):
         """Test webhook response includes commit reference."""
         from app.api.v1 import webhooks
@@ -304,7 +290,7 @@ class TestGitHubWebhook:
         mock_settings = MagicMock()
         mock_settings.bundle.github_webhook_secret = None
 
-        with patch.object(webhooks, '_get_settings', return_value=mock_settings):
+        with patch.object(webhooks, "_get_settings", return_value=mock_settings):
             client = TestClient(app)
             response = client.post("/webhooks/github", json=sample_github_payload)
 
@@ -327,14 +313,14 @@ class TestGitHubWebhook:
         mock_settings = MagicMock()
         mock_settings.bundle.github_webhook_secret = None
 
-        with patch.object(webhooks, '_get_settings', return_value=mock_settings):
+        with patch.object(webhooks, "_get_settings", return_value=mock_settings):
             client = TestClient(app)
 
             # Invalid JSON body
             response = client.post(
                 "/webhooks/github",
                 content="invalid json",
-                headers={"Content-Type": "application/json"}
+                headers={"Content-Type": "application/json"},
             )
 
         assert response.status_code == 422
@@ -344,34 +330,27 @@ class TestGitHubWebhook:
 # Background Task Tests
 # =============================================================================
 
+
 class TestProcessPolicyUpdate:
     """Tests for process_policy_update background task."""
 
     @pytest.mark.asyncio
     async def test_process_policy_update_handles_missing_bundle_registry(
-        self,
-        sample_github_payload,
-        mock_compiler_service,
-        mock_storage_service
+        self, sample_github_payload, mock_compiler_service, mock_storage_service
     ):
         """Test graceful handling when bundle registry import fails."""
         from app.api.v1 import webhooks
 
         # The function should handle ImportError gracefully
-        with patch.dict('sys.modules', {'enhanced_agent_bus.bundle_registry': None}):
+        with patch.dict("sys.modules", {"enhanced_agent_bus.bundle_registry": None}):
             # Should not raise, just log error and return
             await webhooks.process_policy_update(
-                sample_github_payload,
-                mock_compiler_service,
-                mock_storage_service
+                sample_github_payload, mock_compiler_service, mock_storage_service
             )
 
     @pytest.mark.asyncio
     async def test_process_policy_update_handles_missing_policy_dir(
-        self,
-        sample_github_payload,
-        mock_compiler_service,
-        mock_storage_service
+        self, sample_github_payload, mock_compiler_service, mock_storage_service
     ):
         """Test handling when policy directory doesn't exist."""
         from app.api.v1 import webhooks
@@ -380,19 +359,18 @@ class TestProcessPolicyUpdate:
         mock_settings.ai.constitutional_hash = CONSTITUTIONAL_HASH
         mock_settings.bundle.registry_url = "http://localhost:5000"
 
-        with patch.object(webhooks, '_get_settings', return_value=mock_settings):
-            with patch('os.path.exists', return_value=False):
+        with patch.object(webhooks, "_get_settings", return_value=mock_settings):
+            with patch("os.path.exists", return_value=False):
                 # Should handle gracefully without raising
                 await webhooks.process_policy_update(
-                    sample_github_payload,
-                    mock_compiler_service,
-                    mock_storage_service
+                    sample_github_payload, mock_compiler_service, mock_storage_service
                 )
 
 
 # =============================================================================
 # Service Factory Tests
 # =============================================================================
+
 
 class TestServiceFactories:
     """Tests for service factory functions."""
@@ -444,6 +422,7 @@ class TestServiceFactories:
 # HMAC Signature Tests
 # =============================================================================
 
+
 class TestHMACSignature:
     """Tests for HMAC signature generation and verification."""
 
@@ -451,11 +430,7 @@ class TestHMACSignature:
         """Test generating valid HMAC signature."""
         body = json.dumps(sample_github_payload).encode()
 
-        signature = hmac.new(
-            webhook_secret.encode(),
-            body,
-            hashlib.sha256
-        ).hexdigest()
+        signature = hmac.new(webhook_secret.encode(), body, hashlib.sha256).hexdigest()
 
         expected = f"sha256={signature}"
 
@@ -490,17 +465,9 @@ class TestHMACSignature:
         """Test that hmac.compare_digest is used for timing-safe comparison."""
         body = json.dumps(sample_github_payload).encode()
 
-        signature1 = hmac.new(
-            webhook_secret.encode(),
-            body,
-            hashlib.sha256
-        ).hexdigest()
+        signature1 = hmac.new(webhook_secret.encode(), body, hashlib.sha256).hexdigest()
 
-        signature2 = hmac.new(
-            webhook_secret.encode(),
-            body,
-            hashlib.sha256
-        ).hexdigest()
+        signature2 = hmac.new(webhook_secret.encode(), body, hashlib.sha256).hexdigest()
 
         # Use timing-safe comparison
         assert hmac.compare_digest(signature1, signature2)
@@ -509,6 +476,7 @@ class TestHMACSignature:
 # =============================================================================
 # Payload Parsing Tests
 # =============================================================================
+
 
 class TestPayloadParsing:
     """Tests for webhook payload parsing."""
@@ -546,7 +514,7 @@ class TestPayloadParsing:
         mock_settings = MagicMock()
         mock_settings.bundle.github_webhook_secret = None
 
-        with patch.object(webhooks, '_get_settings', return_value=mock_settings):
+        with patch.object(webhooks, "_get_settings", return_value=mock_settings):
             client = TestClient(app)
 
             # Payload without 'after' field
@@ -560,6 +528,7 @@ class TestPayloadParsing:
 # =============================================================================
 # Constitutional Compliance Tests
 # =============================================================================
+
 
 class TestConstitutionalCompliance:
     """Tests for constitutional compliance."""
@@ -582,6 +551,7 @@ class TestConstitutionalCompliance:
 # Error Handling Tests
 # =============================================================================
 
+
 class TestErrorHandling:
     """Tests for error handling in webhook processing."""
 
@@ -599,12 +569,9 @@ class TestErrorHandling:
         mock_settings = MagicMock()
         mock_settings.bundle.github_webhook_secret = secret_mock
 
-        with patch.object(webhooks, '_get_settings', return_value=mock_settings):
+        with patch.object(webhooks, "_get_settings", return_value=mock_settings):
             with pytest.raises(HTTPException) as exc_info:
-                await webhooks.verify_github_signature(
-                    mock_request,
-                    "sha256=wrong_signature"
-                )
+                await webhooks.verify_github_signature(mock_request, "sha256=wrong_signature")
 
         assert exc_info.value.status_code == 401
 
@@ -631,7 +598,7 @@ class TestErrorHandling:
         response = client.post(
             "/webhooks/github",
             content="not valid json",
-            headers={"Content-Type": "application/json"}
+            headers={"Content-Type": "application/json"},
         )
 
         assert response.status_code == 422
@@ -641,10 +608,13 @@ class TestErrorHandling:
 # Security Tests
 # =============================================================================
 
+
 class TestWebhookSecurity:
     """Tests for webhook security measures."""
 
-    def test_empty_signature_rejected(self, mock_compiler_service, mock_storage_service, webhook_secret):
+    def test_empty_signature_rejected(
+        self, mock_compiler_service, mock_storage_service, webhook_secret
+    ):
         """Test that empty signature is rejected."""
         from app.api.v1 import webhooks
 
@@ -663,19 +633,19 @@ class TestWebhookSecurity:
         mock_settings = MagicMock()
         mock_settings.bundle.github_webhook_secret = secret_mock
 
-        with patch.object(webhooks, '_get_settings', return_value=mock_settings):
+        with patch.object(webhooks, "_get_settings", return_value=mock_settings):
             client = TestClient(app)
 
             response = client.post(
-                "/webhooks/github",
-                json={"test": "data"},
-                headers={"X-Hub-Signature-256": ""}
+                "/webhooks/github", json={"test": "data"}, headers={"X-Hub-Signature-256": ""}
             )
 
             # Should fail signature verification
             assert response.status_code in [401, 422]
 
-    def test_malformed_signature_rejected(self, mock_compiler_service, mock_storage_service, webhook_secret):
+    def test_malformed_signature_rejected(
+        self, mock_compiler_service, mock_storage_service, webhook_secret
+    ):
         """Test that malformed signature is rejected."""
         from app.api.v1 import webhooks
 
@@ -693,13 +663,13 @@ class TestWebhookSecurity:
         mock_settings = MagicMock()
         mock_settings.bundle.github_webhook_secret = secret_mock
 
-        with patch.object(webhooks, '_get_settings', return_value=mock_settings):
+        with patch.object(webhooks, "_get_settings", return_value=mock_settings):
             client = TestClient(app)
 
             response = client.post(
                 "/webhooks/github",
                 json={"test": "data"},
-                headers={"X-Hub-Signature-256": "malformed-no-prefix"}
+                headers={"X-Hub-Signature-256": "malformed-no-prefix"},
             )
 
             # Should fail signature verification

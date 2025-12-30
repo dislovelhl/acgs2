@@ -10,12 +10,12 @@ Comprehensive test coverage for NotificationService including:
 - Health status broadcasting
 """
 
-import pytest
 import asyncio
 import json
 from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
 from app.services.notification_service import NotificationService
 
 # Constitutional hash constant
@@ -26,12 +26,12 @@ CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
 # Fixtures
 # =============================================================================
 
+
 @pytest.fixture
 def notification_service():
     """Create a fresh NotificationService instance for testing."""
     return NotificationService(
-        kafka_bootstrap_servers="localhost:9092",
-        kafka_topic="test-policy-updates"
+        kafka_bootstrap_servers="localhost:9092", kafka_topic="test-policy-updates"
     )
 
 
@@ -53,13 +53,14 @@ def sample_notification():
         "policy_id": "policy-123",
         "version": "1.0.0",
         "action": "created",
-        "metadata": {"created_by": "test-user"}
+        "metadata": {"created_by": "test-user"},
     }
 
 
 # =============================================================================
 # Initialization Tests
 # =============================================================================
+
 
 class TestServiceInitialization:
     """Tests for NotificationService initialization."""
@@ -77,8 +78,7 @@ class TestServiceInitialization:
     def test_initialization_custom_values(self):
         """Test service initializes with custom values."""
         service = NotificationService(
-            kafka_bootstrap_servers="kafka.example.com:9093",
-            kafka_topic="custom-topic"
+            kafka_bootstrap_servers="kafka.example.com:9093", kafka_topic="custom-topic"
         )
 
         assert service.kafka_bootstrap_servers == "kafka.example.com:9093"
@@ -87,14 +87,16 @@ class TestServiceInitialization:
     @pytest.mark.asyncio
     async def test_initialize_without_kafka(self, notification_service):
         """Test initialization when aiokafka is not available."""
-        with patch('app.services.notification_service.AIOKafkaProducer', None):
+        with patch("app.services.notification_service.AIOKafkaProducer", None):
             await notification_service.initialize()
             assert notification_service.kafka_producer is None
 
     @pytest.mark.asyncio
     async def test_initialize_with_kafka_success(self, notification_service, mock_kafka_producer):
         """Test successful Kafka initialization."""
-        with patch('app.services.notification_service.AIOKafkaProducer', return_value=mock_kafka_producer):
+        with patch(
+            "app.services.notification_service.AIOKafkaProducer", return_value=mock_kafka_producer
+        ):
             await notification_service.initialize()
             mock_kafka_producer.start.assert_called_once()
 
@@ -104,7 +106,9 @@ class TestServiceInitialization:
         mock_producer = AsyncMock()
         mock_producer.start = AsyncMock(side_effect=Exception("Connection failed"))
 
-        with patch('app.services.notification_service.AIOKafkaProducer', return_value=mock_producer):
+        with patch(
+            "app.services.notification_service.AIOKafkaProducer", return_value=mock_producer
+        ):
             await notification_service.initialize()
             # Should set kafka_producer to None on failure
             assert notification_service.kafka_producer is None
@@ -113,6 +117,7 @@ class TestServiceInitialization:
 # =============================================================================
 # Shutdown Tests
 # =============================================================================
+
 
 class TestServiceShutdown:
     """Tests for NotificationService shutdown."""
@@ -172,6 +177,7 @@ class TestServiceShutdown:
 # WebSocket Connection Management Tests
 # =============================================================================
 
+
 class TestWebSocketConnectionManagement:
     """Tests for WebSocket connection registration."""
 
@@ -195,7 +201,9 @@ class TestWebSocketConnectionManagement:
         notification_service.register_websocket_connection(queue3)
 
         assert len(notification_service.websocket_connections) == 3
-        assert all(q in notification_service.websocket_connections for q in [queue1, queue2, queue3])
+        assert all(
+            q in notification_service.websocket_connections for q in [queue1, queue2, queue3]
+        )
 
     def test_unregister_websocket_connection(self, notification_service):
         """Test unregistering a WebSocket connection."""
@@ -229,6 +237,7 @@ class TestWebSocketConnectionManagement:
 # Policy Update Notification Tests
 # =============================================================================
 
+
 class TestPolicyUpdateNotifications:
     """Tests for policy update notifications."""
 
@@ -239,10 +248,7 @@ class TestPolicyUpdateNotifications:
         notification_service.register_websocket_connection(queue)
 
         await notification_service.notify_policy_update(
-            policy_id="policy-123",
-            version="1.0.0",
-            action="created",
-            metadata={"user": "test"}
+            policy_id="policy-123", version="1.0.0", action="created", metadata={"user": "test"}
         )
 
         notification = await queue.get()
@@ -260,9 +266,7 @@ class TestPolicyUpdateNotifications:
         notification_service.kafka_producer = mock_kafka_producer
 
         await notification_service.notify_policy_update(
-            policy_id="policy-456",
-            version="2.0.0",
-            action="updated"
+            policy_id="policy-456", version="2.0.0", action="updated"
         )
 
         mock_kafka_producer.send_and_wait.assert_called_once()
@@ -270,7 +274,7 @@ class TestPolicyUpdateNotifications:
 
         assert call_args[0][0] == notification_service.kafka_topic
         # Check the message contains policy_id
-        message = json.loads(call_args[0][1].decode('utf-8'))
+        message = json.loads(call_args[0][1].decode("utf-8"))
         assert message["policy_id"] == "policy-456"
         assert message["version"] == "2.0.0"
         assert message["action"] == "updated"
@@ -282,9 +286,7 @@ class TestPolicyUpdateNotifications:
         notification_service.register_websocket_connection(queue)
 
         await notification_service.notify_policy_update(
-            policy_id="policy-789",
-            version="1.0.0",
-            action="activated"
+            policy_id="policy-789", version="1.0.0", action="activated"
         )
 
         notification = await queue.get()
@@ -302,9 +304,7 @@ class TestPolicyUpdateNotifications:
         notification_service.register_websocket_connection(queue3)
 
         await notification_service.notify_policy_update(
-            policy_id="policy-abc",
-            version="1.0.0",
-            action="created"
+            policy_id="policy-abc", version="1.0.0", action="created"
         )
 
         # All queues should have received the notification
@@ -326,9 +326,7 @@ class TestPolicyUpdateNotifications:
         notification_service.websocket_connections = {good_queue, bad_queue}
 
         await notification_service.notify_policy_update(
-            policy_id="policy-xyz",
-            version="1.0.0",
-            action="created"
+            policy_id="policy-xyz", version="1.0.0", action="created"
         )
 
         # Bad queue should be removed
@@ -339,6 +337,7 @@ class TestPolicyUpdateNotifications:
 # =============================================================================
 # Kafka Integration Tests
 # =============================================================================
+
 
 class TestKafkaIntegration:
     """Tests for Kafka integration."""
@@ -358,29 +357,28 @@ class TestKafkaIntegration:
         notification_service.kafka_producer = mock_kafka_producer
 
         # Should not raise
-        await notification_service._send_to_kafka({
-            "type": "test",
-            "policy_id": "test-123"
-        })
+        await notification_service._send_to_kafka({"type": "test", "policy_id": "test-123"})
 
     @pytest.mark.asyncio
-    async def test_send_to_kafka_uses_policy_id_as_key(self, notification_service, mock_kafka_producer):
+    async def test_send_to_kafka_uses_policy_id_as_key(
+        self, notification_service, mock_kafka_producer
+    ):
         """Test Kafka message uses policy_id as message key."""
         notification_service.kafka_producer = mock_kafka_producer
 
-        await notification_service._send_to_kafka({
-            "type": "policy_update",
-            "policy_id": "partition-key-test"
-        })
+        await notification_service._send_to_kafka(
+            {"type": "policy_update", "policy_id": "partition-key-test"}
+        )
 
         call_args = mock_kafka_producer.send_and_wait.call_args
-        key = call_args.kwargs.get('key') or call_args[1].get('key')
+        key = call_args.kwargs.get("key") or call_args[1].get("key")
         assert key == b"partition-key-test"
 
 
 # =============================================================================
 # Health Status Broadcasting Tests
 # =============================================================================
+
 
 class TestHealthStatusBroadcasting:
     """Tests for health status broadcasting."""
@@ -391,11 +389,7 @@ class TestHealthStatusBroadcasting:
         queue = asyncio.Queue()
         notification_service.register_websocket_connection(queue)
 
-        status = {
-            "service": "policy_registry",
-            "healthy": True,
-            "cache_hit_rate": 0.95
-        }
+        status = {"service": "policy_registry", "healthy": True, "cache_hit_rate": 0.95}
 
         await notification_service.broadcast_health_status(status)
 
@@ -426,6 +420,7 @@ class TestHealthStatusBroadcasting:
 # =============================================================================
 # Connection Count Tests
 # =============================================================================
+
 
 class TestConnectionCount:
     """Tests for connection count retrieval."""
@@ -463,6 +458,7 @@ class TestConnectionCount:
 # Timestamp Tests
 # =============================================================================
 
+
 class TestTimestamps:
     """Tests for timestamp handling in notifications."""
 
@@ -474,14 +470,12 @@ class TestTimestamps:
 
         before = datetime.now(timezone.utc)
         await notification_service.notify_policy_update(
-            policy_id="test",
-            version="1.0.0",
-            action="created"
+            policy_id="test", version="1.0.0", action="created"
         )
         after = datetime.now(timezone.utc)
 
         notification = await queue.get()
-        timestamp = datetime.fromisoformat(notification["timestamp"].replace('Z', '+00:00'))
+        timestamp = datetime.fromisoformat(notification["timestamp"].replace("Z", "+00:00"))
 
         assert before <= timestamp <= after
 
@@ -496,7 +490,7 @@ class TestTimestamps:
         after = datetime.now(timezone.utc)
 
         notification = await queue.get()
-        timestamp = datetime.fromisoformat(notification["timestamp"].replace('Z', '+00:00'))
+        timestamp = datetime.fromisoformat(notification["timestamp"].replace("Z", "+00:00"))
 
         assert before <= timestamp <= after
 
@@ -504,6 +498,7 @@ class TestTimestamps:
 # =============================================================================
 # Edge Cases Tests
 # =============================================================================
+
 
 class TestEdgeCases:
     """Tests for edge cases and error handling."""
@@ -515,9 +510,7 @@ class TestEdgeCases:
         notification_service.register_websocket_connection(queue)
 
         await notification_service.notify_policy_update(
-            policy_id="",
-            version="1.0.0",
-            action="created"
+            policy_id="", version="1.0.0", action="created"
         )
 
         notification = await queue.get()
@@ -533,7 +526,7 @@ class TestEdgeCases:
             policy_id="policy/with/slashes",
             version="1.0.0-beta+build.123",
             action="created",
-            metadata={"description": "Special chars: <>&\"'"}
+            metadata={"description": "Special chars: <>&\"'"},
         )
 
         notification = await queue.get()
@@ -551,7 +544,7 @@ class TestEdgeCases:
             policy_id="政策-123",
             version="1.0.0",
             action="created",
-            metadata={"description": "日本語テスト 🎉"}
+            metadata={"description": "日本語テスト 🎉"},
         )
 
         notification = await queue.get()
@@ -567,10 +560,7 @@ class TestEdgeCases:
         large_metadata = {"key_" + str(i): "value_" * 100 for i in range(100)}
 
         await notification_service.notify_policy_update(
-            policy_id="policy-large",
-            version="1.0.0",
-            action="created",
-            metadata=large_metadata
+            policy_id="policy-large", version="1.0.0", action="created", metadata=large_metadata
         )
 
         notification = await queue.get()
@@ -585,9 +575,7 @@ class TestEdgeCases:
         # Send 50 notifications concurrently
         tasks = [
             notification_service.notify_policy_update(
-                policy_id=f"policy-{i}",
-                version="1.0.0",
-                action="created"
+                policy_id=f"policy-{i}", version="1.0.0", action="created"
             )
             for i in range(50)
         ]
@@ -608,12 +596,14 @@ class TestEdgeCases:
 # Constitutional Compliance Tests
 # =============================================================================
 
+
 class TestConstitutionalCompliance:
     """Tests for constitutional compliance markers."""
 
     def test_module_has_constitutional_hash(self):
         """Test that the module has constitutional hash in docstring."""
         from app.services import notification_service
+
         # Module should exist and be importable (constitutional requirement)
         assert notification_service is not None
 
@@ -627,14 +617,12 @@ class TestConstitutionalCompliance:
             queue = asyncio.Queue()
             notification_service.register_websocket_connection(queue)
             await notification_service.notify_policy_update(
-                policy_id="test",
-                version="1.0.0",
-                action="created"
+                policy_id="test", version="1.0.0", action="created"
             )
             notification = await queue.get()
             # Timestamp should include timezone info (ends with +00:00 or Z)
             ts = notification["timestamp"]
-            assert ts.endswith('+00:00') or ts.endswith('Z') or '+' in ts or '-' in ts[-6:]
+            assert ts.endswith("+00:00") or ts.endswith("Z") or "+" in ts or "-" in ts[-6:]
 
         asyncio.get_event_loop().run_until_complete(check())
 
@@ -647,29 +635,31 @@ class TestConstitutionalCompliance:
 # Action Type Tests
 # =============================================================================
 
+
 class TestActionTypes:
     """Tests for different action types in notifications."""
 
     @pytest.mark.asyncio
-    @pytest.mark.parametrize("action", [
-        "created",
-        "updated",
-        "activated",
-        "deprecated",
-        "deleted",
-        "version_added",
-        "compiled",
-        "validated"
-    ])
+    @pytest.mark.parametrize(
+        "action",
+        [
+            "created",
+            "updated",
+            "activated",
+            "deprecated",
+            "deleted",
+            "version_added",
+            "compiled",
+            "validated",
+        ],
+    )
     async def test_various_action_types(self, notification_service, action):
         """Test notifications with various action types."""
         queue = asyncio.Queue()
         notification_service.register_websocket_connection(queue)
 
         await notification_service.notify_policy_update(
-            policy_id="policy-action-test",
-            version="1.0.0",
-            action=action
+            policy_id="policy-action-test", version="1.0.0", action=action
         )
 
         notification = await queue.get()

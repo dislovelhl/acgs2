@@ -6,16 +6,13 @@ a common vector knowledge base of constitutional documents and precedents.
 """
 
 import logging
-from typing import List, Dict, Any, Optional, Set
 from datetime import datetime, timezone
-import asyncio
-from concurrent.futures import ThreadPoolExecutor
-import json
+from typing import Any, Dict, List, Optional, Set
 
-from vector_database import VectorDatabaseManager
-from retrieval_engine import RetrievalEngine
-from llm_reasoner import LLMReasoner
 from feedback_loop import FeedbackLoop
+from llm_reasoner import LLMReasoner
+from retrieval_engine import RetrievalEngine
+from vector_database import VectorDatabaseManager
 
 logger = logging.getLogger(__name__)
 
@@ -23,10 +20,13 @@ logger = logging.getLogger(__name__)
 class MultiAgentCoordinator:
     """Coordinates multiple agents accessing shared constitutional knowledge base."""
 
-    def __init__(self, vector_db: VectorDatabaseManager,
-                 retrieval_engine: RetrievalEngine,
-                 llm_reasoner: LLMReasoner,
-                 feedback_loop: FeedbackLoop):
+    def __init__(
+        self,
+        vector_db: VectorDatabaseManager,
+        retrieval_engine: RetrievalEngine,
+        llm_reasoner: LLMReasoner,
+        feedback_loop: FeedbackLoop,
+    ):
         """
         Initialize multi-agent coordinator.
 
@@ -57,7 +57,7 @@ class MultiAgentCoordinator:
             "total_agents": 0,
             "active_sessions": 0,
             "shared_queries": 0,
-            "knowledge_contributions": 0
+            "knowledge_contributions": 0,
         }
 
     async def register_agent(self, agent_id: str, agent_info: Dict[str, Any]) -> bool:
@@ -89,7 +89,7 @@ class MultiAgentCoordinator:
                 "registered_at": datetime.now(timezone.utc).isoformat(),
                 "last_active": datetime.now(timezone.utc).isoformat(),
                 "status": "active",
-                **agent_info
+                **agent_info,
             }
 
             self.registered_agents[agent_id] = registration
@@ -106,8 +106,9 @@ class MultiAgentCoordinator:
             logger.error(f"Failed to register agent {agent_id}: {e}")
             return False
 
-    async def start_collaboration_session(self, agent_id: str,
-                                        session_purpose: str) -> Optional[str]:
+    async def start_collaboration_session(
+        self, agent_id: str, session_purpose: str
+    ) -> Optional[str]:
         """
         Start a collaboration session for an agent.
 
@@ -124,8 +125,9 @@ class MultiAgentCoordinator:
                 return None
 
             # Check concurrent session limit
-            active_count = sum(1 for s in self.active_sessions.values()
-                             if s["agent_id"] == agent_id)
+            active_count = sum(
+                1 for s in self.active_sessions.values() if s["agent_id"] == agent_id
+            )
             if active_count >= 3:  # Max 3 concurrent sessions per agent
                 logger.warning(f"Agent {agent_id} has too many active sessions")
                 return None
@@ -139,7 +141,7 @@ class MultiAgentCoordinator:
                 "started_at": datetime.now(timezone.utc).isoformat(),
                 "status": "active",
                 "queries_made": 0,
-                "knowledge_accessed": []
+                "knowledge_accessed": [],
             }
 
             self.active_sessions[session_id] = session
@@ -154,8 +156,9 @@ class MultiAgentCoordinator:
             logger.error(f"Failed to start session for agent {agent_id}: {e}")
             return None
 
-    async def collaborative_query(self, session_id: str, query: str,
-                                agent_context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    async def collaborative_query(
+        self, session_id: str, query: str, agent_context: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
         """
         Perform a collaborative query using shared knowledge base.
 
@@ -201,8 +204,8 @@ class MultiAgentCoordinator:
                 "collaboration_info": {
                     "shared_knowledge_used": True,
                     "results_count": len(retrieved_docs),
-                    "query_timestamp": datetime.now(timezone.utc).isoformat()
-                }
+                    "query_timestamp": datetime.now(timezone.utc).isoformat(),
+                },
             }
 
             logger.info(f"Collaborative query by agent {agent_id}: {len(retrieved_docs)} results")
@@ -212,9 +215,12 @@ class MultiAgentCoordinator:
             logger.error(f"Collaborative query failed for session {session_id}: {e}")
             return {"error": str(e), "results": []}
 
-    async def contribute_knowledge(self, session_id: str,
-                                 documents: List[Dict[str, Any]],
-                                 contribution_metadata: Dict[str, Any]) -> bool:
+    async def contribute_knowledge(
+        self,
+        session_id: str,
+        documents: List[Dict[str, Any]],
+        contribution_metadata: Dict[str, Any],
+    ) -> bool:
         """
         Allow an agent to contribute new knowledge to the shared base.
 
@@ -242,23 +248,25 @@ class MultiAgentCoordinator:
             # Add contribution metadata
             for doc in documents:
                 doc["metadata"] = doc.get("metadata", {})
-                doc["metadata"].update({
-                    "contributed_by": agent_id,
-                    "contribution_session": session_id,
-                    "contributed_at": datetime.now(timezone.utc).isoformat(),
-                    **contribution_metadata
-                })
+                doc["metadata"].update(
+                    {
+                        "contributed_by": agent_id,
+                        "contribution_session": session_id,
+                        "contributed_at": datetime.now(timezone.utc).isoformat(),
+                        **contribution_metadata,
+                    }
+                )
 
             # Index the new documents
             success = await self.retrieval_engine.index_documents(documents)
 
             if success:
                 # Record contribution in feedback loop
-                await self.feedback_loop.add_new_knowledge(
-                    documents, source=f"agent_{agent_id}"
-                )
+                await self.feedback_loop.add_new_knowledge(documents, source=f"agent_{agent_id}")
 
-                session["contributions_made"] = session.get("contributions_made", 0) + len(documents)
+                session["contributions_made"] = session.get("contributions_made", 0) + len(
+                    documents
+                )
                 self.collaboration_metrics["knowledge_contributions"] += len(documents)
 
                 logger.info(f"Agent {agent_id} contributed {len(documents)} documents")
@@ -268,8 +276,9 @@ class MultiAgentCoordinator:
             logger.error(f"Knowledge contribution failed: {e}")
             return False
 
-    async def request_peer_assistance(self, session_id: str,
-                                    query: str, required_capabilities: List[str]) -> Dict[str, Any]:
+    async def request_peer_assistance(
+        self, session_id: str, query: str, required_capabilities: List[str]
+    ) -> Dict[str, Any]:
         """
         Request assistance from peer agents with specific capabilities.
 
@@ -310,11 +319,13 @@ class MultiAgentCoordinator:
                 peer_result = await self._simulate_peer_analysis(peer_agent, query)
                 assistance_results.append(peer_result)
 
-            logger.info(f"Peer assistance requested by {requesting_agent}: {len(assistance_results)} responses")
+            logger.info(
+                f"Peer assistance requested by {requesting_agent}: {len(assistance_results)} responses"
+            )
             return {
                 "query": query,
                 "assistance": assistance_results,
-                "peer_agents_engaged": len(assistance_results)
+                "peer_agents_engaged": len(assistance_results),
             }
 
         except Exception as e:
@@ -360,11 +371,13 @@ class MultiAgentCoordinator:
         metrics = self.collaboration_metrics.copy()
 
         # Add real-time stats
-        metrics.update({
-            "registered_agents": len(self.registered_agents),
-            "active_sessions": len(self.active_sessions),
-            "current_time": datetime.now(timezone.utc).isoformat()
-        })
+        metrics.update(
+            {
+                "registered_agents": len(self.registered_agents),
+                "active_sessions": len(self.active_sessions),
+                "current_time": datetime.now(timezone.utc).isoformat(),
+            }
+        )
 
         return metrics
 
@@ -394,8 +407,9 @@ class MultiAgentCoordinator:
 
         return len(expired_sessions)
 
-    def _enhance_with_agent_context(self, documents: List[Dict[str, Any]],
-                                  agent_context: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def _enhance_with_agent_context(
+        self, documents: List[Dict[str, Any]], agent_context: Dict[str, Any]
+    ) -> List[Dict[str, Any]]:
         """Enhance retrieved documents with agent-specific context."""
         agent_type = agent_context.get("agent_type", "unknown")
         agent_priorities = agent_context.get("priorities", [])
@@ -416,8 +430,9 @@ class MultiAgentCoordinator:
 
         return enhanced_docs
 
-    def _calculate_context_boost(self, document: Dict[str, Any],
-                               agent_type: str, priorities: List[str]) -> float:
+    def _calculate_context_boost(
+        self, document: Dict[str, Any], agent_type: str, priorities: List[str]
+    ) -> float:
         """Calculate context-based relevance boost."""
         boost = 0.0
 
@@ -451,7 +466,7 @@ class MultiAgentCoordinator:
             "analysis": f"Peer analysis of: {query[:100]}...",
             "confidence": 0.8,
             "recommendations": ["Consider additional constitutional provisions"],
-            "timestamp": datetime.now(timezone.utc).isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }
 
         return simulated_response
@@ -475,16 +490,20 @@ class MultiAgentCoordinator:
         agent_sessions = [s for s in self.active_sessions.values() if s["agent_id"] == agent_id]
 
         if not agent_sessions:
-            recommendations.append({
-                "type": "exploration",
-                "message": "Try exploring the shared knowledge base with some queries"
-            })
+            recommendations.append(
+                {
+                    "type": "exploration",
+                    "message": "Try exploring the shared knowledge base with some queries",
+                }
+            )
         else:
             total_queries = sum(s.get("queries_made", 0) for s in agent_sessions)
             if total_queries < 5:
-                recommendations.append({
-                    "type": "engagement",
-                    "message": "Increase query frequency to better utilize shared knowledge"
-                })
+                recommendations.append(
+                    {
+                        "type": "engagement",
+                        "message": "Increase query frequency to better utilize shared knowledge",
+                    }
+                )
 
         return recommendations

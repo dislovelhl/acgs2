@@ -5,11 +5,12 @@ Constitutional Hash: cdd01ef066bc6cf2
 Fixtures for timeline ordering, causal validation, and temporal consistency testing.
 """
 
-import pytest
 from dataclasses import dataclass, field
-from typing import Optional, Dict, Any, List, Set, Tuple
-from enum import Enum
 from datetime import datetime, timezone
+from enum import Enum
+from typing import Any, Dict, List, Optional, Set, Tuple
+
+import pytest
 
 try:
     from shared.constants import CONSTITUTIONAL_HASH

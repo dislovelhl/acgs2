@@ -5,12 +5,12 @@ Constitutional Hash: cdd01ef066bc6cf2
 Comprehensive tests for the deliberation layer components.
 """
 
-import asyncio
-import pytest
-import sys
-import os
-from datetime import datetime, timedelta, timezone
 import importlib.util
+import os
+import sys
+from datetime import datetime, timedelta, timezone
+
+import pytest
 
 # Add enhanced_agent_bus directory to path for standalone execution
 enhanced_agent_bus_dir = os.path.dirname(os.path.dirname(__file__))
@@ -28,18 +28,16 @@ def _load_module(name, path):
 
 
 # Load base modules first
-_models = _load_module(
-    "_test_models_delib",
-    os.path.join(enhanced_agent_bus_dir, "models.py")
-)
+_models = _load_module("_test_models_delib", os.path.join(enhanced_agent_bus_dir, "models.py"))
 _validators = _load_module(
-    "_test_validators_delib",
-    os.path.join(enhanced_agent_bus_dir, "validators.py")
+    "_test_validators_delib", os.path.join(enhanced_agent_bus_dir, "validators.py")
 )
+
 
 # Create a mock parent package for relative imports
 class MockPackage:
     pass
+
 
 mock_parent = MockPackage()
 mock_parent.models = _models
@@ -48,10 +46,10 @@ mock_parent.MessageStatus = _models.MessageStatus
 mock_parent.MessageType = _models.MessageType
 
 # Patch sys.modules for both direct and relative imports
-sys.modules['models'] = _models
-sys.modules['validators'] = _validators
-sys.modules['enhanced_agent_bus'] = mock_parent
-sys.modules['enhanced_agent_bus.models'] = _models
+sys.modules["models"] = _models
+sys.modules["validators"] = _validators
+sys.modules["enhanced_agent_bus"] = mock_parent
+sys.modules["enhanced_agent_bus.models"] = _models
 
 # Import from loaded models
 AgentMessage = _models.AgentMessage
@@ -70,6 +68,7 @@ from enum import Enum
 
 class DeliberationStatus(Enum):
     """Status of deliberation process."""
+
     PENDING = "pending"
     UNDER_REVIEW = "under_review"
     APPROVED = "approved"
@@ -80,19 +79,21 @@ class DeliberationStatus(Enum):
 
 class VoteType(Enum):
     """Types of votes in multi-agent consensus."""
+
     APPROVE = "approve"
     REJECT = "reject"
     ABSTAIN = "abstain"
 
 
 # Create simplified test-specific implementations
-from dataclasses import dataclass, field
 import uuid
+from dataclasses import dataclass, field
 
 
 @dataclass
 class AgentVote:
     """Vote from an agent in the consensus process."""
+
     agent_id: str
     vote: VoteType
     reasoning: str
@@ -103,6 +104,7 @@ class AgentVote:
 @dataclass
 class DeliberationItem:
     """Item in the deliberation queue."""
+
     item_id: str = field(default_factory=lambda: str(uuid.uuid4()))
     message: AgentMessage = None
     status: DeliberationStatus = DeliberationStatus.PENDING
@@ -124,24 +126,25 @@ class DeliberationQueue:
 
     def __init__(self):
         self.queue = {}
-        self.stats = {'total_queued': 0}
+        self.stats = {"total_queued": 0}
 
-    async def enqueue_for_deliberation(self, message, requires_human_review=True,
-                                       requires_multi_agent_vote=False,
-                                       timeout_seconds=300):
+    async def enqueue_for_deliberation(
+        self,
+        message,
+        requires_human_review=True,
+        requires_multi_agent_vote=False,
+        timeout_seconds=300,
+    ):
         item = DeliberationItem(message=message, timeout_seconds=timeout_seconds)
         self.queue[item.item_id] = item
-        self.stats['total_queued'] += 1
+        self.stats["total_queued"] += 1
         return item.item_id
 
     def get_queue_status(self):
         return {
-            'queue_size': len(self.queue),
-            'items': [
-                {'item_id': k, 'status': v.status.value}
-                for k, v in self.queue.items()
-            ],
-            'stats': self.stats,
+            "queue_size": len(self.queue),
+            "items": [{"item_id": k, "status": v.status.value} for k, v in self.queue.items()],
+            "stats": self.stats,
         }
 
     def get_item_details(self, item_id):
@@ -149,13 +152,10 @@ class DeliberationQueue:
         if not item:
             return None
         return {
-            'item_id': item.item_id,
-            'message_id': item.message.message_id if item.message else None,
-            'status': item.status.value,
-            'votes': [
-                {'agent_id': v.agent_id, 'vote': v.vote.value}
-                for v in item.current_votes
-            ]
+            "item_id": item.item_id,
+            "message_id": item.message.message_id if item.message else None,
+            "status": item.status.value,
+            "votes": [{"agent_id": v.agent_id, "vote": v.vote.value} for v in item.current_votes],
         }
 
     async def submit_agent_vote(self, item_id, agent_id, vote, reasoning, confidence=1.0):
@@ -167,9 +167,11 @@ class DeliberationQueue:
             existing.vote = vote
             existing.reasoning = reasoning
         else:
-            item.current_votes.append(AgentVote(
-                agent_id=agent_id, vote=vote, reasoning=reasoning, confidence_score=confidence
-            ))
+            item.current_votes.append(
+                AgentVote(
+                    agent_id=agent_id, vote=vote, reasoning=reasoning, confidence_score=confidence
+                )
+            )
         return True
 
 
@@ -186,7 +188,7 @@ def get_deliberation_queue():
 def calculate_message_impact(content):
     """Simple impact calculation for testing."""
     text = str(content).lower()
-    if 'delete' in text or 'production' in text or 'irreversible' in text:
+    if "delete" in text or "production" in text or "irreversible" in text:
         return 0.8
     return 0.3
 
@@ -198,34 +200,33 @@ def get_impact_scorer():
 class AdaptiveRouter:
     """Simplified adaptive router for testing."""
 
-    def __init__(self, impact_threshold=0.5, deliberation_timeout=300,
-                 enable_learning=False):
+    def __init__(self, impact_threshold=0.5, deliberation_timeout=300, enable_learning=False):
         self.impact_threshold = impact_threshold
         self.deliberation_timeout = deliberation_timeout
         self.enable_learning = enable_learning
         self.performance_metrics = {
-            'total_messages': 0,
-            'fast_lane_count': 0,
-            'deliberation_count': 0,
+            "total_messages": 0,
+            "fast_lane_count": 0,
+            "deliberation_count": 0,
         }
         self._queue = DeliberationQueue()
 
     async def route_message(self, message):
-        self.performance_metrics['total_messages'] += 1
+        self.performance_metrics["total_messages"] += 1
         if message.impact_score >= self.impact_threshold:
-            self.performance_metrics['deliberation_count'] += 1
+            self.performance_metrics["deliberation_count"] += 1
             item_id = await self._queue.enqueue_for_deliberation(message)
             return {
-                'lane': 'deliberation',
-                'item_id': item_id,
-                'requires_deliberation': True,
+                "lane": "deliberation",
+                "item_id": item_id,
+                "requires_deliberation": True,
             }
         else:
-            self.performance_metrics['fast_lane_count'] += 1
+            self.performance_metrics["fast_lane_count"] += 1
             message.status = MessageStatus.DELIVERED
             return {
-                'lane': 'fast',
-                'requires_deliberation': False,
+                "lane": "fast",
+                "requires_deliberation": False,
             }
 
     def get_routing_stats(self):
@@ -237,10 +238,10 @@ class AdaptiveRouter:
     async def force_deliberation(self, message, reason=""):
         item_id = await self._queue.enqueue_for_deliberation(message)
         return {
-            'lane': 'deliberation',
-            'item_id': item_id,
-            'forced': True,
-            'force_reason': reason,
+            "lane": "deliberation",
+            "item_id": item_id,
+            "forced": True,
+            "force_reason": reason,
         }
 
 
@@ -284,7 +285,7 @@ class TestDeliberationQueue:
 
         assert item_id is not None
         assert item_id in queue.queue
-        assert queue.stats['total_queued'] == 1
+        assert queue.stats["total_queued"] == 1
 
     @pytest.mark.asyncio
     async def test_queue_status(self, queue, test_message):
@@ -293,9 +294,9 @@ class TestDeliberationQueue:
 
         status = queue.get_queue_status()
 
-        assert status['queue_size'] == 1
-        assert len(status['items']) == 1
-        assert status['stats']['total_queued'] == 1
+        assert status["queue_size"] == 1
+        assert len(status["items"]) == 1
+        assert status["stats"]["total_queued"] == 1
 
     @pytest.mark.asyncio
     async def test_item_details(self, queue, test_message):
@@ -305,9 +306,9 @@ class TestDeliberationQueue:
         details = queue.get_item_details(item_id)
 
         assert details is not None
-        assert details['item_id'] == item_id
-        assert details['message_id'] == test_message.message_id
-        assert details['status'] == DeliberationStatus.PENDING.value
+        assert details["item_id"] == item_id
+        assert details["message_id"] == test_message.message_id
+        assert details["status"] == DeliberationStatus.PENDING.value
 
     @pytest.mark.asyncio
     async def test_item_details_not_found(self, queue):
@@ -387,9 +388,7 @@ class TestVoting:
     @pytest.mark.asyncio
     async def test_submit_agent_vote(self, queue, test_message):
         """Test submitting an agent vote."""
-        item_id = await queue.enqueue_for_deliberation(
-            test_message, requires_multi_agent_vote=True
-        )
+        item_id = await queue.enqueue_for_deliberation(test_message, requires_multi_agent_vote=True)
 
         result = await queue.submit_agent_vote(
             item_id=item_id,
@@ -401,8 +400,8 @@ class TestVoting:
 
         assert result
         details = queue.get_item_details(item_id)
-        assert len(details['votes']) == 1
-        assert details['votes'][0]['vote'] == VoteType.APPROVE.value
+        assert len(details["votes"]) == 1
+        assert details["votes"][0]["vote"] == VoteType.APPROVE.value
 
     @pytest.mark.asyncio
     async def test_vote_update(self, queue, test_message):
@@ -427,9 +426,9 @@ class TestVoting:
 
         details = queue.get_item_details(item_id)
         # Should still only have one vote from agent1
-        agent1_votes = [v for v in details['votes'] if v['agent_id'] == 'agent1']
+        agent1_votes = [v for v in details["votes"] if v["agent_id"] == "agent1"]
         assert len(agent1_votes) == 1
-        assert agent1_votes[0]['vote'] == VoteType.REJECT.value
+        assert agent1_votes[0]["vote"] == VoteType.REJECT.value
 
     @pytest.mark.asyncio
     async def test_vote_for_nonexistent_item(self, queue):
@@ -523,8 +522,8 @@ class TestAdaptiveRouter:
         """Test low-risk messages go to fast lane."""
         decision = await router.route_message(low_risk_message)
 
-        assert decision['lane'] == 'fast'
-        assert decision['requires_deliberation'] is False
+        assert decision["lane"] == "fast"
+        assert decision["requires_deliberation"] is False
         assert low_risk_message.status == MessageStatus.DELIVERED
 
     @pytest.mark.asyncio
@@ -532,9 +531,9 @@ class TestAdaptiveRouter:
         """Test high-risk messages go to deliberation."""
         decision = await router.route_message(high_risk_message)
 
-        assert decision['lane'] == 'deliberation'
-        assert decision['requires_deliberation'] is True
-        assert 'item_id' in decision
+        assert decision["lane"] == "deliberation"
+        assert decision["requires_deliberation"] is True
+        assert "item_id" in decision
 
     @pytest.mark.asyncio
     async def test_routing_stats(self, router, low_risk_message):
@@ -543,8 +542,8 @@ class TestAdaptiveRouter:
 
         stats = router.get_routing_stats()
 
-        assert stats['total_messages'] == 1
-        assert stats['fast_lane_count'] == 1
+        assert stats["total_messages"] == 1
+        assert stats["fast_lane_count"] == 1
 
     def test_set_impact_threshold(self, router):
         """Test setting impact threshold."""
@@ -563,14 +562,11 @@ class TestAdaptiveRouter:
     @pytest.mark.asyncio
     async def test_force_deliberation(self, router, low_risk_message):
         """Test forcing message into deliberation."""
-        decision = await router.force_deliberation(
-            low_risk_message,
-            reason="manual_override"
-        )
+        decision = await router.force_deliberation(low_risk_message, reason="manual_override")
 
-        assert decision['lane'] == 'deliberation'
-        assert decision.get('forced') is True
-        assert decision.get('force_reason') == "manual_override"
+        assert decision["lane"] == "deliberation"
+        assert decision.get("forced") is True
+        assert decision.get("force_reason") == "manual_override"
 
 
 class TestDeliberationStatus:
@@ -578,8 +574,14 @@ class TestDeliberationStatus:
 
     def test_all_statuses_exist(self):
         """Test all expected statuses exist."""
-        expected = ['PENDING', 'UNDER_REVIEW', 'APPROVED', 'REJECTED',
-                   'TIMED_OUT', 'CONSENSUS_REACHED']
+        expected = [
+            "PENDING",
+            "UNDER_REVIEW",
+            "APPROVED",
+            "REJECTED",
+            "TIMED_OUT",
+            "CONSENSUS_REACHED",
+        ]
 
         for status_name in expected:
             assert hasattr(DeliberationStatus, status_name)

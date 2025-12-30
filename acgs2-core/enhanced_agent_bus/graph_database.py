@@ -6,10 +6,11 @@ Supports Neo4j and FalkorDB for GraphRAG operations.
 """
 
 import logging
-from typing import List, Dict, Any, Optional
 from abc import ABC, abstractmethod
+from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
+
 
 class GraphDatabaseManager(ABC):
     """Abstract base class for graph database operations."""
@@ -25,12 +26,16 @@ class GraphDatabaseManager(ABC):
         pass
 
     @abstractmethod
-    async def query(self, cypher: str, params: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
+    async def query(
+        self, cypher: str, params: Optional[Dict[str, Any]] = None
+    ) -> List[Dict[str, Any]]:
         """Execute a Cypher query."""
         pass
 
     @abstractmethod
-    async def add_relationships(self, entities: List[Dict[str, Any]], relationships: List[Dict[str, Any]]) -> bool:
+    async def add_relationships(
+        self, entities: List[Dict[str, Any]], relationships: List[Dict[str, Any]]
+    ) -> bool:
         """Add entities and their relationships to the graph."""
         pass
 
@@ -42,17 +47,21 @@ class GraphDatabaseManager(ABC):
 
 class MockGraphManager(GraphDatabaseManager):
     """Mock implementation for testing and initial development."""
-    
+
     async def connect(self) -> bool:
         return True
 
     async def disconnect(self) -> None:
         pass
 
-    async def query(self, cypher: str, params: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
+    async def query(
+        self, cypher: str, params: Optional[Dict[str, Any]] = None
+    ) -> List[Dict[str, Any]]:
         return []
 
-    async def add_relationships(self, entities: List[Dict[str, Any]], relationships: List[Dict[str, Any]]) -> bool:
+    async def add_relationships(
+        self, entities: List[Dict[str, Any]], relationships: List[Dict[str, Any]]
+    ) -> bool:
         return True
 
     async def get_multi_hop_context(self, entity_name: str, hops: int = 2) -> List[Dict[str, Any]]:
@@ -60,9 +69,14 @@ class MockGraphManager(GraphDatabaseManager):
         if "supply chain" in entity_name.lower():
             return [
                 {"entity": "Supply Chain", "relation": "EXTENDS_TO", "target": "Asian region"},
-                {"entity": "Asian region", "relation": "HAS_RISK", "target": "Q3 Trade limitations"}
+                {
+                    "entity": "Asian region",
+                    "relation": "HAS_RISK",
+                    "target": "Q3 Trade limitations",
+                },
             ]
         return []
+
 
 def create_graph_db_manager(db_type: str = "mock", **kwargs) -> GraphDatabaseManager:
     """Factory function for graph database managers."""

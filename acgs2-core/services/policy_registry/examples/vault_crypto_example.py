@@ -18,7 +18,6 @@ Requirements:
 """
 
 import asyncio
-import json
 import os
 import sys
 from datetime import datetime, timezone
@@ -29,12 +28,11 @@ if parent_dir not in sys.path:
     sys.path.insert(0, parent_dir)
 
 from app.services.vault_crypto_service import (
-    VaultCryptoService,
+    CONSTITUTIONAL_HASH,
     VaultConfig,
-    VaultKeyType,
+    VaultCryptoService,
     VaultOperation,
     create_vault_crypto_service,
-    CONSTITUTIONAL_HASH,
 )
 
 # Separator for output formatting
@@ -76,7 +74,7 @@ async def example_key_generation():
             key_name="example-ed25519",
             key_type="ed25519",
         )
-        print(f"\nEd25519 Key:")
+        print("\nEd25519 Key:")
         print(f"  Success: {ed_result['success']}")
         print(f"  Key name: {ed_result['key_name']}")
         print(f"  Vault path: {ed_result['vault_path']}")
@@ -87,7 +85,7 @@ async def example_key_generation():
             key_name="example-ecdsa",
             key_type="ecdsa-p256",
         )
-        print(f"\nECDSA-P256 Key:")
+        print("\nECDSA-P256 Key:")
         print(f"  Success: {ecdsa_result['success']}")
         print(f"  Key name: {ecdsa_result['key_name']}")
 
@@ -96,7 +94,7 @@ async def example_key_generation():
             key_name="example-rsa",
             key_type="rsa-2048",
         )
-        print(f"\nRSA-2048 Key:")
+        print("\nRSA-2048 Key:")
         print(f"  Success: {rsa_result['success']}")
         print(f"  Key name: {rsa_result['key_name']}")
 
@@ -233,7 +231,7 @@ async def example_policy_signature():
             key_name="policy-signing-key",
         )
 
-        print(f"\nSignature created:")
+        print("\nSignature created:")
         print(f"  Signature ID: {signature.signature_id}")
         print(f"  Policy ID: {signature.policy_id}")
         print(f"  Version: {signature.version}")
@@ -388,7 +386,7 @@ async def example_with_vault_server():
                 # Sign some data
                 test_data = b"Data signed with Vault Transit"
                 signature = await service.sign(key_name=key_name, data=test_data)
-                print(f"Signed data with Vault Transit")
+                print("Signed data with Vault Transit")
 
                 # Verify the signature
                 is_valid = await service.verify(
@@ -435,7 +433,7 @@ async def example_helper_function():
         fallback_enabled=True,
     )
 
-    print(f"\nService created with helper function")
+    print("\nService created with helper function")
     print(f"Initialized: {service._initialized}")
     print(f"Vault available: {service._vault_available}")
 

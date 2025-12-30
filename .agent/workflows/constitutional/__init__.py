@@ -9,10 +9,10 @@ Constitutional governance workflow implementations:
 - GovernanceDecisionWorkflow: AI governance decisions
 """
 
-from .validation import ConstitutionalValidationWorkflow, ValidationResult
 from .compliance import ComplianceCheckWorkflow
-from .policy_evaluation import PolicyEvaluationWorkflow
 from .governance_decision import GovernanceDecisionWorkflow
+from .policy_evaluation import PolicyEvaluationWorkflow
+from .validation import ConstitutionalValidationWorkflow, ValidationResult
 
 __all__ = [
     "ConstitutionalValidationWorkflow",

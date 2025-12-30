@@ -11,34 +11,32 @@ Comprehensive tests for MACI role separation enforcement including:
 """
 
 import pytest
-from datetime import datetime, timezone
 
 try:
     from shared.constants import CONSTITUTIONAL_HASH
 except ImportError:
     CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
 
-from enhanced_agent_bus.maci_enforcement import (
-    MACIRole,
-    MACIAction,
-    MACIAgentRecord,
-    MACIValidationContext,
-    MACIValidationResult,
-    MACIRoleRegistry,
-    MACIEnforcer,
-    MACIValidationStrategy,
-    ROLE_PERMISSIONS,
-    VALIDATION_CONSTRAINTS,
-    create_maci_enforcement_middleware,
-)
 from enhanced_agent_bus.exceptions import (
-    MACIRoleViolationError,
-    MACISelfValidationError,
     MACICrossRoleValidationError,
     MACIRoleNotAssignedError,
+    MACIRoleViolationError,
+    MACISelfValidationError,
+)
+from enhanced_agent_bus.maci_enforcement import (
+    ROLE_PERMISSIONS,
+    VALIDATION_CONSTRAINTS,
+    MACIAction,
+    MACIAgentRecord,
+    MACIEnforcer,
+    MACIRole,
+    MACIRoleRegistry,
+    MACIValidationContext,
+    MACIValidationResult,
+    MACIValidationStrategy,
+    create_maci_enforcement_middleware,
 )
 from enhanced_agent_bus.models import AgentMessage, MessageType
-
 
 # =============================================================================
 # Fixtures
@@ -340,9 +338,7 @@ class TestMACIEnforcerSelfValidation:
     """Tests for Gödel bypass prevention (self-validation)."""
 
     @pytest.mark.asyncio
-    async def test_judicial_cannot_validate_own_output(
-        self, maci_enforcer, maci_registry
-    ):
+    async def test_judicial_cannot_validate_own_output(self, maci_enforcer, maci_registry):
         """Test Judicial cannot validate its own output."""
         await maci_registry.register_agent("jud-1", MACIRole.JUDICIAL)
         await maci_registry.record_output("jud-1", "jud-output-1")
@@ -357,9 +353,7 @@ class TestMACIEnforcerSelfValidation:
         assert exc_info.value.output_id == "jud-output-1"
 
     @pytest.mark.asyncio
-    async def test_judicial_can_validate_other_agent_output(
-        self, maci_enforcer, maci_registry
-    ):
+    async def test_judicial_can_validate_other_agent_output(self, maci_enforcer, maci_registry):
         """Test Judicial can validate another agent's output."""
         await maci_registry.register_agent("jud-1", MACIRole.JUDICIAL)
         await maci_registry.register_agent("exec-1", MACIRole.EXECUTIVE)
@@ -373,9 +367,7 @@ class TestMACIEnforcerSelfValidation:
         assert result.is_valid is True
 
     @pytest.mark.asyncio
-    async def test_self_validation_detected_via_registry(
-        self, maci_enforcer, maci_registry
-    ):
+    async def test_self_validation_detected_via_registry(self, maci_enforcer, maci_registry):
         """Test self-validation is detected even without local tracking."""
         await maci_registry.register_agent("jud-1", MACIRole.JUDICIAL)
         # Record output directly to registry
@@ -398,9 +390,7 @@ class TestMACIEnforcerCrossRoleValidation:
     """Tests for cross-role validation constraints."""
 
     @pytest.mark.asyncio
-    async def test_judicial_cannot_validate_judicial_output(
-        self, maci_enforcer, maci_registry
-    ):
+    async def test_judicial_cannot_validate_judicial_output(self, maci_enforcer, maci_registry):
         """Test Judicial cannot validate another Judicial's output."""
         await maci_registry.register_agent("jud-1", MACIRole.JUDICIAL)
         await maci_registry.register_agent("jud-2", MACIRole.JUDICIAL)
@@ -416,9 +406,7 @@ class TestMACIEnforcerCrossRoleValidation:
         assert exc_info.value.target_role == "judicial"
 
     @pytest.mark.asyncio
-    async def test_judicial_can_validate_executive_output(
-        self, maci_enforcer, maci_registry
-    ):
+    async def test_judicial_can_validate_executive_output(self, maci_enforcer, maci_registry):
         """Test Judicial can validate Executive's output."""
         await maci_registry.register_agent("jud-1", MACIRole.JUDICIAL)
         await maci_registry.register_agent("exec-1", MACIRole.EXECUTIVE)
@@ -432,9 +420,7 @@ class TestMACIEnforcerCrossRoleValidation:
         assert result.is_valid is True
 
     @pytest.mark.asyncio
-    async def test_judicial_can_validate_legislative_output(
-        self, maci_enforcer, maci_registry
-    ):
+    async def test_judicial_can_validate_legislative_output(self, maci_enforcer, maci_registry):
         """Test Judicial can validate Legislative's output."""
         await maci_registry.register_agent("jud-1", MACIRole.JUDICIAL)
         await maci_registry.register_agent("leg-1", MACIRole.LEGISLATIVE)
@@ -448,9 +434,7 @@ class TestMACIEnforcerCrossRoleValidation:
         assert result.is_valid is True
 
     @pytest.mark.asyncio
-    async def test_cross_role_validation_with_target_agent_id(
-        self, maci_enforcer, maci_registry
-    ):
+    async def test_cross_role_validation_with_target_agent_id(self, maci_enforcer, maci_registry):
         """Test cross-role validation using target_agent_id."""
         await maci_registry.register_agent("jud-1", MACIRole.JUDICIAL)
         await maci_registry.register_agent("jud-2", MACIRole.JUDICIAL)
@@ -482,9 +466,7 @@ class TestMACIEnforcerUnregisteredAgents:
         assert exc_info.value.agent_id == "unknown-agent"
 
     @pytest.mark.asyncio
-    async def test_non_strict_mode_allows_unregistered(
-        self, maci_enforcer_non_strict
-    ):
+    async def test_non_strict_mode_allows_unregistered(self, maci_enforcer_non_strict):
         """Test non-strict mode allows unregistered agents."""
         result = await maci_enforcer_non_strict.validate_action(
             agent_id="unknown-agent",
@@ -502,9 +484,7 @@ class TestMACIValidationStrategy:
     """Tests for MACI validation strategy."""
 
     @pytest.mark.asyncio
-    async def test_validate_governance_request_from_executive(
-        self, maci_strategy, maci_registry
-    ):
+    async def test_validate_governance_request_from_executive(self, maci_strategy, maci_registry):
         """Test validating GOVERNANCE_REQUEST from Executive."""
         await maci_registry.register_agent("exec-1", MACIRole.EXECUTIVE)
 
@@ -542,9 +522,7 @@ class TestMACIValidationStrategy:
         assert "judicial" in error.lower()
 
     @pytest.mark.asyncio
-    async def test_validate_validation_request_from_judicial(
-        self, maci_strategy, maci_registry
-    ):
+    async def test_validate_validation_request_from_judicial(self, maci_strategy, maci_registry):
         """Test VALIDATION_REQUEST from Judicial."""
         await maci_registry.register_agent("jud-1", MACIRole.JUDICIAL)
         await maci_registry.register_agent("exec-1", MACIRole.EXECUTIVE)
@@ -996,9 +974,7 @@ class TestReadLockConcurrency:
             await asyncio.sleep(0.001)
             return await maci_registry.get_output_producer(f"output-{i}")
 
-        results = await asyncio.gather(
-            *[record_and_lookup(i) for i in range(10)]
-        )
+        results = await asyncio.gather(*[record_and_lookup(i) for i in range(10)])
 
         # All lookups should return the correct producer
         assert all(r == "exec-1" for r in results)

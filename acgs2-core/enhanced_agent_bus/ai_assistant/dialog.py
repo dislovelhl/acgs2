@@ -9,12 +9,11 @@ and policy-based action selection.
 import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from typing import Any, Callable, Dict, List, Optional, Union
 from enum import Enum
+from typing import Any, Callable, Dict, List, Optional, Union
 
 from .context import ConversationContext, ConversationState
-from .nlu import NLUResult, Intent
+from .nlu import NLUResult
 
 # Import centralized constitutional hash with fallback
 try:
@@ -27,6 +26,7 @@ logger = logging.getLogger(__name__)
 
 class ActionType(Enum):
     """Types of dialog actions."""
+
     RESPOND = "respond"
     ASK_QUESTION = "ask_question"
     CONFIRM = "confirm"
@@ -41,6 +41,7 @@ class ActionType(Enum):
 @dataclass
 class DialogAction:
     """Represents a dialog action to be executed."""
+
     action_type: ActionType
     parameters: Dict[str, Any] = field(default_factory=dict)
     response_template: Optional[str] = None
@@ -62,6 +63,7 @@ class DialogAction:
 @dataclass
 class FlowNode:
     """Represents a node in a conversation flow."""
+
     id: str
     name: str
     node_type: str  # 'response', 'question', 'validation', 'action', 'condition'
@@ -91,6 +93,7 @@ class FlowNode:
 @dataclass
 class ConversationFlow:
     """Defines a complete conversation flow."""
+
     id: str
     name: str
     description: str
@@ -200,11 +203,7 @@ class RuleBasedDialogPolicy(DialogPolicy):
         available_actions: List[ActionType],
     ) -> DialogAction:
         """Select action based on intent and context."""
-        intent_name = (
-            nlu_result.primary_intent.name
-            if nlu_result.primary_intent
-            else "unknown"
-        )
+        intent_name = nlu_result.primary_intent.name if nlu_result.primary_intent else "unknown"
 
         # Check for slot filling in progress
         if context.conversation_state == ConversationState.AWAITING_INPUT:
@@ -221,13 +220,9 @@ class RuleBasedDialogPolicy(DialogPolicy):
         if action:
             # Check if required slots are filled
             if action.required_slots:
-                missing_slots = self._get_missing_slots(
-                    action.required_slots, nlu_result, context
-                )
+                missing_slots = self._get_missing_slots(action.required_slots, nlu_result, context)
                 if missing_slots:
-                    return self._create_slot_filling_action(
-                        missing_slots, action
-                    )
+                    return self._create_slot_filling_action(missing_slots, action)
             return action
 
         # Use clarification for low confidence
@@ -238,10 +233,13 @@ class RuleBasedDialogPolicy(DialogPolicy):
             )
 
         # Default fallback
-        return self.intent_actions.get("unknown", DialogAction(
-            action_type=ActionType.CLARIFY,
-            response_template="I'm not sure how to help with that.",
-        ))
+        return self.intent_actions.get(
+            "unknown",
+            DialogAction(
+                action_type=ActionType.CLARIFY,
+                response_template="I'm not sure how to help with that.",
+            ),
+        )
 
     def _get_missing_slots(
         self,
@@ -253,9 +251,7 @@ class RuleBasedDialogPolicy(DialogPolicy):
         missing = []
         for slot in required_slots:
             # Check if slot is filled from entities
-            entity_filled = any(
-                e.type == slot for e in nlu_result.entities
-            )
+            entity_filled = any(e.type == slot for e in nlu_result.entities)
             # Check if slot is in context
             context_filled = context.get_slot(slot) is not None
 
@@ -314,10 +310,13 @@ class RuleBasedDialogPolicy(DialogPolicy):
                     )
                 else:
                     # More slots to fill
-                    return self._create_slot_filling_action(remaining_slots, DialogAction(
-                        action_type=ActionType.EXECUTE_TASK,
-                        **context.state_data.get("original_action", {}),
-                    ))
+                    return self._create_slot_filling_action(
+                        remaining_slots,
+                        DialogAction(
+                            action_type=ActionType.EXECUTE_TASK,
+                            **context.state_data.get("original_action", {}),
+                        ),
+                    )
 
         # Couldn't extract slot value, ask again
         return DialogAction(

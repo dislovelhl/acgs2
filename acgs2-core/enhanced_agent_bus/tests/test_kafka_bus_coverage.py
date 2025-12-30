@@ -5,35 +5,34 @@ Constitutional Hash: cdd01ef066bc6cf2
 Tests for kafka_bus.py to increase coverage.
 """
 
+from unittest.mock import AsyncMock, MagicMock
+
 import pytest
-from unittest.mock import MagicMock, AsyncMock, patch
 
 try:
+    from enhanced_agent_bus.exceptions import MessageDeliveryError
     from enhanced_agent_bus.kafka_bus import (
+        KAFKA_AVAILABLE,
+        Blackboard,
         KafkaEventBus,
         Orchestrator,
-        Blackboard,
-        KAFKA_AVAILABLE,
     )
     from enhanced_agent_bus.models import (
+        CONSTITUTIONAL_HASH,
         AgentMessage,
         MessageType,
-        CONSTITUTIONAL_HASH,
     )
-    from enhanced_agent_bus.exceptions import MessageDeliveryError
 except ImportError:
+    from exceptions import MessageDeliveryError
     from kafka_bus import (
+        KAFKA_AVAILABLE,
+        Blackboard,
         KafkaEventBus,
         Orchestrator,
-        Blackboard,
-        KAFKA_AVAILABLE,
     )
     from models import (
         AgentMessage,
-        MessageType,
-        CONSTITUTIONAL_HASH,
     )
-    from exceptions import MessageDeliveryError
 
 
 class TestKafkaEventBusInit:
@@ -50,10 +49,7 @@ class TestKafkaEventBusInit:
 
     def test_custom_init(self):
         """KafkaEventBus with custom parameters."""
-        bus = KafkaEventBus(
-            bootstrap_servers="kafka.example.com:9092",
-            client_id="custom-client"
-        )
+        bus = KafkaEventBus(bootstrap_servers="kafka.example.com:9092", client_id="custom-client")
         assert bus.bootstrap_servers == "kafka.example.com:9092"
         assert bus.client_id == "custom-client"
 

@@ -1,0 +1,29 @@
+You are helping integrate NVIDIA GPU acceleration into ACGS-2, an AI Constitutional Governance System.
+
+## Context
+Read `.kilocode-context/nvidia-gpu-acceleration.md` for full project context.
+
+## Current Task
+We need to determine if GPU acceleration is beneficial for our ML models. Our current performance is exceptional (P99 0.278ms, 6,310 RPS), so GPU may not help unless:
+- We're CPU-saturated under load
+- Batch workloads need acceleration
+- DistilBERT inference is the actual bottleneck
+
+## Priority Order
+1. **First**: Add profiling to measure actual model execution time
+2. **Then**: Evaluate RAPIDS for batch training/scoring
+3. **Finally**: Consider TensorRT only if PyTorch models are bottleneck
+
+## Key Constraints
+- Must maintain Python 3.13 compatibility
+- Cannot increase P99 latency
+- Must preserve constitutional compliance (hash: cdd01ef066bc6cf2)
+
+## Start With
+Create a profiling module at `acgs2-core/enhanced_agent_bus/profiling/model_profiler.py` that:
+1. Wraps model inference calls with timing
+2. Tracks CPU usage during inference
+3. Identifies if models are compute-bound or I/O-bound
+4. Outputs metrics to Prometheus
+
+Then we'll use the profiling data to decide GPU vs CPU.

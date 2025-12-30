@@ -7,7 +7,6 @@ Universal Search Platform for high-performance log analysis.
 Constitutional Hash: cdd01ef066bc6cf2
 """
 
-import asyncio
 import logging
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
@@ -19,7 +18,6 @@ from .models import (
     SearchDomain,
     SearchMatch,
     SearchOptions,
-    SearchResponse,
     SearchScope,
     TimeRange,
 )
@@ -29,6 +27,7 @@ logger = logging.getLogger(__name__)
 
 class AuditEventType(str, Enum):
     """Types of audit events."""
+
     GOVERNANCE_DECISION = "governance_decision"
     CONSTITUTIONAL_CHECK = "constitutional_check"
     POLICY_VIOLATION = "policy_violation"
@@ -41,6 +40,7 @@ class AuditEventType(str, Enum):
 
 class AuditSeverity(str, Enum):
     """Severity levels for audit events."""
+
     CRITICAL = "critical"
     HIGH = "high"
     MEDIUM = "medium"
@@ -51,6 +51,7 @@ class AuditSeverity(str, Enum):
 @dataclass
 class AuditEvent:
     """Parsed audit event from search results."""
+
     timestamp: datetime
     event_type: AuditEventType
     severity: AuditSeverity
@@ -103,9 +104,9 @@ class AuditEvent:
 
         # Common timestamp patterns
         patterns = [
-            r'(\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2})',  # ISO format
-            r'(\d{2}/\d{2}/\d{4} \d{2}:\d{2}:\d{2})',     # US format
-            r'\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\]', # Bracketed ISO
+            r"(\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2})",  # ISO format
+            r"(\d{2}/\d{2}/\d{4} \d{2}:\d{2}:\d{2})",  # US format
+            r"\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\]",  # Bracketed ISO
         ]
 
         for pattern in patterns:
@@ -168,12 +169,12 @@ class AuditEvent:
         import re
 
         # Look for [source] pattern
-        match = re.search(r'\[([^\]]+)\]', content)
+        match = re.search(r"\[([^\]]+)\]", content)
         if match:
             return match.group(1)
 
         # Look for source: pattern
-        match = re.search(r'(\w+):', content)
+        match = re.search(r"(\w+):", content)
         if match:
             return match.group(1)
 
@@ -185,9 +186,9 @@ class AuditEvent:
         import re
 
         # Remove timestamp and bracketed prefixes
-        message = re.sub(r'^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}\s*', '', content)
-        message = re.sub(r'^\[[^\]]+\]\s*', '', message)
-        message = re.sub(r'^(INFO|DEBUG|WARN|ERROR|CRITICAL)\s*', '', message)
+        message = re.sub(r"^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}\s*", "", content)
+        message = re.sub(r"^\[[^\]]+\]\s*", "", message)
+        message = re.sub(r"^(INFO|DEBUG|WARN|ERROR|CRITICAL)\s*", "", message)
 
         return message.strip()
 
@@ -207,6 +208,7 @@ class AuditEvent:
 @dataclass
 class AuditSearchResult:
     """Result of an audit trail search."""
+
     query: str
     events: List[AuditEvent]
     total_matches: int
@@ -221,8 +223,7 @@ class AuditSearchResult:
     @property
     def high_severity_events(self) -> List[AuditEvent]:
         return [
-            e for e in self.events
-            if e.severity in [AuditSeverity.CRITICAL, AuditSeverity.HIGH]
+            e for e in self.events if e.severity in [AuditSeverity.CRITICAL, AuditSeverity.HIGH]
         ]
 
     def filter_by_type(self, event_type: AuditEventType) -> List[AuditEvent]:
@@ -386,8 +387,7 @@ class AuditTrailSearchService:
 
         # Filter to only governance events
         result.events = [
-            e for e in result.events
-            if e.event_type == AuditEventType.GOVERNANCE_DECISION
+            e for e in result.events if e.event_type == AuditEventType.GOVERNANCE_DECISION
         ]
 
         return result
@@ -422,8 +422,7 @@ class AuditTrailSearchService:
 
         # Filter to constitutional events
         result.events = [
-            e for e in result.events
-            if e.event_type == AuditEventType.CONSTITUTIONAL_CHECK
+            e for e in result.events if e.event_type == AuditEventType.CONSTITUTIONAL_CHECK
         ]
 
         return result
@@ -454,10 +453,7 @@ class AuditTrailSearchService:
         )
 
         # Filter to violation events
-        events = [
-            e for e in result.events
-            if e.event_type == AuditEventType.POLICY_VIOLATION
-        ]
+        events = [e for e in result.events if e.event_type == AuditEventType.POLICY_VIOLATION]
 
         if severity:
             events = [e for e in events if e.severity == severity]
@@ -491,10 +487,7 @@ class AuditTrailSearchService:
         )
 
         # Filter to security events
-        events = [
-            e for e in result.events
-            if e.event_type == AuditEventType.SECURITY_EVENT
-        ]
+        events = [e for e in result.events if e.event_type == AuditEventType.SECURITY_EVENT]
 
         if only_critical:
             events = [e for e in events if e.severity == AuditSeverity.CRITICAL]
@@ -530,10 +523,7 @@ class AuditTrailSearchService:
         )
 
         # Filter to error events
-        events = [
-            e for e in result.events
-            if e.event_type == AuditEventType.SYSTEM_ERROR
-        ]
+        events = [e for e in result.events if e.event_type == AuditEventType.SYSTEM_ERROR]
 
         if component:
             events = [e for e in events if component.lower() in e.source.lower()]
@@ -567,10 +557,7 @@ class AuditTrailSearchService:
             time_range=(start_time, end_time),
         )
 
-        result.events = [
-            e for e in result.events
-            if e.severity == AuditSeverity.CRITICAL
-        ]
+        result.events = [e for e in result.events if e.severity == AuditSeverity.CRITICAL]
 
         return result
 
@@ -620,11 +607,9 @@ class AuditTrailSearchService:
             "duration_ms": result.duration_ms,
             "by_event_type": type_counts,
             "by_severity": severity_counts,
-            "by_source": dict(sorted(
-                source_counts.items(),
-                key=lambda x: x[1],
-                reverse=True
-            )[:20]),  # Top 20 sources
+            "by_source": dict(
+                sorted(source_counts.items(), key=lambda x: x[1], reverse=True)[:20]
+            ),  # Top 20 sources
             "critical_count": severity_counts.get("critical", 0),
             "high_count": severity_counts.get("high", 0),
             "time_range": {

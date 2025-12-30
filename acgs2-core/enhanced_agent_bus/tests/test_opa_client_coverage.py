@@ -5,33 +5,32 @@ Constitutional Hash: cdd01ef066bc6cf2
 Extended tests to increase opa_client.py coverage.
 """
 
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
-from unittest.mock import MagicMock, AsyncMock, patch
-import hashlib
-import json
 
 try:
-    from enhanced_agent_bus.opa_client import (
-        OPAClient,
-        get_opa_client,
-        initialize_opa_client,
-        close_opa_client,
-        get_redis_url,
-        REDIS_AVAILABLE,
-        OPA_SDK_AVAILABLE,
-    )
     from enhanced_agent_bus.models import CONSTITUTIONAL_HASH
-except ImportError:
-    from opa_client import (
-        OPAClient,
-        get_opa_client,
-        initialize_opa_client,
-        close_opa_client,
-        get_redis_url,
-        REDIS_AVAILABLE,
+    from enhanced_agent_bus.opa_client import (
         OPA_SDK_AVAILABLE,
+        REDIS_AVAILABLE,
+        OPAClient,
+        close_opa_client,
+        get_opa_client,
+        get_redis_url,
+        initialize_opa_client,
     )
+except ImportError:
     from models import CONSTITUTIONAL_HASH
+    from opa_client import (
+        OPA_SDK_AVAILABLE,
+        REDIS_AVAILABLE,
+        OPAClient,
+        close_opa_client,
+        get_opa_client,
+        get_redis_url,
+        initialize_opa_client,
+    )
 
 
 class TestOPAClientInit:
@@ -106,7 +105,7 @@ class TestOPAClientContextManager:
         """__aenter__ initializes the client."""
         client = OPAClient()
 
-        with patch.object(client, 'initialize', new_callable=AsyncMock) as mock_init:
+        with patch.object(client, "initialize", new_callable=AsyncMock) as mock_init:
             result = await client.__aenter__()
             mock_init.assert_called_once()
             assert result is client
@@ -116,7 +115,7 @@ class TestOPAClientContextManager:
         """__aexit__ closes the client."""
         client = OPAClient()
 
-        with patch.object(client, 'close', new_callable=AsyncMock) as mock_close:
+        with patch.object(client, "close", new_callable=AsyncMock) as mock_close:
             await client.__aexit__(None, None, None)
             mock_close.assert_called_once()
 
@@ -191,10 +190,8 @@ class TestOPAClientEvaluatePolicy:
         # Pre-populate in-memory cache with proper structure
         cache_key = client._generate_cache_key(policy_path, input_data)
         import time
-        client._memory_cache[cache_key] = {
-            "result": expected,
-            "timestamp": time.time()
-        }
+
+        client._memory_cache[cache_key] = {"result": expected, "timestamp": time.time()}
 
         result = await client.evaluate_policy(input_data, policy_path)
         assert result == expected
@@ -212,7 +209,10 @@ class TestOPAClientEvaluatePolicy:
         result = await client.evaluate_policy("data.test.allow", {"user": "alice"})
 
         # Fail closed should return deny
-        assert result.get("allow", result.get("result", False)) is False or "denied" in str(result).lower()
+        assert (
+            result.get("allow", result.get("result", False)) is False
+            or "denied" in str(result).lower()
+        )
 
     @pytest.mark.asyncio
     async def test_evaluate_fail_open_on_error(self):
@@ -227,7 +227,10 @@ class TestOPAClientEvaluatePolicy:
         result = await client.evaluate_policy("data.test.allow", {"user": "alice"})
 
         # Fail open should return allow
-        assert result.get("allow", result.get("result", True)) is True or "warning" in str(result).lower()
+        assert (
+            result.get("allow", result.get("result", True)) is True
+            or "warning" in str(result).lower()
+        )
 
 
 class TestOPAClientValidateConstitutional:
@@ -242,7 +245,7 @@ class TestOPAClientValidateConstitutional:
     async def test_validate_with_correct_hash(self, client):
         """validate_constitutional passes with correct hash."""
         # Mock evaluate_policy to return success
-        with patch.object(client, 'evaluate_policy', new_callable=AsyncMock) as mock_eval:
+        with patch.object(client, "evaluate_policy", new_callable=AsyncMock) as mock_eval:
             mock_eval.return_value = {"allowed": True, "reason": "Success"}
 
             message = {
@@ -266,7 +269,7 @@ class TestOPAClientCheckAgentAuthorization:
     @pytest.mark.asyncio
     async def test_check_authorization(self, client):
         """check_agent_authorization returns authorization result."""
-        with patch.object(client, 'evaluate_policy', new_callable=AsyncMock) as mock_eval:
+        with patch.object(client, "evaluate_policy", new_callable=AsyncMock) as mock_eval:
             mock_eval.return_value = {"allowed": True}
 
             result = await client.check_agent_authorization(
@@ -350,7 +353,7 @@ class TestOPAClientLoadPolicy:
         mock_http.put = AsyncMock(return_value=mock_response)
         client._http_client = mock_http
 
-        policy_content = 'package test\ndefault allow = false'
+        policy_content = "package test\ndefault allow = false"
         result = await client.load_policy("test", policy_content)
 
         assert result is True
@@ -363,7 +366,7 @@ class TestOPAClientLoadPolicy:
         mock_http.put = AsyncMock(side_effect=Exception("Upload failed"))
         client._http_client = mock_http
 
-        policy_content = 'package test\ndefault allow = false'
+        policy_content = "package test\ndefault allow = false"
         result = await client.load_policy("test", policy_content)
 
         assert result is False
@@ -387,7 +390,7 @@ class TestGetRedisUrl:
 
     def test_get_redis_url_default(self):
         """get_redis_url returns default URL."""
-        with patch.dict('os.environ', {}, clear=True):
+        with patch.dict("os.environ", {}, clear=True):
             url = get_redis_url()
             assert "redis" in url.lower() or "localhost" in url
 
@@ -489,7 +492,7 @@ class TestOPAClientBundleLoading:
     async def test_load_bundle_from_url_success(self, client):
         """load_bundle_from_url successfully loads bundle."""
         mock_response = MagicMock()
-        mock_response.content = b'bundle content'
+        mock_response.content = b"bundle content"
         mock_response.raise_for_status = MagicMock()
 
         mock_http = MagicMock()
@@ -497,12 +500,10 @@ class TestOPAClientBundleLoading:
         client._http_client = mock_http
 
         # Mock _verify_bundle to return True (it's async)
-        with patch.object(client, '_verify_bundle', new_callable=AsyncMock, return_value=True):
+        with patch.object(client, "_verify_bundle", new_callable=AsyncMock, return_value=True):
             # Signature: (url, signature, public_key)
             result = await client.load_bundle_from_url(
-                "http://example.com/bundle.tar.gz",
-                "test_signature",
-                "test_public_key"
+                "http://example.com/bundle.tar.gz", "test_signature", "test_public_key"
             )
 
             # Should succeed or at least not crash
@@ -516,12 +517,10 @@ class TestOPAClientBundleLoading:
         client._http_client = mock_http
 
         # Mock rollback to also fail so we get False return
-        with patch.object(client, '_rollback_to_lkg', new_callable=AsyncMock, return_value=False):
+        with patch.object(client, "_rollback_to_lkg", new_callable=AsyncMock, return_value=False):
             # Signature: (url, signature, public_key)
             result = await client.load_bundle_from_url(
-                "http://example.com/bundle.tar.gz",
-                "test_signature",
-                "test_public_key"
+                "http://example.com/bundle.tar.gz", "test_signature", "test_public_key"
             )
 
             assert result is False
@@ -529,12 +528,12 @@ class TestOPAClientBundleLoading:
     @pytest.mark.asyncio
     async def test_verify_bundle_returns_bool(self, client):
         """_verify_bundle returns a boolean."""
-        import tempfile
         import os
+        import tempfile
 
         # Create a temporary file
-        with tempfile.NamedTemporaryFile(mode='wb', delete=False, suffix='.tar.gz') as f:
-            f.write(b'test bundle content')
+        with tempfile.NamedTemporaryFile(mode="wb", delete=False, suffix=".tar.gz") as f:
+            f.write(b"test bundle content")
             temp_path = f.name
 
         try:

@@ -5,8 +5,9 @@ Constitutional Hash: cdd01ef066bc6cf2
 Configures pytest for this module by adding the directory to sys.path,
 allowing tests to import from sibling modules despite the hyphenated directory name.
 """
-import sys
+
 import os
+import sys
 
 # Add current directory to path for local imports
 _current_dir = os.path.dirname(os.path.abspath(__file__))

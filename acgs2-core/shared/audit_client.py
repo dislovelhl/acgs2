@@ -4,12 +4,13 @@ Constitutional Hash: cdd01ef066bc6cf2
 """
 
 import logging
-import httpx
-import asyncio
-from typing import Dict, Any, List, Optional
 from dataclasses import asdict
+from typing import Any, Dict, Optional
+
+import httpx
 
 logger = logging.getLogger(__name__)
+
 
 class AuditClient:
     """
@@ -32,6 +33,7 @@ class AuditClient:
                 data = validation_result.to_dict()
             else:
                 from dataclasses import is_dataclass
+
                 if is_dataclass(validation_result):
                     data = asdict(validation_result)
                 else:
@@ -54,12 +56,15 @@ class AuditClient:
                 data = decision_log.to_dict()
             else:
                 from dataclasses import is_dataclass
+
                 if is_dataclass(decision_log):
                     data = asdict(decision_log)
                 else:
                     data = decision_log
 
-            logger.info(f"Audit decision reported: {data.get('decision')} for agent {data.get('agent_id')}")
+            logger.info(
+                f"Audit decision reported: {data.get('decision')} for agent {data.get('agent_id')}"
+            )
             # In a real setup, this would be a POST to Audit Service
             return "simulated_decision_hash"
 

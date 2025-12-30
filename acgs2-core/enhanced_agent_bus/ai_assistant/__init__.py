@@ -43,63 +43,62 @@ __version__ = "1.0.0"
 __constitutional_hash__ = CONSTITUTIONAL_HASH
 
 # Core orchestrator
-from .core import (
-    AIAssistant,
-    AssistantConfig,
-    AssistantState,
-    ProcessingResult,
-    ConversationListener,
-    create_assistant,
-)
-
 # Context management
 from .context import (
-    ConversationContext,
     ContextManager,
+    ConversationContext,
     ConversationState,
     Message,
     MessageRole,
     UserProfile,
 )
-
-# NLU components
-from .nlu import (
-    NLUEngine,
-    NLUResult,
-    IntentClassifier,
-    RuleBasedIntentClassifier,
-    EntityExtractor,
-    PatternEntityExtractor,
-    SentimentAnalyzer,
-    BasicSentimentAnalyzer,
+from .core import (
+    AIAssistant,
+    AssistantConfig,
+    AssistantState,
+    ConversationListener,
+    ProcessingResult,
+    create_assistant,
 )
 
 # Dialog management
 from .dialog import (
-    DialogManager,
-    DialogAction,
     ActionType,
-    DialogPolicy,
-    RuleBasedDialogPolicy,
     ConversationFlow,
+    DialogAction,
+    DialogManager,
+    DialogPolicy,
     FlowNode,
-)
-
-# Response generation
-from .response import (
-    ResponseGenerator,
-    TemplateResponseGenerator,
-    LLMResponseGenerator,
-    HybridResponseGenerator,
-    ResponseConfig,
-    PersonalityConfig,
+    RuleBasedDialogPolicy,
 )
 
 # Agent Bus integration
 from .integration import (
     AgentBusIntegration,
-    IntegrationConfig,
     GovernanceDecision,
+    IntegrationConfig,
+)
+
+# NLU components
+from .nlu import (
+    BasicSentimentAnalyzer,
+    EntityExtractor,
+    IntentClassifier,
+    NLUEngine,
+    NLUResult,
+    PatternEntityExtractor,
+    RuleBasedIntentClassifier,
+    SentimentAnalyzer,
+)
+
+# Response generation
+from .response import (
+    HybridResponseGenerator,
+    LLMResponseGenerator,
+    PersonalityConfig,
+    ResponseConfig,
+    ResponseGenerator,
+    TemplateResponseGenerator,
 )
 
 __all__ = [

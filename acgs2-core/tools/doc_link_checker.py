@@ -1,19 +1,21 @@
 #!/usr/bin/env python3
-import os
 import re
 import sys
 from pathlib import Path
 
 # Constitutional Hash: cdd01ef066bc6cf2
 
+
 def find_markdown_files(root_dir):
     return list(Path(root_dir).rglob("*.md"))
+
 
 def extract_links(content):
     # Matches [text](link) but not ![alt](image)
     # Also handles anchors like [text](#anchor)
-    links = re.findall(r'(?<!\!)\[.*?\]\((.*?)\)', content)
+    links = re.findall(r"(?<!\!)\[.*?\]\((.*?)\)", content)
     return links
+
 
 def check_links():
     root_dir = Path(__file__).parent.parent
@@ -26,7 +28,7 @@ def check_links():
         if "node_modules" in str(md_file) or ".git" in str(md_file):
             continue
 
-        with open(md_file, 'r', encoding='utf-8') as f:
+        with open(md_file, "r", encoding="utf-8") as f:
             content = f.read()
 
         links = extract_links(content)
@@ -54,7 +56,9 @@ def check_links():
             if not target_path.exists():
                 # Try with .md extension if it's missing (common in some markdown flavors)
                 if not target_path.with_suffix(".md").exists():
-                    errors.append(f"Broken link in {md_file.relative_to(root_dir)}: {link} (Resolved to: {target_path})")
+                    errors.append(
+                        f"Broken link in {md_file.relative_to(root_dir)}: {link} (Resolved to: {target_path})"
+                    )
 
     if errors:
         print("Found broken internal links:")
@@ -64,6 +68,7 @@ def check_links():
 
     print("All internal links are valid.")
     return True
+
 
 if __name__ == "__main__":
     if not check_links():

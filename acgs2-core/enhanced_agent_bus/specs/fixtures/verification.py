@@ -5,11 +5,11 @@ Constitutional Hash: cdd01ef066bc6cf2
 Fixtures for MACI role enforcement and Z3 verification testing.
 """
 
-import pytest
 from dataclasses import dataclass, field
-from typing import Optional, Dict, Any, List
 from enum import Enum
-from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional
+
+import pytest
 
 try:
     from shared.constants import CONSTITUTIONAL_HASH
@@ -103,9 +103,7 @@ class MACIAgent:
         # Check target agent role
         if target_agent:
             if target_agent.role == MACIRole.JUDICIAL:
-                raise RoleViolationError(
-                    self.name, self.role.value, "validate judicial outputs"
-                )
+                raise RoleViolationError(self.name, self.role.value, "validate judicial outputs")
 
         return True
 

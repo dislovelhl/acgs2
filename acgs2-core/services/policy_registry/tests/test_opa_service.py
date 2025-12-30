@@ -10,12 +10,10 @@ Comprehensive test coverage for OPAService including:
 - Error handling
 """
 
-import hashlib
-import time
-import pytest
 from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
-import httpx
+
+import pytest
 
 # Constitutional hash constant
 CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
@@ -25,8 +23,10 @@ CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
 # Mock settings for testing
 # =============================================================================
 
+
 class MockOPASettings:
     """Mock OPA settings for testing."""
+
     def __init__(self, url: str = "http://localhost:8181", fail_closed: bool = True):
         self.url = url
         self.fail_closed = fail_closed
@@ -34,6 +34,7 @@ class MockOPASettings:
 
 class MockSettings:
     """Mock settings object."""
+
     def __init__(self, url: str = "http://localhost:8181", fail_closed: bool = True):
         self.opa = MockOPASettings(url, fail_closed)
 
@@ -41,6 +42,7 @@ class MockSettings:
 # =============================================================================
 # Fixtures
 # =============================================================================
+
 
 @pytest.fixture
 def mock_settings_fail_closed():
@@ -57,27 +59,20 @@ def mock_settings_fail_open():
 @pytest.fixture
 def sample_user():
     """Sample user data for authorization tests."""
-    return {
-        "agent_id": "agent-001",
-        "role": "admin",
-        "tenant_id": "tenant-001"
-    }
+    return {"agent_id": "agent-001", "role": "admin", "tenant_id": "tenant-001"}
 
 
 @pytest.fixture
 def sample_operator_user():
     """Sample operator user data."""
-    return {
-        "agent_id": "agent-002",
-        "role": "operator",
-        "tenant_id": "tenant-001"
-    }
+    return {"agent_id": "agent-002", "role": "operator", "tenant_id": "tenant-001"}
 
 
 @pytest.fixture
 def clear_auth_cache():
     """Clear the authorization cache before each test."""
     import app.services.opa_service as opa_module
+
     opa_module._auth_cache.clear()
     yield
     opa_module._auth_cache.clear()
@@ -86,6 +81,7 @@ def clear_auth_cache():
 # =============================================================================
 # Cache Key Generation Tests
 # =============================================================================
+
 
 class TestCacheKeyGeneration:
     """Tests for authorization cache key generation."""
@@ -166,6 +162,7 @@ class TestCacheKeyGeneration:
 # Cache Behavior Tests
 # =============================================================================
 
+
 class TestCacheBehavior:
     """Tests for authorization caching behavior."""
 
@@ -233,6 +230,7 @@ class TestCacheBehavior:
 # Authorization Check Tests
 # =============================================================================
 
+
 class TestAuthorizationCheck:
     """Tests for OPA authorization checking."""
 
@@ -258,9 +256,7 @@ class TestAuthorizationCheck:
                 mock_instance.__aexit__.return_value = None
                 mock_client.return_value = mock_instance
 
-                result = await service.check_authorization(
-                    sample_user, "read", "policies"
-                )
+                result = await service.check_authorization(sample_user, "read", "policies")
 
                 assert result is True
 
@@ -285,9 +281,7 @@ class TestAuthorizationCheck:
                 mock_instance.__aexit__.return_value = None
                 mock_client.return_value = mock_instance
 
-                result = await service.check_authorization(
-                    sample_user, "delete", "system"
-                )
+                result = await service.check_authorization(sample_user, "delete", "system")
 
                 assert result is False
 
@@ -313,14 +307,10 @@ class TestAuthorizationCheck:
                 mock_client.return_value = mock_instance
 
                 # First call
-                result1 = await service.check_authorization(
-                    sample_user, "read", "policies"
-                )
+                result1 = await service.check_authorization(sample_user, "read", "policies")
 
                 # Second call (should use cache)
-                result2 = await service.check_authorization(
-                    sample_user, "read", "policies"
-                )
+                result2 = await service.check_authorization(sample_user, "read", "policies")
 
                 assert result1 is True
                 assert result2 is True
@@ -348,9 +338,7 @@ class TestAuthorizationCheck:
                 mock_instance.__aexit__.return_value = None
                 mock_client.return_value = mock_instance
 
-                await service.check_authorization(
-                    sample_user, "write", "bundles"
-                )
+                await service.check_authorization(sample_user, "write", "bundles")
 
                 # Verify the request
                 call_args = mock_instance.post.call_args
@@ -366,6 +354,7 @@ class TestAuthorizationCheck:
 # =============================================================================
 # Fail-Closed vs Fail-Open Tests
 # =============================================================================
+
 
 class TestFailBehavior:
     """Tests for fail-closed and fail-open behavior."""
@@ -388,9 +377,7 @@ class TestFailBehavior:
                 mock_instance.__aexit__.return_value = None
                 mock_client.return_value = mock_instance
 
-                result = await service.check_authorization(
-                    sample_user, "read", "policies"
-                )
+                result = await service.check_authorization(sample_user, "read", "policies")
 
                 assert result is False
 
@@ -412,9 +399,7 @@ class TestFailBehavior:
                 mock_instance.__aexit__.return_value = None
                 mock_client.return_value = mock_instance
 
-                result = await service.check_authorization(
-                    sample_user, "read", "policies"
-                )
+                result = await service.check_authorization(sample_user, "read", "policies")
 
                 assert result is True
 
@@ -440,9 +425,7 @@ class TestFailBehavior:
                 mock_instance.__aexit__.return_value = None
                 mock_client.return_value = mock_instance
 
-                result = await service.check_authorization(
-                    sample_user, "read", "policies"
-                )
+                result = await service.check_authorization(sample_user, "read", "policies")
 
                 assert result is False
 
@@ -468,9 +451,7 @@ class TestFailBehavior:
                 mock_instance.__aexit__.return_value = None
                 mock_client.return_value = mock_instance
 
-                result = await service.check_authorization(
-                    sample_user, "read", "policies"
-                )
+                result = await service.check_authorization(sample_user, "read", "policies")
 
                 assert result is True
 
@@ -479,14 +460,15 @@ class TestFailBehavior:
 # Cache Invalidation Tests
 # =============================================================================
 
+
 class TestCacheInvalidation:
     """Tests for cache invalidation."""
 
     def test_invalidate_entire_cache(self, mock_settings_fail_closed, clear_auth_cache):
         """Test invalidating the entire cache."""
         with patch("app.services.opa_service.settings", mock_settings_fail_closed):
-            from app.services.opa_service import OPAService
             import app.services.opa_service as opa_module
+            from app.services.opa_service import OPAService
 
             service = OPAService()
 
@@ -532,8 +514,8 @@ class TestCacheInvalidation:
     def test_invalidate_by_role_clears_all(self, mock_settings_fail_closed, clear_auth_cache):
         """Test that invalidate_by_role clears entire cache (current implementation)."""
         with patch("app.services.opa_service.settings", mock_settings_fail_closed):
-            from app.services.opa_service import OPAService
             import app.services.opa_service as opa_module
+            from app.services.opa_service import OPAService
 
             service = OPAService()
 
@@ -551,6 +533,7 @@ class TestCacheInvalidation:
 # =============================================================================
 # Cache Cleanup Tests
 # =============================================================================
+
 
 class TestCacheCleanup:
     """Tests for cache cleanup behavior."""
@@ -578,6 +561,7 @@ class TestCacheCleanup:
 # =============================================================================
 # Initialization Tests
 # =============================================================================
+
 
 class TestOPAServiceInitialization:
     """Tests for OPA service initialization."""
@@ -618,6 +602,7 @@ class TestOPAServiceInitialization:
 # Constitutional Compliance Tests
 # =============================================================================
 
+
 class TestConstitutionalCompliance:
     """Tests for constitutional compliance in OPA operations."""
 
@@ -635,17 +620,17 @@ class TestConstitutionalCompliance:
             mock_response.status_code = 200
             mock_response.json.return_value = {"result": True}
 
-            with patch("httpx.AsyncClient") as mock_client, \
-                 patch("app.services.opa_service.logger") as mock_logger:
+            with (
+                patch("httpx.AsyncClient") as mock_client,
+                patch("app.services.opa_service.logger") as mock_logger,
+            ):
                 mock_instance = AsyncMock()
                 mock_instance.post.return_value = mock_response
                 mock_instance.__aenter__.return_value = mock_instance
                 mock_instance.__aexit__.return_value = None
                 mock_client.return_value = mock_instance
 
-                await service.check_authorization(
-                    sample_user, "read", "policies"
-                )
+                await service.check_authorization(sample_user, "read", "policies")
 
                 # Verify logging was called with authorization details
                 mock_logger.info.assert_called()

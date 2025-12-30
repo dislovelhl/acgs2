@@ -5,22 +5,21 @@ Constitutional Hash: cdd01ef066bc6cf2
 Tests for shared/redis_config.py
 """
 
-import pytest
 import os
 from unittest.mock import patch
 
 # Import module under test
 from shared.redis_config import (
-    RedisConfig,
     REDIS_URL,
     REDIS_URL_WITH_DB,
+    RedisConfig,
     get_redis_url,
 )
-
 
 # ============================================================================
 # RedisConfig Class Tests
 # ============================================================================
+
 
 class TestRedisConfigClass:
     """Test RedisConfig dataclass."""
@@ -33,6 +32,7 @@ class TestRedisConfigClass:
 # ============================================================================
 # RedisConfig.get_url Tests
 # ============================================================================
+
 
 class TestGetUrl:
     """Test RedisConfig.get_url method."""
@@ -79,12 +79,13 @@ class TestGetUrl:
         with patch.dict(os.environ, {"REDIS_URL": "redis://localhost:6379/"}):
             url = RedisConfig.get_url(db=2)
             # Should handle trailing slash correctly
-            assert "/2" in url or url.count('/') > 2
+            assert "/2" in url or url.count("/") > 2
 
 
 # ============================================================================
 # RedisConfig.get_connection_params Tests
 # ============================================================================
+
 
 class TestGetConnectionParams:
     """Test RedisConfig.get_connection_params method."""
@@ -135,6 +136,7 @@ class TestGetConnectionParams:
 # Module-level Constants Tests
 # ============================================================================
 
+
 class TestModuleConstants:
     """Test module-level constants."""
 
@@ -155,6 +157,7 @@ class TestModuleConstants:
 # get_redis_url Function Tests
 # ============================================================================
 
+
 class TestGetRedisUrlFunction:
     """Test get_redis_url convenience function."""
 
@@ -166,7 +169,7 @@ class TestGetRedisUrlFunction:
     def test_get_redis_url_with_db(self):
         """Test get_redis_url with database number."""
         url = get_redis_url(db=3)
-        assert "/3" in url or url.count('/') > 2
+        assert "/3" in url or url.count("/") > 2
 
     def test_get_redis_url_returns_string(self):
         """Test get_redis_url returns string."""
@@ -177,6 +180,7 @@ class TestGetRedisUrlFunction:
 # ============================================================================
 # Integration Tests
 # ============================================================================
+
 
 class TestRedisConfigIntegration:
     """Integration tests for Redis configuration."""

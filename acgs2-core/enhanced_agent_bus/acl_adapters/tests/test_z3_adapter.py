@@ -3,17 +3,18 @@ ACGS-2 Z3 Adapter Tests
 Constitutional Hash: cdd01ef066bc6cf2
 """
 
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import MagicMock, patch, AsyncMock
 
 from ..z3_adapter import (
+    CONSTITUTIONAL_HASH,
     Z3Adapter,
     Z3AdapterConfig,
     Z3Request,
     Z3Response,
     check_satisfiability,
     prove_property,
-    CONSTITUTIONAL_HASH,
 )
 
 
@@ -152,6 +153,7 @@ class TestZ3AdapterWithZ3:
         """Check if Z3 is available."""
         try:
             import z3  # noqa: F401
+
             return True
         except ImportError:
             return False
@@ -212,6 +214,7 @@ class TestZ3ConvenienceFunctions:
         """Check if Z3 is available."""
         try:
             import z3  # noqa: F401
+
             return True
         except ImportError:
             return False
@@ -222,9 +225,7 @@ class TestZ3ConvenienceFunctions:
         if not z3_available:
             pytest.skip("Z3 not available")
 
-        result = await check_satisfiability(
-            "(declare-const x Int) (assert (= x 42))"
-        )
+        result = await check_satisfiability("(declare-const x Int) (assert (= x 42))")
 
         assert result.success is True
         assert result.data.is_sat is True
@@ -285,9 +286,7 @@ class TestZ3ConvenienceFunctionsNoZ3:
     async def test_check_satisfiability_creates_adapter(self):
         """check_satisfiability creates adapter if none provided."""
         # This will use the default adapter (which may or may not have Z3)
-        result = await check_satisfiability(
-            "(declare-const x Int) (assert (= x 42))"
-        )
+        result = await check_satisfiability("(declare-const x Int) (assert (= x 42))")
         # Either way, should get a successful result (sat or unknown)
         assert result.success is True
         assert result.data.result in ("sat", "unsat", "unknown")
@@ -460,7 +459,7 @@ class TestZ3AdapterWithMockedZ3:
         adapter._z3_available = True
 
         # Mock the sync execution method
-        with patch.object(adapter, '_run_z3_sync') as mock_run:
+        with patch.object(adapter, "_run_z3_sync") as mock_run:
             mock_run.return_value = Z3Response(
                 result="sat",
                 model={"x": "42"},
@@ -509,7 +508,7 @@ class TestZ3AdapterWithMockedZ3:
         adapter = Z3Adapter()
         adapter._z3_available = True
 
-        with patch.object(adapter, '_run_z3_sync') as mock_run:
+        with patch.object(adapter, "_run_z3_sync") as mock_run:
             mock_run.return_value = Z3Response(
                 result="sat",
                 model={"x": "100"},
@@ -530,7 +529,7 @@ class TestZ3AdapterWithMockedZ3:
         adapter = Z3Adapter()
         adapter._z3_available = True
 
-        with patch.object(adapter, '_run_z3_sync') as mock_run:
+        with patch.object(adapter, "_run_z3_sync") as mock_run:
             mock_run.return_value = Z3Response(
                 result="unsat",
                 proof="(proof (mp ...))",
@@ -557,7 +556,7 @@ class TestZ3AdapterWithMockedZ3:
         adapter = Z3Adapter()
         adapter._z3_available = True
 
-        with patch.object(adapter, '_run_z3_sync') as mock_run:
+        with patch.object(adapter, "_run_z3_sync") as mock_run:
             mock_run.return_value = Z3Response(
                 result="unknown",
                 statistics={"reason": "timeout"},
@@ -623,7 +622,7 @@ class TestZ3AdapterCircuitBreaker:
         adapter = Z3Adapter()
         adapter._z3_available = True
 
-        with patch.object(adapter, '_run_z3_sync') as mock_run:
+        with patch.object(adapter, "_run_z3_sync") as mock_run:
             mock_run.side_effect = Exception("Z3 crashed")
 
             request = Z3Request(formula="(assert true)", trace_id="crash_test")

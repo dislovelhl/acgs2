@@ -5,13 +5,12 @@ Constitutional Hash: cdd01ef066bc6cf2
 Tests for the deliberation layer integration module.
 """
 
-import asyncio
+import importlib.util
 import os
 import sys
+from unittest.mock import AsyncMock, MagicMock
+
 import pytest
-from datetime import datetime, timezone
-from unittest.mock import AsyncMock, MagicMock, patch
-import importlib.util
 
 # Add enhanced_agent_bus directory to path
 enhanced_agent_bus_dir = os.path.dirname(os.path.dirname(__file__))
@@ -36,16 +35,18 @@ if deliberation_layer_dir not in sys.path:
 # Load base models first
 _models = _load_module("models", os.path.join(enhanced_agent_bus_dir, "models.py"))
 
+
 # Create mock parent package
 class MockEnhancedAgentBus:
     pass
+
 
 mock_parent = MockEnhancedAgentBus()
 mock_parent.models = _models
 
 # Patch sys.modules for imports
-sys.modules['enhanced_agent_bus'] = mock_parent
-sys.modules['enhanced_agent_bus.models'] = _models
+sys.modules["enhanced_agent_bus"] = mock_parent
+sys.modules["enhanced_agent_bus.models"] = _models
 
 # Import from models
 AgentMessage = _models.AgentMessage
@@ -59,7 +60,7 @@ CONSTITUTIONAL_HASH = _models.CONSTITUTIONAL_HASH
 class MockImpactScorer:
     """Mock impact scorer for testing without ML dependencies."""
 
-    def __init__(self, model_name: str = 'mock-model'):
+    def __init__(self, model_name: str = "mock-model"):
         self.model_name = model_name
 
     def calculate_impact_score(self, content, context=None) -> float:
@@ -67,8 +68,13 @@ class MockImpactScorer:
         content_str = str(content).lower() if content else ""
         # Check for high-risk keywords
         high_risk_keywords = [
-            'critical', 'emergency', 'security', 'breach',
-            'delete', 'production', 'governance'
+            "critical",
+            "emergency",
+            "security",
+            "breach",
+            "delete",
+            "production",
+            "governance",
         ]
         for keyword in high_risk_keywords:
             if keyword in content_str:
@@ -94,19 +100,24 @@ class MockImpactScorerModule:
     calculate_message_impact = staticmethod(mock_calculate_message_impact)
 
 
-sys.modules['impact_scorer'] = MockImpactScorerModule()
+sys.modules["impact_scorer"] = MockImpactScorerModule()
 
 # Load other dependency modules for integration.py (order matters!)
-_adaptive_router = _load_module("adaptive_router", os.path.join(deliberation_layer_dir, "adaptive_router.py"))
-_deliberation_queue = _load_module("deliberation_queue", os.path.join(deliberation_layer_dir, "deliberation_queue.py"))
-_llm_assistant = _load_module("llm_assistant", os.path.join(deliberation_layer_dir, "llm_assistant.py"))
-_redis_integration = _load_module("redis_integration", os.path.join(deliberation_layer_dir, "redis_integration.py"))
+_adaptive_router = _load_module(
+    "adaptive_router", os.path.join(deliberation_layer_dir, "adaptive_router.py")
+)
+_deliberation_queue = _load_module(
+    "deliberation_queue", os.path.join(deliberation_layer_dir, "deliberation_queue.py")
+)
+_llm_assistant = _load_module(
+    "llm_assistant", os.path.join(deliberation_layer_dir, "llm_assistant.py")
+)
+_redis_integration = _load_module(
+    "redis_integration", os.path.join(deliberation_layer_dir, "redis_integration.py")
+)
 
 # Load the actual integration module
-_integration = _load_module(
-    "integration",
-    os.path.join(deliberation_layer_dir, "integration.py")
-)
+_integration = _load_module("integration", os.path.join(deliberation_layer_dir, "integration.py"))
 
 DeliberationLayer = _integration.DeliberationLayer
 get_deliberation_layer = _integration.get_deliberation_layer
@@ -132,7 +143,7 @@ class TestDeliberationLayerInitialization:
             deliberation_timeout=120,
             enable_redis=False,
             enable_learning=False,
-            enable_llm=False
+            enable_llm=False,
         )
 
         assert layer.impact_threshold == 0.5
@@ -176,7 +187,7 @@ class TestMessageProcessing:
             deliberation_timeout=10,
             enable_learning=False,
             enable_llm=False,
-            enable_opa_guard=False
+            enable_opa_guard=False,
         )
 
     @pytest.fixture
@@ -207,8 +218,8 @@ class TestMessageProcessing:
         result = await layer.process_message(low_risk_message)
 
         assert isinstance(result, dict)
-        assert 'success' in result
-        assert 'processing_time' in result
+        assert "success" in result
+        assert "processing_time" in result
 
     @pytest.mark.asyncio
     async def test_process_message_calculates_impact_score(self, layer, low_risk_message):
@@ -227,8 +238,8 @@ class TestMessageProcessing:
 
         result = await layer.process_message(low_risk_message)
 
-        assert result.get('lane') == 'fast'
-        assert result.get('status') == 'delivered'
+        assert result.get("lane") == "fast"
+        assert result.get("status") == "delivered"
 
     @pytest.mark.asyncio
     async def test_process_high_risk_to_deliberation(self, layer, high_risk_message):
@@ -238,9 +249,9 @@ class TestMessageProcessing:
 
         result = await layer.process_message(high_risk_message)
 
-        assert result.get('lane') == 'deliberation'
-        assert result.get('status') == 'queued'
-        assert 'item_id' in result
+        assert result.get("lane") == "deliberation"
+        assert result.get("status") == "queued"
+        assert "item_id" in result
 
 
 class TestCallbacks:
@@ -250,18 +261,14 @@ class TestCallbacks:
     def layer(self):
         """Create a deliberation layer."""
         return DeliberationLayer(
-            impact_threshold=0.5,
-            enable_learning=False,
-            enable_llm=False,
-            enable_opa_guard=False
+            impact_threshold=0.5, enable_learning=False, enable_llm=False, enable_opa_guard=False
         )
 
     @pytest.fixture
     def test_message(self):
         """Create a test message."""
         msg = AgentMessage(
-            from_agent="a", to_agent="b", sender_id="s",
-            message_type=MessageType.QUERY, content={}
+            from_agent="a", to_agent="b", sender_id="s", message_type=MessageType.QUERY, content={}
         )
         msg.impact_score = 0.2  # Low risk for fast lane
         return msg
@@ -297,8 +304,11 @@ class TestCallbacks:
         layer.set_deliberation_callback(callback)
 
         msg = AgentMessage(
-            from_agent="a", to_agent="b", sender_id="s",
-            message_type=MessageType.GOVERNANCE_REQUEST, content={}
+            from_agent="a",
+            to_agent="b",
+            sender_id="s",
+            message_type=MessageType.GOVERNANCE_REQUEST,
+            content={},
         )
         msg.impact_score = 0.9  # High risk for deliberation
 
@@ -313,23 +323,22 @@ class TestHumanDecision:
     @pytest.fixture
     def layer(self):
         """Create a deliberation layer."""
-        return DeliberationLayer(
-            enable_learning=False,
-            enable_llm=False,
-            enable_opa_guard=False
-        )
+        return DeliberationLayer(enable_learning=False, enable_llm=False, enable_opa_guard=False)
 
     @pytest.fixture
     async def queued_item(self, layer):
         """Create a queued deliberation item."""
         msg = AgentMessage(
-            from_agent="a", to_agent="b", sender_id="s",
-            message_type=MessageType.GOVERNANCE_REQUEST, content={}
+            from_agent="a",
+            to_agent="b",
+            sender_id="s",
+            message_type=MessageType.GOVERNANCE_REQUEST,
+            content={},
         )
         msg.impact_score = 0.9
 
         result = await layer.process_message(msg)
-        return result.get('item_id')
+        return result.get("item_id")
 
     @pytest.mark.asyncio
     async def test_submit_human_decision_approved(self, layer, queued_item):
@@ -345,7 +354,7 @@ class TestHumanDecision:
                 item_id=queued_item,
                 reviewer="human_reviewer",
                 decision="approved",
-                reasoning="Approved after review"
+                reasoning="Approved after review",
             )
 
             assert result is True
@@ -363,7 +372,7 @@ class TestHumanDecision:
                 item_id=queued_item,
                 reviewer="human_reviewer",
                 decision="rejected",
-                reasoning="Rejected due to policy violation"
+                reasoning="Rejected due to policy violation",
             )
 
             assert result is True
@@ -372,10 +381,7 @@ class TestHumanDecision:
     async def test_submit_human_decision_nonexistent_item(self, layer):
         """Test decision for nonexistent item returns False."""
         result = await layer.submit_human_decision(
-            item_id="nonexistent",
-            reviewer="human_reviewer",
-            decision="approved",
-            reasoning="Test"
+            item_id="nonexistent", reviewer="human_reviewer", decision="approved", reasoning="Test"
         )
 
         assert result is False
@@ -388,23 +394,23 @@ class TestAgentVote:
     def layer(self):
         """Create a deliberation layer."""
         return DeliberationLayer(
-            enable_learning=False,
-            enable_llm=False,
-            enable_redis=False,
-            enable_opa_guard=False
+            enable_learning=False, enable_llm=False, enable_redis=False, enable_opa_guard=False
         )
 
     @pytest.fixture
     async def queued_item(self, layer):
         """Create a queued deliberation item."""
         msg = AgentMessage(
-            from_agent="a", to_agent="b", sender_id="s",
-            message_type=MessageType.GOVERNANCE_REQUEST, content={}
+            from_agent="a",
+            to_agent="b",
+            sender_id="s",
+            message_type=MessageType.GOVERNANCE_REQUEST,
+            content={},
         )
         msg.impact_score = 0.9
 
         result = await layer.process_message(msg)
-        return result.get('item_id')
+        return result.get("item_id")
 
     @pytest.mark.asyncio
     async def test_submit_agent_vote(self, layer, queued_item):
@@ -414,7 +420,7 @@ class TestAgentVote:
             agent_id="agent1",
             vote="approve",
             reasoning="Valid operation",
-            confidence=0.9
+            confidence=0.9,
         )
 
         assert result is True
@@ -423,16 +429,13 @@ class TestAgentVote:
     async def test_submit_multiple_agent_votes(self, layer, queued_item):
         """Test submitting multiple agent votes."""
         await layer.submit_agent_vote(
-            item_id=queued_item, agent_id="agent1",
-            vote="approve", reasoning="Good"
+            item_id=queued_item, agent_id="agent1", vote="approve", reasoning="Good"
         )
         await layer.submit_agent_vote(
-            item_id=queued_item, agent_id="agent2",
-            vote="approve", reasoning="Valid"
+            item_id=queued_item, agent_id="agent2", vote="approve", reasoning="Valid"
         )
         await layer.submit_agent_vote(
-            item_id=queued_item, agent_id="agent3",
-            vote="reject", reasoning="Concerns"
+            item_id=queued_item, agent_id="agent3", vote="reject", reasoning="Concerns"
         )
 
         item = layer.deliberation_queue.queue.get(queued_item)
@@ -442,10 +445,7 @@ class TestAgentVote:
     async def test_submit_agent_vote_nonexistent_item(self, layer):
         """Test vote for nonexistent item returns False."""
         result = await layer.submit_agent_vote(
-            item_id="nonexistent",
-            agent_id="agent1",
-            vote="approve",
-            reasoning="Test"
+            item_id="nonexistent", agent_id="agent1", vote="approve", reasoning="Test"
         )
 
         assert result is False
@@ -463,34 +463,34 @@ class TestLayerStats:
             enable_redis=False,
             enable_learning=True,
             enable_llm=True,
-            enable_opa_guard=False
+            enable_opa_guard=False,
         )
 
     def test_get_layer_stats_structure(self, layer):
         """Test layer stats returns correct structure."""
         stats = layer.get_layer_stats()
 
-        assert 'layer_status' in stats
-        assert 'impact_threshold' in stats
-        assert 'deliberation_timeout' in stats
-        assert 'features' in stats
-        assert 'router_stats' in stats
-        assert 'queue_stats' in stats
+        assert "layer_status" in stats
+        assert "impact_threshold" in stats
+        assert "deliberation_timeout" in stats
+        assert "features" in stats
+        assert "router_stats" in stats
+        assert "queue_stats" in stats
 
     def test_get_layer_stats_features(self, layer):
         """Test features are reported correctly."""
         stats = layer.get_layer_stats()
 
-        assert stats['features']['redis_enabled'] is False
-        assert stats['features']['learning_enabled'] is True
-        assert stats['features']['llm_enabled'] is True
+        assert stats["features"]["redis_enabled"] is False
+        assert stats["features"]["learning_enabled"] is True
+        assert stats["features"]["llm_enabled"] is True
 
     def test_get_layer_stats_threshold(self, layer):
         """Test threshold is reported correctly."""
         stats = layer.get_layer_stats()
 
-        assert stats['impact_threshold'] == 0.5
-        assert stats['deliberation_timeout'] == 60
+        assert stats["impact_threshold"] == 0.5
+        assert stats["deliberation_timeout"] == 60
 
 
 class TestForceDeliberation:
@@ -503,15 +503,18 @@ class TestForceDeliberation:
             impact_threshold=0.9,  # High threshold
             enable_learning=False,
             enable_llm=False,
-            enable_opa_guard=False
+            enable_opa_guard=False,
         )
 
     @pytest.fixture
     def low_risk_message(self):
         """Create a low-risk message."""
         msg = AgentMessage(
-            from_agent="a", to_agent="b", sender_id="s",
-            message_type=MessageType.QUERY, content={"action": "ping"}
+            from_agent="a",
+            to_agent="b",
+            sender_id="s",
+            message_type=MessageType.QUERY,
+            content={"action": "ping"},
         )
         msg.impact_score = 0.2
         return msg
@@ -519,14 +522,11 @@ class TestForceDeliberation:
     @pytest.mark.asyncio
     async def test_force_deliberation(self, layer, low_risk_message):
         """Test forcing a low-risk message into deliberation."""
-        result = await layer.force_deliberation(
-            low_risk_message,
-            reason="manual_override"
-        )
+        result = await layer.force_deliberation(low_risk_message, reason="manual_override")
 
-        assert result.get('lane') == 'deliberation'
-        assert result.get('forced') is True
-        assert result.get('force_reason') == 'manual_override'
+        assert result.get("lane") == "deliberation"
+        assert result.get("forced") is True
+        assert result.get("force_reason") == "manual_override"
 
     @pytest.mark.asyncio
     async def test_force_deliberation_preserves_original_score(self, layer, low_risk_message):
@@ -556,8 +556,8 @@ class TestTrendAnalysis:
         """Test trend analysis returns error without LLM."""
         result = await layer_without_llm.analyze_trends()
 
-        assert 'error' in result
-        assert 'not enabled' in result['error']
+        assert "error" in result
+        assert "not enabled" in result["error"]
 
     @pytest.mark.asyncio
     async def test_analyze_trends_with_llm(self, layer_with_llm):
@@ -588,24 +588,19 @@ class TestErrorHandling:
     @pytest.fixture
     def layer(self):
         """Create a deliberation layer."""
-        return DeliberationLayer(
-            enable_learning=False,
-            enable_llm=False,
-            enable_opa_guard=False
-        )
+        return DeliberationLayer(enable_learning=False, enable_llm=False, enable_opa_guard=False)
 
     @pytest.mark.asyncio
     async def test_process_message_handles_error(self, layer):
         """Test message processing handles errors gracefully."""
         msg = AgentMessage(
-            from_agent="a", to_agent="b", sender_id="s",
-            message_type=MessageType.QUERY, content={}
+            from_agent="a", to_agent="b", sender_id="s", message_type=MessageType.QUERY, content={}
         )
 
         # This should succeed even with minimal content
         result = await layer.process_message(msg)
 
-        assert 'processing_time' in result
+        assert "processing_time" in result
 
 
 class TestAsyncInitialize:

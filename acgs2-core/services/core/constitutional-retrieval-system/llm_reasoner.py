@@ -6,22 +6,20 @@ to provide enhanced decision support for fuzzy legal scenarios.
 """
 
 import logging
-from typing import List, Dict, Any, Optional, TYPE_CHECKING
-import json
-import asyncio
 from datetime import datetime, timezone
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 if TYPE_CHECKING:
     from retrieval_engine import RetrievalEngine
 
 try:
-    from langchain_openai import ChatOpenAI
-    from langchain_core.prompts import ChatPromptTemplate
     from langchain_core.output_parsers import JsonOutputParser
+    from langchain_core.prompts import ChatPromptTemplate
+    from langchain_openai import ChatOpenAI
+
     LANGCHAIN_AVAILABLE = True
 except ImportError:
     LANGCHAIN_AVAILABLE = False
-
 
 
 logger = logging.getLogger(__name__)
@@ -30,9 +28,12 @@ logger = logging.getLogger(__name__)
 class LLMReasoner:
     """LLM-powered reasoner that integrates retrieved context for decision enhancement."""
 
-    def __init__(self, retrieval_engine: 'RetrievalEngine',
-                 openai_api_key: Optional[str] = None,
-                 model_name: str = "gpt-4"):
+    def __init__(
+        self,
+        retrieval_engine: "RetrievalEngine",
+        openai_api_key: Optional[str] = None,
+        model_name: str = "gpt-4",
+    ):
         """
         Initialize LLM reasoner.
 
@@ -50,7 +51,7 @@ class LLMReasoner:
                 self.llm = ChatOpenAI(
                     model_name=model_name,
                     temperature=0.1,  # Low temperature for consistent legal reasoning
-                    openai_api_key=openai_api_key
+                    openai_api_key=openai_api_key,
                 )
                 logger.info(f"Initialized LLM reasoner with {model_name}")
             except Exception as e:
@@ -58,8 +59,12 @@ class LLMReasoner:
         else:
             logger.warning("LangChain not available, LLM reasoning disabled")
 
-    async def reason_with_context(self, query: str, context_documents: List[Dict[str, Any]],
-                                decision_criteria: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    async def reason_with_context(
+        self,
+        query: str,
+        context_documents: List[Dict[str, Any]],
+        decision_criteria: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
         """
         Perform reasoning with retrieved constitutional context.
 
@@ -79,7 +84,8 @@ class LLMReasoner:
             context_summary = self._summarize_context(context_documents)
 
             # Create reasoning prompt
-            prompt = ChatPromptTemplate.from_template("""
+            prompt = ChatPromptTemplate.from_template(
+                """
             You are a constitutional law expert providing reasoned analysis for a legal decision.
             Your task is to analyze the given legal scenario using relevant constitutional provisions
             and precedents, then provide a well-reasoned recommendation.
@@ -113,14 +119,13 @@ class LLMReasoner:
                 "counterarguments": ["argument1", "argument2"],
                 "reasoning_trace": "step-by-step reasoning process"
             }}
-            """)
+            """
+            )
 
             criteria_text = self._format_decision_criteria(decision_criteria)
 
             formatted_prompt = prompt.format_messages(
-                query=query,
-                context=context_summary,
-                criteria=criteria_text
+                query=query, context=context_summary, criteria=criteria_text
             )
 
             # Get LLM response
@@ -129,13 +134,15 @@ class LLMReasoner:
             reasoning_result = parser.parse(response.content)
 
             # Add metadata
-            reasoning_result.update({
-                'reasoned_by': 'llm_reasoner',
-                'model': self.model_name,
-                'context_documents_used': len(context_documents),
-                'timestamp': datetime.now(timezone.utc).isoformat(),
-                'query': query
-            })
+            reasoning_result.update(
+                {
+                    "reasoned_by": "llm_reasoner",
+                    "model": self.model_name,
+                    "context_documents_used": len(context_documents),
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "query": query,
+                }
+            )
 
             logger.info(f"LLM reasoning completed for query: {query[:50]}...")
             return reasoning_result
@@ -144,8 +151,9 @@ class LLMReasoner:
             logger.error(f"LLM reasoning failed: {e}")
             return self._fallback_reasoning(query, context_documents, decision_criteria)
 
-    async def analyze_precedent_conflict(self, case_description: str,
-                                       conflicting_precedents: List[Dict[str, Any]]) -> Dict[str, Any]:
+    async def analyze_precedent_conflict(
+        self, case_description: str, conflicting_precedents: List[Dict[str, Any]]
+    ) -> Dict[str, Any]:
         """
         Analyze conflicts between multiple precedents.
 
@@ -168,7 +176,8 @@ class LLMReasoner:
 
             precedents_text = "\n".join(precedent_summaries)
 
-            prompt = ChatPromptTemplate.from_template("""
+            prompt = ChatPromptTemplate.from_template(
+                """
             You are analyzing potential conflicts between legal precedents in the context of a new case.
 
             Current Case:
@@ -193,22 +202,24 @@ class LLMReasoner:
                 "influencing_factors": ["factor1", "factor2"],
                 "precedent_hierarchy": ["most_relevant", "less_relevant"]
             }}
-            """)
+            """
+            )
 
             formatted_prompt = prompt.format_messages(
-                case_description=case_description,
-                precedents=precedents_text
+                case_description=case_description, precedents=precedents_text
             )
 
             response = await self.llm.ainvoke(formatted_prompt)
             parser = JsonOutputParser()
             analysis = parser.parse(response.content)
 
-            analysis.update({
-                'analyzed_by': 'llm_reasoner',
-                'precedents_analyzed': len(conflicting_precedents),
-                'timestamp': datetime.now(timezone.utc).isoformat()
-            })
+            analysis.update(
+                {
+                    "analyzed_by": "llm_reasoner",
+                    "precedents_analyzed": len(conflicting_precedents),
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                }
+            )
 
             return analysis
 
@@ -216,8 +227,9 @@ class LLMReasoner:
             logger.error(f"Precedent conflict analysis failed: {e}")
             return self._fallback_conflict_analysis(case_description, conflicting_precedents)
 
-    async def generate_decision_explanation(self, decision: Dict[str, Any],
-                                          context_used: List[Dict[str, Any]]) -> str:
+    async def generate_decision_explanation(
+        self, decision: Dict[str, Any], context_used: List[Dict[str, Any]]
+    ) -> str:
         """
         Generate a human-readable explanation of the decision.
 
@@ -233,12 +245,15 @@ class LLMReasoner:
 
         try:
             # Prepare context summary
-            context_summary = "\n".join([
-                f"- {doc.get('payload', {}).get('title', 'Unknown')}: {doc.get('payload', {}).get('content', '')[:200]}..."
-                for doc in context_used[:3]  # Limit to top 3
-            ])
+            context_summary = "\n".join(
+                [
+                    f"- {doc.get('payload', {}).get('title', 'Unknown')}: {doc.get('payload', {}).get('content', '')[:200]}..."
+                    for doc in context_used[:3]  # Limit to top 3
+                ]
+            )
 
-            prompt = ChatPromptTemplate.from_template("""
+            prompt = ChatPromptTemplate.from_template(
+                """
             Generate a clear, concise explanation of this legal decision for stakeholders.
 
             Decision Details:
@@ -254,7 +269,8 @@ class LLMReasoner:
             - Notes any uncertainties or caveats
 
             Keep the explanation professional, clear, and accessible to non-lawyers.
-            """)
+            """
+            )
 
             decision_text = f"""
             Recommendation: {decision.get('recommendation', 'Unknown')}
@@ -263,8 +279,7 @@ class LLMReasoner:
             """
 
             formatted_prompt = prompt.format_messages(
-                decision=decision_text,
-                context=context_summary
+                decision=decision_text, context=context_summary
             )
 
             response = await self.llm.ainvoke(formatted_prompt)
@@ -276,8 +291,9 @@ class LLMReasoner:
             logger.error(f"Explanation generation failed: {e}")
             return self._fallback_explanation(decision, context_used)
 
-    async def assess_decision_consistency(self, decision: Dict[str, Any],
-                                        historical_decisions: List[Dict[str, Any]]) -> Dict[str, Any]:
+    async def assess_decision_consistency(
+        self, decision: Dict[str, Any], historical_decisions: List[Dict[str, Any]]
+    ) -> Dict[str, Any]:
         """
         Assess consistency of current decision with historical decisions.
 
@@ -293,13 +309,16 @@ class LLMReasoner:
 
         try:
             # Summarize historical decisions
-            historical_summary = "\n".join([
-                f"Case {i+1}: {hist.get('recommendation', 'Unknown')} "
-                f"(confidence: {hist.get('confidence', 0.0)})"
-                for i, hist in enumerate(historical_decisions[:5])
-            ])
+            historical_summary = "\n".join(
+                [
+                    f"Case {i+1}: {hist.get('recommendation', 'Unknown')} "
+                    f"(confidence: {hist.get('confidence', 0.0)})"
+                    for i, hist in enumerate(historical_decisions[:5])
+                ]
+            )
 
-            prompt = ChatPromptTemplate.from_template("""
+            prompt = ChatPromptTemplate.from_template(
+                """
             Assess the consistency of a current legal decision with historical decisions.
 
             Current Decision:
@@ -324,13 +343,14 @@ class LLMReasoner:
                 "patterns_identified": ["pattern1", "pattern2"],
                 "consistency_recommendations": ["rec1", "rec2"]
             }}
-            """)
+            """
+            )
 
             formatted_prompt = prompt.format_messages(
-                current_recommendation=decision.get('recommendation', 'Unknown'),
-                current_confidence=decision.get('confidence', 0.0),
-                current_factors=', '.join(decision.get('key_factors', [])),
-                historical=historical_summary
+                current_recommendation=decision.get("recommendation", "Unknown"),
+                current_confidence=decision.get("confidence", 0.0),
+                current_factors=", ".join(decision.get("key_factors", [])),
+                historical=historical_summary,
             )
 
             response = await self.llm.ainvoke(formatted_prompt)
@@ -350,10 +370,10 @@ class LLMReasoner:
 
         summaries = []
         for doc in documents[:5]:  # Limit to top 5
-            payload = doc.get('payload', {})
-            title = payload.get('title', payload.get('doc_id', 'Unknown Document'))
-            content = payload.get('content', '')[:300]  # Truncate content
-            score = doc.get('score', 0.0)
+            payload = doc.get("payload", {})
+            title = payload.get("title", payload.get("doc_id", "Unknown Document"))
+            content = payload.get("content", "")[:300]  # Truncate content
+            score = doc.get("score", 0.0)
 
             summary = f"Document: {title}\nRelevance: {score:.3f}\nContent: {content}..."
             summaries.append(summary)
@@ -373,16 +393,20 @@ class LLMReasoner:
 
     def _summarize_precedent(self, precedent: Dict[str, Any]) -> str:
         """Summarize a single precedent."""
-        payload = precedent.get('payload', {})
-        case_id = payload.get('case_id', 'Unknown')
-        outcome = payload.get('outcome', 'Unknown')
-        court = payload.get('court', 'Unknown Court')
+        payload = precedent.get("payload", {})
+        case_id = payload.get("case_id", "Unknown")
+        outcome = payload.get("outcome", "Unknown")
+        court = payload.get("court", "Unknown Court")
 
-        content = payload.get('content', '')[:200]
+        content = payload.get("content", "")[:200]
         return f"Case {case_id} ({court}): {outcome} - {content}..."
 
-    def _fallback_reasoning(self, query: str, context_documents: List[Dict[str, Any]],
-                          decision_criteria: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+    def _fallback_reasoning(
+        self,
+        query: str,
+        context_documents: List[Dict[str, Any]],
+        decision_criteria: Optional[Dict[str, Any]],
+    ) -> Dict[str, Any]:
         """Fallback reasoning when LLM is unavailable."""
         # Simple rule-based reasoning
         context_count = len(context_documents)
@@ -391,7 +415,7 @@ class LLMReasoner:
         if context_count == 0:
             recommendation = "further_review"
             confidence = 0.3
-        elif any(doc.get('score', 0) > 0.8 for doc in context_documents):
+        elif any(doc.get("score", 0) > 0.8 for doc in context_documents):
             recommendation = "approve"
             confidence = 0.7
         else:
@@ -399,36 +423,38 @@ class LLMReasoner:
             confidence = 0.5
 
         return {
-            'issue_summary': f'Legal query: {query[:100]}...',
-            'constitutional_analysis': f'Based on {context_count} relevant documents',
-            'precedent_application': 'Automated analysis (LLM unavailable)',
-            'recommendation': recommendation,
-            'confidence': confidence,
-            'key_factors': ['document_relevance', 'context_availability'],
-            'counterarguments': ['Limited analysis without LLM'],
-            'reasoning_trace': 'Rule-based fallback reasoning',
-            'reasoned_by': 'fallback_reasoner',
-            'timestamp': datetime.now(timezone.utc).isoformat()
+            "issue_summary": f"Legal query: {query[:100]}...",
+            "constitutional_analysis": f"Based on {context_count} relevant documents",
+            "precedent_application": "Automated analysis (LLM unavailable)",
+            "recommendation": recommendation,
+            "confidence": confidence,
+            "key_factors": ["document_relevance", "context_availability"],
+            "counterarguments": ["Limited analysis without LLM"],
+            "reasoning_trace": "Rule-based fallback reasoning",
+            "reasoned_by": "fallback_reasoner",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }
 
-    def _fallback_conflict_analysis(self, case_description: str,
-                                  conflicting_precedents: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def _fallback_conflict_analysis(
+        self, case_description: str, conflicting_precedents: List[Dict[str, Any]]
+    ) -> Dict[str, Any]:
         """Fallback conflict analysis."""
         return {
-            'conflict_exists': len(conflicting_precedents) > 1,
-            'conflict_nature': 'Multiple precedents identified',
-            'reconciliation_approach': 'Manual review recommended',
-            'recommended_approach': 'further_review',
-            'influencing_factors': ['precedent_count', 'similarity_scores'],
-            'precedent_hierarchy': [f'precedent_{i+1}' for i in range(len(conflicting_precedents))],
-            'analyzed_by': 'fallback_analyzer'
+            "conflict_exists": len(conflicting_precedents) > 1,
+            "conflict_nature": "Multiple precedents identified",
+            "reconciliation_approach": "Manual review recommended",
+            "recommended_approach": "further_review",
+            "influencing_factors": ["precedent_count", "similarity_scores"],
+            "precedent_hierarchy": [f"precedent_{i+1}" for i in range(len(conflicting_precedents))],
+            "analyzed_by": "fallback_analyzer",
         }
 
-    def _fallback_explanation(self, decision: Dict[str, Any],
-                            context_used: List[Dict[str, Any]]) -> str:
+    def _fallback_explanation(
+        self, decision: Dict[str, Any], context_used: List[Dict[str, Any]]
+    ) -> str:
         """Fallback explanation generation."""
-        recommendation = decision.get('recommendation', 'Unknown')
-        confidence = decision.get('confidence', 0.0)
+        recommendation = decision.get("recommendation", "Unknown")
+        confidence = decision.get("confidence", 0.0)
         context_count = len(context_used)
 
         return f"""
@@ -441,31 +467,34 @@ class LLMReasoner:
         legal experts. (LLM explanation unavailable)
         """.strip()
 
-    def _fallback_consistency_check(self, decision: Dict[str, Any],
-                                  historical_decisions: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def _fallback_consistency_check(
+        self, decision: Dict[str, Any], historical_decisions: List[Dict[str, Any]]
+    ) -> Dict[str, Any]:
         """Fallback consistency check."""
         if not historical_decisions:
             return {
-                'consistency_score': 1.0,
-                'consistency_level': 'high',
-                'deviations': [],
-                'patterns_identified': ['First decision in series'],
-                'consistency_recommendations': ['Establish baseline']
+                "consistency_score": 1.0,
+                "consistency_level": "high",
+                "deviations": [],
+                "patterns_identified": ["First decision in series"],
+                "consistency_recommendations": ["Establish baseline"],
             }
 
         # Simple consistency check
-        current_rec = decision.get('recommendation', '')
-        historical_recs = [hist.get('recommendation', '') for hist in historical_decisions]
+        current_rec = decision.get("recommendation", "")
+        historical_recs = [hist.get("recommendation", "") for hist in historical_decisions]
 
         matches = sum(1 for rec in historical_recs if rec == current_rec)
         consistency_score = matches / len(historical_recs)
 
-        level = 'high' if consistency_score > 0.8 else 'medium' if consistency_score > 0.5 else 'low'
+        level = (
+            "high" if consistency_score > 0.8 else "medium" if consistency_score > 0.5 else "low"
+        )
 
         return {
-            'consistency_score': consistency_score,
-            'consistency_level': level,
-            'deviations': ['Consistency analysis limited without LLM'],
-            'patterns_identified': [f'{matches}/{len(historical_recs)} matching recommendations'],
-            'consistency_recommendations': ['Use LLM for detailed analysis']
+            "consistency_score": consistency_score,
+            "consistency_level": level,
+            "deviations": ["Consistency analysis limited without LLM"],
+            "patterns_identified": [f"{matches}/{len(historical_recs)} matching recommendations"],
+            "consistency_recommendations": ["Use LLM for detailed analysis"],
         }

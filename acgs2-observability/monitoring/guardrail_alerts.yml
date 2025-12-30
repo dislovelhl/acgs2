@@ -1,0 +1,32 @@
+groups:
+  - name: nemoguard_alerts
+    rules:
+      - alert: HighGuardrailLatency
+        expr: histogram_quantile(0.99, sum by (le, job) (rate(nemoguard_request_duration_seconds_bucket[5m]))) > 0.1
+        for: 1m
+        labels:
+          severity: warning
+          component: governance
+        annotations:
+          summary: "High guardrail latency detected"
+          description: "P99 latency for {{ $labels.job }} is above 100ms: {{ $value }}s"
+
+      - alert: HighGuardrailBlockRate
+        expr: sum(rate(nemoguard_requests_blocked_total[5m])) / sum(rate(nemoguard_requests_total[5m])) > 0.05
+        for: 2m
+        labels:
+          severity: critical
+          component: governance
+        annotations:
+          summary: "High constitutional block rate"
+          description: "Guardrails are blocking more than 5% of traffic: {{ $value | humanizePercentage }}"
+
+      - alert: NemoGuardDown
+        expr: up{job=~"nemoguard-.*"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: governance
+        annotations:
+          summary: "NemoGuard service down"
+          description: "{{ $labels.job }} instance is unreachable."

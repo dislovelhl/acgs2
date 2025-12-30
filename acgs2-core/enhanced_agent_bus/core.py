@@ -10,100 +10,102 @@ refactored modules. New code should import directly from:
 
 # Re-export from refactored modules for backward compatibility
 try:
-    from .message_processor import MessageProcessor
     from .agent_bus import (
+        DEFAULT_REDIS_URL,
         EnhancedAgentBus,
         get_agent_bus,
         reset_agent_bus,
-        DEFAULT_REDIS_URL,
     )
+    from .message_processor import MessageProcessor
 except ImportError:
     # Fallback for direct execution or testing
-    from message_processor import MessageProcessor  # type: ignore
     from agent_bus import (  # type: ignore
+        DEFAULT_REDIS_URL,
         EnhancedAgentBus,
         get_agent_bus,
         reset_agent_bus,
-        DEFAULT_REDIS_URL,
     )
+    from message_processor import MessageProcessor  # type: ignore
 
 # Re-export models and interfaces
 try:
-    from .models import (
-        AgentMessage,
-        MessageType,
-        Priority,
-        MessagePriority,  # DEPRECATED: Use Priority instead (v3.0.0 removal)
-        MessageStatus,
-        CONSTITUTIONAL_HASH,
-        DecisionLog,
-    )
-    from .validators import ValidationResult
     from .interfaces import (
         AgentRegistry,
         MessageRouter,
-        ValidationStrategy,
         ProcessingStrategy,
+        ValidationStrategy,
     )
-    from .registry import (
-        InMemoryAgentRegistry,
-        DirectMessageRouter,
-        StaticHashValidationStrategy,
-        DynamicPolicyValidationStrategy,
-        RustValidationStrategy,
-        PythonProcessingStrategy,
-        RustProcessingStrategy,
-        DynamicPolicyProcessingStrategy,
-        OPAProcessingStrategy,
-        OPAValidationStrategy,
-        CompositeProcessingStrategy,
-    )
-except ImportError:
-    # Fallback for direct execution or testing
-    from models import (  # type: ignore
+    from .models import (
+        CONSTITUTIONAL_HASH,
         AgentMessage,
-        MessageType,
-        Priority,
+        DecisionLog,
         MessagePriority,  # DEPRECATED: Use Priority instead (v3.0.0 removal)
         MessageStatus,
-        CONSTITUTIONAL_HASH,
-        DecisionLog,
+        MessageType,
+        Priority,
     )
-    from validators import ValidationResult  # type: ignore
+    from .registry import (
+        CompositeProcessingStrategy,
+        DirectMessageRouter,
+        DynamicPolicyProcessingStrategy,
+        DynamicPolicyValidationStrategy,
+        InMemoryAgentRegistry,
+        OPAProcessingStrategy,
+        OPAValidationStrategy,
+        PythonProcessingStrategy,
+        RustProcessingStrategy,
+        RustValidationStrategy,
+        StaticHashValidationStrategy,
+    )
+    from .validators import ValidationResult
+except ImportError:
+    # Fallback for direct execution or testing
     from interfaces import (  # type: ignore
         AgentRegistry,
         MessageRouter,
-        ValidationStrategy,
         ProcessingStrategy,
+        ValidationStrategy,
+    )
+    from models import (  # type: ignore
+        CONSTITUTIONAL_HASH,
+        AgentMessage,
+        DecisionLog,
+        MessagePriority,  # DEPRECATED: Use Priority instead (v3.0.0 removal)
+        MessageStatus,
+        MessageType,
+        Priority,
     )
     from registry import (  # type: ignore
-        InMemoryAgentRegistry,
         DirectMessageRouter,
-        StaticHashValidationStrategy,
-        DynamicPolicyValidationStrategy,
-        RustValidationStrategy,
-        PythonProcessingStrategy,
-        RustProcessingStrategy,
         DynamicPolicyProcessingStrategy,
+        DynamicPolicyValidationStrategy,
+        InMemoryAgentRegistry,
         OPAProcessingStrategy,
         OPAValidationStrategy,
+        PythonProcessingStrategy,
+        RustProcessingStrategy,
+        StaticHashValidationStrategy,
     )
+    from validators import ValidationResult  # type: ignore
 
 # Re-export feature flags
 try:
     from shared.metrics import MESSAGES_TOTAL
+
     METRICS_ENABLED = True
 except ImportError:
     METRICS_ENABLED = False
 
 try:
     from shared.circuit_breaker import get_circuit_breaker
+
     CIRCUIT_BREAKER_ENABLED = True
 except ImportError:
     CIRCUIT_BREAKER_ENABLED = False
 
 try:
     import enhanced_agent_bus_rust as rust_bus
+
     USE_RUST = True
 except ImportError:
     USE_RUST = False
@@ -112,15 +114,15 @@ except ImportError:
 # Re-export metering integration
 try:
     from .metering_integration import (
-        MeteringConfig,
+        METERING_AVAILABLE,
         AsyncMeteringQueue,
+        MeteringConfig,
         MeteringHooks,
         MeteringMixin,
-        get_metering_queue,
         get_metering_hooks,
-        reset_metering,
+        get_metering_queue,
         metered_operation,
-        METERING_AVAILABLE,
+        reset_metering,
     )
 except ImportError:
     METERING_AVAILABLE = False

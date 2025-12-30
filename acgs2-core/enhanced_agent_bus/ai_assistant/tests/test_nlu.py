@@ -3,25 +3,28 @@ ACGS-2 AI Assistant - NLU Engine Tests
 Constitutional Hash: cdd01ef066bc6cf2
 """
 
-import pytest
-from typing import Dict, Any, List
-
-import sys
 import os
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
+import sys
+from typing import List
+
+import pytest
+
+sys.path.insert(
+    0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+)
 
 from enhanced_agent_bus.ai_assistant.nlu import (
+    BasicSentimentAnalyzer,
+    Entity,
+    EntityExtractor,
+    Intent,
+    IntentClassifier,
     NLUEngine,
     NLUResult,
-    Intent,
-    Entity,
-    Sentiment,
-    IntentClassifier,
-    RuleBasedIntentClassifier,
-    EntityExtractor,
     PatternEntityExtractor,
+    RuleBasedIntentClassifier,
+    Sentiment,
     SentimentAnalyzer,
-    BasicSentimentAnalyzer,
 )
 
 # Import centralized constitutional hash with fallback
@@ -206,7 +209,9 @@ class TestPatternEntityExtractor:
 
         assert isinstance(entities, list)
         # Should extract order_id or number
-        order_entities = [e for e in entities if "order" in e.type.lower() or "number" in e.type.lower()]
+        order_entities = [
+            e for e in entities if "order" in e.type.lower() or "number" in e.type.lower()
+        ]
         assert len(order_entities) > 0
 
     @pytest.mark.asyncio
@@ -226,9 +231,7 @@ class TestPatternEntityExtractor:
         """Test extracting multiple entities."""
         extractor = PatternEntityExtractor()
 
-        entities = await extractor.extract(
-            "Email john@example.com about order ORD-12345"
-        )
+        entities = await extractor.extract("Email john@example.com about order ORD-12345")
 
         assert isinstance(entities, list)
         assert len(entities) >= 1
@@ -380,6 +383,7 @@ class TestNLUEngineCustomComponents:
     @pytest.mark.asyncio
     async def test_custom_intent_classifier(self):
         """Test using a custom intent classifier."""
+
         class MockClassifier(IntentClassifier):
             async def classify(self, text: str, context=None) -> List[Intent]:
                 return [Intent(name="custom_intent", confidence=1.0)]
@@ -393,6 +397,7 @@ class TestNLUEngineCustomComponents:
     @pytest.mark.asyncio
     async def test_custom_entity_extractor(self):
         """Test using a custom entity extractor."""
+
         class MockExtractor(EntityExtractor):
             async def extract(self, text: str, context=None) -> List[Entity]:
                 return [Entity(text="value", type="custom_entity", value="value", start=0, end=5)]
@@ -410,6 +415,7 @@ class TestNLUEngineCustomComponents:
     @pytest.mark.asyncio
     async def test_custom_sentiment_analyzer(self):
         """Test using a custom sentiment analyzer."""
+
         class MockAnalyzer(SentimentAnalyzer):
             async def analyze(self, text: str, context=None) -> str:
                 return "positive"

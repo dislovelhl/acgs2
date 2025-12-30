@@ -5,29 +5,29 @@ Constitutional Hash: cdd01ef066bc6cf2
 Tests for Protocol interface definitions.
 """
 
-import pytest
 from typing import Any, Dict, List, Optional
+
+import pytest
 
 try:
     from interfaces import (
         AgentRegistry,
-        MessageRouter,
-        ValidationStrategy,
-        ProcessingStrategy,
         MessageHandler,
+        MessageRouter,
         MetricsCollector,
+        ProcessingStrategy,
+        ValidationStrategy,
     )
     from models import AgentMessage, MessageType
 except ImportError:
     from ..interfaces import (
         AgentRegistry,
-        MessageRouter,
-        ValidationStrategy,
-        ProcessingStrategy,
         MessageHandler,
+        MessageRouter,
         MetricsCollector,
+        ProcessingStrategy,
+        ValidationStrategy,
     )
-    from ..models import AgentMessage, MessageType
 
 
 class TestAgentRegistryProtocol:
@@ -35,35 +35,37 @@ class TestAgentRegistryProtocol:
 
     def test_is_runtime_checkable(self):
         """AgentRegistry is runtime checkable."""
-        from typing import runtime_checkable
-        assert hasattr(AgentRegistry, '__protocol_attrs__') or hasattr(AgentRegistry, '_is_protocol')
+        assert hasattr(AgentRegistry, "__protocol_attrs__") or hasattr(
+            AgentRegistry, "_is_protocol"
+        )
 
     def test_has_register_method(self):
         """AgentRegistry defines register method."""
-        assert hasattr(AgentRegistry, 'register')
+        assert hasattr(AgentRegistry, "register")
 
     def test_has_unregister_method(self):
         """AgentRegistry defines unregister method."""
-        assert hasattr(AgentRegistry, 'unregister')
+        assert hasattr(AgentRegistry, "unregister")
 
     def test_has_get_method(self):
         """AgentRegistry defines get method."""
-        assert hasattr(AgentRegistry, 'get')
+        assert hasattr(AgentRegistry, "get")
 
     def test_has_list_agents_method(self):
         """AgentRegistry defines list_agents method."""
-        assert hasattr(AgentRegistry, 'list_agents')
+        assert hasattr(AgentRegistry, "list_agents")
 
     def test_has_exists_method(self):
         """AgentRegistry defines exists method."""
-        assert hasattr(AgentRegistry, 'exists')
+        assert hasattr(AgentRegistry, "exists")
 
     def test_has_update_metadata_method(self):
         """AgentRegistry defines update_metadata method."""
-        assert hasattr(AgentRegistry, 'update_metadata')
+        assert hasattr(AgentRegistry, "update_metadata")
 
     def test_mock_implementation(self):
         """Mock implementation satisfies protocol."""
+
         class MockRegistry:
             async def register(self, agent_id: str, capabilities=None, metadata=None) -> bool:
                 return True
@@ -92,18 +94,21 @@ class TestMessageRouterProtocol:
 
     def test_is_runtime_checkable(self):
         """MessageRouter is runtime checkable."""
-        assert hasattr(MessageRouter, '__protocol_attrs__') or hasattr(MessageRouter, '_is_protocol')
+        assert hasattr(MessageRouter, "__protocol_attrs__") or hasattr(
+            MessageRouter, "_is_protocol"
+        )
 
     def test_has_route_method(self):
         """MessageRouter defines route method."""
-        assert hasattr(MessageRouter, 'route')
+        assert hasattr(MessageRouter, "route")
 
     def test_has_broadcast_method(self):
         """MessageRouter defines broadcast method."""
-        assert hasattr(MessageRouter, 'broadcast')
+        assert hasattr(MessageRouter, "broadcast")
 
     def test_mock_implementation(self):
         """Mock implementation satisfies protocol."""
+
         class MockRouter:
             async def route(self, message, registry) -> Optional[str]:
                 return None
@@ -120,14 +125,17 @@ class TestValidationStrategyProtocol:
 
     def test_is_runtime_checkable(self):
         """ValidationStrategy is runtime checkable."""
-        assert hasattr(ValidationStrategy, '__protocol_attrs__') or hasattr(ValidationStrategy, '_is_protocol')
+        assert hasattr(ValidationStrategy, "__protocol_attrs__") or hasattr(
+            ValidationStrategy, "_is_protocol"
+        )
 
     def test_has_validate_method(self):
         """ValidationStrategy defines validate method."""
-        assert hasattr(ValidationStrategy, 'validate')
+        assert hasattr(ValidationStrategy, "validate")
 
     def test_mock_implementation(self):
         """Mock implementation satisfies protocol."""
+
         class MockValidator:
             async def validate(self, message) -> tuple:
                 return (True, None)
@@ -141,22 +149,25 @@ class TestProcessingStrategyProtocol:
 
     def test_is_runtime_checkable(self):
         """ProcessingStrategy is runtime checkable."""
-        assert hasattr(ProcessingStrategy, '__protocol_attrs__') or hasattr(ProcessingStrategy, '_is_protocol')
+        assert hasattr(ProcessingStrategy, "__protocol_attrs__") or hasattr(
+            ProcessingStrategy, "_is_protocol"
+        )
 
     def test_has_process_method(self):
         """ProcessingStrategy defines process method."""
-        assert hasattr(ProcessingStrategy, 'process')
+        assert hasattr(ProcessingStrategy, "process")
 
     def test_has_is_available_method(self):
         """ProcessingStrategy defines is_available method."""
-        assert hasattr(ProcessingStrategy, 'is_available')
+        assert hasattr(ProcessingStrategy, "is_available")
 
     def test_has_get_name_method(self):
         """ProcessingStrategy defines get_name method."""
-        assert hasattr(ProcessingStrategy, 'get_name')
+        assert hasattr(ProcessingStrategy, "get_name")
 
     def test_mock_implementation(self):
         """Mock implementation satisfies protocol."""
+
         class MockProcessor:
             async def process(self, message, handlers) -> Any:
                 return None
@@ -176,18 +187,21 @@ class TestMessageHandlerProtocol:
 
     def test_is_runtime_checkable(self):
         """MessageHandler is runtime checkable."""
-        assert hasattr(MessageHandler, '__protocol_attrs__') or hasattr(MessageHandler, '_is_protocol')
+        assert hasattr(MessageHandler, "__protocol_attrs__") or hasattr(
+            MessageHandler, "_is_protocol"
+        )
 
     def test_has_handle_method(self):
         """MessageHandler defines handle method."""
-        assert hasattr(MessageHandler, 'handle')
+        assert hasattr(MessageHandler, "handle")
 
     def test_has_can_handle_method(self):
         """MessageHandler defines can_handle method."""
-        assert hasattr(MessageHandler, 'can_handle')
+        assert hasattr(MessageHandler, "can_handle")
 
     def test_mock_implementation(self):
         """Mock implementation satisfies protocol."""
+
         class MockHandler:
             async def handle(self, message) -> Optional[Any]:
                 return None
@@ -204,28 +218,33 @@ class TestMetricsCollectorProtocol:
 
     def test_is_runtime_checkable(self):
         """MetricsCollector is runtime checkable."""
-        assert hasattr(MetricsCollector, '__protocol_attrs__') or hasattr(MetricsCollector, '_is_protocol')
+        assert hasattr(MetricsCollector, "__protocol_attrs__") or hasattr(
+            MetricsCollector, "_is_protocol"
+        )
 
     def test_has_record_message_processed(self):
         """MetricsCollector defines record_message_processed."""
-        assert hasattr(MetricsCollector, 'record_message_processed')
+        assert hasattr(MetricsCollector, "record_message_processed")
 
     def test_has_record_agent_registered(self):
         """MetricsCollector defines record_agent_registered."""
-        assert hasattr(MetricsCollector, 'record_agent_registered')
+        assert hasattr(MetricsCollector, "record_agent_registered")
 
     def test_has_record_agent_unregistered(self):
         """MetricsCollector defines record_agent_unregistered."""
-        assert hasattr(MetricsCollector, 'record_agent_unregistered')
+        assert hasattr(MetricsCollector, "record_agent_unregistered")
 
     def test_has_get_metrics(self):
         """MetricsCollector defines get_metrics."""
-        assert hasattr(MetricsCollector, 'get_metrics')
+        assert hasattr(MetricsCollector, "get_metrics")
 
     def test_mock_implementation(self):
         """Mock implementation satisfies protocol."""
+
         class MockCollector:
-            def record_message_processed(self, message_type: str, duration_ms: float, success: bool) -> None:
+            def record_message_processed(
+                self, message_type: str, duration_ms: float, success: bool
+            ) -> None:
                 pass
 
             def record_agent_registered(self, agent_id: str) -> None:
@@ -269,6 +288,7 @@ class TestProtocolNonImplementation:
 
     def test_empty_class_not_registry(self):
         """Empty class does not implement AgentRegistry."""
+
         class Empty:
             pass
 
@@ -276,19 +296,22 @@ class TestProtocolNonImplementation:
 
     def test_partial_implementation_not_registry(self):
         """Partial implementation does not satisfy AgentRegistry."""
+
         class PartialRegistry:
             async def register(self, agent_id, capabilities=None, metadata=None):
                 return True
+
             # Missing other methods
 
         # With runtime_checkable, partial implementations may pass
         # This test documents the behavior
         partial = PartialRegistry()
         # Note: runtime_checkable only checks for method existence, not full signature
-        assert hasattr(partial, 'register')
+        assert hasattr(partial, "register")
 
     def test_wrong_signature_class(self):
         """Class with wrong signature still matches protocol name."""
+
         class WrongSignature:
             def record_message_processed(self):  # Missing parameters
                 pass
@@ -347,6 +370,7 @@ class TestProtocolInheritance:
 
     def test_explicit_inheritance_works(self):
         """Explicit protocol inheritance works correctly."""
+
         class ConcreteRegistry(AgentRegistry):
             async def register(self, agent_id: str, capabilities=None, metadata=None) -> bool:
                 return True

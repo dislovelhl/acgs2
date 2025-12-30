@@ -8,18 +8,18 @@ and audit trail searching capabilities.
 Constitutional Hash: cdd01ef066bc6cf2
 """
 
+from .audit_search import AuditTrailSearchService
 from .client import SearchPlatformClient, SearchPlatformConfig
+from .constitutional_search import ConstitutionalCodeSearchService
 from .models import (
+    SearchDomain,
+    SearchMatch,
+    SearchOptions,
     SearchRequest,
     SearchResponse,
-    SearchMatch,
-    SearchStats,
-    SearchDomain,
     SearchScope,
-    SearchOptions,
+    SearchStats,
 )
-from .constitutional_search import ConstitutionalCodeSearchService
-from .audit_search import AuditTrailSearchService
 
 __all__ = [
     # Client

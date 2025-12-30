@@ -7,15 +7,17 @@ Defines metering events, aggregations, and billing dimensions.
 
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Optional, Dict, Any, List
-from pydantic import BaseModel, Field
+from typing import Any, Dict, Optional
 from uuid import UUID, uuid4
+
+from pydantic import BaseModel, Field
 
 CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
 
 
 class MeterableOperation(str, Enum):
     """Operations tracked for usage-based billing."""
+
     CONSTITUTIONAL_VALIDATION = "constitutional_validation"
     AGENT_MESSAGE = "agent_message"
     POLICY_EVALUATION = "policy_evaluation"
@@ -28,14 +30,16 @@ class MeterableOperation(str, Enum):
 
 class MeteringTier(str, Enum):
     """Pricing tiers based on constitutional complexity."""
-    STANDARD = "standard"      # Basic validation
-    ENHANCED = "enhanced"      # With ML scoring
+
+    STANDARD = "standard"  # Basic validation
+    ENHANCED = "enhanced"  # With ML scoring
     DELIBERATION = "deliberation"  # Human-in-the-loop
     ENTERPRISE = "enterprise"  # Full governance suite
 
 
 class UsageEvent(BaseModel):
     """Individual metered operation event."""
+
     event_id: UUID = Field(default_factory=uuid4)
     timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
@@ -61,14 +65,12 @@ class UsageEvent(BaseModel):
     metadata: Dict[str, Any] = Field(default_factory=dict)
 
     class Config:
-        json_encoders = {
-            datetime: lambda v: v.isoformat(),
-            UUID: str
-        }
+        json_encoders = {datetime: lambda v: v.isoformat(), UUID: str}
 
 
 class UsageAggregation(BaseModel):
     """Aggregated usage for billing period."""
+
     aggregation_id: UUID = Field(default_factory=uuid4)
     tenant_id: str
 
@@ -92,14 +94,12 @@ class UsageAggregation(BaseModel):
     constitutional_hash: str = CONSTITUTIONAL_HASH
 
     class Config:
-        json_encoders = {
-            datetime: lambda v: v.isoformat(),
-            UUID: str
-        }
+        json_encoders = {datetime: lambda v: v.isoformat(), UUID: str}
 
 
 class MeteringQuota(BaseModel):
     """Usage quota and limits for a tenant."""
+
     tenant_id: str
 
     # Quotas per operation type
@@ -112,9 +112,7 @@ class MeteringQuota(BaseModel):
     rate_limit_per_second: int = 100
 
     # Current usage (updated periodically)
-    current_period_start: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc)
-    )
+    current_period_start: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     current_usage: Dict[str, int] = Field(default_factory=dict)
 
     # Constitutional
@@ -123,6 +121,7 @@ class MeteringQuota(BaseModel):
 
 class BillingRate(BaseModel):
     """Pricing rates per operation and tier."""
+
     operation: MeterableOperation
     tier: MeteringTier
 

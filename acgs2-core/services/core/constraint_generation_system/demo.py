@@ -5,16 +5,16 @@ ACGS-2 Constraint Generation System Demo
 """
 
 import asyncio
-import sys
 import os
+import sys
 
 # 添加路径
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))))
 
 from constraint_generator import ConstraintGenerator, GenerationRequest
 from language_constraints import LanguageConstraints
-from unit_test_generator import UnitTestGenerator
 from quality_scorer import QualityScorer
+from unit_test_generator import UnitTestGenerator
 
 
 async def demo_python_generation():
@@ -25,14 +25,14 @@ async def demo_python_generation():
         use_guidance=False,
         use_outlines=False,
         enable_dynamic_update=False,
-        enable_feedback_loop=False
+        enable_feedback_loop=False,
     )
 
     request = GenerationRequest(
         language="python",
         task_description="创建一个计算斐波那契数列的函数，要求包含类型提示和文档字符串",
         generate_tests=True,
-        quality_check=True
+        quality_check=True,
     )
 
     print(f"任务: {request.task_description}")
@@ -48,7 +48,7 @@ async def demo_python_generation():
         print("\n生成的测试:")
         print(result.tests[:500] + "..." if len(result.tests) > 500 else result.tests)
 
-    print("\n" + "="*50 + "\n")
+    print("\n" + "=" * 50 + "\n")
 
 
 async def demo_javascript_generation():
@@ -59,14 +59,14 @@ async def demo_javascript_generation():
         use_guidance=False,
         use_outlines=False,
         enable_dynamic_update=False,
-        enable_feedback_loop=False
+        enable_feedback_loop=False,
     )
 
     request = GenerationRequest(
         language="javascript",
         task_description="创建一个验证邮箱地址的函数",
         generate_tests=True,
-        quality_check=True
+        quality_check=True,
     )
 
     print(f"任务: {request.task_description}")
@@ -82,7 +82,7 @@ async def demo_javascript_generation():
         print("\n生成的测试:")
         print(result.tests[:500] + "..." if len(result.tests) > 500 else result.tests)
 
-    print("\n" + "="*50 + "\n")
+    print("\n" + "=" * 50 + "\n")
 
 
 async def demo_language_constraints():
@@ -91,7 +91,7 @@ async def demo_language_constraints():
 
     constraints = LanguageConstraints()
 
-    languages = ['python', 'javascript', 'java', 'cpp', 'go']
+    languages = ["python", "javascript", "java", "cpp", "go"]
 
     for lang in languages:
         lang_constraints = constraints.get_constraints(lang)
@@ -103,7 +103,7 @@ async def demo_language_constraints():
         print(f"  文件扩展名: {lang_constraints['file_extension']}")
         print()
 
-    print("="*50 + "\n")
+    print("=" * 50 + "\n")
 
 
 async def demo_unit_test_generation():
@@ -142,7 +142,7 @@ class MathUtils:
     print("\n生成的测试:")
     print(tests)
 
-    print("\n" + "="*50 + "\n")
+    print("\n" + "=" * 50 + "\n")
 
 
 async def demo_quality_scoring():
@@ -172,9 +172,9 @@ def bubble_sort(arr):
 '''
 
     # 差的代码示例
-    bad_code = '''
+    bad_code = """
 def sort(arr):return sorted(arr)  # 没有文档，没有错误处理
-'''
+"""
 
     print("好的代码质量评分:")
     good_score = await scorer.score_code(good_code, "python")
@@ -184,7 +184,7 @@ def sort(arr):return sorted(arr)  # 没有文档，没有错误处理
     bad_score = await scorer.score_code(bad_code, "python")
     print(f"分数: {bad_score}")
 
-    print("\n" + "="*50 + "\n")
+    print("\n" + "=" * 50 + "\n")
 
 
 async def demo_system_stats():
@@ -194,19 +194,11 @@ async def demo_system_stats():
     generator = ConstraintGenerator()
 
     # 生成一些代码来积累统计
-    tasks = [
-        "创建用户管理类",
-        "实现数据验证函数",
-        "构建API客户端",
-        "设计配置管理器"
-    ]
+    tasks = ["创建用户管理类", "实现数据验证函数", "构建API客户端", "设计配置管理器"]
 
     for task in tasks:
         request = GenerationRequest(
-            language="python",
-            task_description=task,
-            generate_tests=False,
-            quality_check=False
+            language="python", task_description=task, generate_tests=False, quality_check=False
         )
         await generator.generate_code(request)
 
@@ -218,14 +210,14 @@ async def demo_system_stats():
     print(f"  质量改进次数: {stats['quality_improvements']}")
     print(f"  约束更新次数: {stats['constraint_updates']}")
 
-    print("\n" + "="*50 + "\n")
+    print("\n" + "=" * 50 + "\n")
 
 
 async def main():
     """主演示函数"""
     print("ACGS-2 约束生成系统演示")
     print("从'事后修复'转向'约束生成'")
-    print("="*50 + "\n")
+    print("=" * 50 + "\n")
 
     try:
         await demo_language_constraints()
@@ -252,6 +244,7 @@ async def main():
     except Exception as e:
         print(f"演示过程中出现错误: {e}")
         import traceback
+
         traceback.print_exc()
 
 

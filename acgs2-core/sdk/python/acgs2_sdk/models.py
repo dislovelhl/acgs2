@@ -12,7 +12,6 @@ from pydantic import BaseModel, Field, field_validator
 
 from acgs2_sdk.constants import CONSTITUTIONAL_HASH
 
-
 # =============================================================================
 # Enums
 # =============================================================================

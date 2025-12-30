@@ -6,14 +6,14 @@ Implement the Supervisor-Worker topology for CEOS.
 The Supervisor plans, delegates, and critiques.
 """
 
-from typing import List, Dict, Any, Optional, Callable, Awaitable
-import json
 import logging
+from typing import Any, Awaitable, Callable
+
 from ..cyclic.state_schema import GlobalState
-from ..cyclic.actor_core import NodeCallable
-from .signatures import PlanningSignature, CritiqueSignature, CEOSPoncho
+from .signatures import CEOSPoncho, CritiqueSignature, PlanningSignature
 
 logger = logging.getLogger(__name__)
+
 
 class SupervisorNode:
     """
@@ -43,15 +43,14 @@ class SupervisorNode:
                 CritiqueSignature,
                 task_desc=f"Execute step for {last_worker_node}",
                 worker_output=last_worker_result,
-                constitutional_constraints=[state.metadata.constitutional_hash]
+                constitutional_constraints=[state.metadata.constitutional_hash],
             )
 
             if not critique["is_passed"]:
-                state.log_event(self.name, {
-                    "action": "critique",
-                    "status": "fail",
-                    "feedback": critique["feedback"]
-                })
+                state.log_event(
+                    self.name,
+                    {"action": "critique", "status": "fail", "feedback": critique["feedback"]},
+                )
                 # Re-run the node with feedback
                 state.next_node = last_worker_node
                 state.context["last_feedback"] = critique["feedback"]
@@ -70,18 +69,22 @@ class SupervisorNode:
                 PlanningSignature,
                 user_request=user_request,
                 context=state.context,
-                available_workers=["worker_research", "worker_coder", "worker_validator", "worker_analyst"]
+                available_workers=[
+                    "worker_research",
+                    "worker_coder",
+                    "worker_validator",
+                    "worker_analyst",
+                ],
             )
 
             plan = planning_result["plan"]
             state.context["ceos_plan"] = plan
             state.context["ceos_plan_idx"] = 0
             state.context["planning_reasoning"] = planning_result["reasoning"]
-            state.log_event(self.name, {
-                "action": "planning",
-                "steps": plan,
-                "reasoning": planning_result["reasoning"]
-            })
+            state.log_event(
+                self.name,
+                {"action": "planning", "steps": plan, "reasoning": planning_result["reasoning"]},
+            )
 
         # 3. Delegation Phase
         if plan_idx < len(plan):

@@ -6,31 +6,31 @@ Comprehensive tests for health aggregation service.
 """
 
 import asyncio
+from datetime import datetime, timedelta, timezone
+
 import pytest
-from datetime import datetime, timezone, timedelta
-from unittest.mock import Mock, AsyncMock, patch
 
 try:
     from enhanced_agent_bus.health_aggregator import (
-        CONSTITUTIONAL_HASH,
         CIRCUIT_BREAKER_AVAILABLE,
-        SystemHealthStatus,
+        CONSTITUTIONAL_HASH,
+        HealthAggregator,
+        HealthAggregatorConfig,
         HealthSnapshot,
         SystemHealthReport,
-        HealthAggregatorConfig,
-        HealthAggregator,
+        SystemHealthStatus,
         get_health_aggregator,
         reset_health_aggregator,
     )
 except ImportError:
     from health_aggregator import (
-        CONSTITUTIONAL_HASH,
         CIRCUIT_BREAKER_AVAILABLE,
-        SystemHealthStatus,
+        CONSTITUTIONAL_HASH,
+        HealthAggregator,
+        HealthAggregatorConfig,
         HealthSnapshot,
         SystemHealthReport,
-        HealthAggregatorConfig,
-        HealthAggregator,
+        SystemHealthStatus,
         get_health_aggregator,
         reset_health_aggregator,
     )
@@ -58,9 +58,9 @@ class MockCircuitBreakerRegistry:
         """Get all circuit breaker states."""
         return {
             name: {
-                'state': breaker.current_state,
-                'fail_counter': breaker.fail_counter,
-                'success_counter': breaker.success_counter,
+                "state": breaker.current_state,
+                "fail_counter": breaker.fail_counter,
+                "success_counter": breaker.success_counter,
             }
             for name, breaker in self._breakers.items()
         }
@@ -112,7 +112,7 @@ class TestHealthSnapshot:
             closed_breakers=10,
             half_open_breakers=0,
             open_breakers=0,
-            circuit_states={'service1': 'closed', 'service2': 'closed'},
+            circuit_states={"service1": "closed", "service2": "closed"},
         )
 
         assert snapshot.status == SystemHealthStatus.HEALTHY
@@ -130,16 +130,16 @@ class TestHealthSnapshot:
             closed_breakers=6,
             half_open_breakers=2,
             open_breakers=2,
-            circuit_states={'service1': 'open', 'service2': 'closed'},
+            circuit_states={"service1": "open", "service2": "closed"},
         )
 
         data = snapshot.to_dict()
 
-        assert data['status'] == 'degraded'
-        assert data['health_score'] == 0.6
-        assert data['total_breakers'] == 10
-        assert data['constitutional_hash'] == CONSTITUTIONAL_HASH
-        assert 'timestamp' in data
+        assert data["status"] == "degraded"
+        assert data["health_score"] == 0.6
+        assert data["total_breakers"] == 10
+        assert data["constitutional_hash"] == CONSTITUTIONAL_HASH
+        assert "timestamp" in data
 
 
 class TestSystemHealthReport:
@@ -174,17 +174,17 @@ class TestSystemHealthReport:
             closed_breakers=3,
             half_open_breakers=2,
             open_breakers=5,
-            circuit_details={'service1': {'state': 'open'}},
-            degraded_services=['service2'],
-            critical_services=['service1'],
+            circuit_details={"service1": {"state": "open"}},
+            degraded_services=["service2"],
+            critical_services=["service1"],
         )
 
         data = report.to_dict()
 
-        assert data['status'] == 'critical'
-        assert data['health_score'] == 0.3
-        assert data['constitutional_hash'] == CONSTITUTIONAL_HASH
-        assert len(data['critical_services']) == 1
+        assert data["status"] == "critical"
+        assert data["health_score"] == 0.3
+        assert data["constitutional_hash"] == CONSTITUTIONAL_HASH
+        assert len(data["critical_services"]) == 1
 
 
 class TestHealthAggregatorConfig:
@@ -242,18 +242,18 @@ class TestHealthAggregator:
 
     async def test_register_circuit_breaker(self, aggregator):
         """Test registering custom circuit breakers."""
-        breaker = MockCircuitBreaker(state='closed')
-        aggregator.register_circuit_breaker('test_service', breaker)
+        breaker = MockCircuitBreaker(state="closed")
+        aggregator.register_circuit_breaker("test_service", breaker)
 
-        assert 'test_service' in aggregator._custom_breakers
+        assert "test_service" in aggregator._custom_breakers
 
     async def test_unregister_circuit_breaker(self, aggregator):
         """Test unregistering circuit breakers."""
-        breaker = MockCircuitBreaker(state='closed')
-        aggregator.register_circuit_breaker('test_service', breaker)
-        aggregator.unregister_circuit_breaker('test_service')
+        breaker = MockCircuitBreaker(state="closed")
+        aggregator.register_circuit_breaker("test_service", breaker)
+        aggregator.unregister_circuit_breaker("test_service")
 
-        assert 'test_service' not in aggregator._custom_breakers
+        assert "test_service" not in aggregator._custom_breakers
 
     async def test_get_system_health_no_breakers(self, aggregator):
         """Test getting system health with no circuit breakers."""
@@ -277,9 +277,10 @@ class TestHealthAggregator:
 
         # Add closed circuit breakers
         import pybreaker
-        mock_registry.add_breaker('service1', pybreaker.STATE_CLOSED)
-        mock_registry.add_breaker('service2', pybreaker.STATE_CLOSED)
-        mock_registry.add_breaker('service3', pybreaker.STATE_CLOSED)
+
+        mock_registry.add_breaker("service1", pybreaker.STATE_CLOSED)
+        mock_registry.add_breaker("service2", pybreaker.STATE_CLOSED)
+        mock_registry.add_breaker("service3", pybreaker.STATE_CLOSED)
 
         report = aggregator.get_system_health()
 
@@ -295,9 +296,10 @@ class TestHealthAggregator:
 
         # Add mix of circuit breakers
         import pybreaker
-        mock_registry.add_breaker('service1', pybreaker.STATE_CLOSED)
-        mock_registry.add_breaker('service2', pybreaker.STATE_HALF_OPEN)
-        mock_registry.add_breaker('service3', pybreaker.STATE_OPEN)
+
+        mock_registry.add_breaker("service1", pybreaker.STATE_CLOSED)
+        mock_registry.add_breaker("service2", pybreaker.STATE_HALF_OPEN)
+        mock_registry.add_breaker("service3", pybreaker.STATE_OPEN)
 
         report = aggregator.get_system_health()
 
@@ -312,9 +314,10 @@ class TestHealthAggregator:
 
         # Add mostly open circuit breakers
         import pybreaker
-        mock_registry.add_breaker('service1', pybreaker.STATE_OPEN)
-        mock_registry.add_breaker('service2', pybreaker.STATE_OPEN)
-        mock_registry.add_breaker('service3', pybreaker.STATE_CLOSED)
+
+        mock_registry.add_breaker("service1", pybreaker.STATE_OPEN)
+        mock_registry.add_breaker("service2", pybreaker.STATE_OPEN)
+        mock_registry.add_breaker("service3", pybreaker.STATE_CLOSED)
 
         report = aggregator.get_system_health()
 
@@ -362,7 +365,8 @@ class TestHealthAggregator:
             pytest.skip("Circuit breaker support not available")
 
         import pybreaker
-        mock_registry.add_breaker('service1', pybreaker.STATE_CLOSED)
+
+        mock_registry.add_breaker("service1", pybreaker.STATE_CLOSED)
 
         await aggregator.start()
 
@@ -393,7 +397,7 @@ class TestHealthAggregator:
                 closed_breakers=1,
                 half_open_breakers=0,
                 open_breakers=0,
-                circuit_states={'service1': 'closed'},
+                circuit_states={"service1": "closed"},
             )
             aggregator._health_history.append(snapshot)
 
@@ -419,7 +423,8 @@ class TestHealthAggregator:
         aggregator.on_health_change(health_callback)
 
         import pybreaker
-        mock_registry.add_breaker('service1', pybreaker.STATE_CLOSED)
+
+        mock_registry.add_breaker("service1", pybreaker.STATE_CLOSED)
 
         await aggregator.start()
 
@@ -450,8 +455,8 @@ class TestHealthAggregator:
         import pybreaker
 
         # Start with healthy state
-        mock_registry.add_breaker('service1', pybreaker.STATE_CLOSED)
-        mock_registry.add_breaker('service2', pybreaker.STATE_CLOSED)
+        mock_registry.add_breaker("service1", pybreaker.STATE_CLOSED)
+        mock_registry.add_breaker("service2", pybreaker.STATE_CLOSED)
 
         await aggregator.start()
 
@@ -459,7 +464,7 @@ class TestHealthAggregator:
         await asyncio.sleep(0.2)
 
         # Change to degraded state
-        mock_registry._breakers['service1'].current_state = pybreaker.STATE_OPEN
+        mock_registry._breakers["service1"].current_state = pybreaker.STATE_OPEN
 
         # Wait for status change callback
         await asyncio.sleep(0.2)
@@ -468,19 +473,22 @@ class TestHealthAggregator:
 
         # Should have at least 2 status changes
         assert len(status_changes) >= 1
-        assert SystemHealthStatus.HEALTHY in status_changes or SystemHealthStatus.DEGRADED in status_changes
+        assert (
+            SystemHealthStatus.HEALTHY in status_changes
+            or SystemHealthStatus.DEGRADED in status_changes
+        )
 
     async def test_get_metrics(self, aggregator):
         """Test getting aggregator metrics."""
         metrics = aggregator.get_metrics()
 
-        assert 'snapshots_collected' in metrics
-        assert 'callbacks_fired' in metrics
-        assert 'history_size' in metrics
-        assert 'running' in metrics
-        assert 'enabled' in metrics
-        assert 'current_status' in metrics
-        assert metrics['constitutional_hash'] == CONSTITUTIONAL_HASH
+        assert "snapshots_collected" in metrics
+        assert "callbacks_fired" in metrics
+        assert "history_size" in metrics
+        assert "running" in metrics
+        assert "enabled" in metrics
+        assert "current_status" in metrics
+        assert metrics["constitutional_hash"] == CONSTITUTIONAL_HASH
 
     async def test_custom_breaker_integration(self, aggregator):
         """Test integration with custom circuit breakers."""
@@ -493,16 +501,16 @@ class TestHealthAggregator:
         breaker1 = MockCircuitBreaker(pybreaker.STATE_CLOSED)
         breaker2 = MockCircuitBreaker(pybreaker.STATE_OPEN)
 
-        aggregator.register_circuit_breaker('custom1', breaker1)
-        aggregator.register_circuit_breaker('custom2', breaker2)
+        aggregator.register_circuit_breaker("custom1", breaker1)
+        aggregator.register_circuit_breaker("custom2", breaker2)
 
         report = aggregator.get_system_health()
 
         assert report.total_breakers == 2
         assert report.closed_breakers == 1
         assert report.open_breakers == 1
-        assert 'custom1' in report.circuit_details
-        assert 'custom2' in report.circuit_details
+        assert "custom1" in report.circuit_details
+        assert "custom2" in report.circuit_details
 
     async def test_constitutional_compliance_in_reports(self, aggregator):
         """Test that all reports include constitutional hash."""
@@ -512,7 +520,7 @@ class TestHealthAggregator:
 
         # Test report serialization
         data = report.to_dict()
-        assert data['constitutional_hash'] == CONSTITUTIONAL_HASH
+        assert data["constitutional_hash"] == CONSTITUTIONAL_HASH
 
 
 class TestHealthAggregatorSingleton:
@@ -557,7 +565,8 @@ class TestFireAndForgetPattern:
         aggregator.on_health_change(slow_callback)
 
         import pybreaker
-        mock_registry.add_breaker('service1', pybreaker.STATE_CLOSED)
+
+        mock_registry.add_breaker("service1", pybreaker.STATE_CLOSED)
 
         start_time = asyncio.get_event_loop().time()
         await aggregator.start()
@@ -585,7 +594,8 @@ class TestFireAndForgetPattern:
         aggregator.on_health_change(failing_callback)
 
         import pybreaker
-        mock_registry.add_breaker('service1', pybreaker.STATE_CLOSED)
+
+        mock_registry.add_breaker("service1", pybreaker.STATE_CLOSED)
 
         # Should not raise exception despite callback failure
         await aggregator.start()

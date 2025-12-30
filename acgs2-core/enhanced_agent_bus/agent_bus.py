@@ -10,87 +10,85 @@ import asyncio
 import logging
 import time
 from datetime import datetime, timezone
-from typing import Any, Callable, Dict, List, Optional, TYPE_CHECKING
+from typing import Any, Dict, List, Optional
+
+from .config import BusConfiguration
 
 # Use centralized imports module for optional dependencies
 from .imports import (
+    AUDIT_CLIENT_AVAILABLE,
+    CIRCUIT_BREAKER_ENABLED,
+    CONFIG_AVAILABLE,
+    CRYPTO_AVAILABLE,
+    DEFAULT_REDIS_URL,
+    DELIBERATION_AVAILABLE,
+    # Prometheus
+    MESSAGE_QUEUE_DEPTH,
+    METERING_AVAILABLE,
     # Feature flags
     METRICS_ENABLED,
     OTEL_ENABLED,
-    CIRCUIT_BREAKER_ENABLED,
     POLICY_CLIENT_AVAILABLE,
-    DELIBERATION_AVAILABLE,
-    CRYPTO_AVAILABLE,
-    CONFIG_AVAILABLE,
-    AUDIT_CLIENT_AVAILABLE,
-    OPA_CLIENT_AVAILABLE,
-    USE_RUST,
-    METERING_AVAILABLE,
-    DEFAULT_REDIS_URL,
-    # Prometheus
-    MESSAGE_QUEUE_DEPTH,
-    set_service_info,
-    # OpenTelemetry
-    tracer,
     QUEUE_DEPTH,
-    # Circuit breaker
-    get_circuit_breaker,
-    circuit_breaker_health_check,
-    initialize_core_circuit_breakers,
-    CircuitBreakerConfig,
-    # Policy client
-    get_policy_client,
-    PolicyClient,
-    # Deliberation
-    VotingService,
-    DeliberationQueue,
-    # Crypto
-    CryptoService,
-    # Settings
-    settings,
+    USE_RUST,
     # Audit
     AuditClient,
+    CircuitBreakerConfig,
+    # Crypto
+    CryptoService,
+    DeliberationQueue,
+    VotingService,
+    circuit_breaker_health_check,
+    # Circuit breaker
+    get_circuit_breaker,
     # OPA
     get_opa_client,
+    # Policy client
+    get_policy_client,
+    initialize_core_circuit_breakers,
+    set_service_info,
+    # Settings
+    settings,
+    # OpenTelemetry
+    tracer,
 )
 
 # Use centralized metering manager
-from .metering_manager import MeteringManager, create_metering_manager
-from .config import BusConfiguration
+from .metering_manager import create_metering_manager
 
 # Core package imports with fallback
 try:
+    from .interfaces import AgentRegistry, MessageRouter, ValidationStrategy
     from .models import (
-        AgentMessage,
-        MessageType,
-        MessageStatus,
         CONSTITUTIONAL_HASH,
+        AgentMessage,
+        MessageStatus,
+        MessageType,
+    )
+    from .registry import (
+        DirectMessageRouter,
+        DynamicPolicyValidationStrategy,
+        InMemoryAgentRegistry,
+        OPAValidationStrategy,
+        StaticHashValidationStrategy,
     )
     from .validators import ValidationResult
-    from .interfaces import AgentRegistry, MessageRouter, ValidationStrategy
-    from .registry import (
-        InMemoryAgentRegistry,
-        DirectMessageRouter,
-        StaticHashValidationStrategy,
-        DynamicPolicyValidationStrategy,
-        OPAValidationStrategy,
-    )
 except ImportError:
+    from interfaces import AgentRegistry, MessageRouter, ValidationStrategy
     from models import (
-        AgentMessage,
-        MessageType,
-        MessageStatus,
         CONSTITUTIONAL_HASH,
+        AgentMessage,
+        MessageStatus,
+        MessageType,
+    )
+    from registry import (
+        DirectMessageRouter,
+        DynamicPolicyValidationStrategy,
+        InMemoryAgentRegistry,
+        OPAValidationStrategy,
+        StaticHashValidationStrategy,
     )
     from validators import ValidationResult
-    from interfaces import AgentRegistry, MessageRouter, ValidationStrategy
-    from registry import (
-        InMemoryAgentRegistry,
-        DirectMessageRouter,
-        StaticHashValidationStrategy,
-        DynamicPolicyValidationStrategy,
-        OPAValidationStrategy,
-    )
 
 # Import MessageProcessor
 try:
@@ -101,12 +99,13 @@ except ImportError:
 # MACI role separation enforcement (optional)
 try:
     from .maci_enforcement import (
-        MACIRole,
-        MACIRoleRegistry,
         MACIEnforcer,
-        MACIRoleViolationError,
+        MACIRole,
         MACIRoleNotAssignedError,
+        MACIRoleRegistry,
+        MACIRoleViolationError,
     )
+
     MACI_AVAILABLE = True
 except ImportError:
     MACI_AVAILABLE = False
@@ -240,8 +239,7 @@ class EnhancedAgentBus:
         # Initialize circuit breaker for policy registry
         if CIRCUIT_BREAKER_ENABLED and self._use_dynamic_policy:
             self._policy_circuit_breaker = get_circuit_breaker(
-                'policy_registry',
-                CircuitBreakerConfig(fail_max=3, reset_timeout=15)
+                "policy_registry", CircuitBreakerConfig(fail_max=3, reset_timeout=15)
             )
 
         # Initialize Deliberation Layer
@@ -258,7 +256,7 @@ class EnhancedAgentBus:
         }
 
     @classmethod
-    def from_config(cls, config: BusConfiguration) -> 'EnhancedAgentBus':
+    def from_config(cls, config: BusConfiguration) -> "EnhancedAgentBus":
         """Create an EnhancedAgentBus from a BusConfiguration object.
 
         This factory method provides a cleaner interface for complex configurations
@@ -318,6 +316,26 @@ class EnhancedAgentBus:
             return AuditClient(service_url=audit_service_url)
         return None
 
+    def _redact_error_message(self, error: Exception) -> str:
+        """Redact sensitive information from error messages (VULN-008)."""
+        import re
+
+        error_msg = str(error)
+
+        # 1. Redact potential URLs/URIs with various protocols (e.g. postgres://, redis://)
+        redacted = re.sub(r'[a-zA-Z0-9+.-]+://[^\s<>"]+', "[REDACTED_URI]", error_msg)
+
+        # 2. Redact common credential patterns (e.g. key=...) BEFORE path redaction
+        redacted = re.sub(
+            r"(?i)(key|secret|token|password|auth|pwd)=[^ \b\n\r\t,;]+", r"\1=[REDACTED]", redacted
+        )
+
+        # 3. Redact absolute file paths (Unix-style)
+        # Avoid redacting solitary slashes or very short paths
+        redacted = re.sub(r"/(?:[a-zA-Z0-9._-]+/)+[a-zA-Z0-9._-]+", "[REDACTED_PATH]", redacted)
+
+        return redacted
+
     def _init_registry(
         self,
         registry: Optional[AgentRegistry],
@@ -356,6 +374,7 @@ class EnhancedAgentBus:
         """Initialize Kafka bus if enabled."""
         if use_kafka:
             from .kafka_bus import KafkaEventBus
+
             return KafkaEventBus(bootstrap_servers=kafka_bootstrap_servers)
         return None
 
@@ -376,9 +395,9 @@ class EnhancedAgentBus:
         # Initialize Prometheus service info
         if METRICS_ENABLED and set_service_info:
             set_service_info(
-                service_name='enhanced_agent_bus',
-                version='2.0.0',
-                constitutional_hash=CONSTITUTIONAL_HASH
+                service_name="enhanced_agent_bus",
+                version="2.0.0",
+                constitutional_hash=CONSTITUTIONAL_HASH,
             )
 
         # Initialize core circuit breakers
@@ -447,6 +466,20 @@ class EnhancedAgentBus:
         )
         if validated_tenant is False:
             return False
+
+        # SANITIZATION (VULN-005): Normalize and validate tenant identity
+        from .security.tenant_validator import TenantValidator
+
+        normalized_tenant, is_valid = TenantValidator.sanitize_and_validate(
+            validated_tenant or tenant_id
+        )
+
+        if tenant_id and not is_valid:
+            logger.error(f"Agent registration rejected: invalid tenant_id format '{tenant_id}'")
+            return False
+
+        validated_tenant = normalized_tenant
+
         if validated_tenant is not None:
             tenant_id = validated_tenant
         if validated_capabilities is not None:
@@ -480,9 +513,7 @@ class EnhancedAgentBus:
                     role=maci_role,
                     metadata={"capabilities": capabilities or []},
                 )
-                logger.info(
-                    f"Agent registered with MACI: {agent_id} (role: {maci_role.value})"
-                )
+                logger.info(f"Agent registered with MACI: {agent_id} (role: {maci_role.value})")
             except Exception as e:
                 logger.warning(f"Failed to register agent with MACI: {e}")
                 if self._maci_strict_mode:
@@ -510,7 +541,7 @@ class EnhancedAgentBus:
             try:
                 public_key = (
                     settings.security.jwt_public_key
-                    if hasattr(settings.security, 'jwt_public_key')
+                    if hasattr(settings.security, "jwt_public_key")
                     else CONSTITUTIONAL_HASH
                 )
                 payload = CryptoService.verify_agent_token(auth_token, public_key)
@@ -575,8 +606,8 @@ class EnhancedAgentBus:
                     "message.id": message.message_id,
                     "agent.from": message.from_agent,
                     "agent.to": message.to_agent,
-                    "tenant.id": message.tenant_id or "default"
-                }
+                    "tenant.id": message.tenant_id or "default",
+                },
             ):
                 return await self._do_send_message(message)
         else:
@@ -584,6 +615,18 @@ class EnhancedAgentBus:
 
     async def _do_send_message(self, message: AgentMessage) -> ValidationResult:
         """Internal message sending logic with validation and routing."""
+        # SANITIZATION (VULN-005): Normalize and validate tenant identity
+        from .security.tenant_validator import TenantValidator
+
+        normalized_tenant, is_valid = TenantValidator.sanitize_and_validate(message.tenant_id)
+        if message.tenant_id and not is_valid:
+            return ValidationResult(
+                is_valid=False,
+                errors=[f"Invalid tenant_id format: {message.tenant_id}"],
+                constitutional_hash=self.constitutional_hash,
+            )
+        message.tenant_id = normalized_tenant
+
         message_start = time.perf_counter()
 
         if OTEL_ENABLED and QUEUE_DEPTH:
@@ -652,14 +695,14 @@ class EnhancedAgentBus:
             if error:
                 result.add_error(error)
             result.metadata["governance_mode"] = "DEGRADED"
-            result.metadata["fallback_reason"] = str(e)
+            # SECURITY (VULN-008): Redact error details before returning to environment
+            result.metadata["fallback_reason"] = self._redact_error_message(e)
             return result
 
     def _requires_deliberation(self, result: ValidationResult) -> bool:
         """Check if message requires deliberation based on impact score."""
         return (
-            self._deliberation_queue is not None
-            and result.metadata.get("impact_score", 0.0) >= 0.8
+            self._deliberation_queue is not None and result.metadata.get("impact_score", 0.0) >= 0.8
         )
 
     async def _handle_deliberation(
@@ -673,9 +716,7 @@ class EnhancedAgentBus:
         logger.info(
             f"Message {message.message_id} diverted to deliberation (Score: {impact_score})"
         )
-        await self._deliberation_queue.enqueue(
-            message, metadata={"impact_score": impact_score}
-        )
+        await self._deliberation_queue.enqueue(message, metadata={"impact_score": impact_score})
         result.status = MessageStatus.PENDING_DELIBERATION
         self._metering_manager.record_deliberation_request(
             message, impact_score, (time.perf_counter() - start_time) * 1000
@@ -707,7 +748,9 @@ class EnhancedAgentBus:
     @staticmethod
     def _normalize_tenant_id(tenant_id: Optional[str]) -> Optional[str]:
         """Normalize tenant identifiers to a canonical optional value."""
-        return tenant_id or None
+        from .security.tenant_validator import TenantValidator
+
+        return TenantValidator.normalize(tenant_id)
 
     @staticmethod
     def _format_tenant_id(tenant_id: Optional[str]) -> str:
@@ -829,14 +872,16 @@ class EnhancedAgentBus:
     def get_agents_by_type(self, agent_type: str) -> List[str]:
         """Get agent IDs filtered by type."""
         return [
-            agent_id for agent_id, info in self._agents.items()
+            agent_id
+            for agent_id, info in self._agents.items()
             if info.get("agent_type") == agent_type
         ]
 
     def get_agents_by_capability(self, capability: str) -> List[str]:
         """Get agent IDs that have a specific capability."""
         return [
-            agent_id for agent_id, info in self._agents.items()
+            agent_id
+            for agent_id, info in self._agents.items()
             if capability in info.get("capabilities", [])
         ]
 
@@ -849,9 +894,7 @@ class EnhancedAgentBus:
 
         # Update Prometheus queue depth gauge
         if METRICS_ENABLED and MESSAGE_QUEUE_DEPTH:
-            MESSAGE_QUEUE_DEPTH.labels(
-                queue_name='main', priority='all'
-            ).set(queue_size)
+            MESSAGE_QUEUE_DEPTH.labels(queue_name="main", priority="all").set(queue_size)
 
         metrics = {
             **self._metrics,

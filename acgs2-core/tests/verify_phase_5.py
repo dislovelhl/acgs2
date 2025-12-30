@@ -7,9 +7,6 @@ Verifies:
 """
 
 import asyncio
-import json
-import os
-from datetime import datetime, timezone
 import sys
 from pathlib import Path
 
@@ -17,9 +14,10 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).parent.parent))
 
 from enhanced_agent_bus.core import EnhancedAgentBus
-from enhanced_agent_bus.models import AgentMessage, MessageType, Priority, MessageStatus
-from services.audit_service.core.audit_ledger import AuditLedger
+from enhanced_agent_bus.models import AgentMessage, MessageType, Priority
 from services.audit_service.core.anchor_mock import BlockchainAnchor
+from services.audit_service.core.audit_ledger import AuditLedger
+
 
 async def verify_phase_5():
     print("🚀 Starting Phase 5 Verification...")
@@ -29,12 +27,13 @@ async def verify_phase_5():
         use_dynamic_policy=False,
         use_kafka=True,
         kafka_bootstrap_servers="localhost:9092",
-        use_rust=False
+        use_rust=False,
     )
-    
+
     # Mock Kafka bus to avoid connection errors in dev env
-    from unittest.mock import MagicMock, AsyncMock
-    if hasattr(bus, '_kafka_bus') and bus._kafka_bus:
+    from unittest.mock import AsyncMock
+
+    if hasattr(bus, "_kafka_bus") and bus._kafka_bus:
         bus._kafka_bus.start = AsyncMock()
         bus._kafka_bus.stop = AsyncMock()
         bus._kafka_bus.send_message = AsyncMock(return_value=True)
@@ -53,28 +52,28 @@ async def verify_phase_5():
         from_agent="agent-alpha",
         to_agent="agent-beta",
         content={
-            "action": "transfer_funds", 
-            "amount": 1000000, 
+            "action": "transfer_funds",
+            "amount": 1000000,
             "priority": "critical",
-            "details": "CRITICAL security breach risk emergency: unauthorized financial transaction payment transfer admin execute delete"
+            "details": "CRITICAL security breach risk emergency: unauthorized financial transaction payment transfer admin execute delete",
         },
         message_type=MessageType.COMMAND,
         priority=Priority.CRITICAL,
-        tenant_id="tenant-1"
+        tenant_id="tenant-1",
     )
 
     # We need to ensure the processor returns a high impact score
-    # For verification, we might need to mock or ensure the impact scorer 
+    # For verification, we might need to mock or ensure the impact scorer
     # catches 'high-value-transfer' which I added patterns for earlier.
-    
+
     result = await bus.send_message(msg_high_impact)
     print(f"Validation Result: {result.is_valid}")
     print(f"Impact Score: {result.metadata.get('impact_score', 0)}")
-    
+
     # Check deliberation queue
     pending_tasks = bus._deliberation_queue.get_pending_tasks()
     print(f"Pending Deliberation Tasks: {len(pending_tasks)}")
-    
+
     if len(pending_tasks) > 0:
         print("✅ SUCCESS: High-impact message diverted to Deliberation Queue.")
     else:
@@ -82,29 +81,31 @@ async def verify_phase_5():
 
     # 4. Test Auditing & Anchoring
     print("\n--- Testing Immutable Auditing ---")
-    ledger = AuditLedger(batch_size=2) # Small batch for testing
-    
+    ledger = AuditLedger(batch_size=2)  # Small batch for testing
+
     # Add two entries
     await ledger.start()
     from enhanced_agent_bus.validators import ValidationResult
+
     await ledger.add_validation_result(ValidationResult(is_valid=True))
     await ledger.add_validation_result(ValidationResult(is_valid=True))
     await ledger.force_commit_batch()
-    
+
     # This should trigger a commit and anchoring
     # AuditLedger anchors root in _commit_batch
-    
+
     anchor = BlockchainAnchor()
     latest_block = anchor.get_latest_block()
     print(f"Latest Anchored Block: {latest_block['index']} | Root: {latest_block['root_hash']}")
-    
-    if latest_block['index'] > 0:
+
+    if latest_block["index"] > 0:
         print("✅ SUCCESS: Merkle root anchored to Blockchain Mock.")
     else:
         print("❌ FAILURE: No roots anchored.")
 
     await bus.stop()
     print("\n🏁 Phase 5 Verification Complete.")
+
 
 if __name__ == "__main__":
     asyncio.run(verify_phase_5())

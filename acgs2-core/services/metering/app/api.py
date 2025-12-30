@@ -5,18 +5,18 @@ Constitutional Hash: cdd01ef066bc6cf2
 REST API for usage tracking, quota management, and billing estimates.
 """
 
-from datetime import datetime, timezone, timedelta
+from datetime import datetime
 from typing import Optional
-from fastapi import FastAPI, HTTPException, Depends, Query, Header
+
+from fastapi import Depends, FastAPI, Header, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from .models import (
-    UsageEvent,
-    MeteringQuota,
-    MeterableOperation,
-    MeteringTier,
     CONSTITUTIONAL_HASH,
+    MeterableOperation,
+    MeteringQuota,
+    MeteringTier,
 )
 from .service import UsageMeteringService
 
@@ -48,7 +48,7 @@ async def get_metering_service() -> UsageMeteringService:
 
 
 async def validate_constitutional_hash(
-    x_constitutional_hash: str = Header(default=CONSTITUTIONAL_HASH)
+    x_constitutional_hash: str = Header(default=CONSTITUTIONAL_HASH),
 ) -> str:
     """Validate constitutional hash from request header."""
     if x_constitutional_hash != CONSTITUTIONAL_HASH:

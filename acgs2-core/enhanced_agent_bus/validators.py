@@ -8,7 +8,7 @@ Validation utilities for message and agent compliance.
 import hmac
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 # Import centralized constitutional hash from shared module
 try:
@@ -29,6 +29,7 @@ class ValidationResult:
         metadata (Dict[str, Any]): Additional metadata associated with the validation.
         constitutional_hash (str): The constitutional hash `cdd01ef066bc6cf2`.
     """
+
     is_valid: bool = True
     errors: List[str] = field(default_factory=list)
     warnings: List[str] = field(default_factory=list)
@@ -65,7 +66,7 @@ class ValidationResult:
             "metadata": self.metadata,
             "decision": self.decision,
             "constitutional_hash": self.constitutional_hash,
-            "timestamp": datetime.now(timezone.utc).isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }
 
 

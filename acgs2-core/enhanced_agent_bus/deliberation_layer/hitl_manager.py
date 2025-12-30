@@ -6,20 +6,18 @@ Orchestrates human approval workflows for high-risk agent actions.
 Integrates with DeliberationLayer and AuditLedger.
 """
 
+import json
 import logging
 import os
-import json
-from typing import Optional
 from datetime import datetime, timezone
+from typing import Optional
 
 try:
-    from .deliberation_queue import DeliberationQueue, DeliberationStatus
     from ..models import CONSTITUTIONAL_HASH
+    from .deliberation_queue import DeliberationQueue, DeliberationStatus
 except ImportError:
     # Fallback for direct execution
-    from deliberation_queue import (  # type: ignore
-        DeliberationQueue, DeliberationStatus
-    )
+    from deliberation_queue import DeliberationQueue, DeliberationStatus  # type: ignore
     from models import CONSTITUTIONAL_HASH  # type: ignore
 
 # Try to import ValidationResult from canonical source first
@@ -38,6 +36,7 @@ except ImportError:
 
             Constitutional Hash: cdd01ef066bc6cf2
             """
+
             is_valid: bool = True
             errors: List[str] = field(default_factory=list)
             warnings: List[str] = field(default_factory=list)
@@ -61,14 +60,18 @@ except ImportError:
                     "constitutional_hash": self.constitutional_hash,
                 }
 
+
 # Try to import AuditLedger
 try:
     import sys
+
     sys.path.append(os.path.join(os.getcwd(), "services/audit_service"))
     from core.audit_ledger import AuditLedger
 except ImportError:
+
     class AuditLedger:  # type: ignore
         """Mock AuditLedger."""
+
         async def add_validation_result(self, res):
             """Mock add."""
             logging.getLogger(__name__).debug(f"Mock audit recorded: {res.to_dict()}")
@@ -81,9 +84,9 @@ logger = logging.getLogger(__name__)
 class HITLManager:
     """Manages the Human-In-The-Loop lifecycle."""
 
-    def __init__(self,
-                 deliberation_queue: DeliberationQueue,
-                 audit_ledger: Optional[AuditLedger] = None):
+    def __init__(
+        self, deliberation_queue: DeliberationQueue, audit_ledger: Optional[AuditLedger] = None
+    ):
         """Initialize HITL Manager."""
         self.queue = deliberation_queue
         self.audit_ledger = audit_ledger or AuditLedger()
@@ -104,38 +107,36 @@ class HITLManager:
             "attachments": [
                 {
                     "fields": [
-                        {"title": "Agent ID", "value": msg.from_agent,
-                         "short": True},
-                        {"title": "Impact Score", "value": str(msg.impact_score),
-                         "short": True},
-                        {"title": "Action Type", "value": msg.message_type.value,
-                         "short": False},
-                        {"title": "Content", "value": str(msg.content)[:100] + "...",
-                         "short": False}
+                        {"title": "Agent ID", "value": msg.from_agent, "short": True},
+                        {"title": "Impact Score", "value": str(msg.impact_score), "short": True},
+                        {"title": "Action Type", "value": msg.message_type.value, "short": False},
+                        {
+                            "title": "Content",
+                            "value": str(msg.content)[:100] + "...",
+                            "short": False,
+                        },
                     ],
                     "callback_id": item_id,
                     "actions": [
-                        {"name": "approve", "text": "Approve",
-                         "type": "button", "style": "primary"},
-                        {"name": "reject", "text": "Reject",
-                         "type": "button", "style": "danger"}
-                    ]
+                        {
+                            "name": "approve",
+                            "text": "Approve",
+                            "type": "button",
+                            "style": "primary",
+                        },
+                        {"name": "reject", "text": "Reject", "type": "button", "style": "danger"},
+                    ],
                 }
-            ]
+            ],
         }
 
         # Simulate sending to Slack/Teams
-        logger.info(f"Notification sent to {channel}: "
-                    f"{json.dumps(payload, indent=2)}")
+        logger.info(f"Notification sent to {channel}: " f"{json.dumps(payload, indent=2)}")
 
         # Update status to under review
         item.status = DeliberationStatus.UNDER_REVIEW
 
-    async def process_approval(self,
-                               item_id: str,
-                               reviewer_id: str,
-                               decision: str,
-                               reasoning: str):
+    async def process_approval(self, item_id: str, reviewer_id: str, decision: str, reasoning: str):
         """
         Process the human decision and record to audit ledger.
         Implements Pillar 2: Immutable audit metadata.
@@ -146,10 +147,7 @@ class HITLManager:
             status = DeliberationStatus.REJECTED
 
         success = await self.queue.submit_human_decision(
-            item_id=item_id,
-            reviewer=reviewer_id,
-            decision=status,
-            reasoning=reasoning
+            item_id=item_id, reviewer=reviewer_id, decision=status, reasoning=reasoning
         )
 
         if success:
@@ -162,8 +160,8 @@ class HITLManager:
                     "reviewer": reviewer_id,
                     "decision": decision,
                     "reasoning": reasoning,
-                    "timestamp": datetime.now(timezone.utc).isoformat()
-                }
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                },
             )
             audit_hash = await self.audit_ledger.add_validation_result(audit_res)
             logger.info(f"Decision for {item_id} recorded. Hash: {audit_hash}")

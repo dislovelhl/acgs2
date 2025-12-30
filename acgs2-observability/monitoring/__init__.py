@@ -5,18 +5,19 @@ Constitutional Hash: cdd01ef066bc6cf2
 Real-time production monitoring with psutil integration, Redis metrics, and PagerDuty alerting.
 """
 
-from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
 import asyncio
 import logging
 import uuid
+from dataclasses import dataclass, field
+from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional
 
 from .alerting import Alert, AlertSeverity, AlertStatus
 
 # Import centralized Redis config with fallback
 try:
     from shared.redis_config import get_redis_url
+
     DEFAULT_REDIS_URL = get_redis_url()
 except ImportError:
     DEFAULT_REDIS_URL = "redis://localhost:6379"
@@ -30,6 +31,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class SystemMetrics:
     """System metrics data class."""
+
     timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     constitutional_hash: str = CONSTITUTIONAL_HASH
     cpu_percent: float = 0.0
@@ -43,6 +45,7 @@ class SystemMetrics:
 @dataclass
 class RedisMetrics:
     """Redis metrics data class."""
+
     timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     constitutional_hash: str = CONSTITUTIONAL_HASH
     connected_clients: int = 0
@@ -64,6 +67,7 @@ class SystemMetricsCollector:
         self._psutil = None
         try:
             import psutil
+
             self._psutil = psutil
         except ImportError:
             logger.warning("psutil not available, using mock metrics")
@@ -74,7 +78,7 @@ class SystemMetricsCollector:
             return SystemMetrics(
                 cpu_percent=self._psutil.cpu_percent(interval=0.1),
                 memory_percent=self._psutil.virtual_memory().percent,
-                disk_percent=self._psutil.disk_usage('/').percent,
+                disk_percent=self._psutil.disk_usage("/").percent,
                 network_bytes_sent=self._psutil.net_io_counters().bytes_sent,
                 network_bytes_recv=self._psutil.net_io_counters().bytes_recv,
                 process_count=len(self._psutil.pids()),
@@ -87,7 +91,9 @@ class SystemMetricsCollector:
             return {
                 "cpu_percent": self._psutil.cpu_percent(interval=0.1),
                 "cpu_count": self._psutil.cpu_count(),
-                "cpu_freq": getattr(self._psutil.cpu_freq(), 'current', 0) if self._psutil.cpu_freq() else 0,
+                "cpu_freq": (
+                    getattr(self._psutil.cpu_freq(), "current", 0) if self._psutil.cpu_freq() else 0
+                ),
             }
         return {"cpu_percent": 0.0, "cpu_count": 1, "cpu_freq": 0}
 
@@ -101,12 +107,17 @@ class SystemMetricsCollector:
                 "memory_percent": mem.percent,
                 "memory_available_gb": mem.available / (1024**3),
             }
-        return {"memory_total_gb": 0, "memory_used_gb": 0, "memory_percent": 0.0, "memory_available_gb": 0}
+        return {
+            "memory_total_gb": 0,
+            "memory_used_gb": 0,
+            "memory_percent": 0.0,
+            "memory_available_gb": 0,
+        }
 
     async def _collect_disk_metrics(self) -> Dict[str, Any]:
         """Collect disk-specific metrics."""
         if self._psutil:
-            disk = self._psutil.disk_usage('/')
+            disk = self._psutil.disk_usage("/")
             return {
                 "disk_total_gb": disk.total / (1024**3),
                 "disk_used_gb": disk.used / (1024**3),
@@ -125,7 +136,12 @@ class SystemMetricsCollector:
                 "network_packets_sent": net.packets_sent,
                 "network_packets_recv": net.packets_recv,
             }
-        return {"network_bytes_sent_mb": 0, "network_bytes_recv_mb": 0, "network_packets_sent": 0, "network_packets_recv": 0}
+        return {
+            "network_bytes_sent_mb": 0,
+            "network_bytes_recv_mb": 0,
+            "network_packets_sent": 0,
+            "network_packets_recv": 0,
+        }
 
     async def _collect_process_metrics(self) -> Dict[str, Any]:
         """Collect process-specific metrics."""
@@ -161,6 +177,7 @@ class RedisMetricsCollector:
         """Connect to Redis."""
         try:
             import redis.asyncio as aioredis
+
             self._redis_client = await aioredis.from_url(self.redis_url)
             self._connected = True
             return True
@@ -180,20 +197,24 @@ class RedisMetricsCollector:
         try:
             if self._redis_client:
                 info = await self._redis_client.info()
-                hits = info.get('keyspace_hits', 0)
-                misses = info.get('keyspace_misses', 0)
+                hits = info.get("keyspace_hits", 0)
+                misses = info.get("keyspace_misses", 0)
                 total = hits + misses
 
                 return RedisMetrics(
-                    connected_clients=info.get('connected_clients', 0),
-                    used_memory_mb=info.get('used_memory', 0) / (1024**2),
-                    used_memory_peak=info.get('used_memory_peak', 0),
-                    total_connections_received=info.get('total_connections_received', 0),
-                    total_commands_processed=info.get('total_commands_processed', 0),
+                    connected_clients=info.get("connected_clients", 0),
+                    used_memory_mb=info.get("used_memory", 0) / (1024**2),
+                    used_memory_peak=info.get("used_memory_peak", 0),
+                    total_connections_received=info.get("total_connections_received", 0),
+                    total_commands_processed=info.get("total_commands_processed", 0),
                     keyspace_hits=hits,
                     keyspace_misses=misses,
                     hit_rate_percent=(hits / total * 100) if total > 0 else 0.0,
-                    total_keys=info.get('db0', {}).get('keys', 0) if isinstance(info.get('db0'), dict) else 0,
+                    total_keys=(
+                        info.get("db0", {}).get("keys", 0)
+                        if isinstance(info.get("db0"), dict)
+                        else 0
+                    ),
                 )
         except Exception as e:
             logger.warning(f"Failed to collect Redis metrics: {e}")
@@ -285,8 +306,7 @@ class AlertManager:
 
         # Check rate limiting
         self._rate_limit_window = [
-            t for t in self._rate_limit_window
-            if (now - t).total_seconds() < 60
+            t for t in self._rate_limit_window if (now - t).total_seconds() < 60
         ]
         if len(self._rate_limit_window) >= self.max_alerts_per_minute:
             return None  # Rate limited
@@ -443,9 +463,9 @@ class ProductionMonitor:
 
     async def _check_system_thresholds(self, metrics: Any) -> None:
         """Check system metrics against thresholds."""
-        cpu = getattr(metrics, 'cpu_percent', 0)
-        memory = getattr(metrics, 'memory_percent', 0)
-        disk = getattr(metrics, 'disk_percent', 0)
+        cpu = getattr(metrics, "cpu_percent", 0)
+        memory = getattr(metrics, "memory_percent", 0)
+        disk = getattr(metrics, "disk_percent", 0)
 
         if cpu >= self._thresholds["cpu_critical"]:
             await self.alert_manager.trigger_alert(
@@ -480,7 +500,7 @@ class ProductionMonitor:
 
     async def _check_redis_thresholds(self, metrics: Any) -> None:
         """Check Redis metrics against thresholds."""
-        hit_rate = getattr(metrics, 'hit_rate_percent', 100)
+        hit_rate = getattr(metrics, "hit_rate_percent", 100)
 
         if hit_rate < self._thresholds["redis_hit_rate_constitutional"]:
             await self.alert_manager.trigger_alert(

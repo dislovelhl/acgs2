@@ -6,13 +6,13 @@ CLI tool to verify a Merkle Root against the anchored blockchain.
 
 import argparse
 import sys
-import json
 from pathlib import Path
 
 # Add project root to path
 sys.path.append(str(Path(__file__).parent.parent.parent.parent))
 
 from services.audit_service.core.anchor_mock import BlockchainAnchor
+
 
 def verify_root(root_hash: str):
     anchor = BlockchainAnchor()
@@ -28,6 +28,7 @@ def verify_root(root_hash: str):
     else:
         print(f"❌ VERIFICATION FAILED: Hash {root_hash} NOT found in the blockchain anchor.")
 
+
 def list_blocks():
     anchor = BlockchainAnchor()
     print(f"Blockchain Anchor: {len(anchor.blocks)} blocks")
@@ -35,8 +36,11 @@ def list_blocks():
     for block in anchor.blocks:
         print(f"B[{block['index']}] | {block['timestamp']} | Root: {block['root_hash'][:16]}...")
 
+
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Verify Merkle Roots against ACGS-2 Blockchain Anchor")
+    parser = argparse.ArgumentParser(
+        description="Verify Merkle Roots against ACGS-2 Blockchain Anchor"
+    )
     subparsers = parser.add_subparsers(dest="command")
 
     verify_parser = subparsers.add_parser("verify", help="Verify a root hash")

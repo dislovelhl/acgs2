@@ -7,8 +7,7 @@ Workflow for coordinating collective agent tasks (broadcast, aggregation, consen
 
 import asyncio
 import logging
-from typing import Any, Dict, List, Optional
-import uuid
+from typing import Any, Dict, Optional
 
 from ..base.result import WorkflowResult
 from ..base.workflow import BaseWorkflow
@@ -110,8 +109,8 @@ class SwarmCoordinationWorkflow(BaseWorkflow):
                 "metrics": {
                     "total_agents": total_count,
                     "success_count": success_count,
-                    "success_rate": success_rate
-                }
+                    "success_rate": success_rate,
+                },
             }
 
             return await self.complete(output)

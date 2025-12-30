@@ -5,29 +5,25 @@ Constitutional Hash: cdd01ef066bc6cf2
 Tests that exercise the actual core.py module code with proper mocking.
 """
 
-import os
-import sys
+from unittest.mock import MagicMock
+
 import pytest
-import asyncio
-from datetime import datetime, timezone
-from unittest.mock import AsyncMock, MagicMock, patch
 
 # Imports are handled via sys.modules patching in conftest.py
-
 from enhanced_agent_bus.core import (
-    MessageProcessor,
+    CONSTITUTIONAL_HASH,
     EnhancedAgentBus,
+    MessageProcessor,
     get_agent_bus,
     reset_agent_bus,
-    CONSTITUTIONAL_HASH,
 )
-from enhanced_agent_bus.models import AgentMessage, MessageType, Priority, MessageStatus
+from enhanced_agent_bus.models import AgentMessage, MessageType, Priority
 from enhanced_agent_bus.validators import ValidationResult
-
 
 # ============================================================================
 # MessageProcessor Tests
 # ============================================================================
+
 
 class TestMessageProcessorActual:
     """Test MessageProcessor with actual code."""
@@ -166,6 +162,7 @@ class TestMessageProcessorActual:
 # EnhancedAgentBus Tests
 # ============================================================================
 
+
 class TestEnhancedAgentBusActual:
     """Test EnhancedAgentBus with actual code."""
 
@@ -186,9 +183,7 @@ class TestEnhancedAgentBusActual:
     async def test_register_agent(self, bus):
         """Test agent registration."""
         result = await bus.register_agent(
-            agent_id="test_agent",
-            agent_type="worker",
-            capabilities=["task_execution"]
+            agent_id="test_agent", agent_type="worker", capabilities=["task_execution"]
         )
         assert result is True
         assert "test_agent" in bus._agents
@@ -197,9 +192,7 @@ class TestEnhancedAgentBusActual:
     async def test_register_agent_with_tenant(self, bus):
         """Test agent registration with tenant_id."""
         result = await bus.register_agent(
-            agent_id="tenant_agent",
-            agent_type="worker",
-            tenant_id="tenant_123"
+            agent_id="tenant_agent", agent_type="worker", tenant_id="tenant_123"
         )
         assert result is True
         info = bus.get_agent_info("tenant_agent")
@@ -390,6 +383,7 @@ class TestEnhancedAgentBusActual:
 # Global Instance Tests
 # ============================================================================
 
+
 class TestGlobalInstances:
     """Test global instance management."""
 
@@ -411,6 +405,7 @@ class TestGlobalInstances:
 # ============================================================================
 # Start/Stop Tests
 # ============================================================================
+
 
 class TestBusLifecycle:
     """Test bus start/stop lifecycle."""
@@ -454,6 +449,7 @@ class TestBusLifecycle:
 # ============================================================================
 # Additional Coverage Tests
 # ============================================================================
+
 
 class TestMessageProcessorAdditional:
     """Additional MessageProcessor tests for coverage."""

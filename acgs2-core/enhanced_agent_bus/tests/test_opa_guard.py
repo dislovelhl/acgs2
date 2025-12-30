@@ -5,13 +5,12 @@ Constitutional Hash: cdd01ef066bc6cf2
 Tests for enhanced_agent_bus/deliberation_layer/opa_guard.py
 """
 
+import importlib.util
 import os
 import sys
-import importlib.util
-import pytest
-from datetime import datetime, timedelta, timezone
-from unittest.mock import AsyncMock, MagicMock, patch
+from datetime import datetime, timezone
 
+import pytest
 
 # ============================================================================
 # Direct Module Loading (compatible with conftest.py)
@@ -32,9 +31,7 @@ def _load_module(name: str, path: str):
 # Load required modules
 _models_path = os.path.join(_parent_dir, "models.py")
 _validators_path = os.path.join(_parent_dir, "validators.py")
-_opa_guard_models_path = os.path.join(
-    _parent_dir, "deliberation_layer", "opa_guard_models.py"
-)
+_opa_guard_models_path = os.path.join(_parent_dir, "deliberation_layer", "opa_guard_models.py")
 
 _models = _load_module("_models_for_guard", _models_path)
 _validators = _load_module("_validators_for_guard", _validators_path)
@@ -60,6 +57,7 @@ GUARD_CONSTITUTIONAL_HASH = _opa_models.GUARD_CONSTITUTIONAL_HASH
 # ============================================================================
 # OPAGuard Mock Implementation for Testing
 # ============================================================================
+
 
 class MockOPAClient:
     """Mock OPA client for testing."""
@@ -121,10 +119,7 @@ class OPAGuardForTest:
         self._critic_agents = {}
         self._default_signers = {
             "high": ["supervisor_agent", "compliance_agent"],
-            "critical": [
-                "supervisor_agent", "compliance_agent",
-                "security_agent", "ethics_agent"
-            ],
+            "critical": ["supervisor_agent", "compliance_agent", "security_agent", "ethics_agent"],
         }
 
     async def initialize(self):
@@ -211,9 +206,7 @@ class OPAGuardForTest:
             self._stats["constitutional_failures"] += 1
             result.decision = GuardDecision.DENY
             result.is_allowed = False
-            result.validation_errors.append(
-                "Constitutional compliance check failed"
-            )
+            result.validation_errors.append("Constitutional compliance check failed")
             return result
 
         # Evaluate policy
@@ -224,9 +217,7 @@ class OPAGuardForTest:
             "constitutional_hash": GUARD_CONSTITUTIONAL_HASH,
         }
         policy_path = action.get("policy_path", "data.acgs.guard.verify")
-        policy_result = await self.opa_client.evaluate_policy(
-            policy_input, policy_path
-        )
+        policy_result = await self.opa_client.evaluate_policy(policy_input, policy_path)
 
         result.policy_path = policy_path
         result.policy_result = policy_result
@@ -241,9 +232,7 @@ class OPAGuardForTest:
         if not policy_result.get("allowed", False):
             result.decision = GuardDecision.DENY
             result.is_allowed = False
-            result.validation_errors.append(
-                policy_result.get("reason", "Policy denied action")
-            )
+            result.validation_errors.append(policy_result.get("reason", "Policy denied action"))
             self._stats["denied"] += 1
         elif risk_score >= self.critical_risk_threshold:
             result.decision = GuardDecision.REQUIRE_REVIEW
@@ -286,11 +275,13 @@ class OPAGuardForTest:
 
     async def log_decision(self, request, result):
         """Log a decision to audit log."""
-        self._audit_log.append({
-            "request": request,
-            "result": result,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-        })
+        self._audit_log.append(
+            {
+                "request": request,
+                "result": result,
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            }
+        )
 
 
 OPAGuard = OPAGuardForTest
@@ -299,6 +290,7 @@ OPAGuard = OPAGuardForTest
 # ============================================================================
 # OPAGuard Initialization Tests
 # ============================================================================
+
 
 class TestOPAGuardInit:
     """Test OPAGuard initialization."""
@@ -351,14 +343,13 @@ class TestOPAGuardInit:
 
         assert "high" in guard._default_signers
         assert "critical" in guard._default_signers
-        assert len(guard._default_signers["critical"]) > len(
-            guard._default_signers["high"]
-        )
+        assert len(guard._default_signers["critical"]) > len(guard._default_signers["high"])
 
 
 # ============================================================================
 # OPAGuard Lifecycle Tests
 # ============================================================================
+
 
 class TestOPAGuardLifecycle:
     """Test OPAGuard lifecycle methods."""
@@ -401,6 +392,7 @@ class TestOPAGuardLifecycle:
 # Constitutional Compliance Tests
 # ============================================================================
 
+
 class TestConstitutionalCompliance:
     """Test constitutional compliance checking."""
 
@@ -439,6 +431,7 @@ class TestConstitutionalCompliance:
 # Risk Calculation Tests
 # ============================================================================
 
+
 class TestRiskCalculation:
     """Test risk score calculation."""
 
@@ -468,11 +461,7 @@ class TestRiskCalculation:
         """Test risk score is capped at 1.0."""
         guard = OPAGuard()
         action = {"type": "delete"}
-        context = {
-            "affects_production": True,
-            "affects_users": True,
-            "sensitive_data": True
-        }
+        context = {"affects_production": True, "affects_users": True, "sensitive_data": True}
         policy_result = {"risk_score": 0.9}
 
         score = guard._calculate_risk_score(action, context, policy_result)
@@ -493,6 +482,7 @@ class TestRiskCalculation:
 # Action Verification Tests
 # ============================================================================
 
+
 class TestActionVerification:
     """Test action verification."""
 
@@ -502,15 +492,12 @@ class TestActionVerification:
         guard = OPAGuard()
         mock_client = MockOPAClient()
         mock_client.set_policy_result(
-            "data.acgs.guard.verify",
-            {"allowed": True, "risk_score": 0.0}
+            "data.acgs.guard.verify", {"allowed": True, "risk_score": 0.0}
         )
         guard.opa_client = mock_client
 
         result = await guard.verify_action(
-            agent_id="test_agent",
-            action={"type": "read"},
-            context={}
+            agent_id="test_agent", action={"type": "read"}, context={}
         )
 
         assert result.decision == GuardDecision.ALLOW
@@ -522,15 +509,14 @@ class TestActionVerification:
         guard = OPAGuard(high_risk_threshold=0.5, critical_risk_threshold=0.9)
         mock_client = MockOPAClient()
         mock_client.set_policy_result(
-            "data.acgs.guard.verify",
-            {"allowed": True, "risk_score": 0.1}
+            "data.acgs.guard.verify", {"allowed": True, "risk_score": 0.1}
         )
         guard.opa_client = mock_client
 
         result = await guard.verify_action(
             agent_id="test_agent",
             action={"type": "modify"},  # 0.2 risk
-            context={"affects_production": True}  # 0.3 risk = 0.6 total (high but not critical)
+            context={"affects_production": True},  # 0.3 risk = 0.6 total (high but not critical)
         )
 
         assert result.decision == GuardDecision.REQUIRE_SIGNATURES
@@ -543,18 +529,14 @@ class TestActionVerification:
         guard = OPAGuard(critical_risk_threshold=0.7)
         mock_client = MockOPAClient()
         mock_client.set_policy_result(
-            "data.acgs.guard.verify",
-            {"allowed": True, "risk_score": 0.5}
+            "data.acgs.guard.verify", {"allowed": True, "risk_score": 0.5}
         )
         guard.opa_client = mock_client
 
         result = await guard.verify_action(
             agent_id="test_agent",
             action={"type": "delete"},
-            context={
-                "affects_production": True,
-                "sensitive_data": True
-            }
+            context={"affects_production": True, "sensitive_data": True},
         )
 
         assert result.decision == GuardDecision.REQUIRE_REVIEW
@@ -568,14 +550,12 @@ class TestActionVerification:
         mock_client = MockOPAClient()
         mock_client.set_policy_result(
             "data.acgs.guard.verify",
-            {"allowed": False, "reason": "Policy denied: Unauthorized access"}
+            {"allowed": False, "reason": "Policy denied: Unauthorized access"},
         )
         guard.opa_client = mock_client
 
         result = await guard.verify_action(
-            agent_id="test_agent",
-            action={"type": "execute"},
-            context={}
+            agent_id="test_agent", action={"type": "execute"}, context={}
         )
 
         assert result.decision == GuardDecision.DENY
@@ -592,11 +572,8 @@ class TestActionVerification:
 
         result = await guard.verify_action(
             agent_id="test_agent",
-            action={
-                "type": "execute",
-                "constitutional_hash": "invalid_hash"
-            },
-            context={}
+            action={"type": "execute", "constitutional_hash": "invalid_hash"},
+            context={},
         )
 
         assert result.decision == GuardDecision.DENY
@@ -609,16 +586,11 @@ class TestActionVerification:
         guard = OPAGuard()
         mock_client = MockOPAClient()
         mock_client.set_policy_result(
-            "data.acgs.guard.verify",
-            {"allowed": True, "risk_score": 0.0}
+            "data.acgs.guard.verify", {"allowed": True, "risk_score": 0.0}
         )
         guard.opa_client = mock_client
 
-        await guard.verify_action(
-            agent_id="test_agent",
-            action={"type": "read"},
-            context={}
-        )
+        await guard.verify_action(agent_id="test_agent", action={"type": "read"}, context={})
 
         assert guard._stats["total_verifications"] == 1
         assert guard._stats["allowed"] == 1
@@ -628,6 +600,7 @@ class TestActionVerification:
 # Critic Agent Registration Tests
 # ============================================================================
 
+
 class TestCriticAgentRegistration:
     """Test critic agent registration."""
 
@@ -636,9 +609,7 @@ class TestCriticAgentRegistration:
         guard = OPAGuard()
 
         result = guard.register_critic_agent(
-            agent_id="critic_1",
-            agent_type="security",
-            expertise=["policy", "compliance"]
+            agent_id="critic_1", agent_type="security", expertise=["policy", "compliance"]
         )
 
         assert result is True
@@ -659,6 +630,7 @@ class TestCriticAgentRegistration:
 # ============================================================================
 # Statistics Tests
 # ============================================================================
+
 
 class TestStatistics:
     """Test guard statistics."""
@@ -690,6 +662,7 @@ class TestStatistics:
 # Audit Log Tests
 # ============================================================================
 
+
 class TestAuditLog:
     """Test audit logging."""
 
@@ -699,8 +672,7 @@ class TestAuditLog:
         guard = OPAGuard()
 
         await guard.log_decision(
-            request={"agent_id": "test", "action": {"type": "read"}},
-            result={"decision": "allow"}
+            request={"agent_id": "test", "action": {"type": "read"}}, result={"decision": "allow"}
         )
 
         assert len(guard._audit_log) == 1
@@ -709,9 +681,7 @@ class TestAuditLog:
     def test_get_audit_log(self):
         """Test getting audit log."""
         guard = OPAGuard()
-        guard._audit_log = [
-            {"request": 1}, {"request": 2}, {"request": 3}
-        ]
+        guard._audit_log = [{"request": 1}, {"request": 2}, {"request": 3}]
 
         log = guard.get_audit_log(limit=2)
 
@@ -731,6 +701,7 @@ class TestAuditLog:
 # ============================================================================
 # Risk Factor Identification Tests
 # ============================================================================
+
 
 class TestRiskFactorIdentification:
     """Test risk factor identification."""

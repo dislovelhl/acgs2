@@ -5,9 +5,10 @@ Constitutional Hash: cdd01ef066bc6cf2
 Fixtures for constitutional hash validation and compliance testing.
 """
 
-import pytest
 from dataclasses import dataclass
 from typing import Optional
+
+import pytest
 
 try:
     from shared.constants import CONSTITUTIONAL_HASH

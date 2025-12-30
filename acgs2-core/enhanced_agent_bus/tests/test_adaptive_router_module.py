@@ -5,13 +5,12 @@ Constitutional Hash: cdd01ef066bc6cf2
 Tests for the actual adaptive_router.py module with mocked dependencies.
 """
 
-import asyncio
+import importlib.util
 import os
 import sys
+from datetime import datetime, timezone
+
 import pytest
-from datetime import datetime, timedelta, timezone
-from unittest.mock import AsyncMock, MagicMock, patch
-import importlib.util
 
 # Add enhanced_agent_bus directory to path
 enhanced_agent_bus_dir = os.path.dirname(os.path.dirname(__file__))
@@ -31,16 +30,18 @@ def _load_module(name, path):
 # Load base models first
 _models = _load_module("_adaptive_test_models", os.path.join(enhanced_agent_bus_dir, "models.py"))
 
+
 # Create mock parent package
 class MockEnhancedAgentBus:
     pass
+
 
 mock_parent = MockEnhancedAgentBus()
 mock_parent.models = _models
 
 # Patch sys.modules for imports
-sys.modules['enhanced_agent_bus'] = mock_parent
-sys.modules['enhanced_agent_bus.models'] = _models
+sys.modules["enhanced_agent_bus"] = mock_parent
+sys.modules["enhanced_agent_bus.models"] = _models
 
 # Import from models
 AgentMessage = _models.AgentMessage
@@ -57,16 +58,21 @@ class MockDeliberationQueue:
         self.queue = {}
         self.enqueue_count = 0
 
-    async def enqueue_for_deliberation(self, message, requires_human_review=True,
-                                       requires_multi_agent_vote=True,
-                                       timeout_seconds=300):
+    async def enqueue_for_deliberation(
+        self,
+        message,
+        requires_human_review=True,
+        requires_multi_agent_vote=True,
+        timeout_seconds=300,
+    ):
         import uuid
+
         item_id = str(uuid.uuid4())
         self.queue[item_id] = {
-            'message': message,
-            'requires_human_review': requires_human_review,
-            'requires_multi_agent_vote': requires_multi_agent_vote,
-            'timeout_seconds': timeout_seconds,
+            "message": message,
+            "requires_human_review": requires_human_review,
+            "requires_multi_agent_vote": requires_multi_agent_vote,
+            "timeout_seconds": timeout_seconds,
         }
         self.enqueue_count += 1
         return item_id
@@ -83,14 +89,14 @@ def mock_get_deliberation_queue():
 def mock_calculate_message_impact(content):
     """Simple mock impact calculation."""
     text = str(content).lower()
-    high_risk_keywords = ['critical', 'emergency', 'security', 'delete', 'production']
+    high_risk_keywords = ["critical", "emergency", "security", "delete", "production"]
     if any(keyword in text for keyword in high_risk_keywords):
         return 0.9
     return 0.3
 
 
 # Patch the imports before loading adaptive_router
-sys.modules['..models'] = _models
+sys.modules["..models"] = _models
 
 
 class TestAdaptiveRouterModule:
@@ -104,25 +110,27 @@ class TestAdaptiveRouterModule:
 
         # Create AdaptiveRouter-like class for testing
         class TestableAdaptiveRouter:
-            def __init__(self, impact_threshold=0.8, deliberation_timeout=300, enable_learning=True):
+            def __init__(
+                self, impact_threshold=0.8, deliberation_timeout=300, enable_learning=True
+            ):
                 self.impact_threshold = impact_threshold
                 self.deliberation_timeout = deliberation_timeout
                 self.enable_learning = enable_learning
                 self.routing_history = []
                 self.performance_metrics = {
-                    'total_messages': 0,
-                    'fast_lane_count': 0,
-                    'deliberation_count': 0,
-                    'deliberation_approved': 0,
-                    'deliberation_rejected': 0,
-                    'deliberation_timeout': 0,
-                    'false_positives': 0,
-                    'false_negatives': 0,
+                    "total_messages": 0,
+                    "fast_lane_count": 0,
+                    "deliberation_count": 0,
+                    "deliberation_approved": 0,
+                    "deliberation_rejected": 0,
+                    "deliberation_timeout": 0,
+                    "false_positives": 0,
+                    "false_negatives": 0,
                 }
                 self.deliberation_queue = mock_queue
 
             async def route_message(self, message):
-                self.performance_metrics['total_messages'] += 1
+                self.performance_metrics["total_messages"] += 1
 
                 if message.impact_score is None:
                     message.impact_score = mock_calculate_message_impact(message.content)
@@ -133,37 +141,37 @@ class TestAdaptiveRouterModule:
                     return await self._route_to_fast_lane(message)
 
             async def _route_to_fast_lane(self, message):
-                self.performance_metrics['fast_lane_count'] += 1
+                self.performance_metrics["fast_lane_count"] += 1
                 message.status = MessageStatus.DELIVERED
                 message.updated_at = datetime.now(timezone.utc)
 
                 routing_decision = {
-                    'lane': 'fast',
-                    'impact_score': message.impact_score,
-                    'decision_timestamp': datetime.now(timezone.utc),
-                    'processing_time': 0.0,
-                    'requires_deliberation': False
+                    "lane": "fast",
+                    "impact_score": message.impact_score,
+                    "decision_timestamp": datetime.now(timezone.utc),
+                    "processing_time": 0.0,
+                    "requires_deliberation": False,
                 }
                 self._record_routing_history(message, routing_decision)
                 return routing_decision
 
             async def _route_to_deliberation(self, message):
-                self.performance_metrics['deliberation_count'] += 1
+                self.performance_metrics["deliberation_count"] += 1
 
                 item_id = await self.deliberation_queue.enqueue_for_deliberation(
                     message=message,
                     requires_human_review=True,
                     requires_multi_agent_vote=True,
-                    timeout_seconds=self.deliberation_timeout
+                    timeout_seconds=self.deliberation_timeout,
                 )
 
                 routing_decision = {
-                    'lane': 'deliberation',
-                    'item_id': item_id,
-                    'impact_score': message.impact_score,
-                    'decision_timestamp': datetime.now(timezone.utc),
-                    'requires_deliberation': True,
-                    'estimated_wait_time': self.deliberation_timeout
+                    "lane": "deliberation",
+                    "item_id": item_id,
+                    "impact_score": message.impact_score,
+                    "decision_timestamp": datetime.now(timezone.utc),
+                    "requires_deliberation": True,
+                    "estimated_wait_time": self.deliberation_timeout,
                 }
                 self._record_routing_history(message, routing_decision)
                 return routing_decision
@@ -173,54 +181,58 @@ class TestAdaptiveRouterModule:
                     return
 
                 entry = {
-                    'message_id': message.message_id,
-                    'impact_score': message.impact_score,
-                    'routing_decision': routing_decision,
-                    'timestamp': datetime.now(timezone.utc),
-                    'message_type': message.message_type.value,
+                    "message_id": message.message_id,
+                    "impact_score": message.impact_score,
+                    "routing_decision": routing_decision,
+                    "timestamp": datetime.now(timezone.utc),
+                    "message_type": message.message_type.value,
                 }
                 self.routing_history.append(entry)
 
                 if len(self.routing_history) > 1000:
                     self.routing_history = self.routing_history[-1000:]
 
-            async def update_performance_feedback(self, message_id, actual_outcome,
-                                                  processing_time, feedback_score=None):
+            async def update_performance_feedback(
+                self, message_id, actual_outcome, processing_time, feedback_score=None
+            ):
                 if not self.enable_learning:
                     return
 
                 for entry in reversed(self.routing_history):
-                    if entry['message_id'] == message_id:
-                        entry['actual_outcome'] = actual_outcome
-                        entry['processing_time'] = processing_time
-                        entry['feedback_score'] = feedback_score
+                    if entry["message_id"] == message_id:
+                        entry["actual_outcome"] = actual_outcome
+                        entry["processing_time"] = processing_time
+                        entry["feedback_score"] = feedback_score
 
-                        if entry['routing_decision']['lane'] == 'deliberation':
-                            if actual_outcome == 'approved':
-                                self.performance_metrics['deliberation_approved'] += 1
-                            elif actual_outcome == 'rejected':
-                                self.performance_metrics['deliberation_rejected'] += 1
-                            elif actual_outcome == 'timeout':
-                                self.performance_metrics['deliberation_timeout'] += 1
+                        if entry["routing_decision"]["lane"] == "deliberation":
+                            if actual_outcome == "approved":
+                                self.performance_metrics["deliberation_approved"] += 1
+                            elif actual_outcome == "rejected":
+                                self.performance_metrics["deliberation_rejected"] += 1
+                            elif actual_outcome == "timeout":
+                                self.performance_metrics["deliberation_timeout"] += 1
                         break
 
             def get_routing_stats(self):
-                total = self.performance_metrics['total_messages']
+                total = self.performance_metrics["total_messages"]
                 if total == 0:
                     return self.performance_metrics.copy()
 
                 stats = self.performance_metrics.copy()
-                stats.update({
-                    'fast_lane_percentage': self.performance_metrics['fast_lane_count'] / total,
-                    'deliberation_percentage': self.performance_metrics['deliberation_count'] / total,
-                    'deliberation_approval_rate': (
-                        self.performance_metrics['deliberation_approved'] /
-                        max(self.performance_metrics['deliberation_count'], 1)
-                    ),
-                    'current_threshold': self.impact_threshold,
-                    'learning_enabled': self.enable_learning,
-                    'history_size': len(self.routing_history)
-                })
+                stats.update(
+                    {
+                        "fast_lane_percentage": self.performance_metrics["fast_lane_count"] / total,
+                        "deliberation_percentage": self.performance_metrics["deliberation_count"]
+                        / total,
+                        "deliberation_approval_rate": (
+                            self.performance_metrics["deliberation_approved"]
+                            / max(self.performance_metrics["deliberation_count"], 1)
+                        ),
+                        "current_threshold": self.impact_threshold,
+                        "learning_enabled": self.enable_learning,
+                        "history_size": len(self.routing_history),
+                    }
+                )
                 return stats
 
             def set_impact_threshold(self, threshold):
@@ -231,8 +243,8 @@ class TestAdaptiveRouterModule:
                 message.impact_score = 1.0
                 result = await self._route_to_deliberation(message)
                 message.impact_score = original_score
-                result['forced'] = True
-                result['force_reason'] = reason
+                result["forced"] = True
+                result["force_reason"] = reason
                 return result
 
         return TestableAdaptiveRouter()
@@ -264,20 +276,20 @@ class TestAdaptiveRouterModule:
         """Test that low-risk messages are routed to fast lane."""
         result = await router.route_message(low_risk_message)
 
-        assert result['lane'] == 'fast'
-        assert result['requires_deliberation'] is False
+        assert result["lane"] == "fast"
+        assert result["requires_deliberation"] is False
         assert low_risk_message.status == MessageStatus.DELIVERED
-        assert router.performance_metrics['fast_lane_count'] == 1
+        assert router.performance_metrics["fast_lane_count"] == 1
 
     @pytest.mark.asyncio
     async def test_route_high_risk_to_deliberation(self, router, high_risk_message):
         """Test that high-risk messages are routed to deliberation."""
         result = await router.route_message(high_risk_message)
 
-        assert result['lane'] == 'deliberation'
-        assert result['requires_deliberation'] is True
-        assert 'item_id' in result
-        assert router.performance_metrics['deliberation_count'] == 1
+        assert result["lane"] == "deliberation"
+        assert result["requires_deliberation"] is True
+        assert "item_id" in result
+        assert router.performance_metrics["deliberation_count"] == 1
 
     @pytest.mark.asyncio
     async def test_impact_score_calculation(self, router, low_risk_message):
@@ -295,31 +307,32 @@ class TestAdaptiveRouterModule:
         await router.route_message(low_risk_message)
 
         assert len(router.routing_history) == 1
-        assert router.routing_history[0]['message_id'] == low_risk_message.message_id
+        assert router.routing_history[0]["message_id"] == low_risk_message.message_id
 
     @pytest.mark.asyncio
     async def test_routing_history_disabled(self, low_risk_message):
         """Test that routing history is not recorded when learning is disabled."""
+
         # Create router with learning disabled
         class NoLearningRouter:
             def __init__(self):
                 self.enable_learning = False
                 self.routing_history = []
                 self.performance_metrics = {
-                    'total_messages': 0,
-                    'fast_lane_count': 0,
-                    'deliberation_count': 0,
+                    "total_messages": 0,
+                    "fast_lane_count": 0,
+                    "deliberation_count": 0,
                 }
                 self.impact_threshold = 0.8
 
             async def route_message(self, message):
-                self.performance_metrics['total_messages'] += 1
+                self.performance_metrics["total_messages"] += 1
                 if message.impact_score is None:
                     message.impact_score = 0.3
-                self.performance_metrics['fast_lane_count'] += 1
+                self.performance_metrics["fast_lane_count"] += 1
                 message.status = MessageStatus.DELIVERED
-                self._record_routing_history(message, {'lane': 'fast'})
-                return {'lane': 'fast'}
+                self._record_routing_history(message, {"lane": "fast"})
+                return {"lane": "fast"}
 
             def _record_routing_history(self, message, decision):
                 if not self.enable_learning:
@@ -338,13 +351,13 @@ class TestAdaptiveRouterModule:
 
         await router.update_performance_feedback(
             message_id=high_risk_message.message_id,
-            actual_outcome='approved',
+            actual_outcome="approved",
             processing_time=5.0,
-            feedback_score=0.9
+            feedback_score=0.9,
         )
 
-        assert router.performance_metrics['deliberation_approved'] == 1
-        assert router.routing_history[0].get('actual_outcome') == 'approved'
+        assert router.performance_metrics["deliberation_approved"] == 1
+        assert router.routing_history[0].get("actual_outcome") == "approved"
 
     @pytest.mark.asyncio
     async def test_performance_feedback_rejected(self, router, high_risk_message):
@@ -352,12 +365,10 @@ class TestAdaptiveRouterModule:
         await router.route_message(high_risk_message)
 
         await router.update_performance_feedback(
-            message_id=high_risk_message.message_id,
-            actual_outcome='rejected',
-            processing_time=3.0
+            message_id=high_risk_message.message_id, actual_outcome="rejected", processing_time=3.0
         )
 
-        assert router.performance_metrics['deliberation_rejected'] == 1
+        assert router.performance_metrics["deliberation_rejected"] == 1
 
     @pytest.mark.asyncio
     async def test_performance_feedback_timeout(self, router, high_risk_message):
@@ -365,25 +376,23 @@ class TestAdaptiveRouterModule:
         await router.route_message(high_risk_message)
 
         await router.update_performance_feedback(
-            message_id=high_risk_message.message_id,
-            actual_outcome='timeout',
-            processing_time=300.0
+            message_id=high_risk_message.message_id, actual_outcome="timeout", processing_time=300.0
         )
 
-        assert router.performance_metrics['deliberation_timeout'] == 1
+        assert router.performance_metrics["deliberation_timeout"] == 1
 
     def test_get_routing_stats(self, router):
         """Test getting routing statistics."""
         stats = router.get_routing_stats()
 
         # Base metrics should always be present
-        assert 'total_messages' in stats
-        assert 'fast_lane_count' in stats
-        assert 'deliberation_count' in stats
+        assert "total_messages" in stats
+        assert "fast_lane_count" in stats
+        assert "deliberation_count" in stats
 
         # When total_messages is 0, additional stats may not be computed
         # These are only added when there are processed messages
-        assert stats['total_messages'] == 0
+        assert stats["total_messages"] == 0
 
     @pytest.mark.asyncio
     async def test_routing_stats_percentages(self, router, low_risk_message, high_risk_message):
@@ -393,9 +402,9 @@ class TestAdaptiveRouterModule:
 
         stats = router.get_routing_stats()
 
-        assert stats['total_messages'] == 2
-        assert stats['fast_lane_percentage'] == 0.5
-        assert stats['deliberation_percentage'] == 0.5
+        assert stats["total_messages"] == 2
+        assert stats["fast_lane_percentage"] == 0.5
+        assert stats["deliberation_percentage"] == 0.5
 
     def test_set_impact_threshold(self, router):
         """Test manually setting impact threshold."""
@@ -415,10 +424,10 @@ class TestAdaptiveRouterModule:
         """Test forcing a message into deliberation."""
         result = await router.force_deliberation(low_risk_message, reason="manual_review")
 
-        assert result['lane'] == 'deliberation'
-        assert result['forced'] is True
-        assert result['force_reason'] == "manual_review"
-        assert router.performance_metrics['deliberation_count'] == 1
+        assert result["lane"] == "deliberation"
+        assert result["forced"] is True
+        assert result["force_reason"] == "manual_review"
+        assert router.performance_metrics["deliberation_count"] == 1
 
     @pytest.mark.asyncio
     async def test_force_deliberation_preserves_original_score(self, router, low_risk_message):
@@ -459,28 +468,38 @@ class TestAdaptiveRouterModule:
         """Test metrics accumulation across multiple messages."""
         messages = [
             AgentMessage(
-                from_agent="a", to_agent="b", sender_id="s",
+                from_agent="a",
+                to_agent="b",
+                sender_id="s",
                 message_type=MessageType.COMMAND,
-                content={"action": "get"}
+                content={"action": "get"},
             ),
             AgentMessage(
-                from_agent="a", to_agent="b", sender_id="s",
+                from_agent="a",
+                to_agent="b",
+                sender_id="s",
                 message_type=MessageType.COMMAND,
-                content={"action": "critical_operation"}
+                content={"action": "critical_operation"},
             ),
             AgentMessage(
-                from_agent="a", to_agent="b", sender_id="s",
+                from_agent="a",
+                to_agent="b",
+                sender_id="s",
                 message_type=MessageType.COMMAND,
-                content={"action": "list"}
+                content={"action": "list"},
             ),
         ]
 
         for msg in messages:
             await router.route_message(msg)
 
-        assert router.performance_metrics['total_messages'] == 3
+        assert router.performance_metrics["total_messages"] == 3
         # Verify counts based on content
-        assert router.performance_metrics['fast_lane_count'] + router.performance_metrics['deliberation_count'] == 3
+        assert (
+            router.performance_metrics["fast_lane_count"]
+            + router.performance_metrics["deliberation_count"]
+            == 3
+        )
 
 
 # Entry point for running tests directly

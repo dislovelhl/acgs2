@@ -7,11 +7,10 @@ Requires the Search Platform to be running on localhost:9080.
 Constitutional Hash: cdd01ef066bc6cf2
 """
 
-import asyncio
 import os
-import pytest
 from datetime import datetime, timedelta, timezone
-from typing import List
+
+import pytest
 
 # Skip all tests if Search Platform is not available
 pytestmark = pytest.mark.asyncio
@@ -261,6 +260,7 @@ class TestAuditTrailSearch:
         # All should be critical
         for event in result.events:
             from services.integration.search_platform.audit_search import AuditSeverity
+
             assert event.severity == AuditSeverity.CRITICAL
 
     async def test_generate_audit_summary(self, audit_service):
@@ -283,10 +283,10 @@ class TestModels:
     def test_search_request_to_dict(self):
         """Test SearchRequest serialization."""
         from services.integration.search_platform import (
-            SearchRequest,
             SearchDomain,
-            SearchScope,
             SearchOptions,
+            SearchRequest,
+            SearchScope,
         )
 
         request = SearchRequest(
@@ -392,6 +392,7 @@ class TestCircuitBreaker:
 
         # Wait for recovery timeout
         import time
+
         time.sleep(0.15)
 
         # Should be half-open now
@@ -426,7 +427,9 @@ class TestLiveIntegration:
 
         # Verify results contain our hash
         for match in response.results:
-            assert "cdd01ef066bc6cf2" in match.line_content or "Constitutional" in match.line_content
+            assert (
+                "cdd01ef066bc6cf2" in match.line_content or "Constitutional" in match.line_content
+            )
 
     async def test_constitutional_compliance_scan(self, constitutional_service, acgs2_path):
         """Test full constitutional compliance scan."""

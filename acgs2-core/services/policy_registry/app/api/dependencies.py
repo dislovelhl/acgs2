@@ -7,8 +7,7 @@ Provides dependency injection factories for FastAPI routes.
 
 from typing import Optional
 
-from ..services import PolicyService, CacheService, NotificationService, CryptoService
-
+from ..services import CacheService, CryptoService, NotificationService, PolicyService
 
 # Singleton instances for service caching
 _policy_service: Optional[PolicyService] = None
@@ -52,7 +51,7 @@ async def get_policy_service():
         _policy_service = PolicyService(
             crypto_service=crypto_service,
             cache_service=cache_service,
-            notification_service=notification_service
+            notification_service=notification_service,
         )
     return _policy_service
 

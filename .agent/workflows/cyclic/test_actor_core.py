@@ -4,10 +4,9 @@ Constitutional Hash: cdd01ef066bc6cf2
 """
 
 import pytest
-import asyncio
-from typing import Dict, Any
-from workflows.cyclic.state_schema import GlobalState
+
 from workflows.cyclic.actor_core import StateGraph
+from workflows.cyclic.state_schema import GlobalState
 
 
 @pytest.mark.asyncio
@@ -68,11 +67,11 @@ async def test_interrupt_and_resume():
     assert state.context["step1"] is True
     assert "step2" not in state.context
     assert state.interrupt_required is True
-    assert state.next_node == "step2" # It was about to run step2
+    assert state.next_node == "step2"  # It was about to run step2
 
     # Simulate human intervention (patching state)
     state.interrupt_required = False
-    state.next_node = "step2" # Override next node
+    state.next_node = "step2"  # Override next node
 
     # 2. Resume
     final_state = await graph.execute(state)
@@ -102,6 +101,8 @@ async def test_error_handler():
 
     assert final_state.context.get("handled") is True
     assert "fail" in final_state.errors[0]
+
+
 @pytest.mark.asyncio
 async def test_subgraph_execution():
     """Test that a StateGraph can be used as a node in another graph."""
@@ -111,7 +112,7 @@ async def test_subgraph_execution():
 
     async def child_node(state: GlobalState) -> GlobalState:
         state.context["child_visited"] = True
-        state.is_finished = True # Signal end of child graph
+        state.is_finished = True  # Signal end of child graph
         return state
 
     child_graph.add_node("child_node", child_node)
@@ -130,7 +131,7 @@ async def test_subgraph_execution():
         return state
 
     parent_graph.add_node("start", parent_start)
-    parent_graph.add_node("call_child", child_graph) # CHILD GRAPH AS NODE
+    parent_graph.add_node("call_child", child_graph)  # CHILD GRAPH AS NODE
     parent_graph.add_node("end", parent_end)
 
     parent_graph.set_entry_point("start")

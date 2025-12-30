@@ -2,13 +2,16 @@
 Security Audit Remediation Regression Tests
 Focus: VULN-001 (Rust Validation Bypass) and VULN-002 (OPA Fail-Open)
 """
+
+from unittest.mock import AsyncMock, MagicMock
+
 import pytest
-import asyncio
-from unittest.mock import MagicMock, AsyncMock
-from ..validation_strategies import RustValidationStrategy
+
 from ..deliberation_layer.integration import DeliberationLayer
-from ..deliberation_layer.opa_guard import GuardResult, GuardDecision
-from ..models import AgentMessage, MessageStatus, CONSTITUTIONAL_HASH
+from ..deliberation_layer.opa_guard import GuardDecision, GuardResult
+from ..models import CONSTITUTIONAL_HASH, AgentMessage
+from ..validation_strategies import RustValidationStrategy
+
 
 class TestSecurityRemediation:
 
@@ -27,7 +30,7 @@ class TestSecurityRemediation:
             message_id="msg-123",
             content="test",
             sender_id="agent-1",
-            constitutional_hash=CONSTITUTIONAL_HASH
+            constitutional_hash=CONSTITUTIONAL_HASH,
         )
 
         # Execute
@@ -51,7 +54,7 @@ class TestSecurityRemediation:
             message_id="msg-124",
             content="test",
             sender_id="agent-1",
-            constitutional_hash=CONSTITUTIONAL_HASH
+            constitutional_hash=CONSTITUTIONAL_HASH,
         )
 
         # Execute
@@ -77,14 +80,14 @@ class TestSecurityRemediation:
             # Mock other dependencies to avoid complexity
             impact_scorer=MagicMock(),
             adaptive_router=MagicMock(),
-            deliberation_queue=MagicMock()
+            deliberation_queue=MagicMock(),
         )
 
         message = AgentMessage(
             message_id="msg-125",
             content="dangerous_action",
             sender_id="rogue_agent",
-            constitutional_hash=CONSTITUTIONAL_HASH
+            constitutional_hash=CONSTITUTIONAL_HASH,
         )
 
         # Execute - this calls _verify_with_opa_guard internally

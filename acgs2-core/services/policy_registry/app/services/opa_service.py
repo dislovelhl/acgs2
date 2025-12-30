@@ -5,9 +5,10 @@ Constitutional Hash: cdd01ef066bc6cf2
 
 import hashlib
 import logging
-import httpx
 from datetime import datetime, timezone
 from typing import Any, Dict, Optional, Tuple
+
+import httpx
 
 try:
     from shared.config import settings
@@ -25,12 +26,13 @@ logger = logging.getLogger(__name__)
 _auth_cache: Dict[str, Tuple[bool, float]] = {}
 AUTH_CACHE_TTL_SECONDS = 900  # 15 minutes
 
+
 class OPAService:
     """
     Service for interacting with Open Policy Agent (OPA).
     Used for RBAC and granular authorization.
     """
-    
+
     def __init__(self):
         if settings:
             self.opa_url = settings.opa.url
@@ -38,7 +40,7 @@ class OPAService:
         else:
             self.opa_url = "http://localhost:8181"
             self.fail_closed = True
-        
+
     def _get_cache_key(self, user: Dict[str, Any], action: str, resource: str) -> str:
         """Generate cache key from authorization parameters."""
         # Use role for caching (role-based, not user-specific)
@@ -74,12 +76,7 @@ class OPAService:
         for key in expired_keys:
             del _auth_cache[key]
 
-    async def check_authorization(
-        self,
-        user: Dict[str, Any],
-        action: str,
-        resource: str
-    ) -> bool:
+    async def check_authorization(self, user: Dict[str, Any], action: str, resource: str) -> bool:
         """
         Check if a user is authorized for an action on a resource.
         Queries the 'acgs.rbac.allow' rule in OPA with caching.
@@ -92,13 +89,7 @@ class OPAService:
         if cached_result is not None:
             return cached_result
 
-        input_data = {
-            "input": {
-                "user": user,
-                "action": action,
-                "resource": resource
-            }
-        }
+        input_data = {"input": {"user": user, "action": action, "resource": resource}}
 
         # OPA data API path for the rbac policy
         policy_path = "acgs/rbac/allow"
@@ -112,13 +103,17 @@ class OPAService:
                     data = response.json()
                     # OPA returns {"result": true/false}
                     result = data.get("result", False)
-                    logger.info(f"OPA RBAC check: user={user.get('agent_id')}, role={user.get('role')}, action={action}, resource={resource}, result={result}")
+                    logger.info(
+                        f"OPA RBAC check: user={user.get('agent_id')}, role={user.get('role')}, action={action}, resource={resource}, result={result}"
+                    )
 
                     # Cache the result
                     self._cache_result(cache_key, result)
                     return result
                 else:
-                    logger.error(f"OPA returned non-200 status: {response.status_code} - {response.text}")
+                    logger.error(
+                        f"OPA returned non-200 status: {response.status_code} - {response.text}"
+                    )
                     return False if self.fail_closed else True
 
         except Exception as e:

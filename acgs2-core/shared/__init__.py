@@ -32,21 +32,21 @@ __author__ = "ACGS-2 Team"
 # Re-export commonly used components
 try:
     from .metrics import (
-        track_request_metrics,
-        track_constitutional_validation,
-        track_message_processing,
         get_metrics,
         set_service_info,
+        track_constitutional_validation,
+        track_message_processing,
+        track_request_metrics,
     )
 except ImportError:
     pass
 
 try:
     from .circuit_breaker import (
+        CircuitBreakerConfig,
+        circuit_breaker_health_check,
         get_circuit_breaker,
         with_circuit_breaker,
-        circuit_breaker_health_check,
-        CircuitBreakerConfig,
     )
 except ImportError:
     pass

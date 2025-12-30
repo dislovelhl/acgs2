@@ -13,7 +13,6 @@ Implements:
 
 import asyncio
 import functools
-import hashlib
 import json
 import logging
 import os
@@ -21,7 +20,7 @@ import time
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional, Set, Union
+from typing import Any, Callable, Dict, List, Optional, Set
 
 from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -32,6 +31,7 @@ CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
 # Try to import JWT library
 try:
     import jwt
+
     JWT_AVAILABLE = True
 except ImportError:
     JWT_AVAILABLE = False
@@ -40,6 +40,7 @@ except ImportError:
 
 class Role(Enum):
     """ACGS-2 system roles."""
+
     SYSTEM_ADMIN = "system_admin"
     TENANT_ADMIN = "tenant_admin"
     AGENT_OPERATOR = "agent_operator"
@@ -50,6 +51,7 @@ class Role(Enum):
 
 class Permission(Enum):
     """ACGS-2 permissions."""
+
     # Tenant permissions
     TENANT_CREATE = "tenant:create"
     TENANT_READ = "tenant:read"
@@ -92,7 +94,6 @@ class Permission(Enum):
 # Role to permission mapping
 ROLE_PERMISSIONS: Dict[Role, Set[Permission]] = {
     Role.SYSTEM_ADMIN: set(Permission),  # All permissions
-
     Role.TENANT_ADMIN: {
         Permission.TENANT_READ,
         Permission.TENANT_UPDATE,
@@ -116,7 +117,6 @@ ROLE_PERMISSIONS: Dict[Role, Set[Permission]] = {
         Permission.APPROVAL_APPROVE,
         Permission.APPROVAL_REJECT,
     },
-
     Role.AGENT_OPERATOR: {
         Permission.AGENT_START,
         Permission.AGENT_STOP,
@@ -127,7 +127,6 @@ ROLE_PERMISSIONS: Dict[Role, Set[Permission]] = {
         Permission.POLICY_READ,
         Permission.POLICY_LIST,
     },
-
     Role.POLICY_AUTHOR: {
         Permission.POLICY_CREATE,
         Permission.POLICY_READ,
@@ -135,7 +134,6 @@ ROLE_PERMISSIONS: Dict[Role, Set[Permission]] = {
         Permission.POLICY_LIST,
         Permission.APPROVAL_CREATE,
     },
-
     Role.AUDITOR: {
         Permission.TENANT_READ,
         Permission.TENANT_LIST,
@@ -146,7 +144,6 @@ ROLE_PERMISSIONS: Dict[Role, Set[Permission]] = {
         Permission.AUDIT_READ,
         Permission.AUDIT_EXPORT,
     },
-
     Role.VIEWER: {
         Permission.TENANT_READ,
         Permission.POLICY_READ,
@@ -159,14 +156,16 @@ ROLE_PERMISSIONS: Dict[Role, Set[Permission]] = {
 
 class Scope(Enum):
     """Permission scopes."""
+
     GLOBAL = "global"  # System-wide access
     TENANT = "tenant"  # Tenant-specific access
-    AGENT = "agent"    # Agent-specific access
+    AGENT = "agent"  # Agent-specific access
 
 
 @dataclass
 class TokenClaims:
     """Parsed JWT token claims."""
+
     subject: str
     issuer: str
     tenant_id: str
@@ -229,12 +228,11 @@ class TokenClaims:
 @dataclass
 class AccessDecision:
     """Result of an access decision."""
+
     allowed: bool
     reason: str
     claims: Optional[TokenClaims] = None
-    decision_time: datetime = field(
-        default_factory=lambda: datetime.now(timezone.utc)
-    )
+    decision_time: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     request_id: Optional[str] = None
 
     def to_audit_dict(self) -> Dict[str, Any]:
@@ -422,10 +420,7 @@ class RateLimiter:
             return True
 
         # Determine rate limit based on highest role
-        limit = max(
-            self.config.rate_limits.get(role, 50)
-            for role in claims.roles
-        )
+        limit = max(self.config.rate_limits.get(role, 50) for role in claims.roles)
 
         key = f"{claims.tenant_id}:{claims.subject}"
         now = time.time()
@@ -436,10 +431,7 @@ class RateLimiter:
                 self._requests[key] = []
 
             # Remove old requests
-            self._requests[key] = [
-                t for t in self._requests[key]
-                if now - t < window
-            ]
+            self._requests[key] = [t for t in self._requests[key] if now - t < window]
 
             # Check limit
             if len(self._requests[key]) >= limit:
@@ -555,6 +547,7 @@ class RBACMiddleware:
                 ...
             ```
         """
+
         def decorator(func: Callable) -> Callable:
             @functools.wraps(func)
             async def wrapper(*args, **kwargs):
@@ -571,7 +564,7 @@ class RBACMiddleware:
                             request = v
                             break
 
-                claims = getattr(request.state, 'claims', None) if request else None
+                claims = getattr(request.state, "claims", None) if request else None
 
                 if claims is None:
                     raise HTTPException(
@@ -605,6 +598,7 @@ class RBACMiddleware:
                 return await func(*args, **kwargs)
 
             return wrapper
+
         return decorator
 
     def require_role(self, *roles: Role, require_all: bool = False) -> Callable:
@@ -615,6 +609,7 @@ class RBACMiddleware:
             roles: Required roles
             require_all: If True, all roles required. If False, any one suffices.
         """
+
         def decorator(func: Callable) -> Callable:
             @functools.wraps(func)
             async def wrapper(*args, **kwargs):
@@ -624,7 +619,7 @@ class RBACMiddleware:
                         request = arg
                         break
 
-                claims = getattr(request.state, 'claims', None) if request else None
+                claims = getattr(request.state, "claims", None) if request else None
 
                 if claims is None:
                     raise HTTPException(
@@ -648,6 +643,7 @@ class RBACMiddleware:
                 return await func(*args, **kwargs)
 
             return wrapper
+
         return decorator
 
     def require_tenant_access(self, tenant_id_param: str = "tenant_id") -> Callable:
@@ -657,6 +653,7 @@ class RBACMiddleware:
         Args:
             tenant_id_param: Name of the route parameter containing tenant ID
         """
+
         def decorator(func: Callable) -> Callable:
             @functools.wraps(func)
             async def wrapper(*args, **kwargs):
@@ -666,7 +663,7 @@ class RBACMiddleware:
                         request = arg
                         break
 
-                claims = getattr(request.state, 'claims', None) if request else None
+                claims = getattr(request.state, "claims", None) if request else None
 
                 if claims is None:
                     raise HTTPException(
@@ -692,6 +689,7 @@ class RBACMiddleware:
                 return await func(*args, **kwargs)
 
             return wrapper
+
         return decorator
 
     def get_stats(self) -> Dict[str, Any]:

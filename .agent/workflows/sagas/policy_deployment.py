@@ -7,12 +7,10 @@ Ensures atomicity: either the policy is fully deployed and verified, or rolled b
 """
 
 import json
-from typing import Dict, Any
 import logging
+from typing import Any, Dict
 
 from .base_saga import BaseSaga, SagaStep
-from ..base.context import WorkflowContext
-from ..base.result import WorkflowResult
 
 try:
     from shared.constants import CONSTITUTIONAL_HASH
@@ -20,6 +18,7 @@ except ImportError:
     CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
 
 logger = logging.getLogger(__name__)
+
 
 class PolicyDeploymentSaga(BaseSaga):
     """
@@ -33,42 +32,43 @@ class PolicyDeploymentSaga(BaseSaga):
     """
 
     def __init__(self):
-        super().__init__(
-            saga_id="policy-deployment-saga",
-            constitutional_hash=CONSTITUTIONAL_HASH
-        )
+        super().__init__(saga_id="policy-deployment-saga", constitutional_hash=CONSTITUTIONAL_HASH)
         self._configure_steps()
 
     def _configure_steps(self):
         """Configure saga steps and compensations."""
 
         # Step 1: Validate Policy
-        self.add_step(SagaStep(
-            name="validate_policy",
-            execute=self._validate_policy,
-            compensate=self._noop_compensation  # Nothing to undo if validation fails
-        ))
+        self.add_step(
+            SagaStep(
+                name="validate_policy",
+                execute=self._validate_policy,
+                compensate=self._noop_compensation,  # Nothing to undo if validation fails
+            )
+        )
 
         # Step 2: Backup Current Policy
-        self.add_step(SagaStep(
-            name="backup_policy",
-            execute=self._backup_policy,
-            compensate=self._delete_backup
-        ))
+        self.add_step(
+            SagaStep(
+                name="backup_policy", execute=self._backup_policy, compensate=self._delete_backup
+            )
+        )
 
         # Step 3: Deploy New Policy
-        self.add_step(SagaStep(
-            name="deploy_policy",
-            execute=self._deploy_policy,
-            compensate=self._restore_backup
-        ))
+        self.add_step(
+            SagaStep(
+                name="deploy_policy", execute=self._deploy_policy, compensate=self._restore_backup
+            )
+        )
 
         # Step 4: Verify Deployment
-        self.add_step(SagaStep(
-            name="verify_deployment",
-            execute=self._verify_deployment,
-            compensate=self._noop_compensation # Rolled back by previous steps
-        ))
+        self.add_step(
+            SagaStep(
+                name="verify_deployment",
+                execute=self._verify_deployment,
+                compensate=self._noop_compensation,  # Rolled back by previous steps
+            )
+        )
 
     # --- Step Executions ---
 

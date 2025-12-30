@@ -3,14 +3,14 @@ Tests for Base Workflow Abstractions
 Constitutional Hash: cdd01ef066bc6cf2
 """
 
-import pytest
 import asyncio
-from datetime import datetime, timezone
 from typing import Any, Dict
+
+import pytest
 
 from ..base.context import WorkflowContext
 from ..base.result import WorkflowResult, WorkflowStatus
-from ..base.step import WorkflowStep, StepStatus, StepCompensation
+from ..base.step import StepCompensation, WorkflowStep
 from ..base.workflow import BaseWorkflow
 
 try:
@@ -44,10 +44,7 @@ class TestWorkflowContext:
 
     def test_child_context(self):
         """Test child context creation and inheritance."""
-        parent = WorkflowContext.create(
-            tenant_id="tenant-1",
-            metadata={"key": "value"}
-        )
+        parent = WorkflowContext.create(tenant_id="tenant-1", metadata={"key": "value"})
         parent.set_step_result("parent_step", "result")
 
         child = parent.create_child_context()
@@ -152,6 +149,7 @@ class TestWorkflowStep:
     @pytest.mark.asyncio
     async def test_step_execution(self):
         """Test step execute function."""
+
         async def execute_fn(input: Dict[str, Any]) -> str:
             return f"processed: {input.get('data')}"
 
@@ -245,6 +243,7 @@ class TestBaseWorkflow:
     @pytest.mark.asyncio
     async def test_workflow_timeout(self):
         """Test workflow timeout handling."""
+
         class SlowWorkflow(BaseWorkflow):
             async def execute(self, input: Dict[str, Any]) -> WorkflowResult:
                 await asyncio.sleep(10)  # Long operation
@@ -306,5 +305,6 @@ class TestConstitutionalCompliance:
 
         # Should raise ConstitutionalHashMismatchError with wrong hash
         from ..base.workflow import ConstitutionalHashMismatchError
+
         with pytest.raises(ConstitutionalHashMismatchError):
             await workflow.validate_constitutional_hash("wrong_hash")

@@ -7,10 +7,10 @@ Tests for the impact_scorer.py module with mocked ML dependencies.
 
 import os
 import sys
-import pytest
+from unittest.mock import MagicMock
+
 import numpy as np
-from unittest.mock import MagicMock, patch
-import importlib.util
+import pytest
 
 # Add enhanced_agent_bus directory to path
 enhanced_agent_bus_dir = os.path.dirname(os.path.dirname(__file__))
@@ -25,10 +25,7 @@ class TestImpactScorerMocked:
     def mock_tokenizer(self):
         """Create a mock BERT tokenizer."""
         mock = MagicMock()
-        mock.return_value = {
-            'input_ids': MagicMock(),
-            'attention_mask': MagicMock()
-        }
+        mock.return_value = {"input_ids": MagicMock(), "attention_mask": MagicMock()}
         return mock
 
     @pytest.fixture
@@ -47,13 +44,34 @@ class TestImpactScorerMocked:
     @pytest.fixture
     def scorer(self, mock_tokenizer, mock_model):
         """Create an ImpactScorer-like class for testing core logic."""
+
         class TestableImpactScorer:
             def __init__(self):
                 self.high_impact_keywords = [
-                    "critical", "emergency", "security", "breach", "violation", "danger",
-                    "risk", "threat", "attack", "exploit", "vulnerability", "compromise",
-                    "governance", "policy", "regulation", "compliance", "legal", "audit",
-                    "financial", "transaction", "payment", "transfer", "blockchain", "consensus"
+                    "critical",
+                    "emergency",
+                    "security",
+                    "breach",
+                    "violation",
+                    "danger",
+                    "risk",
+                    "threat",
+                    "attack",
+                    "exploit",
+                    "vulnerability",
+                    "compromise",
+                    "governance",
+                    "policy",
+                    "regulation",
+                    "compliance",
+                    "legal",
+                    "audit",
+                    "financial",
+                    "transaction",
+                    "payment",
+                    "transfer",
+                    "blockchain",
+                    "consensus",
                 ]
                 self._mock_embedding = np.array([[0.5] * 768])
 
@@ -96,7 +114,7 @@ class TestImpactScorerMocked:
             def _extract_text_content(self, message_content):
                 """Extract text from message content."""
                 text_parts = []
-                for field in ['content', 'payload', 'description', 'reason', 'details']:
+                for field in ["content", "payload", "description", "reason", "details"]:
                     if field in message_content:
                         value = message_content[field]
                         if isinstance(value, str):
@@ -107,22 +125,26 @@ class TestImpactScorerMocked:
 
             def _calculate_priority_factor(self, message_content):
                 """Calculate priority factor."""
-                priority = message_content.get('priority', 'normal').lower()
+                priority = message_content.get("priority", "normal").lower()
                 priority_map = {
-                    'low': 0.1,
-                    'normal': 0.3,
-                    'medium': 0.5,
-                    'high': 0.8,
-                    'critical': 1.0
+                    "low": 0.1,
+                    "normal": 0.3,
+                    "medium": 0.5,
+                    "high": 0.8,
+                    "critical": 1.0,
                 }
                 return priority_map.get(priority, 0.3)
 
             def _calculate_type_factor(self, message_content):
                 """Calculate message type factor."""
-                msg_type = message_content.get('message_type', '').lower()
+                msg_type = message_content.get("message_type", "").lower()
                 high_impact_types = [
-                    'governance_request', 'security_alert', 'critical_command',
-                    'policy_violation', 'emergency', 'blockchain_consensus'
+                    "governance_request",
+                    "security_alert",
+                    "critical_command",
+                    "policy_violation",
+                    "emergency",
+                    "blockchain_consensus",
                 ]
                 return 0.8 if msg_type in high_impact_types else 0.2
 
@@ -175,19 +197,14 @@ class TestImpactScorerMocked:
         content = {
             "content": "critical emergency security breach violation danger risk threat",
             "priority": "critical",
-            "message_type": "security_alert"
+            "message_type": "security_alert",
         }
         score = scorer.calculate_impact_score(content)
         assert 0.0 <= score <= 1.0
 
     def test_nested_content_extraction(self, scorer):
         """Test extraction of nested content."""
-        content = {
-            "content": "outer message",
-            "payload": {
-                "description": "inner security alert"
-            }
-        }
+        content = {"content": "outer message", "payload": {"description": "inner security alert"}}
         # Should find "security" in nested payload
         score = scorer.calculate_impact_score(content)
         assert score > 0.2  # Should be higher due to "security" keyword
@@ -210,11 +227,7 @@ class TestImpactScorerMocked:
 
     def test_extract_text_from_dict_field(self, scorer):
         """Test text extraction from nested dict fields."""
-        content = {
-            "payload": {
-                "details": "nested details here"
-            }
-        }
+        content = {"payload": {"details": "nested details here"}}
         text = scorer._extract_text_content(content)
         assert "nested details" in text
 
@@ -234,8 +247,12 @@ class TestImpactScorerMocked:
     def test_type_factor_high_impact(self, scorer):
         """Test type factor for high-impact types."""
         high_impact_types = [
-            'governance_request', 'security_alert', 'critical_command',
-            'policy_violation', 'emergency', 'blockchain_consensus'
+            "governance_request",
+            "security_alert",
+            "critical_command",
+            "policy_violation",
+            "emergency",
+            "blockchain_consensus",
         ]
 
         for msg_type in high_impact_types:
@@ -261,11 +278,20 @@ class TestImpactScorerIntegration:
     @pytest.fixture
     def scorer(self):
         """Create a testable impact scorer."""
+
         class IntegrationScorer:
             def __init__(self):
                 self.high_impact_keywords = [
-                    "critical", "emergency", "security", "breach", "violation",
-                    "governance", "policy", "compliance", "financial", "transaction"
+                    "critical",
+                    "emergency",
+                    "security",
+                    "breach",
+                    "violation",
+                    "governance",
+                    "policy",
+                    "compliance",
+                    "financial",
+                    "transaction",
                 ]
 
             def calculate_impact_score(self, content):
@@ -278,13 +304,19 @@ class TestImpactScorerIntegration:
                 keyword_score = min(keyword_score, 0.6)
 
                 # Priority factor
-                priority = content.get('priority', 'normal').lower()
-                priority_scores = {'low': 0.1, 'normal': 0.3, 'medium': 0.5, 'high': 0.8, 'critical': 1.0}
+                priority = content.get("priority", "normal").lower()
+                priority_scores = {
+                    "low": 0.1,
+                    "normal": 0.3,
+                    "medium": 0.5,
+                    "high": 0.8,
+                    "critical": 1.0,
+                }
                 priority_score = priority_scores.get(priority, 0.3) * 0.3
 
                 # Type factor
-                msg_type = content.get('message_type', '').lower()
-                high_types = {'governance_request', 'security_alert', 'emergency'}
+                msg_type = content.get("message_type", "").lower()
+                high_types = {"governance_request", "security_alert", "emergency"}
                 type_score = (0.8 if msg_type in high_types else 0.2) * 0.1
 
                 return min(1.0, keyword_score + priority_score + type_score)
@@ -302,11 +334,7 @@ class TestImpactScorerIntegration:
 
     def test_real_world_low_risk_message(self, scorer):
         """Test a typical low-risk message."""
-        content = {
-            "action": "get_status",
-            "target": "system",
-            "priority": "normal"
-        }
+        content = {"action": "get_status", "target": "system", "priority": "normal"}
         score = scorer.calculate_impact_score(content)
         assert score < 0.5
 
@@ -316,7 +344,7 @@ class TestImpactScorerIntegration:
             "action": "modify_governance_policy",
             "description": "Critical security compliance update required",
             "priority": "critical",
-            "message_type": "governance_request"
+            "message_type": "governance_request",
         }
         score = scorer.calculate_impact_score(content)
         assert score > 0.5
@@ -327,7 +355,7 @@ class TestImpactScorerIntegration:
             "action": "transfer",
             "description": "Financial transaction to external account",
             "amount": "10000",
-            "priority": "high"
+            "priority": "high",
         }
         score = scorer.calculate_impact_score(content)
         # Should have moderate-high score due to "financial" and "transaction"
@@ -339,7 +367,7 @@ class TestImpactScorerIntegration:
             "alert": "security breach detected",
             "severity": "critical",
             "message_type": "security_alert",
-            "priority": "critical"
+            "priority": "critical",
         }
         score = scorer.calculate_impact_score(content)
         assert score > 0.6
@@ -350,10 +378,11 @@ class TestGlobalFunctions:
 
     def test_mock_calculate_message_impact(self):
         """Test the convenience function."""
+
         # Create a simple implementation
         def calculate_message_impact(content):
             text = str(content).lower()
-            if any(k in text for k in ['critical', 'security', 'emergency']):
+            if any(k in text for k in ["critical", "security", "emergency"]):
                 return 0.8
             return 0.3
 

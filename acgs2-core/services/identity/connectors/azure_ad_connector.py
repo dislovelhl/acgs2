@@ -6,13 +6,12 @@ Enterprise Azure Active Directory integration for federated identity management.
 Supports OIDC authentication, Microsoft Graph API, and B2C scenarios.
 """
 
-import asyncio
 import hashlib
 import secrets
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional, Set, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple
 from urllib.parse import urlencode, urljoin
 
 import aiohttp
@@ -23,31 +22,37 @@ from jwt import PyJWKClient
 CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
 
 import logging
+
 logger = logging.getLogger(__name__)
 
 
 class AzureADError(Exception):
     """Azure AD base error."""
+
     pass
 
 
 class AzureADAuthError(AzureADError):
     """Azure AD authentication error."""
+
     pass
 
 
 class AzureADConfigError(AzureADError):
     """Azure AD configuration error."""
+
     pass
 
 
 class AzureADGraphError(AzureADError):
     """Azure AD Graph API error."""
+
     pass
 
 
 class AzureADCloud(str, Enum):
     """Azure AD cloud environments."""
+
     PUBLIC = "https://login.microsoftonline.com"
     CHINA = "https://login.chinacloudapi.cn"
     GERMANY = "https://login.microsoftonline.de"
@@ -56,6 +61,7 @@ class AzureADCloud(str, Enum):
 
 class AzureADGrantType(str, Enum):
     """Azure AD OAuth grant types."""
+
     AUTHORIZATION_CODE = "authorization_code"
     REFRESH_TOKEN = "refresh_token"
     CLIENT_CREDENTIALS = "client_credentials"
@@ -65,6 +71,7 @@ class AzureADGrantType(str, Enum):
 
 class AzureADScope(str, Enum):
     """Common Azure AD/Microsoft Graph scopes."""
+
     OPENID = "openid"
     PROFILE = "profile"
     EMAIL = "email"
@@ -77,6 +84,7 @@ class AzureADScope(str, Enum):
 
 class AzureADUserType(str, Enum):
     """Azure AD user types."""
+
     MEMBER = "Member"
     GUEST = "Guest"
 
@@ -84,27 +92,32 @@ class AzureADUserType(str, Enum):
 @dataclass
 class AzureADConfig:
     """Azure AD OIDC configuration."""
+
     tenant_id: str
     client_id: str
     client_secret: str
     redirect_uri: str
 
     # Scopes for authentication
-    scopes: List[str] = field(default_factory=lambda: [
-        AzureADScope.OPENID.value,
-        AzureADScope.PROFILE.value,
-        AzureADScope.EMAIL.value,
-        AzureADScope.OFFLINE_ACCESS.value,
-    ])
+    scopes: List[str] = field(
+        default_factory=lambda: [
+            AzureADScope.OPENID.value,
+            AzureADScope.PROFILE.value,
+            AzureADScope.EMAIL.value,
+            AzureADScope.OFFLINE_ACCESS.value,
+        ]
+    )
 
     # Cloud environment
     cloud: AzureADCloud = AzureADCloud.PUBLIC
 
     # Graph API scopes (for user management)
-    graph_scopes: List[str] = field(default_factory=lambda: [
-        AzureADScope.USER_READ_ALL.value,
-        AzureADScope.GROUP_READ_ALL.value,
-    ])
+    graph_scopes: List[str] = field(
+        default_factory=lambda: [
+            AzureADScope.USER_READ_ALL.value,
+            AzureADScope.GROUP_READ_ALL.value,
+        ]
+    )
 
     # Session settings
     session_lifetime_minutes: int = 60
@@ -176,6 +189,7 @@ class AzureADConfig:
 @dataclass
 class AzureADTokenResponse:
     """Azure AD token response."""
+
     access_token: str
     token_type: str
     expires_in: int
@@ -193,6 +207,7 @@ class AzureADTokenResponse:
 @dataclass
 class AzureADUserInfo:
     """Azure AD user information."""
+
     oid: str  # Object ID (unique identifier)
     sub: str  # Subject claim
     email: Optional[str] = None
@@ -217,6 +232,7 @@ class AzureADUserInfo:
 @dataclass
 class AzureADUser:
     """Azure AD user from Graph API."""
+
     id: str
     display_name: str
     user_principal_name: str
@@ -236,6 +252,7 @@ class AzureADUser:
 @dataclass
 class AzureADGroup:
     """Azure AD group from Graph API."""
+
     id: str
     display_name: str
     description: Optional[str]
@@ -251,6 +268,7 @@ class AzureADGroup:
 @dataclass
 class AzureADAuthState:
     """OAuth state for CSRF protection."""
+
     state: str
     nonce: str
     code_verifier: str
@@ -319,7 +337,7 @@ class AzureADOIDCConnector:
                 "tenant_id": config.tenant_id,
                 "cloud": config.cloud.value,
                 "constitutional_hash": CONSTITUTIONAL_HASH,
-            }
+            },
         )
 
     def _validate_config(self) -> None:
@@ -358,15 +376,11 @@ class AzureADOIDCConnector:
 
         if now > self._rate_limit_reset:
             self._request_count = 0
-            self._rate_limit_reset = now + timedelta(
-                seconds=self.config.rate_limit_window_seconds
-            )
+            self._rate_limit_reset = now + timedelta(seconds=self.config.rate_limit_window_seconds)
 
         if self._request_count >= self.config.rate_limit_requests:
             wait_time = (self._rate_limit_reset - now).total_seconds()
-            raise AzureADAuthError(
-                f"Rate limit exceeded. Retry after {wait_time:.0f} seconds"
-            )
+            raise AzureADAuthError(f"Rate limit exceeded. Retry after {wait_time:.0f} seconds")
 
         self._request_count += 1
 
@@ -374,14 +388,11 @@ class AzureADOIDCConnector:
         """Generate PKCE code verifier and challenge."""
         code_verifier = secrets.token_urlsafe(64)
 
-        code_challenge_digest = hashlib.sha256(
-            code_verifier.encode("utf-8")
-        ).digest()
+        code_challenge_digest = hashlib.sha256(code_verifier.encode("utf-8")).digest()
 
         import base64
-        code_challenge = base64.urlsafe_b64encode(
-            code_challenge_digest
-        ).decode("utf-8").rstrip("=")
+
+        code_challenge = base64.urlsafe_b64encode(code_challenge_digest).decode("utf-8").rstrip("=")
 
         return code_verifier, code_challenge
 
@@ -570,7 +581,7 @@ class AzureADOIDCConnector:
                 "email": user_info.email,
                 "roles": user_info.acgs_roles,
                 "constitutional_hash": CONSTITUTIONAL_HASH,
-            }
+            },
         )
 
         return token_response, user_info
@@ -608,7 +619,7 @@ class AzureADOIDCConnector:
                     "verify_exp": True,
                     "verify_iat": True,
                     "verify_nbf": True,
-                }
+                },
             )
         except jwt.ExpiredSignatureError:
             raise AzureADAuthError("ID token has expired")
@@ -934,9 +945,7 @@ class AzureADOIDCConnector:
         Returns:
             True if successful
         """
-        data = {
-            "@odata.id": f"{self.config.graph_api_base_url}/directoryObjects/{user_id}"
-        }
+        data = {"@odata.id": f"{self.config.graph_api_base_url}/directoryObjects/{user_id}"}
 
         await self._graph_request("POST", f"groups/{group_id}/members/$ref", data=data)
 
@@ -946,7 +955,7 @@ class AzureADOIDCConnector:
                 "user_id": user_id,
                 "group_id": group_id,
                 "constitutional_hash": CONSTITUTIONAL_HASH,
-            }
+            },
         )
 
         return True
@@ -974,7 +983,7 @@ class AzureADOIDCConnector:
                 "user_id": user_id,
                 "group_id": group_id,
                 "constitutional_hash": CONSTITUTIONAL_HASH,
-            }
+            },
         )
 
         return True
@@ -1008,9 +1017,7 @@ class AzureADOIDCConnector:
         }
 
         if custom_message:
-            data["invitedUserMessageInfo"] = {
-                "customizedMessageBody": custom_message
-            }
+            data["invitedUserMessageInfo"] = {"customizedMessageBody": custom_message}
 
         result = await self._graph_request("POST", "invitations", data=data)
 
@@ -1019,7 +1026,7 @@ class AzureADOIDCConnector:
             extra={
                 "email": email,
                 "constitutional_hash": CONSTITUTIONAL_HASH,
-            }
+            },
         )
 
         return result
@@ -1041,8 +1048,18 @@ class AzureADOIDCConnector:
             mobile_phone=data.get("mobilePhone"),
             account_enabled=data.get("accountEnabled", True),
             user_type=AzureADUserType(data.get("userType", "Member")),
-            created_datetime=datetime.fromisoformat(data["createdDateTime"].replace("Z", "+00:00")) if data.get("createdDateTime") else None,
-            last_sign_in_datetime=datetime.fromisoformat(sign_in_activity["lastSignInDateTime"].replace("Z", "+00:00")) if sign_in_activity.get("lastSignInDateTime") else None,
+            created_datetime=(
+                datetime.fromisoformat(data["createdDateTime"].replace("Z", "+00:00"))
+                if data.get("createdDateTime")
+                else None
+            ),
+            last_sign_in_datetime=(
+                datetime.fromisoformat(
+                    sign_in_activity["lastSignInDateTime"].replace("Z", "+00:00")
+                )
+                if sign_in_activity.get("lastSignInDateTime")
+                else None
+            ),
         )
 
     def _parse_group(self, data: Dict[str, Any]) -> AzureADGroup:
@@ -1055,7 +1072,11 @@ class AzureADOIDCConnector:
             mail_enabled=data.get("mailEnabled", False),
             security_enabled=data.get("securityEnabled", True),
             group_types=data.get("groupTypes", []),
-            created_datetime=datetime.fromisoformat(data["createdDateTime"].replace("Z", "+00:00")) if data.get("createdDateTime") else None,
+            created_datetime=(
+                datetime.fromisoformat(data["createdDateTime"].replace("Z", "+00:00"))
+                if data.get("createdDateTime")
+                else None
+            ),
             membership_rule=data.get("membershipRule"),
             membership_rule_processing_state=data.get("membershipRuleProcessingState"),
         )
@@ -1069,8 +1090,7 @@ class AzureADOIDCConnector:
         self._app_token_expires_at = None
 
         logger.info(
-            "Closed Azure AD OIDC connector",
-            extra={"constitutional_hash": CONSTITUTIONAL_HASH}
+            "Closed Azure AD OIDC connector", extra={"constitutional_hash": CONSTITUTIONAL_HASH}
         )
 
 

@@ -11,10 +11,10 @@ import random
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
 
 from .context import ConversationContext
-from .nlu import NLUResult, Sentiment
+from .nlu import Sentiment
 
 # Import centralized constitutional hash with fallback
 try:
@@ -28,6 +28,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class PersonalityConfig:
     """Configuration for assistant personality."""
+
     name: str = "Assistant"
     description: str = "A helpful AI assistant"
     tone: str = "professional"  # professional, friendly, casual, formal
@@ -51,6 +52,7 @@ class PersonalityConfig:
 @dataclass
 class ResponseConfig:
     """Configuration for response generation system."""
+
     max_response_length: int = 2000
     min_response_length: int = 10
     default_personality: PersonalityConfig = field(default_factory=PersonalityConfig)
@@ -82,6 +84,7 @@ class ResponseConfig:
 @dataclass
 class ResponseTemplate:
     """Template for generating responses."""
+
     id: str
     intent: str
     templates: List[str]
@@ -369,7 +372,8 @@ class TemplateResponseGenerator(ResponseGenerator):
         """Validate and sanitize response."""
         # Remove any unfilled placeholders
         import re
-        response = re.sub(r'\{[^}]+\}', '', response)
+
+        response = re.sub(r"\{[^}]+\}", "", response)
 
         # Ensure response is not empty
         if not response.strip():
@@ -476,10 +480,7 @@ Current user intent: {intent}"""
         # Build user context
         user_context = ""
         if context.entities:
-            entity_info = ", ".join(
-                f"{k}={v.get('value')}"
-                for k, v in context.entities.items()
-            )
+            entity_info = ", ".join(f"{k}={v.get('value')}" for k, v in context.entities.items())
             user_context += f"Known information: {entity_info}\n"
 
         if data:
@@ -518,15 +519,15 @@ Generate a helpful, natural response:"""
         # This is a placeholder for actual LLM integration
         # In production, this would call OpenAI, Anthropic, or local model
 
-        if hasattr(self.llm_client, 'complete'):
+        if hasattr(self.llm_client, "complete"):
             response = await self.llm_client.complete(
                 prompt=prompt,
                 max_tokens=self.max_tokens,
                 temperature=self.temperature,
             )
-            return response.text if hasattr(response, 'text') else str(response)
+            return response.text if hasattr(response, "text") else str(response)
 
-        elif hasattr(self.llm_client, 'generate'):
+        elif hasattr(self.llm_client, "generate"):
             response = await self.llm_client.generate(
                 prompt,
                 max_tokens=self.max_tokens,
@@ -546,15 +547,15 @@ Generate a helpful, natural response:"""
         prefixes = ["Assistant:", "AI:", "Bot:"]
         for prefix in prefixes:
             if response.startswith(prefix):
-                response = response[len(prefix):].strip()
+                response = response[len(prefix) :].strip()
 
         # Ensure response doesn't end mid-sentence
-        if not response.endswith(('.', '!', '?')):
+        if not response.endswith((".", "!", "?")):
             # Try to find last complete sentence
-            for punct in ['.', '!', '?']:
+            for punct in [".", "!", "?"]:
                 last_punct = response.rfind(punct)
                 if last_punct > 0:
-                    response = response[:last_punct + 1]
+                    response = response[: last_punct + 1]
                     break
 
         return response
@@ -622,9 +623,9 @@ class HybridResponseGenerator(ResponseGenerator):
         """Generate response using appropriate method."""
         # Use LLM for specified intents or complex situations
         use_llm = (
-            intent in self.llm_intents or
-            data.get("requires_llm", False) or
-            len(context.messages) > 10  # Complex conversation
+            intent in self.llm_intents
+            or data.get("requires_llm", False)
+            or len(context.messages) > 10  # Complex conversation
         )
 
         if use_llm and self.llm_generator.llm_client:

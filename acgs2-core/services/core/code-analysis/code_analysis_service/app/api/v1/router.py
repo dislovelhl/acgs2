@@ -5,15 +5,10 @@ FastAPI router implementing all endpoints from OpenAPI specification.
 Constitutional Hash: cdd01ef066bc6cf2
 """
 
-import logging
 import time
 import uuid
 from datetime import datetime, timezone
-from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
-
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
-from pydantic import BaseModel
+from typing import Any
 
 from app.models.schemas import (
     AnalysisRequest,
@@ -30,6 +25,8 @@ from app.utils.constitutional import (
     ensure_constitutional_compliance,
 )
 from app.utils.logging import get_logger, log_api_request, log_api_response
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from pydantic import BaseModel
 
 logger = get_logger("api.v1")
 
@@ -114,27 +111,17 @@ async def get_request_id(request: Request) -> str:
     return getattr(request.state, "request_id", str(uuid.uuid4()))
 
 
-@api_router.get(
-    "/search/semantic", response_model=SemanticSearchResponse, tags=["Search"]
-)
+@api_router.get("/search/semantic", response_model=SemanticSearchResponse, tags=["Search"])
 async def semantic_search(
     request: Request,
     query: str = Query(..., min_length=1, max_length=500, description="Search query"),
-    limit: int = Query(
-        default=10, ge=1, le=100, description="Maximum number of results"
-    ),
+    limit: int = Query(default=10, ge=1, le=100, description="Maximum number of results"),
     min_confidence: float = Query(
         default=0.7, ge=0.0, le=1.0, description="Minimum confidence score"
     ),
-    symbol_types: str | None = Query(
-        default=None, description="Comma-separated symbol types"
-    ),
-    file_paths: str | None = Query(
-        default=None, description="Comma-separated file paths"
-    ),
-    include_embeddings: bool = Query(
-        default=False, description="Include embedding vectors"
-    ),
+    symbol_types: str | None = Query(default=None, description="Comma-separated symbol types"),
+    file_paths: str | None = Query(default=None, description="Comma-separated file paths"),
+    include_embeddings: bool = Query(default=False, description="Include embedding vectors"),
     current_user: dict[str, Any] | None = Depends(get_current_user),
     user_id: str | None = Depends(get_user_id),
     request_id: str = Depends(get_request_id),
@@ -179,9 +166,7 @@ async def semantic_search(
             "cache_hit": False,
         }
 
-        response = SemanticSearchResponse(
-            **ensure_constitutional_compliance(response_data)
-        )
+        response = SemanticSearchResponse(**ensure_constitutional_compliance(response_data))
 
         duration_ms = (time.time() - start_time) * 1000
         log_api_response(
@@ -309,9 +294,7 @@ async def get_symbol(
         )
 
 
-@api_router.post(
-    "/analysis/trigger", response_model=AnalysisResponse, tags=["Analysis"]
-)
+@api_router.post("/analysis/trigger", response_model=AnalysisResponse, tags=["Analysis"])
 async def trigger_analysis(
     analysis_request: AnalysisRequest,
     request: Request,
@@ -335,9 +318,7 @@ async def trigger_analysis(
             "id": str(uuid.uuid4()),
             "job_type": analysis_request.analysis_type,
             "status": "queued",
-            "file_path": (
-                analysis_request.file_paths[0] if analysis_request.file_paths else None
-            ),
+            "file_path": (analysis_request.file_paths[0] if analysis_request.file_paths else None),
             "progress_percentage": 0.0,
             "symbols_found": 0,
             "symbols_updated": 0,
@@ -401,9 +382,7 @@ async def trigger_analysis(
         )
 
 
-@api_router.post(
-    "/context/enrich", response_model=ContextEnrichmentResponse, tags=["Context"]
-)
+@api_router.post("/context/enrich", response_model=ContextEnrichmentResponse, tags=["Context"])
 async def enrich_context(
     enrichment_request: ContextEnrichmentRequest,
     request: Request,
@@ -430,9 +409,7 @@ async def enrich_context(
             "processing_time_ms": round((time.time() - start_time) * 1000, 2),
         }
 
-        response = ContextEnrichmentResponse(
-            **ensure_constitutional_compliance(response_data)
-        )
+        response = ContextEnrichmentResponse(**ensure_constitutional_compliance(response_data))
 
         duration_ms = (time.time() - start_time) * 1000
         log_api_response(

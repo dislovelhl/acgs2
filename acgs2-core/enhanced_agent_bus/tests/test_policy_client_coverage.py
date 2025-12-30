@@ -5,26 +5,26 @@ Constitutional Hash: cdd01ef066bc6cf2
 Extended tests to increase policy_client.py coverage.
 """
 
-import pytest
-from unittest.mock import MagicMock, AsyncMock, patch
 from collections import OrderedDict
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 
 try:
+    from enhanced_agent_bus.models import CONSTITUTIONAL_HASH, AgentMessage
     from enhanced_agent_bus.policy_client import (
+        DEFAULT_MAX_CACHE_SIZE,
         PolicyRegistryClient,
         get_policy_client,
-        DEFAULT_MAX_CACHE_SIZE,
     )
-    from enhanced_agent_bus.models import AgentMessage, CONSTITUTIONAL_HASH
     from enhanced_agent_bus.validators import ValidationResult
 except ImportError:
+    from models import AgentMessage
     from policy_client import (
+        DEFAULT_MAX_CACHE_SIZE,
         PolicyRegistryClient,
         get_policy_client,
-        DEFAULT_MAX_CACHE_SIZE,
     )
-    from models import AgentMessage, CONSTITUTIONAL_HASH
-    from validators import ValidationResult
 
 
 class TestPolicyRegistryClientInit:
@@ -107,7 +107,7 @@ class TestPolicyRegistryClientContextManager:
         """__aenter__ initializes the client."""
         client = PolicyRegistryClient()
 
-        with patch.object(client, 'initialize', new_callable=AsyncMock) as mock_init:
+        with patch.object(client, "initialize", new_callable=AsyncMock) as mock_init:
             result = await client.__aenter__()
             mock_init.assert_called_once()
             assert result is client
@@ -117,7 +117,7 @@ class TestPolicyRegistryClientContextManager:
         """__aexit__ closes the client."""
         client = PolicyRegistryClient()
 
-        with patch.object(client, 'close', new_callable=AsyncMock) as mock_close:
+        with patch.object(client, "close", new_callable=AsyncMock) as mock_close:
             await client.__aexit__(None, None, None)
             mock_close.assert_called_once()
 
@@ -223,7 +223,7 @@ class TestPolicyRegistryClientGetPolicyContent:
         # Pre-populate cache
         initialized_client._cache["test-policy:default"] = {
             "content": {"rule": "test"},
-            "timestamp": asyncio.get_event_loop().time()
+            "timestamp": asyncio.get_event_loop().time(),
         }
 
         result = await initialized_client.get_policy_content("test-policy")
@@ -247,7 +247,7 @@ class TestPolicyRegistryClientValidateMessageSignature:
         client = PolicyRegistryClient(fail_closed=False)
 
         # Mock get_policy_content to return None
-        with patch.object(client, 'get_policy_content', new_callable=AsyncMock) as mock_get:
+        with patch.object(client, "get_policy_content", new_callable=AsyncMock) as mock_get:
             mock_get.return_value = None
 
             msg = self.create_message()
@@ -262,7 +262,7 @@ class TestPolicyRegistryClientValidateMessageSignature:
         """Validation with no policy and fail_closed=True fails."""
         client = PolicyRegistryClient(fail_closed=True)
 
-        with patch.object(client, 'get_policy_content', new_callable=AsyncMock) as mock_get:
+        with patch.object(client, "get_policy_content", new_callable=AsyncMock) as mock_get:
             mock_get.return_value = None
 
             msg = self.create_message()
@@ -277,7 +277,7 @@ class TestPolicyRegistryClientValidateMessageSignature:
         client = PolicyRegistryClient()
 
         # Mock policy with small max_response_length
-        with patch.object(client, 'get_policy_content', new_callable=AsyncMock) as mock_get:
+        with patch.object(client, "get_policy_content", new_callable=AsyncMock) as mock_get:
             mock_get.return_value = {"max_response_length": 10}
 
             msg = self.create_message(content="This is a very long message that exceeds the limit")
@@ -291,7 +291,7 @@ class TestPolicyRegistryClientValidateMessageSignature:
         """Validation fails when message contains prohibited content."""
         client = PolicyRegistryClient()
 
-        with patch.object(client, 'get_policy_content', new_callable=AsyncMock) as mock_get:
+        with patch.object(client, "get_policy_content", new_callable=AsyncMock) as mock_get:
             mock_get.return_value = {"prohibited_content": ["forbidden", "banned"]}
 
             msg = self.create_message(content="This contains forbidden words")
@@ -305,7 +305,7 @@ class TestPolicyRegistryClientValidateMessageSignature:
         """Validation adds warning when topic not in allowed list."""
         client = PolicyRegistryClient()
 
-        with patch.object(client, 'get_policy_content', new_callable=AsyncMock) as mock_get:
+        with patch.object(client, "get_policy_content", new_callable=AsyncMock) as mock_get:
             mock_get.return_value = {"allowed_topics": ["finance", "health"]}
 
             msg = self.create_message(content={"topics": ["technology"], "text": "test"})
@@ -320,7 +320,7 @@ class TestPolicyRegistryClientValidateMessageSignature:
         """Validation passes with valid content."""
         client = PolicyRegistryClient()
 
-        with patch.object(client, 'get_policy_content', new_callable=AsyncMock) as mock_get:
+        with patch.object(client, "get_policy_content", new_callable=AsyncMock) as mock_get:
             mock_get.return_value = {"max_response_length": 10000}
 
             msg = self.create_message(content={"action": "test"})
@@ -362,9 +362,7 @@ class TestPolicyRegistryClientHealthCheck:
 
         mock_http = MagicMock()
         error = httpx.HTTPStatusError(
-            message="Server Error",
-            request=MagicMock(),
-            response=mock_response
+            message="Server Error", request=MagicMock(), response=mock_response
         )
         mock_http.get = AsyncMock(side_effect=error)
         client._http_client = mock_http

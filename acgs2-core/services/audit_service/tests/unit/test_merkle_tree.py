@@ -1,5 +1,6 @@
-import unittest
 import hashlib
+import unittest
+
 from services.audit_service.core.merkle_tree.merkle_tree import MerkleTree
 
 
@@ -97,8 +98,7 @@ class TestMerkleTree(unittest.TestCase):
         test_indices = [0, 100, 500, 999]
         for idx in test_indices:
             proof = tree.get_proof(idx)
-            is_valid = tree.verify_proof(data_list[idx], proof,
-                                       tree.get_root_hash())
+            is_valid = tree.verify_proof(data_list[idx], proof, tree.get_root_hash())
             self.assertTrue(is_valid)
 
     def test_tree_height_calculation(self):
@@ -121,5 +121,5 @@ class TestMerkleTree(unittest.TestCase):
         self.assertEqual(tree.get_tree_height(), 3)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

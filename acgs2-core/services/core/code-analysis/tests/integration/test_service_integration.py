@@ -6,10 +6,8 @@ Constitutional Hash: cdd01ef066bc6cf2
 """
 
 import pytest
-from datetime import datetime, timezone
-
-from code_analysis_service.config.settings import Settings, get_settings
 from code_analysis_service.app.utils.constitutional import CONSTITUTIONAL_HASH
+from code_analysis_service.config.settings import get_settings
 
 
 class TestServiceConfiguration:
@@ -51,8 +49,8 @@ class TestConstitutionalIntegration:
     @pytest.mark.constitutional
     def test_constitutional_hash_consistency(self) -> None:
         """Test constitutional hash is consistent across all modules."""
-        from code_analysis_service.config.settings import CONSTITUTIONAL_HASH as SETTINGS_HASH
         from code_analysis_service.app.utils.constitutional import CONSTITUTIONAL_HASH as UTILS_HASH
+        from code_analysis_service.config.settings import CONSTITUTIONAL_HASH as SETTINGS_HASH
 
         assert SETTINGS_HASH == UTILS_HASH
         assert SETTINGS_HASH == "cdd01ef066bc6cf2"
@@ -94,7 +92,10 @@ class TestServiceURLConfiguration:
         settings = get_settings()
 
         assert hasattr(settings, "context_service_url")
-        assert "localhost:8012" in settings.context_service_url or "8012" in settings.context_service_url
+        assert (
+            "localhost:8012" in settings.context_service_url
+            or "8012" in settings.context_service_url
+        )
 
     @pytest.mark.integration
     def test_service_registry_url(self) -> None:
@@ -102,7 +103,10 @@ class TestServiceURLConfiguration:
         settings = get_settings()
 
         assert hasattr(settings, "service_registry_url")
-        assert "localhost:8010" in settings.service_registry_url or "8010" in settings.service_registry_url
+        assert (
+            "localhost:8010" in settings.service_registry_url
+            or "8010" in settings.service_registry_url
+        )
 
 
 class TestACGSStandardPorts:

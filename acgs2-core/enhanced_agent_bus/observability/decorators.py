@@ -7,16 +7,16 @@ Function decorators for automatic tracing and metrics collection.
 
 import asyncio
 import functools
-import time
 import logging
-from typing import Optional, Dict, Any, Callable, TypeVar, Union
+import time
+from typing import Any, Callable, Dict, Optional, TypeVar
 
 from .telemetry import (
-    get_tracer,
-    get_meter,
-    TracingContext,
     CONSTITUTIONAL_HASH,
     OTEL_AVAILABLE,
+    TracingContext,
+    get_meter,
+    get_tracer,
 )
 
 logger = logging.getLogger(__name__)
@@ -283,6 +283,7 @@ class SpanContext:
             self._span.record_exception(exc_val)
             if OTEL_AVAILABLE:
                 from opentelemetry.trace import Status, StatusCode
+
                 self._span.set_status(Status(StatusCode.ERROR, str(exc_val)))
 
         if self._context:

@@ -5,14 +5,13 @@ Constitutional Hash: cdd01ef066bc6cf2
 Comprehensive tests for constitutional validation paths.
 """
 
-import asyncio
 import pytest
+from core import EnhancedAgentBus, MessageProcessor
 
 # Import from module names that conftest.py patches (models, validators, core)
 # This ensures class identity with the strategies in registry.py
-from models import AgentMessage, MessageType, MessagePriority, MessageStatus, CONSTITUTIONAL_HASH
+from models import CONSTITUTIONAL_HASH, AgentMessage, MessagePriority, MessageStatus, MessageType
 from validators import ValidationResult, validate_constitutional_hash, validate_message_content
-from core import MessageProcessor, EnhancedAgentBus
 
 
 class TestConstitutionalHashValidation:
@@ -243,6 +242,7 @@ class TestMessageProcessor:
     @pytest.mark.asyncio
     async def test_handler_error_handling(self, processor, valid_message):
         """Test handler error is properly caught and reported."""
+
         def failing_handler(msg):
             raise ValueError("Handler error")
 

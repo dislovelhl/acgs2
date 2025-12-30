@@ -6,13 +6,14 @@ Tests for traced, metered, timed decorators and SpanContext.
 """
 
 import asyncio
+
 import pytest
 
 try:
-    from observability.decorators import traced, metered, timed, SpanContext
+    from observability.decorators import SpanContext, metered, timed, traced
     from observability.telemetry import CONSTITUTIONAL_HASH
 except ImportError:
-    from ..observability.decorators import traced, metered, timed, SpanContext
+    from ..observability.decorators import SpanContext, metered, timed, traced
     from ..observability.telemetry import CONSTITUTIONAL_HASH
 
 

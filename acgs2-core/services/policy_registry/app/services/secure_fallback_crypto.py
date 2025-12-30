@@ -17,21 +17,21 @@ unavailable. Production deployments SHOULD use Vault Transit engine.
 """
 
 import base64
-import hashlib
 import logging
 import os
 import secrets
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Optional
 
 # Use the cryptography library for AES-GCM
 try:
+    from cryptography.hazmat.backends import default_backend
+    from cryptography.hazmat.primitives import hashes
     from cryptography.hazmat.primitives.ciphers.aead import AESGCM
     from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
-    from cryptography.hazmat.primitives import hashes
-    from cryptography.hazmat.backends import default_backend
+
     CRYPTOGRAPHY_AVAILABLE = True
 except ImportError:
     CRYPTOGRAPHY_AVAILABLE = False
@@ -60,31 +60,37 @@ class FallbackCryptoError(Exception):
 
 class KeyDerivationError(FallbackCryptoError):
     """Error during key derivation."""
+
     pass
 
 
 class EncryptionError(FallbackCryptoError):
     """Error during encryption."""
+
     pass
 
 
 class DecryptionError(FallbackCryptoError):
     """Error during decryption."""
+
     pass
 
 
 class CiphertextFormatError(FallbackCryptoError):
     """Invalid ciphertext format."""
+
     pass
 
 
 class CryptoNotAvailableError(FallbackCryptoError):
     """Cryptography library not available."""
+
     pass
 
 
 class KeyDerivationAlgorithm(str, Enum):
     """Supported key derivation algorithms."""
+
     PBKDF2_SHA256 = "pbkdf2-sha256"
     # Future: ARGON2ID = "argon2id"  # Requires argon2-cffi
 
@@ -102,6 +108,7 @@ class SecureFallbackConfig:
         max_plaintext_size: Maximum plaintext size (16 MB default)
         audit_enabled: Enable audit logging for operations
     """
+
     key_derivation: KeyDerivationAlgorithm = KeyDerivationAlgorithm.PBKDF2_SHA256
     pbkdf2_iterations: int = 310_000  # OWASP 2023 recommendation for SHA256
     nonce_size: int = 12  # 96 bits for AES-GCM
@@ -114,15 +121,11 @@ class SecureFallbackConfig:
     def from_env(cls) -> "SecureFallbackConfig":
         """Create config from environment variables."""
         return cls(
-            pbkdf2_iterations=int(os.environ.get(
-                "FALLBACK_CRYPTO_PBKDF2_ITERATIONS", "310000"
-            )),
-            max_plaintext_size=int(os.environ.get(
-                "FALLBACK_CRYPTO_MAX_SIZE", str(16 * 1024 * 1024)
-            )),
-            audit_enabled=os.environ.get(
-                "FALLBACK_CRYPTO_AUDIT", "true"
-            ).lower() == "true",
+            pbkdf2_iterations=int(os.environ.get("FALLBACK_CRYPTO_PBKDF2_ITERATIONS", "310000")),
+            max_plaintext_size=int(
+                os.environ.get("FALLBACK_CRYPTO_MAX_SIZE", str(16 * 1024 * 1024))
+            ),
+            audit_enabled=os.environ.get("FALLBACK_CRYPTO_AUDIT", "true").lower() == "true",
         )
 
 
@@ -135,6 +138,7 @@ class EncryptedPayload:
     The salt is used for key derivation, nonce for AES-GCM, and tag for
     authentication. All are bundled together for easy storage/transport.
     """
+
     version: int
     salt: bytes
     nonce: bytes
@@ -173,9 +177,7 @@ class EncryptedPayload:
         try:
             version = int(version_str[1:])
         except ValueError:
-            raise CiphertextFormatError(
-                f"Invalid version number: '{version_str}'"
-            )
+            raise CiphertextFormatError(f"Invalid version number: '{version_str}'")
 
         try:
             combined = base64.b64decode(encoded)
@@ -184,9 +186,7 @@ class EncryptedPayload:
 
         # Extract components (salt: 32 bytes, nonce: 12 bytes, rest is ciphertext+tag)
         if len(combined) < 32 + 12 + 16:  # Minimum size
-            raise CiphertextFormatError(
-                f"Ciphertext too short: {len(combined)} bytes"
-            )
+            raise CiphertextFormatError(f"Ciphertext too short: {len(combined)} bytes")
 
         salt = combined[:32]
         nonce = combined[32:44]
@@ -251,9 +251,7 @@ class SecureFallbackCrypto:
             )
 
         self.config = config or SecureFallbackConfig.from_env()
-        self._master_secret = master_secret or os.environ.get(
-            "FALLBACK_CRYPTO_MASTER_SECRET", ""
-        )
+        self._master_secret = master_secret or os.environ.get("FALLBACK_CRYPTO_MASTER_SECRET", "")
         self._constitutional_hash = CONSTITUTIONAL_HASH
         self._key_version = 1  # For future key rotation
         self._operation_count = 0

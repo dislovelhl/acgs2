@@ -6,7 +6,9 @@ Provides centralized Redis configuration for all services.
 """
 
 from dataclasses import dataclass
+
 from shared.config import settings
+
 
 @dataclass
 class RedisConfig:
@@ -20,20 +22,20 @@ class RedisConfig:
         # If env_var is REDIS_URL, we use settings.redis.url
         # If db is 0, we use settings.redis.db unless overridden by db param
         base_url = settings.redis.url
-        
+
         # If it's a specialty call for another env var, still support os.getenv
         if env_var != "REDIS_URL":
             base_url = os.getenv(env_var, settings.redis.url)
 
         # Ensure URL doesn't already have a database number
-        if base_url.count('/') > 2:
+        if base_url.count("/") > 2:
             return base_url
 
         # Use db from settings if not explicitly provided as non-zero
         effective_db = db if db > 0 else settings.redis.db
 
         if effective_db > 0:
-            base_url = base_url.rstrip('/')
+            base_url = base_url.rstrip("/")
             return f"{base_url}/{effective_db}"
 
         return base_url

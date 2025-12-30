@@ -8,12 +8,11 @@ Designed to maintain P99 latency < 1.31ms by using fire-and-forget patterns.
 
 import asyncio
 import logging
-import time
 from collections import deque
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional, Set
+from typing import Any, Callable, Dict, List, Optional
 
 try:
     from shared.constants import CONSTITUTIONAL_HASH
@@ -22,8 +21,9 @@ except ImportError:
     CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
 
 try:
-    from shared.circuit_breaker import CircuitBreakerRegistry
     import pybreaker
+    from shared.circuit_breaker import CircuitBreakerRegistry
+
     CIRCUIT_BREAKER_AVAILABLE = True
 except ImportError:
     CIRCUIT_BREAKER_AVAILABLE = False
@@ -35,6 +35,7 @@ logger = logging.getLogger(__name__)
 
 class SystemHealthStatus(Enum):
     """System health status levels."""
+
     HEALTHY = "healthy"  # All circuits closed, system operating normally
     DEGRADED = "degraded"  # Some circuits open, reduced capacity
     CRITICAL = "critical"  # Multiple circuits open, service impaired
@@ -44,6 +45,7 @@ class SystemHealthStatus(Enum):
 @dataclass
 class HealthSnapshot:
     """Point-in-time health snapshot."""
+
     timestamp: datetime
     status: SystemHealthStatus
     health_score: float  # 0.0 - 1.0
@@ -57,15 +59,15 @@ class HealthSnapshot:
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for serialization."""
         return {
-            'timestamp': self.timestamp.isoformat(),
-            'status': self.status.value,
-            'health_score': round(self.health_score, 3),
-            'total_breakers': self.total_breakers,
-            'closed_breakers': self.closed_breakers,
-            'half_open_breakers': self.half_open_breakers,
-            'open_breakers': self.open_breakers,
-            'circuit_states': self.circuit_states,
-            'constitutional_hash': self.constitutional_hash,
+            "timestamp": self.timestamp.isoformat(),
+            "status": self.status.value,
+            "health_score": round(self.health_score, 3),
+            "total_breakers": self.total_breakers,
+            "closed_breakers": self.closed_breakers,
+            "half_open_breakers": self.half_open_breakers,
+            "open_breakers": self.open_breakers,
+            "circuit_states": self.circuit_states,
+            "constitutional_hash": self.constitutional_hash,
         }
 
 
@@ -76,6 +78,7 @@ class SystemHealthReport:
 
     Includes current status, health score, and detailed circuit breaker states.
     """
+
     status: SystemHealthStatus
     health_score: float  # 0.0 - 1.0
     timestamp: datetime
@@ -91,17 +94,17 @@ class SystemHealthReport:
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for serialization."""
         return {
-            'status': self.status.value,
-            'health_score': round(self.health_score, 3),
-            'timestamp': self.timestamp.isoformat(),
-            'total_breakers': self.total_breakers,
-            'closed_breakers': self.closed_breakers,
-            'half_open_breakers': self.half_open_breakers,
-            'open_breakers': self.open_breakers,
-            'circuit_details': self.circuit_details,
-            'degraded_services': self.degraded_services,
-            'critical_services': self.critical_services,
-            'constitutional_hash': self.constitutional_hash,
+            "status": self.status.value,
+            "health_score": round(self.health_score, 3),
+            "timestamp": self.timestamp.isoformat(),
+            "total_breakers": self.total_breakers,
+            "closed_breakers": self.closed_breakers,
+            "half_open_breakers": self.half_open_breakers,
+            "open_breakers": self.open_breakers,
+            "circuit_details": self.circuit_details,
+            "degraded_services": self.degraded_services,
+            "critical_services": self.critical_services,
+            "constitutional_hash": self.constitutional_hash,
         }
 
 
@@ -143,7 +146,9 @@ class HealthAggregator:
         registry: Optional[CircuitBreakerRegistry] = None,
     ):
         self.config = config or HealthAggregatorConfig()
-        self._registry = registry or (CircuitBreakerRegistry() if CIRCUIT_BREAKER_AVAILABLE else None)
+        self._registry = registry or (
+            CircuitBreakerRegistry() if CIRCUIT_BREAKER_AVAILABLE else None
+        )
         self._custom_breakers: Dict[str, Any] = {}
         self._health_history: deque = deque(maxlen=self.config.max_history_size)
         self._running = False
@@ -199,9 +204,7 @@ class HealthAggregator:
             breaker: Circuit breaker instance (must have 'current_state' attribute)
         """
         self._custom_breakers[name] = breaker
-        logger.debug(
-            f"[{self.config.constitutional_hash}] Registered circuit breaker: {name}"
-        )
+        logger.debug(f"[{self.config.constitutional_hash}] Registered circuit breaker: {name}")
 
     def unregister_circuit_breaker(self, name: str) -> None:
         """Unregister a custom circuit breaker."""
@@ -261,11 +264,11 @@ class HealthAggregator:
         if self._registry:
             registry_states = self._registry.get_all_states()
             for name, state_info in registry_states.items():
-                state = state_info['state']
+                state = state_info["state"]
                 circuit_details[name] = {
-                    'state': state,
-                    'fail_counter': state_info.get('fail_counter', 0),
-                    'success_counter': state_info.get('success_counter', 0),
+                    "state": state,
+                    "fail_counter": state_info.get("fail_counter", 0),
+                    "success_counter": state_info.get("success_counter", 0),
                 }
                 if state == pybreaker.STATE_CLOSED:
                     closed_count += 1
@@ -276,12 +279,12 @@ class HealthAggregator:
 
         # Get states from custom breakers
         for name, breaker in self._custom_breakers.items():
-            if hasattr(breaker, 'current_state'):
+            if hasattr(breaker, "current_state"):
                 state = breaker.current_state
                 circuit_details[name] = {
-                    'state': state,
-                    'fail_counter': getattr(breaker, 'fail_counter', 0),
-                    'success_counter': getattr(breaker, 'success_counter', 0),
+                    "state": state,
+                    "fail_counter": getattr(breaker, "fail_counter", 0),
+                    "success_counter": getattr(breaker, "success_counter", 0),
                 }
                 if state == pybreaker.STATE_CLOSED:
                     closed_count += 1
@@ -302,12 +305,12 @@ class HealthAggregator:
 
         # Identify degraded and critical services
         degraded_services = [
-            name for name, info in circuit_details.items()
-            if info['state'] == pybreaker.STATE_HALF_OPEN
+            name
+            for name, info in circuit_details.items()
+            if info["state"] == pybreaker.STATE_HALF_OPEN
         ]
         critical_services = [
-            name for name, info in circuit_details.items()
-            if info['state'] == pybreaker.STATE_OPEN
+            name for name, info in circuit_details.items() if info["state"] == pybreaker.STATE_OPEN
         ]
 
         return SystemHealthReport(
@@ -341,7 +344,8 @@ class HealthAggregator:
 
         # Filter snapshots within window
         filtered_snapshots = [
-            snapshot for snapshot in self._health_history
+            snapshot
+            for snapshot in self._health_history
             if snapshot.timestamp.timestamp() >= cutoff_time
         ]
 
@@ -351,15 +355,15 @@ class HealthAggregator:
         """Get aggregator metrics."""
         current_health = self.get_system_health()
         return {
-            'snapshots_collected': self._snapshots_collected,
-            'callbacks_fired': self._callbacks_fired,
-            'history_size': len(self._health_history),
-            'running': self._running,
-            'enabled': self.config.enabled,
-            'current_status': current_health.status.value,
-            'current_health_score': current_health.health_score,
-            'total_breakers': current_health.total_breakers,
-            'constitutional_hash': self.config.constitutional_hash,
+            "snapshots_collected": self._snapshots_collected,
+            "callbacks_fired": self._callbacks_fired,
+            "history_size": len(self._health_history),
+            "running": self._running,
+            "enabled": self.config.enabled,
+            "current_status": current_health.status.value,
+            "current_health_score": current_health.health_score,
+            "total_breakers": current_health.total_breakers,
+            "constitutional_hash": self.config.constitutional_hash,
         }
 
     async def _health_check_loop(self) -> None:
@@ -391,7 +395,7 @@ class HealthAggregator:
             half_open_breakers=health_report.half_open_breakers,
             open_breakers=health_report.open_breakers,
             circuit_states={
-                name: info['state'] for name, info in health_report.circuit_details.items()
+                name: info["state"] for name, info in health_report.circuit_details.items()
             },
             constitutional_hash=self.config.constitutional_hash,
         )
@@ -416,9 +420,7 @@ class HealthAggregator:
                     asyncio.create_task(self._invoke_callback(callback, health_report))
                     self._callbacks_fired += 1
                 except Exception as e:
-                    logger.error(
-                        f"Failed to fire health change callback {callback.__name__}: {e}"
-                    )
+                    logger.error(f"Failed to fire health change callback {callback.__name__}: {e}")
 
     async def _invoke_callback(
         self, callback: Callable[[SystemHealthReport], None], report: SystemHealthReport
@@ -490,13 +492,13 @@ def reset_health_aggregator() -> None:
 
 
 __all__ = [
-    'CONSTITUTIONAL_HASH',
-    'CIRCUIT_BREAKER_AVAILABLE',
-    'SystemHealthStatus',
-    'HealthSnapshot',
-    'SystemHealthReport',
-    'HealthAggregatorConfig',
-    'HealthAggregator',
-    'get_health_aggregator',
-    'reset_health_aggregator',
+    "CONSTITUTIONAL_HASH",
+    "CIRCUIT_BREAKER_AVAILABLE",
+    "SystemHealthStatus",
+    "HealthSnapshot",
+    "SystemHealthReport",
+    "HealthAggregatorConfig",
+    "HealthAggregator",
+    "get_health_aggregator",
+    "reset_health_aggregator",
 ]

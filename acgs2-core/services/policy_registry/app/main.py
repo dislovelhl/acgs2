@@ -4,25 +4,27 @@ Policy Registry Service - Main FastAPI Application
 
 import logging
 from contextlib import asynccontextmanager
-from typing import Dict, Any
+from typing import Any, Dict
 
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-
-from .services import CryptoService, CacheService, NotificationService, PolicyService
 from shared.audit_client import AuditClient
+
+from .services import CacheService, CryptoService, NotificationService, PolicyService
 
 # Import secure CORS configuration
 try:
     from shared.security.cors_config import get_cors_config
+
     SECURE_CORS_AVAILABLE = True
 except ImportError:
     SECURE_CORS_AVAILABLE = False
 
 # Import rate limiting middleware
 try:
-    from shared.security.rate_limiter import RateLimitMiddleware, RateLimitConfig
+    from shared.security.rate_limiter import RateLimitConfig, RateLimitMiddleware
+
     RATE_LIMIT_AVAILABLE = True
 except ImportError:
     RATE_LIMIT_AVAILABLE = False
@@ -45,10 +47,7 @@ cache_service = CacheService()
 notification_service = NotificationService()
 audit_client = AuditClient(service_url=settings.audit.url)
 policy_service = PolicyService(
-    crypto_service, 
-    cache_service, 
-    notification_service,
-    audit_client=audit_client
+    crypto_service, cache_service, notification_service, audit_client=audit_client
 )
 
 
@@ -57,20 +56,20 @@ async def lifespan(app: FastAPI):
     """Application lifespan manager"""
     # Startup
     logger.info("Starting Policy Registry Service")
-    
+
     await cache_service.initialize()
     await notification_service.initialize()
-    
+
     logger.info("Policy Registry Service started")
-    
+
     yield
-    
+
     # Shutdown
     logger.info("Shutting down Policy Registry Service")
-    
+
     await notification_service.shutdown()
     await cache_service.close()
-    
+
     logger.info("Policy Registry Service stopped")
 
 
@@ -79,14 +78,16 @@ app = FastAPI(
     title="Policy Registry Service",
     description="Dynamic Constitution Policy Management with Ed25519 Signatures",
     version="1.0.0",
-    lifespan=lifespan
+    lifespan=lifespan,
 )
 
 # Add CORS middleware with secure configuration
 if SECURE_CORS_AVAILABLE:
     # Use secure CORS configuration from shared module
     cors_config = get_cors_config()
-    logger.info(f"Using secure CORS configuration with {len(cors_config.get('allow_origins', []))} origins")
+    logger.info(
+        f"Using secure CORS configuration with {len(cors_config.get('allow_origins', []))} origins"
+    )
 else:
     # Fallback to settings-based configuration
     cors_config = {
@@ -104,9 +105,7 @@ if RATE_LIMIT_AVAILABLE:
     rate_limit_config = RateLimitConfig.from_env()
     if rate_limit_config.enabled:
         app.add_middleware(RateLimitMiddleware, config=rate_limit_config)
-        logger.info(
-            f"Rate limiting enabled with {len(rate_limit_config.rules)} rules"
-        )
+        logger.info(f"Rate limiting enabled with {len(rate_limit_config.rules)} rules")
     else:
         logger.info("Rate limiting is disabled via configuration")
 else:
@@ -124,10 +123,9 @@ async def internal_auth_middleware(request, call_next):
             # Only restrict certain paths or all? Let's restrict /api/v1 for now
             if request.url.path.startswith("/api/v1"):
                 return JSONResponse(
-                    status_code=401,
-                    content={"detail": "Unauthorized: Invalid internal API key"}
+                    status_code=401, content={"detail": "Unauthorized: Invalid internal API key"}
                 )
-    
+
     return await call_next(request)
 
 
@@ -166,17 +164,17 @@ async def liveness_check():
 @app.get("/health/ready", response_model=Dict[str, Any])
 async def readiness_check(
     cache_svc: CacheService = Depends(get_cache_service),
-    notification_svc: NotificationService = Depends(get_notification_service)
+    notification_svc: NotificationService = Depends(get_notification_service),
 ):
     """Kubernetes readiness probe"""
     cache_stats = await cache_svc.get_cache_stats()
     connection_stats = await notification_svc.get_connection_count()
-    
+
     return {
         "status": "ready",
         "service": "policy-registry",
         "cache": cache_stats,
-        "connections": connection_stats
+        "connections": connection_stats,
     }
 
 
@@ -184,17 +182,17 @@ async def readiness_check(
 async def detailed_health_check(
     policy_svc: PolicyService = Depends(get_policy_service),
     cache_svc: CacheService = Depends(get_cache_service),
-    notification_svc: NotificationService = Depends(get_notification_service)
+    notification_svc: NotificationService = Depends(get_notification_service),
 ):
     """Detailed health check for monitoring"""
     policies = await policy_svc.list_policies()
-    
+
     return {
         "status": "healthy",
         "service": "policy-registry",
         "policies_count": len(policies),
         "cache_stats": await cache_svc.get_cache_stats(),
-        "connection_stats": await notification_svc.get_connection_count()
+        "connection_stats": await notification_svc.get_connection_count(),
     }
 
 
@@ -203,19 +201,10 @@ async def detailed_health_check(
 async def global_exception_handler(request, exc):
     """Global exception handler"""
     logger.error(f"Unhandled exception: {exc}", exc_info=True)
-    return JSONResponse(
-        status_code=500,
-        content={"detail": "Internal server error"}
-    )
+    return JSONResponse(status_code=500, content={"detail": "Internal server error"})
 
 
 if __name__ == "__main__":
     import uvicorn
-    
-    uvicorn.run(
-        "main:app",
-        host="0.0.0.0",
-        port=8000,
-        reload=True,
-        log_level="info"
-    )
+
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True, log_level="info")
