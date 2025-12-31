@@ -16,6 +16,16 @@ import asyncio
 import logging
 from datetime import datetime, timezone
 from typing import Any, Callable, Dict, Optional
+try:
+    from ..models import CONSTITUTIONAL_HASH
+except (ImportError, ValueError):
+    try:
+        from enhanced_agent_bus.models import CONSTITUTIONAL_HASH
+    except ImportError:
+        try:
+            from models import CONSTITUTIONAL_HASH
+        except ImportError:
+            CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
 
 try:
     from ..models import AgentMessage, MessageStatus
@@ -27,7 +37,6 @@ except ImportError:
 _USING_MOCKS = False
 
 try:
-    # Try relative imports first (package context)
     from .adaptive_router import get_adaptive_router
     from .deliberation_queue import DeliberationStatus, VoteType, get_deliberation_queue
     from .impact_scorer import get_impact_scorer
@@ -41,12 +50,34 @@ try:
         RedisVotingProtocol,
     )
     from .llm_assistant import get_llm_assistant
-    from .opa_guard import (
-        GuardDecision,
-        GuardResult,
-        OPAGuard,
-    )
+    from .opa_guard import GuardDecision, GuardResult, OPAGuard
     from .redis_integration import get_redis_deliberation_queue, get_redis_voting_system
+except (ImportError, ValueError):
+    try:
+        from adaptive_router import get_adaptive_router # type: ignore
+        from deliberation_queue import DeliberationStatus, VoteType, get_deliberation_queue # type: ignore
+        from impact_scorer import get_impact_scorer # type: ignore
+        from interfaces import ( # type: ignore
+            AdaptiveRouterProtocol, DeliberationQueueProtocol, ImpactScorerProtocol,
+            LLMAssistantProtocol, OPAGuardProtocol, RedisQueueProtocol, RedisVotingProtocol
+        )
+        from llm_assistant import get_llm_assistant # type: ignore
+        from opa_guard import GuardDecision, GuardResult, OPAGuard # type: ignore
+        from redis_integration import get_redis_deliberation_queue, get_redis_voting_system # type: ignore
+    except (ImportError, ValueError):
+        import sys, os
+        d = os.path.dirname(os.path.abspath(__file__))
+        if d not in sys.path: sys.path.append(d)
+        from adaptive_router import get_adaptive_router # type: ignore
+        from deliberation_queue import DeliberationStatus, VoteType, get_deliberation_queue # type: ignore
+        from impact_scorer import get_impact_scorer # type: ignore
+        from interfaces import ( # type: ignore
+            AdaptiveRouterProtocol, DeliberationQueueProtocol, ImpactScorerProtocol,
+            LLMAssistantProtocol, OPAGuardProtocol, RedisQueueProtocol, RedisVotingProtocol
+        )
+        from llm_assistant import get_llm_assistant # type: ignore
+        from opa_guard import GuardDecision, GuardResult, OPAGuard # type: ignore
+        from redis_integration import get_redis_deliberation_queue, get_redis_voting_system # type: ignore
 except (ImportError, ValueError):
     try:
         # Try absolute imports (direct execution context)
@@ -967,3 +998,4 @@ def reset_deliberation_layer() -> None:
     """
     global _deliberation_layer
     _deliberation_layer = None
+DeliberationEngine = DeliberationLayer

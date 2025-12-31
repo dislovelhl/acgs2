@@ -1,19 +1,32 @@
 # ADR 003: Constitutional AI Governance Integration
 
+<!-- Constitutional Hash: cdd01ef066bc6cf2 -->
+
 ## Status
-Accepted
+Accepted & Implemented (v2.3.0)
+
+## Date
+2025-12-31 (Phase 3.6 confirmed)
 
 ## Context
-Autonomous agents can exhibit unpredictable behavior that violates safety or legal guidelines. Hard-coded rules are too brittle for LLM-driven agents.
+Autonomous agents require flexible governance beyond hard-coded rules for LLM-driven behaviors.
 
 ## Decision
-We will implement "Constitutional'AI" as the primary governance mechanism:
-1. **The Constitution**: A versioned document containing high-level principles (e.g., "Do not authorize payments >$10k without human approval").
-2. **Impact Scoring**: Use semantic models (BERT) to score the intent of agent messages.
-3. **Deliberation Layer**: Intercept messages that exceed safety thresholds and route them for further scrutiny (HITL or Multi-agent consensus).
+1. **Constitution**: Versioned principles document.
+2. **Impact Scoring**: Semantic models (DistilBERT/ONNX).
+3. **Deliberation Layer**: Intercept high-impact messages for HITL/multi-agent review.
 
 ## Consequences
-- **Positive**: Flexible, intent-based safety enforcement.
-- **Positive**: Prevents "breakout" scenarios where agents bypass hard-coded filters.
-- **Negative**: Adds latency to high-risk decisions.
-- **Negative**: Semantic scoring can have false positives/negatives.
+
+### Positive
+- Intent-based safety.
+- Prevents breakout scenarios.
+
+### Negative
+- Latency for high-risk.
+- Scoring false positives.
+
+### Post Phase 3.6
+- Aligned with agent bus refactors.
+- New validators/exceptions integrated.
+- OPA enhancements pending Phase 3.7.

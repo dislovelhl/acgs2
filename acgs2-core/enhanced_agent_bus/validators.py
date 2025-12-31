@@ -7,6 +7,10 @@ Validation utilities for message and agent compliance.
 
 import hmac
 from dataclasses import dataclass, field
+try:
+    from .models import AgentMessage, MessageStatus
+except (ImportError, ValueError):
+    from models import AgentMessage, MessageStatus # type: ignore
 from datetime import datetime, timezone
 from typing import Any, Dict, List
 
@@ -35,6 +39,7 @@ class ValidationResult:
     warnings: List[str] = field(default_factory=list)
     metadata: Dict[str, Any] = field(default_factory=dict)
     decision: str = "ALLOW"
+    status: MessageStatus = MessageStatus.VALIDATED
     constitutional_hash: str = CONSTITUTIONAL_HASH
 
     def add_error(self, error: str) -> None:

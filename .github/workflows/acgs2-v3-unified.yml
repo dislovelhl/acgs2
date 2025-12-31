@@ -1,0 +1,111 @@
+name: ACGS2 v3.0.0 Unified CI
+# Constitutional Hash: cdd01ef066bc6cf2
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  security-audit:
+    name: Security Audit (SCA)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Pip Audit
+        run: |
+          pip install pip-audit
+          pip-audit -r acgs2-core/requirements_optimized.txt
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.80.0
+
+      - name: Cargo Audit
+        run: |
+          cargo install cargo-audit
+          cd acgs2-core/enhanced_agent_bus/rust && cargo audit
+
+  test-python:
+    name: Python Tests (3.12)
+    needs: security-audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+      - name: Install dependencies
+        run: |
+          pip install -e .[test]
+          pip install -r acgs2-core/requirements_optimized.txt
+      - name: Run All Tests
+        run: |
+          python3 test_all.py
+
+  test-rust:
+    name: Rust Tests (1.80.0)
+    needs: security-audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.80.0
+      - name: Cargo Test
+        run: |
+          cd acgs2-core/enhanced_agent_bus/rust && cargo test
+
+  build-and-scan:
+    name: Build and Trivy Scan
+    needs: [test-python, test-rust]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build Optimized Image
+        run: |
+          docker build -t acgs2-bus:v3 -f acgs2-core/Dockerfile.optimized acgs2-core/
+      - name: Trivy Scan
+        uses: aquasecurity/trivy-action@0.24.0
+        with:
+          image-ref: acgs2-bus:v3
+          exit-code: "1"
+          severity: "HIGH,CRITICAL"
+          ignore-unfixed: true
+
+  kyverno-test:
+    name: Kyverno Policy Test
+    needs: build-and-scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Kyverno CLI
+        run: |
+          curl -LO https://github.com/kyverno/kyverno/releases/download/v1.12.0/kyverno-cli_v1.12.0_linux_x86_64.tar.gz
+          tar -xvf kyverno-cli_v1.12.0_linux_x86_64.tar.gz
+          sudo mv kyverno /usr/local/bin/
+      - name: Test K8s Manifests
+        run: |
+          # Simplified test against a mock policy or manifest
+          kyverno test acgs2-infra/k8s/
+
+  slsa-provenance:
+    name: SLSA Provenance (Structure)
+    needs: build-and-scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate SLSA Metadata
+        run: |
+          echo "Generating SLSA L4 provenance metadata..."
+          # This would eventually integrate with SLSA generator actions

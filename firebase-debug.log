@@ -56,3 +56,15 @@
 [debug] [2025-12-30T22:56:35.720Z] > authorizing via signed-in user (martin@git.com.co)
 [debug] [2025-12-30T23:33:51.593Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
 [debug] [2025-12-30T23:33:51.594Z] > authorizing via signed-in user (martin@git.com.co)
+[debug] [2025-12-31T10:23:29.661Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2025-12-31T10:23:29.662Z] > authorizing via signed-in user (martin@git.com.co)
+[debug] [2025-12-31T10:27:09.759Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2025-12-31T10:27:09.760Z] > authorizing via signed-in user (martin@git.com.co)
+[debug] [2025-12-31T11:37:29.989Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2025-12-31T11:37:29.990Z] > authorizing via signed-in user (martin@git.com.co)
+[debug] [2025-12-31T16:26:07.388Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2025-12-31T16:26:07.389Z] > authorizing via signed-in user (martin@git.com.co)
+[debug] [2025-12-31T16:35:23.419Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2025-12-31T16:35:23.421Z] > authorizing via signed-in user (martin@git.com.co)
+[debug] [2025-12-31T16:36:48.146Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2025-12-31T16:36:48.148Z] > authorizing via signed-in user (martin@git.com.co)

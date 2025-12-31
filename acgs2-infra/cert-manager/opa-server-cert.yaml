@@ -1,0 +1,21 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: opa-server-tls
+  namespace: acgs2
+spec:
+  secretName: opa-server-tls
+  issuerRef:
+    name: mtlsca-issuer
+    kind: ClusterIssuer
+  commonName: opa.acgs2.svc.cluster.local
+  dnsNames:
+    - opa.acgs2.svc.cluster.local
+  usages:
+    - digital signature
+    - key encipherment
+    - server auth
+    - client auth
+  privateKey:
+    algorithm: ECDSA
+    size: 256

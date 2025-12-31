@@ -1,33 +1,29 @@
 """
 ACGS-2 Enhanced Agent Bus - Registry Implementations
 Constitutional Hash: cdd01ef066bc6cf2
-
-Default implementations of protocol interfaces for agent management.
 """
 
-import asyncio
-import json
-import logging
+import asyncio, json, logging
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
-
-# redis import moved to RedisAgentRegistry._get_client to prevent import-time failures
 
 try:
     from .interfaces import AgentRegistry, MessageRouter, ProcessingStrategy, ValidationStrategy
     from .models import CONSTITUTIONAL_HASH, AgentMessage, MessageStatus
     from .validators import ValidationResult
-except ImportError as e:
-    # Only fallback if it's specifically a relative import failure,
-    # not if it's an ImportError from within the module itself
-    if "relative import" in str(e) or "attempted relative import" in str(e):
-        try:
-            from interfaces import AgentRegistry  # type: ignore
-            from models import CONSTITUTIONAL_HASH, AgentMessage  # type: ignore
-        except ImportError:
-            raise e
-    else:
-        raise e
+except (ImportError, ValueError):
+    try:
+        from interfaces import AgentRegistry, MessageRouter, ProcessingStrategy, ValidationStrategy # type: ignore
+        from models import CONSTITUTIONAL_HASH, AgentMessage, MessageStatus # type: ignore
+        from validators import ValidationResult # type: ignore
+    except (ImportError, ValueError):
+        # Fallback for dynamic loaders
+        import sys, os
+        d = os.path.dirname(os.path.abspath(__file__))
+        if d not in sys.path: sys.path.append(d)
+        from interfaces import AgentRegistry, MessageRouter, ProcessingStrategy, ValidationStrategy # type: ignore
+        from models import CONSTITUTIONAL_HASH, AgentMessage, MessageStatus # type: ignore
+        from validators import ValidationResult # type: ignore
 
 # Import validation and processing strategies from extracted modules
 try:
@@ -37,6 +33,7 @@ try:
         OPAProcessingStrategy,
         PythonProcessingStrategy,
         RustProcessingStrategy,
+        MACIProcessingStrategy,
     )
     from .validation_strategies import (
         CompositeValidationStrategy,
@@ -45,13 +42,14 @@ try:
         RustValidationStrategy,
         StaticHashValidationStrategy,
     )
-except ImportError:
+except (ImportError, ValueError):
     from processing_strategies import (  # type: ignore
         CompositeProcessingStrategy,
         DynamicPolicyProcessingStrategy,
         OPAProcessingStrategy,
         PythonProcessingStrategy,
         RustProcessingStrategy,
+        MACIProcessingStrategy,
     )
     from validation_strategies import (  # type: ignore
         CompositeValidationStrategy,
@@ -68,380 +66,124 @@ DEFAULT_REDIS_MAX_CONNECTIONS = 20
 DEFAULT_REDIS_SOCKET_TIMEOUT = 5.0
 DEFAULT_REDIS_SOCKET_CONNECT_TIMEOUT = 5.0
 
-
 class InMemoryAgentRegistry:
-    """In-memory implementation of AgentRegistry.
-
-    Thread-safe agent registration using asyncio locks.
-    Suitable for single-instance deployments.
-    Constitutional Hash: cdd01ef066bc6cf2
-    """
-
     def __init__(self) -> None:
-        """Initialize the in-memory registry."""
         self._agents: Dict[str, Dict[str, Any]] = {}
         self._lock = asyncio.Lock()
         self._constitutional_hash = CONSTITUTIONAL_HASH
 
-    async def register(
-        self,
-        agent_id: str,
-        capabilities: Optional[Dict[str, Any]] = None,
-        metadata: Optional[Dict[str, Any]] = None,
-    ) -> bool:
-        """Register an agent with the bus."""
+    async def register(self, agent_id: str, capabilities: Optional[Dict[str, Any]] = None, metadata: Optional[Dict[str, Any]] = None) -> bool:
         async with self._lock:
-            if agent_id in self._agents:
-                return False
-
-            self._agents[agent_id] = {
-                "agent_id": agent_id,
-                "capabilities": capabilities or {},
-                "metadata": metadata or {},
-                "registered_at": datetime.now(timezone.utc).isoformat(),
-                "constitutional_hash": self._constitutional_hash,
-            }
+            if agent_id in self._agents: return False
+            self._agents[agent_id] = {"agent_id": agent_id, "capabilities": capabilities or {}, "metadata": metadata or {}, "registered_at": datetime.now(timezone.utc).isoformat(), "constitutional_hash": self._constitutional_hash}
             return True
 
     async def unregister(self, agent_id: str) -> bool:
-        """Unregister an agent from the bus."""
         async with self._lock:
-            if agent_id not in self._agents:
-                return False
-            del self._agents[agent_id]
-            return True
+            if agent_id not in self._agents: return False
+            del self._agents[agent_id]; return True
 
     async def get(self, agent_id: str) -> Optional[Dict[str, Any]]:
-        """Get agent information by ID."""
-        async with self._lock:
-            return self._agents.get(agent_id)
+        async with self._lock: return self._agents.get(agent_id)
 
     async def list_agents(self) -> List[str]:
-        """List all registered agent IDs."""
-        async with self._lock:
-            return list(self._agents.keys())
+        async with self._lock: return list(self._agents.keys())
 
     async def exists(self, agent_id: str) -> bool:
-        """Check if an agent is registered."""
-        async with self._lock:
-            return agent_id in self._agents
+        async with self._lock: return agent_id in self._agents
 
     async def update_metadata(self, agent_id: str, metadata: Dict[str, Any]) -> bool:
-        """Update agent metadata."""
         async with self._lock:
-            if agent_id not in self._agents:
-                return False
-            self._agents[agent_id]["metadata"].update(metadata)
-            self._agents[agent_id]["updated_at"] = datetime.now(timezone.utc).isoformat()
+            if agent_id not in self._agents: return False
+            self._agents[agent_id]["metadata"].update(metadata); self._agents[agent_id]["updated_at"] = datetime.now(timezone.utc).isoformat()
             return True
 
     async def clear(self) -> None:
-        """Clear all registered agents. Useful for testing."""
-        async with self._lock:
-            self._agents.clear()
+        async with self._lock: self._agents.clear()
 
     @property
-    def agent_count(self) -> int:
-        """Get the number of registered agents."""
-        return len(self._agents)
-
+    def agent_count(self) -> int: return len(self._agents)
 
 class RedisAgentRegistry:
-    """Redis-based implementation of AgentRegistry for distributed deployments.
-
-    Uses Redis hashes to store agent information across multiple instances.
-    Includes connection pool configuration to prevent resource exhaustion.
-    Constitutional Hash: cdd01ef066bc6cf2
-    """
-
-    def __init__(
-        self,
-        redis_url: str,
-        key_prefix: str = "acgs2:registry:agents",
-        max_connections: int = DEFAULT_REDIS_MAX_CONNECTIONS,
-        socket_timeout: float = DEFAULT_REDIS_SOCKET_TIMEOUT,
-        socket_connect_timeout: float = DEFAULT_REDIS_SOCKET_CONNECT_TIMEOUT,
-    ) -> None:
-        """Initialize the Redis registry with connection pool configuration.
-
-        Args:
-            redis_url: Redis connection URL
-            key_prefix: Redis key prefix for the registry hash
-            max_connections: Maximum connections in pool (default 20)
-            socket_timeout: Socket timeout in seconds (default 5.0)
-            socket_connect_timeout: Connection timeout in seconds (default 5.0)
-        """
-        self._redis_url = redis_url
-        self._key_prefix = key_prefix
-        self._max_connections = max_connections
-        self._socket_timeout = socket_timeout
-        self._socket_connect_timeout = socket_connect_timeout
+    def __init__(self, redis_url: str, key_prefix: str = "acgs2:registry:agents", max_connections: int = DEFAULT_REDIS_MAX_CONNECTIONS, socket_timeout: float = DEFAULT_REDIS_SOCKET_TIMEOUT, socket_connect_timeout: float = DEFAULT_REDIS_SOCKET_CONNECT_TIMEOUT) -> None:
+        self._redis_url, self._key_prefix, self._max_connections = redis_url, key_prefix, max_connections
+        self._socket_timeout, self._socket_connect_timeout = socket_timeout, socket_connect_timeout
         self._constitutional_hash = CONSTITUTIONAL_HASH
-        self._redis: Optional[redis.Redis] = None
-        self._pool: Optional[redis.ConnectionPool] = None
+        self._redis = self._pool = None
 
     async def _get_client(self) -> Any:
-        """Get or create the Redis client with connection pool limits."""
-        try:
-            import redis.asyncio as redis
-        except ImportError:
-            logger.error("redis-py not installed. RedisAgentRegistry requires the 'redis' package.")
-            raise ImportError(
-                "RedisAgentRegistry requires 'redis' package. " "Install with 'pip install redis'"
-            )
-
+        try: import redis.asyncio as redis
+        except ImportError: raise ImportError("RedisAgentRegistry requires 'redis' package.")
         if self._redis is None:
-            # Create connection pool with configured limits
-            self._pool = redis.ConnectionPool.from_url(
-                self._redis_url,
-                max_connections=self._max_connections,
-                socket_timeout=self._socket_timeout,
-                socket_connect_timeout=self._socket_connect_timeout,
-                decode_responses=True,
-            )
+            self._pool = redis.ConnectionPool.from_url(self._redis_url, max_connections=self._max_connections, socket_timeout=self._socket_timeout, socket_connect_timeout=self._socket_connect_timeout, decode_responses=True)
             self._redis = redis.Redis(connection_pool=self._pool)
         return self._redis
 
-    async def register(
-        self,
-        agent_id: str,
-        capabilities: Optional[Dict[str, Any]] = None,
-        metadata: Optional[Dict[str, Any]] = None,
-    ) -> bool:
-        """Register an agent with the bus."""
+    async def register(self, aid: str, caps: Optional[Dict[str, Any]] = None, meta: Optional[Dict[str, Any]] = None) -> bool:
         client = await self._get_client()
+        info = {"agent_id": aid, "capabilities": caps or {}, "metadata": meta or {}, "registered_at": datetime.now(timezone.utc).isoformat(), "constitutional_hash": self._constitutional_hash}
+        return bool(await client.hsetnx(self._key_prefix, aid, json.dumps(info)))
 
-        agent_info = {
-            "agent_id": agent_id,
-            "capabilities": capabilities or {},
-            "metadata": metadata or {},
-            "registered_at": datetime.now(timezone.utc).isoformat(),
-            "constitutional_hash": self._constitutional_hash,
-        }
+    async def unregister(self, aid: str) -> bool:
+        client = await self._get_client(); return bool(await client.hdel(self._key_prefix, aid) > 0)
 
-        # HSETNX returns 1 if field is new, 0 if it already exists
-        # We use a transaction or simply check before setting
-        # to ensure we don't overwrite if it exists
-        success = await client.hsetnx(self._key_prefix, agent_id, json.dumps(agent_info))
-        return bool(success)
-
-    async def unregister(self, agent_id: str) -> bool:
-        """Unregister an agent from the bus."""
-        client = await self._get_client()
-        # HDEL returns 1 if field was removed, 0 if not found
-        count = await client.hdel(self._key_prefix, agent_id)
-        return bool(count > 0)
-
-    async def get(self, agent_id: str) -> Optional[Dict[str, Any]]:
-        """Get agent information by ID."""
-        client = await self._get_client()
-        data = await client.hget(self._key_prefix, agent_id)
-        if data:
-            return json.loads(data)
-        return None
+    async def get(self, aid: str) -> Optional[Dict[str, Any]]:
+        client = await self._get_client(); data = await client.hget(self._key_prefix, aid)
+        return json.loads(data) if data else None
 
     async def list_agents(self) -> List[str]:
-        """List all registered agent IDs."""
-        client = await self._get_client()
-        return await client.hkeys(self._key_prefix)
+        client = await self._get_client(); return await client.hkeys(self._key_prefix)
 
-    async def exists(self, agent_id: str) -> bool:
-        """Check if an agent is registered."""
-        client = await self._get_client()
-        return bool(await client.hexists(self._key_prefix, agent_id))
+    async def exists(self, aid: str) -> bool:
+        client = await self._get_client(); return bool(await client.hexists(self._key_prefix, aid))
 
-    async def update_metadata(self, agent_id: str, metadata: Dict[str, Any]) -> bool:
-        """Update agent metadata."""
-        client = await self._get_client()
-
-        # Need to fetch, merge, and save
-        # Using a simple watch/multi if needed, but for metadata-only updates
-        # a standard get/set is usually acceptable in this context.
-        # For strictness we could use a Lua script.
-
-        data = await client.hget(self._key_prefix, agent_id)
-        if not data:
-            return False
-
-        agent_info = json.loads(data)
-        agent_info["metadata"].update(metadata)
-        agent_info["updated_at"] = datetime.now(timezone.utc).isoformat()
-
-        await client.hset(self._key_prefix, agent_id, json.dumps(agent_info))
-        return True
+    async def update_metadata(self, aid: str, meta: Dict[str, Any]) -> bool:
+        client = await self._get_client(); data = await client.hget(self._key_prefix, aid)
+        if not data: return False
+        info = json.loads(data); info["metadata"].update(meta); info["updated_at"] = datetime.now(timezone.utc).isoformat()
+        await client.hset(self._key_prefix, aid, json.dumps(info)); return True
 
     async def clear(self) -> None:
-        """Clear all registered agents. Useful for testing."""
-        client = await self._get_client()
-        await client.delete(self._key_prefix)
+        client = await self._get_client(); await client.delete(self._key_prefix)
 
     async def close(self) -> None:
-        """Close the Redis client and connection pool."""
-        if self._redis:
-            await self._redis.close()
-            self._redis = None
-        if self._pool:
-            await self._pool.disconnect()
-            self._pool = None
+        if self._redis: await self._redis.close(); self._redis = None
+        if self._pool: await self._pool.disconnect(); self._pool = None
 
     @property
-    def agent_count(self) -> int:
-        """Get the number of registered agents.
-        Note: This is async-challenging for a property, so it might need a method.
-        But sticking to protocol if it demands property (though protocol didn't specify count).
-        """
-        # Protocol didn't have agent_count, InMemory had it.
-        # For Redis, this would need to be an async call.
-        return -1  # Placeholder, should use HLEN in an async method if needed
-
+    def agent_count(self) -> int: return -1
 
 class DirectMessageRouter:
-    """Simple direct message router.
-
-    Routes messages directly to their specified target agent.
-    Constitutional Hash: cdd01ef066bc6cf2
-    """
-
-    def __init__(self) -> None:
-        """Initialize the direct router."""
-        self._constitutional_hash = CONSTITUTIONAL_HASH
-
-    @staticmethod
-    def _normalize_tenant_id(tenant_id: Optional[str]) -> Optional[str]:
-        """Normalize tenant identifiers to a canonical optional value."""
-        return tenant_id or None
-
-    @staticmethod
-    def _extract_tenant_id(agent_info: Dict[str, Any]) -> Optional[str]:
-        """Extract tenant identifier from agent registry info."""
-        if "tenant_id" in agent_info:
-            return agent_info.get("tenant_id")
-        metadata = agent_info.get("metadata", {})
-        if isinstance(metadata, dict):
-            return metadata.get("tenant_id")
-        return None
-
-    async def route(self, message: AgentMessage, registry: AgentRegistry) -> Optional[str]:
-        """Determine the target agent for a message."""
-        target = message.to_agent
-        if not target:
-            return None
-
-        if not await registry.exists(target):
-            return None
-
-        agent_info = await registry.get(target)
-        if agent_info is None:
-            return None
-
-        message_tenant = self._normalize_tenant_id(message.tenant_id)
-        agent_tenant = self._normalize_tenant_id(self._extract_tenant_id(agent_info))
-        if message_tenant != agent_tenant:
-            logger.warning(
-                "Tenant mismatch routing denied: message tenant_id=%s target=%s tenant_id=%s",
-                message_tenant,
-                target,
-                agent_tenant,
-            )
-            return None
-
+    def __init__(self) -> None: self._constitutional_hash = CONSTITUTIONAL_HASH
+    async def route(self, msg: AgentMessage, reg: AgentRegistry) -> Optional[str]:
+        target = msg.to_agent
+        if not target or not await reg.exists(target): return None
+        info = await reg.get(target); msg_t = msg.tenant_id or None; agent_t = (info.get("tenant_id") or info.get("metadata", {}).get("tenant_id")) or None
+        if msg_t != agent_t: logger.warning(f"Tenant mismatch: {msg_t} vs {agent_t}"); return None
         return target
-
-    async def broadcast(
-        self, message: AgentMessage, registry: AgentRegistry, exclude: Optional[List[str]] = None
-    ) -> List[str]:
-        """Get list of agents to broadcast a message to."""
-        all_agents = await registry.list_agents()
-        exclude_set = set(exclude or [])
-
-        # Exclude sender
-        if message.from_agent:
-            exclude_set.add(message.from_agent)
-
-        return [a for a in all_agents if a not in exclude_set]
-
+    async def broadcast(self, msg: AgentMessage, reg: AgentRegistry, exclude: Optional[List[str]] = None) -> List[str]:
+        all_a, ex = await reg.list_agents(), set(exclude or [])
+        if msg.from_agent: ex.add(msg.from_agent)
+        return [a for a in all_a if a not in ex]
 
 class CapabilityBasedRouter:
-    """Routes messages based on agent capabilities.
-
-    Finds agents that have capabilities matching message requirements.
-    Constitutional Hash: cdd01ef066bc6cf2
-    """
-
-    def __init__(self) -> None:
-        """Initialize the capability-based router."""
-        self._constitutional_hash = CONSTITUTIONAL_HASH
-
-    async def route(self, message: AgentMessage, registry: AgentRegistry) -> Optional[str]:
-        """Route based on required capabilities in message content."""
-        # Check for explicit target first
-        if message.to_agent:
-            if await registry.exists(message.to_agent):
-                return message.to_agent
-
-        # Look for capability requirements in message content
-        required_capabilities = message.content.get("required_capabilities", [])
-        if not required_capabilities:
-            return None
-
-        # Find agents with matching capabilities
-        all_agents = await registry.list_agents()
-        for agent_id in all_agents:
-            agent_info = await registry.get(agent_id)
-            if agent_info:
-                agent_capabilities = agent_info.get("capabilities", {})
-                if all(cap in agent_capabilities for cap in required_capabilities):
-                    return agent_id
-
+    def __init__(self) -> None: self._constitutional_hash = CONSTITUTIONAL_HASH
+    async def route(self, msg: AgentMessage, reg: AgentRegistry) -> Optional[str]:
+        if msg.to_agent and await reg.exists(msg.to_agent): return msg.to_agent
+        req = msg.content.get("required_capabilities", []) if isinstance(msg.content, dict) else []
+        if not req: return None
+        for aid in await reg.list_agents():
+            info = await reg.get(aid)
+            if info and all(c in info.get("capabilities", {}) for c in req): return aid
         return None
+    async def broadcast(self, msg: AgentMessage, reg: AgentRegistry, exclude: Optional[List[str]] = None) -> List[str]:
+        req, ex = (msg.content.get("required_capabilities", []) if isinstance(msg.content, dict) else []), set(exclude or [])
+        if msg.from_agent: ex.add(msg.from_agent)
+        res = []
+        for aid in await reg.list_agents():
+            if aid in ex: continue
+            info = await reg.get(aid)
+            if info and (not req or all(c in info.get("capabilities", {}) for c in req)): res.append(aid)
+        return res
 
-    async def broadcast(
-        self, message: AgentMessage, registry: AgentRegistry, exclude: Optional[List[str]] = None
-    ) -> List[str]:
-        """Broadcast to agents with matching capabilities."""
-        required_capabilities = message.content.get("required_capabilities", [])
-        exclude_set = set(exclude or [])
-
-        if message.from_agent:
-            exclude_set.add(message.from_agent)
-
-        all_agents = await registry.list_agents()
-        matching_agents = []
-
-        for agent_id in all_agents:
-            if agent_id in exclude_set:
-                continue
-
-            if not required_capabilities:
-                matching_agents.append(agent_id)
-                continue
-
-            agent_info = await registry.get(agent_id)
-            if agent_info:
-                agent_capabilities = agent_info.get("capabilities", {})
-                if all(cap in agent_capabilities for cap in required_capabilities):
-                    matching_agents.append(agent_id)
-
-        return matching_agents
-
-
-__all__ = [
-    # Agent Registries
-    "InMemoryAgentRegistry",
-    "RedisAgentRegistry",
-    # Message Routers
-    "DirectMessageRouter",
-    "CapabilityBasedRouter",
-    # Validation Strategies (re-exported for backward compatibility)
-    "StaticHashValidationStrategy",
-    "DynamicPolicyValidationStrategy",
-    "OPAValidationStrategy",
-    "RustValidationStrategy",
-    "CompositeValidationStrategy",
-    # Processing Strategies (re-exported for backward compatibility)
-    "PythonProcessingStrategy",
-    "RustProcessingStrategy",
-    "DynamicPolicyProcessingStrategy",
-    "OPAProcessingStrategy",
-    "CompositeProcessingStrategy",
-]
+__all__ = ["InMemoryAgentRegistry", "RedisAgentRegistry", "DirectMessageRouter", "CapabilityBasedRouter", "StaticHashValidationStrategy", "DynamicPolicyValidationStrategy", "OPAValidationStrategy", "RustValidationStrategy", "CompositeValidationStrategy", "PythonProcessingStrategy", "RustProcessingStrategy", "DynamicPolicyProcessingStrategy", "OPAProcessingStrategy", "CompositeProcessingStrategy", "MACIProcessingStrategy"]

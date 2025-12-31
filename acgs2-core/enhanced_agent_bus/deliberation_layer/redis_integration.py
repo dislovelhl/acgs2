@@ -350,3 +350,47 @@ def get_redis_voting_system() -> RedisVotingSystem:
     if _redis_voting_system is None:
         _redis_voting_system = RedisVotingSystem()
     return _redis_voting_system
+
+
+def reset_redis_deliberation_queue() -> None:
+    """Reset the global Redis deliberation queue instance.
+
+    Used primarily for test isolation to prevent state leakage between tests.
+    This clears the singleton instance without closing connections.
+    Constitutional Hash: cdd01ef066bc6cf2
+    """
+    global _redis_deliberation_queue
+    _redis_deliberation_queue = None
+
+
+def reset_redis_voting_system() -> None:
+    """Reset the global Redis voting system instance.
+
+    Used primarily for test isolation to prevent state leakage between tests.
+    This clears the singleton instance without closing connections.
+    Constitutional Hash: cdd01ef066bc6cf2
+    """
+    global _redis_voting_system
+    _redis_voting_system = None
+
+
+def reset_all_redis_singletons() -> None:
+    """Reset all Redis-related singleton instances.
+
+    Convenience function for test isolation.
+    Constitutional Hash: cdd01ef066bc6cf2
+    """
+    reset_redis_deliberation_queue()
+    reset_redis_voting_system()
+
+
+__all__ = [
+    "REDIS_AVAILABLE",
+    "RedisDeliberationQueue",
+    "RedisVotingSystem",
+    "get_redis_deliberation_queue",
+    "get_redis_voting_system",
+    "reset_redis_deliberation_queue",
+    "reset_redis_voting_system",
+    "reset_all_redis_singletons",
+]

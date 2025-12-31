@@ -47,6 +47,7 @@ def main():
         ("Metering", "services/metering"),
         ("Constitutional Retrieval", "services/core/constitutional-retrieval-system"),
         ("Constraint Generation", "services/core/constraint_generation_system"),
+        ("Audit Service", "services/audit_service"),
     ]
 
     service_results = {}

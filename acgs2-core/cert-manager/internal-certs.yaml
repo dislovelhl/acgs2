@@ -1,0 +1,52 @@
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: acgs-internal-issuer
+  namespace: acgs2
+spec:
+  selfSigned: {}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: opa-tls-cert
+  namespace: acgs2
+spec:
+  secretName: opa-tls-certs
+  duration: 2160h # 90 days
+  renewBefore: 360h # 15 days
+  subject:
+    organizations:
+      - acgs2-foundation
+  isCA: false
+  privateKey:
+    algorithm: RSA
+    encoding: PKCS1
+    size: 2048
+  usages:
+    - server auth
+    - client auth
+  dnsNames:
+    - opa.acgs2.svc.cluster.local
+    - opa-service
+  issuerRef:
+    name: acgs-internal-issuer
+    kind: Issuer
+    group: cert-manager.io
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: kafka-client-cert
+  namespace: acgs2
+spec:
+  secretName: kafka-client-cert
+  duration: 2160h
+  renewBefore: 360h
+  usages:
+    - client auth
+  dnsNames:
+    - kafka-client.acgs2.svc.cluster.local
+  issuerRef:
+    name: acgs-internal-issuer
+    kind: Issuer

@@ -746,6 +746,17 @@ async def close_opa_guard():
         _opa_guard = None
 
 
+def reset_opa_guard() -> None:
+    """Reset the global OPA guard instance without async cleanup.
+
+    Used primarily for test isolation to prevent state leakage between tests.
+    For graceful shutdown, use close_opa_guard() instead.
+    Constitutional Hash: cdd01ef066bc6cf2
+    """
+    global _opa_guard
+    _opa_guard = None
+
+
 __all__ = [
     # Models (re-exported for backward compatibility)
     "GuardDecision",
@@ -762,6 +773,7 @@ __all__ = [
     "get_opa_guard",
     "initialize_opa_guard",
     "close_opa_guard",
+    "reset_opa_guard",
     # Constants
     "GUARD_CONSTITUTIONAL_HASH",
 ]

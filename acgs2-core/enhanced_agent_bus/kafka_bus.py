@@ -7,7 +7,9 @@ Provides high-throughput, multi-tenant isolated messaging.
 import asyncio
 import json
 import logging
-from typing import Any, Callable, Dict, List, Optional
+import re
+import ssl
+from typing import Any, Callable, Dict, List, Optional, Set
 
 try:
     from aiokafka import AIOKafkaConsumer, AIOKafkaProducer
@@ -18,10 +20,12 @@ except ImportError:
 
 try:
     from .exceptions import MessageDeliveryError
-    from .models import AgentMessage, MessageStatus, MessageType
+    from .models import AgentMessage, MessageType
+    from .shared.config import settings
 except ImportError:
     from exceptions import MessageDeliveryError  # type: ignore
     from models import AgentMessage, MessageType  # type: ignore
+    from shared.config import settings # type: ignore
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +42,7 @@ class KafkaEventBus:
         self.producer: Optional[AIOKafkaProducer] = None
         self._consumers: Dict[str, AIOKafkaConsumer] = {}
         self._running = False
+        self._ssl_context: Optional[ssl.SSLContext] = self._create_ssl_context()
 
     async def start(self):
         """Start the Kafka producer."""
@@ -51,6 +56,8 @@ class KafkaEventBus:
             value_serializer=lambda v: json.dumps(v, default=str).encode("utf-8"),
             acks="all",  # Ensure durability for production
             retry_backoff_ms=500,
+            security_protocol=settings.kafka.get("security_protocol", "PLAINTEXT"),
+            ssl_context=self._ssl_context,
         )
         await self.producer.start()
         self._running = True
@@ -65,6 +72,29 @@ class KafkaEventBus:
         for consumer in self._consumers.values():
             await consumer.stop()
         logger.info("KafkaEventBus stopped")
+
+    def _create_ssl_context(self) -> Optional[ssl.SSLContext]:
+        """Create SSL context for Kafka if security protocol is SSL."""
+        security_protocol = settings.kafka.get("security_protocol", "PLAINTEXT")
+        if security_protocol != "SSL":
+            return None
+
+        context = ssl.create_default_context(
+            cafile=settings.kafka.get("ssl_ca_location")
+        )
+
+        cert_file = settings.kafka.get("ssl_certificate_location")
+        key_file = settings.kafka.get("ssl_key_location")
+        password = settings.kafka.get("ssl_password")
+
+        if cert_file and key_file:
+            context.load_cert_chain(
+                certfile=cert_file,
+                keyfile=key_file,
+                password=password
+            )
+
+        return context
 
     def _get_topic_name(self, tenant_id: str, message_type: str) -> str:
         """
@@ -96,7 +126,7 @@ class KafkaEventBus:
             logger.debug(f"Message {message.message_id} sent to topic {topic}")
             return True
         except Exception as e:
-            logger.error(f"Failed to send message to Kafka (topic={topic}): {e}")
+            logger.error(f"Failed to send message to Kafka (topic={topic}): {self._sanitize_error(e)}")
             return False
 
     async def subscribe(self, tenant_id: str, message_types: List[MessageType], handler: Callable):
@@ -112,6 +142,8 @@ class KafkaEventBus:
             bootstrap_servers=self.bootstrap_servers,
             group_id=f"{self.client_id}-group-{tenant_id}",
             value_deserializer=lambda v: json.loads(v.decode("utf-8")),
+            security_protocol=settings.kafka.get("security_protocol", "PLAINTEXT"),
+            ssl_context=self._ssl_context,
         )
 
         self._consumers[consumer_id] = consumer
@@ -129,12 +161,20 @@ class KafkaEventBus:
                         # For now, we'll assume the handler can take the dict or we wrap it
                         await handler(message_data)
                     except Exception as e:
-                        logger.error(f"Error in Kafka message handler: {e}")
+                        logger.error(f"Error in Kafka message handler: {self._sanitize_error(e)}")
             finally:
                 await consumer.stop()
 
         asyncio.create_task(consume_loop())
         logger.info(f"Subscribed to topics: {topics}")
+
+    def _sanitize_error(self, error: Exception) -> str:
+        """Strip sensitive metadata from error messages (VULN-008)."""
+        error_msg = str(error)
+        # Remove potential bootstrap server details if they contain secrets, etc.
+        error_msg = re.sub(r"bootstrap_servers='[^']+'", "bootstrap_servers='REDACTED'", error_msg)
+        error_msg = re.sub(r"password='[^']+'", "password='REDACTED'", error_msg)
+        return error_msg
 
 
 class Orchestrator:

@@ -1,0 +1,271 @@
+name: ACGS2 CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+  pull_request:
+    branches: [ main ]
+  release:
+    types: [ published ]
+
+env:
+  REGISTRY: ghcr.io/${{ github.repository_owner }}/acgs2
+  PYTHON_VERSION: '3.11'
+  RUST_VERSION: stable
+  COVERAGE_MIN: 90
+
+permissions:
+  contents: read
+  packages: write
+  id-token: write
+  security-events: write
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+
+      - name: Install dependencies
+        working-directory: ./acgs2-core
+        run: |
+          pip install pre-commit ruff black mypy
+
+      - name: Lint with pre-commit
+        working-directory: ./acgs2-core
+        run: pre-commit run --all-files
+
+      - name: Ruff check
+        working-directory: ./acgs2-core
+        run: ruff check .
+
+      - name: Black check
+        working-directory: ./acgs2-core
+        run: black --check .
+
+      - name: Mypy check
+        working-directory: ./acgs2-core
+        run: mypy .
+
+      - name: Constitutional hash validation
+        working-directory: ./acgs2-core
+        run: |
+          HASH="cdd01ef066bc6cf2"
+          COUNT=$(grep -r "$HASH" --include="*.py" --include="*.rego" . | wc -l)
+          echo "Found $COUNT constitutional hash references"
+          if [ "$COUNT" -lt 10 ]; then
+            echo "❌ Insufficient constitutional hash references"
+            exit 1
+          fi
+          INVALID=$(grep -rE "constitutional.*hash.*=['\"][a-f0-9]{16}['\"]" --include="*.py" | grep -v "$HASH" || true)
+          if [ -n "$INVALID" ]; then
+            echo "❌ Invalid hashes: $INVALID"
+            exit 1
+          fi
+
+      - name: OPA policy validation
+        run: |
+          docker run --rm -v ${{ github.workspace }}/acgs2-core/policies/rego:/policies openpolicyagent/opa:latest check /policies
+          docker run --rm -v ${{ github.workspace }}/acgs2-core/policies/rego:/policies openpolicyagent/opa:latest test /policies -v
+
+  security:
+    needs: validate
+    uses: ./.github/workflows/reusable-security.yml
+    secrets: inherit
+    permissions:
+      security-events: write
+
+  test:
+    needs: security
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.11, 3.12]
+        include:
+          - rust: stable
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+          cache-dependency-path: acgs2-core/pyproject.toml
+
+      - name: Install Python deps
+        working-directory: ./acgs2-core
+        run: |
+          pip install -r requirements_optimized.txt pytest pytest-cov pytest-asyncio
+
+      - name: Pytest with coverage
+        working-directory: ./acgs2-core
+        run: |
+          pytest --cov=enhanced_agent_bus --cov-report=xml:coverage.xml --cov-report=term-missing --cov-fail-under=${{ env.COVERAGE_MIN }}
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4
+        with:
+          file: ./acgs2-core/coverage.xml
+
+      - name: Rust setup ${{ matrix.rust }}
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+
+      - name: Cargo test
+        working-directory: ./acgs2-core/enhanced_agent_bus/rust
+        run: cargo test --all-features
+
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push multi-arch images
+        uses: docker/build-push-action@v6
+        with:
+          context: ./acgs2-core
+          file: ./acgs2-core/Dockerfile.optimized
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ env.REGISTRY }}:${{ github.sha }},${{ env.REGISTRY }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  chaos-validate:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate chaos experiments
+        working-directory: ./acgs2-core
+        run: |
+          # Install kubeval or yamllint for chaos yamls
+          pip install yamllint kubeval
+          yamllint chaos/experiments/*.yaml
+          # kubeval if k8s schema
+
+  deploy-staging:
+    needs: [build, chaos-validate]
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: staging
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Helm deploy staging
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.15.0
+
+      - name: Auth to cluster
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Deploy Helm
+        working-directory: ./acgs2-core/deploy/helm/acgs2
+        run: |
+          helm upgrade --install acgs2 . \
+            --set image.repository=${{ env.REGISTRY }} \
+            --set image.tag=${{ github.sha }} \
+            --namespace acgs2-staging \
+            --create-namespace
+
+  deploy-prod:
+    needs: deploy-staging
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Helm deploy prod
+        uses: azure/setup-helm@v4
+
+      - name: Auth to prod cluster
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID_PROD }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID_PROD }}
+
+      - name: Deploy Helm prod
+        working-directory: ./acgs2-core/deploy/helm/acgs2
+        run: |
+          helm upgrade --install acgs2 . \
+            --set image.repository=${{ env.REGISTRY }} \
+            --set image.tag=${{ github.ref_name }} \
+            --namespace acgs2-prod \
+            --create-namespace \
+            --atomic
+
+  rollback:
+    needs: deploy-prod
+    if: failure()
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Helm rollback
+        uses: azure/setup-helm@v4
+
+      - name: Auth
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID_PROD }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID_PROD }}
+
+      - name: Rollback to previous revision
+        working-directory: ./acgs2-core/deploy/helm/acgs2
+        run: helm rollback acgs2 1 --namespace acgs2-prod
+
+  notify:
+    needs: [deploy-prod, rollback]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notify Slack
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}

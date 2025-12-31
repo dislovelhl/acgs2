@@ -2,9 +2,9 @@
 
 **Constitutional Hash**: `cdd01ef066bc6cf2`
 
-> **Version**: 2.2.0
-> **Status**: Stable
-> **Last Updated**: 2025-12-24
+> **Version**: 3.0.0
+> **Status**: Production Ready (Optimized)
+> **Last Updated**: 2025-12-31
 > **Language**: EN
 
 ## Architectural Overview
@@ -27,47 +27,36 @@ graph TD
     end
 
     subgraph Deliberation_Layer [Deliberation Layer]
-        Scorer[Impact Scorer BERT]
-        Router[Adaptive Router]
-        Queue[Deliberation Queue]
-        OPAGuard[OPA Guard]
+        Scorer[Impact Scorer ONNX]
+        LLM[LLM Assistant]
+        CB[Circuit Breaker]
 
         Processor --> Scorer
-        Scorer --> Router
-        Router -- Impact >= 0.8 --> Queue
-        Router -- Impact < 0.8 --> FastLane[Fast Lane]
-        Queue --> OPAGuard
+        Processor --> LLM
+        Processor --> CB
     end
 
     subgraph Governance_Services [Governance Services]
         Policy[Policy Registry]
         Audit[Audit Service]
         Ledger[Audit Ledger Merkle Tree]
-        Metering[Metering Service]
         ZKP[ZKP Engine]
 
-        OPAGuard --> Policy
+        Processor --> Policy
         Processor --> Audit
-        Processor --> Metering
         Audit --> Ledger
         Audit --> ZKP
     end
 
     subgraph External_Integrations [External Integrations]
         Redis[(Redis Queue/Registry)]
-        Kafka[(Kafka Event Bus)]
         OPA[(OPA Server)]
         Blockchain[Blockchain Solana/Avalanche]
 
         Bus --> Redis
-        Bus --> Kafka
-        OPAGuard --> OPA
+        Processor --> OPA
         Ledger --> Blockchain
     end
-
-    FastLane --> Delivery[Message Delivery]
-    OPAGuard -- Approved --> Delivery
-    OPAGuard -- Rejected --> Audit
 ```
 
 ## Component Descriptions

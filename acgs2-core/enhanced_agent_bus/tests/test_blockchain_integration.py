@@ -219,7 +219,7 @@ class TestAnchorBackend:
 
     def test_backend_count(self):
         """Correct number of backends defined."""
-        assert len(AnchorBackend) == 4
+        assert len(AnchorBackend) == 5
 
 
 @pytest.mark.skipif(not ANCHOR_MANAGER_AVAILABLE, reason="BlockchainAnchorManager not available")

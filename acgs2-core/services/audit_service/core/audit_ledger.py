@@ -154,6 +154,7 @@ class AuditLedger:
         self.current_batch: List[ValidationResult] = []
         self.batch_size = self.config.batch_size
         self.merkle_tree: Optional[MerkleTree] = None
+        self.batches: Dict[str, Dict[str, Any]] = {}  # Phase 3: Store all batches
         self.batch_counter = 0
 
         # Initialize blockchain anchoring
@@ -194,6 +195,8 @@ class AuditLedger:
             "successful": 0,
             "failed": 0,
             "pending": 0,
+            "by_backend": {},  # Phase 4
+            "last_latencies": [],  # Phase 4: Store last 100 latencies
         }
 
     def _init_blockchain_anchoring(self):
@@ -358,9 +361,18 @@ class AuditLedger:
 
         self.merkle_tree = MerkleTree(batch_data)
         root_hash = self.merkle_tree.get_root_hash()
+        batch_count = len(self.current_batch)
+
+        # Phase 3: Store batch metadata
+        self.batches[batch_id] = {
+            "root_hash": root_hash,
+            "merkle_tree": self.merkle_tree,
+            "timestamp": time.time(),
+            "entry_count": batch_count,
+            "anchors": {},
+        }
 
         # Update entries with proofs
-        batch_count = len(self.current_batch)
         for i, entry in enumerate(self.entries[-batch_count:]):
             entry.batch_id = batch_id
             if self.merkle_tree:
@@ -455,15 +467,42 @@ class AuditLedger:
         """Callback for async anchor completion."""
         self._anchor_stats["pending"] -= 1
 
+        latency = (result.timestamp - result.start_time) if result.start_time else 0
+        if latency > 0:
+            self._anchor_stats["last_latencies"].append(latency)
+            if len(self._anchor_stats["last_latencies"]) > 100:
+                self._anchor_stats["last_latencies"].pop(0)
+
+        backend_name = result.backend.value
+        if backend_name not in self._anchor_stats["by_backend"]:
+            self._anchor_stats["by_backend"][backend_name] = {
+                "successful": 0,
+                "failed": 0,
+                "avg_latency": 0
+            }
+
         if result.status.value in ("confirmed", "submitted"):
             self._anchor_stats["successful"] += 1
+            self._anchor_stats["by_backend"][backend_name]["successful"] += 1
+
+            # Phase 3: Update batch info with anchor result
+            if result.batch_id and result.batch_id in self.batches:
+                self.batches[result.batch_id]["anchors"][result.backend.value] = {
+                    "status": result.status.value,
+                    "tx_id": result.transaction_id,
+                    "block_info": result.block_info,
+                    "timestamp": result.timestamp,
+                    "latency": latency,
+                }
+
             logger.info(
                 f"[{CONSTITUTIONAL_HASH}] Anchor completed: "
                 f"{result.backend.value} -> {result.status.value} "
-                f"(tx: {result.transaction_id})"
+                f"(tx: {result.transaction_id}, latency: {latency:.2f}s)"
             )
         else:
             self._anchor_stats["failed"] += 1
+            self._anchor_stats["by_backend"][backend_name]["failed"] += 1
             logger.warning(
                 f"[{CONSTITUTIONAL_HASH}] Anchor failed: "
                 f"{result.backend.value} -> {result.status.value} "
@@ -567,6 +606,11 @@ class AuditLedger:
             self.entries.append(entry)
 
     def get_batch_root_hash(self, batch_id: str) -> Optional[str]:
+        """Get root hash for a specific batch."""
+        if batch_id in self.batches:
+            return self.batches[batch_id]["root_hash"]
+
+        # Fallback to latest tree if no batch_id found or provided (legacy compatibility)
         if self.merkle_tree:
             return self.merkle_tree.get_root_hash()
         return None
@@ -592,9 +636,15 @@ class AuditLedger:
             "constitutional_hash": entry.validation_result.constitutional_hash,
         }
         entry_data = json.dumps(hash_data, sort_keys=True).encode()
+
+        # Phase 3: Find correct Merkle Tree for this batch
+        tree = self.merkle_tree
+        if entry.batch_id and entry.batch_id in self.batches:
+            tree = self.batches[entry.batch_id]["merkle_tree"]
+
         return (
-            self.merkle_tree.verify_proof(entry_data, merkle_proof, root_hash)
-            if self.merkle_tree
+            tree.verify_proof(entry_data, merkle_proof, root_hash)
+            if tree
             else False
         )
 
@@ -666,3 +716,72 @@ class AuditLedger:
             "timestamp": int(time.time()),
             "entries_hashes": [entry.hash for entry in entries],
         }
+
+    def get_anchor_stats(self) -> Dict[str, Any]:
+        """Get detailed anchoring statistics."""
+        avg_latency = 0
+        if self._anchor_stats["last_latencies"]:
+            avg_latency = sum(self._anchor_stats["last_latencies"]) / len(
+                self._anchor_stats["last_latencies"]
+            )
+
+        # Merge with manager stats if available
+        manager_stats = {}
+        if self._anchor_manager:
+            manager_stats = self._anchor_manager.get_stats()
+
+        return {
+            "total_anchored": self._anchor_stats["total_anchored"],
+            "successful": self._anchor_stats["successful"],
+            "failed": self._anchor_stats["failed"],
+            "pending": self._anchor_stats["pending"],
+            "avg_latency_sec": avg_latency,
+            "by_backend": self._anchor_stats["by_backend"],
+            "manager_stats": manager_stats,
+        }
+
+    def reset_for_testing(self) -> None:
+        """Reset ledger state for test isolation.
+
+        Cancels worker task and clears all internal state without async cleanup.
+        For graceful shutdown, use stop() instead.
+        Constitutional Hash: cdd01ef066bc6cf2
+        """
+        self._running = False
+        if self._worker_task and not self._worker_task.done():
+            self._worker_task.cancel()
+        self._worker_task = None
+
+        # Clear queue
+        while not self._queue.empty():
+            try:
+                self._queue.get_nowait()
+            except asyncio.QueueEmpty:
+                break
+
+        # Reset state
+        self.entries.clear()
+        self.current_batch.clear()
+        self.batches.clear()
+        self.batch_counter = 0
+        self.merkle_tree = None
+
+        # Reset anchor stats
+        self._anchor_stats = {
+            "total_anchored": 0,
+            "successful": 0,
+            "failed": 0,
+            "pending": 0,
+            "by_backend": {},
+            "last_latencies": [],
+        }
+
+
+__all__ = [
+    "AuditEntry",
+    "AuditLedgerConfig",
+    "AuditLedger",
+    "ValidationResult",
+    "ANCHOR_MANAGER_AVAILABLE",
+    "HAS_REDIS",
+]

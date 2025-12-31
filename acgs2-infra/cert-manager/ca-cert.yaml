@@ -1,0 +1,20 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: mtls-ca
+  namespace: acgs2
+spec:
+  secretName: mtls-ca
+  issuerRef:
+    name: selfsigned-issuer
+    kind: ClusterIssuer
+  commonName: acgs2-mtls-ca
+  isCA: true
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+  usages:
+    - cert sign
+    - crl sign
+    - server auth
+    - client auth

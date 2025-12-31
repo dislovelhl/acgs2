@@ -250,10 +250,11 @@ class TestMessageType:
         assert MessageType.CONSTITUTIONAL_VALIDATION.value == "constitutional_validation"
         assert MessageType.TASK_REQUEST.value == "task_request"
         assert MessageType.TASK_RESPONSE.value == "task_response"
+        assert MessageType.AUDIT_LOG.value == "audit_log"
 
     def test_type_count(self):
         """Test number of message types."""
-        assert len(MessageType) == 11
+        assert len(MessageType) == 12
 
 
 class TestPriority:

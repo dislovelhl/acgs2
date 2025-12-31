@@ -1,54 +1,31 @@
 package acgs.resources
 
-import future.keywords.if
-import future.keywords.in
+# Resource Limits Policy - P99 <5ms enforcement (ACGS-2 Perf)
+# NIST SP 800-53 SC-7, OWASP Resource Exhaustion
+# Bounds CPU/Mem requests for low latency
+# Constitutional Hash: cdd01ef066bc6cf2
 
-default allow = false
+default allow := false
 
-# Public resources - anyone can read
-allow if {
-    input.resource in public_resources
-    input.action == "read"
-    input.constitutional_hash == "cdd01ef066bc6cf2"
+allow {
+	input.resources.cpu_requests <= 250m
+	input.resources.cpu_limits <= 500m
+	input.resources.mem_requests <= 512Mi
+	input.resources.mem_limits <= 1Gi
+	input.tenant_id != null
+	input.constitutional_hash == "cdd01ef066bc6cf2"
 }
 
-# Protected resources - require specific clearance
-allow if {
-    input.resource in protected_resources
-    input.context.clearance_level >= required_clearance[input.resource]
-    input.constitutional_hash == "cdd01ef066bc6cf2"
+# Input validation: resource strings parsed safely (no eval)
+parse_cpu(value) := num {
+	contains(value, "m")
+	num := to_number(trim_suffix(value, "m"))
+	num >= 0
+	num <= 500
 }
 
-# Sensitive resources - admin only
-allow if {
-    input.resource in sensitive_resources
-    input.context.role == "admin"
-    input.constitutional_hash == "cdd01ef066bc6cf2"
+# Metrics: resource violations
+violation[msg] {
+	not allow
+	msg := sprintf("Resource limit exceeded: cpu=%v mem=%v", [input.resources.cpu_limits, input.resources.mem_limits])
 }
-
-# Public resources
-public_resources := [
-    "public_documents",
-    "public_data",
-    "system_status"
-]
-
-# Protected resources with clearance requirements
-protected_resources := [
-    "financial_data",
-    "user_pii",
-    "internal_documents"
-]
-
-required_clearance := {
-    "financial_data": 3,
-    "user_pii": 2,
-    "internal_documents": 1
-}
-
-# Sensitive resources
-sensitive_resources := [
-    "constitutional_settings",
-    "encryption_keys",
-    "admin_controls"
-]

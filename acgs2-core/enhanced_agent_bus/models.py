@@ -57,6 +57,7 @@ class MessageType(Enum):
     CONSTITUTIONAL_VALIDATION = "constitutional_validation"
     TASK_REQUEST = "task_request"
     TASK_RESPONSE = "task_response"
+    AUDIT_LOG = "audit_log"
 
 
 class Priority(Enum):
@@ -115,6 +116,7 @@ class MessageStatus(Enum):
     FAILED = "failed"
     EXPIRED = "expired"
     PENDING_DELIBERATION = "pending_deliberation"
+    VALIDATED = "validated"
 
 
 @dataclass

@@ -1,58 +1,41 @@
 package acgs.rbac
 
-import future.keywords.if
-import future.keywords.in
+# RBAC Policy - Stricter least-privilege, tenant-scoped (ACGS-2 Enhanced)
+# NIST 800-53 AC-6, OWASP A01:2021 Broken Access Control
+# Constitutional Hash: cdd01ef066bc6cf2
+# P99 eval <5ms: simple array membership checks
 
-default allow = false
+default allow := false
 
-# Admin role - full access
-allow if {
-    input.context.role == "admin"
-    input.constitutional_hash == "cdd01ef066bc6cf2"
+# Allow if user has required role in tenant context
+allow {
+	input.user.roles[_] == input.required_role
+	input.user.tenant_id == input.tenant_id
+	input.constitutional_hash == "cdd01ef066bc6cf2"
+	not privilege_escalation_attempt
 }
 
-# Analyst role - read and query only
-allow if {
-    input.context.role == "analyst"
-    input.action in ["read", "query"]
-    input.constitutional_hash == "cdd01ef066bc6cf2"
+# Deny privilege escalation (stricter)
+privilege_escalation_attempt {
+	input.required_role == "admin"
+	input.user.roles[_] != "admin"
 }
 
-# Operator role - read and execute
-allow if {
-    input.context.role == "operator"
-    input.action in ["read", "execute", "query"]
-    input.constitutional_hash == "cdd01ef066bc6cf2"
+privilege_escalation_attempt {
+	input.action == "delete"
+	input.user.roles[_] != "admin"
+	input.user.roles[_] != "owner"
 }
 
-# Developer role - read, write, execute (non-production only)
-allow if {
-    input.context.role == "developer"
-    input.context.environment != "production"
-    input.action in ["read", "write", "execute", "query"]
-    input.constitutional_hash == "cdd01ef066bc6cf2"
+# Input validation: roles array non-empty, strings only (OWASP Injection prev)
+valid_roles {
+	is_array(input.user.roles)
+	count(input.user.roles) > 0
+	input.user.roles[_] matches "^[a-zA-Z0-9_-]+$"
 }
 
-# Service accounts - specific permissions
-allow if {
-    input.context.role == "service"
-    input.agent_id in service_accounts
-    input.constitutional_hash == "cdd01ef066bc6cf2"
-}
-
-# Allowed service accounts
-service_accounts := [
-    "monitoring_agent",
-    "backup_agent",
-    "audit_agent"
-]
-
-# Reason for denial
-deny_reason := "Invalid constitutional hash" if {
-    input.constitutional_hash != "cdd01ef066bc6cf2"
-}
-
-deny_reason := sprintf("Role '%v' not authorized for action '%v'", [input.context.role, input.action]) if {
-    not allow
-    input.constitutional_hash == "cdd01ef066bc6cf2"
+# Metrics: RBAC denials
+violation[msg] {
+	not allow
+	msg := sprintf("RBAC denial: role '%v' insufficient for '%v' in tenant '%v'", [input.required_role, input.action, input.tenant_id])
 }

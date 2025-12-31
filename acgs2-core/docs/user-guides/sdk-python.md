@@ -1,163 +1,127 @@
-# ACGS-2 Python SDK Guide
+# ACGS-2 Python SDK Guide (v2.3.0)
 
-Official Python SDK for the AI Constitutional Governance System (ACGS-2).
+Official Python SDK for ACGS-2, aligned with Phase 3.6 refactors (modularity, new exceptions/validators, UV deps).
 
-**Constitutional Hash:** `cdd01ef066bc6cf2`
-
-## Overview
-
-The ACGS-2 Python SDK provides a high-level, asynchronous interface for interacting with the ACGS-2 platform. It handles authentication, constitutional hash validation, and provides specialized services for policy management, agent communication, compliance checking, and auditing.
+**Constitutional Hash**: `cdd01ef066bc6cf2`
 
 ## Installation
 
-The SDK requires Python 3.11 or higher.
-
 ```bash
-pip install acgs2-sdk
+# Use UV for optimized deps (Phase 3.6)
+uv add acgs2-core[dev]
+# or pip
+pip install -e .[dev]
 ```
+
+Requires Python >=3.11.
 
 ## Quick Start
 
 ```python
 import asyncio
-from acgs2_sdk import create_client, ACGS2Config
+from acgs2_core import create_bus, CONSTITUTIONAL_HASH
+from acgs2_core.exceptions import ConstitutionalHashMismatchError, AgentBusError
 
 async def main():
-    # Initialize the client
-    config = ACGS2Config(
-        base_url="https://api.acgs.io",
-        api_key="your-api-key",
-        tenant_id="your-tenant-id",
-    )
-
-    async with create_client(config) as client:
-        # Check API health
-        health = await client.health_check()
-        print(f"API healthy: {health['healthy']}")
-
-        # Use services
-        from acgs2_sdk import PolicyService
-        policies = PolicyService(client)
-
-        # List policies
-        result = await policies.list()
-        print(f"Found {result.total} policies")
+    try:
+        bus = create_bus(redis_url="redis://localhost:6379")
+        await bus.start()
+        
+        # Register agent
+        await bus.register_agent("agent-001", capabilities=["validate"])
+        
+        # Send message with new validators
+        message = {
+            "from_agent": "agent-001",
+            "to_agent": "governance",
+            "content": {"action": "validate"},
+            "constitutional_hash": CONSTITUTIONAL_HASH
+        }
+        
+        result = await bus.send_message(message)
+        if result["is_valid"]:
+            print("Message sent")
+        else:
+            print(f"Validation errors: {result['errors']}")
+            
+    except ConstitutionalHashMismatchError as e:
+        print(f"Hash mismatch: {e}")
+    except AgentBusError as e:
+        print(f"Bus error: {e}")
+    finally:
+        await bus.stop()
 
 asyncio.run(main())
 ```
 
-## Core Services
+## Core Usage
+
+### Enhanced Agent Bus
+
+```python
+from acgs2_core.enhanced_agent_bus import EnhancedAgentBus
+from acgs2_core.models import AgentMessage
+from acgs2_core.validators import validate_constitutional_hash
+
+# Post-refactor modularity (HandlerExecutorMixin)
+bus = EnhancedAgentBus()
+await bus.start()
+
+# New dataclasses.replace for config
+config = bus.config.replace(policy_registry=my_registry)
+
+# Send with new exceptions
+try:
+    msg = AgentMessage(content={"test": True}, constitutional_hash=CONSTITUTIONAL_HASH)
+    result = await bus.send_message(msg)
+except ValidationError as e:
+    print(f"New validator error: {e}")
+```
 
 ### Policy Service
 
-Manage governance policies and analyze their impact.
-
 ```python
-from acgs2_sdk import PolicyService, CreatePolicyRequest
+from acgs2_core.policy_service import PolicyService
 
-policies = PolicyService(client)
+policies = PolicyService(bus)
 
-# Create a policy
-policy = await policies.create(CreatePolicyRequest(
-    name="Production Deployment Policy",
-    description="Requires approval for production deployments",
-    rules=[
-        {"condition": "environment == 'production'", "action": "require_approval"}
-    ],
-    tags=["production", "deployment"],
-))
+# Create policy
+policy = await policies.create("test-policy", content={"rules": []})
 
-# Activate the policy
+# Activate
 await policies.activate(policy.id)
 ```
 
-### Agent Service
+## Error Handling (New Exceptions)
 
-Register agents and handle secure messaging.
-
-```python
-from acgs2_sdk import AgentService, Priority
-
-agents = AgentService(client)
-
-# Register an agent
-agent = await agents.register(
-    name="Deployment Agent",
-    agent_type="automation",
-    capabilities=["deploy", "rollback", "monitor"],
-)
-
-# Send a command
-message = await agents.send_command(
-    target_agent_id="target-agent-id",
-    command="deploy",
-    params={"service": "api-gateway", "version": "2.0.0"},
-    priority=Priority.HIGH,
-)
-```
-
-### Compliance Service
-
-Validate actions against active policies.
+Post-refactor exceptions:
 
 ```python
-from acgs2_sdk import ComplianceService, ValidateComplianceRequest
-
-compliance = ComplianceService(client)
-
-# Validate compliance
-result = await compliance.validate(ValidateComplianceRequest(
-    policy_id="policy-uuid",
-    context={
-        "action": "deploy",
-        "environment": "production",
-        "risk_level": "low",
-    },
-))
-```
-
-### Audit Service
-
-Record and verify immutable audit logs.
-
-```python
-from acgs2_sdk import AuditService, EventCategory, EventSeverity
-
-audit = AuditService(client)
-
-# Record an audit event
-event = await audit.record(
-    category=EventCategory.GOVERNANCE,
-    severity=EventSeverity.INFO,
-    action="policy.activated",
-    actor="admin@example.com",
-    resource="policy",
-    resource_id="policy-id",
-    outcome="success",
-)
-```
-
-## Error Handling
-
-The SDK uses specific exception types for granular error handling:
-
-```python
-from acgs2_sdk import (
-    AuthenticationError,
-    ValidationError,
+from acgs2_core.exceptions import (
     ConstitutionalHashMismatchError,
+    PolicyEvaluationError,
+    DeliberationTimeoutError,
+    HandlerExecutionError
 )
 
 try:
-    await policies.create(request)
-except AuthenticationError:
-    print("Check your API key")
-except ValidationError as e:
-    print(f"Invalid request: {e.errors}")
-except ConstitutionalHashMismatchError as e:
-    print(f"Constitutional violation detected!")
+    # Operations
+    pass
+except ConstitutionalHashMismatchError:
+    print("Hash invalid - constitutional violation")
+except PolicyEvaluationError:
+    print("OPA policy failed")
+except DeliberationTimeoutError:
+    print("Deliberation timed out")
+except HandlerExecutionError as e:
+    print(f"Handler failed: {e}")
 ```
 
-## Constitutional Validation
+## Best Practices
 
-The SDK automatically validates the `constitutional_hash` on all incoming responses. If a mismatch is detected, a `ConstitutionalHashMismatchError` is raised, ensuring that your agent only interacts with compliant system components.
+- Always use `CONSTITUTIONAL_HASH` constant.
+- Handle new exceptions explicitly.
+- Use `uv sync` for deps.
+- Test with `pytest --cov --marker constitutional`.
+
+See [Enhanced Agent Bus Guide](enhanced-agent-bus.md) for advanced usage.

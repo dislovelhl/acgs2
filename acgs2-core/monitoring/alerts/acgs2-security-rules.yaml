@@ -1,0 +1,8 @@
+groups:
+  - name: acgs2.security.rules
+    rules:
+      # Recording rules
+      - record: acgs2:maci_deny_rate
+        expr: rate(maci_deny_count[5m])
+      - record: acgs2:ssl_errors_rate
+        expr

@@ -29,10 +29,15 @@ if HAS_PYDANTIC_SETTINGS:
         """Redis connection settings."""
 
         url: str = Field("redis://localhost:6379", validation_alias="REDIS_URL")
+        host: str = Field("localhost", validation_alias="REDIS_HOST")
+        port: int = Field(6379, validation_alias="REDIS_PORT")
         db: int = Field(0, validation_alias="REDIS_DB")
         max_connections: int = Field(10, validation_alias="REDIS_MAX_CONNECTIONS")
         socket_timeout: float = Field(5.0, validation_alias="REDIS_SOCKET_TIMEOUT")
         retry_on_timeout: bool = Field(True, validation_alias="REDIS_RETRY_ON_TIMEOUT")
+        ssl: bool = Field(False, validation_alias="REDIS_SSL")
+        ssl_cert_reqs: str = Field("none", validation_alias="REDIS_SSL_CERT_REQS")  # none, optional, required
+        ssl_ca_certs: Optional[str] = Field(None, validation_alias="REDIS_SSL_CA_CERTS")
 
     class AISettings(BaseSettings):
         """AI Service settings."""
@@ -78,6 +83,9 @@ if HAS_PYDANTIC_SETTINGS:
         # SECURITY FIX (VULN-002): OPA is now ALWAYS fail-closed.
         # Parameter removed to prevent insecure overrides.
         fail_closed: bool = True
+        ssl_verify: bool = Field(True, validation_alias="OPA_SSL_VERIFY")
+        ssl_cert: Optional[str] = Field(None, validation_alias="OPA_SSL_CERT")
+        ssl_key: Optional[str] = Field(None, validation_alias="OPA_SSL_KEY")
 
     class AuditSettings(BaseSettings):
         """Audit Service settings."""
@@ -111,6 +119,17 @@ if HAS_PYDANTIC_SETTINGS:
         opa: OPASettings = OPASettings()
         audit: AuditSettings = AuditSettings()
         bundle: BundleSettings = BundleSettings()
+        kafka: Dict[str, Any] = Field(
+            default_factory=lambda: {
+                "bootstrap_servers": os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092"),
+                "security_protocol": os.getenv("KAFKA_SECURITY_PROTOCOL", "PLAINTEXT"),
+                "ssl_ca_location": os.getenv("KAFKA_SSL_CA_LOCATION"),
+                "ssl_certificate_location": os.getenv("KAFKA_SSL_CERTIFICATE_LOCATION"),
+                "ssl_key_location": os.getenv("KAFKA_SSL_KEY_LOCATION"),
+                "ssl_password": os.getenv("KAFKA_SSL_PASSWORD"),
+            },
+            validation_alias="KAFKA_CONFIG",
+        )
 
         @model_validator(mode="after")
         def validate_production_security(self) -> "Settings":
@@ -127,10 +146,13 @@ if HAS_PYDANTIC_SETTINGS:
 else:
     # Fallback to pure os.getenv for environment mapping
     from dataclasses import dataclass, field
+    from typing import Dict, Any
 
     @dataclass
     class RedisSettings:
         url: str = field(default_factory=lambda: os.getenv("REDIS_URL", "redis://localhost:6379"))
+        host: str = field(default_factory=lambda: os.getenv("REDIS_HOST", "localhost"))
+        port: int = field(default_factory=lambda: int(os.getenv("REDIS_PORT", "6379")))
         db: int = field(default_factory=lambda: int(os.getenv("REDIS_DB", "0")))
         max_connections: int = field(
             default_factory=lambda: int(os.getenv("REDIS_MAX_CONNECTIONS", "10"))
@@ -140,6 +162,15 @@ else:
         )
         retry_on_timeout: bool = field(
             default_factory=lambda: os.getenv("REDIS_RETRY_ON_TIMEOUT", "true").lower() == "true"
+        )
+        ssl: bool = field(
+            default_factory=lambda: os.getenv("REDIS_SSL", "false").lower() == "true"
+        )
+        ssl_cert_reqs: str = field(
+            default_factory=lambda: os.getenv("REDIS_SSL_CERT_REQS", "none")
+        )
+        ssl_ca_certs: Optional[str] = field(
+            default_factory=lambda: os.getenv("REDIS_SSL_CA_CERTS")
         )
 
     @dataclass
@@ -217,6 +248,15 @@ else:
         fail_closed: bool = field(
             default_factory=lambda: os.getenv("OPA_FAIL_CLOSED", "true").lower() == "true"
         )
+        ssl_verify: bool = field(
+            default_factory=lambda: os.getenv("OPA_SSL_VERIFY", "true").lower() == "true"
+        )
+        ssl_cert: Optional[str] = field(
+            default_factory=lambda: os.getenv("OPA_SSL_CERT")
+        )
+        ssl_key: Optional[str] = field(
+            default_factory=lambda: os.getenv("OPA_SSL_KEY")
+        )
 
     @dataclass
     class AuditSettings:
@@ -255,6 +295,16 @@ else:
         opa: OPASettings = field(default_factory=OPASettings)
         audit: AuditSettings = field(default_factory=AuditSettings)
         bundle: BundleSettings = field(default_factory=BundleSettings)
+        kafka: Dict[str, Any] = field(
+            default_factory=lambda: {
+                "bootstrap_servers": os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092"),
+                "security_protocol": os.getenv("KAFKA_SECURITY_PROTOCOL", "PLAINTEXT"),
+                "ssl_ca_location": os.getenv("KAFKA_SSL_CA_LOCATION"),
+                "ssl_certificate_location": os.getenv("KAFKA_SSL_CERTIFICATE_LOCATION"),
+                "ssl_key_location": os.getenv("KAFKA_SSL_KEY_LOCATION"),
+                "ssl_password": os.getenv("KAFKA_SSL_PASSWORD"),
+            }
+        )
 
 
 # Global settings instance

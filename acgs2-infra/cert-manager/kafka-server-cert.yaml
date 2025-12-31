@@ -1,0 +1,22 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: kafka-server-tls
+  namespace: acgs2
+spec:
+  secretName: kafka-server-tls
+  issuerRef:
+    name: mtlsca-issuer
+    kind: ClusterIssuer
+  commonName: kafka.acgs2.svc.cluster.local
+  dnsNames:
+    - kafka.acgs2.svc.cluster.local
+    - "*.kafka-headless.acgs2.svc.cluster.local"
+  usages:
+    - digital signature
+    - key encipherment
+    - server auth
+    - client auth
+  privateKey:
+    algorithm: ECDSA
+    size: 256

@@ -204,7 +204,7 @@ class TestEnhancedAgentBusActual:
         """Test registering same agent twice."""
         await bus.register_agent("test_agent", "worker")
         result = await bus.register_agent("test_agent", "worker")
-        assert result is True  # Should update existing
+        assert result is True  # Now supports idempotent updates/overwrites
 
     @pytest.mark.asyncio
     async def test_unregister_agent(self, bus):

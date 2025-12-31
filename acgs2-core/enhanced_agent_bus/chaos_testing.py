@@ -24,6 +24,11 @@ from enum import Enum
 from functools import wraps
 from typing import Any, Callable, Dict, List, Optional, Set
 
+# SECURITY CONSTANTS (VULN-006)
+MAX_LATENCY_MS = 5000  # Prevent total system lockout
+MAX_ERROR_RATE = 1.0   # Allow deterministic failure testing
+MAX_DURATION_S = 300.0  # 5 minutes absolute max
+
 # Import centralized constitutional hash from shared module
 try:
     from shared.circuit_breaker import get_circuit_breaker
@@ -90,7 +95,6 @@ class ChaosScenario:
 
     # Safety controls
     duration_s: float = 10.0  # Max duration in seconds
-    max_duration_s: float = 300.0  # Absolute max duration (5 minutes)
     blast_radius: Set[str] = field(default_factory=set)  # Allowed targets
 
     # Constitutional compliance
@@ -102,18 +106,33 @@ class ChaosScenario:
     active: bool = False
 
     def __post_init__(self):
-        """Validate scenario configuration."""
+        """Validate scenario configuration - SECURITY: VULN-006."""
         # Enforce max duration limit
-        if self.duration_s > self.max_duration_s:
+        if self.duration_s > MAX_DURATION_S:
             logger.warning(
-                f"Duration {self.duration_s}s exceeds max {self.max_duration_s}s, "
+                f"Duration {self.duration_s}s exceeds max {MAX_DURATION_S}s, "
                 f"capping to max"
             )
-            self.duration_s = self.max_duration_s
+            self.duration_s = MAX_DURATION_S
 
-        # Validate error rate
+        # Validate latency (VULN-006)
+        if self.delay_ms > MAX_LATENCY_MS:
+            logger.warning(
+                f"Latency {self.delay_ms}ms exceeds safety limit {MAX_LATENCY_MS}ms, "
+                f"capping to limit"
+            )
+            self.delay_ms = MAX_LATENCY_MS
+
+        # Validate error rate (VULN-006)
         if not 0.0 <= self.error_rate <= 1.0:
-            raise ValueError(f"error_rate must be between 0.0 and 1.0, got {self.error_rate}")
+            raise ValueError(f"error_rate must be between 0.0 and 1.0")
+
+        if self.error_rate > MAX_ERROR_RATE:
+            logger.warning(
+                f"Error rate {self.error_rate} exceeds safety limit {MAX_ERROR_RATE}, "
+                f"capping to limit"
+            )
+            self.error_rate = MAX_ERROR_RATE
 
         # Validate resource level
         if not 0.0 <= self.resource_level <= 1.0:
@@ -136,6 +155,11 @@ class ChaosScenario:
     def is_target_allowed(self, target: str) -> bool:
         """Check if a target is within the blast radius."""
         return target in self.blast_radius
+
+    @property
+    def max_duration_s(self) -> float:
+        """Safety limit for chaos duration."""
+        return MAX_DURATION_S
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert scenario to dictionary."""

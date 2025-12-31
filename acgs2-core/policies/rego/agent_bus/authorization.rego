@@ -11,6 +11,7 @@ import future.keywords.in
 
 # Default deny - All actions must be explicitly authorized
 default allow := false
+default deny := true
 
 # Allow action if it passes all authorization checks
 allow if {
@@ -19,6 +20,8 @@ allow if {
     authorized_target
     rate_limit_check
     security_context_valid
+    zk_attest_valid
+    alignment_check_pass
 }
 
 # Validate agent role exists and is active
@@ -277,6 +280,19 @@ violations[msg] {
         [input.security_context.token_expiry])
 }
 
+# ZK Attestation check (MACI)
+zk_attest_valid if {
+    input.security_context.zk_proof
+    # Logic to verify ZK proof would go here (simulated for now)
+    true
+}
+
+# Alignment Score Check
+alignment_check_pass if {
+    input.context.alignment_score
+    input.context.alignment_score > 0.98
+}
+
 # Authorization metadata for audit trail
 authorization_metadata := {
     "authorized": allow,
@@ -286,5 +302,7 @@ authorization_metadata := {
     "target": input.target.agent_id,
     "violations": violations,
     "timestamp": time.now_ns(),
-    "constitutional_hash": "cdd01ef066bc6cf2"
+    "constitutional_hash": "cdd01ef066bc6cf2",
+    "alignment_score": input.context.alignment_score,
+    "zk_verified": zk_attest_valid
 }

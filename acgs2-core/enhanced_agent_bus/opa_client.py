@@ -11,8 +11,10 @@ import hashlib
 import json
 import logging
 import os
+import re
+import ssl
 from datetime import datetime, timezone
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 import httpx
 
@@ -23,14 +25,30 @@ try:
         PolicyEvaluationError,
     )
     from .models import CONSTITUTIONAL_HASH, AgentMessage
+    from .config import settings
     from .validators import ValidationResult
-except ImportError:
-    # Fallback for direct execution or testing
-    from exceptions import (  # type: ignore
-        OPANotInitializedError,
-    )
-    from models import CONSTITUTIONAL_HASH  # type: ignore
-    from validators import ValidationResult  # type: ignore
+except (ImportError, ValueError):
+    try:
+        from exceptions import ( # type: ignore
+            OPAConnectionError, OPANotInitializedError, PolicyEvaluationError
+        )
+        from models import CONSTITUTIONAL_HASH, AgentMessage # type: ignore
+        from config import settings # type: ignore
+        from validators import ValidationResult # type: ignore
+    except ImportError:
+        try:
+            from enhanced_agent_bus.exceptions import (
+                OPAConnectionError, OPANotInitializedError, PolicyEvaluationError
+            )
+            from enhanced_agent_bus.models import CONSTITUTIONAL_HASH, AgentMessage
+            from enhanced_agent_bus.config import settings
+            from enhanced_agent_bus.validators import ValidationResult
+        except ImportError:
+            # Fallback for sharing with shared package
+            from shared.config import settings # type: ignore
+            from models import CONSTITUTIONAL_HASH # type: ignore
+            from validators import ValidationResult # type: ignore
+            from exceptions import OPANotInitializedError # type: ignore
 
 # Import centralized Redis config for caching
 try:
@@ -84,13 +102,21 @@ class OPAClient:
         cache_ttl: int = 300,  # 5 minutes
         enable_cache: bool = True,
         redis_url: Optional[str] = None,
+        ssl_verify: bool = True,
+        ssl_cert: Optional[str] = None,
+        ssl_key: Optional[str] = None,
     ):
         """Initialize OPA client."""
-        self.opa_url = opa_url.rstrip("/")
-        self.mode = mode
+        # Use settings defaults if not provided
+        self.opa_url = opa_url or settings.opa.url
+        self.opa_url = self.opa_url.rstrip("/")
+        self.mode = mode or settings.opa.mode
         self.timeout = timeout
         self.cache_ttl = cache_ttl
         self.enable_cache = enable_cache
+        self.ssl_verify = ssl_verify
+        self.ssl_cert = ssl_cert
+        self.ssl_key = ssl_key
         # SECURITY FIX (VULN-002): Force fail-closed architecture.
         # This prevents any "fail-open" scenarios when OPA is unavailable.
         self.fail_closed = True
@@ -121,9 +147,21 @@ class OPAClient:
         """Initialize HTTP client and cache connections."""
         if self.mode in ("http", "fallback"):
             if not self._http_client:
+                # Configure SSL context if needed
+                ssl_context = None
+                if self.opa_url.startswith("https"):
+                    ssl_context = ssl.create_default_context()
+                    if not self.ssl_verify:
+                        ssl_context.check_hostname = False
+                        ssl_context.verify_mode = ssl.CERT_NONE
+
+                    if self.ssl_cert and self.ssl_key:
+                        ssl_context.load_cert_chain(certfile=self.ssl_cert, keyfile=self.ssl_key)
+
                 self._http_client = httpx.AsyncClient(
                     timeout=self.timeout,
                     limits=httpx.Limits(max_keepalive_connections=10, max_connections=20),
+                    verify=ssl_context if ssl_context else self.ssl_verify
                 )
 
         if self.mode == "embedded" and OPA_SDK_AVAILABLE:
@@ -219,6 +257,10 @@ class OPAClient:
             return cached_result
 
         try:
+            # SECURITY FIX (VULN-009): Strict input validation
+            self._validate_policy_path(policy_path)
+            self._validate_input_data(input_data)
+
             if self.mode == "http":
                 result = await self._evaluate_http(input_data, policy_path)
             elif self.mode == "embedded":
@@ -230,18 +272,41 @@ class OPAClient:
             return result
 
         except Exception as e:
-            logger.error(f"Policy evaluation error: {e}")
+            sanitized_error = self._sanitize_error(e)
+            logger.error(f"Policy evaluation error: {sanitized_error}")
             return self._handle_evaluation_error(e, policy_path)
+
+    def _validate_policy_path(self, policy_path: str):
+        """Strict validation of OPA policy path to prevent injection (VULN-009)."""
+        if not re.match(r"^[a-zA-Z0-9_.]+$", policy_path):
+            raise ValueError(f"Invalid policy path characters: {policy_path}")
+        if ".." in policy_path:
+            raise ValueError(f"Path traversal detected in policy path: {policy_path}")
+
+    def _validate_input_data(self, input_data: Dict[str, Any]):
+        """Validate input data size and structure (VULN-009)."""
+        if len(json.dumps(input_data)) > 1024 * 512:  # 512KB limit
+            raise ValueError("Input data exceeds maximum allowed size")
+
+    def _sanitize_error(self, error: Exception) -> str:
+        """Strip sensitive metadata from error messages (VULN-008)."""
+        error_msg = str(error)
+        # Remove potential API keys, URLs with tokens, and stack traces
+        error_msg = re.sub(r"key=[^&\s]+", "key=REDACTED", error_msg)
+        error_msg = re.sub(r"token=[^&\s]+", "token=REDACTED", error_msg)
+        error_msg = re.sub(r"https?://[^:\s]+:[^@\s]+@", "http://REDACTED@", error_msg)
+        return error_msg
 
     def _handle_evaluation_error(self, error: Exception, policy_path: str) -> Dict[str, Any]:
         """Build a response for OPA evaluation failures - ALWAYS FAIL-CLOSED."""
-        logger.error(f"OPA evaluation failed: {error}")
+        sanitized_error = self._sanitize_error(error)
+        logger.error(f"OPA evaluation failed: {sanitized_error}")
         return {
             "result": False,
             "allowed": False,
-            "reason": f"Policy evaluation failed: {str(error)}",
+            "reason": f"Policy evaluation failed: {sanitized_error}",
             "metadata": {
-                "error": str(error),
+                "error": sanitized_error,
                 "mode": self.mode,
                 "policy_path": policy_path,
                 "security": "fail-closed",
@@ -290,7 +355,8 @@ class OPAClient:
                 }
 
         except Exception as e:
-            logger.error(f"OPA evaluation error: {e}")
+            sanitized_error = self._sanitize_error(e)
+            logger.error(f"OPA evaluation error: {sanitized_error}")
             raise
 
     async def _evaluate_embedded(
@@ -333,7 +399,8 @@ class OPAClient:
                 }
 
         except Exception as e:
-            logger.error(f"Embedded OPA evaluation error: {e}")
+            sanitized_error = self._sanitize_error(e)
+            logger.error(f"Embedded OPA evaluation error: {sanitized_error}")
             raise
 
     async def _evaluate_fallback(

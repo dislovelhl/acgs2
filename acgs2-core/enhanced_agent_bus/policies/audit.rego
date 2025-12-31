@@ -1,52 +1,32 @@
 package acgs.audit
 
-import future.keywords.if
-import future.keywords.in
+# Audit Policy - Loggable decisions (ACGS-2 Compliance)
+# NIST 800-53 AU-2, OWASP Logging
+# Generates audit events for all decisions
+# Constitutional Hash: cdd01ef066bc6cf2
 
-# Determine if action should be audited
-should_audit := true if {
-    input.action in audited_actions
+default allow := false  # Audit before allow from other policies
+
+audit_event := {
+	"timestamp": time.now_ns(),
+	"tenant_id": input.tenant_id,
+	"user_id": input.user_id,
+	"action": input.action,
+	"resource": input.resource,
+	"decision": decision,
+	"constitutional_hash": input.constitutional_hash
 }
 
-should_audit := true if {
-    input.resource in sensitive_resources
+decision := "allowed" if allow else "denied"
+
+allow {
+	input.constitutional_hash == "cdd01ef066bc6cf2"
+	input.tenant_id != null
+	# Delegate to other policies via input.allow
+	input.allow == true
 }
 
-should_audit := true if {
-    input.context.role == "admin"
-}
-
-# Actions that require audit logging
-audited_actions := [
-    "write",
-    "delete",
-    "execute",
-    "admin"
-]
-
-# Sensitive resources requiring audit
-sensitive_resources := [
-    "constitutional_settings",
-    "user_data",
-    "encryption_keys",
-    "admin_controls"
-]
-
-# Audit level determination
-audit_level := "critical" if {
-    input.action in ["delete", "admin"]
-    input.resource in sensitive_resources
-}
-
-audit_level := "high" if {
-    input.action == "write"
-    input.resource in sensitive_resources
-}
-
-audit_level := "medium" if {
-    input.action in audited_actions
-}
-
-audit_level := "low" if {
-    not audit_level
+# Input validation
+valid_input {
+	input.action matches "^[a-zA-Z0-9_.-]+$"
 }

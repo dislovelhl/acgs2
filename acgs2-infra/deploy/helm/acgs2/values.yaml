@@ -385,6 +385,12 @@ redis:
   sentinel:
     enabled: true
 
+  tls:
+    enabled: true
+    existingSecret: redis-server-tls
+    clientAuthentication:
+      caSecret: mtls-ca
+
 # Kafka (Bitnami subchart)
 kafka:
   enabled: true
@@ -405,6 +411,15 @@ kafka:
     persistence:
       enabled: true
       size: 20Gi
+
+  tls:
+    enabled: true
+    existingSecret: kafka-server-tls
+    authentication:
+      enabled: true
+      clientProtocol: TLS
+    clientAuth:
+      caSecret: mtls-ca
 
 # OPA (Open Policy Agent)
 opa:
@@ -434,6 +449,12 @@ opa:
     pollInterval: "60s"
     service: "bundle-service"
 
+  tls:
+    enabled: true
+    existingSecret: opa-server-tls
+    clientCA:
+      existingSecret: mtls-ca
+
 # Service Accounts
 serviceAccount:
   create: true
@@ -459,7 +480,18 @@ nodeSelector: {}
 
 tolerations: []
 
-affinity: {}
+affinity:
+  podAntiAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchExpressions:
+            - key: app.kubernetes.io/name
+              operator: In
+              values:
+                - kafka
+                - redis
+                - opa
+        topologyKey: kubernetes.io/hostname
 
 # Priority Class
 priorityClassName: ""
@@ -490,9 +522,25 @@ extraEnv:
     value: "1"
   - name: ONNX_RUNTIME
     value: "1"
+  - name: KAFKA_BOOTSTRAP_SERVERS
+    value: "kafka.acgs2.svc.cluster.local:9093"
+  - name: KAFKA_SECURITY_PROTOCOL
+    value: "SSL"
+  - name: KAFKA_SSL_CA_LOCATION
+    value: "/tls-ca/ca.crt"
+  - name: REDIS_URL
+    value: "rediss://redis-master.acgs2.svc.cluster.local:6380/0"
+  - name: OPA_URL
+    value: "https://opa.acgs2.svc.cluster.local:8181"
 
 # Extra volumes
-extraVolumes: []
+extraVolumes:
+  - name: mtls-ca
+    secret:
+      secretName: mtls-ca
 
 # Extra volume mounts
-extraVolumeMounts: []
+extraVolumeMounts:
+  - name: mtls-ca
+    mountPath: /tls-ca
+    readOnly: true

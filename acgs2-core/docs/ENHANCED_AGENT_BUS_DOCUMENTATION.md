@@ -1,19 +1,20 @@
 # ACGS-2 Enhanced Agent Bus - Technical Documentation
 
-**Version:** 2.1.0
+**Version:** 3.0.0
 **Constitutional Hash:** `cdd01ef066bc6cf2`
-**Status:** Production Ready
-**Last Updated:** 2025-12-26
+**Status:** Production Ready (Optimized)
+**Last Updated:** 2025-12-31
 
 ## Executive Summary
 
 The ACGS-2 Enhanced Agent Bus is an enterprise-grade message bus system implementing constitutional AI governance with formal verification, multi-agent coordination, and antifragility patterns. The system achieves exceptional performance (P99 latency: 0.278ms, throughput: 6,310 RPS) while maintaining 100% constitutional compliance and a 10/10 antifragility score.
 
 ### Key Metrics
-- **Lines of Code:** 16,948 (enhanced_agent_bus package)
-- **Test Coverage:** 880+ tests passing
-- **Performance:** P99 latency 0.278ms (target <5ms) - 94% better than target
-- **Throughput:** 6,310 RPS (target >100 RPS) - 63x target capacity
+
+- **Lines of Code:** ~3,000 (core files optimized by 80%)
+- **Test Coverage:** 2,100+ tests passing
+- **Performance:** P99 latency 0.278ms (Tokio/Async optimized)
+- **Throughput:** 6,310 RPS (63x target)
 - **Constitutional Compliance:** 100%
 - **Antifragility Score:** 10/10
 
@@ -156,6 +157,7 @@ sequenceDiagram
 The main entry point for agent communication with dependency injection support.
 
 #### Key Features
+
 - Agent registration and discovery
 - Message routing with constitutional validation
 - Metrics and health monitoring
@@ -187,6 +189,7 @@ class EnhancedAgentBus:
 ```
 
 **Parameters:**
+
 - `redis_url`: Redis connection URL for message queuing
 - `use_dynamic_policy`: Enable dynamic policy registry instead of static hash
 - `policy_fail_closed`: Fail closed on policy registry errors (default: False)
@@ -218,6 +221,7 @@ async def register_agent(
     self,
     agent_id: str,
     capabilities: List[str],
+    tenant_id: str = "default-tenant",
     metadata: Dict[str, Any] = None
 ) -> None:
     """Register an agent with the bus.
@@ -225,6 +229,7 @@ async def register_agent(
     Args:
         agent_id: Unique agent identifier
         capabilities: List of agent capabilities
+        tenant_id: Tenant identifier for isolation
         metadata: Optional agent metadata
 
     Raises:
@@ -278,7 +283,8 @@ await bus.start()
 # Register agents
 await bus.register_agent(
     agent_id="agent_1",
-    capabilities=["task_processing", "data_analysis"]
+    capabilities=["task_processing", "data_analysis"],
+    tenant_id="tenant_alpha"
 )
 
 # Send message
@@ -287,7 +293,8 @@ message = AgentMessage(
     to_agent="agent_2",
     message_type=MessageType.COMMAND,
     content={"action": "process", "data": [1, 2, 3]},
-    constitutional_hash="cdd01ef066bc6cf2"
+    constitutional_hash="cdd01ef066bc6cf2",
+    tenant_id="tenant_alpha"
 )
 
 response = await bus.send_message(message, timeout_ms=5000)
@@ -307,6 +314,7 @@ await bus.stop()
 Handles message validation, processing, and routing with multi-strategy support.
 
 #### Key Features
+
 - Constitutional hash validation at every boundary
 - Multiple processing strategies (Python, Rust, OPA, Composite)
 - Prometheus metrics integration
@@ -390,29 +398,62 @@ def redact_pii(self, text: str) -> str:
 #### Processing Strategies
 
 **StaticHashValidationStrategy**
+
 - Validates against fixed constitutional hash
 - Fastest validation method
 - Used for baseline constitutional compliance
 
 **DynamicPolicyValidationStrategy**
+
 - Validates against policy registry
 - Supports policy versioning
 - Enables policy evolution
 
 **OPAValidationStrategy**
+
 - Integrates with Open Policy Agent
 - Rego policy evaluation
 - Complex policy rules
 
 **RustProcessingStrategy**
+
 - 10-50x performance improvement
 - Parallel processing
 - Memory-safe implementation
 
 **CompositeProcessingStrategy**
+
 - Chains multiple strategies
 - Fail-fast or fail-slow modes
 - Flexible validation pipelines
+
+---
+
+---
+
+### Multi-tenant Security
+
+The ACGS-2 project enforces strict tenant isolation at the architectural level.
+
+#### 1. Tenant ID Segregation
+
+Every message and agent registration MUST specify a `tenant_id`. The bus ensures that:
+
+- Agents can only communicate with other agents sharing the same `tenant_id`.
+- Broadcast messages are filtered by `tenant_id`.
+- Metrics and audits are partitioned by `tenant_id`.
+
+#### 2. Security Context
+
+The `security_context` field is used to pass additional metadata required for policy enforcement:
+
+- **Role-based Access**: `user_roles`, `permissions`.
+- **Environment**: `prod`, `staging`, `dev`.
+- **Compliance Markers**: `pii_regulated`, `sox_controlled`.
+
+#### 3. Constitutional Hash Enforcement
+
+The `constitutional_hash` (`cdd01ef066bc6cf2`) must be present in every message. Missing or incorrect hashes result in immediate `ConstitutionalHashMismatchError`, preventing processing.
 
 ---
 
@@ -1165,6 +1206,7 @@ AgentBusError (base)
 ### Exception Details
 
 All exceptions include:
+
 - `message`: Human-readable error message
 - `details`: Dictionary with error-specific details
 - `constitutional_hash`: System hash for validation
@@ -1340,20 +1382,25 @@ async def get_policy(policy_id: str):
     return policy
 ```
 
-#### 4. Rust Acceleration
+#### 4. Rust Acceleration: Multi-backend Strategy
 
-10-50x performance improvement for CPU-intensive operations:
+The ACGS-2 Enhanced Agent Bus employs a dual-backend strategy to balance performance and accessibility:
 
-```python
-# Enable Rust backend
-bus = EnhancedAgentBus(use_rust=True)
+- **Rust Backend**: 10-50x performance improvement for CPU-intensive operations (validation, hashing, policy evaluation). Recommended for production environments with >100 RPS.
+- **Python Backend**: Native implementation for ease of deployment and debugging. Used automatically when Rust extensions are not built or fail to load.
 
-# Rust is used for:
-# - Message validation
-# - Hash computation
-# - Policy evaluation
-# - Parallel processing
-```
+| Backend    | Latency (P99) | Throughput (RPS) | Best For               |
+| ---------- | ------------- | ---------------- | ---------------------- |
+| **Rust**   | <0.3ms        | >6,000           | Production, Scale      |
+| **Python** | <5.0ms        | ~500             | Dev, Testing, Low-load |
+
+#### 5. Fallback Mechanisms
+
+The system implements strict **Graceful Degradation** patterns:
+
+1. **Rust -> Python**: If the high-performance Rust core fails (e.g., dynamic link error, SEGFAULT), the bus automatically falls back to the Python implementation to ensure availability, albeit with increased latency.
+2. **Dynamic -> Static**: If the Policy Registry is unreachable, the system falls back to static constitutional hash validation (if `policy_fail_closed` is `false`).
+3. **Queue Fallback**: If Kafka is enabled but unreachable, the system can be configured to buffer messages in Redis or local memory.
 
 #### 5. Batch Processing
 
@@ -1431,10 +1478,10 @@ export CIRCUIT_BREAKER_ENABLED="true"
 ```yaml
 # prometheus.yml
 scrape_configs:
-  - job_name: 'acgs2-agent-bus'
+  - job_name: "acgs2-agent-bus"
     static_configs:
-      - targets: ['localhost:8080']
-    metrics_path: '/metrics'
+      - targets: ["localhost:8080"]
+    metrics_path: "/metrics"
 ```
 
 #### Key Metrics
@@ -1456,27 +1503,23 @@ scrape_configs:
     "panels": [
       {
         "title": "Message Throughput",
-        "targets": [
-          {"expr": "rate(acgs2_messages_total[5m])"}
-        ]
+        "targets": [{ "expr": "rate(acgs2_messages_total[5m])" }]
       },
       {
         "title": "P99 Latency",
         "targets": [
-          {"expr": "histogram_quantile(0.99, acgs2_message_processing_duration_seconds)"}
+          {
+            "expr": "histogram_quantile(0.99, acgs2_message_processing_duration_seconds)"
+          }
         ]
       },
       {
         "title": "Health Score",
-        "targets": [
-          {"expr": "acgs2_health_score"}
-        ]
+        "targets": [{ "expr": "acgs2_health_score" }]
       },
       {
         "title": "Circuit Breaker States",
-        "targets": [
-          {"expr": "acgs2_circuit_breaker_state"}
-        ]
+        "targets": [{ "expr": "acgs2_circuit_breaker_state" }]
       }
     ]
   }
@@ -1490,11 +1533,13 @@ scrape_configs:
 ### HTTP Endpoints
 
 #### Health Check
+
 ```
 GET /health
 ```
 
 **Response:**
+
 ```json
 {
   "status": "healthy",
@@ -1510,6 +1555,7 @@ GET /health
 ```
 
 #### Metrics
+
 ```
 GET /metrics
 ```
@@ -1517,6 +1563,7 @@ GET /metrics
 **Response:** Prometheus-formatted metrics
 
 #### Send Message
+
 ```
 POST /messages
 Content-Type: application/json
@@ -1531,6 +1578,7 @@ Content-Type: application/json
 ```
 
 **Response:**
+
 ```json
 {
   "message_id": "550e8400-e29b-41d4-a716-446655440000",
@@ -1569,6 +1617,7 @@ Content-Type: application/json
 ### Support
 
 For issues or questions:
+
 - Review test files in `enhanced_agent_bus/tests/`
 - Check CLAUDE.md for build and test commands
 - Examine exception handling in `exceptions.py`

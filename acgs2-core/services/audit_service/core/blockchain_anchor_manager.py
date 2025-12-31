@@ -42,6 +42,7 @@ class AnchorBackend(Enum):
     ETHEREUM_L2 = "ethereum_l2"
     ARWEAVE = "arweave"
     HYPERLEDGER = "hyperledger"
+    SOLANA = "solana"
 
 
 class AnchorStatus(Enum):
@@ -59,9 +60,11 @@ class AnchorResult:
 
     backend: AnchorBackend
     status: AnchorStatus
+    batch_id: Optional[str] = None
     transaction_id: Optional[str] = None
     block_info: Optional[Dict[str, Any]] = None
     timestamp: float = field(default_factory=time.time)
+    start_time: Optional[float] = None  # Latency tracking
     error: Optional[str] = None
     constitutional_hash: str = CONSTITUTIONAL_HASH
 
@@ -69,9 +72,11 @@ class AnchorResult:
         return {
             "backend": self.backend.value,
             "status": self.status.value,
+            "batch_id": self.batch_id,
             "transaction_id": self.transaction_id,
             "block_info": self.block_info,
             "timestamp": self.timestamp,
+            "latency": (self.timestamp - self.start_time) if self.start_time else 0,
             "error": self.error,
             "constitutional_hash": self.constitutional_hash,
         }
@@ -103,6 +108,9 @@ class AnchorManagerConfig:
     # Async queue settings
     queue_size: int = 1000
     worker_count: int = 2
+
+    # Global mode
+    live: bool = True
 
     # Network-specific settings
     ethereum_network: str = "optimism"
@@ -189,6 +197,18 @@ class BlockchainAnchorManager:
                     self._backends[backend] = FabricClient(config={})
                     logger.info(f"[{CONSTITUTIONAL_HASH}] Initialized HYPERLEDGER anchor backend")
 
+                elif backend == AnchorBackend.SOLANA:
+                    from ..blockchain.solana.solana_client import SolanaClient
+
+                    self._backends[backend] = SolanaClient(
+                        config={
+                            "rpc_url": "https://api.devnet.solana.com",
+                            "commitment": "confirmed",
+                            "live": self.config.live
+                        }
+                    )
+                    logger.info(f"[{CONSTITUTIONAL_HASH}] Initialized SOLANA anchor backend")
+
                 # Initialize circuit breaker for this backend
                 if CIRCUIT_BREAKER_AVAILABLE:
                     cb_config = CircuitBreakerConfig(
@@ -207,6 +227,18 @@ class BlockchainAnchorManager:
                 logger.error(
                     f"[{CONSTITUTIONAL_HASH}] Error initializing {backend.value} backend: {e}"
                 )
+
+    def get_backend(self, backend: AnchorBackend) -> Optional[Any]:
+        """
+        Get a specific blockchain backend client.
+
+        Args:
+            backend: The backend to retrieve
+
+        Returns:
+            The backend client or None if not found/enabled
+        """
+        return self._backends.get(backend)
 
     async def start(self):
         """Start the anchor manager and background workers."""
@@ -376,6 +408,7 @@ class BlockchainAnchorManager:
         metadata: Dict[str, Any],
     ) -> AnchorResult:
         """Execute anchoring with failover support."""
+        start_time = time.time()
         self._stats["total_anchored"] += 1
         backends_to_try = list(self.config.enabled_backends)
         failover_count = 0
@@ -401,6 +434,7 @@ class BlockchainAnchorManager:
                     batch_id=batch_id,
                     metadata=metadata,
                 )
+                result.start_time = start_time
 
                 if (
                     result.status == AnchorStatus.CONFIRMED
@@ -428,6 +462,8 @@ class BlockchainAnchorManager:
         failed_result = AnchorResult(
             backend=backends_to_try[0] if backends_to_try else AnchorBackend.LOCAL,
             status=AnchorStatus.FAILED,
+            batch_id=batch_id,
+            start_time=start_time,
             error="All backends failed",
         )
         self._store_result(failed_result)
@@ -449,6 +485,7 @@ class BlockchainAnchorManager:
             return AnchorResult(
                 backend=backend,
                 status=AnchorStatus.CONFIRMED,
+                batch_id=batch_id,
                 transaction_id=block.get("hash"),
                 block_info=block,
             )
@@ -466,6 +503,7 @@ class BlockchainAnchorManager:
                 return AnchorResult(
                     backend=backend,
                     status=AnchorStatus.SUBMITTED,
+                    batch_id=batch_id,
                     transaction_id=tx_hash,
                     block_info={"network": self.config.ethereum_network},
                 )
@@ -477,6 +515,7 @@ class BlockchainAnchorManager:
                 return AnchorResult(
                     backend=backend,
                     status=AnchorStatus.SUBMITTED,
+                    batch_id=batch_id,
                     transaction_id=tx_id,
                 )
             raise Exception("Arweave storage failed")
@@ -484,6 +523,23 @@ class BlockchainAnchorManager:
         elif backend == AnchorBackend.HYPERLEDGER:
             # Implement Hyperledger anchoring
             raise NotImplementedError("Hyperledger anchoring not implemented")
+
+        elif backend == AnchorBackend.SOLANA:
+            tx_hash = await client.submit_audit_batch({
+                "batch_id": batch_id,
+                "root_hash": root_hash,
+                "entry_count": metadata.get("entry_count", 0),
+                "timestamp": int(time.time()),
+                "entries_hashes": metadata.get("entries_hashes", []),
+            })
+            if tx_hash:
+                return AnchorResult(
+                    backend=backend,
+                    status=AnchorStatus.SUBMITTED,
+                    batch_id=batch_id,
+                    transaction_id=tx_hash,
+                )
+            raise Exception("Solana transaction submission failed")
 
         raise ValueError(f"Unknown backend: {backend}")
 
@@ -585,3 +641,43 @@ async def close_anchor_manager():
     if _anchor_manager:
         await _anchor_manager.stop()
         _anchor_manager = None
+
+
+def reset_anchor_manager() -> None:
+    """Reset the global anchor manager instance without async cleanup.
+
+    Used primarily for test isolation to prevent state leakage between tests.
+    For graceful shutdown, use close_anchor_manager() instead.
+    Constitutional Hash: cdd01ef066bc6cf2
+    """
+    global _anchor_manager
+    if _anchor_manager is not None:
+        # Set running to False to prevent worker loops from continuing
+        _anchor_manager._running = False
+        # Cancel all worker tasks
+        for worker in _anchor_manager._workers:
+            if not worker.done():
+                worker.cancel()
+        _anchor_manager._workers.clear()
+        # Clear the queue
+        while not _anchor_manager._queue.empty():
+            try:
+                _anchor_manager._queue.get_nowait()
+            except asyncio.QueueEmpty:
+                break
+    _anchor_manager = None
+
+
+__all__ = [
+    "AnchorBackend",
+    "AnchorStatus",
+    "AnchorResult",
+    "AnchorManagerConfig",
+    "PendingAnchor",
+    "BlockchainAnchorManager",
+    "get_anchor_manager",
+    "initialize_anchor_manager",
+    "close_anchor_manager",
+    "reset_anchor_manager",
+    "CIRCUIT_BREAKER_AVAILABLE",
+]

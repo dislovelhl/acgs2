@@ -1,0 +1,154 @@
+# Production Helm Configuration for ACGS2
+# Constitutional Hash: cdd01ef066bc6cf2
+
+global:
+  env: production
+  tenant_id: acgs-main
+  constitutional_hash: cdd01ef066bc6cf2
+
+image:
+  repository: acgs2/agent-bus
+  tag: "v3.0.0"
+  pullPolicy: IfNotPresent
+
+# RBAC Configuration
+rbac:
+  create: true
+  serviceAccountName: acgs2-sa
+
+# Network Policy
+networkPolicy:
+  enabled: true
+  egress:
+    - kafka
+    - redis
+  ingress:
+    - opa
+
+# Kyverno Policy Enforcement
+kyverno:
+  enabled: true
+  policies:
+    - restrict-root-user
+    - require-ro-rootfs
+    - disallow-privilege-escalation
+
+# OPA Configuration (Pillar 1)
+opa:
+  enabled: True
+  port: 8181
+  securePort: 8443
+  tls:
+    enabled: True
+    certSecret: opa-tls-certs
+    mTLS: True
+  resources:
+    limits:
+      cpu: 500m  # P99 <5ms
+      memory: 1Gi
+    requests:
+      cpu: 250m
+      memory: 512Mi
+  bundle:
+    path: "file:///policies"  # Mount new .rego policies
+    pollInterval: 10s
+    auth: false  # Local
+
+# Kafka Configuration (Pillar 2)
+kafka:
+  bootstrapServers: "kafka-cluster-kafka-bootstrap:9093"
+  securityProtocol: SSL
+  ssl:
+    caSecret: kafka-ca-cert
+    certSecret: kafka-client-cert
+  auth:
+    enabled: True
+
+# Redis Configuration (Pillar 2/3)
+redis:
+  url: "rediss://redis-cluster:6380/0"
+  ssl:
+    enabled: True
+    caSecret: redis-ca-cert
+  maxConnections: 100
+
+# Security Context for Pods
+securityContext:
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000
+  runAsNonRoot: true
+
+containerSecurityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+  readOnlyRootFilesystem: true
+
+# MACI Role Enforcement
+maci:
+  enabled: True
+  strictMode: True
+  roles:
+    executive:
+      replicaCount: 3
+    judicial:
+      replicaCount: 2
+    legislative:
+      replicaCount: 2
+
+# Monitoring and SLOs
+monitoring:
+  prometheus:
+    enabled: True
+    scrapeInterval: 15s
+  grafana:
+    enabled: True
+    dashboardLabel: acgs2-dashboards
+  alerts:
+    pd_integration_key: "REDACTED"
+    slo_threshold: 99.99
+
+# Resilience and Chaos (chaos exps integration)
+chaos:
+  enabled: True
+  engine_hash: cdd01ef066bc6cf2
+  blast_radius: ["agent-bus", "opa", "kafka"]
+  litmusIntegration: true  # K8s chaos-mesh compatible
+
+istio:
+  enabled: True
+  rateLimit:
+    qps: 100  # P99 <5ms
+    burst: 200
+
+# Ingress with TLS/mTLS (Phase 3.2 harden)
+ingress:
+  enabled: true
+  className: "istio-ingress"
+  annotations:
+    cert-manager.io/cluster-issuer: "acgs-internal-issuer"
+    nginx.ingress.kubernetes.io/auth-tls-verify-client: "on"
+    nginx.ingress.kubernetes.io/auth-tls-secret: "acgs2/acgs2-ca-secret"
+    nginx.ingress.kubernetes.io/auth-tls-verify-depth: "1"
+  tls:
+    - secretName: acgs2-tls
+      hosts:
+        - acgs2.example.com
+  hosts:
+    - host: acgs2.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+
+# Pod Security Standards v1.28+ (non-root, no priv esc)
+podSecurityStandards:
+  enforce:
+    version: v1.28
+  warn:
+    version: v1.28
+  audit:
+    version: v1.28
+
+# OPA Bundle ref integrated in existing opa section above

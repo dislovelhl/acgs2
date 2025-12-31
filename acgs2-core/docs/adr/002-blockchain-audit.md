@@ -1,19 +1,31 @@
-# ADR 002: Blockchain-Backed Audit Trail
+# ADR 002: Blockchain-Anchored Audit Trails
+
+<!-- Constitutional Hash: cdd01ef066bc6cf2 -->
 
 ## Status
-Accepted
+Accepted & Implemented (v2.3.0)
+
+## Date
+2025-12-31 (Phase 3.6 confirmed)
 
 ## Context
-Agent actions in a governance system must be immutable and verifiable by external third parties. Traditional centralized logs are susceptible to tampering or accidental deletion.
+Agent actions must be immutable and verifiable. Centralized logs vulnerable to tampering.
 
 ## Decision
-We will integrate a decentralized audit backend:
-1. **Data Structure**: Use Merkle Trees to batch agent actions.
-2. **Persistence**: Commit Merkle Roots to the Solana blockchain (main) with Avalanche as a secondary/high-throughput option.
-3. **Privacy**: Use Zero-Knowledge Proofs (ZKP) to prove that a specific action was valid without revealing the full content of the message on-chain.
+1. **Merkle Trees**: Batch actions.
+2. **Anchoring**: Solana mainnet (primary), PostgreSQL metadata.
+3. **Privacy**: ZKP proofs for validation without content disclosure.
 
 ## Consequences
-- **Positive**: Cryptographic proof of every decision.
-- **Positive**: High resistance to internal data breaches.
-- **Negative**: Latency in finality (mitigated by local batching).
-- **Negative**: Operational cost (gas fees) associated with chain commits.
+
+### Positive
+- Cryptographic non-repudiation.
+- Breach-resistant audits.
+
+### Negative
+- Commit latency (batched).
+- Gas costs.
+
+### Post Phase 3.6
+- Integrated with enhanced agent bus refactors.
+- AuditClient API optimized, dead code removed.

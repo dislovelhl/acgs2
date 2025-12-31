@@ -1,38 +1,29 @@
 package acgs.constitutional
 
-import future.keywords.if
+# Constitutional AI Policy - Enforce hash integrity (Pillar 1)
+# ACGS-2 Standard: cdd01ef066bc6cf2
+# OWASP API Sec Top 10: Broken Auth, NIST AI RMF 1.2 Integrity
+# Deny if constitutional_hash mismatch or missing
 
-default validate = false
+default allow := false
 
-# Validate constitutional hash presence and correctness
-validate if {
-    input.message.constitutional_hash == "cdd01ef066bc6cf2"
+allow {
+	input.constitutional_hash == "cdd01ef066bc6cf2"
+	not deprecated_features_used
+	input.tenant_id != null  # Cross-policy tenant enforcement
 }
 
-# Validate message structure
-validate if {
-    input.message.message_id
-    input.message.from_agent
-    input.message.to_agent
-    input.message.constitutional_hash == "cdd01ef066bc6cf2"
+# Input validation: hash exact match (no regex for perf/security)
+deprecated_features_used {
+	input.features[_] == "eval"  # No eval/exec (OWASP A03:2021 Injection)
 }
 
-# Return detailed validation result
-allow := {
-    "allow": validate,
-    "reason": reason,
-    "metadata": {
-        "policy": "constitutional_validation",
-        "version": "1.0.0"
-    }
+deprecated_features_used {
+	input.features[_] == "legacy_sync"  # Enforce async/await
 }
 
-reason := "Valid constitutional hash and message structure" if validate
-reason := sprintf("Invalid constitutional hash: %v", [input.message.constitutional_hash]) if {
-    not validate
-    input.message.constitutional_hash != "cdd01ef066bc6cf2"
-}
-reason := "Missing required message fields" if {
-    not validate
-    not input.message.message_id
+# Metrics: constitutional violations (P99 eval <1ms)
+violation[msg] {
+	not allow
+	msg := "Constitutional hash mismatch or deprecated features detected"
 }

@@ -14,6 +14,7 @@ constitutional_hash := "cdd01ef066bc6cf2"
 
 # Default deny - All messages must explicitly pass validation
 default allow := false
+default deny := true
 
 # Allow message if it passes all constitutional checks
 allow if {
@@ -25,6 +26,7 @@ allow if {
     valid_payload_size
     valid_rate_limit
     valid_capabilities
+    pii_redacted
 }
 
 # Validate constitutional hash matches required value
@@ -238,6 +240,16 @@ constitutional_validated if {
     not message_expired
 }
 
+# PII Safeguards - ensure PII is redacted if not authorized
+pii_redacted if {
+    not input.message.content.contains_pii
+}
+
+pii_redacted if {
+    input.message.content.contains_pii
+    input.context.agent_role == "system_admin"
+}
+
 # Compliance metadata for audit trail
 compliance_metadata := {
     "constitutional_hash": constitutional_hash,
@@ -245,5 +257,6 @@ compliance_metadata := {
     "validation_timestamp": time.now_ns(),
     "violations": violations,
     "message_id": input.message.message_id,
-    "agent_role": input.context.agent_role
+    "agent_role": input.context.agent_role,
+    "pii_safe": pii_redacted
 }

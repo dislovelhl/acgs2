@@ -631,6 +631,35 @@ class MACIRoleNotAssignedError(MACIError):
 
 
 # =============================================================================
+# Alignment and Governance Errors
+# =============================================================================
+
+class AlignmentViolationError(AgentBusError):
+    """Raised when an agent message or action violates constitutional alignment."""
+
+    def __init__(
+        self,
+        reason: str,
+        alignment_score: Optional[float] = None,
+        agent_id: Optional[str] = None,
+    ) -> None:
+        self.reason = reason
+        self.alignment_score = alignment_score
+        self.agent_id = agent_id
+        message = f"Constitutional alignment violation: {reason}"
+        if alignment_score is not None:
+            message += f" (score: {alignment_score})"
+        super().__init__(
+            message=message,
+            details={
+                "reason": reason,
+                "alignment_score": alignment_score,
+                "agent_id": agent_id,
+            },
+        )
+
+
+# =============================================================================
 # Export all exceptions
 # =============================================================================
 
@@ -676,6 +705,7 @@ __all__ = [
     "MACISelfValidationError",
     "MACICrossRoleValidationError",
     "MACIRoleNotAssignedError",
+    "AlignmentViolationError",
     # Constants
     "CONSTITUTIONAL_HASH",
 ]

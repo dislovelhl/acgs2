@@ -1,0 +1,10 @@
+# Kubeval configuration for ACGS-2 infra validation
+version: experimental
+schemaVersion:
+  type: semver
+  value: 1.30.0
+ignoreMissingSchemas: false
+validateHiddenFields: all
+additionalProperties: false
+strict:
+  - equivalences: false

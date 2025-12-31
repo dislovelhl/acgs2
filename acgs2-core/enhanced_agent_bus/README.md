@@ -19,14 +19,14 @@ The Enhanced Agent Bus is the core communication infrastructure for ACGS-2's mul
 
 ### Key Capabilities
 
-| Capability | Description | Status |
-|------------|-------------|--------|
-| **Constitutional Compliance** | All messages validated against hash `cdd01ef066bc6cf2` | ✅ 100% |
-| **High Performance** | Sub-millisecond P99 latency (0.278ms achieved vs 5ms target) | ✅ 94% better |
-| **Massive Throughput** | 6,310+ requests per second (63x target capacity) | ✅ Exceeded |
-| **MACI Role Separation** | Trias Politica enforcement (Executive/Legislative/Judicial) | ✅ Active |
-| **Antifragility** | Health aggregation, recovery orchestration, chaos testing | ✅ 10/10 |
-| **Multi-Backend** | Pure Python with optional Rust acceleration (10-50x speedup) | ✅ Available |
+| Capability                    | Description                                                  | Status        |
+| ----------------------------- | ------------------------------------------------------------ | ------------- |
+| **Constitutional Compliance** | All messages validated against hash `cdd01ef066bc6cf2`       | ✅ 100%       |
+| **High Performance**          | Sub-millisecond P99 latency (0.278ms achieved vs 5ms target) | ✅ 94% better |
+| **Massive Throughput**        | 6,310+ requests per second (63x target capacity)             | ✅ Exceeded   |
+| **MACI Role Separation**      | Trias Politica enforcement (Executive/Legislative/Judicial)  | ✅ Active     |
+| **Antifragility**             | Health aggregation, recovery orchestration, chaos testing    | ✅ 10/10      |
+| **Multi-Backend**             | Pure Python with optional Rust acceleration (10-50x speedup) | ✅ Available  |
 
 ## Quick Start
 
@@ -100,64 +100,49 @@ await bus.register_agent(
 
 ## Architecture
 
-```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                         Enhanced Agent Bus v2.3                          │
-├─────────────────────────────────────────────────────────────────────────┤
-│                                                                          │
-│   ┌─────────────┐    ┌─────────────┐    ┌─────────────┐                 │
-│   │   Agents    │    │   Message   │    │   MACI      │                 │
-│   │  Registry   │    │  Processor  │    │ Enforcement │                 │
-│   └──────┬──────┘    └──────┬──────┘    └──────┬──────┘                 │
-│          │                  │                  │                         │
-│          ▼                  ▼                  ▼                         │
-│   ┌─────────────────────────────────────────────────────────────────┐   │
-│   │              Constitutional Validation Layer                     │   │
-│   │              (Hash: cdd01ef066bc6cf2 enforcement)               │   │
-│   └─────────────────────────────────────────────────────────────────┘   │
-│          │                  │                  │                         │
-│          ▼                  ▼                  ▼                         │
-│   ┌─────────────┐    ┌─────────────┐    ┌─────────────────────────┐     │
-│   │   Policy    │    │  Circuit    │    │    Deliberation         │     │
-│   │   Client    │    │  Breakers   │    │    Layer (AI Review)    │     │
-│   └─────────────┘    └─────────────┘    └─────────────────────────┘     │
-│                                                                          │
-│   ┌─────────────────────────────────────────────────────────────────┐   │
-│   │                    Antifragility Layer                           │   │
-│   │  Health Aggregator │ Recovery Orchestrator │ Chaos Testing      │   │
-│   └─────────────────────────────────────────────────────────────────┘   │
-│                                                                          │
-└─────────────────────────────────────────────────────────────────────────┘
+```mermaid
+graph TD
+    A[Agents] --> B[EnhancedAgentBus]
+    B --> C{MessageProcessor}
+    C --> D[Validation Layer]
+    D --> E[OPA/Constitutional]
+    D --> F[MACI Enforcement]
+    C --> G[Deliberation Layer]
+    G --> H[Impact Scorer/ONNX]
+    G --> I[LLM Assistant]
+    B --> J[Antifragility Layer]
+    J --> K[Health Aggregator]
+    J --> L[Recovery Orchestrator]
 ```
 
 ## Core Components
 
 ### Message Types
 
-| Type | Description | Use Case |
-|------|-------------|----------|
-| `COMMAND` | Direct agent command | Initiate governance actions |
-| `QUERY` | Information request | Read-only data retrieval |
-| `EVENT` | Event notification | Status updates, alerts |
-| `GOVERNANCE_REQUEST` | Governance action | Policy changes, votes |
-| `BROADCAST` | Multi-agent message | System-wide notifications |
+| Type                 | Description          | Use Case                    |
+| -------------------- | -------------------- | --------------------------- |
+| `COMMAND`            | Direct agent command | Initiate governance actions |
+| `QUERY`              | Information request  | Read-only data retrieval    |
+| `EVENT`              | Event notification   | Status updates, alerts      |
+| `GOVERNANCE_REQUEST` | Governance action    | Policy changes, votes       |
+| `BROADCAST`          | Multi-agent message  | System-wide notifications   |
 
 ### Priority Levels
 
-| Priority | Value | Processing |
-|----------|-------|------------|
-| `CRITICAL` | 4 | Immediate, bypasses queues |
-| `HIGH` | 3 | Priority queue |
-| `NORMAL` | 2 | Standard queue |
-| `LOW` | 1 | Background processing |
+| Priority   | Value | Processing                 |
+| ---------- | ----- | -------------------------- |
+| `CRITICAL` | 4     | Immediate, bypasses queues |
+| `HIGH`     | 3     | Priority queue             |
+| `NORMAL`   | 2     | Standard queue             |
+| `LOW`      | 1     | Background processing      |
 
 ### MACI Role Permissions
 
-| Role | Allowed Actions | Prohibited Actions |
-|------|----------------|-------------------|
-| **EXECUTIVE** | PROPOSE, SYNTHESIZE, QUERY | VALIDATE, AUDIT, EXTRACT_RULES |
-| **LEGISLATIVE** | EXTRACT_RULES, SYNTHESIZE, QUERY | PROPOSE, VALIDATE, AUDIT |
-| **JUDICIAL** | VALIDATE, AUDIT, QUERY | PROPOSE, EXTRACT_RULES, SYNTHESIZE |
+| Role            | Allowed Actions                  | Prohibited Actions                 |
+| --------------- | -------------------------------- | ---------------------------------- |
+| **EXECUTIVE**   | PROPOSE, SYNTHESIZE, QUERY       | VALIDATE, AUDIT, EXTRACT_RULES     |
+| **LEGISLATIVE** | EXTRACT_RULES, SYNTHESIZE, QUERY | PROPOSE, VALIDATE, AUDIT           |
+| **JUDICIAL**    | VALIDATE, AUDIT, QUERY           | PROPOSE, EXTRACT_RULES, SYNTHESIZE |
 
 ## Antifragility Features
 
@@ -214,13 +199,13 @@ async with engine.run_scenario(scenario):
 
 ### Benchmarks
 
-| Metric | Target | Achieved | Improvement |
-|--------|--------|----------|-------------|
-| P99 Latency | <5ms | 0.278ms | **94% better** |
-| Throughput | >100 RPS | 6,310 RPS | **63x target** |
-| Cache Hit Rate | >85% | 95% | **12% better** |
-| Constitutional Compliance | 100% | 100% | ✅ |
-| Antifragility Score | 10/10 | 10/10 | ✅ |
+| Metric                    | Target   | Achieved  | Improvement    |
+| ------------------------- | -------- | --------- | -------------- |
+| P99 Latency               | <5ms     | 0.278ms   | **94% better** |
+| Throughput                | >100 RPS | 6,310 RPS | **63x target** |
+| Cache Hit Rate            | >85%     | 95%       | **12% better** |
+| Constitutional Compliance | 100%     | 100%      | ✅             |
+| Antifragility Score       | 10/10    | 10/10     | ✅             |
 
 ### Optimization Tips
 
@@ -250,25 +235,25 @@ python3 -m pytest tests/test_health_aggregator.py tests/test_chaos_framework.py 
 
 ### Test Categories
 
-| Category | Count | Description |
-|----------|-------|-------------|
-| Core | 500+ | Bus operations, message processing |
-| Constitutional | 200+ | Hash validation, compliance |
-| MACI | 108 | Role separation, permissions |
-| Antifragility | 150+ | Health, recovery, chaos |
-| Integration | 100+ | E2E workflows |
+| Category       | Count | Description                        |
+| -------------- | ----- | ---------------------------------- |
+| Core           | 500+  | Bus operations, message processing |
+| Constitutional | 200+  | Hash validation, compliance        |
+| MACI           | 108   | Role separation, permissions       |
+| Antifragility  | 150+  | Health, recovery, chaos            |
+| Integration    | 100+  | E2E workflows                      |
 
 ## Configuration
 
 ### Environment Variables
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `REDIS_URL` | `redis://localhost:6379` | Redis connection URL |
-| `USE_RUST_BACKEND` | `false` | Enable Rust acceleration |
-| `METRICS_ENABLED` | `true` | Enable Prometheus metrics |
-| `MACI_STRICT_MODE` | `false` | Strict MACI enforcement |
-| `METERING_ENABLED` | `true` | Enable usage metering |
+| Variable           | Default                  | Description               |
+| ------------------ | ------------------------ | ------------------------- |
+| `REDIS_URL`        | `redis://localhost:6379` | Redis connection URL      |
+| `USE_RUST_BACKEND` | `false`                  | Enable Rust acceleration  |
+| `METRICS_ENABLED`  | `true`                   | Enable Prometheus metrics |
+| `MACI_STRICT_MODE` | `false`                  | Strict MACI enforcement   |
+| `METERING_ENABLED` | `true`                   | Enable usage metering     |
 
 ### Programmatic Configuration
 
@@ -284,12 +269,12 @@ bus = EnhancedAgentBus(
 
 ## Documentation
 
-| Document | Description |
-|----------|-------------|
-| [API Reference](./docs/API.md) | Complete API documentation |
+| Document                                     | Description                    |
+| -------------------------------------------- | ------------------------------ |
+| [API Reference](./docs/API.md)               | Complete API documentation     |
 | [Developer Guide](./docs/DEVELOPER_GUIDE.md) | Development setup and patterns |
-| [Architecture](./docs/ARCHITECTURE.md) | System design and components |
-| [MACI Guide](./MACI_GUIDE.md) | Role separation enforcement |
+| [Architecture](./docs/ARCHITECTURE.md)       | System design and components   |
+| [MACI Guide](./MACI_GUIDE.md)                | Role separation enforcement    |
 
 ## Exception Hierarchy
 
@@ -331,6 +316,6 @@ MIT License - See [LICENSE](./LICENSE) for details.
 
 ---
 
-*Constitutional Hash: cdd01ef066bc6cf2*
-*Updated: 2025-12-27*
-*ACGS-2 Enhanced Agent Bus v2.3.0*
+_Constitutional Hash: cdd01ef066bc6cf2_
+_Updated: 2025-12-27_
+_ACGS-2 Enhanced Agent Bus v2.3.0_

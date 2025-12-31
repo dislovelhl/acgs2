@@ -1,0 +1,35 @@
+apiVersion: chaos-mesh.org/v1alpha1
+kind: NetworkChaos
+metadata:
+  name: opa-service-partition
+  namespace: acgs2-chaos
+spec:
+  action: partition
+  mode: one
+  selector:
+    labelSelectors:
+      "app": "opa"
+  direction: both
+  target:
+    selector:
+      labelSelectors:
+        "app": "agent-bus"
+    mode: all
+  duration: "10s"
+  scheduler:
+    cron: "@every 2h"
+---
+apiVersion: chaos-mesh.org/v1alpha1
+kind: PodChaos
+metadata:
+  name: kafka-consumer-restart
+  namespace: acgs2-chaos
+spec:
+  action: pod-kill
+  mode: one
+  selector:
+    labelSelectors:
+      "app": "kafka"
+  duration: "5s"
+  scheduler:
+    cron: "@every 1h"

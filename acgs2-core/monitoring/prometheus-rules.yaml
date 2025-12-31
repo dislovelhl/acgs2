@@ -1,0 +1,45 @@
+groups:
+  - name: acgs2-security-alerts
+    rules:
+      - alert: HighMACIDenials
+        expr: increase(acgs2_maci_denials_total[5m]) > 50
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High rate of MACI denials detected ({{ $value }} per 5m)"
+          description: "Agent role separation violations are occurring at an elevated rate. Possible Gödel bypass attempt or misconfiguration."
+
+      - alert: TLSHandshakeFailures
+        expr: increase(acgs2_tls_handshake_errors_total[5m]) > 0
+        for: 0m
+        labels:
+          severity: critical
+        annotations:
+          summary: "TLS handshake failures detected"
+          description: "Secure communication between agents and core services (OPA/Kafka/Redis) is failing."
+
+      - alert: OPAServiceUnavailable
+        expr: acgs2_opa_health_status == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "OPA Service Unavailable"
+          description: "OPA service is not responding to health checks. System is in FAIL-CLOSED mode."
+
+  - name: acgs2-slo-alerts
+    rules:
+      - alert: SLOErrorBudgetBurnRate
+        expr: |
+          (
+            sum(rate(acgs2_request_errors_total{job="agent-bus"}[1h]))
+            /
+            sum(rate(acgs2_request_total{job="agent-bus"}[1h]))
+          ) > (1 - 0.9999) * 2
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "SLO Error Budget burning fast"
+          description: "The 99.99% SLO error budget is burning at 2x the sustainable rate over the last hour."

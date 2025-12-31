@@ -197,3 +197,8 @@ class BusConfiguration:
             "has_custom_processor": self.processor is not None,
             "has_metering_config": self.metering_config is not None,
         }
+try:
+    from shared.config import settings
+except ImportError:
+    settings = BusConfiguration()  # Use as fallback if shared settings not available
+

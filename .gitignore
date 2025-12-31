@@ -28,3 +28,20 @@ coverage.xml
 # Pytest
 .pytest_cache/
 pytest_*.log
+
+# Large test result files
+test_results*.txt
+test_output.txt
+
+# Backup files
+acgs2-audit-backup-*.tar.gz
+
+# Virtual environments (additional patterns)
+venv/
+enhanced_agent_bus/venv/
+acgs2-core/enhanced_agent_bus/venv/
+
+# Large binaries in virtual environments
+**/venv/bin/z3
+**/venv/**/*.so
+**/venv/**/*.pyd

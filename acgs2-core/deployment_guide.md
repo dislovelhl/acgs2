@@ -1,28 +1,81 @@
-# ACGS-2 Deployment Portal
+# ACGS-2 Deployment Guide (v2.3.0)
 
-> **Constitutional Hash**: `cdd01ef066bc6cf2`
-> **Version**: 2.1.0
-> **Status**: Stable
-> **Last Updated**: 2025-12-20
+> **Constitutional Hash**: `cdd01ef066bc6cf2`  
+> **Version**: 2.3.0 (Phase 3.6 Complete)  
+> **Perf Targets**: P99 <5ms, 99.8% tests, 100% cov  
+> **Last Updated**: 2025-12-31
 
-This document serves as the primary entry point for deploying the ACGS-2 system across various environments.
+## Docker Compose (Local/Dev)
 
-## 🚀 Production Deployment Guides
-For enterprise-grade production environments (AWS/GCP), please refer to the detailed guides below:
+Updated v3.9+ with limits/health/TLS.
 
-- [English Enterprise Deployment Guide](docs/DEPLOYMENT_GUIDE.md)
-- [中文企业级部署指南](docs/DEPLOYMENT_GUIDE_CN.md)
+```yaml
+version: '3.9'
+services:
+  rust-message-bus:
+    build:
+      context: ./enhanced_agent_bus/rust
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    user: "1000:1000"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+    networks:
+      - acgs2-net
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+  opa:
+    image: openpolicyagent/opa:latest
+    ports:
+      - "8181:8181"
+    command: run --server /policies
+    volumes:
+      - ./policies/rego:/policies
+```
 
-## 💻 Local Development
-For local testing and development setup:
+**Quickstart**:
+```bash
+docker compose up -d
+docker compose logs -f rust-message-bus
+```
 
-- See the [Quick Start section in README.md](README.md#快速上手)
-- See [docker-compose.yml](docker-compose.yml) for service orchestration.
+## Helm (Production)
 
-## 🛠️ Specialized infrastructure
-- [Kubernetes manifests](k8s/)
-- [Terraform modules](deploy/terraform/)
-- [Monitoring stack](monitoring/)
+RBAC/networkPolicy enabled.
 
----
-*Last Updated: 2025-12-20*
+```bash
+helm repo add acgs2 https://charts.acgs2.io
+helm install acgs2 ./deploy/helm/acgs2 -n acgs2 --create-namespace \
+  --set image.tag=2.3.0 \
+  --set resources.requests.cpu=500m \
+  --set resources.requests.memory=1Gi \
+  --set rbac.enabled=true \
+  --set networkPolicy.enabled=true
+```
+
+**Values** [`deploy/helm/acgs2/values.yaml`](deploy/helm/acgs2/values.yaml):
+- TLS: cert-manager internal certs
+- Limits: CPU 500m, Mem 1Gi
+- Healthchecks: readiness/liveness probes
+
+## Verification
+
+```bash
+kubectl get pods -n acgs2
+curl http://localhost:8080/health  # docker
+kubectl port-forward svc/rust-message-bus 8080:8080 -n acgs2  # k8s
+```
+
+See [C4 Container](C4-Documentation/c4-container-acgs2.md).

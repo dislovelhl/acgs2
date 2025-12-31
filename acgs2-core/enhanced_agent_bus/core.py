@@ -17,8 +17,7 @@ try:
         reset_agent_bus,
     )
     from .message_processor import MessageProcessor
-except ImportError:
-    # Fallback for direct execution or testing
+except (ImportError, ValueError):
     from agent_bus import (  # type: ignore
         DEFAULT_REDIS_URL,
         EnhancedAgentBus,

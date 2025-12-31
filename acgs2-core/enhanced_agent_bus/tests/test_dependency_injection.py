@@ -406,7 +406,7 @@ class TestEnhancedAgentBusDI:
         await bus.register_agent("agent-1", capabilities=["compute"])
 
         # Verify agent exists in injected registry
-        assert await registry.exists("agent-1") is False  # Legacy dict still used
+        assert await registry.exists("agent-1") is True  # Registry is now correctly engaged
 
         # But legacy interface works
         assert "agent-1" in bus.get_registered_agents()
