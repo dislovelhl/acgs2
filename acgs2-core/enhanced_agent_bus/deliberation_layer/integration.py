@@ -18,7 +18,7 @@ from datetime import datetime, timezone
 from typing import Any, Callable, Dict, Optional
 
 try:
-    from ..models import CONSTITUTIONAL_HASH, AgentMessage, MessageStatus
+    from ..models import AgentMessage, MessageStatus
 except ImportError:
     # Fallback for direct execution or testing
     from models import AgentMessage, MessageStatus  # type: ignore
@@ -30,7 +30,7 @@ try:
     # Try relative imports first (package context)
     from .adaptive_router import get_adaptive_router
     from .deliberation_queue import DeliberationStatus, VoteType, get_deliberation_queue
-    from .impact_scorer import calculate_message_impact, get_impact_scorer
+    from .impact_scorer import get_impact_scorer
     from .interfaces import (
         AdaptiveRouterProtocol,
         DeliberationQueueProtocol,
@@ -45,9 +45,6 @@ try:
         GuardDecision,
         GuardResult,
         OPAGuard,
-        ReviewResult,
-        SignatureResult,
-        get_opa_guard,
     )
     from .redis_integration import get_redis_deliberation_queue, get_redis_voting_system
 except (ImportError, ValueError):
@@ -61,10 +58,7 @@ except (ImportError, ValueError):
             VoteType,
             get_deliberation_queue,
         )
-        from deliberation_layer.impact_scorer import (  # type: ignore
-            calculate_message_impact,
-            get_impact_scorer,
-        )
+        from deliberation_layer.impact_scorer import get_impact_scorer  # type: ignore
         from deliberation_layer.interfaces import (  # type: ignore
             AdaptiveRouterProtocol,
             DeliberationQueueProtocol,
@@ -79,9 +73,6 @@ except (ImportError, ValueError):
             GuardDecision,
             GuardResult,
             OPAGuard,
-            ReviewResult,
-            SignatureResult,
-            get_opa_guard,
         )
         from deliberation_layer.redis_integration import (  # type: ignore
             get_redis_deliberation_queue,
@@ -95,7 +86,8 @@ except (ImportError, ValueError):
         )
         raise RuntimeError(
             "CRITICAL SECURITY FAILURE: Deliberation Layer dependencies are missing. "
-            "System is configured to fail-closed to prevent insecure operation with mock components."
+            "System is configured to fail-closed to prevent insecure operation "
+            "with mock components."
         ) from e
 
 
@@ -965,3 +957,13 @@ def get_deliberation_layer() -> DeliberationLayer:
     if _deliberation_layer is None:
         _deliberation_layer = DeliberationLayer()
     return _deliberation_layer
+
+
+def reset_deliberation_layer() -> None:
+    """Reset the global deliberation layer instance.
+
+    Used primarily for test isolation to prevent state leakage between tests.
+    Constitutional Hash: cdd01ef066bc6cf2
+    """
+    global _deliberation_layer
+    _deliberation_layer = None
