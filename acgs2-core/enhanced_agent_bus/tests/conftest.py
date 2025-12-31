@@ -379,6 +379,47 @@ def reset_singletons():
     if hasattr(_core, "reset_agent_bus"):
         _core.reset_agent_bus()
 
+    # Reset deliberation layer singleton
+    try:
+        from deliberation_layer.integration import reset_deliberation_layer
+
+        reset_deliberation_layer()
+    except ImportError:
+        try:
+            from enhanced_agent_bus.deliberation_layer.integration import reset_deliberation_layer
+
+            reset_deliberation_layer()
+        except ImportError:
+            pass  # Deliberation layer not available
+
+    # Reset adaptive router singleton (prevents mock pollution between tests)
+    try:
+        from deliberation_layer.adaptive_router import reset_adaptive_router
+
+        reset_adaptive_router()
+    except ImportError:
+        try:
+            from enhanced_agent_bus.deliberation_layer.adaptive_router import reset_adaptive_router
+
+            reset_adaptive_router()
+        except ImportError:
+            pass  # Adaptive router not available
+
+    # Reset deliberation queue singleton (prevents mock pollution between tests)
+    try:
+        from deliberation_layer.deliberation_queue import reset_deliberation_queue
+
+        reset_deliberation_queue()
+    except ImportError:
+        try:
+            from enhanced_agent_bus.deliberation_layer.deliberation_queue import (
+                reset_deliberation_queue,
+            )
+
+            reset_deliberation_queue()
+        except ImportError:
+            pass  # Deliberation queue not available
+
 
 # === Rust Testing Support ===
 

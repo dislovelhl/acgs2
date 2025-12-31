@@ -1,6 +1,8 @@
 """
 ACGS-2 Deliberation Layer - Adaptive Router
 Routes messages based on impact scores to appropriate processing lanes.
+
+Constitutional Hash: cdd01ef066bc6cf2
 """
 
 import logging
@@ -387,3 +389,13 @@ def get_adaptive_router() -> AdaptiveRouter:
     if _adaptive_router is None:
         _adaptive_router = AdaptiveRouter()
     return _adaptive_router
+
+
+def reset_adaptive_router() -> None:
+    """Reset the global adaptive router instance.
+
+    Used primarily for test isolation to prevent state leakage between tests.
+    Constitutional Hash: cdd01ef066bc6cf2
+    """
+    global _adaptive_router
+    _adaptive_router = None

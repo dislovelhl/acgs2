@@ -398,6 +398,16 @@ def get_deliberation_queue(persistence_path: Optional[str] = None) -> Deliberati
     return _deliberation_queue
 
 
+def reset_deliberation_queue() -> None:
+    """Reset the global deliberation queue instance.
+
+    Used primarily for test isolation to prevent state leakage between tests.
+    Constitutional Hash: cdd01ef066bc6cf2
+    """
+    global _deliberation_queue
+    _deliberation_queue = None
+
+
 __all__ = [
     "DeliberationStatus",
     "VoteType",
