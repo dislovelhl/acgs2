@@ -84,6 +84,9 @@ DeliberationItem = DeliberationTask
 
 logger = logging.getLogger(__name__)
 
+# Global registry of all queue instances for cleanup
+_all_queue_instances: list = []
+
 
 class DeliberationQueue:
     """
@@ -113,6 +116,9 @@ class DeliberationQueue:
         }
         self._lock = asyncio.Lock()
         self._shutdown = False  # Shutdown flag for clean task termination
+        self._shutdown_event = asyncio.Event()  # Event for immediate task wakeup on shutdown
+        # Register this instance for global cleanup
+        _all_queue_instances.append(self)
         if self.persistence_path:
             self._load_tasks()
 
@@ -192,7 +198,14 @@ class DeliberationQueue:
             while elapsed < task.timeout_seconds:
                 if self._shutdown:
                     return  # Exit cleanly on shutdown
-                await asyncio.sleep(check_interval)
+                # Wait for either the check interval or shutdown event
+                try:
+                    await asyncio.wait_for(self._shutdown_event.wait(), timeout=check_interval)
+                    # Shutdown event was set
+                    return
+                except asyncio.TimeoutError:
+                    # Normal timeout, continue monitoring
+                    pass
                 elapsed += check_interval
                 # Check if task was resolved externally
                 if task.is_complete:
@@ -219,6 +232,7 @@ class DeliberationQueue:
     async def stop(self):
         """Stop all background tasks cleanly."""
         self._shutdown = True  # Signal all monitor tasks to exit
+        self._shutdown_event.set()  # Wake up all waiting tasks immediately
         tasks_to_cancel = list(self.processing_tasks)  # Copy to avoid modification during iteration
         for task in tasks_to_cancel:
             if not task.done():
@@ -402,10 +416,61 @@ def reset_deliberation_queue() -> None:
     """Reset the global deliberation queue instance.
 
     Used primarily for test isolation to prevent state leakage between tests.
+    Properly cleans up any pending async tasks to avoid 'Task was destroyed but pending' warnings.
     Constitutional Hash: cdd01ef066bc6cf2
     """
     global _deliberation_queue
+    if _deliberation_queue is not None:
+        # Signal shutdown to stop monitor tasks gracefully
+        _deliberation_queue._shutdown = True
+        _deliberation_queue._shutdown_event.set()  # Wake up waiting tasks immediately
+        # Cancel all pending processing tasks
+        tasks_to_cancel = list(_deliberation_queue.processing_tasks)
+        for task in tasks_to_cancel:
+            if not task.done():
+                task.cancel()
+        # Try to process cancellations if there's a running event loop
+        if tasks_to_cancel:
+            try:
+                loop = asyncio.get_running_loop()
+                # If there's a running loop, schedule cleanup
+                loop.call_soon(lambda: None)  # Just trigger loop iteration
+            except RuntimeError:
+                # No running loop - try to create one temporarily to process cancellations
+                try:
+                    loop = asyncio.new_event_loop()
+                    asyncio.set_event_loop(loop)
+                    # Brief run to process cancellations
+                    loop.run_until_complete(
+                        asyncio.gather(*tasks_to_cancel, return_exceptions=True)
+                    )
+                    loop.close()
+                except Exception:
+                    pass  # Best effort cleanup
+        # Clear the task list
+        _deliberation_queue.processing_tasks.clear()
     _deliberation_queue = None
+
+
+def cleanup_all_deliberation_queues() -> None:
+    """Clean up all DeliberationQueue instances to prevent async task warnings.
+
+    This function should be called at test teardown to properly stop all
+    queue instances, not just the singleton. Essential for tests that create
+    multiple queue instances directly.
+    Constitutional Hash: cdd01ef066bc6cf2
+    """
+    global _all_queue_instances
+    for queue in _all_queue_instances:
+        if queue is not None:
+            queue._shutdown = True
+            queue._shutdown_event.set()
+            tasks_to_cancel = list(queue.processing_tasks)
+            for task in tasks_to_cancel:
+                if not task.done():
+                    task.cancel()
+            queue.processing_tasks.clear()
+    _all_queue_instances.clear()
 
 
 __all__ = [
@@ -416,4 +481,6 @@ __all__ = [
     "AgentVote",
     "DeliberationQueue",
     "get_deliberation_queue",
+    "reset_deliberation_queue",
+    "cleanup_all_deliberation_queues",
 ]

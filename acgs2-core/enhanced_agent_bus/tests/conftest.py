@@ -369,12 +369,38 @@ def performance_messages(valid_message) -> list:
 # === Cleanup Fixtures ===
 
 
+async def _async_cleanup_deliberation_queue():
+    """Async helper to properly stop deliberation queue tasks."""
+    try:
+        from deliberation_layer.deliberation_queue import _deliberation_queue
+    except ImportError:
+        try:
+            from enhanced_agent_bus.deliberation_layer.deliberation_queue import _deliberation_queue
+        except ImportError:
+            return
+    if _deliberation_queue is not None:
+        await _deliberation_queue.stop()
+
+
 @pytest.fixture(autouse=True)
-def reset_singletons():
+def reset_singletons(request):
     """Reset singleton instances between tests."""
     # Reset any global state that might persist between tests
     yield
     # Cleanup after test
+
+    # For async tests, try to properly stop the deliberation queue first
+    if asyncio.iscoroutinefunction(request.node.obj) or hasattr(request.node.obj, "__wrapped__"):
+        try:
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                # Schedule cleanup in running loop
+                loop.create_task(_async_cleanup_deliberation_queue())
+            else:
+                loop.run_until_complete(_async_cleanup_deliberation_queue())
+        except Exception:
+            pass  # Best effort async cleanup
+
     # Reset core module singletons if they have reset functions
     if hasattr(_core, "reset_agent_bus"):
         _core.reset_agent_bus()
@@ -405,17 +431,24 @@ def reset_singletons():
         except ImportError:
             pass  # Adaptive router not available
 
-    # Reset deliberation queue singleton (prevents mock pollution between tests)
+    # Reset deliberation queue singleton and cleanup all instances
+    # (prevents mock pollution and async task warnings between tests)
     try:
-        from deliberation_layer.deliberation_queue import reset_deliberation_queue
+        from deliberation_layer.deliberation_queue import (
+            cleanup_all_deliberation_queues,
+            reset_deliberation_queue,
+        )
 
+        cleanup_all_deliberation_queues()  # Clean up all instances first
         reset_deliberation_queue()
     except ImportError:
         try:
             from enhanced_agent_bus.deliberation_layer.deliberation_queue import (
+                cleanup_all_deliberation_queues,
                 reset_deliberation_queue,
             )
 
+            cleanup_all_deliberation_queues()  # Clean up all instances first
             reset_deliberation_queue()
         except ImportError:
             pass  # Deliberation queue not available
