@@ -5,7 +5,8 @@ Constitutional Hash: cdd01ef066bc6cf2
 
 from typing import Optional
 
-from pydantic import BaseSettings
+from pydantic import Field
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # Constitutional compliance constant
 CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
@@ -56,11 +57,10 @@ class Settings(BaseSettings):
     vault_cache_ttl: int = 300  # 5 minutes
     vault_audit_enabled: bool = True
 
-    class Config:
-        """Pydantic configuration"""
-
-        env_prefix = "POLICY_REGISTRY_"
-        case_sensitive = False
+    model_config = SettingsConfigDict(
+        env_prefix="POLICY_REGISTRY_",
+        case_sensitive=False,
+    )
 
 
 # Global settings instance

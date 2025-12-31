@@ -21,22 +21,22 @@ class Settings:
     debug: bool = os.getenv("DEBUG", "false").lower() == "true"
 
     # API settings
-    host: str = os.getenv("API_HOST", "0.0.0.0")
-    port: int = int(os.getenv("API_PORT", "8007"))
+    host: str = os.getenv("ACGS_CODE_ANALYSIS_HOST", "0.0.0.0")
+    port: int = int(os.getenv("ACGS_CODE_ANALYSIS_PORT", "8007"))
     api_prefix: str = "/api/v1"
 
     # PostgreSQL settings (ACGS standard port: 5439)
-    postgresql_host: str = os.getenv("POSTGRESQL_HOST", "localhost")
-    postgresql_port: int = int(os.getenv("POSTGRESQL_PORT", "5439"))
-    postgresql_database: str = os.getenv("POSTGRESQL_DATABASE", "acgs_code_analysis")
-    postgresql_user: str = os.getenv("POSTGRESQL_USER", "acgs_user")
-    postgresql_password: str = os.getenv("POSTGRESQL_PASSWORD", "")
+    postgresql_host: str = os.getenv("ACGS_CODE_ANALYSIS_POSTGRES_HOST", "localhost")
+    postgresql_port: int = int(os.getenv("ACGS_CODE_ANALYSIS_POSTGRES_PORT", "5439"))
+    postgresql_database: str = os.getenv("ACGS_CODE_ANALYSIS_POSTGRES_DB", "acgs_code_analysis")
+    postgresql_user: str = os.getenv("ACGS_CODE_ANALYSIS_POSTGRES_USER", "acgs_user")
+    postgresql_password: str = os.getenv("ACGS_CODE_ANALYSIS_POSTGRES_PASSWORD", "")
 
     # Redis settings (ACGS standard port: 6389)
-    redis_host: str = os.getenv("REDIS_HOST", "localhost")
-    redis_port: int = int(os.getenv("REDIS_PORT", "6389"))
-    redis_db: int = int(os.getenv("REDIS_DB", "0"))
-    redis_password: str = os.getenv("REDIS_PASSWORD", "")
+    redis_host: str = os.getenv("ACGS_CODE_ANALYSIS_REDIS_HOST", "localhost")
+    redis_port: int = int(os.getenv("ACGS_CODE_ANALYSIS_REDIS_PORT", "6389"))
+    redis_db: int = int(os.getenv("ACGS_CODE_ANALYSIS_REDIS_DB", "0"))
+    redis_password: str = os.getenv("ACGS_CODE_ANALYSIS_REDIS_PASSWORD", "")
 
     # Constitutional compliance
     constitutional_hash: str = CONSTITUTIONAL_HASH

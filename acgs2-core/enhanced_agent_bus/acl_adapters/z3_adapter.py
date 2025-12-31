@@ -159,7 +159,7 @@ class Z3Adapter(ACLAdapter[Z3Request, Z3Response]):
             )
 
         # Run Z3 in thread pool to avoid blocking event loop
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         return await loop.run_in_executor(None, self._run_z3_sync, request)
 
     def _run_z3_sync(self, request: Z3Request) -> Z3Response:
@@ -181,8 +181,7 @@ class Z3Adapter(ACLAdapter[Z3Request, Z3Response]):
             except z3.Z3Exception:
                 # Fallback: treat as single boolean expression
                 logger.warning(
-                    f"[{CONSTITUTIONAL_HASH}] Failed to parse SMT-LIB2, "
-                    f"treating as expression"
+                    f"[{CONSTITUTIONAL_HASH}] Failed to parse SMT-LIB2, " f"treating as expression"
                 )
                 return Z3Response(
                     result="unknown",

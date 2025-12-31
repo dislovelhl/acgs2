@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 from typing import Optional
 from uuid import uuid4
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, field_serializer, Field
 
 
 class PolicySignature(BaseModel):
@@ -16,21 +16,17 @@ class PolicySignature(BaseModel):
     policy_id: str = Field(...)
     version: str = Field(...)
     public_key: str = Field(...)  # Base64 encoded Ed25519 public key
-    signature: str = Field(...)   # Base64 encoded Ed25519 signature
+    signature: str = Field(...)  # Base64 encoded Ed25519 signature
     algorithm: str = Field(default="Ed25519")
     key_fingerprint: Optional[str] = Field(None)  # SHA256 fingerprint of public key
 
     # Timestamps
-    signed_at: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc)
-    )
+    signed_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     expires_at: Optional[datetime] = Field(None)
 
-    class Config:
-        """Pydantic configuration"""
-        json_encoders = {
-            datetime: lambda v: v.isoformat()
-        }
+    @field_serializer("signed_at", "expires_at", when_used="unless-none")
+    def serialize_datetimes(self, value: datetime) -> str:
+        return value.isoformat()
 
     def __init__(self, **data):
         super().__init__(**data)

@@ -11,17 +11,23 @@ import logging
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
-import redis.asyncio as redis
+# redis import moved to RedisAgentRegistry._get_client to prevent import-time failures
 
 try:
     from .interfaces import AgentRegistry, MessageRouter, ProcessingStrategy, ValidationStrategy
     from .models import CONSTITUTIONAL_HASH, AgentMessage, MessageStatus
     from .validators import ValidationResult
-except ImportError:
-    from interfaces import (  # type: ignore
-        AgentRegistry,
-    )
-    from models import CONSTITUTIONAL_HASH, AgentMessage  # type: ignore
+except ImportError as e:
+    # Only fallback if it's specifically a relative import failure,
+    # not if it's an ImportError from within the module itself
+    if "relative import" in str(e) or "attempted relative import" in str(e):
+        try:
+            from interfaces import AgentRegistry  # type: ignore
+            from models import CONSTITUTIONAL_HASH, AgentMessage  # type: ignore
+        except ImportError:
+            raise e
+    else:
+        raise e
 
 # Import validation and processing strategies from extracted modules
 try:
@@ -174,8 +180,16 @@ class RedisAgentRegistry:
         self._redis: Optional[redis.Redis] = None
         self._pool: Optional[redis.ConnectionPool] = None
 
-    async def _get_client(self) -> redis.Redis:
+    async def _get_client(self) -> Any:
         """Get or create the Redis client with connection pool limits."""
+        try:
+            import redis.asyncio as redis
+        except ImportError:
+            logger.error("redis-py not installed. RedisAgentRegistry requires the 'redis' package.")
+            raise ImportError(
+                "RedisAgentRegistry requires 'redis' package. " "Install with 'pip install redis'"
+            )
+
         if self._redis is None:
             # Create connection pool with configured limits
             self._pool = redis.ConnectionPool.from_url(

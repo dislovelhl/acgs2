@@ -7,11 +7,12 @@ from enum import Enum
 from typing import Optional
 from uuid import uuid4
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, field_serializer, Field
 
 
 class KeyAlgorithm(str, Enum):
     """Supported cryptographic algorithms"""
+
     ED25519 = "Ed25519"
     RSA = "RSA"
     ECDSA = "ECDSA"
@@ -19,6 +20,7 @@ class KeyAlgorithm(str, Enum):
 
 class KeyStatus(str, Enum):
     """Key status enumeration"""
+
     ACTIVE = "active"
     ROTATED = "rotated"
     COMPROMISED = "compromised"
@@ -37,17 +39,13 @@ class KeyPair(BaseModel):
     metadata: dict = Field(default_factory=dict)
 
     # Timestamps
-    created_at: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc)
-    )
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     expires_at: Optional[datetime] = Field(None)
     rotated_at: Optional[datetime] = Field(None)
 
-    class Config:
-        """Pydantic configuration"""
-        json_encoders = {
-            datetime: lambda v: v.isoformat()
-        }
+    @field_serializer("created_at", "expires_at", "rotated_at", when_used="unless-none")
+    def serialize_datetimes(self, value: datetime) -> str:
+        return value.isoformat()
 
     def __init__(self, **data):
         super().__init__(**data)

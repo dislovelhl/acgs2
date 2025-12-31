@@ -32,8 +32,8 @@ Enforces strict role separation: **A Judicial step cannot be performed by the sa
 
 ## Performance Targets
 
-| Metric      | Target     |
-| :---------- | :--------- |
-| P99 Latency | <0.3ms     |
-| Throughput  | >6,000 RPS |
-| Parallelism | Max async  |
+| Metric      | Target    |
+| :---------- | :-------- |
+| P99 Latency | 0.278ms   |
+| Throughput  | 6,310 RPS |
+| Parallelism | Max async |

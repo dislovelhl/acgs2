@@ -23,10 +23,10 @@ except ImportError:
     JsonOutputParser = None
 
 try:
-    from ..models import AgentMessage
+    from ..models import AgentMessage, get_enum_value
 except ImportError:
     # Fallback for direct execution or testing
-    from models import AgentMessage  # type: ignore
+    from models import AgentMessage, get_enum_value  # type: ignore
 
 
 logger = logging.getLogger(__name__)
@@ -442,9 +442,7 @@ Provide your analysis as valid JSON only:
             reasoning.append("Step 2d: No elevated risk indicators found")
 
         # Priority-based escalation
-        priority_value = (
-            message.priority.value if hasattr(message.priority, "value") else str(message.priority)
-        )
+        priority_value = get_enum_value(message.priority)
         if priority_value in ["CRITICAL", "critical", "4"]:
             if risk_level == "low":
                 risk_level = "medium"

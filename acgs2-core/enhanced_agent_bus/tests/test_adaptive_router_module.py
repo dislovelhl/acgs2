@@ -31,9 +31,16 @@ def _load_module(name, path):
 _models = _load_module("_adaptive_test_models", os.path.join(enhanced_agent_bus_dir, "models.py"))
 
 
-# Create mock parent package
+# Create mock parent package that can function as a Python package
 class MockEnhancedAgentBus:
-    pass
+    """Mock package that provides all required module attributes for import system."""
+
+    __path__ = [enhanced_agent_bus_dir]  # Required for package submodule imports
+    __name__ = "enhanced_agent_bus"
+    __file__ = os.path.join(enhanced_agent_bus_dir, "__init__.py")
+    __spec__ = None  # Mock spec
+    __loader__ = None
+    __package__ = "enhanced_agent_bus"
 
 
 mock_parent = MockEnhancedAgentBus()

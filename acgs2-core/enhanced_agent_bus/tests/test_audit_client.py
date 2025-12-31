@@ -220,8 +220,11 @@ class TestGetStats:
 
             stats = await client.get_stats()
 
-            assert stats["total_records"] == 1000
-            assert stats["valid_count"] == 950
+            # Enhanced API returns structured response with remote_stats
+            assert stats["remote_stats"]["total_records"] == 1000
+            assert stats["remote_stats"]["valid_count"] == 950
+            assert "client_stats" in stats
+            assert stats["constitutional_hash"] == "cdd01ef066bc6cf2"
             mock_get.assert_called_once_with("http://localhost:8001/stats")
 
     @pytest.mark.asyncio
@@ -250,7 +253,10 @@ class TestGetStats:
 
             stats = await client.get_stats()
 
-            assert stats == {}
+            # Enhanced API still returns client stats even when remote fails
+            assert "client_stats" in stats
+            assert stats["remote_stats"] == {}
+            assert stats["constitutional_hash"] == "cdd01ef066bc6cf2"
 
     @pytest.mark.asyncio
     async def test_get_stats_timeout_error(self) -> None:
@@ -262,7 +268,10 @@ class TestGetStats:
 
             stats = await client.get_stats()
 
-            assert stats == {}
+            # Enhanced API still returns client stats even when remote times out
+            assert "client_stats" in stats
+            assert stats["remote_stats"] == {}
+            assert stats["constitutional_hash"] == "cdd01ef066bc6cf2"
 
     @pytest.mark.asyncio
     async def test_get_stats_json_decode_error(self) -> None:
@@ -277,7 +286,10 @@ class TestGetStats:
 
             stats = await client.get_stats()
 
-            assert stats == {}
+            # Enhanced API still returns client stats even when JSON decode fails
+            assert "client_stats" in stats
+            assert stats["remote_stats"] == {}
+            assert stats["constitutional_hash"] == "cdd01ef066bc6cf2"
 
 
 # =============================================================================
@@ -345,7 +357,9 @@ class TestAuditClientIntegration:
         with patch.object(client.client, "get", new_callable=AsyncMock) as mock_get:
             mock_get.return_value = mock_response
             stats = await client.get_stats()
-            assert stats.get("total_records") == 1
+            # Enhanced API nests remote stats inside remote_stats key
+            assert stats["remote_stats"].get("total_records") == 1
+            assert stats["client_stats"]["successful"] == 1
 
         # Close the client
         with patch.object(client.client, "aclose", new_callable=AsyncMock):

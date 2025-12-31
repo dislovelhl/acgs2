@@ -5,6 +5,7 @@ Constitutional Hash: cdd01ef066bc6cf2
 Extended tests to increase policy_client.py coverage.
 """
 
+import time
 from collections import OrderedDict
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -218,12 +219,10 @@ class TestPolicyRegistryClientGetPolicyContent:
     @pytest.mark.asyncio
     async def test_get_policy_content_returns_cached(self, initialized_client):
         """get_policy_content returns cached content if fresh."""
-        import asyncio
-
         # Pre-populate cache
         initialized_client._cache["test-policy:default"] = {
             "content": {"rule": "test"},
-            "timestamp": asyncio.get_event_loop().time(),
+            "timestamp": time.monotonic(),
         }
 
         result = await initialized_client.get_policy_content("test-policy")

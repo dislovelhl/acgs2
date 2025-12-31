@@ -6,6 +6,7 @@ Comprehensive tests for health aggregation service.
 """
 
 import asyncio
+import time
 from datetime import datetime, timedelta, timezone
 
 import pytest
@@ -568,14 +569,14 @@ class TestFireAndForgetPattern:
 
         mock_registry.add_breaker("service1", pybreaker.STATE_CLOSED)
 
-        start_time = asyncio.get_event_loop().time()
+        start_time = time.monotonic()
         await aggregator.start()
 
         # Wait for health check
         await asyncio.sleep(0.2)
 
         await aggregator.stop()
-        elapsed = asyncio.get_event_loop().time() - start_time
+        elapsed = time.monotonic() - start_time
 
         # Should complete quickly even with slow callback
         assert elapsed < 1.0  # Should be much faster than callback duration

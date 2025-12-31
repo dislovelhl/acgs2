@@ -39,6 +39,49 @@ class CircuitBreakerConfig:
     listeners: list = None  # Event listeners
 
 
+# Optimized service-specific configurations based on service characteristics
+# These values are tuned based on expected failure patterns and recovery times
+OPTIMIZED_CIRCUIT_CONFIGS = {
+    # Fast-fail services: Quick detection, fast recovery
+    # OPA/Policy services have transient failures from network issues
+    "adaptive_governance": CircuitBreakerConfig(
+        fail_max=3,  # Lower threshold for fast failover
+        reset_timeout=15,  # Quick recovery attempt
+    ),
+    "policy_registry": CircuitBreakerConfig(
+        fail_max=3,
+        reset_timeout=15,
+    ),
+    "opa_client": CircuitBreakerConfig(
+        fail_max=3,
+        reset_timeout=15,
+    ),
+    # Critical slow services: Higher tolerance, longer recovery
+    # These services are essential but may take longer to respond
+    "audit_ledger": CircuitBreakerConfig(
+        fail_max=7,  # More tolerance for critical service
+        reset_timeout=60,  # Longer recovery for blockchain
+    ),
+    "deliberation_layer": CircuitBreakerConfig(
+        fail_max=7,
+        reset_timeout=45,  # AI inference can be slow
+    ),
+    # Standard services: Default balanced configuration
+    "rust_message_bus": CircuitBreakerConfig(
+        fail_max=5,
+        reset_timeout=30,
+    ),
+    "constraint_generation": CircuitBreakerConfig(
+        fail_max=5,
+        reset_timeout=30,
+    ),
+    "vector_search": CircuitBreakerConfig(
+        fail_max=5,
+        reset_timeout=30,
+    ),
+}
+
+
 class ACGSCircuitBreakerListener(pybreaker.CircuitBreakerListener):
     """
     ACGS-2 Circuit Breaker Listener with constitutional compliance logging.
@@ -158,13 +201,23 @@ def get_circuit_breaker(
     """
     Get or create a circuit breaker for a service.
 
+    Uses optimized service-specific configurations from OPTIMIZED_CIRCUIT_CONFIGS
+    if no explicit config is provided and the service has an optimized config.
+
     Args:
         service_name: Name of the service
-        config: Optional configuration
+        config: Optional configuration (overrides optimized defaults)
 
     Returns:
         Circuit breaker instance
     """
+    # Use optimized config if available and no explicit config provided
+    if config is None and service_name in OPTIMIZED_CIRCUIT_CONFIGS:
+        config = OPTIMIZED_CIRCUIT_CONFIGS[service_name]
+        logger.debug(
+            f"[{CONSTITUTIONAL_HASH}] Using optimized config for '{service_name}': "
+            f"fail_max={config.fail_max}, reset_timeout={config.reset_timeout}"
+        )
     return _registry.get_or_create(service_name, config)
 
 
@@ -272,6 +325,7 @@ __all__ = [
     # Constants
     "CONSTITUTIONAL_HASH",
     "CORE_SERVICES",
+    "OPTIMIZED_CIRCUIT_CONFIGS",
     # Classes
     "CircuitState",
     "CircuitBreakerConfig",

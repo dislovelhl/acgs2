@@ -263,8 +263,25 @@ class RBACConfig:
         audit_all_decisions: bool = True,
         rate_limit_enabled: bool = True,
         rate_limits: Optional[Dict[Role, int]] = None,  # requests per minute
+        env: Optional[str] = None,
     ):
-        self.jwt_secret = jwt_secret or os.environ.get("JWT_SECRET", "dev-secret")
+        self.env = env or os.environ.get("APP_ENV", "development")
+        self.development_mode = self.env == "development"
+
+        # In production, jwt_secret must be provided or set in environment
+        # and it MUST NOT be 'dev-secret'
+        env_secret = os.environ.get("JWT_SECRET")
+        self.jwt_secret = jwt_secret or env_secret
+
+        if not self.development_mode:
+            if not self.jwt_secret:
+                raise ValueError("JWT_SECRET is mandatory in production environment")
+            if self.jwt_secret == "dev-secret":
+                raise ValueError("Insecure JWT_SECRET 'dev-secret' is forbidden in production")
+        elif not self.jwt_secret:
+            self.jwt_secret = "dev-secret"
+            logger.warning("Using default JWT_SECRET 'dev-secret' in development mode")
+
         self.jwt_algorithm = jwt_algorithm
         self.jwt_issuer = jwt_issuer
         self.verify_signature = verify_signature
@@ -296,8 +313,14 @@ class TokenValidator:
             HTTPException: If token is invalid
         """
         if not JWT_AVAILABLE:
-            # Simulate validation for development
-            return self._simulate_validation(token)
+            if self.config.development_mode:
+                return self._simulate_validation(token)
+            else:
+                logger.critical("PyJWT not installed in production environment")
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail="Authentication service misconfigured: JWT library unavailable",
+                )
 
         try:
             options = {

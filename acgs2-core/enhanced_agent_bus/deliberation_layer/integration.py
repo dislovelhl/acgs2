@@ -663,18 +663,19 @@ class DeliberationLayer(OPAGuardMixin):
             True if decision submitted successfully
         """
         try:
-            if isinstance(decision, DeliberationStatus):
-                deliberation_decision = decision
+            # Handle enum objects by extracting value (avoids cross-module enum identity issues)
+            if hasattr(decision, "value"):
+                decision_str = decision.value
             else:
-                decision_map = {
-                    "approved": DeliberationStatus.APPROVED,
-                    "rejected": DeliberationStatus.REJECTED,
-                    "escalated": DeliberationStatus.UNDER_REVIEW,
-                    "under_review": DeliberationStatus.UNDER_REVIEW,
-                }
-                deliberation_decision = decision_map.get(
-                    str(decision).lower(), DeliberationStatus.REJECTED
-                )
+                decision_str = str(decision).lower()
+
+            decision_map = {
+                "approved": DeliberationStatus.APPROVED,
+                "rejected": DeliberationStatus.REJECTED,
+                "escalated": DeliberationStatus.UNDER_REVIEW,
+                "under_review": DeliberationStatus.UNDER_REVIEW,
+            }
+            deliberation_decision = decision_map.get(decision_str, DeliberationStatus.REJECTED)
 
             success = await self.deliberation_queue.submit_human_decision(
                 item_id=item_id,

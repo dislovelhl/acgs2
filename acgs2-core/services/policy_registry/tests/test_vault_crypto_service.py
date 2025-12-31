@@ -168,8 +168,8 @@ class TestVaultCryptoServiceInitialize:
         """Test initialization with httpx client."""
         service = VaultCryptoService(config=vault_config)
 
-        with patch("app.services.vault_crypto_service.HTTPX_AVAILABLE", True):
-            with patch("app.services.vault_crypto_service.httpx") as mock_httpx:
+        with patch("app.services.vault_http_client.HTTPX_AVAILABLE", True):
+            with patch("app.services.vault_http_client.httpx") as mock_httpx:
                 # Create mock client
                 mock_client = MagicMock()
                 mock_httpx.AsyncClient.return_value = mock_client

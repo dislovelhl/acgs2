@@ -541,24 +541,28 @@ class ImpactScorer:
         if msg_type_val is None and context:
             msg_type_val = context.get("message_type")
 
-        if isinstance(msg_type_val, MessageType):
-            mt = msg_type_val
+        # Handle enum objects by extracting their value (handles cross-module enum identity issues)
+        if hasattr(msg_type_val, "value"):
+            msg_type_str = msg_type_val.value
         elif isinstance(msg_type_val, str):
-            try:
-                mt = MessageType(msg_type_val.lower())
-            except ValueError:
-                mt = MessageType.COMMAND
+            msg_type_str = msg_type_val.lower()
         else:
+            msg_type_str = "command"
+
+        # Convert to our MessageType enum for consistent comparison
+        try:
+            mt = MessageType(msg_type_str)
+        except ValueError:
             mt = MessageType.COMMAND
 
-        # High-impact message types
-        high_impact_types = [
-            MessageType.GOVERNANCE_REQUEST,
-            MessageType.CONSTITUTIONAL_VALIDATION,
-            MessageType.TASK_REQUEST,  # Sometimes critical
+        # High-impact message types - compare by value to avoid enum identity issues
+        high_impact_values = [
+            MessageType.GOVERNANCE_REQUEST.value,
+            MessageType.CONSTITUTIONAL_VALIDATION.value,
+            MessageType.TASK_REQUEST.value,  # Sometimes critical
         ]
 
-        return 0.8 if mt in high_impact_types else 0.2
+        return 0.8 if mt.value in high_impact_values else 0.2
 
     def validate_with_baseline(
         self, message_content: Dict[str, Any], baseline_scorer: "ImpactScorer"

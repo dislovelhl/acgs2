@@ -8,6 +8,7 @@ Tests for enhanced_agent_bus/policy_client.py
 import importlib.util
 import os
 import sys
+import time
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -131,12 +132,10 @@ class PolicyRegistryClientForTest:
             self._http_client = None
 
     async def get_policy_content(self, policy_id: str, client_id=None):
-        import asyncio
-
         cache_key = f"{policy_id}:{client_id or 'default'}"
         if cache_key in self._cache:
             cached = self._cache[cache_key]
-            if asyncio.get_event_loop().time() - cached["timestamp"] < self.cache_ttl:
+            if time.monotonic() - cached["timestamp"] < self.cache_ttl:
                 return cached["content"]
             else:
                 del self._cache[cache_key]
@@ -151,7 +150,7 @@ class PolicyRegistryClientForTest:
 
             self._cache[cache_key] = {
                 "content": content,
-                "timestamp": asyncio.get_event_loop().time(),
+                "timestamp": time.monotonic(),
             }
             return content
 
@@ -385,9 +384,7 @@ class TestPolicyRegistryClientGetPolicyContent:
 
         client._cache["test_policy:default"] = {"content": {"cached": True}, "timestamp": 1000.0}
 
-        with patch("asyncio.get_event_loop") as mock_loop:
-            mock_loop.return_value.time.return_value = 1100.0
-
+        with patch("time.monotonic", return_value=1100.0):
             result = await client.get_policy_content("test_policy")
 
             assert result == {"cached": True}
@@ -405,9 +402,7 @@ class TestPolicyRegistryClientGetPolicyContent:
 
         client._cache["test_policy:default"] = {"content": {"cached": True}, "timestamp": 1000.0}
 
-        with patch("asyncio.get_event_loop") as mock_loop:
-            mock_loop.return_value.time.return_value = 1500.0
-
+        with patch("time.monotonic", return_value=1500.0):
             result = await client.get_policy_content("test_policy")
 
             assert result == {"fresh": True}

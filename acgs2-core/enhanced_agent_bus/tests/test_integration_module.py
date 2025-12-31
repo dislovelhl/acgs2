@@ -36,9 +36,16 @@ if deliberation_layer_dir not in sys.path:
 _models = _load_module("models", os.path.join(enhanced_agent_bus_dir, "models.py"))
 
 
-# Create mock parent package
+# Create mock parent package that can function as a Python package
 class MockEnhancedAgentBus:
-    pass
+    """Mock package that provides all required module attributes for import system."""
+
+    __path__ = [enhanced_agent_bus_dir]  # Required for package submodule imports
+    __name__ = "enhanced_agent_bus"
+    __file__ = os.path.join(enhanced_agent_bus_dir, "__init__.py")
+    __spec__ = None  # Mock spec
+    __loader__ = None
+    __package__ = "enhanced_agent_bus"
 
 
 mock_parent = MockEnhancedAgentBus()
@@ -346,8 +353,10 @@ class TestHumanDecision:
         # First set the item to under_review status
         item = layer.deliberation_queue.queue.get(queued_item)
         if item:
-            # Use the already loaded module's DeliberationStatus
-            DeliberationStatus = _deliberation_queue.DeliberationStatus
+            # Get the DeliberationStatus from the same module as the queue class
+            # to avoid enum identity issues from different module loads
+            queue_module = sys.modules[type(layer.deliberation_queue).__module__]
+            DeliberationStatus = queue_module.DeliberationStatus
             item.status = DeliberationStatus.UNDER_REVIEW
 
             result = await layer.submit_human_decision(
@@ -364,8 +373,10 @@ class TestHumanDecision:
         """Test submitting rejected decision."""
         item = layer.deliberation_queue.queue.get(queued_item)
         if item:
-            # Use the already loaded module's DeliberationStatus
-            DeliberationStatus = _deliberation_queue.DeliberationStatus
+            # Get the DeliberationStatus from the same module as the queue class
+            # to avoid enum identity issues from different module loads
+            queue_module = sys.modules[type(layer.deliberation_queue).__module__]
+            DeliberationStatus = queue_module.DeliberationStatus
             item.status = DeliberationStatus.UNDER_REVIEW
 
             result = await layer.submit_human_decision(

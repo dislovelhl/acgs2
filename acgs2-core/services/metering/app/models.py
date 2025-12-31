@@ -10,7 +10,7 @@ from enum import Enum
 from typing import Any, Dict, Optional
 from uuid import UUID, uuid4
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, field_serializer, Field
 
 CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
 
@@ -64,8 +64,13 @@ class UsageEvent(BaseModel):
     # Metadata
     metadata: Dict[str, Any] = Field(default_factory=dict)
 
-    class Config:
-        json_encoders = {datetime: lambda v: v.isoformat(), UUID: str}
+    @field_serializer("timestamp")
+    def serialize_timestamp(self, value: datetime) -> str:
+        return value.isoformat()
+
+    @field_serializer("event_id")
+    def serialize_event_id(self, value: UUID) -> str:
+        return str(value)
 
 
 class UsageAggregation(BaseModel):
@@ -93,8 +98,13 @@ class UsageAggregation(BaseModel):
     # Constitutional validation
     constitutional_hash: str = CONSTITUTIONAL_HASH
 
-    class Config:
-        json_encoders = {datetime: lambda v: v.isoformat(), UUID: str}
+    @field_serializer("aggregation_id")
+    def serialize_aggregation_id(self, value: UUID) -> str:
+        return str(value)
+
+    @field_serializer("period_start", "period_end")
+    def serialize_period_datetimes(self, value: datetime) -> str:
+        return value.isoformat()
 
 
 class MeteringQuota(BaseModel):

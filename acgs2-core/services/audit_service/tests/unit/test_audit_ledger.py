@@ -6,14 +6,11 @@ from services.audit_service.core.audit_ledger import AuditLedger, ValidationResu
 async def ledger(tmp_path):
     """AuditLedger fixture with unique storage path to avoid state pollution"""
     storage_path = tmp_path / "test_ledger.json"
-    anchor_path = tmp_path / "test_anchor.json"
 
-    # We need to pass these to the constructor but currently AuditLedger
-    # has they hardcoded or and Anchor too.
-    # Let's see if we can patch them or if AuditLedger supports them.
+    # Create AuditLedger with test-specific persistence file
+    # Blockchain anchoring is handled internally via _anchor_manager or _legacy_anchor
     l = AuditLedger(batch_size=3)
     l.persistence_file = str(storage_path)
-    l.anchor.storage_path = str(anchor_path)
 
     await l.start()
     yield l

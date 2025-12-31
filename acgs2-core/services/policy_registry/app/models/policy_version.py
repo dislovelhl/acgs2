@@ -7,7 +7,7 @@ from enum import Enum
 from typing import Any, Dict, Optional
 from uuid import uuid4
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, field_serializer, Field
 
 
 class VersionStatus(str, Enum):
@@ -42,10 +42,9 @@ class PolicyVersion(BaseModel):
     # Timestamps
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
-    class Config:
-        """Pydantic configuration"""
-
-        json_encoders = {datetime: lambda v: v.isoformat()}
+    @field_serializer("created_at")
+    def serialize_created_at(self, value: datetime) -> str:
+        return value.isoformat()
 
     def __init__(self, **data):
         super().__init__(**data)

@@ -301,7 +301,7 @@ class OPAClient:
             raise OPANotInitializedError("embedded policy evaluation")
 
         try:
-            loop = asyncio.get_event_loop()
+            loop = asyncio.get_running_loop()
             opa_result = await loop.run_in_executor(
                 None, self._embedded_opa.evaluate, policy_path, input_data
             )
@@ -531,11 +531,18 @@ class OPAClient:
 _opa_client: Optional[OPAClient] = None
 
 
-def get_opa_client() -> OPAClient:
-    """Get global OPA client instance."""
+def get_opa_client(fail_closed: bool = True) -> OPAClient:
+    """Get global OPA client instance.
+
+    Args:
+        fail_closed: If True, reject requests when OPA is unavailable.
+                    Default True for security (fail-closed architecture).
+    """
     global _opa_client
     if _opa_client is None:
         _opa_client = OPAClient()
+    # Allow callers to configure fail_closed behavior
+    _opa_client.fail_closed = fail_closed
     return _opa_client
 
 

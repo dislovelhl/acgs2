@@ -6,7 +6,7 @@ constitutional precedents and documents to enhance decision making.
 """
 
 import logging
-from datetime import timezone
+from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from document_processor import DocumentProcessor

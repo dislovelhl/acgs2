@@ -24,6 +24,25 @@ except ImportError:
     CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
 
 
+def get_enum_value(enum_or_str: Any) -> str:
+    """
+    Safely extract enum value, handling cross-module enum identity issues.
+
+    When modules are loaded via different import paths (e.g., during testing),
+    enum instances from different module loads have different class identities.
+    This function extracts the underlying string value regardless of class identity.
+
+    Args:
+        enum_or_str: An enum instance, string, or other value
+
+    Returns:
+        The string value of the enum or the stringified input
+    """
+    if hasattr(enum_or_str, "value"):
+        return enum_or_str.value
+    return str(enum_or_str)
+
+
 class MessageType(Enum):
     """Types of messages in the agent bus."""
 

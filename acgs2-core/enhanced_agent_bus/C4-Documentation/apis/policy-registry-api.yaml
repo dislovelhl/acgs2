@@ -1,0 +1,745 @@
+openapi: 3.0.3
+info:
+  title: Policy Registry Service API
+  description: |
+    Dynamic Constitution Policy Management with Ed25519 Signatures.
+
+    Constitutional Hash: cdd01ef066bc6cf2
+  version: 1.0.0
+  contact:
+    name: ACGS-2 Team
+  license:
+    name: Proprietary
+
+servers:
+  - url: http://localhost:8000/api/v1
+    description: Local development
+  - url: https://api.acgs2.io/policy/v1
+    description: Production
+
+tags:
+  - name: policies
+    description: Policy management operations
+  - name: bundles
+    description: Policy bundle operations
+  - name: auth
+    description: Authentication and authorization
+  - name: webhooks
+    description: Webhook subscriptions
+  - name: health
+    description: Health check endpoints
+
+paths:
+  # Health Endpoints
+  /health/live:
+    get:
+      tags: [health]
+      summary: Kubernetes liveness probe
+      operationId: livenessCheck
+      responses:
+        '200':
+          description: Service is alive
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+
+  /health/ready:
+    get:
+      tags: [health]
+      summary: Kubernetes readiness probe
+      operationId: readinessCheck
+      responses:
+        '200':
+          description: Service is ready
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReadinessResponse'
+
+  /health/details:
+    get:
+      tags: [health]
+      summary: Detailed health check for monitoring
+      operationId: detailedHealthCheck
+      responses:
+        '200':
+          description: Detailed health information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DetailedHealthResponse'
+
+  # Policy Endpoints
+  /policies:
+    get:
+      tags: [policies]
+      summary: List all policies (tenant-scoped)
+      operationId: listPolicies
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          description: Filter by policy status
+          schema:
+            $ref: '#/components/schemas/PolicyStatus'
+      responses:
+        '200':
+          description: List of policies
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Policy'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      tags: [policies]
+      summary: Create a new policy
+      operationId: createPolicy
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePolicyRequest'
+      responses:
+        '201':
+          description: Policy created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Policy'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /policies/{policy_id}:
+    get:
+      tags: [policies]
+      summary: Get policy by ID
+      operationId: getPolicy
+      parameters:
+        - $ref: '#/components/parameters/PolicyId'
+      responses:
+        '200':
+          description: Policy details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Policy'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /policies/{policy_id}/versions:
+    get:
+      tags: [policies]
+      summary: List all versions of a policy
+      operationId: listPolicyVersions
+      parameters:
+        - $ref: '#/components/parameters/PolicyId'
+      responses:
+        '200':
+          description: List of policy versions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PolicyVersion'
+
+    post:
+      tags: [policies]
+      summary: Create a new policy version with signature
+      operationId: createPolicyVersion
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PolicyId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePolicyVersionRequest'
+      responses:
+        '201':
+          description: Version created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PolicyVersion'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /policies/{policy_id}/versions/{version}:
+    get:
+      tags: [policies]
+      summary: Get specific policy version
+      operationId: getPolicyVersion
+      parameters:
+        - $ref: '#/components/parameters/PolicyId'
+        - $ref: '#/components/parameters/Version'
+      responses:
+        '200':
+          description: Policy version details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PolicyVersion'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /policies/{policy_id}/activate:
+    put:
+      tags: [policies]
+      summary: Activate a policy version
+      operationId: activatePolicyVersion
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PolicyId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [version]
+              properties:
+                version:
+                  type: string
+                  description: Version to activate
+      responses:
+        '200':
+          description: Version activated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /policies/{policy_id}/verify:
+    post:
+      tags: [policies]
+      summary: Verify policy signature
+      operationId: verifyPolicySignature
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PolicyId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [version]
+              properties:
+                version:
+                  type: string
+      responses:
+        '200':
+          description: Signature verification result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SignatureVerificationResult'
+
+  /policies/{policy_id}/content:
+    get:
+      tags: [policies]
+      summary: Get policy content for client (with A/B testing)
+      operationId: getPolicyContent
+      parameters:
+        - $ref: '#/components/parameters/PolicyId'
+        - name: client_id
+          in: query
+          description: Client ID for A/B testing
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Policy content
+          content:
+            application/json:
+              schema:
+                type: object
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # Bundle Endpoints
+  /bundles:
+    get:
+      tags: [bundles]
+      summary: List policy bundles
+      operationId: listBundles
+      responses:
+        '200':
+          description: List of bundles
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PolicyBundle'
+
+    post:
+      tags: [bundles]
+      summary: Create policy bundle
+      operationId: createBundle
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateBundleRequest'
+      responses:
+        '201':
+          description: Bundle created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PolicyBundle'
+
+  /bundles/{bundle_id}:
+    get:
+      tags: [bundles]
+      summary: Get bundle by ID
+      operationId: getBundle
+      parameters:
+        - name: bundle_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Bundle details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PolicyBundle'
+
+  /bundles/{bundle_id}/download:
+    get:
+      tags: [bundles]
+      summary: Download bundle as tarball
+      operationId: downloadBundle
+      parameters:
+        - name: bundle_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Bundle tarball
+          content:
+            application/gzip:
+              schema:
+                type: string
+                format: binary
+
+  # Auth Endpoints
+  /auth/login:
+    post:
+      tags: [auth]
+      summary: User login
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /auth/refresh:
+    post:
+      tags: [auth]
+      summary: Refresh access token
+      operationId: refreshToken
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refresh_token]
+              properties:
+                refresh_token:
+                  type: string
+      responses:
+        '200':
+          description: Token refreshed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+
+  # Webhook Endpoints
+  /webhooks:
+    get:
+      tags: [webhooks]
+      summary: List webhooks
+      operationId: listWebhooks
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of webhooks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Webhook'
+
+    post:
+      tags: [webhooks]
+      summary: Create webhook
+      operationId: createWebhook
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateWebhookRequest'
+      responses:
+        '201':
+          description: Webhook created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Webhook'
+
+components:
+  schemas:
+    # Health Schemas
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: "alive"
+        service:
+          type: string
+          example: "policy-registry"
+
+    ReadinessResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: "ready"
+        service:
+          type: string
+        cache:
+          type: object
+        connections:
+          type: integer
+
+    DetailedHealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+        service:
+          type: string
+        policies_count:
+          type: integer
+        cache_stats:
+          type: object
+        connection_stats:
+          type: integer
+
+    # Policy Schemas
+    PolicyStatus:
+      type: string
+      enum: [DRAFT, ACTIVE, DEPRECATED, ARCHIVED]
+
+    Policy:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        tenant_id:
+          type: string
+        status:
+          $ref: '#/components/schemas/PolicyStatus'
+        content:
+          type: object
+        format:
+          type: string
+          enum: [json, rego, yaml]
+        description:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    CreatePolicyRequest:
+      type: object
+      required: [name, content]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        content:
+          type: object
+        format:
+          type: string
+          default: "json"
+        description:
+          type: string
+
+    PolicyVersion:
+      type: object
+      properties:
+        policy_id:
+          type: string
+        version:
+          type: string
+        content:
+          type: object
+        signature:
+          type: string
+          description: Ed25519 signature
+        public_key:
+          type: string
+          description: Base64-encoded public key
+        ab_test_group:
+          type: string
+          enum: [control, treatment_a, treatment_b]
+        is_active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+
+    CreatePolicyVersionRequest:
+      type: object
+      required: [content, version, private_key_b64, public_key_b64]
+      properties:
+        content:
+          type: object
+        version:
+          type: string
+          pattern: '^\d+\.\d+\.\d+$'
+        private_key_b64:
+          type: string
+          description: Base64-encoded Ed25519 private key
+        public_key_b64:
+          type: string
+          description: Base64-encoded Ed25519 public key
+        ab_test_group:
+          type: string
+          enum: [control, treatment_a, treatment_b]
+
+    SignatureVerificationResult:
+      type: object
+      properties:
+        policy_id:
+          type: string
+        version:
+          type: string
+        signature_valid:
+          type: boolean
+
+    # Bundle Schemas
+    PolicyBundle:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        policies:
+          type: array
+          items:
+            type: string
+        created_at:
+          type: string
+          format: date-time
+
+    CreateBundleRequest:
+      type: object
+      required: [name, policy_ids]
+      properties:
+        name:
+          type: string
+        policy_ids:
+          type: array
+          items:
+            type: string
+
+    # Auth Schemas
+    LoginRequest:
+      type: object
+      required: [username, password]
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+          format: password
+
+    AuthResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+        refresh_token:
+          type: string
+        token_type:
+          type: string
+          example: "bearer"
+        expires_in:
+          type: integer
+          description: Seconds until expiration
+
+    # Webhook Schemas
+    Webhook:
+      type: object
+      properties:
+        id:
+          type: string
+        url:
+          type: string
+          format: uri
+        events:
+          type: array
+          items:
+            type: string
+            enum: [policy.created, policy.updated, policy.activated, policy.deprecated]
+        secret:
+          type: string
+        is_active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+
+    CreateWebhookRequest:
+      type: object
+      required: [url, events]
+      properties:
+        url:
+          type: string
+          format: uri
+        events:
+          type: array
+          items:
+            type: string
+
+    # Error Schema
+    Error:
+      type: object
+      properties:
+        detail:
+          type: string
+        error_code:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+
+  parameters:
+    PolicyId:
+      name: policy_id
+      in: path
+      required: true
+      description: Policy ID
+      schema:
+        type: string
+        format: uuid
+
+    Version:
+      name: version
+      in: path
+      required: true
+      description: Policy version
+      schema:
+        type: string
+
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    Forbidden:
+      description: Forbidden
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token obtained from /auth/login
+
+    internalApiKey:
+      type: apiKey
+      in: header
+      name: X-Internal-API-Key
+      description: Internal service API key

@@ -13,10 +13,10 @@ from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
 
 try:
-    from ..models import AgentMessage, MessageStatus
+    from ..models import AgentMessage, MessageStatus, get_enum_value
 except (ImportError, ValueError):
     # Fallback for direct execution or testing
-    from models import AgentMessage, MessageStatus  # type: ignore
+    from models import AgentMessage, MessageStatus, get_enum_value  # type: ignore
 from enum import Enum
 
 
@@ -112,6 +112,7 @@ class DeliberationQueue:
             "avg_processing_time": 0.0,
         }
         self._lock = asyncio.Lock()
+        self._shutdown = False  # Shutdown flag for clean task termination
         if self.persistence_path:
             self._load_tasks()
 
@@ -178,13 +179,26 @@ class DeliberationQueue:
         return await self.enqueue_for_deliberation(*args, **kwargs)
 
     async def _monitor_task(self, task_id: str):
-        """Monitor task for timeout."""
+        """Monitor task for timeout with proper shutdown handling."""
         task = self.tasks.get(task_id)
         if not task:
             return
 
+        current_task = asyncio.current_task()
         try:
-            await asyncio.sleep(task.timeout_seconds)
+            # Use smaller sleep intervals to respond to shutdown quickly
+            elapsed = 0
+            check_interval = min(1.0, task.timeout_seconds / 10)
+            while elapsed < task.timeout_seconds:
+                if self._shutdown:
+                    return  # Exit cleanly on shutdown
+                await asyncio.sleep(check_interval)
+                elapsed += check_interval
+                # Check if task was resolved externally
+                if task.is_complete:
+                    return
+
+            # Timeout reached
             async with self._lock:
                 if task_id in self.tasks and not task.is_complete:
                     task.status = DeliberationStatus.TIMED_OUT
@@ -192,15 +206,41 @@ class DeliberationQueue:
                     self._save_tasks()
                     logger.warning(f"Task {task_id} timed out")
         except asyncio.CancelledError:
-            pass
+            # Propagate cancellation properly
+            raise
+        finally:
+            # Clean up task reference
+            if current_task and current_task in self.processing_tasks:
+                try:
+                    self.processing_tasks.remove(current_task)
+                except ValueError:
+                    pass  # Already removed
 
     async def stop(self):
-        """Stop all background tasks."""
-        for task in self.processing_tasks:
-            task.cancel()
-        if self.processing_tasks:
-            await asyncio.gather(*self.processing_tasks, return_exceptions=True)
+        """Stop all background tasks cleanly."""
+        self._shutdown = True  # Signal all monitor tasks to exit
+        tasks_to_cancel = list(self.processing_tasks)  # Copy to avoid modification during iteration
+        for task in tasks_to_cancel:
+            if not task.done():
+                task.cancel()
+        if tasks_to_cancel:
+            # Wait for tasks to complete with timeout to avoid hanging
+            try:
+                await asyncio.wait_for(
+                    asyncio.gather(*tasks_to_cancel, return_exceptions=True), timeout=2.0
+                )
+            except asyncio.TimeoutError:
+                logger.warning("Some deliberation tasks did not stop cleanly within timeout")
         self.processing_tasks.clear()
+
+    async def __aenter__(self):
+        """Async context manager entry."""
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        """Async context manager exit - ensures cleanup."""
+        await self.stop()
+        return False
 
     async def update_status(self, task_id: str, status: Any):
         """Update the status of a deliberation task."""
@@ -219,7 +259,8 @@ class DeliberationQueue:
 
     def get_pending_tasks(self) -> List[DeliberationItem]:
         """Get all tasks awaiting deliberation."""
-        return [t for t in self.tasks.values() if t.status == DeliberationStatus.PENDING]
+        pending_value = DeliberationStatus.PENDING.value
+        return [t for t in self.tasks.values() if get_enum_value(t.status) == pending_value]
 
     def get_task(self, task_id: str) -> Optional[DeliberationItem]:
         """Get a task by ID."""
@@ -233,7 +274,7 @@ class DeliberationQueue:
         return {
             "item_id": task.item_id,
             "message_id": task.message.message_id if task.message else None,
-            "status": task.status.value if hasattr(task.status, "value") else str(task.status),
+            "status": get_enum_value(task.status),
             "created_at": task.created_at.isoformat(),
             "updated_at": task.updated_at.isoformat(),
             "votes": len(task.current_votes),
@@ -296,7 +337,7 @@ class DeliberationQueue:
                 return False
 
             # Allow decision only if already under review
-            if task.status != DeliberationStatus.UNDER_REVIEW:
+            if get_enum_value(task.status) != DeliberationStatus.UNDER_REVIEW.value:
                 return False
 
             task.human_reviewer = reviewer
@@ -304,7 +345,7 @@ class DeliberationQueue:
             task.human_reasoning = reasoning
             task.status = decision
 
-            if decision == DeliberationStatus.APPROVED:
+            if get_enum_value(decision) == DeliberationStatus.APPROVED.value:
                 self.stats["approved"] += 1
             else:
                 self.stats["rejected"] += 1
@@ -320,7 +361,7 @@ class DeliberationQueue:
             storage = {
                 tid: {
                     "message": t.message.to_dict_raw() if t.message else {},
-                    "status": t.status.value if hasattr(t.status, "value") else str(t.status),
+                    "status": get_enum_value(t.status),
                     "metadata": t.metadata,
                     "created_at": t.created_at.isoformat(),
                 }

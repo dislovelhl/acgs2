@@ -50,10 +50,12 @@ class TestOPAClientInit:
         # Trailing slash should be stripped
         assert client.opa_url == "http://opa.example.com:8181"
 
-    def test_fail_open_mode(self):
-        """OPAClient in fail-open mode."""
-        client = OPAClient(fail_closed=False)
-        assert client.fail_closed is False
+    def test_fail_closed_always_enforced(self):
+        """OPAClient always enforces fail-closed for security (VULN-002)."""
+        # fail_closed is hardcoded to True and cannot be overridden
+        # This is a security measure to prevent fail-open scenarios
+        client = OPAClient()
+        assert client.fail_closed is True
 
     def test_custom_cache_ttl(self):
         """OPAClient with custom cache TTL."""
@@ -198,8 +200,8 @@ class TestOPAClientEvaluatePolicy:
 
     @pytest.mark.asyncio
     async def test_evaluate_fail_closed_on_error(self):
-        """evaluate_policy fails closed on error when configured."""
-        client = OPAClient(fail_closed=True)
+        """evaluate_policy fails closed on error (security default)."""
+        client = OPAClient()  # fail_closed is always True for security
 
         # Mock HTTP to fail
         mock_http = MagicMock()
@@ -215,9 +217,16 @@ class TestOPAClientEvaluatePolicy:
         )
 
     @pytest.mark.asyncio
-    async def test_evaluate_fail_open_on_error(self):
-        """evaluate_policy allows through on error when fail_closed=False."""
-        client = OPAClient(fail_closed=False)
+    async def test_fail_open_not_supported(self):
+        """Verify fail-open mode is NOT supported (security measure VULN-002).
+
+        OPAClient always enforces fail-closed behavior even on errors.
+        This test verifies the security hardening is in place.
+        """
+        client = OPAClient()
+
+        # Verify fail_closed is always True and cannot be overridden
+        assert client.fail_closed is True
 
         # Mock HTTP to fail
         mock_http = MagicMock()
@@ -226,10 +235,11 @@ class TestOPAClientEvaluatePolicy:
 
         result = await client.evaluate_policy("data.test.allow", {"user": "alice"})
 
-        # Fail open should return allow
+        # Should always fail closed (deny on error)
         assert (
-            result.get("allow", result.get("result", True)) is True
-            or "warning" in str(result).lower()
+            result.get("allow", result.get("result", False)) is False
+            or "denied" in str(result).lower()
+            or "error" in str(result).lower()
         )
 
 

@@ -2,25 +2,19 @@
   "mcpServers": {
     "puppeteer": {
       "command": "npx",
-      "args": [
-        "-y",
-        "@modelcontextprotocol/server-puppeteer"
-      ]
+      "args": ["-y", "@modelcontextprotocol/server-puppeteer"]
     },
     "memory": {
       "command": "npx",
-      "args": [
-        "-y",
-        "@modelcontextprotocol/server-memory"
-      ]
+      "args": ["-y", "@modelcontextprotocol/server-memory"]
     },
     "firebase": {
       "command": "npx",
-      "args": [
-        "-y",
-        "firebase-tools@14.15.2",
-        "experimental:mcp"
-      ]
+      "args": ["-y", "firebase-tools@14.15.2", "experimental:mcp"]
+    },
+    "neural": {
+      "command": "node",
+      "args": ["/home/dislove/document/acgs2/acgs2-neural-mcp/dist/index.js"]
     }
   }
 }

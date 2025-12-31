@@ -41,6 +41,20 @@ except ImportError:
     FASTAPI_AVAILABLE = False
     FastAPI = None
     WebSocket = None
+    # Provide fallback BaseModel for when pydantic is not available
+    from dataclasses import dataclass, field as dataclass_field
+
+    class BaseModel:
+        """Fallback BaseModel when pydantic is not available."""
+
+        pass
+
+    def Field(default=None, default_factory=None, **kwargs):
+        """Fallback Field when pydantic is not available."""
+        if default_factory is not None:
+            return dataclass_field(default_factory=default_factory)
+        return default
+
 
 try:
     import psutil

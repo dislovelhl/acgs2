@@ -1,10 +1,10 @@
 {
   "metadata": {
-    "generated": "2025-12-27",
+    "generated": "2025-12-30",
     "constitutional_hash": "cdd01ef066bc6cf2",
     "version": "2.2.0",
     "project_name": "ACGS-2",
-    "description": "Advanced Constitutional Governance System 2"
+    "description": "Advanced Constitutional Governance System 2 - Enterprise AI Governance Platform"
   },
   "metrics": {
     "p99_latency_ms": 0.278,
@@ -13,9 +13,11 @@
     "throughput_target_rps": 100,
     "cache_hit_rate": 0.95,
     "constitutional_compliance": 1.0,
-    "test_files": 139,
-    "python_files": 421,
-    "core_loc": 13091
+    "antifragility_score": 10,
+    "test_files": 184,
+    "test_count": 2717,
+    "test_pass_rate": 0.952,
+    "python_loc": 278797
   },
   "structure": {
     "root": "acgs2",
@@ -23,35 +25,41 @@
       {
         "name": "acgs2-core",
         "path": "acgs2-core/",
-        "description": "Core application logic",
+        "description": "Core application logic (278K+ LOC)",
         "subdirs": [
           "enhanced_agent_bus",
           "services",
           "sdk",
           "policies",
           "shared",
-          "integrations"
+          "integrations",
+          "C4-Documentation"
         ]
       },
       {
         "name": "acgs2-infra",
         "path": "acgs2-infra/",
-        "description": "Infrastructure as Code"
+        "description": "Infrastructure as Code (Helm, K8s, Terraform)"
       },
       {
         "name": "acgs2-observability",
         "path": "acgs2-observability/",
-        "description": "Monitoring and dashboards"
+        "description": "Monitoring, dashboards, alerts"
       },
       {
         "name": "acgs2-research",
         "path": "acgs2-research/",
-        "description": "Research papers and specs"
+        "description": "Research papers and experiments"
       },
       {
-        "name": "workflows",
-        "path": ".agent/workflows/",
-        "description": "Workflow orchestration patterns"
+        "name": "acgs2-neural-mcp",
+        "path": "acgs2-neural-mcp/",
+        "description": "Neural MCP integration"
+      },
+      {
+        "name": "runtime",
+        "path": "runtime/",
+        "description": "Runtime configuration"
       }
     ]
   },
@@ -65,12 +73,8 @@
       {
         "name": "Agent Bus Tests",
         "path": "acgs2-core/enhanced_agent_bus/tests/",
-        "command": "python3 -m pytest tests/ -v"
-      },
-      {
-        "name": "Performance Validation",
-        "path": "acgs2-core/scripts/validate_performance.py",
-        "command": "python3 scripts/validate_performance.py"
+        "command": "cd acgs2-core/enhanced_agent_bus && python3 -m pytest tests/ -v",
+        "test_count": 95
       }
     ],
     "fastapi_services": [
@@ -88,100 +92,108 @@
         "name": "Metering",
         "path": "services/metering/app/api.py",
         "port": 8085
+      },
+      {
+        "name": "Code Analysis",
+        "path": "services/core/code-analysis/code_analysis_service/main_simple.py",
+        "port": null
       }
     ],
     "docker_services": [
-      {"name": "rust-message-bus", "port": 8080},
-      {"name": "deliberation-layer", "port": 8081},
-      {"name": "vector-search", "port": 8083},
-      {"name": "audit-ledger", "port": 8084},
-      {"name": "adaptive-governance", "port": 8000}
+      {"name": "rust-message-bus", "port": 8080, "description": "Rust-accelerated message bus"},
+      {"name": "deliberation-layer", "port": 8081, "description": "AI-powered decision review"},
+      {"name": "constraint-generation", "port": 8082, "description": "Policy synthesis"},
+      {"name": "vector-search", "port": 8083, "description": "Semantic retrieval"},
+      {"name": "audit-ledger", "port": 8084, "description": "Blockchain audit service"},
+      {"name": "adaptive-governance", "port": 8000, "description": "Policy registry"}
     ]
   },
   "core_modules": {
     "enhanced_agent_bus": {
       "path": "acgs2-core/enhanced_agent_bus/",
-      "loc": 13091,
+      "loc": 17500,
+      "test_count": 2717,
       "modules": [
-        {"name": "core.py", "exports": ["EnhancedAgentBus", "MessageProcessor"]},
-        {"name": "agent_bus.py", "exports": ["AgentBus"]},
-        {"name": "models.py", "exports": ["AgentMessage", "MessageType", "Priority"]},
-        {"name": "validators.py", "exports": ["validate_constitutional_hash"]},
-        {"name": "exceptions.py", "exports": ["ConstitutionalError", "PolicyEvaluationError"]},
-        {"name": "policy_client.py", "exports": ["PolicyClient"]},
-        {"name": "opa_client.py", "exports": ["OPAClient"]},
-        {"name": "maci_enforcement.py", "exports": ["MACIRole", "MACIAction"]}
+        {"name": "agent_bus.py", "exports": ["EnhancedAgentBus"], "purpose": "Main orchestration engine"},
+        {"name": "core.py", "exports": ["MessageProcessor"], "purpose": "Message processing"},
+        {"name": "models.py", "exports": ["AgentMessage", "MessageType", "Priority", "ValidationResult"], "purpose": "Data models"},
+        {"name": "config.py", "exports": ["AgentBusConfig"], "purpose": "Configuration"},
+        {"name": "validators.py", "exports": ["validate_constitutional_hash"], "purpose": "Hash validation"},
+        {"name": "exceptions.py", "exports": ["ConstitutionalError", "PolicyEvaluationError"], "purpose": "22 typed exceptions"},
+        {"name": "policy_client.py", "exports": ["PolicyClient"], "purpose": "Policy registry client"},
+        {"name": "opa_client.py", "exports": ["OPAClient"], "purpose": "OPA policy evaluation"},
+        {"name": "maci_enforcement.py", "exports": ["MACIRole", "MACIAction"], "purpose": "Role separation"},
+        {"name": "health_aggregator.py", "exports": ["HealthAggregator"], "purpose": "Real-time health scoring"},
+        {"name": "recovery_orchestrator.py", "exports": ["RecoveryOrchestrator"], "purpose": "4-strategy recovery"},
+        {"name": "chaos_testing.py", "exports": ["ChaosEngine"], "purpose": "Failure injection"},
+        {"name": "metering_integration.py", "exports": ["MeteringHooks"], "purpose": "Fire-and-forget metering"}
       ]
     },
     "deliberation_layer": {
       "path": "acgs2-core/enhanced_agent_bus/deliberation_layer/",
+      "module_count": 21,
       "modules": [
-        {"name": "impact_scorer.py", "purpose": "DistilBERT-based scoring"},
-        {"name": "hitl_manager.py", "purpose": "Human-in-the-loop approvals"},
-        {"name": "adaptive_router.py", "purpose": "Impact-based routing"},
-        {"name": "opa_guard.py", "purpose": "OPA policy enforcement"}
-      ]
-    },
-    "antifragility": {
-      "modules": [
-        {"name": "health_aggregator.py", "purpose": "Real-time health scoring"},
-        {"name": "recovery_orchestrator.py", "purpose": "Priority-based recovery"},
-        {"name": "chaos_testing.py", "purpose": "Controlled failure injection"},
-        {"name": "metering_integration.py", "purpose": "Fire-and-forget metering"}
-      ]
-    },
-    "workflows": {
-      "path": ".agent/workflows/",
-      "patterns": [
-        {"name": "Base Workflow", "path": "base/workflow.py"},
-        {"name": "DAG Executor", "path": "dags/dag_executor.py"},
-        {"name": "Saga", "path": "sagas/base_saga.py"},
-        {"name": "Governance", "path": "constitutional/governance_decision.py"}
+        {"name": "impact_scorer.py", "purpose": "DistilBERT-based impact scoring"},
+        {"name": "hitl_manager.py", "purpose": "Human-in-the-loop approvals (Slack/Teams)"},
+        {"name": "adaptive_router.py", "purpose": "Impact-based routing (threshold: 0.8)"},
+        {"name": "voting_service.py", "purpose": "Multi-party consensus"},
+        {"name": "llm_assistant.py", "purpose": "AI-powered decision support"},
+        {"name": "opa_guard.py", "purpose": "OPA policy enforcement"},
+        {"name": "deliberation_queue.py", "purpose": "Priority-based queuing"},
+        {"name": "multi_approver.py", "purpose": "Multi-approver workflows"},
+        {"name": "intent_classifier.py", "purpose": "Intent classification"},
+        {"name": "tensorrt_optimizer.py", "purpose": "GPU acceleration"}
       ]
     }
   },
   "services": {
     "count": 47,
     "categories": {
-      "core": ["policy_registry", "audit_service", "constitutional_ai", "metering"],
-      "governance": ["governance_synthesis", "policy_governance", "formal_verification"],
-      "ai_ml": ["ai_reasoning", "constitutional_cognition", "breakthrough", "ai_governance"],
-      "infrastructure": ["api_gateway", "identity", "tenant_management", "monitoring"]
+      "core": ["policy_registry", "audit_service", "metering"],
+      "governance": ["governance_synthesis", "policy_governance", "formal_verification", "constitutional_evolution", "constitutional_hash_verification"],
+      "ai_ml": ["ai_reasoning", "breakthrough", "constitutional_cognition"],
+      "core_systems": ["constitutional-retrieval-system", "constraint_generation_system", "code-analysis"],
+      "infrastructure": ["api_gateway", "identity", "tenant_management", "integration/search_platform"]
     }
   },
   "sdk": {
     "python": {
-      "path": "acgs2-core/sdk/python/",
-      "package": "acgs2_sdk"
+      "path": "acgs2-core/sdk/python/acgs2_sdk/",
+      "package": "acgs2_sdk",
+      "modules": ["client.py", "governor.py", "models.py", "config.py", "exceptions.py"],
+      "services": ["agent", "audit", "compliance", "governance", "policy"]
     },
     "typescript": {
       "path": "acgs2-core/sdk/typescript/",
       "package": "@acgs2/sdk"
-    },
-    "go": {
-      "path": "acgs2-core/sdk/go/"
     }
   },
   "dependencies": {
     "core": [
-      {"name": "redis", "version": ">=4.5.0"},
-      {"name": "httpx", "version": ">=0.24.0"},
-      {"name": "pydantic", "version": ">=2.0.0"},
-      {"name": "fastapi", "version": "latest"}
+      {"name": "FastAPI", "version": "0.115+", "purpose": "API framework"},
+      {"name": "Pydantic", "version": "2.x", "purpose": "Data validation"},
+      {"name": "redis", "version": "7+", "purpose": "Caching, pub/sub"},
+      {"name": "httpx", "version": ">=0.24.0", "purpose": "Async HTTP"},
+      {"name": "PostgreSQL", "version": "14+", "purpose": "Primary database"}
     ],
     "testing": [
       {"name": "pytest", "version": ">=7.4.0"},
       {"name": "pytest-asyncio", "version": ">=0.21.0"},
       {"name": "pytest-cov", "version": ">=4.1.0"},
       {"name": "fakeredis", "version": ">=2.18.0"}
+    ],
+    "ml": [
+      {"name": "transformers", "purpose": "DistilBERT models"},
+      {"name": "torch", "purpose": "Neural networks"}
     ]
   },
   "configuration": {
     "files": [
-      {"path": "acgs2-core/docker-compose.yml", "purpose": "Service orchestration"},
-      {"path": "acgs2-core/pytest.ini", "purpose": "Test configuration"},
-      {"path": "acgs2-core/enhanced_agent_bus/pyproject.toml", "purpose": "Package config"},
-      {"path": "acgs2-core/.gitlab-ci.yml", "purpose": "CI/CD pipeline"}
+      {"path": "pyproject.toml", "purpose": "Root Python config (3.11+)"},
+      {"path": "acgs2-core/enhanced_agent_bus/pyproject.toml", "purpose": "Agent bus deps"},
+      {"path": ".pre-commit-config.yaml", "purpose": "Pre-commit hooks"},
+      {"path": "arch-manifest.yaml", "purpose": "Architecture manifest"},
+      {"path": "mkdocs.yml", "purpose": "Documentation config"}
     ],
     "environment": [
       {"name": "REDIS_URL", "default": "redis://localhost:6379"},
@@ -191,6 +203,14 @@
       {"name": "OPA_URL", "default": "http://localhost:8181"}
     ]
   },
+  "security": {
+    "maci_roles": ["EXECUTIVE", "LEGISLATIVE", "JUDICIAL"],
+    "rbac": {"roles": 6, "permissions": 23},
+    "rate_limiting": ["IP", "tenant", "user", "endpoint", "global"],
+    "cryptography": ["Ed25519", "ECDSA-P256", "RSA-2048", "AES-256-GCM"],
+    "blockchain": ["Arweave", "Ethereum L2", "Hyperledger Fabric"],
+    "pii_patterns": 15
+  },
   "test_markers": [
     {"marker": "asyncio", "description": "Async tests"},
     {"marker": "slow", "description": "Performance tests"},
@@ -199,20 +219,20 @@
   ],
   "documentation": [
     {"name": "README", "path": "README.md"},
-    {"name": "CLAUDE.md", "path": "acgs2-core/CLAUDE.md"},
-    {"name": "Deployment", "path": "acgs2-core/deployment_guide.md"},
-    {"name": "Architecture", "path": "acgs2-core/docs/adr/"},
-    {"name": "Performance", "path": "acgs2-core/PERFORMANCE_ANALYSIS_REPORT.md"}
+    {"name": "CLAUDE.md", "path": "CLAUDE.md"},
+    {"name": "C4 Architecture", "path": "acgs2-core/C4-Documentation/"},
+    {"name": "ADRs", "path": "acgs2-core/docs/adr/"},
+    {"name": "User Guides", "path": "acgs2-core/docs/user-guides/"},
+    {"name": "API Specs", "path": "acgs2-core/docs/api/specs/"},
+    {"name": "Rego Policies", "path": "acgs2-core/policies/rego/"}
   ],
   "quick_start": {
     "setup": [
-      "cd acgs2-core",
-      "python3 -m venv .venv",
-      "source .venv/bin/activate",
-      "pip install -r requirements_optimized.txt"
+      "python3 -m venv .venv && source .venv/bin/activate",
+      "pip install -e acgs2-core/enhanced_agent_bus"
     ],
     "test": [
-      "cd enhanced_agent_bus",
+      "cd acgs2-core/enhanced_agent_bus",
       "python3 -m pytest tests/ -v --tb=short"
     ],
     "run": [

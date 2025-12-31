@@ -40,6 +40,43 @@ from enhanced_agent_bus.profiling.model_profiler import (
 )
 
 
+@pytest.fixture(autouse=True)
+def reset_prometheus_registry():
+    """Reset Prometheus registry and global profiler between tests to prevent duplication errors."""
+    import enhanced_agent_bus.profiling.model_profiler as profiler_module
+
+    # Reset global profiler
+    profiler_module._global_profiler = None
+
+    yield
+
+    # Cleanup after test - reset again and try to unregister metrics
+    profiler_module._global_profiler = None
+
+    # Try to clear Prometheus collectors if available
+    if PROMETHEUS_AVAILABLE:
+        try:
+            from prometheus_client import REGISTRY
+
+            # Get collectors to remove (those with our prefix)
+            collectors_to_remove = []
+            for collector in list(REGISTRY._collector_to_names.keys()):
+                try:
+                    if hasattr(collector, "_name") and collector._name.startswith("acgs2_model"):
+                        collectors_to_remove.append(collector)
+                except (AttributeError, TypeError):
+                    pass
+
+            # Unregister our collectors
+            for collector in collectors_to_remove:
+                try:
+                    REGISTRY.unregister(collector)
+                except Exception:
+                    pass
+        except Exception:
+            pass
+
+
 class TestBottleneckType:
     """Tests for BottleneckType enum."""
 

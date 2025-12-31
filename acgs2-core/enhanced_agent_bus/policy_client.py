@@ -23,6 +23,47 @@ logger = logging.getLogger(__name__)
 # Default maximum cache size to prevent unbounded memory growth
 DEFAULT_MAX_CACHE_SIZE = 1000
 
+# Optimized cache TTL settings based on content volatility
+# These values balance freshness with hit rate optimization
+CACHE_TTL_POLICIES = {
+    # Dynamic policies that may change frequently (e.g., A/B tests, active updates)
+    "dynamic": 60,  # 1 minute - quick refresh for frequently changing content
+    # Standard policies that change occasionally (default)
+    "standard": 300,  # 5 minutes - balance between freshness and hit rate
+    # Stable policies that rarely change (constitutional, core governance)
+    "stable": 900,  # 15 minutes - higher TTL for stable content
+    # Immutable policies (versioned, locked)
+    "immutable": 3600,  # 1 hour - can cache longer since they don't change
+}
+
+# Policy ID patterns to TTL tier mapping
+POLICY_TTL_PATTERNS = {
+    "constitutional": "stable",
+    "governance": "stable",
+    "core": "stable",
+    "ab_test": "dynamic",
+    "experiment": "dynamic",
+    "feature_flag": "dynamic",
+}
+
+
+def get_optimal_cache_ttl(policy_id: str, default_ttl: int = 300) -> int:
+    """
+    Get optimal cache TTL based on policy ID pattern matching.
+
+    Args:
+        policy_id: The policy identifier
+        default_ttl: Default TTL if no pattern matches
+
+    Returns:
+        Optimal TTL in seconds
+    """
+    policy_id_lower = policy_id.lower()
+    for pattern, tier in POLICY_TTL_PATTERNS.items():
+        if pattern in policy_id_lower:
+            return CACHE_TTL_POLICIES.get(tier, default_ttl)
+    return default_ttl
+
 
 class PolicyRegistryClient:
     """Client for communicating with Policy Registry Service"""

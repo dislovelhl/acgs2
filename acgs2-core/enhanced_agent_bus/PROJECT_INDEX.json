@@ -1,0 +1,216 @@
+{
+  "project": {
+    "name": "enhanced-agent-bus",
+    "version": "2.2.0",
+    "constitutional_hash": "cdd01ef066bc6cf2",
+    "description": "ACGS-2 Enhanced Agent Bus with Constitutional Compliance",
+    "python_requires": ">=3.11",
+    "generated": "2025-12-30"
+  },
+  "entry_points": {
+    "main": "__init__.py",
+    "bus": "agent_bus.py",
+    "core": "core.py"
+  },
+  "key_exports": {
+    "__init__.py": [
+      "EnhancedAgentBus",
+      "AgentMessage",
+      "MessageType",
+      "Priority",
+      "ValidationResult",
+      "CONSTITUTIONAL_HASH",
+      "BusConfiguration",
+      "InMemoryAgentRegistry",
+      "RedisAgentRegistry"
+    ],
+    "agent_bus.py": [
+      "EnhancedAgentBus",
+      "get_agent_bus",
+      "reset_agent_bus"
+    ],
+    "models.py": [
+      "AgentMessage",
+      "MessageType",
+      "Priority",
+      "MessageStatus",
+      "ValidationStatus",
+      "RoutingContext",
+      "DecisionLog"
+    ],
+    "maci_enforcement.py": [
+      "MACIRole",
+      "MACIAction",
+      "MACIEnforcer",
+      "MACIRoleRegistry",
+      "MACIValidationStrategy",
+      "MACIConfigLoader",
+      "apply_maci_config"
+    ]
+  },
+  "modules": {
+    "core": {
+      "agent_bus.py": "Main bus class with lifecycle management",
+      "core.py": "MessageProcessor and validation orchestration",
+      "models.py": "Data models: AgentMessage, enums, dataclasses",
+      "exceptions.py": "22 exception classes with hierarchy",
+      "validators.py": "ValidationResult and hash validation",
+      "validation_strategies.py": "Composable validation strategies",
+      "registry.py": "Agent registry implementations",
+      "interfaces.py": "Protocol definitions for DI",
+      "config.py": "BusConfiguration dataclass",
+      "imports.py": "Feature flags and conditional imports"
+    },
+    "governance": {
+      "maci_enforcement.py": "MACI role separation (Trias Politica)",
+      "opa_client.py": "OPA policy evaluation client",
+      "policy_client.py": "Policy registry client with caching",
+      "audit_client.py": "Audit service client for blockchain anchoring"
+    },
+    "antifragility": {
+      "health_aggregator.py": "Real-time 0.0-1.0 health scoring",
+      "recovery_orchestrator.py": "4 recovery strategies with priority queues",
+      "chaos_testing.py": "Controlled failure injection framework",
+      "metering_integration.py": "Fire-and-forget async metering (<5μs)"
+    },
+    "processing": {
+      "processing_strategies.py": "Python, Rust, OPA, Dynamic Policy strategies",
+      "message_processor.py": "Message processing pipeline",
+      "kafka_bus.py": "Kafka event streaming integration"
+    }
+  },
+  "directories": {
+    "deliberation_layer": {
+      "description": "AI-powered review for high-impact decisions",
+      "key_files": [
+        "impact_scorer.py",
+        "hitl_manager.py",
+        "adaptive_router.py",
+        "opa_guard.py",
+        "llm_assistant.py"
+      ]
+    },
+    "acl_adapters": {
+      "description": "Formal verification adapters",
+      "key_files": [
+        "z3_adapter.py",
+        "opa_adapter.py",
+        "base.py"
+      ]
+    },
+    "workflows": {
+      "description": "Workflow orchestration patterns",
+      "key_files": [
+        "workflow_base.py",
+        "agent_entity_workflow.py"
+      ]
+    },
+    "observability": {
+      "description": "Metrics, tracing, Prometheus"
+    },
+    "runtime": {
+      "description": "Runtime configuration and chaos profiles"
+    },
+    "rust": {
+      "description": "Rust backend for 10-50x speedup"
+    },
+    "tests": {
+      "description": "100+ test files",
+      "markers": ["asyncio", "constitutional", "integration", "slow"]
+    },
+    "C4-Documentation": {
+      "description": "Full C4 architecture documentation",
+      "levels": ["context", "container", "component", "code"]
+    }
+  },
+  "maci_roles": {
+    "EXECUTIVE": {
+      "allowed": ["PROPOSE", "SYNTHESIZE", "QUERY"],
+      "prohibited": ["VALIDATE", "AUDIT", "EXTRACT_RULES"]
+    },
+    "LEGISLATIVE": {
+      "allowed": ["EXTRACT_RULES", "SYNTHESIZE", "QUERY"],
+      "prohibited": ["PROPOSE", "VALIDATE", "AUDIT"]
+    },
+    "JUDICIAL": {
+      "allowed": ["VALIDATE", "AUDIT", "QUERY"],
+      "prohibited": ["PROPOSE", "EXTRACT_RULES", "SYNTHESIZE"]
+    }
+  },
+  "message_types": [
+    "REQUEST",
+    "RESPONSE",
+    "GOVERNANCE_REQUEST",
+    "GOVERNANCE_RESPONSE",
+    "BROADCAST",
+    "HEARTBEAT",
+    "SYSTEM"
+  ],
+  "exceptions_hierarchy": {
+    "AgentBusError": {
+      "ConstitutionalError": ["ConstitutionalHashMismatchError", "ConstitutionalValidationError"],
+      "MessageError": ["MessageValidationError", "MessageDeliveryError", "MessageTimeoutError", "MessageRoutingError"],
+      "AgentError": ["AgentNotRegisteredError", "AgentAlreadyRegisteredError", "AgentCapabilityError"],
+      "PolicyError": ["PolicyEvaluationError", "PolicyNotFoundError", "OPAConnectionError", "OPANotInitializedError"],
+      "DeliberationError": ["DeliberationTimeoutError", "SignatureCollectionError", "ReviewConsensusError"],
+      "BusOperationError": ["BusNotStartedError", "BusAlreadyStartedError", "HandlerExecutionError"],
+      "ConfigurationError": [],
+      "MACIError": ["MACIRoleViolationError", "MACISelfValidationError", "MACICrossRoleValidationError", "MACIRoleNotAssignedError"]
+    }
+  },
+  "validation_strategies": [
+    {
+      "name": "StaticHashValidationStrategy",
+      "description": "Constitutional hash validation"
+    },
+    {
+      "name": "DynamicPolicyValidationStrategy",
+      "description": "OPA-based policy validation"
+    },
+    {
+      "name": "RustValidationStrategy",
+      "description": "10-50x faster Rust backend"
+    },
+    {
+      "name": "CompositeValidationStrategy",
+      "description": "Chain multiple strategies"
+    },
+    {
+      "name": "MACIValidationStrategy",
+      "description": "MACI role enforcement"
+    }
+  ],
+  "performance": {
+    "targets": {
+      "p99_latency_ms": 5,
+      "throughput_rps": 100,
+      "cache_hit_rate": 0.85,
+      "constitutional_compliance": 1.0
+    },
+    "achieved": {
+      "p99_latency_ms": 0.18,
+      "throughput_qps": 98.5,
+      "cache_hit_rate": 0.95,
+      "constitutional_compliance": 1.0
+    }
+  },
+  "dependencies": {
+    "core": ["redis>=4.5.0", "httpx>=0.24.0", "pydantic>=2.0.0"],
+    "dev": ["pytest>=7.4.0", "pytest-asyncio>=0.21.0", "pytest-cov>=4.1.0"],
+    "ml": ["numpy>=1.24.0"]
+  },
+  "feature_flags": {
+    "USE_RUST": "Enable Rust backend acceleration",
+    "METRICS_ENABLED": "Enable Prometheus metrics",
+    "CIRCUIT_BREAKER_ENABLED": "Enable circuit breaker patterns",
+    "DELIBERATION_AVAILABLE": "Enable deliberation layer",
+    "METERING_AVAILABLE": "Enable usage metering"
+  },
+  "quick_reference": {
+    "create_bus": "bus = EnhancedAgentBus(enable_maci=True)",
+    "register_agent": "await bus.register_agent('id', 'type', maci_role=MACIRole.EXECUTIVE)",
+    "send_message": "await bus.send_message(AgentMessage(...))",
+    "validate_hash": "validate_constitutional_hash(hash, 'cdd01ef066bc6cf2')",
+    "run_tests": "pytest tests/ -v --tb=short"
+  }
+}

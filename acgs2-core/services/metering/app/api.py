@@ -48,7 +48,7 @@ async def get_metering_service() -> UsageMeteringService:
 
 
 async def validate_constitutional_hash(
-    x_constitutional_hash: str = Header(default=CONSTITUTIONAL_HASH),
+    x_constitutional_hash: str = Header(..., alias="X-Constitutional-Hash"),
 ) -> str:
     """Validate constitutional hash from request header."""
     if x_constitutional_hash != CONSTITUTIONAL_HASH:

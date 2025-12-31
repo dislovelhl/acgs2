@@ -1,0 +1,489 @@
+openapi: 3.0.3
+info:
+  title: Decentralized Audit Service API
+  description: |
+    Immutable proof of agent interactions and governance decisions with blockchain anchoring.
+
+    Constitutional Hash: cdd01ef066bc6cf2
+
+    Features:
+    - Merkle tree-based audit trails
+    - Blockchain anchoring for immutability
+    - Inclusion proof verification
+    - Batch-based entry organization
+  version: 1.0.0
+  contact:
+    name: ACGS-2 Team
+  license:
+    name: Proprietary
+
+servers:
+  - url: http://localhost:8084
+    description: Local development
+  - url: https://api.acgs2.io/audit
+    description: Production
+
+tags:
+  - name: health
+    description: Health check endpoints
+  - name: records
+    description: Audit record management
+  - name: batches
+    description: Batch operations
+  - name: verification
+    description: Proof verification
+
+paths:
+  /health/live:
+    get:
+      tags: [health]
+      summary: Liveness check
+      operationId: livenessCheck
+      responses:
+        '200':
+          description: Service is alive
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+
+  /stats:
+    get:
+      tags: [records]
+      summary: Get audit ledger statistics
+      operationId: getLedgerStats
+      responses:
+        '200':
+          description: Ledger statistics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LedgerStats'
+
+  /record:
+    post:
+      tags: [records]
+      summary: Record a validation result in the audit ledger
+      operationId: recordValidation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecordRequest'
+      responses:
+        '200':
+          description: Entry recorded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecordResponse'
+        '500':
+          description: Recording failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /batch/{batch_id}:
+    get:
+      tags: [batches]
+      summary: List all entries in a specific batch
+      operationId: getBatchEntries
+      parameters:
+        - $ref: '#/components/parameters/BatchId'
+      responses:
+        '200':
+          description: Batch entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AuditEntry'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /batch/{batch_id}/root:
+    get:
+      tags: [batches]
+      summary: Get the Merkle root of a specific batch
+      operationId: getBatchRoot
+      parameters:
+        - $ref: '#/components/parameters/BatchId'
+      responses:
+        '200':
+          description: Merkle root
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchRoot'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /verify:
+    post:
+      tags: [verification]
+      summary: Verify an inclusion proof for an entry hash
+      operationId: verifyEntry
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyRequest'
+      responses:
+        '200':
+          description: Verification result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VerifyResponse'
+
+  /entries/{entry_hash}:
+    get:
+      tags: [records]
+      summary: Get audit entry by hash
+      operationId: getEntry
+      parameters:
+        - name: entry_hash
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Audit entry
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditEntry'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /entries/{entry_hash}/proof:
+    get:
+      tags: [verification]
+      summary: Get Merkle proof for an entry
+      operationId: getEntryProof
+      parameters:
+        - name: entry_hash
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Merkle proof
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MerkleProof'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /anchors:
+    get:
+      tags: [verification]
+      summary: List blockchain anchors
+      operationId: listAnchors
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: List of blockchain anchors
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/BlockchainAnchor'
+
+  /anchors/{anchor_id}:
+    get:
+      tags: [verification]
+      summary: Get blockchain anchor details
+      operationId: getAnchor
+      parameters:
+        - name: anchor_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Anchor details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BlockchainAnchor'
+
+components:
+  schemas:
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: "alive"
+        service:
+          type: string
+          example: "audit-service"
+
+    LedgerStats:
+      type: object
+      properties:
+        total_entries:
+          type: integer
+          description: Total number of audit entries
+        total_batches:
+          type: integer
+          description: Total number of batches
+        latest_batch_id:
+          type: string
+          description: ID of the most recent batch
+        blockchain_anchors:
+          type: integer
+          description: Number of blockchain anchors
+        entries_pending_anchor:
+          type: integer
+          description: Entries awaiting blockchain anchoring
+        storage_size_mb:
+          type: number
+          description: Total storage used in MB
+
+    RecordRequest:
+      type: object
+      required: [agent_id, action, result, constitutional_hash]
+      properties:
+        agent_id:
+          type: string
+          description: Agent that performed the action
+        action:
+          type: string
+          description: Action performed
+        result:
+          type: string
+          enum: [ALLOW, DENY, PENDING, ERROR]
+          description: Result of the action
+        constitutional_hash:
+          type: string
+          pattern: '^cdd01ef066bc6cf2$'
+          description: Constitutional hash for validation
+        message_id:
+          type: string
+          format: uuid
+          description: Related message ID
+        policy_id:
+          type: string
+          description: Policy that was evaluated
+        impact_score:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: Impact score if deliberation occurred
+        metadata:
+          type: object
+          description: Additional metadata
+          additionalProperties: true
+
+    RecordResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: "recorded"
+        entry_hash:
+          type: string
+          description: SHA-256 hash of the entry
+        batch_id:
+          type: string
+          description: Batch this entry belongs to
+        timestamp:
+          type: string
+          format: date-time
+
+    AuditEntry:
+      type: object
+      properties:
+        entry_hash:
+          type: string
+          description: SHA-256 hash of the entry
+        batch_id:
+          type: string
+          description: Batch ID
+        sequence_number:
+          type: integer
+          description: Entry sequence within batch
+        agent_id:
+          type: string
+        action:
+          type: string
+        result:
+          type: string
+          enum: [ALLOW, DENY, PENDING, ERROR]
+        constitutional_hash:
+          type: string
+        message_id:
+          type: string
+        policy_id:
+          type: string
+        impact_score:
+          type: number
+        metadata:
+          type: object
+        timestamp:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+
+    BatchRoot:
+      type: object
+      properties:
+        batch_id:
+          type: string
+        root_hash:
+          type: string
+          description: Merkle tree root hash
+        entry_count:
+          type: integer
+        first_entry_timestamp:
+          type: string
+          format: date-time
+        last_entry_timestamp:
+          type: string
+          format: date-time
+        is_anchored:
+          type: boolean
+        anchor_id:
+          type: string
+
+    VerifyRequest:
+      type: object
+      required: [entry_hash, merkle_proof, root_hash]
+      properties:
+        entry_hash:
+          type: string
+          description: Hash of the entry to verify
+        merkle_proof:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProofNode'
+          description: Merkle proof path
+        root_hash:
+          type: string
+          description: Expected root hash
+
+    ProofNode:
+      type: object
+      properties:
+        hash:
+          type: string
+        position:
+          type: string
+          enum: [left, right]
+
+    VerifyResponse:
+      type: object
+      properties:
+        entry_hash:
+          type: string
+        is_valid:
+          type: boolean
+        root_hash:
+          type: string
+        verification_timestamp:
+          type: string
+          format: date-time
+
+    MerkleProof:
+      type: object
+      properties:
+        entry_hash:
+          type: string
+        batch_id:
+          type: string
+        root_hash:
+          type: string
+        proof:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProofNode'
+        depth:
+          type: integer
+
+    BlockchainAnchor:
+      type: object
+      properties:
+        anchor_id:
+          type: string
+        batch_ids:
+          type: array
+          items:
+            type: string
+        root_hash:
+          type: string
+        chain:
+          type: string
+          enum: [ethereum, polygon, custom]
+        transaction_hash:
+          type: string
+        block_number:
+          type: integer
+        timestamp:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum: [pending, confirmed, failed]
+        confirmations:
+          type: integer
+
+    Error:
+      type: object
+      properties:
+        detail:
+          type: string
+        error_code:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+
+  parameters:
+    BatchId:
+      name: batch_id
+      in: path
+      required: true
+      description: Batch ID
+      schema:
+        type: string
+
+  responses:
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  securitySchemes:
+    internalApiKey:
+      type: apiKey
+      in: header
+      name: X-Internal-API-Key
+      description: Internal service API key
+
+security:
+  - internalApiKey: []

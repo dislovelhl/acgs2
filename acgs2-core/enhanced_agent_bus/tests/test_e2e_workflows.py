@@ -11,6 +11,7 @@ Comprehensive E2E tests for workflow patterns:
 """
 
 import asyncio
+import time
 import uuid
 from typing import Any, Dict, List, Optional
 from unittest.mock import AsyncMock, MagicMock
@@ -304,7 +305,7 @@ class TestDAGExecutionE2E:
             return await node.execute(context, execution_counter)
 
         # Track start times to verify parallelism
-        start_time = asyncio.get_event_loop().time()
+        start_time = time.monotonic()
 
         # First wave: A and C can run in parallel
         first_wave = [nodes["A"], nodes["C"]]
@@ -313,7 +314,7 @@ class TestDAGExecutionE2E:
         # Second wave: B can now run
         results_second = await execute_node(nodes["B"])
 
-        end_time = asyncio.get_event_loop().time()
+        end_time = time.monotonic()
 
         # Verify parallel execution of A and C
         assert nodes["A"].executed and nodes["C"].executed
@@ -760,7 +761,7 @@ class TestIntegrationWorkflowE2E:
 
         try:
             num_messages = 100
-            start_time = asyncio.get_event_loop().time()
+            start_time = time.monotonic()
 
             # Send many messages concurrently
             messages = [
@@ -779,7 +780,7 @@ class TestIntegrationWorkflowE2E:
 
             results = await asyncio.gather(*[bus.send_message(m) for m in messages])
 
-            end_time = asyncio.get_event_loop().time()
+            end_time = time.monotonic()
             elapsed_ms = (end_time - start_time) * 1000
 
             # All messages should succeed

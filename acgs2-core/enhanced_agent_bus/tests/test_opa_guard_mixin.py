@@ -16,8 +16,11 @@ from enhanced_agent_bus.deliberation_layer.opa_guard_mixin import OPAGuardMixin
 # =============================================================================
 
 
-class TestableOPAGuardMixin(OPAGuardMixin):
-    """Testable implementation of OPAGuardMixin."""
+class _OPAGuardMixinImpl(OPAGuardMixin):
+    """Concrete implementation of OPAGuardMixin for testing.
+
+    Note: Prefixed with underscore to avoid pytest collection warning.
+    """
 
     def __init__(self, opa_guard: Optional[Any] = None, deliberation_timeout: int = 30):
         self.opa_guard = opa_guard
@@ -45,15 +48,15 @@ def mock_opa_guard() -> MagicMock:
 
 
 @pytest.fixture
-def mixin_with_guard(mock_opa_guard: MagicMock) -> TestableOPAGuardMixin:
+def mixin_with_guard(mock_opa_guard: MagicMock) -> _OPAGuardMixinImpl:
     """Create mixin with guard enabled."""
-    return TestableOPAGuardMixin(opa_guard=mock_opa_guard, deliberation_timeout=60)
+    return _OPAGuardMixinImpl(opa_guard=mock_opa_guard, deliberation_timeout=60)
 
 
 @pytest.fixture
-def mixin_without_guard() -> TestableOPAGuardMixin:
+def mixin_without_guard() -> _OPAGuardMixinImpl:
     """Create mixin without guard (disabled)."""
-    return TestableOPAGuardMixin(opa_guard=None, deliberation_timeout=30)
+    return _OPAGuardMixinImpl(opa_guard=None, deliberation_timeout=30)
 
 
 # =============================================================================
@@ -66,7 +69,7 @@ class TestVerifyAction:
 
     @pytest.mark.asyncio
     async def test_verify_action_with_guard(
-        self, mixin_with_guard: TestableOPAGuardMixin, mock_opa_guard: MagicMock
+        self, mixin_with_guard: _OPAGuardMixinImpl, mock_opa_guard: MagicMock
     ) -> None:
         """Test verify_action forwards to guard."""
         mock_result = MagicMock()
@@ -90,7 +93,7 @@ class TestVerifyAction:
 
     @pytest.mark.asyncio
     async def test_verify_action_without_context(
-        self, mixin_with_guard: TestableOPAGuardMixin, mock_opa_guard: MagicMock
+        self, mixin_with_guard: _OPAGuardMixinImpl, mock_opa_guard: MagicMock
     ) -> None:
         """Test verify_action with None context."""
         action = {"type": "delete"}
@@ -105,7 +108,7 @@ class TestVerifyAction:
 
     @pytest.mark.asyncio
     async def test_verify_action_guard_disabled(
-        self, mixin_without_guard: TestableOPAGuardMixin
+        self, mixin_without_guard: _OPAGuardMixinImpl
     ) -> None:
         """Test verify_action returns None when guard disabled."""
         result = await mixin_without_guard.verify_action(
@@ -126,7 +129,7 @@ class TestCollectSignatures:
 
     @pytest.mark.asyncio
     async def test_collect_signatures_with_guard(
-        self, mixin_with_guard: TestableOPAGuardMixin, mock_opa_guard: MagicMock
+        self, mixin_with_guard: _OPAGuardMixinImpl, mock_opa_guard: MagicMock
     ) -> None:
         """Test collect_signatures forwards to guard."""
         mock_result = MagicMock()
@@ -149,7 +152,7 @@ class TestCollectSignatures:
 
     @pytest.mark.asyncio
     async def test_collect_signatures_default_timeout(
-        self, mixin_with_guard: TestableOPAGuardMixin, mock_opa_guard: MagicMock
+        self, mixin_with_guard: _OPAGuardMixinImpl, mock_opa_guard: MagicMock
     ) -> None:
         """Test collect_signatures uses deliberation_timeout as default."""
         await mixin_with_guard.collect_signatures(
@@ -164,7 +167,7 @@ class TestCollectSignatures:
 
     @pytest.mark.asyncio
     async def test_collect_signatures_guard_disabled(
-        self, mixin_without_guard: TestableOPAGuardMixin
+        self, mixin_without_guard: _OPAGuardMixinImpl
     ) -> None:
         """Test collect_signatures returns None when guard disabled."""
         result = await mixin_without_guard.collect_signatures(
@@ -185,7 +188,7 @@ class TestSubmitSignature:
 
     @pytest.mark.asyncio
     async def test_submit_signature_with_guard(
-        self, mixin_with_guard: TestableOPAGuardMixin, mock_opa_guard: MagicMock
+        self, mixin_with_guard: _OPAGuardMixinImpl, mock_opa_guard: MagicMock
     ) -> None:
         """Test submit_signature forwards to guard."""
         result = await mixin_with_guard.submit_signature(
@@ -205,7 +208,7 @@ class TestSubmitSignature:
 
     @pytest.mark.asyncio
     async def test_submit_signature_guard_disabled(
-        self, mixin_without_guard: TestableOPAGuardMixin
+        self, mixin_without_guard: _OPAGuardMixinImpl
     ) -> None:
         """Test submit_signature returns False when guard disabled."""
         result = await mixin_without_guard.submit_signature(
@@ -226,7 +229,7 @@ class TestSubmitForReview:
 
     @pytest.mark.asyncio
     async def test_submit_for_review_with_guard(
-        self, mixin_with_guard: TestableOPAGuardMixin, mock_opa_guard: MagicMock
+        self, mixin_with_guard: _OPAGuardMixinImpl, mock_opa_guard: MagicMock
     ) -> None:
         """Test submit_for_review forwards to guard."""
         mock_result = MagicMock()
@@ -253,7 +256,7 @@ class TestSubmitForReview:
 
     @pytest.mark.asyncio
     async def test_submit_for_review_default_timeout(
-        self, mixin_with_guard: TestableOPAGuardMixin, mock_opa_guard: MagicMock
+        self, mixin_with_guard: _OPAGuardMixinImpl, mock_opa_guard: MagicMock
     ) -> None:
         """Test submit_for_review uses deliberation_timeout as default."""
         await mixin_with_guard.submit_for_review(
@@ -267,7 +270,7 @@ class TestSubmitForReview:
 
     @pytest.mark.asyncio
     async def test_submit_for_review_guard_disabled(
-        self, mixin_without_guard: TestableOPAGuardMixin
+        self, mixin_without_guard: _OPAGuardMixinImpl
     ) -> None:
         """Test submit_for_review returns None when guard disabled."""
         result = await mixin_without_guard.submit_for_review(
@@ -288,7 +291,7 @@ class TestSubmitCriticReview:
 
     @pytest.mark.asyncio
     async def test_submit_critic_review_with_guard(
-        self, mixin_with_guard: TestableOPAGuardMixin, mock_opa_guard: MagicMock
+        self, mixin_with_guard: _OPAGuardMixinImpl, mock_opa_guard: MagicMock
     ) -> None:
         """Test submit_critic_review forwards to guard."""
         result = await mixin_with_guard.submit_critic_review(
@@ -314,7 +317,7 @@ class TestSubmitCriticReview:
 
     @pytest.mark.asyncio
     async def test_submit_critic_review_minimal_args(
-        self, mixin_with_guard: TestableOPAGuardMixin, mock_opa_guard: MagicMock
+        self, mixin_with_guard: _OPAGuardMixinImpl, mock_opa_guard: MagicMock
     ) -> None:
         """Test submit_critic_review with minimal arguments."""
         await mixin_with_guard.submit_critic_review(
@@ -332,7 +335,7 @@ class TestSubmitCriticReview:
 
     @pytest.mark.asyncio
     async def test_submit_critic_review_guard_disabled(
-        self, mixin_without_guard: TestableOPAGuardMixin
+        self, mixin_without_guard: _OPAGuardMixinImpl
     ) -> None:
         """Test submit_critic_review returns False when guard disabled."""
         result = await mixin_without_guard.submit_critic_review(
@@ -353,7 +356,7 @@ class TestRegisterCriticAgent:
     """Tests for register_critic_agent method."""
 
     def test_register_critic_agent_with_guard(
-        self, mixin_with_guard: TestableOPAGuardMixin, mock_opa_guard: MagicMock
+        self, mixin_with_guard: _OPAGuardMixinImpl, mock_opa_guard: MagicMock
     ) -> None:
         """Test register_critic_agent forwards to guard."""
         callback = MagicMock()
@@ -374,7 +377,7 @@ class TestRegisterCriticAgent:
         )
 
     def test_register_critic_agent_guard_disabled(
-        self, mixin_without_guard: TestableOPAGuardMixin
+        self, mixin_without_guard: _OPAGuardMixinImpl
     ) -> None:
         """Test register_critic_agent does nothing when guard disabled."""
         # Should not raise
@@ -393,7 +396,7 @@ class TestUnregisterCriticAgent:
     """Tests for unregister_critic_agent method."""
 
     def test_unregister_critic_agent_with_guard(
-        self, mixin_with_guard: TestableOPAGuardMixin, mock_opa_guard: MagicMock
+        self, mixin_with_guard: _OPAGuardMixinImpl, mock_opa_guard: MagicMock
     ) -> None:
         """Test unregister_critic_agent forwards to guard."""
         mixin_with_guard.unregister_critic_agent(critic_id="critic-1")
@@ -401,7 +404,7 @@ class TestUnregisterCriticAgent:
         mock_opa_guard.unregister_critic_agent.assert_called_once_with("critic-1")
 
     def test_unregister_critic_agent_guard_disabled(
-        self, mixin_without_guard: TestableOPAGuardMixin
+        self, mixin_without_guard: _OPAGuardMixinImpl
     ) -> None:
         """Test unregister_critic_agent does nothing when guard disabled."""
         # Should not raise
@@ -417,7 +420,7 @@ class TestGetGuardAuditLog:
     """Tests for get_guard_audit_log method."""
 
     def test_get_guard_audit_log_with_guard(
-        self, mixin_with_guard: TestableOPAGuardMixin, mock_opa_guard: MagicMock
+        self, mixin_with_guard: _OPAGuardMixinImpl, mock_opa_guard: MagicMock
     ) -> None:
         """Test get_guard_audit_log forwards to guard."""
         mock_entries = [{"id": "1", "action": "verify"}, {"id": "2", "action": "sign"}]
@@ -437,7 +440,7 @@ class TestGetGuardAuditLog:
         )
 
     def test_get_guard_audit_log_defaults(
-        self, mixin_with_guard: TestableOPAGuardMixin, mock_opa_guard: MagicMock
+        self, mixin_with_guard: _OPAGuardMixinImpl, mock_opa_guard: MagicMock
     ) -> None:
         """Test get_guard_audit_log with default arguments."""
         mixin_with_guard.get_guard_audit_log()
@@ -449,7 +452,7 @@ class TestGetGuardAuditLog:
         )
 
     def test_get_guard_audit_log_guard_disabled(
-        self, mixin_without_guard: TestableOPAGuardMixin
+        self, mixin_without_guard: _OPAGuardMixinImpl
     ) -> None:
         """Test get_guard_audit_log returns empty list when guard disabled."""
         result = mixin_without_guard.get_guard_audit_log()
@@ -468,7 +471,7 @@ class TestOPAGuardMixinIntegration:
     @pytest.mark.asyncio
     async def test_full_verification_workflow(self, mock_opa_guard: MagicMock) -> None:
         """Test complete verification workflow."""
-        mixin = TestableOPAGuardMixin(opa_guard=mock_opa_guard, deliberation_timeout=30)
+        mixin = _OPAGuardMixinImpl(opa_guard=mock_opa_guard, deliberation_timeout=30)
 
         # Setup mock return values
         mock_opa_guard.verify_action.return_value = MagicMock(allowed=True)
@@ -500,7 +503,7 @@ class TestOPAGuardMixinIntegration:
 
     def test_all_methods_disabled_gracefully(self) -> None:
         """Test all methods handle disabled guard gracefully."""
-        mixin = TestableOPAGuardMixin(opa_guard=None)
+        mixin = _OPAGuardMixinImpl(opa_guard=None)
 
         # None of these should raise
         mixin.register_critic_agent("critic-1", ["test"])
