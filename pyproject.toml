@@ -37,7 +37,9 @@ ignore_missing_imports = true
 exclude = ["venv", ".venv", "tests"]
 
 [tool.pytest.ini_options]
-addopts = "-q --maxfail=1 --dist=loadfile"
+# Note: --dist=loadfile requires pytest-xdist. Install with: pip install ".[test]"
+# For minimal testing without xdist, run: pytest -p no:randomly tests/
+addopts = "-q --maxfail=3"
 testpaths = [
     "acgs2-core/enhanced_agent_bus/tests",
     "acgs2-core/services/policy_registry/tests",

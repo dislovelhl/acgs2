@@ -333,7 +333,10 @@ class MetricsCollector:
 
         memory = psutil.virtual_memory()
         disk = psutil.disk_usage("/")
+        # Defensive: net_io_counters() can return None in some environments (containers, etc.)
         network = psutil.net_io_counters()
+        network_bytes_sent = network.bytes_sent if network else 0
+        network_bytes_recv = network.bytes_recv if network else 0
 
         return {
             "cpu_percent": psutil.cpu_percent(interval=None),
@@ -343,8 +346,8 @@ class MetricsCollector:
             "disk_percent": disk.percent,
             "disk_used_gb": round(disk.used / (1024**3), 2),
             "disk_total_gb": round(disk.total / (1024**3), 2),
-            "network_bytes_sent": network.bytes_sent,
-            "network_bytes_recv": network.bytes_recv,
+            "network_bytes_sent": network_bytes_sent,
+            "network_bytes_recv": network_bytes_recv,
             "process_count": len(psutil.pids()),
         }
 

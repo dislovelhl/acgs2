@@ -174,7 +174,9 @@ Agent → EnhancedAgentBus → Constitutional Validation (hash: cdd01ef066bc6cf2
 
 ## License
 
-Copyright 2024-2025. All rights reserved.
+Licensed under the Apache License, Version 2.0. See [LICENSE](./acgs2-core/LICENSE) for details.
+
+Copyright 2024-2025 ACGS-2 Contributors.
 
 ---
 

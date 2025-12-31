@@ -75,12 +75,17 @@ class SystemMetricsCollector:
     async def collect_metrics(self) -> SystemMetrics:
         """Collect comprehensive system metrics."""
         if self._psutil:
+            # Defensive: net_io_counters() can return None in some environments (containers, etc.)
+            net_counters = self._psutil.net_io_counters()
+            network_bytes_sent = net_counters.bytes_sent if net_counters else 0
+            network_bytes_recv = net_counters.bytes_recv if net_counters else 0
+
             return SystemMetrics(
                 cpu_percent=self._psutil.cpu_percent(interval=0.1),
                 memory_percent=self._psutil.virtual_memory().percent,
                 disk_percent=self._psutil.disk_usage("/").percent,
-                network_bytes_sent=self._psutil.net_io_counters().bytes_sent,
-                network_bytes_recv=self._psutil.net_io_counters().bytes_recv,
+                network_bytes_sent=network_bytes_sent,
+                network_bytes_recv=network_bytes_recv,
                 process_count=len(self._psutil.pids()),
             )
         return SystemMetrics()
@@ -129,13 +134,15 @@ class SystemMetricsCollector:
     async def _collect_network_metrics(self) -> Dict[str, Any]:
         """Collect network-specific metrics."""
         if self._psutil:
+            # Defensive: net_io_counters() can return None in some environments
             net = self._psutil.net_io_counters()
-            return {
-                "network_bytes_sent_mb": net.bytes_sent / (1024**2),
-                "network_bytes_recv_mb": net.bytes_recv / (1024**2),
-                "network_packets_sent": net.packets_sent,
-                "network_packets_recv": net.packets_recv,
-            }
+            if net is not None:
+                return {
+                    "network_bytes_sent_mb": net.bytes_sent / (1024**2),
+                    "network_bytes_recv_mb": net.bytes_recv / (1024**2),
+                    "network_packets_sent": net.packets_sent,
+                    "network_packets_recv": net.packets_recv,
+                }
         return {
             "network_bytes_sent_mb": 0,
             "network_bytes_recv_mb": 0,
