@@ -14,3 +14,17 @@ build/
 # Large ML model files
 *.onnx
 *.onnx.data
+
+# Coverage
+.coverage
+.coverage.*
+coverage.json
+htmlcov/
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+
+# Pytest
+.pytest_cache/
+pytest_*.log

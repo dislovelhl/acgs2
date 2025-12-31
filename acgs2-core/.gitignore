@@ -70,6 +70,8 @@ cython_debug/
 
 # Coverage
 .coverage
+.coverage.*
+coverage.json
 htmlcov/
 
 # Rust build artifacts

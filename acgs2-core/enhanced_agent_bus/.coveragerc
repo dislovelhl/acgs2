@@ -1,0 +1,32 @@
+[run]
+branch = True
+omit =
+    */tests/*
+    *_test.py
+    test_*.py
+    *_example.py
+    */fixtures/*
+    *specs/*
+    *_mocks.py
+    *conftest.py
+    *setup.py
+    *simple_test.py
+    *deliberation_mocks.py
+    *bundle_registry.py
+    *ai_assistant/*
+    *mcp_server/*
+    *tensorrt_optimizer.py
+    *dashboard.py
+    *dx_ecosystem.py
+    *sql_agent.py
+    *benchmark_gpu_decision.py
+
+[report]
+exclude_lines =
+    pragma: no cover
+    def __repr__
+    if __name__ == .__main__.:
+    if TYPE_CHECKING:
+    raise NotImplementedError
+    pass
+    ...
