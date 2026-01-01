@@ -2,6 +2,7 @@ import hashlib
 import logging
 import re
 import time
+from contextlib import nullcontext
 from typing import Any, Callable, Dict, List, Optional
 
 try:
@@ -19,12 +20,13 @@ try:
         rust_bus,
     )
     from .interfaces import ProcessingStrategy
+    from .memory_profiler import ProfilingLevel, get_memory_profiler
     from .models import CONSTITUTIONAL_HASH, AgentMessage, MessageStatus, MessageType, Priority
     from .utils import LRUCache
     from .validators import ValidationResult
 except (ImportError, ValueError):
-    from imports import CIRCUIT_BREAKER_ENABLED  # type: ignore
     from imports import (
+        CIRCUIT_BREAKER_ENABLED,  # type: ignore
         METERING_AVAILABLE,
         POLICY_CLIENT_AVAILABLE,
         USE_RUST,
@@ -36,6 +38,7 @@ except (ImportError, ValueError):
         rust_bus,
     )
     from interfaces import ProcessingStrategy  # type: ignore
+    from memory_profiler import ProfilingLevel, get_memory_profiler  # type: ignore
     from models import CONSTITUTIONAL_HASH, AgentMessage, MessageType, Priority  # type: ignore
     from utils import LRUCache  # type: ignore
     from validators import ValidationResult  # type: ignore
@@ -204,10 +207,22 @@ class MessageProcessor:
 
     async def _do_process(self, msg: AgentMessage) -> ValidationResult:
         start = time.perf_counter()
-        inj_res = self._detect_prompt_injection(msg)
-        if inj_res:
-            self._failed_count += 1
-            return inj_res
+
+        # Memory profiling integration (fire-and-forget, <5μs impact)
+        profiler = get_memory_profiler()
+        operation_name = f"message_processing_{msg.message_type.value}_{msg.priority.value}"
+
+        context_manager = (
+            profiler.profile_async(operation_name, trace_id=msg.message_id)
+            if profiler
+            else nullcontext()
+        )
+
+        async with context_manager:
+            inj_res = self._detect_prompt_injection(msg)
+            if inj_res:
+                self._failed_count += 1
+                return inj_res
 
         ckey = f"{hashlib.sha256(str(msg.content).encode()).hexdigest()[:16]}:{msg.constitutional_hash}"
         cached = self._validation_cache.get(ckey)

@@ -326,6 +326,33 @@ class MemoryProfiler:
             for stat in top_stats[: self.config.top_n_allocations]
         ]
 
+    def profile_async(
+        self,
+        operation: str,
+        trace_id: Optional[str] = None,
+    ) -> "MemoryProfilingContext":
+        """
+        Return an async context manager for profiling a code block.
+
+        Usage:
+            async with profiler.profile_async("process_message", trace_id="abc") as ctx:
+                result = await process(message)
+            delta = ctx.delta  # Memory change during operation
+
+        Args:
+            operation: Name of the operation being profiled
+            trace_id: Optional trace ID for correlation
+
+        Returns:
+            MemoryProfilingContext async context manager
+        """
+        return MemoryProfilingContext(
+            profiler=self,
+            operation=operation,
+            trace_id=trace_id,
+            queue=self._queue,
+        )
+
 
 class MemoryProfilingContext:
     """
