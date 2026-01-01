@@ -18,6 +18,7 @@ try:
 except ImportError:
     # Fallback for direct execution
     from deliberation_queue import DeliberationQueue, DeliberationStatus  # type: ignore
+
     from models import CONSTITUTIONAL_HASH  # type: ignore
 
 # Try to import ValidationResult from canonical source first

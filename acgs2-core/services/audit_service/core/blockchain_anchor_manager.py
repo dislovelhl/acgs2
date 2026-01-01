@@ -25,7 +25,6 @@ try:
     from shared.circuit_breaker import (
         CircuitBreakerConfig,
         get_circuit_breaker,
-        with_circuit_breaker,
     )
 
     CIRCUIT_BREAKER_AVAILABLE = True
@@ -204,7 +203,7 @@ class BlockchainAnchorManager:
                         config={
                             "rpc_url": "https://api.devnet.solana.com",
                             "commitment": "confirmed",
-                            "live": self.config.live
+                            "live": self.config.live,
                         }
                     )
                     logger.info(f"[{CONSTITUTIONAL_HASH}] Initialized SOLANA anchor backend")
@@ -525,13 +524,15 @@ class BlockchainAnchorManager:
             raise NotImplementedError("Hyperledger anchoring not implemented")
 
         elif backend == AnchorBackend.SOLANA:
-            tx_hash = await client.submit_audit_batch({
-                "batch_id": batch_id,
-                "root_hash": root_hash,
-                "entry_count": metadata.get("entry_count", 0),
-                "timestamp": int(time.time()),
-                "entries_hashes": metadata.get("entries_hashes", []),
-            })
+            tx_hash = await client.submit_audit_batch(
+                {
+                    "batch_id": batch_id,
+                    "root_hash": root_hash,
+                    "entry_count": metadata.get("entry_count", 0),
+                    "timestamp": int(time.time()),
+                    "entries_hashes": metadata.get("entries_hashes", []),
+                }
+            )
             if tx_hash:
                 return AnchorResult(
                     backend=backend,

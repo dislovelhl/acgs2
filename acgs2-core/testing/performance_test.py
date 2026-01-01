@@ -1,3 +1,5 @@
+import logging
+
 #!/usr/bin/env python3
 """
 ACGS-2 Performance Test Suite
@@ -38,7 +40,7 @@ class PerformanceTester:
 
         async with E2ETestClient() as client:
             if not await client.check_services():
-                print("Services unavailable, switching to mock mode for performance test")
+                logging.info("Services unavailable, switching to mock mode for performance test")
                 client.mock_mode = True
 
             for i in range(iterations):
@@ -51,7 +53,9 @@ class PerformanceTester:
                     latency_ms = (end_time - start_time) * 1000
                     latencies.append(latency_ms)
 
-                    print(f"Iteration {i+1}: {latency_ms:.2f}ms - Decision: {result['decision']}")
+                    logging.info(
+                        f"Iteration {i+1}: {latency_ms:.2f}ms - Decision: {result['decision']}"
+                    )
 
                     # Fail fast if latency exceeds threshold
                     assert (
@@ -59,7 +63,7 @@ class PerformanceTester:
                     ), f"Latency {latency_ms:.2f}ms exceeds threshold {self.latency_threshold}ms"
 
                 except Exception as e:
-                    print(f"Iteration {i+1} failed: {e}")
+                    logging.error(f"Iteration {i+1} failed: {e}")
                     latencies.append(float("inf"))  # Mark as failed
 
         # Calculate statistics
@@ -139,7 +143,7 @@ class PerformanceTester:
                         latencies.append((end_time - start_time) * 1000)
 
                     except Exception as e:
-                        print(f"Service {service_name} iteration {i+1} failed: {e}")
+                        logging.error(f"Service {service_name} iteration {i+1} failed: {e}")
                         latencies.append(float("inf"))
 
                 valid_latencies = [l for l in latencies if l != float("inf")]
@@ -178,11 +182,11 @@ class TestPerformance:
             stats["mean_latency_ms"] < 3000
         ), f"Mean latency {stats['mean_latency_ms']:.2f}ms too high"
 
-        print("Performance Results:")
-        print(f"  Success Rate: {stats['success_rate']:.2%}")
-        print(f"  Mean Latency: {stats['mean_latency_ms']:.2f}ms")
-        print(f"  P95 Latency: {stats['p95_latency_ms']:.2f}ms")
-        print(f"  P99 Latency: {stats['p99_latency_ms']:.2f}ms")
+        logging.info("Performance Results:")
+        logging.info(f"  Success Rate: {stats['success_rate']:.2%}")
+        logging.info(f"  Mean Latency: {stats['mean_latency_ms']:.2f}ms")
+        logging.info(f"  P95 Latency: {stats['p95_latency_ms']:.2f}ms")
+        logging.info(f"  P99 Latency: {stats['p99_latency_ms']:.2f}ms")
 
     @pytest.mark.asyncio
     async def test_individual_service_performance(self):
@@ -228,7 +232,7 @@ class TestPerformance:
                 if not await client.check_services():
                     client.mock_mode = True
                 start_time = time.perf_counter()
-                result = await client.test_end_to_end_workflow()
+                await client.test_end_to_end_workflow()
                 end_time = time.perf_counter()
                 return (end_time - start_time) * 1000
 
@@ -245,7 +249,7 @@ class TestPerformance:
             assert (
                 mean_concurrent_latency < tester.latency_threshold * 1.5
             ), f"Concurrent latency {mean_concurrent_latency:.2f}ms too high under load"
-            print(f"Concurrent load test: {mean_concurrent_latency:.2f}ms mean latency")
+            logging.info(f"Concurrent load test: {mean_concurrent_latency:.2f}ms mean latency")
 
 
 if __name__ == "__main__":

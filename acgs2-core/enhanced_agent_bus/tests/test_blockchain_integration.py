@@ -8,11 +8,7 @@ Comprehensive tests for:
 - AuditLedger blockchain anchoring configuration
 """
 
-import asyncio
 import time
-from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
-from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 

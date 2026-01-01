@@ -6,15 +6,15 @@ Tests for all MCP governance resources.
 Constitutional Hash: cdd01ef066bc6cf2
 """
 
-import pytest
 import json
 from unittest.mock import AsyncMock, MagicMock
 
-from ..resources.principles import PrinciplesResource
-from ..resources.metrics import MetricsResource
-from ..resources.decisions import DecisionsResource
-from ..resources.audit_trail import AuditTrailResource, AuditEventType, AuditEntry
+import pytest
 
+from ..resources.audit_trail import AuditEntry, AuditEventType, AuditTrailResource
+from ..resources.decisions import DecisionsResource
+from ..resources.metrics import MetricsResource
+from ..resources.principles import PrinciplesResource
 
 CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
 

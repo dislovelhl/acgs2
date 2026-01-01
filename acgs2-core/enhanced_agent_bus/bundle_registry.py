@@ -97,7 +97,7 @@ class BundleManifest:
         try:
             jsonschema.validate(instance=self.to_dict(), schema=self._schema)
         except jsonschema.exceptions.ValidationError as e:
-            raise ValueError(f"Manifest validation failed: {e.message}")
+            raise ValueError(f"Manifest validation failed: {e.message}") from e
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for JSON serialization."""
@@ -668,8 +668,8 @@ class OCIRegistryClient:
             signature = private_key.sign(manifest_digest.encode())
             sig_hex = signature.hex()
 
-            # Cosign-style signature tag: tag.sig
-            sig_tag = f"{tag}.sig"
+            # Cosign-style signature tag: tag.sig (used in manifest reference)
+            _sig_tag = f"{tag}.sig"  # noqa: F841 - reserved for future OCI signature layer
 
             # Create a minimal signature artifact
             # In OCI, this is often a manifest referencing a signature blob

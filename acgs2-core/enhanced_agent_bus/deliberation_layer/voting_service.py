@@ -98,7 +98,6 @@ class VotingService:
     async def _check_resolution(self, election: Election):
         """Check if an election can be resolved based on its strategy."""
         total_participants = len(election.participants)
-        votes_cast = len(election.votes)
 
         approvals = sum(1 for v in election.votes.values() if v.decision == "APPROVE")
         denials = sum(1 for v in election.votes.values() if v.decision == "DENY")

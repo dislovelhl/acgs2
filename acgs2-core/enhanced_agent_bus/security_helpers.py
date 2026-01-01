@@ -4,18 +4,24 @@ Constitutional Hash: cdd01ef066bc6cf2
 """
 
 import re
-from typing import Optional, List, Any
+from typing import Any, List, Optional
+
 from .security.tenant_validator import TenantValidator
+
 
 def normalize_tenant_id(tenant_id: Optional[str]) -> Optional[str]:
     """Normalize tenant identifiers to a canonical optional value."""
     return TenantValidator.normalize(tenant_id)
 
+
 def format_tenant_id(tenant_id: Optional[str]) -> str:
     """Format tenant identifiers for logging and validation messages."""
     return tenant_id if tenant_id else "none"
 
-def validate_tenant_consistency(agents_registry: dict, from_agent: str, to_agent: Optional[str], message_tenant: Optional[str]) -> List[str]:
+
+def validate_tenant_consistency(
+    agents_registry: dict, from_agent: str, to_agent: Optional[str], message_tenant: Optional[str]
+) -> List[str]:
     """Validate tenant_id consistency for sender/recipient."""
     errors: List[str] = []
     norm_msg_tenant = normalize_tenant_id(message_tenant)
@@ -38,6 +44,7 @@ def validate_tenant_consistency(agents_registry: dict, from_agent: str, to_agent
 
     return errors
 
+
 PROMPT_INJECTION_PATTERNS = [
     r"ignore (all )?previous instructions",
     r"system prompt (leak|override)",
@@ -48,6 +55,7 @@ PROMPT_INJECTION_PATTERNS = [
     r"\[INST\].*\[/INST\]",
 ]
 _INJECTION_RE = re.compile("|".join(PROMPT_INJECTION_PATTERNS), re.IGNORECASE)
+
 
 def detect_prompt_injection(content: Any) -> bool:
     """Detect potential prompt injection attacks."""

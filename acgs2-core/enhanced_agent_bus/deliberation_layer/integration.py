@@ -16,6 +16,7 @@ import asyncio
 import logging
 from datetime import datetime, timezone
 from typing import Any, Callable, Dict, Optional
+
 try:
     from ..models import CONSTITUTIONAL_HASH
 except (ImportError, ValueError):
@@ -54,31 +55,60 @@ try:
     from .redis_integration import get_redis_deliberation_queue, get_redis_voting_system
 except (ImportError, ValueError):
     try:
-        from adaptive_router import get_adaptive_router # type: ignore
-        from deliberation_queue import DeliberationStatus, VoteType, get_deliberation_queue # type: ignore
-        from impact_scorer import get_impact_scorer # type: ignore
-        from interfaces import ( # type: ignore
-            AdaptiveRouterProtocol, DeliberationQueueProtocol, ImpactScorerProtocol,
-            LLMAssistantProtocol, OPAGuardProtocol, RedisQueueProtocol, RedisVotingProtocol
+        from adaptive_router import get_adaptive_router  # type: ignore
+        from deliberation_queue import (  # type: ignore
+            DeliberationStatus,
+            VoteType,
+            get_deliberation_queue,
         )
-        from llm_assistant import get_llm_assistant # type: ignore
-        from opa_guard import GuardDecision, GuardResult, OPAGuard # type: ignore
-        from redis_integration import get_redis_deliberation_queue, get_redis_voting_system # type: ignore
+        from impact_scorer import get_impact_scorer  # type: ignore
+        from llm_assistant import get_llm_assistant  # type: ignore
+        from opa_guard import GuardDecision, GuardResult, OPAGuard  # type: ignore
+        from redis_integration import (  # type: ignore
+            get_redis_deliberation_queue,
+            get_redis_voting_system,
+        )
+
+        from interfaces import (  # type: ignore
+            AdaptiveRouterProtocol,
+            DeliberationQueueProtocol,
+            ImpactScorerProtocol,
+            LLMAssistantProtocol,
+            OPAGuardProtocol,
+            RedisQueueProtocol,
+            RedisVotingProtocol,
+        )
     except (ImportError, ValueError):
-        import sys, os
+        import os
+        import sys
+
         d = os.path.dirname(os.path.abspath(__file__))
-        if d not in sys.path: sys.path.append(d)
-        from adaptive_router import get_adaptive_router # type: ignore
-        from deliberation_queue import DeliberationStatus, VoteType, get_deliberation_queue # type: ignore
-        from impact_scorer import get_impact_scorer # type: ignore
-        from interfaces import ( # type: ignore
-            AdaptiveRouterProtocol, DeliberationQueueProtocol, ImpactScorerProtocol,
-            LLMAssistantProtocol, OPAGuardProtocol, RedisQueueProtocol, RedisVotingProtocol
+        if d not in sys.path:
+            sys.path.append(d)
+        from adaptive_router import get_adaptive_router  # type: ignore
+        from deliberation_queue import (  # type: ignore
+            DeliberationStatus,
+            VoteType,
+            get_deliberation_queue,
         )
-        from llm_assistant import get_llm_assistant # type: ignore
-        from opa_guard import GuardDecision, GuardResult, OPAGuard # type: ignore
-        from redis_integration import get_redis_deliberation_queue, get_redis_voting_system # type: ignore
-except (ImportError, ValueError):
+        from impact_scorer import get_impact_scorer  # type: ignore
+        from llm_assistant import get_llm_assistant  # type: ignore
+        from opa_guard import GuardDecision, GuardResult, OPAGuard  # type: ignore
+        from redis_integration import (  # type: ignore
+            get_redis_deliberation_queue,
+            get_redis_voting_system,
+        )
+
+        from interfaces import (  # type: ignore
+            AdaptiveRouterProtocol,
+            DeliberationQueueProtocol,
+            ImpactScorerProtocol,
+            LLMAssistantProtocol,
+            OPAGuardProtocol,
+            RedisQueueProtocol,
+            RedisVotingProtocol,
+        )
+except (ImportError, ValueError):  # noqa: B025 - intentional fallback import pattern
     try:
         # Try absolute imports (direct execution context)
         # Use deliberation_layer prefix for interfaces to avoid conflict with
@@ -998,4 +1028,6 @@ def reset_deliberation_layer() -> None:
     """
     global _deliberation_layer
     _deliberation_layer = None
+
+
 DeliberationEngine = DeliberationLayer

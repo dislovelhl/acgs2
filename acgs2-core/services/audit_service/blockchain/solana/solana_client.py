@@ -18,15 +18,19 @@ from typing import Any, Dict, Optional, List, Callable
 
 # Handle httpx 0.25.x vs 0.26.x incompatibility in solana-py 0.36.9
 import httpx
+
 try:
     if httpx.__version__ < "0.26.0":
         import functools
+
         _original_async_client_init = httpx.AsyncClient.__init__
+
         @functools.wraps(_original_async_client_init)
         def _patched_async_client_init(self, *args, **kwargs):
             if "proxy" in kwargs:
                 kwargs["proxies"] = kwargs.pop("proxy")
             return _original_async_client_init(self, *args, **kwargs)
+
         httpx.AsyncClient.__init__ = _patched_async_client_init
 except Exception:
     pass
@@ -39,8 +43,8 @@ try:
     from solders.instruction import Instruction
     from solders.transaction import Transaction
     from solana.rpc.commitment import Confirmed
-    from solders.message import Message
     from solders.signature import Signature
+
     try:
         from solders.compute_budget import set_compute_unit_price
     except ImportError:
@@ -99,8 +103,7 @@ class SolanaClient:
         """
         self.network = config.get("network", "devnet")
         self.network_config = self.NETWORKS.get(
-            self.network,
-            {"name": "Custom", "rpc_url": config.get("rpc_url"), "explorer": ""}
+            self.network, {"name": "Custom", "rpc_url": config.get("rpc_url"), "explorer": ""}
         )
         self.config = config
         self.connected = False
@@ -124,13 +127,19 @@ class SolanaClient:
         self._keypair: Optional[Keypair] = None
 
         if not HAS_SOLANA and self.live:
-            logger.warning(f"[{CONSTITUTIONAL_HASH}] solana-py not found, falling back to mock mode")
+            logger.warning(
+                f"[{CONSTITUTIONAL_HASH}] solana-py not found, falling back to mock mode"
+            )
             self.live = False
 
         if self.live:
-            logger.info(f"[{CONSTITUTIONAL_HASH}] Initializing Solana client in LIVE mode for {self.network}")
+            logger.info(
+                f"[{CONSTITUTIONAL_HASH}] Initializing Solana client in LIVE mode for {self.network}"
+            )
         else:
-            logger.info(f"[{CONSTITUTIONAL_HASH}] Initializing Solana client in MOCK mode for {self.network}")
+            logger.info(
+                f"[{CONSTITUTIONAL_HASH}] Initializing Solana client in MOCK mode for {self.network}"
+            )
 
     async def _load_wallet(self) -> bool:
         """加载本地钱包 (支持环境变量或文件路径)"""
@@ -166,7 +175,9 @@ class SolanaClient:
                 secret = bytes(secret)
 
             self._keypair = Keypair.from_bytes(secret)
-            logger.info(f"[{CONSTITUTIONAL_HASH}] Wallet loaded from file: {self._keypair.pubkey()}")
+            logger.info(
+                f"[{CONSTITUTIONAL_HASH}] Wallet loaded from file: {self._keypair.pubkey()}"
+            )
             return True
         except Exception as e:
             logger.error(f"[{CONSTITUTIONAL_HASH}] Failed to load wallet from {wallet_path}: {e}")
@@ -195,7 +206,7 @@ class SolanaClient:
                     )
 
                 if i < self.retry_count:
-                    wait_time = self.retry_delay * (2 ** i)
+                    wait_time = self.retry_delay * (2**i)
                     logger.warning(
                         f"[{CONSTITUTIONAL_HASH}] Solana RPC call '{func_name}' failed (attempt {i+1}): {e}. "
                         f"Retrying in {wait_time:.1f}s..."
@@ -216,9 +227,7 @@ class SolanaClient:
             return True
 
         try:
-            self.rpc_clients = [
-                AsyncClient(url, commitment=Confirmed) for url in self.rpc_urls
-            ]
+            self.rpc_clients = [AsyncClient(url, commitment=Confirmed) for url in self.rpc_urls]
             self.current_rpc_index = 0
 
             # 测试第一个连接
@@ -258,7 +267,9 @@ class SolanaClient:
         if not self.live:
             await asyncio.sleep(0.1)
             tx_signature = f"sol_mock_sig_{int(time.time())}_{batch_data['batch_id']}"
-            logger.info(f"[{CONSTITUTIONAL_HASH}] MOCK: Submitted audit batch {batch_data['batch_id']} to Solana")
+            logger.info(
+                f"[{CONSTITUTIONAL_HASH}] MOCK: Submitted audit batch {batch_data['batch_id']} to Solana"
+            )
             return tx_signature
 
         try:
@@ -270,7 +281,7 @@ class SolanaClient:
                 "batch_id": batch_data["batch_id"],
                 "root_hash": batch_data["root_hash"],
                 "constitutional_hash": CONSTITUTIONAL_HASH,
-                "v": "2.0"
+                "v": "2.0",
             }
             memo_bytes = json.dumps(memo_dict, sort_keys=True).encode("utf-8")
 
@@ -282,11 +293,13 @@ class SolanaClient:
                 instructions.append(set_compute_unit_price(self.compute_unit_price))
 
             # Memo 指令
-            instructions.append(Instruction(
-                program_id=Pubkey.from_string(self.MEMO_PROGRAM_ID),
-                data=memo_bytes,
-                accounts=[]
-            ))
+            instructions.append(
+                Instruction(
+                    program_id=Pubkey.from_string(self.MEMO_PROGRAM_ID),
+                    data=memo_bytes,
+                    accounts=[],
+                )
+            )
 
             # 2. 获取 Blockhash (支持重试和多 RPC)
             bh_resp = await self._with_retry("get_latest_blockhash")
@@ -294,10 +307,7 @@ class SolanaClient:
 
             # 3. 构建交易
             tx = Transaction.new_signed_with_payer(
-                instructions,
-                self._keypair.pubkey(),
-                [self._keypair],
-                recent_blockhash
+                instructions, self._keypair.pubkey(), [self._keypair], recent_blockhash
             )
 
             # 4. 发送交易 (支持重试和多 RPC)
@@ -312,7 +322,9 @@ class SolanaClient:
                 if self.config.get("wait_for_confirmation", True):
                     confirmed = await self.confirm_transaction(tx_sig)
                     if not confirmed:
-                        logger.error(f"[{CONSTITUTIONAL_HASH}] Transaction failed to confirm: {tx_sig}")
+                        logger.error(
+                            f"[{CONSTITUTIONAL_HASH}] Transaction failed to confirm: {tx_sig}"
+                        )
                         return None
 
                 logger.info(
@@ -338,10 +350,7 @@ class SolanaClient:
         try:
             sig = Signature.from_string(signature)
             resp = await self._with_retry(
-                "get_transaction",
-                sig,
-                encoding="jsonParsed",
-                max_supported_transaction_version=0
+                "get_transaction", sig, encoding="jsonParsed", max_supported_transaction_version=0
             )
 
             if not resp or not resp.value:
@@ -350,7 +359,7 @@ class SolanaClient:
             transaction = resp.value.transaction.transaction
             for ix in transaction.message.instructions:
                 if str(ix.program_id) == self.MEMO_PROGRAM_ID:
-                    if hasattr(ix, 'parsed') and ix.parsed:
+                    if hasattr(ix, "parsed") and ix.parsed:
                         try:
                             if isinstance(ix.parsed, str):
                                 return json.loads(ix.parsed)
@@ -362,7 +371,9 @@ class SolanaClient:
             logger.error(f"[{CONSTITUTIONAL_HASH}] Failed to retrieve memo for {signature}: {e}")
             return None
 
-    async def verify_batch_on_chain(self, batch_id: str, signature: str, expected_root_hash: str) -> bool:
+    async def verify_batch_on_chain(
+        self, batch_id: str, signature: str, expected_root_hash: str
+    ) -> bool:
         """物理验证批次是否在链上且匹配"""
         memo = await self.get_transaction_memo(signature)
         if not memo:
@@ -372,12 +383,16 @@ class SolanaClient:
         on_chain_batch = memo.get("batch_id")
 
         if on_chain_root == expected_root_hash and on_chain_batch == batch_id:
-            logger.info(f"[{CONSTITUTIONAL_HASH}] On-chain verification SUCCESS for batch {batch_id}")
+            logger.info(
+                f"[{CONSTITUTIONAL_HASH}] On-chain verification SUCCESS for batch {batch_id}"
+            )
             return True
 
         return False
 
-    async def confirm_transaction(self, signature: str, max_retries: int = 30, delay: float = 2.0) -> bool:
+    async def confirm_transaction(
+        self, signature: str, max_retries: int = 30, delay: float = 2.0
+    ) -> bool:
         """等待交易确认 (Polling)"""
         sig = Signature.from_string(signature)
         logger.info(f"[{CONSTITUTIONAL_HASH}] Waiting for confirmation of {signature}...")
@@ -389,7 +404,11 @@ class SolanaClient:
                 if resp and resp.value and resp.value[0]:
                     status = resp.value[0]
                     if status.confirmations is not None or status.confirmation_status is not None:
-                        confirmation_status = str(status.confirmation_status) if status.confirmation_status else "unknown"
+                        confirmation_status = (
+                            str(status.confirmation_status)
+                            if status.confirmation_status
+                            else "unknown"
+                        )
                         logger.info(
                             f"[{CONSTITUTIONAL_HASH}] Transaction {signature} confirmation status: {confirmation_status} "
                             f"({status.confirmations} confirmations)"
@@ -400,10 +419,14 @@ class SolanaClient:
 
                 await asyncio.sleep(delay)
             except Exception as e:
-                logger.warning(f"[{CONSTITUTIONAL_HASH}] Error checking signature status (attempt {i+1}): {e}")
+                logger.warning(
+                    f"[{CONSTITUTIONAL_HASH}] Error checking signature status (attempt {i+1}): {e}"
+                )
                 await asyncio.sleep(delay)
 
-        logger.error(f"[{CONSTITUTIONAL_HASH}] Transaction {signature} timed out after {max_retries} checks")
+        logger.error(
+            f"[{CONSTITUTIONAL_HASH}] Transaction {signature} timed out after {max_retries} checks"
+        )
         return False
 
     async def get_network_stats(self) -> Dict[str, Any]:

@@ -1,0 +1,129 @@
+openapi: 3.0.3
+info:
+  title: ACGS-2 Constitutional AI Service API
+  description: |
+    Core constitutional validation and AI governance service.
+    Constitutional Hash: cdd01ef066bc6cf2
+  version: "2.0.0"
+  contact:
+    name: ACGS-2 Governance Team
+
+servers:
+  - url: http://localhost:8085
+    description: Local constitutional AI service
+
+paths:
+  /validate:
+    post:
+      summary: Validate content against constitutional principles
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                content:
+                  type: string
+                  description: Content to validate
+                content_type:
+                  type: string
+                  enum: [message, policy, decision, action]
+                context:
+                  type: object
+                  description: Additional context for validation
+                constitutional_hash:
+                  type: string
+                  example: "cdd01ef066bc6cf2"
+      responses:
+        "200":
+          description: Validation result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  valid:
+                    type: boolean
+                  score:
+                    type: number
+                    minimum: 0
+                    maximum: 1
+                  violations:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        rule:
+                          type: string
+                        severity:
+                          type: string
+                          enum: [low, medium, high, critical]
+                        description:
+                          type: string
+                  recommendations:
+                    type: array
+                    items:
+                      type: string
+
+  /constitution/rules:
+    get:
+      summary: Get constitutional rules
+      parameters:
+        - name: category
+          in: query
+          schema:
+            type: string
+            enum: [governance, security, ethics, transparency]
+      responses:
+        "200":
+          description: List of constitutional rules
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  rules:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        category:
+                          type: string
+                        description:
+                          type: string
+                        enforcement:
+                          type: string
+                          enum: [mandatory, recommended, informational]
+
+  /constitution/validate-hash:
+    post:
+      summary: Validate constitutional hash
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                provided_hash:
+                  type: string
+                expected_hash:
+                  type: string
+                  example: "cdd01ef066bc6cf2"
+      responses:
+        "200":
+          description: Hash validation result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  valid:
+                    type: boolean
+                  expected:
+                    type: string
+                  provided:
+                    type: string

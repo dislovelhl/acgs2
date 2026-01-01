@@ -12,20 +12,21 @@ Comprehensive tests for the Retrieval Triad module including:
 """
 
 import asyncio
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
 
 # Import retrieval triad module
 try:
-    from enhanced_agent_bus.retrieval_triad import RetrievalTriad
     from enhanced_agent_bus.graph_database import MockGraphManager
+    from enhanced_agent_bus.retrieval_triad import RetrievalTriad
 except ImportError:
     import os
     import sys
 
     sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-    from retrieval_triad import RetrievalTriad
     from graph_database import MockGraphManager
+    from retrieval_triad import RetrievalTriad
 
 
 # Constitutional Hash for validation

@@ -1,3 +1,6 @@
+import logging
+
+logger = logging.getLogger(__name__)
 """
 ACGS-2 AI Assistant Framework
 Constitutional Hash: cdd01ef066bc6cf2
@@ -14,7 +17,7 @@ Example usage:
         user_id="user123",
         message="What is my order status?"
     )
-    print(result.response_text)
+    logging.info(result.response_text)
 
     # Full control
     from enhanced_agent_bus.ai_assistant import (

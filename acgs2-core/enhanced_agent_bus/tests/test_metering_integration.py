@@ -5,6 +5,9 @@ Constitutional Hash: cdd01ef066bc6cf2
 Comprehensive tests for production billing metering integration.
 """
 
+import logging
+
+logger = logging.getLogger(__name__)
 import os
 import sys
 import time
@@ -198,7 +201,7 @@ class TestAsyncMeteringQueue:
         queue.config.enabled = True
 
         # Fill the queue
-        for i in range(5):
+        for _i in range(5):
             queue.enqueue_nowait(
                 tenant_id="test-tenant",
                 operation=MeterableOperation.CONSTITUTIONAL_VALIDATION,
@@ -564,7 +567,7 @@ class TestLatencyImpact:
         # Enqueue should be extremely fast (< 100 microseconds per operation)
         # This ensures minimal impact on P99 latency
         assert avg_latency_us < 100, f"Enqueue latency too high: {avg_latency_us:.2f}us"
-        print(f"\nAverage enqueue latency: {avg_latency_us:.2f}us")
+        logger.info(f"\nAverage enqueue latency: {avg_latency_us:.2f}us")
 
     @pytest.mark.asyncio
     async def test_hooks_latency(self, metering_hooks, metering_queue):
@@ -589,7 +592,7 @@ class TestLatencyImpact:
 
         # Hook calls should be extremely fast (< 150 microseconds per operation)
         assert avg_latency_us < 150, f"Hook latency too high: {avg_latency_us:.2f}us"
-        print(f"\nAverage hook call latency: {avg_latency_us:.2f}us")
+        logger.info(f"\nAverage hook call latency: {avg_latency_us:.2f}us")
 
 
 class TestConstitutionalCompliance:

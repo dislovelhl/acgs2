@@ -1,3 +1,5 @@
+import logging
+
 #!/usr/bin/env python3
 """
 ACGS-2 Load Test Suite
@@ -239,21 +241,23 @@ class E2EUser(HttpUser):
 @events.test_start.add_listener
 def on_test_start(environment, **kwargs):
     """Initialize test environment."""
-    print("Starting ACGS-2 Load Test")
-    print(f"Target host: {environment.host}")
-    print(f"Number of users: {environment.runner.user_count if environment.runner else 'N/A'}")
+    logging.info("Starting ACGS-2 Load Test")
+    logging.info(f"Target host: {environment.host}")
+    logging.info(
+        f"Number of users: {environment.runner.user_count if environment.runner else 'N/A'}"
+    )
 
 
 @events.test_stop.add_listener
 def on_test_stop(environment, **kwargs):
     """Clean up after test."""
-    print("Load test completed")
+    logging.info("Load test completed")
     if environment.runner:
         stats = environment.runner.stats
-        print(f"Total requests: {stats.num_requests}")
-        print(f"Total failures: {stats.num_failures}")
-        print(".2f")
-        print(".2f")
+        logging.info(f"Total requests: {stats.num_requests}")
+        logging.error(f"Total failures: {stats.num_failures}")
+        logging.info(".2f")
+        logging.info(".2f")
 
 
 if __name__ == "__main__":

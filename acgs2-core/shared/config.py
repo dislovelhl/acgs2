@@ -36,7 +36,9 @@ if HAS_PYDANTIC_SETTINGS:
         socket_timeout: float = Field(5.0, validation_alias="REDIS_SOCKET_TIMEOUT")
         retry_on_timeout: bool = Field(True, validation_alias="REDIS_RETRY_ON_TIMEOUT")
         ssl: bool = Field(False, validation_alias="REDIS_SSL")
-        ssl_cert_reqs: str = Field("none", validation_alias="REDIS_SSL_CERT_REQS")  # none, optional, required
+        ssl_cert_reqs: str = Field(
+            "none", validation_alias="REDIS_SSL_CERT_REQS"
+        )  # none, optional, required
         ssl_ca_certs: Optional[str] = Field(None, validation_alias="REDIS_SSL_CA_CERTS")
 
     class AISettings(BaseSettings):
@@ -163,15 +165,9 @@ else:
         retry_on_timeout: bool = field(
             default_factory=lambda: os.getenv("REDIS_RETRY_ON_TIMEOUT", "true").lower() == "true"
         )
-        ssl: bool = field(
-            default_factory=lambda: os.getenv("REDIS_SSL", "false").lower() == "true"
-        )
-        ssl_cert_reqs: str = field(
-            default_factory=lambda: os.getenv("REDIS_SSL_CERT_REQS", "none")
-        )
-        ssl_ca_certs: Optional[str] = field(
-            default_factory=lambda: os.getenv("REDIS_SSL_CA_CERTS")
-        )
+        ssl: bool = field(default_factory=lambda: os.getenv("REDIS_SSL", "false").lower() == "true")
+        ssl_cert_reqs: str = field(default_factory=lambda: os.getenv("REDIS_SSL_CERT_REQS", "none"))
+        ssl_ca_certs: Optional[str] = field(default_factory=lambda: os.getenv("REDIS_SSL_CA_CERTS"))
 
     @dataclass
     class AISettings:
@@ -251,12 +247,8 @@ else:
         ssl_verify: bool = field(
             default_factory=lambda: os.getenv("OPA_SSL_VERIFY", "true").lower() == "true"
         )
-        ssl_cert: Optional[str] = field(
-            default_factory=lambda: os.getenv("OPA_SSL_CERT")
-        )
-        ssl_key: Optional[str] = field(
-            default_factory=lambda: os.getenv("OPA_SSL_KEY")
-        )
+        ssl_cert: Optional[str] = field(default_factory=lambda: os.getenv("OPA_SSL_CERT"))
+        ssl_key: Optional[str] = field(default_factory=lambda: os.getenv("OPA_SSL_KEY"))
 
     @dataclass
     class AuditSettings:

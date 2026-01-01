@@ -7,10 +7,11 @@ Validation utilities for message and agent compliance.
 
 import hmac
 from dataclasses import dataclass, field
+
 try:
     from .models import AgentMessage, MessageStatus
 except (ImportError, ValueError):
-    from models import AgentMessage, MessageStatus # type: ignore
+    from models import MessageStatus  # type: ignore
 from datetime import datetime, timezone
 from typing import Any, Dict, List
 

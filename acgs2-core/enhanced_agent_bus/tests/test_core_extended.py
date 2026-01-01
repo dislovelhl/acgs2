@@ -76,7 +76,9 @@ class TestMessageProcessorExtended:
                 return False
 
         processor = SimpleProcessor()
-        handler = lambda msg: None
+
+        def handler(msg):
+            return None
 
         processor.register_handler(MessageType.COMMAND, handler)
         result = processor.unregister_handler(MessageType.COMMAND, handler)
@@ -98,7 +100,9 @@ class TestMessageProcessorExtended:
                 return False
 
         processor = SimpleProcessor()
-        handler = lambda msg: None
+
+        def handler(msg):
+            return None
 
         result = processor.unregister_handler(MessageType.COMMAND, handler)
         assert result is False

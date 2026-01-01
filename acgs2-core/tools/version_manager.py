@@ -2,6 +2,7 @@
 import re
 import sys
 from pathlib import Path
+import logging
 
 # Constitutional Hash: cdd01ef066bc6cf2
 
@@ -9,7 +10,7 @@ from pathlib import Path
 def get_version():
     version_file = Path(__file__).parent.parent / "VERSION"
     if not version_file.exists():
-        print("VERSION file not found.")
+        logging.info("VERSION file not found.")
         return None
     return version_file.read_text().strip()
 
@@ -38,7 +39,7 @@ def update_version_in_files(version):
     for file_path in files_to_update:
         full_path = root_dir / file_path
         if not full_path.exists():
-            print(f"File not found: {file_path}")
+            logging.info(f"File not found: {file_path}")
             continue
 
         content = full_path.read_text(encoding="utf-8")
@@ -49,9 +50,9 @@ def update_version_in_files(version):
 
         if new_content != content:
             full_path.write_text(new_content, encoding="utf-8")
-            print(f"Updated version in {file_path} to {version}")
+            logging.info(f"Updated version in {file_path} to {version}")
         else:
-            print(f"No version string found or already up to date in {file_path}")
+            logging.info(f"No version string found or already up to date in {file_path}")
 
 
 if __name__ == "__main__":

@@ -3,9 +3,9 @@
 
 [run]
 source =
-    enhanced_agent_bus
-    monitoring
-    services
+    acgs2-core
+    acgs2-observability
+    acgs2-research
 branch = True
 parallel = True
 omit =
@@ -15,6 +15,8 @@ omit =
     */.venv/*
     */migrations/*
     */conftest.py
+
+# Ensure consistent reporting with root configuration
 
 [report]
 exclude_lines =

@@ -1,0 +1,116 @@
+openapi: 3.0.3
+info:
+  title: ACGS-2 Blockchain Audit Service API
+  description: |
+    Blockchain-anchored audit trails and compliance verification.
+    Constitutional Hash: cdd01ef066bc6cf2
+  version: "2.0.0"
+  contact:
+    name: ACGS-2 Governance Team
+
+servers:
+  - url: http://localhost:8084
+    description: Local audit service
+
+paths:
+  /audit/log:
+    post:
+      summary: Log an audit event to blockchain
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                event_type:
+                  type: string
+                  example: "message_processed"
+                event_data:
+                  type: object
+                timestamp:
+                  type: string
+                  format: date-time
+                constitutional_hash:
+                  type: string
+                  example: "cdd01ef066bc6cf2"
+      responses:
+        "201":
+          description: Audit event logged
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  transaction_hash:
+                    type: string
+                  block_number:
+                    type: integer
+
+  /audit/verify/{transaction_hash}:
+    get:
+      summary: Verify an audit transaction
+      parameters:
+        - name: transaction_hash
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Transaction verification result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  verified:
+                    type: boolean
+                  block_number:
+                    type: integer
+                  timestamp:
+                    type: string
+                    format: date-time
+
+  /audit/events:
+    get:
+      summary: Query audit events
+      parameters:
+        - name: event_type
+          in: query
+          schema:
+            type: string
+        - name: start_date
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: end_date
+          in: query
+          schema:
+            type: string
+            format: date-time
+      responses:
+        "200":
+          description: List of audit events
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  events:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        transaction_hash:
+                          type: string
+                        event_type:
+                          type: string
+                        event_data:
+                          type: object
+                        block_number:
+                          type: integer
+                        timestamp:
+                          type: string
+                          format: date-time

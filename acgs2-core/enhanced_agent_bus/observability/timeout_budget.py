@@ -235,7 +235,7 @@ class TimeoutBudgetManager:
 
             return result
 
-        except asyncio.TimeoutError:
+        except asyncio.TimeoutError as e:
             elapsed = budget.stop()
             logger.error(
                 f"[{CONSTITUTIONAL_HASH}] Layer {layer.value} timeout: "
@@ -248,7 +248,7 @@ class TimeoutBudgetManager:
                     budget_ms=budget.budget_ms,
                     elapsed_ms=elapsed,
                     operation=operation_name,
-                )
+                ) from e
             raise
 
         except Exception:

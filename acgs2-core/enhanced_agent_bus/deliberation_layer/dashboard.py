@@ -69,13 +69,13 @@ def show_pending_reviews(deliberation_queue, llm_assistant):
             col1, col2 = st.columns([2, 1])
 
             with col1:
-                show_item_details(item, llm_assistant)
+                show_item_details(item, llm_assistant, deliberation_queue)
 
             with col2:
                 show_review_actions(item["item_id"], deliberation_queue)
 
 
-def show_item_details(item: Dict[str, Any], llm_assistant):
+def show_item_details(item: Dict[str, Any], llm_assistant, deliberation_queue):
     """Show detailed information about a deliberation item."""
     item_details = deliberation_queue.get_item_details(item["item_id"])
 

@@ -1,3 +1,5 @@
+import logging
+
 #!/usr/bin/env python3
 """
 ACGS-2 Performance Validation Script
@@ -205,12 +207,12 @@ def print_results(results: List[ValidationResult], format_type: str = "text") ->
                 else "warning" if any(r.status == Status.WARNING for r in results) else "pass"
             ),
         }
-        print(json.dumps(output, indent=2))
+        logging.info(json.dumps(output, indent=2))
     else:
-        print("\nACGS-2 Performance Validation Report")
-        print(f"Constitutional Hash: {CONSTITUTIONAL_HASH}")
-        print(f"Timestamp: {datetime.now(timezone.utc).isoformat()}")
-        print("=" * 70)
+        logging.info("\nACGS-2 Performance Validation Report")
+        logging.info(f"Constitutional Hash: {CONSTITUTIONAL_HASH}")
+        logging.info(f"Timestamp: {datetime.now(timezone.utc)}")
+        logging.info("=" * 70)
         print()
 
         for result in results:
@@ -218,21 +220,21 @@ def print_results(results: List[ValidationResult], format_type: str = "text") ->
                 result.status
             ]
 
-            print(f"{status_icon} {result.name}")
-            print(f"       Value: {result.value}")
-            print(f"       Warning Threshold: {result.threshold_warning}")
-            print(f"       Critical Threshold: {result.threshold_critical}")
-            print(f"       Message: {result.message}")
+            logging.info(f"{status_icon} {result.name}")
+            logging.info(f"       Value: {result.value}")
+            logging.warning(f"       Warning Threshold: {result.threshold_warning}")
+            logging.error(f"       Critical Threshold: {result.threshold_critical}")
+            logging.info(f"       Message: {result.message}")
             print()
 
-        print("=" * 70)
+        logging.info("=" * 70)
 
         overall_status = (
             "FAIL"
             if any(r.status == Status.FAIL for r in results)
             else "WARNING" if any(r.status == Status.WARNING for r in results) else "PASS"
         )
-        print(f"Overall Status: {overall_status}")
+        logging.info(f"Overall Status: {overall_status}")
         print()
 
 
@@ -240,11 +242,11 @@ def generate_github_annotations(results: List[ValidationResult]) -> None:
     """Generate GitHub Actions annotations."""
     for result in results:
         if result.status == Status.FAIL:
-            print(f"::error::{result.message}")
+            logging.error(f"::error::{result.message}")
         elif result.status == Status.WARNING:
-            print(f"::warning::{result.message}")
+            logging.warning(f"::warning::{result.message}")
         else:
-            print(f"::notice::{result.message}")
+            logging.info(f"::notice::{result.message}")
 
 
 def main():
@@ -287,10 +289,10 @@ Examples:
     try:
         metrics = load_metrics(args.metrics_file)
     except FileNotFoundError:
-        print(f"Error: Metrics file not found: {args.metrics_file}")
+        logging.error(f"Error: Metrics file not found: {args.metrics_file}")
         sys.exit(1)
     except json.JSONDecodeError as e:
-        print(f"Error: Invalid JSON in metrics file: {e}")
+        logging.error(f"Error: Invalid JSON in metrics file: {e}")
         sys.exit(1)
 
     results = validate_metrics(metrics)

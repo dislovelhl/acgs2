@@ -11,29 +11,28 @@ close, and convenience functions.
 import asyncio
 import hashlib
 import json
-import pytest
-from dataclasses import dataclass
-from typing import Any, Optional
-from unittest.mock import AsyncMock, MagicMock, patch
+import os
 
 # Direct imports to ensure coverage tracking
 import sys
-import os
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 
 # Add parent to path for direct imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from acl_adapters.base import AdapterResult
 from acl_adapters.opa_adapter import (
     CONSTITUTIONAL_HASH,
     OPAAdapter,
     OPAAdapterConfig,
     OPARequest,
     OPAResponse,
-    check_constitutional_compliance,
     check_agent_permission,
+    check_constitutional_compliance,
     evaluate_maci_role,
 )
-from acl_adapters.base import AdapterResult
 
 # =============================================================================
 # Test Fixtures

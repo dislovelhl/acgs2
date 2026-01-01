@@ -1,3 +1,4 @@
+import logging
 #!/usr/bin/env python3
 """
 Surface Code Extension for PAG-QEC Framework
@@ -599,11 +600,11 @@ class CurriculumTrainer:
 
     def train(self) -> Dict[str, List]:
         """Run curriculum training."""
-        print(f"\nCurriculum Training for Distance-{self.distance} Surface Code")
-        print("=" * 60)
+        logging.info(f"\nCurriculum Training for Distance-{self.distance} Surface Code")
+        logging.info("=" * 60)
 
         for stage, error_rate in enumerate(self.error_rates):
-            print(f"\nStage {stage + 1}/{self.num_stages}: " f"Error Rate = {error_rate:.4f}")
+            logging.error(f"\nStage {stage + 1}/{self.num_stages}: " f"Error Rate = {error_rate:.4f}")
 
             # Create environment for this stage
             env = SurfaceCodeEnvironment(distance=self.distance, physical_error_rate=error_rate)
@@ -732,25 +733,25 @@ def run_surface_code_benchmark(
     """
     if distances is None:
         distances = [3, 5]
-    print("\n" + "=" * 60)
-    print("SURFACE CODE DECODER BENCHMARK")
-    print(f"Constitutional Hash: {CONSTITUTIONAL_HASH}")
-    print("=" * 60)
+    logging.info("\n" + "=" * 60)
+    logging.info("SURFACE CODE DECODER BENCHMARK")
+    logging.info(f"Constitutional Hash: {CONSTITUTIONAL_HASH}")
+    logging.info("=" * 60)
 
     results = {}
 
     for d in distances:
-        print(f"\n{'='*60}")
-        print(f"DISTANCE-{d} SURFACE CODE")
-        print(f"{'='*60}")
-        print(f"Data qubits: {d**2}, Syndrome bits: {d**2 - 1}")
-        print(f"Physical error rate: {error_rate:.2%}")
+        logging.info(f"\n{'='*60}")
+        logging.info(f"DISTANCE-{d} SURFACE CODE")
+        logging.info(f"{'='*60}")
+        logging.info(f"Data qubits: {d**2}, Syndrome bits: {d**2 - 1}")
+        logging.error(f"Physical error rate: {error_rate:.2%}")
 
         # Setup environment
         env = SurfaceCodeEnvironment(distance=d, physical_error_rate=error_rate)
 
         # Train neural decoder with curriculum
-        print("\n[1/3] Training Neural Decoder (Curriculum)...")
+        logging.info("\n[1/3] Training Neural Decoder (Curriculum)
         neural_decoder = SurfaceCodeNeuralDecoder(
             distance=d, hidden_multiplier=4, num_layers=2, num_heads=2
         )
@@ -767,11 +768,11 @@ def run_surface_code_benchmark(
         trainer.train()
 
         # Setup MWPM baseline
-        print("\n[2/3] Initializing MWPM Decoder...")
+        logging.info("\n[2/3] Initializing MWPM Decoder...")
         mwpm_decoder = MWPMDecoder(env.geometry)
 
         # Generate test data
-        print(f"\n[3/3] Running benchmark ({num_samples} samples)...")
+        logging.info(f"\n[3/3] Running benchmark ({num_samples} samples)
         test_data = env.generate_dataset(num_samples)
 
         # Benchmark Neural Decoder
@@ -810,18 +811,18 @@ def run_surface_code_benchmark(
         }
 
         # Print results
-        print(f"\nResults for Distance-{d}:")
-        print("  Neural Decoder:")
-        print(f"    Logical Error Rate: {neural_logical_errors/num_samples:.4f}")
-        print(f"    Avg Latency: {neural_decoder.get_avg_inference_time_ns():.0f} ns")
-        print("  MWPM Decoder:")
-        print(f"    Logical Error Rate: {mwpm_logical_errors/num_samples:.4f}")
-        print(f"    Avg Latency: {mwpm_decoder.get_avg_inference_time_ns():.0f} ns")
+        logging.info(f"\nResults for Distance-{d}:")
+        logging.info("  Neural Decoder:")
+        logging.error(f"    Logical Error Rate: {neural_logical_errors/num_samples:.4f}")
+        logging.info(f"    Avg Latency: {neural_decoder.get_avg_inference_time_ns()
+        logging.info("  MWPM Decoder:")
+        logging.error(f"    Logical Error Rate: {mwpm_logical_errors/num_samples:.4f}")
+        logging.info(f"    Avg Latency: {mwpm_decoder.get_avg_inference_time_ns()
 
     # Summary
-    print("\n" + "=" * 60)
-    print("BENCHMARK SUMMARY")
-    print("=" * 60)
+    logging.info("\n" + "=" * 60)
+    logging.info("BENCHMARK SUMMARY")
+    logging.info("=" * 60)
 
     for d in distances:
         key = f"d{d}"
@@ -833,12 +834,12 @@ def run_surface_code_benchmark(
         else:
             improvement = 0
 
-        print(f"\nDistance-{d}:")
-        print(f"  Neural LER: {neural_ler:.4f}, MWPM LER: {mwpm_ler:.4f}")
+        logging.info(f"\nDistance-{d}:")
+        logging.info(f"  Neural LER: {neural_ler:.4f}, MWPM LER: {mwpm_ler:.4f}")
         if improvement > 0:
-            print(f"  >> Neural decoder {improvement:.1f}% better than MWPM!")
+            logging.info(f"  >> Neural decoder {improvement:.1f}% better than MWPM!")
         elif improvement < 0:
-            print(f"  >> MWPM {-improvement:.1f}% better than Neural decoder")
+            logging.info(f"  >> MWPM {-improvement:.1f}% better than Neural decoder")
 
     return results
 
@@ -862,9 +863,9 @@ def main():
     # Run benchmark on distance-3 and distance-5 codes
     results = run_surface_code_benchmark(distances=[3, 5], error_rate=0.01, num_samples=500)
 
-    print("\n" + "=" * 60)
-    print("SURFACE CODE EXTENSION READY")
-    print("=" * 60)
+    logging.info("\n" + "=" * 60)
+    logging.info("SURFACE CODE EXTENSION READY")
+    logging.info("=" * 60)
     print(
         """
     Next steps:

@@ -22,9 +22,7 @@ class ImpactScorerProtocol(Protocol):
     """
 
     def calculate_impact_score(
-        self,
-        content: Dict[str, Any],
-        context: Optional[Dict[str, Any]] = None
+        self, content: Dict[str, Any], context: Optional[Dict[str, Any]] = None
     ) -> float:
         """Calculate impact score for message content.
 
@@ -46,9 +44,7 @@ class AdaptiveRouterProtocol(Protocol):
     """
 
     async def route_message(
-        self,
-        message: Any,  # AgentMessage
-        context: Optional[Dict[str, Any]] = None
+        self, message: Any, context: Optional[Dict[str, Any]] = None  # AgentMessage
     ) -> Dict[str, Any]:
         """Route a message based on impact assessment.
 
@@ -61,11 +57,7 @@ class AdaptiveRouterProtocol(Protocol):
         """
         ...
 
-    async def force_deliberation(
-        self,
-        message: Any,
-        reason: str
-    ) -> Dict[str, Any]:
+    async def force_deliberation(self, message: Any, reason: str) -> Dict[str, Any]:
         """Force a message into deliberation.
 
         Args:
@@ -82,7 +74,7 @@ class AdaptiveRouterProtocol(Protocol):
         message_id: str,
         actual_outcome: str,
         processing_time: float,
-        feedback_score: Optional[float] = None
+        feedback_score: Optional[float] = None,
     ) -> None:
         """Update performance feedback for learning.
 
@@ -115,7 +107,7 @@ class DeliberationQueueProtocol(Protocol):
         message: Any,
         requires_human_review: bool = False,
         requires_multi_agent_vote: bool = False,
-        timeout_seconds: int = 300
+        timeout_seconds: int = 300,
     ) -> str:
         """Enqueue a message for deliberation.
 
@@ -131,11 +123,7 @@ class DeliberationQueueProtocol(Protocol):
         ...
 
     async def submit_human_decision(
-        self,
-        item_id: str,
-        reviewer: str,
-        decision: Any,  # DeliberationStatus
-        reasoning: str
+        self, item_id: str, reviewer: str, decision: Any, reasoning: str  # DeliberationStatus
     ) -> bool:
         """Submit a human decision for a deliberation item.
 
@@ -156,7 +144,7 @@ class DeliberationQueueProtocol(Protocol):
         agent_id: str,
         vote: Any,  # VoteType
         reasoning: str,
-        confidence: float = 1.0
+        confidence: float = 1.0,
     ) -> bool:
         """Submit an agent vote for a deliberation item.
 
@@ -199,10 +187,7 @@ class LLMAssistantProtocol(Protocol):
     Constitutional Hash: cdd01ef066bc6cf2
     """
 
-    async def analyze_deliberation_trends(
-        self,
-        history: List[Dict[str, Any]]
-    ) -> Dict[str, Any]:
+    async def analyze_deliberation_trends(self, history: List[Dict[str, Any]]) -> Dict[str, Any]:
         """Analyze deliberation trends.
 
         Args:
@@ -230,10 +215,7 @@ class RedisQueueProtocol(Protocol):
         ...
 
     async def enqueue_deliberation_item(
-        self,
-        message: Any,
-        item_id: str,
-        metadata: Optional[Dict[str, Any]] = None
+        self, message: Any, item_id: str, metadata: Optional[Dict[str, Any]] = None
     ) -> bool:
         """Enqueue a deliberation item in Redis.
 
@@ -272,12 +254,7 @@ class RedisVotingProtocol(Protocol):
         ...
 
     async def submit_vote(
-        self,
-        item_id: str,
-        agent_id: str,
-        vote: str,
-        reasoning: str,
-        confidence: float = 1.0
+        self, item_id: str, agent_id: str, vote: str, reasoning: str, confidence: float = 1.0
     ) -> bool:
         """Submit a vote.
 
@@ -310,10 +287,7 @@ class OPAGuardProtocol(Protocol):
         ...
 
     async def verify_action(
-        self,
-        agent_id: str,
-        action: Dict[str, Any],
-        context: Optional[Dict[str, Any]] = None
+        self, agent_id: str, action: Dict[str, Any], context: Optional[Dict[str, Any]] = None
     ) -> Any:  # GuardResult
         """Verify an action with OPA Guard.
 
@@ -332,7 +306,7 @@ class OPAGuardProtocol(Protocol):
         decision_id: str,
         required_signers: List[str],
         threshold: float = 1.0,
-        timeout: int = 300
+        timeout: int = 300,
     ) -> Any:  # SignatureResult
         """Collect multi-signatures for a decision.
 
@@ -348,11 +322,7 @@ class OPAGuardProtocol(Protocol):
         ...
 
     async def submit_signature(
-        self,
-        decision_id: str,
-        signer_id: str,
-        reasoning: str = "",
-        confidence: float = 1.0
+        self, decision_id: str, signer_id: str, reasoning: str = "", confidence: float = 1.0
     ) -> bool:
         """Submit a signature for a pending decision."""
         ...
@@ -362,7 +332,7 @@ class OPAGuardProtocol(Protocol):
         decision: Dict[str, Any],
         critic_agents: List[str],
         review_types: Optional[List[str]] = None,
-        timeout: int = 300
+        timeout: int = 300,
     ) -> Any:  # ReviewResult
         """Submit a decision for critic agent review."""
         ...
@@ -375,7 +345,7 @@ class OPAGuardProtocol(Protocol):
         reasoning: str = "",
         concerns: Optional[List[str]] = None,
         recommendations: Optional[List[str]] = None,
-        confidence: float = 1.0
+        confidence: float = 1.0,
     ) -> bool:
         """Submit a critic review for a pending decision."""
         ...
@@ -385,7 +355,7 @@ class OPAGuardProtocol(Protocol):
         critic_id: str,
         review_types: List[str],
         callback: Optional[Callable] = None,
-        metadata: Optional[Dict[str, Any]] = None
+        metadata: Optional[Dict[str, Any]] = None,
     ) -> None:
         """Register a critic agent for reviews."""
         ...
@@ -399,10 +369,7 @@ class OPAGuardProtocol(Protocol):
         ...
 
     def get_audit_log(
-        self,
-        limit: int = 100,
-        offset: int = 0,
-        agent_id: Optional[str] = None
+        self, limit: int = 100, offset: int = 0, agent_id: Optional[str] = None
     ) -> List[Dict[str, Any]]:
         """Get audit log entries."""
         ...

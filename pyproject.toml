@@ -32,9 +32,8 @@ line-length = 100
 target-version = ['py311']
 
 [tool.mypy]
-strict = true
-ignore_missing_imports = true
-exclude = ["venv", ".venv", "tests"]
+# MyPy is configured per-package to avoid directory naming conflicts
+# See individual package mypy.ini files for configuration
 
 [tool.pytest.ini_options]
 # Note: --dist=loadfile requires pytest-xdist. Install with: pip install ".[test]"

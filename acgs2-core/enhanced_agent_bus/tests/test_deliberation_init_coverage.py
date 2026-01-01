@@ -6,10 +6,10 @@ Comprehensive tests for deliberation_layer/__init__.py lazy loading pattern
 and module-level exports.
 """
 
-import pytest
 import sys
-import importlib
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
+
+import pytest
 
 # =============================================================================
 # Test Fixtures
@@ -151,7 +151,7 @@ class TestDeliberationGetattr:
 
         try:
             # Access via getattr (simulates attribute access)
-            scorer_class = getattr(deliberation_layer, "ImpactScorer")
+            scorer_class = deliberation_layer.ImpactScorer
             assert scorer_class is not None
         except ImportError:
             # numpy not available - expected
@@ -162,7 +162,7 @@ class TestDeliberationGetattr:
         import deliberation_layer
 
         try:
-            func = getattr(deliberation_layer, "calculate_message_impact")
+            func = deliberation_layer.calculate_message_impact
             assert callable(func)
         except ImportError:
             # numpy not available - expected
@@ -173,7 +173,7 @@ class TestDeliberationGetattr:
         import deliberation_layer
 
         try:
-            func = getattr(deliberation_layer, "get_impact_scorer")
+            func = deliberation_layer.get_impact_scorer
             assert callable(func)
         except ImportError:
             # numpy not available - expected
@@ -184,15 +184,15 @@ class TestDeliberationGetattr:
         import deliberation_layer
 
         with pytest.raises(AttributeError):
-            getattr(deliberation_layer, "InvalidClassName")
+            _ = deliberation_layer.InvalidClassName  # noqa: B018
 
     def test_getattr_multiple_accesses_cached(self):
         """Test that multiple accesses return same object (module caching)."""
         import deliberation_layer
 
         try:
-            scorer1 = getattr(deliberation_layer, "ImpactScorer")
-            scorer2 = getattr(deliberation_layer, "ImpactScorer")
+            scorer1 = deliberation_layer.ImpactScorer
+            scorer2 = deliberation_layer.ImpactScorer
             assert scorer1 is scorer2
         except ImportError:
             # numpy not available - expected
@@ -212,10 +212,10 @@ class TestDeliberationModuleImports:
         from deliberation_layer import (
             DeliberationQueue,
             DeliberationTask,
+            Election,
+            Vote,
             VotingService,
             VotingStrategy,
-            Vote,
-            Election,
         )
 
         assert all(

@@ -9,8 +9,8 @@ Constitutional Hash: cdd01ef066bc6cf2
 import json
 import logging
 from dataclasses import dataclass
-from typing import Any, Dict, Optional
 from datetime import datetime, timezone
+from typing import Any, Dict, Optional
 
 from ..protocol.types import ToolDefinition, ToolInputSchema
 
@@ -240,7 +240,6 @@ class GetMetricsTool:
         """
         im = self._internal_metrics
 
-        total = max(im["total_requests"], 1)
         validation_count = max(im["validation_count"], 1)
 
         # Calculate average latency

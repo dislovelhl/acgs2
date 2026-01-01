@@ -8,12 +8,10 @@ Targeted tests to boost coverage for high-risk modules:
 - deliberation_queue.py: 73%→80%
 """
 
-import asyncio
 import json
 import os
 import tempfile
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -34,7 +32,7 @@ class TestMessageProcessorLogDecision:
     async def test_log_decision_with_span(self) -> None:
         """Test _log_decision with OpenTelemetry span."""
         from enhanced_agent_bus.message_processor import MessageProcessor
-        from enhanced_agent_bus.models import AgentMessage, MessageType, Priority
+        from enhanced_agent_bus.models import AgentMessage, MessageType
 
         processor = MessageProcessor()
 
@@ -237,8 +235,8 @@ class TestOPAClientEmbedded:
     @pytest.mark.asyncio
     async def test_evaluate_embedded_not_initialized(self) -> None:
         """Test embedded evaluation when not initialized."""
-        from enhanced_agent_bus.opa_client import OPAClient
         from enhanced_agent_bus.exceptions import OPANotInitializedError
+        from enhanced_agent_bus.opa_client import OPAClient
 
         client = OPAClient()
         # Set embedded OPA to None
@@ -372,7 +370,6 @@ class TestDeliberationQueuePersistence:
     async def test_load_tasks_valid_json(self) -> None:
         """Test _load_tasks with valid JSON."""
         from enhanced_agent_bus.deliberation_layer.deliberation_queue import DeliberationQueue
-        from enhanced_agent_bus.models import MessageType
 
         with tempfile.TemporaryDirectory() as tmpdir:
             path = os.path.join(tmpdir, "tasks.json")
@@ -448,7 +445,6 @@ class TestDeliberationQueueUpdateStatus:
         """Test update_status converts string to enum."""
         from enhanced_agent_bus.deliberation_layer.deliberation_queue import (
             DeliberationQueue,
-            DeliberationStatus,
         )
         from enhanced_agent_bus.models import AgentMessage, MessageType
 
@@ -521,9 +517,8 @@ class TestDeliberationQueueResolveTask:
         """Test resolve_task with approved=True."""
         from enhanced_agent_bus.deliberation_layer.deliberation_queue import (
             DeliberationQueue,
-            DeliberationStatus,
         )
-        from enhanced_agent_bus.models import AgentMessage, MessageType, MessageStatus
+        from enhanced_agent_bus.models import AgentMessage, MessageStatus, MessageType
 
         queue = DeliberationQueue()
 
@@ -550,9 +545,8 @@ class TestDeliberationQueueResolveTask:
         """Test resolve_task with approved=False."""
         from enhanced_agent_bus.deliberation_layer.deliberation_queue import (
             DeliberationQueue,
-            DeliberationStatus,
         )
-        from enhanced_agent_bus.models import AgentMessage, MessageType, MessageStatus
+        from enhanced_agent_bus.models import AgentMessage, MessageStatus, MessageType
 
         queue = DeliberationQueue()
 
@@ -762,8 +756,9 @@ class TestOPAClientAdditional:
     @pytest.mark.asyncio
     async def test_opa_cache_get_from_memory(self) -> None:
         """Test OPA getting from memory cache."""
-        from enhanced_agent_bus.opa_client import OPAClient
         from datetime import datetime, timezone
+
+        from enhanced_agent_bus.opa_client import OPAClient
 
         client = OPAClient(enable_cache=True, cache_ttl=300)
 
@@ -798,8 +793,9 @@ class TestOPAClientAdditional:
     @pytest.mark.asyncio
     async def test_opa_cache_expired(self) -> None:
         """Test OPA cache expiration."""
-        from enhanced_agent_bus.opa_client import OPAClient
         from datetime import datetime, timezone
+
+        from enhanced_agent_bus.opa_client import OPAClient
 
         client = OPAClient(enable_cache=True, cache_ttl=1)  # 1 second TTL
 
@@ -834,8 +830,9 @@ class TestOPAClientAdditional:
     @pytest.mark.asyncio
     async def test_opa_redis_cache_get(self) -> None:
         """Test OPA getting from Redis cache."""
-        from enhanced_agent_bus.opa_client import OPAClient
         import json
+
+        from enhanced_agent_bus.opa_client import OPAClient
 
         client = OPAClient(enable_cache=True)
 
@@ -966,7 +963,6 @@ class TestDeliberationQueueExtended:
         """Test successful agent vote submission."""
         from enhanced_agent_bus.deliberation_layer.deliberation_queue import (
             DeliberationQueue,
-            DeliberationStatus,
             VoteType,
         )
         from enhanced_agent_bus.models import AgentMessage, MessageType
@@ -1290,11 +1286,12 @@ class TestDeliberationQueueExtended:
     @pytest.mark.asyncio
     async def test_voting_deadline_property(self) -> None:
         """Test voting_deadline property of DeliberationTask."""
+        from datetime import timedelta
+
         from enhanced_agent_bus.deliberation_layer.deliberation_queue import (
             DeliberationQueue,
         )
         from enhanced_agent_bus.models import AgentMessage, MessageType
-        from datetime import datetime, timedelta, timezone
 
         queue = DeliberationQueue(default_timeout=600)
         message = AgentMessage(
@@ -1534,7 +1531,7 @@ class TestMessageProcessorExtended:
     async def test_decision_log_creation(self) -> None:
         """Test that decision logs are created correctly."""
         from enhanced_agent_bus.message_processor import MessageProcessor
-        from enhanced_agent_bus.models import AgentMessage, MessageType, DecisionLog
+        from enhanced_agent_bus.models import AgentMessage, MessageType
 
         processor = MessageProcessor()
         message = AgentMessage(
@@ -1570,7 +1567,6 @@ class TestIntegrationScenarios:
         """Test complete deliberation workflow."""
         from enhanced_agent_bus.deliberation_layer.deliberation_queue import (
             DeliberationQueue,
-            DeliberationStatus,
             VoteType,
         )
         from enhanced_agent_bus.models import AgentMessage, MessageType
@@ -1640,8 +1636,9 @@ class TestIntegrationScenarios:
     @pytest.mark.asyncio
     async def test_deliberation_queue_persistence_roundtrip(self) -> None:
         """Test persistence save and load roundtrip."""
-        import tempfile
         import os
+        import tempfile
+
         from enhanced_agent_bus.deliberation_layer.deliberation_queue import (
             DeliberationQueue,
         )

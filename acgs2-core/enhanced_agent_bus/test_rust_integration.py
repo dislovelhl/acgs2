@@ -5,10 +5,13 @@ Constitutional Hash: cdd01ef066bc6cf2
 """
 
 import asyncio
+import logging
 import os
 import sys
 
 import pytest
+
+logger = logging.getLogger(__name__)
 
 # Add the enhanced_agent_bus directory to Python path
 current_dir = os.path.dirname(__file__)
@@ -46,11 +49,11 @@ MessageType = models.MessageType
 
 async def test_rust_processor():
     """Test the Rust MessageProcessor implementation."""
-    print("Testing Rust MessageProcessor integration...")
+    logger.info("Testing Rust MessageProcessor integration...")
 
     # Create processor
     processor = MessageProcessor()
-    print(f"Using Rust implementation: {hasattr(processor, '_rust_processor')}")
+    logger.info(f"Using Rust implementation: {hasattr(processor, '_rust_processor')}")
 
     # Create a test message
     message = AgentMessage(
@@ -62,18 +65,18 @@ async def test_rust_processor():
         payload={"data": "test_data"},
     )
 
-    print(f"Created message: {message.message_id}")
+    logger.info(f"Created message: {message.message_id}")
 
     # Process the message
     result = await processor.process(message)
 
-    print(f"Processing result: valid={result.is_valid}, errors={result.errors}")
-    print(f"Processed count: {processor.processed_count}")
+    logger.error(f"Processing result: valid={result.is_valid}, errors={result.errors}")
+    logger.info(f"Processed count: {processor.processed_count}")
 
     return result.is_valid
 
 
 if __name__ == "__main__":
     success = asyncio.run(test_rust_processor())
-    print(f"Test {'PASSED' if success else 'FAILED'}")
+    logger.error(f"Test {'PASSED' if success else 'FAILED'}")
     sys.exit(0 if success else 1)

@@ -6,8 +6,9 @@ Additional comprehensive tests for protocol interface definitions in interfaces.
 Tests mock implementations, isinstance checks, and async functional behavior.
 """
 
-import pytest
 from typing import Any, Dict, List, Optional
+
+import pytest
 
 try:
     from enhanced_agent_bus import interfaces

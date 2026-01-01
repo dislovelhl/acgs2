@@ -47,7 +47,9 @@ def traced(
 
     def decorator(func: F) -> F:
         span_name = name or func.__name__
-        tracer = get_tracer(service_name)
+        _tracer = get_tracer(
+            service_name
+        )  # noqa: F841 - tracer obtained for context initialization
 
         @functools.wraps(func)
         async def async_wrapper(*args, **kwargs):

@@ -1,6 +1,7 @@
-# ACGS-2 Model Profiler - GPU Acceleration Evaluation
-# Constitutional Hash: cdd01ef066bc6cf2
 """
+ACGS-2 Model Profiler - GPU Acceleration Evaluation
+Constitutional Hash: cdd01ef066bc6cf2
+
 Model profiling for determining GPU acceleration ROI.
 
 This module instruments ML model inference to measure:
@@ -16,6 +17,7 @@ from __future__ import annotations
 
 import asyncio
 import functools
+import logging
 import statistics
 import threading
 import time
@@ -39,6 +41,8 @@ try:
     PROMETHEUS_AVAILABLE = True
 except ImportError:
     PROMETHEUS_AVAILABLE = False
+
+logger = logging.getLogger(__name__)
 
 
 class BottleneckType(Enum):
@@ -133,8 +137,8 @@ class ModelProfiler:
 
         # Get aggregated metrics
         metrics = profiler.get_metrics("impact_scorer")
-        print(f"P99 latency: {metrics.latency_p99_ms}ms")
-        print(f"GPU recommendation: {metrics.gpu_recommendation}")
+        logger.info(f"P99 latency: {metrics.latency_p99_ms}ms")
+        logger.info(f"GPU recommendation: {metrics.gpu_recommendation}")
     """
 
     # Thresholds for bottleneck classification

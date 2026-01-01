@@ -2,8 +2,11 @@
 Simple test for ACGS-2 Deliberation Layer components.
 """
 
+import logging
 import os
 import sys
+
+logger = logging.getLogger(__name__)
 
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
@@ -18,7 +21,7 @@ from models import AgentMessage, MessageType, Priority
 
 def test_impact_scorer():
     """Test impact scorer functionality."""
-    print("Testing Impact Scorer...")
+    logger.info("Testing Impact Scorer...")
 
     # Test messages
     low_risk = {"action": "status_check", "details": "normal operation"}
@@ -27,16 +30,16 @@ def test_impact_scorer():
     low_score = calculate_message_impact(low_risk)
     high_score = calculate_message_impact(high_risk)
 
-    print(f"Low risk score: {low_score:.3f}")
-    print(f"High risk score: {high_score:.3f}")
+    logger.info(f"Low risk score: {low_score:.3f}")
+    logger.info(f"High risk score: {high_score:.3f}")
 
     assert low_score < high_score, "High risk should have higher score"
-    print("✅ Impact scorer test passed")
+    logger.info("✅ Impact scorer test passed")
 
 
 def test_adaptive_router():
     """Test adaptive router functionality."""
-    print("\nTesting Adaptive Router...")
+    logger.info("\nTesting Adaptive Router...")
 
     router = AdaptiveRouter(impact_threshold=0.5, enable_learning=False)
 
@@ -54,16 +57,16 @@ def test_adaptive_router():
 
     result = asyncio.run(router.route_message(message))
 
-    print(f"Message routed to: {result.get('lane')}")
-    print(f"Impact score: {message.impact_score:.3f}")
+    logger.info(f"Message routed to: {result.get('lane')}")
+    logger.info(f"Impact score: {message.impact_score:.3f}")
 
     assert result.get("lane") in ["fast", "deliberation"], "Should route to valid lane"
-    print("✅ Adaptive router test passed")
+    logger.info("✅ Adaptive router test passed")
 
 
 def test_deliberation_queue():
     """Test deliberation queue functionality."""
-    print("\nTesting Deliberation Queue...")
+    logger.info("\nTesting Deliberation Queue...")
 
     queue = DeliberationQueue()
 
@@ -81,32 +84,32 @@ def test_deliberation_queue():
 
     item_id = asyncio.run(queue.enqueue_for_deliberation(message))
 
-    print(f"Message enqueued with item ID: {item_id}")
+    logger.info(f"Message enqueued with item ID: {item_id}")
 
     # Check queue status
     status = queue.get_queue_status()
-    print(f"Queue size: {status['queue_size']}")
+    logger.info(f"Queue size: {status['queue_size']}")
 
     assert status["queue_size"] > 0, "Should have item in queue"
-    print("✅ Deliberation queue test passed")
+    logger.info("✅ Deliberation queue test passed")
 
 
 def main():
     """Run all tests."""
-    print("🧪 Running ACGS-2 Deliberation Layer Tests...")
+    logger.info("🧪 Running ACGS-2 Deliberation Layer Tests...")
 
     try:
         test_impact_scorer()
         test_adaptive_router()
         test_deliberation_queue()
 
-        print("\n" + "=" * 50)
-        print("🎉 All tests passed!")
-        print("ACGS-2 Deliberation Layer is functional.")
-        print("=" * 50)
+        logger.info("\n" + "=" * 50)
+        logger.info("🎉 All tests passed!")
+        logger.info("ACGS-2 Deliberation Layer is functional.")
+        logger.info("=" * 50)
 
     except Exception as e:
-        print(f"\n❌ Test failed: {e}")
+        logger.error(f"\n❌ Test failed: {e}")
         import traceback
 
         traceback.print_exc()

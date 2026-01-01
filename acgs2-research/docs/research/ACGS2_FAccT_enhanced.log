@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.25 (TeX Live 2023/Debian) (preloaded format=pdflatex 2025.5.12)  28 DEC 2025 16:12
+This is pdfTeX, Version 3.141592653-2.6-1.40.25 (TeX Live 2023/Debian) (preloaded format=pdflatex 2025.5.12)  31 DEC 2025 18:03
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -1456,84 +1456,80 @@ enefit from \pgfplotsset{compat=1.18} (current compat level: 1.17).
 
 \c@lstlisting=\count373
 LaTeX Font Info:    Font shape `T1/LinuxLibertineT-TLF/m/n' will be
-(Font)              scaled to size 14.4pt on input line 79.
+(Font)              scaled to size 14.4pt on input line 75.
 LaTeX Font Info:    Trying to load font information for T1+LinuxBiolinumT-TLF o
-n input line 79.
+n input line 75.
 (/usr/share/texlive/texmf-dist/tex/latex/libertine/T1LinuxBiolinumT-TLF.fd
 File: T1LinuxBiolinumT-TLF.fd 2017/03/20 (autoinst) Font definitions for T1/Lin
 uxBiolinumT-TLF.
 )
 LaTeX Font Info:    Font shape `T1/LinuxBiolinumT-TLF/m/n' will be
-(Font)              scaled to size 14.4pt on input line 79.
+(Font)              scaled to size 14.4pt on input line 75.
 Package microtype Info: Loading generic protrusion settings for font family
 (microtype)             `LinuxBiolinumT-TLF' (encoding: T1).
 (microtype)             For optimal results, create family-specific settings.
 (microtype)             See the microtype manual for details.
 LaTeX Font Info:    Font shape `T1/LinuxBiolinumT-TLF/b/n' will be
-(Font)              scaled to size 14.4pt on input line 79.
+(Font)              scaled to size 14.4pt on input line 75.
 LaTeX Font Info:    Font shape `T1/LinuxLibertineT-TLF/m/n' will be
-(Font)              scaled to size 10.95pt on input line 79.
+(Font)              scaled to size 10.95pt on input line 75.
 LaTeX Font Info:    Font shape `T1/LinuxBiolinumT-TLF/m/n' will be
-(Font)              scaled to size 10.95pt on input line 79.
+(Font)              scaled to size 10.95pt on input line 75.
 LaTeX Font Info:    Font shape `T1/LinuxBiolinumT-TLF/m/n' will be
-(Font)              scaled to size 9.0pt on input line 79.
+(Font)              scaled to size 9.0pt on input line 75.
 LaTeX Font Info:    Font shape `T1/LinuxLibertineT-TLF/m/n' will be
-(Font)              scaled to size 9.0pt on input line 79.
+(Font)              scaled to size 9.0pt on input line 75.
 LaTeX Font Info:    Font shape `T1/LinuxLibertineT-TLF/b/n' will be
-(Font)              scaled to size 9.0pt on input line 79.
+(Font)              scaled to size 9.0pt on input line 75.
 
 
 Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `\\' on input line 79.
+(hyperref)                removing `\\' on input line 75.
 
 LaTeX Font Info:    Font shape `T1/LinuxBiolinumT-TLF/m/n' will be
-(Font)              scaled to size 10.0pt on input line 84.
+(Font)              scaled to size 10.0pt on input line 80.
 LaTeX Font Info:    Font shape `T1/LinuxBiolinumT-TLF/b/n' will be
-(Font)              scaled to size 10.0pt on input line 84.
+(Font)              scaled to size 10.0pt on input line 80.
 LaTeX Font Info:    Font shape `T1/LinuxLibertineT-TLF/m/it' will be
-(Font)              scaled to size 10.0pt on input line 90.
+(Font)              scaled to size 10.0pt on input line 86.
 LaTeX Font Info:    Font shape `T1/LinuxLibertineT-TLF/b/n' will be
-(Font)              scaled to size 10.0pt on input line 98.
+(Font)              scaled to size 10.0pt on input line 94.
 [1.1{/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map}{/usr/share/texlive/texm
 f-dist/fonts/enc/dvips/libertine/lbtn_25tcsq.enc}{/usr/share/texlive/texmf-dist
 /fonts/enc/dvips/libertine/lbtn_76gpa5.enc}{/usr/share/texlive/texmf-dist/fonts
 /enc/dvips/libertine/lbtn_nh77jq.enc}{/usr/share/texlive/texmf-dist/fonts/enc/d
 vips/libertine/lbtn_7grukw.enc}]
-Overfull \hbox (9.78984pt too wide) in paragraph at lines 116--117
+Overfull \hbox (9.78984pt too wide) in paragraph at lines 112--113
 []\T1/LinuxLibertineT-TLF/b/n/10 (-20) C1: Socio-Technical Sys-tem De-sign. \T1
 /LinuxLibertineT-TLF/m/n/10 (-20) The de-sign and im-ple-men-ta-tion of ACGS-2,
  an infrastructure-
  []
 
 
-Overfull \hbox (3.986pt too wide) in paragraph at lines 120--121
+Overfull \hbox (3.986pt too wide) in paragraph at lines 116--117
 []\T1/LinuxLibertineT-TLF/b/n/10 (-20) C3: Crit-i-cal Anal-y-sis of Gov-er-nanc
 e Lim-its. \T1/LinuxLibertineT-TLF/m/n/10 (-20) We iden-tify and op-er-a-tional
 -ize the \T1/LinuxLibertineT-TLF/b/n/10 (-20) ``Performance-
  []
 
-
-Underfull \vbox (badness 10000) has occurred while \output is active []
-
 LaTeX Font Info:    Font shape `T1/LinuxBiolinumT-TLF/m/n' will be
 (Font)              scaled to size 8.0pt on input line 135.
- [2.2]
+[2.2]
 LaTeX Font Info:    Font shape `OT1/LinuxLibertineT-TLF/m/n' will be
-(Font)              scaled to size 10.0pt on input line 145.
+(Font)              scaled to size 10.0pt on input line 141.
 Package microtype Info: Loading generic protrusion settings for font family
 (microtype)             `LinuxLibertineT-TLF' (encoding: OT1).
 (microtype)             For optimal results, create family-specific settings.
 (microtype)             See the microtype manual for details.
 LaTeX Font Info:    Font shape `OT1/LinuxLibertineT-TLF/m/n' will be
-(Font)              scaled to size 7.3pt on input line 145.
-
-(/usr/share/texlive/texmf-dist/tex/latex/microtype/mt-msa.cfg
+(Font)              scaled to size 7.3pt on input line 141.
+ (/usr/share/texlive/texmf-dist/tex/latex/microtype/mt-msa.cfg
 File: mt-msa.cfg 2006/02/04 v1.1 microtype config. file: AMS symbols (a) (RS)
 )
 (/usr/share/texlive/texmf-dist/tex/latex/microtype/mt-msb.cfg
 File: mt-msb.cfg 2005/06/01 v1.0 microtype config. file: AMS symbols (b) (RS)
 )
-Overfull \hbox (21.89693pt too wide) in paragraph at lines 165--175
+Overfull \hbox (21.89693pt too wide) in paragraph at lines 161--171
  [][] 
  []
 
@@ -1547,20 +1543,20 @@ Package fancyhdr Warning: \headheight is too small (13.0pt):
 
 [3.3]
 LaTeX Font Info:    Font shape `T1/LinuxLibertineT-TLF/m/sc' will be
-(Font)              scaled to size 10.0pt on input line 188.
+(Font)              scaled to size 10.0pt on input line 184.
 LaTeX Font Info:    Font shape `T1/LinuxLibertineT-TLF/m/it' will be
-(Font)              scaled to size 7.3pt on input line 213.
+(Font)              scaled to size 7.3pt on input line 209.
 LaTeX Font Info:    Font shape `T1/LinuxLibertineT-TLF/m/it' will be
-(Font)              scaled to size 5.5pt on input line 213.
+(Font)              scaled to size 5.5pt on input line 209.
 LaTeX Font Info:    Font shape `T1/LinuxLibertineT-TLF/m/n' will be
-(Font)              scaled to size 7.3pt on input line 225.
+(Font)              scaled to size 7.3pt on input line 221.
 LaTeX Font Info:    Font shape `T1/LinuxLibertineT-TLF/m/n' will be
-(Font)              scaled to size 5.5pt on input line 225.
- [4.4{/usr/share/texlive/texmf-dist/fonts/enc/dvips/libertine/lbtn_ncsllp.enc}{
-/usr/share/texlive/texmf-dist/fonts/enc/dvips/libertine/lbtn_oexx6f.enc}]
+(Font)              scaled to size 5.5pt on input line 221.
 LaTeX Font Info:    Font shape `T1/LinuxLibertineT-TLF/b/it' will be
-(Font)              scaled to size 10.0pt on input line 231.
-
+(Font)              scaled to size 10.0pt on input line 227.
+ [4.4{/usr/share/texlive/texmf-dist/fonts/enc/dvips/libertine/lbtn_ncsllp.enc}{
+/usr/share/texlive/texmf-dist/fonts/enc/dvips/libertine/lbtn_oexx6f.enc}{/usr/s
+hare/texlive/texmf-dist/fonts/enc/dvips/libertine/lbtn_ki75ao.enc}]
 
 Package fancyhdr Warning: \headheight is too small (13.0pt): 
 (fancyhdr)                Make it at least 18.48402pt, for example:
@@ -1569,31 +1565,27 @@ Package fancyhdr Warning: \headheight is too small (13.0pt):
 
 (fancyhdr)                \addtolength{\topmargin}{-5.48402pt}.
 
-[5.5{/usr/share/texlive/texmf-dist/fonts/enc/dvips/libertine/lbtn_ki75ao.enc}]
-[6.6]
-LaTeX Font Info:    Trying to load font information for T1+zi4 on input line 34
-2.
+[5.5] [6.6]
+LaTeX Font Info:    Trying to load font information for T1+zi4 on input line 33
+8.
  (/usr/share/texlive/texmf-dist/tex/latex/inconsolata/t1zi4.fd
 File: t1zi4.fd 2018/01/14 T1/zi4 (Inconsolata)
 )
 LaTeX Font Info:    Font shape `T1/zi4/m/n' will be
-(Font)              scaled to size 10.0pt on input line 342.
+(Font)              scaled to size 10.0pt on input line 338.
 Package microtype Info: Loading generic protrusion settings for font family
 (microtype)             `zi4' (encoding: T1).
 (microtype)             For optimal results, create family-specific settings.
 (microtype)             See the microtype manual for details.
 Package hyperref Info: bookmark level for unknown algorithm defaults to 0 on in
-put line 361.
+put line 357.
 
-Overfull \hbox (20.46324pt too wide) in paragraph at lines 386--388
+Overfull \hbox (20.46324pt too wide) in paragraph at lines 382--384
 \T1/LinuxLibertineT-TLF/m/n/10 (-20) All con-sti-tu-tional op-er-a-tions are va
 l-i-dated against hash \T1/zi4/m/n/10 cdd01ef066bc6cf2\T1/LinuxLibertineT-TLF/m
 /n/10 (-20) : (de-fined as SHA256($\LMS/ntxsy/m/n/10 C$\T1/LinuxLibertineT-TLF/
 m/n/10 (-20) )[0:16]) 
  []
-
-
-LaTeX Warning: `h' float specifier changed to `ht'.
 
 
 Package fancyhdr Warning: \headheight is too small (13.0pt): 
@@ -1614,14 +1606,14 @@ Package fancyhdr Warning: \headheight is too small (13.0pt):
 (fancyhdr)                \addtolength{\topmargin}{-5.48402pt}.
 
 [9.9]
-Underfull \hbox (badness 10000) in paragraph at lines 519--519
+Underfull \hbox (badness 10000) in paragraph at lines 515--515
 []\T1/LinuxLibertineT-TLF/m/n/10 (+20) Independent Vi-o-la-
  []
 
 LaTeX Font Info:    Font shape `T1/LinuxLibertineT-TLF/m/n' will be
-(Font)              scaled to size 7.0pt on input line 538.
+(Font)              scaled to size 7.0pt on input line 534.
 LaTeX Font Info:    Font shape `T1/LinuxLibertineT-TLF/m/n' will be
-(Font)              scaled to size 6.0pt on input line 558.
+(Font)              scaled to size 6.0pt on input line 554.
 [10.10]
 
 Package fancyhdr Warning: \headheight is too small (13.0pt): 
@@ -1642,7 +1634,7 @@ Package fancyhdr Warning: \headheight is too small (13.0pt):
 
 [13.13]
 LaTeX Font Info:    Font shape `T1/LinuxLibertineT-TLF/m/it' will be
-(Font)              scaled to size 8.0pt on input line 727.
+(Font)              scaled to size 8.0pt on input line 723.
  (/usr/share/texlive/texmf-dist/tex/generic/stringenc/se-pdfdoc.def
 File: se-pdfdoc.def 2019/11/29 v1.12 stringenc: PDFDocEncoding
 )
@@ -1654,15 +1646,19 @@ File: se-utf8.def 2019/11/29 v1.12 stringenc: UTF-8
 LaTeX2e <2023-11-01> patch level 1
 L3 programming layer <2024-01-22>
  ***********
+
+
+LaTeX Warning: Label(s) may have changed. Rerun to get cross-references right.
+
 Package rerunfilecheck Info: File `ACGS2_FAccT_enhanced.out' has not changed.
 (rerunfilecheck)             Checksum: 0E0A60EA280BB0C7CD860F26135A1DD9;10908.
  ) 
 Here is how much of TeX's memory you used:
- 46075 strings out of 474222
- 1007861 string characters out of 5748733
- 1942975 words of memory out of 5000000
+ 46064 strings out of 474222
+ 1007597 string characters out of 5748733
+ 1940975 words of memory out of 5000000
  66781 multiletter control sequences out of 15000+600000
- 760277 words of font info for 420 fonts, out of 8000000 for 9000
+ 759304 words of font info for 413 fonts, out of 8000000 for 9000
  1302 hyphenation exceptions out of 8191
  90i,13n,131p,1017b,852s stack positions out of 10000i,1000n,20000p,200000b,200000s
 </usr/share/texlive/texmf-dist/fonts/type1/public/inconsolata/Inconsolata-zi4
@@ -1681,10 +1677,9 @@ e/texmf-dist/fonts/type1/public/newtx/txexs.pfb></usr/share/texlive/texmf-dist/
 fonts/type1/public/newtx/txmiaX.pfb></usr/share/texlive/texmf-dist/fonts/type1/
 public/newtx/txsym.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/newtx/
 txsys.pfb>
-Output written on ACGS2_FAccT_enhanced.pdf (14 pages, 572223 bytes).
+Output written on ACGS2_FAccT_enhanced.pdf (14 pages, 571772 bytes).
 PDF statistics:
  468 PDF objects out of 1000 (max. 8388607)
  410 compressed objects within 5 object streams
  121 named destinations out of 1000 (max. 500000)
  101261 words of extra memory for PDF output out of 106986 (max. 10000000)
-

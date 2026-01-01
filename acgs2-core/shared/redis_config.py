@@ -40,15 +40,17 @@ class RedisConfig:
         # This check needs to be more robust if base_url can come from os.getenv
         # and already contain a db. For now, we assume base_url from settings
         # or env_var doesn't have a db number if we're about to append one.
-        if base_url.count("/") > 2: # This check is for URLs like redis://host:port/db/something_else
+        if (
+            base_url.count("/") > 2
+        ):  # This check is for URLs like redis://host:port/db/something_else
             # If the URL already has a path segment that looks like a DB, we might not want to append.
             # This logic might need refinement depending on expected URL formats.
-            pass # Keep the base_url as is if it already has multiple slashes indicating a path/db
+            pass  # Keep the base_url as is if it already has multiple slashes indicating a path/db
 
         # Use db from settings if not explicitly provided as non-zero
         effective_db = db if db > 0 else settings.redis.db
 
-        if effective_db >= 0: # Allow db=0 to be explicitly set
+        if effective_db >= 0:  # Allow db=0 to be explicitly set
             base_url = base_url.rstrip("/")
             return f"{base_url}/{effective_db}"
 

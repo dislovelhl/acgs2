@@ -5,7 +5,6 @@ Constitutional Hash: cdd01ef066bc6cf2
 
 from typing import Optional
 
-from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # Constitutional compliance constant

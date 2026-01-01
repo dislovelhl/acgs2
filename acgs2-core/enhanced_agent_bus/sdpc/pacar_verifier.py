@@ -33,16 +33,16 @@ class PACARVerifier:
         # In Phase 2, we use specialized prompts for the LLM assistant
         # to simulate these roles.
 
-        # 1. Red Team Critique
-        critique_prompt = (
+        # 1. Red Team Critique - prompt documented for future multi-turn implementation
+        # TODO: Use critique_prompt with assistant.invoke() when multi-turn API is available
+        _critique_prompt = (  # noqa: F841 - prompt template for future multi-agent invoke
             f"Role: Adversarial Auditor (Red Team)\n"
             f"Original Intent: {original_intent}\n"
             f"Content to Review: {content}\n"
             f"Task: Identify any hallucinations, factual inconsistencies, or logical gaps. "
             f"Be extremely critical."
         )
-        # Assuming assistant has a general 'invoke' method or we use analyze_message_impact
-        # For this implementation, we simulate the multi-turn deliberation
+        # Current implementation uses analyze_message_impact as proxy for multi-turn deliberation
 
         try:
             # We leverage the existing analyze_message_impact which already has

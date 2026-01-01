@@ -7,8 +7,6 @@ Tests cover: workflow lifecycle, signals, queries, activities, and error handlin
 """
 
 import asyncio
-from datetime import datetime, timezone
-from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -35,10 +33,7 @@ from workflows.agent_entity_workflow import (
 )
 from workflows.workflow_base import (
     InMemoryWorkflowExecutor,
-    Query,
-    Signal,
     WorkflowContext,
-    WorkflowDefinition,
     WorkflowStatus,
     query,
     signal,

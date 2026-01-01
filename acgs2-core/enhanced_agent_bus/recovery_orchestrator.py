@@ -1,12 +1,17 @@
-import asyncio, logging, heapq, time
+import asyncio
+import heapq
+import logging
+import time
 from dataclasses import dataclass, field
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
 from enum import Enum
 from typing import Any, Callable, Dict, List, Optional
-from .utils import get_iso_timestamp
+
 from .models import CONSTITUTIONAL_HASH
+from .utils import get_iso_timestamp
 
 logger = logging.getLogger(__name__)
+
 
 class RecoveryState(Enum):
     IDLE = "idle"
@@ -17,15 +22,25 @@ class RecoveryState(Enum):
     CANCELLED = "cancelled"
     AWAITING_MANUAL = "awaiting_manual"
 
+
 class RecoveryStrategy(Enum):
     EXPONENTIAL_BACKOFF = "exponential_backoff"
     LINEAR_BACKOFF = "linear_backoff"
     IMMEDIATE = "immediate"
     MANUAL = "manual"
 
-class RecoveryOrchestratorError(Exception): pass
-class RecoveryConstitutionalError(Exception): pass
-class RecoveryValidationError(Exception): pass
+
+class RecoveryOrchestratorError(Exception):
+    pass
+
+
+class RecoveryConstitutionalError(Exception):
+    pass
+
+
+class RecoveryValidationError(Exception):
+    pass
+
 
 @dataclass
 class RecoveryPolicy:
@@ -37,10 +52,15 @@ class RecoveryPolicy:
     constitutional_hash: str = CONSTITUTIONAL_HASH
 
     def __post_init__(self):
-        if self.max_retry_attempts < 1: raise ValueError("max_retry_attempts must be >= 1")
-        if self.backoff_multiplier < 1.0: raise ValueError("backoff_multiplier must be >= 1.0")
-        if self.initial_delay_ms < 0: raise ValueError("initial_delay_ms must be >= 0")
-        if self.max_delay_ms < self.initial_delay_ms: raise ValueError("max_delay_ms must be >= initial_delay_ms")
+        if self.max_retry_attempts < 1:
+            raise ValueError("max_retry_attempts must be >= 1")
+        if self.backoff_multiplier < 1.0:
+            raise ValueError("backoff_multiplier must be >= 1.0")
+        if self.initial_delay_ms < 0:
+            raise ValueError("initial_delay_ms must be >= 0")
+        if self.max_delay_ms < self.initial_delay_ms:
+            raise ValueError("max_delay_ms must be >= initial_delay_ms")
+
 
 @dataclass
 class RecoveryResult:
@@ -66,8 +86,9 @@ class RecoveryResult:
             "error_message": self.error_message,
             "health_check_passed": self.health_check_passed,
             "constitutional_hash": self.constitutional_hash,
-            "timestamp": self.timestamp
+            "timestamp": self.timestamp,
         }
+
 
 @dataclass(order=True)
 class RecoveryTask:
@@ -80,6 +101,7 @@ class RecoveryTask:
     last_attempt_at: Optional[datetime] = field(default=None, compare=False)
     next_attempt_at: Optional[datetime] = field(default=None, compare=False)
     constitutional_hash: str = CONSTITUTIONAL_HASH
+
 
 class RecoveryOrchestrator:
     def __init__(self, default_policy: Optional[RecoveryPolicy] = None):
@@ -94,11 +116,13 @@ class RecoveryOrchestrator:
         self._lock = asyncio.Lock()
 
     @property
-    def constitutional_hash(self) -> str: return self._constitutional_hash
+    def constitutional_hash(self) -> str:
+        return self._constitutional_hash
 
     async def start(self):
         async with self._lock:
-            if self._running: raise RecoveryOrchestratorError("already running")
+            if self._running:
+                raise RecoveryOrchestratorError("already running")
             self._running = True
             self._loop_task = asyncio.create_task(self._loop())
 
@@ -109,15 +133,23 @@ class RecoveryOrchestrator:
                 self._loop_task.cancel()
                 self._loop_task = None
 
-    def schedule_recovery(self, service_name: str, strategy: RecoveryStrategy = RecoveryStrategy.EXPONENTIAL_BACKOFF, priority: int = 1, policy: Optional[RecoveryPolicy] = None):
-        if service_name in self._tasks: return
+    def schedule_recovery(
+        self,
+        service_name: str,
+        strategy: RecoveryStrategy = RecoveryStrategy.EXPONENTIAL_BACKOFF,
+        priority: int = 1,
+        policy: Optional[RecoveryPolicy] = None,
+    ):
+        if service_name in self._tasks:
+            return
         task = RecoveryTask(priority, service_name, strategy, policy or self.default_policy)
         task.next_attempt_at = self._calculate_next_attempt(task)
         self._tasks[service_name] = task
         heapq.heappush(self._queue, task)
 
     def cancel_recovery(self, service_name: str) -> bool:
-        if service_name not in self._tasks: return False
+        if service_name not in self._tasks:
+            return False
         task = self._tasks.pop(service_name)
         task.state = RecoveryState.CANCELLED
         # Note: Task remains in heap but will be skipped
@@ -129,7 +161,8 @@ class RecoveryOrchestrator:
             self._tasks[service_name].policy = policy
 
     def get_recovery_policy(self, service_name: str) -> RecoveryPolicy:
-        if service_name in self._tasks: return self._tasks[service_name].policy
+        if service_name in self._tasks:
+            return self._tasks[service_name].policy
         return self._policies.get(service_name, self.default_policy)
 
     def get_recovery_status(self) -> Dict[str, Any]:
@@ -137,14 +170,20 @@ class RecoveryOrchestrator:
             "constitutional_hash": self._constitutional_hash,
             "timestamp": get_iso_timestamp(),
             "orchestrator_running": self._running,
-            "active_recoveries": sum(1 for t in self._tasks.values() if t.state == RecoveryState.IN_PROGRESS),
+            "active_recoveries": sum(
+                1 for t in self._tasks.values() if t.state == RecoveryState.IN_PROGRESS
+            ),
             "queued_recoveries": len(self._queue),
-            "services": {name: {"state": t.state.value, "max_attempts": t.policy.max_retry_attempts} for name, t in self._tasks.items()},
-            "recent_history": [r.to_dict() for r in self._history[-10:]]
+            "services": {
+                name: {"state": t.state.value, "max_attempts": t.policy.max_retry_attempts}
+                for name, t in self._tasks.items()
+            },
+            "recent_history": [r.to_dict() for r in self._history[-10:]],
         }
 
     async def execute_recovery(self, service_name: str) -> RecoveryResult:
-        if service_name not in self._tasks: raise RecoveryValidationError("No active recovery task")
+        if service_name not in self._tasks:
+            raise RecoveryValidationError("No active recovery task")
         task = self._tasks[service_name]
         start_time = time.time()
         task.state = RecoveryState.IN_PROGRESS
@@ -184,7 +223,7 @@ class RecoveryOrchestrator:
             elapsed_time_ms=elapsed,
             state=task.state,
             error_message=error,
-            health_check_passed=health_passed
+            health_check_passed=health_passed,
         )
         self._history.append(result)
         return result
@@ -196,9 +235,12 @@ class RecoveryOrchestrator:
         elif task.strategy == RecoveryStrategy.LINEAR_BACKOFF:
             delay = task.policy.initial_delay_ms * task.attempt_count
         elif task.strategy == RecoveryStrategy.EXPONENTIAL_BACKOFF:
-            delay = task.policy.initial_delay_ms * (task.policy.backoff_multiplier ** (task.attempt_count - 1 if task.attempt_count > 0 else 0))
+            delay = task.policy.initial_delay_ms * (
+                task.policy.backoff_multiplier
+                ** (task.attempt_count - 1 if task.attempt_count > 0 else 0)
+            )
         else:
-            return now # Manual or other
+            return now  # Manual or other
 
         delay = min(delay, task.policy.max_delay_ms)
         return now + timedelta(milliseconds=delay)
@@ -207,19 +249,28 @@ class RecoveryOrchestrator:
         while self._running:
             try:
                 now = datetime.now(timezone.utc)
-                while self._queue and (self._queue[0].state == RecoveryState.CANCELLED or self._queue[0].next_attempt_at <= now):
+                while self._queue and (
+                    self._queue[0].state == RecoveryState.CANCELLED
+                    or self._queue[0].next_attempt_at <= now
+                ):
                     task = heapq.heappop(self._queue)
-                    if task.state == RecoveryState.CANCELLED: continue
+                    if task.state == RecoveryState.CANCELLED:
+                        continue
                     if task.service_name in self._tasks:
                         await self.execute_recovery(task.service_name)
                 await asyncio.sleep(0.1)
-            except asyncio.CancelledError: break
+            except asyncio.CancelledError:
+                break
             except Exception as e:
                 logger.error(f"Recovery loop error: {e}")
                 await asyncio.sleep(1)
 
+
 _orchestrator = None
+
+
 def get_recovery_orchestrator():
     global _orchestrator
-    if not _orchestrator: _orchestrator = RecoveryOrchestrator()
+    if not _orchestrator:
+        _orchestrator = RecoveryOrchestrator()
     return _orchestrator

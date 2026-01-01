@@ -88,12 +88,10 @@ class AdapterRegistry:
 
     def reset_all(self) -> None:
         """Reset all adapter circuit breakers."""
-        for name, adapter in self._adapters.items():
+        for _name, adapter in self._adapters.items():
             adapter.reset_circuit_breaker()
             adapter.clear_cache()
-        logger.info(
-            f"[{CONSTITUTIONAL_HASH}] Reset all {len(self._adapters)} adapters"
-        )
+        logger.info(f"[{CONSTITUTIONAL_HASH}] Reset all {len(self._adapters)} adapters")
 
     def get_all_health(self) -> dict:
         """
@@ -153,9 +151,7 @@ class AdapterRegistry:
 
         # Calculate aggregate rates
         if totals["total_calls"] > 0:
-            totals["success_rate"] = (
-                totals["successful_calls"] / totals["total_calls"]
-            )
+            totals["success_rate"] = totals["successful_calls"] / totals["total_calls"]
             totals["cache_hit_rate"] = totals["cache_hits"] / totals["total_calls"]
         else:
             totals["success_rate"] = 0.0
@@ -176,9 +172,7 @@ class AdapterRegistry:
                     await adapter.close()
                     logger.info(f"[{CONSTITUTIONAL_HASH}] Closed adapter '{name}'")
                 except Exception as e:
-                    logger.error(
-                        f"[{CONSTITUTIONAL_HASH}] Error closing adapter '{name}': {e}"
-                    )
+                    logger.error(f"[{CONSTITUTIONAL_HASH}] Error closing adapter '{name}': {e}")
 
     def clear(self) -> None:
         """Clear all adapters from registry."""

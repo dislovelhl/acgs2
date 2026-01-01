@@ -9,7 +9,7 @@ import json
 import logging
 import re
 import ssl
-from typing import Any, Callable, Dict, List, Optional, Set
+from typing import Any, Callable, Dict, List, Optional
 
 try:
     from aiokafka import AIOKafkaConsumer, AIOKafkaProducer
@@ -23,9 +23,10 @@ try:
     from .models import AgentMessage, MessageType
     from .shared.config import settings
 except ImportError:
+    from shared.config import settings  # type: ignore
+
     from exceptions import MessageDeliveryError  # type: ignore
     from models import AgentMessage, MessageType  # type: ignore
-    from shared.config import settings # type: ignore
 
 logger = logging.getLogger(__name__)
 
@@ -79,20 +80,14 @@ class KafkaEventBus:
         if security_protocol != "SSL":
             return None
 
-        context = ssl.create_default_context(
-            cafile=settings.kafka.get("ssl_ca_location")
-        )
+        context = ssl.create_default_context(cafile=settings.kafka.get("ssl_ca_location"))
 
         cert_file = settings.kafka.get("ssl_certificate_location")
         key_file = settings.kafka.get("ssl_key_location")
         password = settings.kafka.get("ssl_password")
 
         if cert_file and key_file:
-            context.load_cert_chain(
-                certfile=cert_file,
-                keyfile=key_file,
-                password=password
-            )
+            context.load_cert_chain(certfile=cert_file, keyfile=key_file, password=password)
 
         return context
 
@@ -126,7 +121,9 @@ class KafkaEventBus:
             logger.debug(f"Message {message.message_id} sent to topic {topic}")
             return True
         except Exception as e:
-            logger.error(f"Failed to send message to Kafka (topic={topic}): {self._sanitize_error(e)}")
+            logger.error(
+                f"Failed to send message to Kafka (topic={topic}): {self._sanitize_error(e)}"
+            )
             return False
 
     async def subscribe(self, tenant_id: str, message_types: List[MessageType], handler: Callable):

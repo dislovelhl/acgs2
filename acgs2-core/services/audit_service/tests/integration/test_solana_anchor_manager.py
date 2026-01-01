@@ -4,20 +4,18 @@ from services.audit_service.core.blockchain_anchor_manager import (
     BlockchainAnchorManager,
     AnchorManagerConfig,
     AnchorBackend,
-    AnchorStatus
+    AnchorStatus,
 )
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
 async def test_solana_integration():
     # 1. Configure manager with Solana enabled
     config = AnchorManagerConfig(
-        enabled_backends=[AnchorBackend.SOLANA],
-        queue_size=10,
-        worker_count=1,
-        live=False
+        enabled_backends=[AnchorBackend.SOLANA], queue_size=10, worker_count=1, live=False
     )
 
     manager = BlockchainAnchorManager(config)
@@ -38,9 +36,9 @@ async def test_solana_integration():
             manager.anchor_root_sync(
                 root_hash="integration_test_root_solana",
                 batch_id="batch_sol_001",
-                metadata={"entry_count": 10}
+                metadata={"entry_count": 10},
             ),
-            timeout=30.0  # 30 second timeout for devnet
+            timeout=30.0,  # 30 second timeout for devnet
         )
     except asyncio.TimeoutError:
         logger.error("Timed out waiting for Solana anchor in integration test")
@@ -57,6 +55,7 @@ async def test_solana_integration():
     logger.info("Stopping manager...")
     await manager.stop()
     logger.info("Integration test PASSED")
+
 
 if __name__ == "__main__":
     asyncio.run(test_solana_integration())

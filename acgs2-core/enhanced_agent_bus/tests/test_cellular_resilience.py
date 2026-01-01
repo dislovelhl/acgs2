@@ -1,8 +1,12 @@
+import logging
+
+logger = logging.getLogger(__name__)
 import asyncio
 import time
 from unittest.mock import patch
 
 import pytest
+
 from core import EnhancedAgentBus, MessageProcessor
 from models import CONSTITUTIONAL_HASH, AgentMessage, MessageType
 
@@ -66,7 +70,7 @@ class TestCellularResilience:
         end_time = time.perf_counter()
 
         avg_latency_ms = ((end_time - start_time) / 100) * 1000
-        print(f"\n[Performance] Avg Isolated Processor Latency: {avg_latency_ms:.4f}ms")
+        logger.info(f"\n[Performance] Avg Isolated Processor Latency: {avg_latency_ms:.4f}ms")
 
         # Requirement: Sub-5ms
         assert avg_latency_ms < 5.0
@@ -121,8 +125,8 @@ class TestCellularResilience:
                 1 for r in results if r.metadata.get("governance_mode") == "DEGRADED"
             )
             assert degraded_count == 25
-            print(
-                "\n[Stress] 50 requests processed: 25 normal, 25 DEGRADED. Zero constitutional breaches."
+            logger.info(
+                "[Stress] 50 requests processed: 25 normal, 25 DEGRADED. Zero constitutional breaches."
             )
 
     @pytest.mark.asyncio
@@ -140,9 +144,9 @@ class TestCellularResilience:
             use_dynamic_policy=True, isolated_mode=True, enable_maci=False
         )
         assert (
-            proc_isolated._use_dynamic_policy == False
+            not proc_isolated._use_dynamic_policy
         ), "Isolated mode should always disable dynamic policy"
-        assert proc_isolated._isolated_mode == True, "Isolated mode flag should be True"
+        assert proc_isolated._isolated_mode, "Isolated mode flag should be True"
 
         # Test 2: Isolated mode = False respects POLICY_CLIENT_AVAILABLE
         # (If POLICY_CLIENT_AVAILABLE is False, _use_dynamic_policy remains False)
@@ -153,4 +157,4 @@ class TestCellularResilience:
         assert (
             proc_normal._use_dynamic_policy == expected_dynamic
         ), f"Non-isolated mode with use_dynamic_policy=True should match POLICY_CLIENT_AVAILABLE={expected_dynamic}"
-        assert proc_normal._isolated_mode == False, "Non-isolated mode flag should be False"
+        assert not proc_normal._isolated_mode, "Non-isolated mode flag should be False"

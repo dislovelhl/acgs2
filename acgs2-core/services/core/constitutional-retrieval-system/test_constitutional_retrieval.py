@@ -1,3 +1,4 @@
+logger = logging.getLogger(__name__)
 """
 Test Constitutional Retrieval System
 
@@ -485,25 +486,29 @@ async def run_constitutional_retrieval_tests():
         results = await tester.run_all_tests()
 
         # Print results
-        print("\n=== Constitutional Retrieval System Test Results ===")
-        print(f"Overall Status: {results['overall_status']}")
-        print(f"Tests Passed: {results['tests_passed']}/{results['total_tests']}")
+        logging.info("\n=== Constitutional Retrieval System Test Results ===")
+        logging.info(f"Overall Status: {results['overall_status']}")
+        logging.info(f"Tests Passed: {results['tests_passed']}/{results['total_tests']}")
 
-        print("\nPerformance Metrics:")
-        print(f"- Retrieval Accuracy: {results['retrieval_accuracy']:.3f}")
-        print(f"- Decision Consistency: {results['decision_consistency']:.3f}")
+        logging.info("\nPerformance Metrics:")
+        logging.info(f"- Retrieval Accuracy: {results['retrieval_accuracy']:.3f}")
+        logging.info(f"- Decision Consistency: {results['decision_consistency']:.3f}")
 
-        print("\nSuccess Criteria:")
+        logging.info("\nSuccess Criteria:")
         criteria = results["success_criteria"]
-        print(f"- Retrieval Accuracy Target: {criteria['retrieval_accuracy_target']}")
-        print(f"- Decision Consistency Target: {criteria['decision_consistency_target']}")
-        print(f"- Retrieval Accuracy Achieved: {criteria['retrieval_accuracy_achieved']:.3f}")
-        print(f"- Decision Consistency Achieved: {criteria['decision_consistency_achieved']:.3f}")
+        logging.info(f"- Retrieval Accuracy Target: {criteria['retrieval_accuracy_target']}")
+        logging.info(f"- Decision Consistency Target: {criteria['decision_consistency_target']}")
+        logging.info(
+            f"- Retrieval Accuracy Achieved: {criteria['retrieval_accuracy_achieved']:.3f}"
+        )
+        logging.info(
+            f"- Decision Consistency Achieved: {criteria['decision_consistency_achieved']:.3f}"
+        )
 
         if results["overall_status"] == "passed":
-            print("\n✅ All tests passed! System is ready for deployment.")
+            logging.info("\n✅ All tests passed! System is ready for deployment.")
         else:
-            print("\n❌ Some tests failed. Check detailed results above.")
+            logging.error("\n❌ Some tests failed. Check detailed results above.")
 
         return results
 

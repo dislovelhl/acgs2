@@ -29,6 +29,7 @@ GUARD_CONSTITUTIONAL_HASH = CONSTITUTIONAL_HASH
 
 class GuardDecision(Enum):
     """Guard decision outcomes."""
+
     ALLOW = "allow"
     DENY = "deny"
     REQUIRE_REVIEW = "require_review"
@@ -38,6 +39,7 @@ class GuardDecision(Enum):
 
 class SignatureStatus(Enum):
     """Status of signature collection."""
+
     PENDING = "pending"
     COLLECTED = "collected"
     EXPIRED = "expired"
@@ -46,6 +48,7 @@ class SignatureStatus(Enum):
 
 class ReviewStatus(Enum):
     """Status of critic review."""
+
     PENDING = "pending"
     IN_PROGRESS = "in_progress"
     APPROVED = "approved"
@@ -61,6 +64,7 @@ class GuardResult:
     Implements VERIFY-BEFORE-ACT pattern by providing comprehensive
     validation results before any action is executed.
     """
+
     decision: GuardDecision = GuardDecision.PENDING
     is_allowed: bool = False
     agent_id: str = ""
@@ -121,6 +125,7 @@ class GuardResult:
 @dataclass
 class Signature:
     """Individual signature from an authorized signer."""
+
     signer_id: str
     signature_hash: str = ""
     signed_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
@@ -143,6 +148,7 @@ class SignatureResult:
     Ensures that high-impact actions require approval from multiple
     authorized entities before execution.
     """
+
     decision_id: str = ""
     status: SignatureStatus = SignatureStatus.PENDING
 
@@ -214,7 +220,7 @@ class SignatureResult:
         self.is_valid = False
         self.metadata[f"rejection_{signer_id}"] = {
             "reason": reason,
-            "timestamp": datetime.now(timezone.utc).isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }
         return True
 
@@ -252,6 +258,7 @@ class SignatureResult:
 @dataclass
 class CriticReview:
     """Review from a critic agent."""
+
     critic_id: str
     review_type: str = "general"  # general, safety, ethics, performance
     verdict: str = ""  # approve, reject, escalate
@@ -271,6 +278,7 @@ class ReviewResult:
     Aggregates reviews from multiple critic agents to provide
     comprehensive decision analysis for high-risk actions.
     """
+
     decision_id: str = ""
     status: ReviewStatus = ReviewStatus.PENDING
 
@@ -356,10 +364,10 @@ class ReviewResult:
             self.completed_at = datetime.now(timezone.utc)
             # Calculate confidence as weighted average
             if total_reviews > 0:
-                self.consensus_confidence = sum(
-                    r.confidence for r in self.reviews
-                    if r.verdict == self.consensus_verdict
-                ) / total_reviews
+                self.consensus_confidence = (
+                    sum(r.confidence for r in self.reviews if r.verdict == self.consensus_verdict)
+                    / total_reviews
+                )
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for serialization."""

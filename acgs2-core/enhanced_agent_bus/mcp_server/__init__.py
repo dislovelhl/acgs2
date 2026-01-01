@@ -8,8 +8,8 @@ through a standardized interface.
 Constitutional Hash: cdd01ef066bc6cf2
 """
 
-from .server import MCPServer, create_mcp_server
 from .config import MCPConfig
+from .server import MCPServer, create_mcp_server
 
 __all__ = [
     "MCPServer",

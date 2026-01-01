@@ -1,3 +1,5 @@
+import logging
+
 #!/usr/bin/env python3
 """
 ACGS-2 Syntax Repair Tool
@@ -186,7 +188,7 @@ def process_file(filepath: Path, dry_run: bool = False) -> Tuple[bool, int]:
     try:
         content = filepath.read_text(encoding="utf-8")
     except Exception as e:
-        print(f"  Error reading {filepath}: {e}")
+        logging.error(f"  Error reading {filepath}: {e}")
         return False, 0
 
     fixed_content, fixes = fix_corrupted_try_except(content)
@@ -216,9 +218,11 @@ def main():
 
     args = parser.parse_args()
 
-    print("ACGS-2 Syntax Repair Tool")
-    print(f"Constitutional Hash: {CONSTITUTIONAL_HASH}")
-    print(f"{'DRY RUN - No changes will be made' if args.dry_run else 'Processing files...'}")
+    logging.info("ACGS-2 Syntax Repair Tool")
+    logging.info(f"Constitutional Hash: {CONSTITUTIONAL_HASH}")
+    logging.info(
+        f"{'DRY RUN - No changes will be made' if args.dry_run else 'Processing files...'}"
+    )
     print()
 
     total_files = 0
@@ -233,7 +237,7 @@ def main():
         elif path.is_dir():
             files = list(path.rglob("*.py"))
         else:
-            print(f"Skipping invalid path: {path}")
+            logging.info(f"Skipping invalid path: {path}")
             continue
 
         for filepath in files:
@@ -250,13 +254,13 @@ def main():
                 total_fixes += fixes
                 if args.verbose or args.dry_run:
                     action = "Would fix" if args.dry_run else "Fixed"
-                    print(f"  {action} {fixes} patterns in {filepath}")
+                    logging.info(f"  {action} {fixes} patterns in {filepath}")
 
     print()
-    print("Summary:")
-    print(f"  Files scanned: {total_files}")
-    print(f"  Files {'to be ' if args.dry_run else ''}modified: {modified_files}")
-    print(f"  Total fixes {'needed' if args.dry_run else 'applied'}: {total_fixes}")
+    logging.info("Summary:")
+    logging.info(f"  Files scanned: {total_files}")
+    logging.info(f"  Files {'to be ' if args.dry_run else ''}modified: {modified_files}")
+    logging.info(f"  Total fixes {'needed' if args.dry_run else 'applied'}: {total_fixes}")
 
     return 0 if total_fixes == 0 or args.dry_run else 0
 

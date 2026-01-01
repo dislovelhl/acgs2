@@ -1,3 +1,4 @@
+import logging
 #!/usr/bin/env python3
 """
 Advanced Syntax Repair Tool for ACGS-2 Codebase
@@ -29,7 +30,7 @@ def repair_file(file_path: Path) -> tuple[bool, int]:
     try:
         content = file_path.read_text(encoding="utf-8")
     except Exception as e:
-        print(f"Error reading {file_path}: {e}")
+        logging.error(f"Error reading {file_path}: {e}")
         return False, 0
 
     original = content
@@ -273,7 +274,7 @@ def repair_file(file_path: Path) -> tuple[bool, int]:
             file_path.write_text(content, encoding="utf-8")
             return True, fixes
         except Exception as e:
-            print(f"Error writing {file_path}: {e}")
+            logging.error(f"Error writing {file_path}: {e}")
             return False, 0
 
     return False, 0
@@ -287,7 +288,7 @@ def main():
         base_path = Path(sys.argv[1])
 
     if not base_path.exists():
-        print(f"Path does not exist: {base_path}")
+        logging.info(f"Path does not exist: {base_path}")
         return 1
 
     total_files = 0
@@ -301,7 +302,7 @@ def main():
         # Exclude pycache and venv
         files = [f for f in files if "__pycache__" not in str(f) and ".venv" not in str(f)]
 
-    print(f"Scanning {len(files)} Python files...")
+    logging.info(f"Scanning {len(files)
 
     for file_path in files:
         total_files += 1
@@ -309,12 +310,12 @@ def main():
         if was_modified:
             modified_files += 1
             total_fixes += fixes
-            print(f"  Fixed: {file_path} ({fixes} repairs)")
+            logging.info(f"  Fixed: {file_path} ({fixes} repairs)
 
-    print("\nSummary:")
-    print(f"  Total files scanned: {total_files}")
-    print(f"  Files modified: {modified_files}")
-    print(f"  Total repairs: {total_fixes}")
+    logging.info("\nSummary:")
+    logging.info(f"  Total files scanned: {total_files}")
+    logging.info(f"  Files modified: {modified_files}")
+    logging.info(f"  Total repairs: {total_fixes}")
 
     return 0
 

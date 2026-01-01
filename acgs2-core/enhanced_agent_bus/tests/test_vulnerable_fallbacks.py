@@ -4,6 +4,9 @@ Ensures that the Deliberation Layer fails closed instead of using mocks.
 Constitutional Hash: cdd01ef066bc6cf2
 """
 
+import logging
+
+logger = logging.getLogger(__name__)
 import subprocess
 import sys
 
@@ -50,20 +53,20 @@ builtins.__import__ = blocking_import
 
 try:
     import enhanced_agent_bus.deliberation_layer.integration
-    print("ERROR: Import succeeded when it should have failed")
+    print("ERROR: Import succeeded when it should have failed", file=sys.stderr)
     sys.exit(1)
 except RuntimeError as e:
     if "CRITICAL" in str(e) or "missing" in str(e).lower():
-        print(f"OK: Got expected RuntimeError: {e}")
+        print(f"OK: Got expected RuntimeError: {e}", file=sys.stderr)
         sys.exit(0)
-    print(f"ERROR: Unexpected RuntimeError: {e}")
+    print(f"ERROR: Unexpected RuntimeError: {e}", file=sys.stderr)
     sys.exit(2)
 except ImportError as e:
     # ImportError is also acceptable - shows fail-closed behavior
-    print(f"OK: Got ImportError (fail-closed): {e}")
+    print(f"OK: Got ImportError (fail-closed): {e}", file=sys.stderr)
     sys.exit(0)
 except Exception as e:
-    print(f"ERROR: Unexpected exception type {type(e).__name__}: {e}")
+    print(f"ERROR: Unexpected exception type {type(e).__name__}: {e}", file=sys.stderr)
     sys.exit(3)
 """
 

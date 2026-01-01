@@ -49,8 +49,10 @@ class AgentBusError(Exception):
 # Constitutional Validation Errors
 # =============================================================================
 
+
 class ConstitutionalError(AgentBusError):
     """Base exception for constitutional compliance failures."""
+
     pass
 
 
@@ -133,8 +135,10 @@ class ConstitutionalValidationError(ConstitutionalError):
 # Message Processing Errors
 # =============================================================================
 
+
 class MessageError(AgentBusError):
     """Base exception for message-related errors."""
+
     pass
 
 
@@ -237,8 +241,10 @@ class MessageRoutingError(MessageError):
 # Agent Registration Errors
 # =============================================================================
 
+
 class AgentError(AgentBusError):
     """Base exception for agent-related errors."""
+
     pass
 
 
@@ -299,8 +305,10 @@ class AgentCapabilityError(AgentError):
 # Policy and OPA Errors
 # =============================================================================
 
+
 class PolicyError(AgentBusError):
     """Base exception for policy-related errors."""
+
     pass
 
 
@@ -367,8 +375,10 @@ class OPANotInitializedError(PolicyError):
 # Deliberation Layer Errors
 # =============================================================================
 
+
 class DeliberationError(AgentBusError):
     """Base exception for deliberation layer errors."""
+
     pass
 
 
@@ -440,8 +450,8 @@ class ReviewConsensusError(DeliberationError):
         self.escalation_count = escalation_count
         super().__init__(
             message=f"Review consensus not reached for '{decision_id}': "
-                    f"{approval_count} approvals, {rejection_count} rejections, "
-                    f"{escalation_count} escalations",
+            f"{approval_count} approvals, {rejection_count} rejections, "
+            f"{escalation_count} escalations",
             details={
                 "decision_id": decision_id,
                 "approval_count": approval_count,
@@ -455,8 +465,10 @@ class ReviewConsensusError(DeliberationError):
 # Bus Operation Errors
 # =============================================================================
 
+
 class BusOperationError(AgentBusError):
     """Base exception for bus operation errors."""
+
     pass
 
 
@@ -508,6 +520,7 @@ class HandlerExecutionError(BusOperationError):
 # Configuration Errors
 # =============================================================================
 
+
 class ConfigurationError(AgentBusError):
     """Raised when configuration is invalid or missing."""
 
@@ -527,8 +540,10 @@ class ConfigurationError(AgentBusError):
 # MACI Role Separation Errors (Gödel Bypass Prevention)
 # =============================================================================
 
+
 class MACIError(AgentBusError):
     """Base exception for MACI role separation errors."""
+
     pass
 
 
@@ -604,7 +619,7 @@ class MACICrossRoleValidationError(MACIError):
         self.reason = reason
         super().__init__(
             message=f"Cross-role validation error: {validator_agent} ({validator_role}) "
-                    f"cannot validate {target_agent} ({target_role}): {reason}",
+            f"cannot validate {target_agent} ({target_role}): {reason}",
             details={
                 "validator_agent": validator_agent,
                 "validator_role": validator_role,
@@ -633,6 +648,7 @@ class MACIRoleNotAssignedError(MACIError):
 # =============================================================================
 # Alignment and Governance Errors
 # =============================================================================
+
 
 class AlignmentViolationError(AgentBusError):
     """Raised when an agent message or action violates constitutional alignment."""

@@ -26,7 +26,7 @@ from typing import Any, Callable, Dict, List, Optional, Set
 
 # SECURITY CONSTANTS (VULN-006)
 MAX_LATENCY_MS = 5000  # Prevent total system lockout
-MAX_ERROR_RATE = 1.0   # Allow deterministic failure testing
+MAX_ERROR_RATE = 1.0  # Allow deterministic failure testing
 MAX_DURATION_S = 300.0  # 5 minutes absolute max
 
 # Import centralized constitutional hash from shared module
@@ -110,8 +110,7 @@ class ChaosScenario:
         # Enforce max duration limit
         if self.duration_s > MAX_DURATION_S:
             logger.warning(
-                f"Duration {self.duration_s}s exceeds max {MAX_DURATION_S}s, "
-                f"capping to max"
+                f"Duration {self.duration_s}s exceeds max {MAX_DURATION_S}s, " f"capping to max"
             )
             self.duration_s = MAX_DURATION_S
 
@@ -125,7 +124,7 @@ class ChaosScenario:
 
         # Validate error rate (VULN-006)
         if not 0.0 <= self.error_rate <= 1.0:
-            raise ValueError(f"error_rate must be between 0.0 and 1.0")
+            raise ValueError("error_rate must be between 0.0 and 1.0")
 
         if self.error_rate > MAX_ERROR_RATE:
             logger.warning(

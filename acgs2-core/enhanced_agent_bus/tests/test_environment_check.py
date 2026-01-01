@@ -5,6 +5,10 @@ Constitutional Hash: cdd01ef066bc6cf2
 Validates that the test environment is correctly configured.
 """
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 import pytest
 
 
@@ -12,14 +16,15 @@ def test_module_imports():
     """Verify that module imports are correctly patched."""
     # Check that flat imports resolve to package imports
     import enhanced_agent_bus.models as pkg_models
+
     import models
 
     # These should be the same module after conftest patching
     assert models.CONSTITUTIONAL_HASH == "cdd01ef066bc6cf2"
     assert models.CONSTITUTIONAL_HASH == pkg_models.CONSTITUTIONAL_HASH
 
-    print(f"✓ models module: {models.__file__}")
-    print(f"✓ CONSTITUTIONAL_HASH: {models.CONSTITUTIONAL_HASH}")
+    logger.info(f"✓ models module: {models.__file__}")
+    logger.info(f"✓ CONSTITUTIONAL_HASH: {models.CONSTITUTIONAL_HASH}")
 
 
 def test_constitutional_hash_value():
@@ -27,7 +32,7 @@ def test_constitutional_hash_value():
     from models import CONSTITUTIONAL_HASH
 
     assert CONSTITUTIONAL_HASH == "cdd01ef066bc6cf2"
-    print(f"✓ Constitutional hash verified: {CONSTITUTIONAL_HASH}")
+    logger.info(f"✓ Constitutional hash verified: {CONSTITUTIONAL_HASH}")
 
 
 def test_rust_disabled():
@@ -41,9 +46,9 @@ def test_rust_disabled():
 
     if not test_with_rust:
         # Rust should be disabled
-        print(f"✓ Rust backend disabled (USE_RUST={USE_RUST})")
+        logger.info(f"✓ Rust backend disabled (USE_RUST={USE_RUST})")
     else:
-        print(f"ℹ Rust backend enabled for testing (USE_RUST={USE_RUST})")
+        logger.info(f"ℹ Rust backend enabled for testing (USE_RUST={USE_RUST})")
 
 
 def test_message_types_available():
@@ -57,8 +62,8 @@ def test_message_types_available():
     assert hasattr(MessageStatus, "DELIVERED")
     assert hasattr(MessageStatus, "FAILED")
 
-    print(f"✓ MessageType.COMMAND: {MessageType.COMMAND}")
-    print(f"✓ MessageStatus.DELIVERED: {MessageStatus.DELIVERED}")
+    logger.info(f"✓ MessageType.COMMAND: {MessageType.COMMAND}")
+    logger.info(f"✓ MessageStatus.DELIVERED: {MessageStatus.DELIVERED}")
 
 
 def test_processor_imports():
@@ -73,8 +78,8 @@ def test_processor_imports():
     assert hasattr(processor, "process")
     assert hasattr(processor, "register_handler")
 
-    print("✓ MessageProcessor created successfully")
-    print(f"✓ Strategy: {processor.processing_strategy.get_name()}")
+    logger.info("✓ MessageProcessor created successfully")
+    logger.info(f"✓ Strategy: {processor.processing_strategy.get_name()}")
 
 
 @pytest.mark.asyncio
@@ -104,8 +109,8 @@ async def test_basic_message_flow():
         message.status.value == MessageStatus.DELIVERED.value
     ), f"Expected DELIVERED, got {message.status}"
 
-    print("✓ Message processed successfully")
-    print(f"✓ Final status: {message.status}")
+    logger.info("✓ Message processed successfully")
+    logger.info(f"✓ Final status: {message.status}")
 
 
 if __name__ == "__main__":

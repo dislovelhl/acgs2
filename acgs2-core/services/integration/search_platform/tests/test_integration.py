@@ -1,3 +1,5 @@
+import logging
+
 """
 Integration Tests for Search Platform Client
 
@@ -440,7 +442,7 @@ class TestLiveIntegration:
 
         # Print violations for debugging
         for v in result.violations:
-            print(f"Violation: {v.violation_type} in {v.file}:{v.line_number}")
+            logging.info(f"Violation: {v.violation_type} in {v.file}:{v.line_number}")
 
         # Our new code should be clean
         critical = [v for v in result.violations if v.severity == "critical"]

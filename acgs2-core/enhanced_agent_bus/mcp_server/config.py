@@ -5,8 +5,8 @@ Constitutional Hash: cdd01ef066bc6cf2
 """
 
 from dataclasses import dataclass, field
-from typing import Optional, Dict, Any, List
 from enum import Enum
+from typing import Any, Dict, List
 
 
 class TransportType(Enum):

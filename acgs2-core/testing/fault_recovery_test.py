@@ -1,3 +1,4 @@
+import logging
 #!/usr/bin/env python3
 """
 ACGS-2 Fault Recovery Test Suite
@@ -35,7 +36,7 @@ class FaultInjector:
 
     async def inject_rust_crash(self, processor):
         """Simulate a Rust backend crash by mocking its process method."""
-        print("Injecting Rust backend crash...")
+        logging.info("Injecting Rust backend crash...")
         strategy = processor._processing_strategy
         # Handle both direct and composite strategies
         if hasattr(strategy, "_strategies"):
@@ -55,22 +56,22 @@ class FaultInjector:
                 rust_strategy._original_process = rust_strategy.process
 
             async def failing_process(*args, **kwargs):
-                print("DEBUG: Executing failing Rust process (FAULT INJECTION)...")
+                logging.debug("DEBUG: Executing failing Rust process (FAULT INJECTION)
                 raise RuntimeError("Simulated Rust Backend Crash (Fault Injection)")
 
             rust_strategy.process = failing_process
             # Also ensure _record_failure is present
             if not hasattr(rust_strategy, "_record_failure"):
-                print("WARNING: rust_strategy missing _record_failure")
+                logging.error("WARNING: rust_strategy missing _record_failure")
 
-            print(f"DEBUG: Successfully mocked Rust strategy: {rust_strategy}")
+            logging.debug(f"DEBUG: Successfully mocked Rust strategy: {rust_strategy}")
             return True
-        print(f"DEBUG: Could not find Rust strategy in {strategy}")
+        logging.debug(f"DEBUG: Could not find Rust strategy in {strategy}")
         return False
 
     async def recover_rust(self, processor):
         """Recover Rust backend from simulated crash."""
-        print("Recovering Rust backend...")
+        logging.info("Recovering Rust backend...")
         strategy = processor._processing_strategy
         if hasattr(strategy, "_strategies"):
             rust_strategy = next(
@@ -93,18 +94,18 @@ class FaultInjector:
         """Inject a failure into a service."""
         if failure_type == "crash":
             # Simulate service crash
-            print(f"Simulating crash of {service_name}")
+            logging.info(f"Simulating crash of {service_name}")
             # In real scenario: kubectl delete pod <pod-name>
         elif failure_type == "slow_response":
             # Simulate slow responses
-            print(f"Simulating slow responses from {service_name}")
+            logging.info(f"Simulating slow responses from {service_name}")
         elif failure_type == "invalid_response":
             # Simulate invalid responses
-            print(f"Simulating invalid responses from {service_name}")
+            logging.info(f"Simulating invalid responses from {service_name}")
 
     async def recover_service(self, service_name: str):
         """Recover a failed service."""
-        print(f"Recovering {service_name}")
+        logging.info(f"Recovering {service_name}")
         # In real scenario: kubectl apply -f deployment.yaml or docker restart
 
     async def wait_for_service_recovery(self, service_name: str, timeout: int = 30) -> bool:
@@ -116,12 +117,12 @@ class FaultInjector:
                 try:
                     # Try a simple health check
                     await client.get_from_service(service_name, "/health")
-                    print(f"{service_name} recovered successfully")
+                    logging.info(f"{service_name} recovered successfully")
                     return True
                 except Exception:
                     await asyncio.sleep(2)
 
-        print(f"{service_name} failed to recover within {timeout}s")
+        logging.error(f"{service_name} failed to recover within {timeout}s")
         return False
 
 
@@ -159,7 +160,7 @@ class FaultRecoveryTester:
                     await client.test_end_to_end_workflow()
                     results["requests_during_failure"] += 1
                 except Exception as e:
-                    print(f"Baseline request {i+1} failed: {e}")
+                    logging.error(f"Baseline request {i+1} failed: {e}")
 
             # Inject failure
             failure_start = time.time()
@@ -193,7 +194,7 @@ class FaultRecoveryTester:
                         await client.test_end_to_end_workflow()
                         results["requests_after_recovery"] += 1
                     except Exception as e:
-                        print(f"Post-recovery request {i+1} failed: {e}")
+                        logging.error(f"Post-recovery request {i+1} failed: {e}")
 
                 # Success if we can make requests after recovery
                 results["success"] = (
@@ -265,7 +266,7 @@ class FaultRecoveryTester:
                 await client.test_end_to_end_workflow()
                 results["success"] = True
             except Exception as e:
-                print(f"Post-recovery test failed: {e}")
+                logging.error(f"Post-recovery test failed: {e}")
 
         return results
 
@@ -296,10 +297,10 @@ class FaultRecoveryTester:
                     latencies.append(latency)
                     results["requests_completed"] += 1
 
-                    print(f"Degraded mode request {i+1}: {latency:.2f}ms")
+                    logging.info(f"Degraded mode request {i+1}: {latency:.2f}ms")
 
                 except Exception as e:
-                    print(f"Degraded mode request {i+1} failed: {e}")
+                    logging.error(f"Degraded mode request {i+1} failed: {e}")
 
             if latencies:
                 results["average_latency_ms"] = sum(latencies) / len(latencies)
@@ -381,7 +382,7 @@ class FaultRecoveryTester:
                 results["success"] = True
 
             except Exception as e:
-                print(f"Consistency check failed: {e}")
+                logging.error(f"Consistency check failed: {e}")
 
         return results
 
@@ -421,7 +422,7 @@ class FaultRecoveryTester:
             # outline says process(self, message)
             validation_result = await processor.process(message)
             results["fallback_triggered"] = True
-            print(f"DEBUG: Processed message status: {getattr(message, 'status', 'N/A')}")
+            logging.debug(f"DEBUG: Processed message status: {getattr(message, 'status', 'N/A')
 
             # 4. Verify integrity
             # message should remain unchanged (except for status/metadata)
@@ -436,7 +437,7 @@ class FaultRecoveryTester:
             results["data_consistent"] = True
             results["success"] = True
         except Exception as e:
-            print(f"Integrity test failed: {e}")
+            logging.error(f"Integrity test failed: {e}")
         finally:
             await self.fault_injector.recover_rust(processor)
 
@@ -469,11 +470,11 @@ class FaultRecoveryTester:
                 message_type=MessageType.COMMAND,
                 created_at=datetime.now(timezone.utc),
             )
-            print("DEBUG: Processing message to trip breaker...")
+            logging.debug("DEBUG: Processing message to trip breaker...")
             try:
                 await processor.process(msg)
             except Exception as e:
-                print(f"DEBUG: Caught expected error: {e}")
+                logging.error(f"DEBUG: Caught expected error: {e}")
 
         # Verify it's tripped
         rust_strategy = None

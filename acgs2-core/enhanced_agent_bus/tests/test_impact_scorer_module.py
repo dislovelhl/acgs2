@@ -323,7 +323,7 @@ class TestImpactScorerIntegration:
 
             def _extract_text(self, content):
                 parts = []
-                for k, v in content.items():
+                for _k, v in content.items():
                     if isinstance(v, str):
                         parts.append(v)
                     elif isinstance(v, dict):

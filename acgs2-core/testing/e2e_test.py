@@ -1,3 +1,4 @@
+import logging
 #!/usr/bin/env python3
 """
 ACGS-2 End-to-End Test Suite
@@ -82,7 +83,7 @@ class E2ETestClient:
                 pass
 
         if unavailable:
-            print(f"Warning: Services unavailable: {', '.join(unavailable)}")
+            logging.warning(f"Warning: Services unavailable: {', '.join(unavailable)
             return False
         return True
 
@@ -273,7 +274,7 @@ class TestE2EIntegration:
         # Try real services first, fallback to mock if unavailable
         async with E2ETestClient() as client:
             if not await client.check_services():
-                print("Services unavailable, switching to mock mode")
+                logging.info("Services unavailable, switching to mock mode")
                 client.mock_mode = True
 
             result = await client.test_end_to_end_workflow()

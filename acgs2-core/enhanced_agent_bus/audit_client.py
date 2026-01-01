@@ -14,7 +14,7 @@ import logging
 import time
 from collections import deque
 from dataclasses import asdict, dataclass, field
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 import httpx
 
@@ -24,11 +24,11 @@ except ImportError:
     CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
 
 try:
+    import pybreaker
     from shared.circuit_breaker import (
         CircuitBreakerConfig,
         get_circuit_breaker,
     )
-    import pybreaker
 
     CIRCUIT_BREAKER_AVAILABLE = True
 except ImportError:

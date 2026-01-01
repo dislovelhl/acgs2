@@ -186,7 +186,6 @@ class PerformanceProfiler:
         logger.info(f"Measurement phase: {self.iterations} iterations")
         start_time = time.perf_counter()
         start_cpu_time = time.process_time()
-        system_metrics_before = self.get_system_metrics()
 
         for i in range(self.iterations):
             message = AgentMessage(
@@ -215,7 +214,6 @@ class PerformanceProfiler:
 
         end_time = time.perf_counter()
         end_cpu_time = time.process_time()
-        system_metrics_after = self.get_system_metrics()
 
         # Calculate metrics
         metrics.duration_seconds = end_time - start_time
@@ -371,48 +369,48 @@ class PerformanceProfiler:
 
     def print_metrics(self, name: str, metrics: PerformanceMetrics) -> None:
         """Print formatted metrics."""
-        print(f"\n{'=' * 80}")
-        print(f" {name}")
-        print(f"{'=' * 80}")
-        print(f"Constitutional Hash: {metrics.constitutional_hash}")
-        print("\nLatency Metrics:")
-        print(f"  P50: {metrics.p50_latency_ms:.3f}ms")
-        print(f"  P95: {metrics.p95_latency_ms:.3f}ms")
-        print(f"  P99: {metrics.p99_latency_ms:.3f}ms")
-        print(f"  Mean: {metrics.mean_latency_ms:.3f}ms")
-        print(f"  Min: {metrics.min_latency_ms:.3f}ms")
-        print(f"  Max: {metrics.max_latency_ms:.3f}ms")
+        logging.info(f"\n{'=' * 80}")
+        logging.info(f" {name}")
+        logging.info(f"{'=' * 80}")
+        logging.info(f"Constitutional Hash: {metrics.constitutional_hash}")
+        logging.info("\nLatency Metrics:")
+        logging.info(f"  P50: {metrics.p50_latency_ms:.3f}ms")
+        logging.info(f"  P95: {metrics.p95_latency_ms:.3f}ms")
+        logging.info(f"  P99: {metrics.p99_latency_ms:.3f}ms")
+        logging.info(f"  Mean: {metrics.mean_latency_ms:.3f}ms")
+        logging.info(f"  Min: {metrics.min_latency_ms:.3f}ms")
+        logging.info(f"  Max: {metrics.max_latency_ms:.3f}ms")
 
-        print("\nThroughput Metrics:")
-        print(f"  Total Operations: {metrics.total_operations}")
-        print(f"  Successful: {metrics.successful_operations}")
-        print(f"  Failed: {metrics.failed_operations}")
-        print(f"  Duration: {metrics.duration_seconds:.2f}s")
-        print(f"  Throughput: {metrics.throughput_rps:.1f} RPS")
+        logging.info("\nThroughput Metrics:")
+        logging.info(f"  Total Operations: {metrics.total_operations}")
+        logging.info(f"  Successful: {metrics.successful_operations}")
+        logging.error(f"  Failed: {metrics.failed_operations}")
+        logging.info(f"  Duration: {metrics.duration_seconds:.2f}s")
+        logging.info(f"  Throughput: {metrics.throughput_rps:.1f} RPS")
 
-        print("\nResource Metrics:")
-        print(f"  CPU: {metrics.cpu_percent:.1f}%")
-        print(f"  Memory: {metrics.memory_mb:.1f} MB")
-        print(f"  Memory Peak: {metrics.memory_peak_mb:.1f} MB")
+        logging.info("\nResource Metrics:")
+        logging.info(f"  CPU: {metrics.cpu_percent:.1f}%")
+        logging.info(f"  Memory: {metrics.memory_mb:.1f} MB")
+        logging.info(f"  Memory Peak: {metrics.memory_peak_mb:.1f} MB")
 
         if metrics.cache_hits + metrics.cache_misses > 0:
-            print("\nCache Metrics:")
-            print(f"  Hits: {metrics.cache_hits}")
-            print(f"  Misses: {metrics.cache_misses}")
-            print(f"  Hit Rate: {metrics.cache_hit_rate:.1%}")
+            logging.info("\nCache Metrics:")
+            logging.info(f"  Hits: {metrics.cache_hits}")
+            logging.info(f"  Misses: {metrics.cache_misses}")
+            logging.info(f"  Hit Rate: {metrics.cache_hit_rate:.1%}")
 
     def print_bottlenecks(self, bottlenecks: List[BottleneckAnalysis]) -> None:
         """Print bottleneck analysis."""
-        print(f"\n{'=' * 80}")
-        print(" Bottleneck Analysis")
-        print(f"{'=' * 80}")
+        logging.info(f"\n{'=' * 80}")
+        logging.info(" Bottleneck Analysis")
+        logging.info(f"{'=' * 80}")
 
         if not bottlenecks:
-            print("No bottlenecks identified.")
+            logging.info("No bottlenecks identified.")
             return
 
-        print(f"\n{'Component':<30} {'P99 Latency':<15} {'% of Total':<12} {'Severity':<10}")
-        print("-" * 80)
+        logging.info(f"\n{'Component':<30} {'P99 Latency':<15} {'% of Total':<12} {'Severity':<10}")
+        logging.info("-" * 80)
 
         for bottleneck in bottlenecks:
             print(
@@ -426,9 +424,9 @@ class PerformanceProfiler:
         self, metrics: PerformanceMetrics, bottlenecks: List[BottleneckAnalysis]
     ) -> None:
         """Print optimization recommendations."""
-        print(f"\n{'=' * 80}")
-        print(" Optimization Recommendations")
-        print(f"{'=' * 80}\n")
+        logging.info(f"\n{'=' * 80}")
+        logging.info(" Optimization Recommendations")
+        logging.info(f"{'=' * 80}\n")
 
         recommendations = []
 
@@ -483,23 +481,23 @@ class PerformanceProfiler:
                 )
 
         for rec in recommendations:
-            print(f"  {rec}")
+            logging.info(f"  {rec}")
 
 
 async def main():
     """Main profiling execution."""
-    print(f"\n{'=' * 80}")
-    print(" ACGS-2 Comprehensive Performance Profiler")
-    print(f" Constitutional Hash: {CONSTITUTIONAL_HASH}")
-    print(f"{'=' * 80}\n")
+    logging.info(f"\n{'=' * 80}")
+    logging.info(" ACGS-2 Comprehensive Performance Profiler")
+    logging.info(f" Constitutional Hash: {CONSTITUTIONAL_HASH}")
+    logging.info(f"{'=' * 80}\n")
 
     profiler = PerformanceProfiler(iterations=1000, warmup_iterations=100)
 
     # Profile components
     component_metrics = {}
 
-    print("Running performance profiling...")
-    print(f"Iterations: {profiler.iterations} (after {profiler.warmup_iterations} warmup)")
+    logging.info("Running performance profiling...")
+    logging.info(f"Iterations: {profiler.iterations} (after {profiler.warmup_iterations} warmup)")
 
     # Profile message processor
     processor_metrics = await profiler.profile_message_processor()
@@ -519,14 +517,14 @@ async def main():
     profiler.print_recommendations(bus_metrics, bottlenecks)
 
     # Summary
-    print(f"\n{'=' * 80}")
-    print(" Performance Summary")
-    print(f"{'=' * 80}\n")
-    print(f"  Overall P99 Latency: {bus_metrics.p99_latency_ms:.3f}ms (target: <5ms)")
-    print(f"  Overall Throughput: {bus_metrics.throughput_rps:.1f} RPS (target: >100 RPS)")
-    print(f"  Cache Hit Rate: {bus_metrics.cache_hit_rate:.1%} (target: >85%)")
-    print(f"  Constitutional Compliance: {bus_metrics.compliance_rate:.1%}")
-    print(f"\n{'=' * 80}\n")
+    logging.info(f"\n{'=' * 80}")
+    logging.info(" Performance Summary")
+    logging.info(f"{'=' * 80}\n")
+    logging.info(f"  Overall P99 Latency: {bus_metrics.p99_latency_ms:.3f}ms (target: <5ms)")
+    logging.info(f"  Overall Throughput: {bus_metrics.throughput_rps:.1f} RPS (target: >100 RPS)")
+    logging.info(f"  Cache Hit Rate: {bus_metrics.cache_hit_rate:.1%} (target: >85%)")
+    logging.info(f"  Constitutional Compliance: {bus_metrics.compliance_rate:.1%}")
+    logging.info(f"\n{'=' * 80}\n")
 
 
 if __name__ == "__main__":

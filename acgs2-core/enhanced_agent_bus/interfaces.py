@@ -268,17 +268,29 @@ class MetricsCollector(Protocol):
 
 try:
     from .deliberation_layer.interfaces import (
-        ImpactScorerProtocol, AdaptiveRouterProtocol, DeliberationQueueProtocol,
-        LLMAssistantProtocol, OPAGuardProtocol, RedisQueueProtocol, RedisVotingProtocol
+        AdaptiveRouterProtocol,
+        DeliberationQueueProtocol,
+        ImpactScorerProtocol,
+        LLMAssistantProtocol,
+        OPAGuardProtocol,
+        RedisQueueProtocol,
+        RedisVotingProtocol,
     )
 except (ImportError, ValueError):
     try:
-        from deliberation_layer.interfaces import ( # type: ignore
-            ImpactScorerProtocol, AdaptiveRouterProtocol, DeliberationQueueProtocol,
-            LLMAssistantProtocol, OPAGuardProtocol, RedisQueueProtocol, RedisVotingProtocol
+        from deliberation_layer.interfaces import (  # type: ignore
+            AdaptiveRouterProtocol,
+            DeliberationQueueProtocol,
+            ImpactScorerProtocol,
+            LLMAssistantProtocol,
+            OPAGuardProtocol,
+            RedisQueueProtocol,
+            RedisVotingProtocol,
         )
     except (ImportError, ValueError):
-        ImpactScorerProtocol = AdaptiveRouterProtocol = DeliberationQueueProtocol = LLMAssistantProtocol = OPAGuardProtocol = RedisQueueProtocol = RedisVotingProtocol = Any
+        ImpactScorerProtocol = AdaptiveRouterProtocol = DeliberationQueueProtocol = (
+            LLMAssistantProtocol
+        ) = OPAGuardProtocol = RedisQueueProtocol = RedisVotingProtocol = Any
 
 __all__ = [
     "AgentRegistry",

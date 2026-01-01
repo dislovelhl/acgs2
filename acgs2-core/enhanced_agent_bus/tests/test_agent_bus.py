@@ -1319,12 +1319,12 @@ class TestMACIProperties:
     def test_maci_enabled_property_true(self):
         """Test maci_enabled property returns True when enabled."""
         bus = EnhancedAgentBus(enable_maci=True)
-        assert bus.maci_enabled == True
+        assert bus.maci_enabled
 
     def test_maci_enabled_property_false(self):
         """Test maci_enabled property returns False when disabled."""
         bus = EnhancedAgentBus(enable_maci=False)
-        assert bus.maci_enabled == False
+        assert not bus.maci_enabled
 
     def test_maci_registry_property_when_enabled(self):
         """Test maci_registry property when MACI is enabled."""
@@ -1448,13 +1448,13 @@ class TestStartWithMetricsAndCircuitBreakers:
         bus = EnhancedAgentBus(enable_maci=False)
 
         # Initially not running
-        assert bus._running == False
+        assert not bus._running
 
         await bus.start()
-        assert bus._running == True
+        assert bus._running
 
         await bus.stop()
-        assert bus._running == False
+        assert not bus._running
 
 
 class TestPolicyClientInitialization:
@@ -1490,7 +1490,7 @@ class TestPolicyClientInitialization:
         # Should not raise, just log warning
         await bus.start()
 
-        assert bus._running == True
+        assert bus._running
 
         await bus.stop()
 
@@ -1522,7 +1522,7 @@ class TestRouteAndDeliverPaths:
 
         success = await bus._route_and_deliver(message)
 
-        assert success == True
+        assert success
 
         # Message should be in the internal queue
         assert bus._message_queue.qsize() >= 1
@@ -1580,7 +1580,7 @@ class TestRegistrationWithJWTValidation:
             auth_token="mock.jwt.token",
         )
 
-        assert result == True
+        assert result
         # Agent should be registered with validated tenant
         agent = bus._agents.get("test-agent")
         assert agent is not None
@@ -1602,7 +1602,7 @@ class TestRegistrationWithJWTValidation:
             agent_id="test-agent", agent_type="worker", auth_token="invalid.jwt.token"
         )
 
-        assert result == False
+        assert not result
         assert "test-agent" not in bus._agents
 
 
@@ -1623,7 +1623,7 @@ class TestRegistrationWithPolicyClient:
             agent_type="worker",
         )
 
-        assert result == True
+        assert result
         # Dynamic key should be fetched
         mock_policy.get_current_public_key.assert_called_once()
         # Agent should have the dynamic key
@@ -1645,7 +1645,7 @@ class TestRegistrationWithPolicyClient:
         )
 
         # Should still succeed with default hash
-        assert result == True
+        assert result
         agent = bus._agents.get("test-agent")
         assert agent is not None
 
@@ -1666,7 +1666,7 @@ class TestMACIRegistrationPaths:
             maci_role=MACIRole.EXECUTIVE,
         )
 
-        assert result == True
+        assert result
         agent = bus._agents.get("executive-agent")
         assert agent is not None
         # Role value is stored as-is from the enum
@@ -1691,7 +1691,7 @@ class TestMACIRegistrationPaths:
         )
 
         # In strict mode, registration should fail and agent should be removed
-        assert result == False
+        assert not result
         assert "failing-agent" not in bus._agents
 
 

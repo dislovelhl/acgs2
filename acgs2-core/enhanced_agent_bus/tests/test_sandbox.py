@@ -10,16 +10,19 @@ Comprehensive tests for the Zero Trust Sandbox module including:
 - Execution isolation and timeout handling
 """
 
+import logging
+
+logger = logging.getLogger(__name__)
 import asyncio
-import pytest
 import time
-from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 
 # Import sandbox module
 try:
     from enhanced_agent_bus.sandbox import (
-        SandboxProvider,
         FirecrackerSandbox,
+        SandboxProvider,
         WasmSandbox,
         get_sandbox_provider,
     )
@@ -29,8 +32,8 @@ except ImportError:
 
     sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
     from sandbox import (
-        SandboxProvider,
         FirecrackerSandbox,
+        SandboxProvider,
         WasmSandbox,
         get_sandbox_provider,
     )
@@ -56,7 +59,6 @@ class TestSandboxProviderInterface:
 
     def test_abstract_methods_are_abstract(self):
         """Test that abstract methods are marked correctly."""
-        from abc import abstractmethod
         import inspect
 
         # Get the abstract methods
@@ -99,7 +101,7 @@ class TestFirecrackerSandbox:
     async def test_execute_code_success(self, sandbox):
         """Test successful code execution."""
         result = await sandbox.execute_code(
-            code="print('hello')", language="python", timeout_ms=5000
+            code="logger.info('hello')", language="python", timeout_ms=5000
         )
 
         assert result["status"] == "success"
@@ -114,7 +116,7 @@ class TestFirecrackerSandbox:
     async def test_execute_code_cold_start_time(self, sandbox):
         """Test that cold start meets <150ms target (simulated)."""
         start = time.time()
-        result = await sandbox.execute_code(code="print('test')", language="python")
+        result = await sandbox.execute_code(code="logger.info('test')", language="python")
         elapsed_ms = (time.time() - start) * 1000
 
         # Should be around 120ms (simulated cold start)
@@ -132,13 +134,13 @@ class TestFirecrackerSandbox:
     @pytest.mark.asyncio
     async def test_execute_code_default_language(self, sandbox):
         """Test default language is Python."""
-        result = await sandbox.execute_code(code="print('test')")
+        result = await sandbox.execute_code(code="logger.info('test')")
         assert "python" in result["output"]
 
     @pytest.mark.asyncio
     async def test_execute_code_default_timeout(self, sandbox):
         """Test default timeout value."""
-        result = await sandbox.execute_code(code="print('test')")
+        result = await sandbox.execute_code(code="logger.info('test')")
         assert result["status"] == "success"
 
     @pytest.mark.asyncio
@@ -184,7 +186,7 @@ class TestFirecrackerSandbox:
         assert instance_id.startswith("vm-accel-")
 
         # Execute
-        result = await sandbox.execute_code(code="print('lifecycle test')", language="python")
+        result = await sandbox.execute_code(code="logger.info('lifecycle test')", language="python")
         assert result["status"] == "success"
 
         # Terminate
@@ -399,7 +401,7 @@ class TestSandboxMetrics:
     async def test_duration_tracking(self):
         """Test that execution duration is tracked."""
         sandbox = FirecrackerSandbox()
-        result = await sandbox.execute_code(code="print('test')")
+        result = await sandbox.execute_code(code="logger.info('test')")
 
         assert "duration_ms" in result
         assert isinstance(result["duration_ms"], float)

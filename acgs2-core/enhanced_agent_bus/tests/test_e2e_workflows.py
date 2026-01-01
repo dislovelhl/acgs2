@@ -148,7 +148,7 @@ class MockDAGNode:
         self.execution_order = execution_counter["count"]
 
         if self.should_fail:
-            raise Exception(f"Node {self.node_id} failed intentionally")
+            raise RuntimeError(f"Node {self.node_id} failed intentionally")
 
         self.executed = True
         return {"node": self.node_id, "result": "success", "order": self.execution_order}
@@ -379,7 +379,7 @@ class TestDAGExecutionE2E:
         await execute_node(nodes["A"])
 
         # B fails
-        with pytest.raises(Exception):
+        with pytest.raises(RuntimeError):
             await execute_node(nodes["B"])
 
         # C should not execute (dependent on failed B)

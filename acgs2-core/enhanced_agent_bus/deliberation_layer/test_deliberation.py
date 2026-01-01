@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 async def test_basic_functionality():
     """Test basic deliberation layer functionality."""
-    print("🧪 Testing ACGS-2 Deliberation Layer...")
+    logger.info("🧪 Testing ACGS-2 Deliberation Layer...")
 
     # Initialize deliberation layer
     deliberation_layer = DeliberationLayer(
@@ -61,7 +61,7 @@ async def test_basic_functionality():
     results = []
 
     for test_case in test_messages:
-        print(f"\n📝 Testing: {test_case['name']}")
+        logger.info(f"\n📝 Testing: {test_case['name']}")
 
         # Create message
         message = AgentMessage(
@@ -75,10 +75,12 @@ async def test_basic_functionality():
         # Process through deliberation layer
         result = await deliberation_layer.process_message(message)
 
-        print(f"   Impact Score: {message.impact_score:.3f}")
-        print(f"   Routed to: {result.get('lane')}")
-        print(f"   Expected: {test_case['expected_lane']}")
-        print(f"   Match: {'✅' if result.get('lane') == test_case['expected_lane'] else '❌'}")
+        logger.info(f"   Impact Score: {message.impact_score:.3f}")
+        logger.info(f"   Routed to: {result.get('lane')}")
+        logger.info(f"   Expected: {test_case['expected_lane']}")
+        logger.info(
+            f"   Match: {'✅' if result.get('lane') == test_case['expected_lane'] else '❌'}"
+        )
 
         results.append(
             {
@@ -95,7 +97,7 @@ async def test_basic_functionality():
 
 async def test_deliberation_workflow():
     """Test the full deliberation workflow."""
-    print("\n🔄 Testing Deliberation Workflow...")
+    logger.info("\n🔄 Testing Deliberation Workflow...")
 
     deliberation_layer = DeliberationLayer(
         impact_threshold=0.5,  # Lower threshold for testing
@@ -119,11 +121,11 @@ async def test_deliberation_workflow():
 
     # Process message (should go to deliberation)
     result = await deliberation_layer.process_message(message)
-    print(f"Message routed to: {result.get('lane')}")
+    logger.info(f"Message routed to: {result.get('lane')}")
 
     if result.get("lane") == "deliberation":
         item_id = result.get("item_id")
-        print(f"Deliberation item ID: {item_id}")
+        logger.info(f"Deliberation item ID: {item_id}")
 
         # Submit agent votes
         await deliberation_layer.submit_agent_vote(
@@ -145,7 +147,7 @@ async def test_deliberation_workflow():
 
         # Check queue status
         queue_status = deliberation_layer.deliberation_queue.get_queue_status()
-        print(f"Queue status: {queue_status['queue_size']} items")
+        logger.info(f"Queue status: {queue_status['queue_size']} items")
 
         # Submit human decision
         success = await deliberation_layer.submit_human_decision(
@@ -155,14 +157,14 @@ async def test_deliberation_workflow():
             reasoning="Approved after reviewing security assessment",
         )
 
-        print(f"Human decision submitted: {success}")
+        logger.info(f"Human decision submitted: {success}")
 
     return True
 
 
 async def test_performance_metrics():
     """Test performance metrics and learning."""
-    print("\n📊 Testing Performance Metrics...")
+    logger.info("\n📊 Testing Performance Metrics...")
 
     deliberation_layer = DeliberationLayer(
         impact_threshold=0.7, enable_learning=True, enable_llm=False, enable_opa_guard=False
@@ -185,18 +187,18 @@ async def test_performance_metrics():
     # Get stats
     stats = deliberation_layer.get_layer_stats()
 
-    print("Layer Statistics:")
-    print(f"  Total messages: {stats['router_stats']['total_messages']}")
-    print(f"  Fast lane: {stats['router_stats']['fast_lane_count']}")
-    print(f"  Deliberation: {stats['router_stats']['deliberation_count']}")
-    print(f"  Current threshold: {stats['impact_threshold']}")
+    logger.info("Layer Statistics:")
+    logger.info(f"  Total messages: {stats['router_stats']['total_messages']}")
+    logger.info(f"  Fast lane: {stats['router_stats']['fast_lane_count']}")
+    logger.info(f"  Deliberation: {stats['router_stats']['deliberation_count']}")
+    logger.info(f"  Current threshold: {stats['impact_threshold']}")
 
     return stats
 
 
 async def run_simulation():
     """Run a comprehensive simulation of the deliberation layer."""
-    print("🚀 Running ACGS-2 Deliberation Layer Simulation...")
+    logger.info("🚀 Running ACGS-2 Deliberation Layer Simulation...")
 
     try:
         # Test basic functionality
@@ -209,30 +211,30 @@ async def run_simulation():
         performance_stats = await test_performance_metrics()
 
         # Summary
-        print("\n" + "=" * 60)
-        print("📋 SIMULATION SUMMARY")
-        print("=" * 60)
+        logger.info("\n" + "=" * 60)
+        logger.info("📋 SIMULATION SUMMARY")
+        logger.info("=" * 60)
 
         successful_tests = sum(1 for r in basic_results if r["success"])
         total_tests = len(basic_results)
 
-        print(f"Basic Functionality Tests: {successful_tests}/{total_tests} passed")
-        print(f"Deliberation Workflow: {'✅ Success' if workflow_success else '❌ Failed'}")
-        print("Performance Metrics: ✅ Collected")
+        logger.info(f"Basic Functionality Tests: {successful_tests}/{total_tests} passed")
+        logger.error(f"Deliberation Workflow: {'✅ Success' if workflow_success else '❌ Failed'}")
+        logger.info("Performance Metrics: ✅ Collected")
 
         # Calculate success rate
         success_rate = successful_tests / total_tests if total_tests > 0 else 0
-        print(f"\nOverall Success Rate: {success_rate:.1%}")
+        logger.info(f"\nOverall Success Rate: {success_rate:.1%}")
 
         if success_rate >= 0.8:  # 80% success threshold
-            print("🎉 Deliberation Layer implementation is ready for production!")
+            logger.info("🎉 Deliberation Layer implementation is ready for production!")
             return True
         else:
-            print("⚠️  Deliberation Layer needs further tuning.")
+            logger.info("⚠️  Deliberation Layer needs further tuning.")
             return False
 
     except Exception as e:
-        print(f"❌ Simulation failed with error: {e}")
+        logger.error(f"❌ Simulation failed with error: {e}")
         return False
 
 
@@ -241,7 +243,7 @@ if __name__ == "__main__":
     success = asyncio.run(run_simulation())
 
     if success:
-        print("\n✅ ACGS-2 Deliberation Layer validation completed successfully!")
-        print("Ready for integration into the main system.")
+        logger.info("\n✅ ACGS-2 Deliberation Layer validation completed successfully!")
+        logger.info("Ready for integration into the main system.")
     else:
-        print("\n❌ Validation failed. Please review the implementation.")
+        logger.error("\n❌ Validation failed. Please review the implementation.")

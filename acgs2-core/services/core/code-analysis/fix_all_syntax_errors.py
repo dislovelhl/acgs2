@@ -1,3 +1,4 @@
+import logging
 #!/usr/bin/env python3
 """
 Comprehensive fix for syntax errors in code-analysis service files.
@@ -234,13 +235,13 @@ def fix_extra_try_except_blocks(content: str) -> str:
 
 def fix_file(filepath: Path) -> bool:
     """Apply all fixes to a single file."""
-    print(f"Processing {filepath}...")
+    logging.info(f"Processing {filepath}...")
 
     try:
         with open(filepath, "r", encoding="utf-8") as f:
             content = f.read()
     except Exception as e:
-        print(f"  ! Error reading file: {e}")
+        logging.error(f"  ! Error reading file: {e}")
         return False
 
     original = content
@@ -263,10 +264,10 @@ def fix_file(filepath: Path) -> bool:
     if content != original:
         with open(filepath, "w", encoding="utf-8") as f:
             f.write(content)
-        print(f"  ✓ Fixed {filepath.name}")
+        logging.info(f"  ✓ Fixed {filepath.name}")
         return True
     else:
-        print(f"  - No changes for {filepath.name}")
+        logging.info(f"  - No changes for {filepath.name}")
         return False
 
 
@@ -287,7 +288,7 @@ def main():
     # Find all Python files
     python_files = list(base_dir.rglob("*.py"))
 
-    print(f"Found {len(python_files)} Python files\n")
+    logging.info(f"Found {len(python_files)
 
     fixed = 0
     still_broken = []
@@ -298,26 +299,26 @@ def main():
 
         # Check if file has syntax errors
         if not validate_syntax(filepath):
-            print(f"\n[BROKEN] {filepath.relative_to(base_dir)}")
+            logging.info(f"\n[BROKEN] {filepath.relative_to(base_dir)
             if fix_file(filepath):
                 fixed += 1
                 if validate_syntax(filepath):
-                    print("  ✓ Syntax now valid")
+                    logging.info("  ✓ Syntax now valid")
                 else:
-                    print("  ! Still has syntax errors")
+                    logging.error("  ! Still has syntax errors")
                     still_broken.append(filepath)
             else:
                 still_broken.append(filepath)
 
-    print(f"\n{'='*50}")
-    print(f"Fixed: {fixed} files")
+    logging.info(f"\n{'='*50}")
+    logging.info(f"Fixed: {fixed} files")
 
     if still_broken:
-        print(f"\nStill broken ({len(still_broken)} files):")
+        logging.info(f"\nStill broken ({len(still_broken)
         for f in still_broken:
-            print(f"  - {f.relative_to(base_dir)}")
+            logging.info(f"  - {f.relative_to(base_dir)
     else:
-        print("\n✓ All files have valid syntax!")
+        logging.info("\n✓ All files have valid syntax!")
 
 
 if __name__ == "__main__":

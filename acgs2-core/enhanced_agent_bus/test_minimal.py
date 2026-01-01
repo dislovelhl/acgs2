@@ -4,8 +4,11 @@ Constitutional Hash: cdd01ef066bc6cf2
 """
 
 import asyncio
+import logging
 import os
 import sys
+
+logger = logging.getLogger(__name__)
 
 # Add to path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -17,14 +20,14 @@ from models import CONSTITUTIONAL_HASH, AgentMessage, MessageStatus, MessageType
 
 async def test_basic():
     """Test basic message processing"""
-    print("=" * 60)
-    print("TEST: Basic Message Processing")
-    print("=" * 60)
+    logger.info("=" * 60)
+    logger.info("TEST: Basic Message Processing")
+    logger.info("=" * 60)
 
     # Create processor
     processor = MessageProcessor()
-    print(f"Processor created: {processor}")
-    print(f"Processor strategy: {processor.processing_strategy.get_name()}")
+    logger.info(f"Processor created: {processor}")
+    logger.info(f"Processor strategy: {processor.processing_strategy.get_name()}")
 
     # Create valid message
     message = AgentMessage(
@@ -36,39 +39,41 @@ async def test_basic():
         payload={"data": "test_data"},
     )
 
-    print("\nBefore processing:")
-    print(f"  Status: {message.status}")
-    print(f"  Hash: {message.constitutional_hash}")
-    print(f"  Expected: {CONSTITUTIONAL_HASH}")
-    print(f"  Match: {message.constitutional_hash == CONSTITUTIONAL_HASH}")
+    logger.info("\nBefore processing:")
+    logger.info(f"  Status: {message.status}")
+    logger.info(f"  Hash: {message.constitutional_hash}")
+    logger.info(f"  Expected: {CONSTITUTIONAL_HASH}")
+    logger.info(f"  Match: {message.constitutional_hash == CONSTITUTIONAL_HASH}")
 
     # Process message
     result = await processor.process(message)
 
-    print("\nAfter processing:")
-    print(f"  Status: {message.status}")
-    print(f"  Result valid: {result.is_valid}")
-    print(f"  Result errors: {result.errors}")
-    print(f"  Result warnings: {result.warnings}")
+    logger.info("\nAfter processing:")
+    logger.info(f"  Status: {message.status}")
+    logger.info(f"  Result valid: {result.is_valid}")
+    logger.error(f"  Result errors: {result.errors}")
+    logger.warning(f"  Result warnings: {result.warnings}")
 
     # Check expectations
-    print("\nExpectations:")
-    print(f"  result.is_valid should be True: {result.is_valid == True}")
-    print(f"  message.status should be DELIVERED: {message.status == MessageStatus.DELIVERED}")
+    logger.info("\nExpectations:")
+    logger.info(f"  result.is_valid should be True: {result.is_valid}")
+    logger.info(
+        f"  message.status should be DELIVERED: {message.status == MessageStatus.DELIVERED}"
+    )
 
     if result.is_valid and message.status == MessageStatus.DELIVERED:
-        print("\n✓ TEST PASSED")
+        logger.info("\n✓ TEST PASSED")
         return True
     else:
-        print("\n✗ TEST FAILED")
+        logger.error("\n✗ TEST FAILED")
         return False
 
 
 async def test_invalid_hash():
     """Test invalid hash message"""
-    print("\n" + "=" * 60)
-    print("TEST: Invalid Hash Message")
-    print("=" * 60)
+    logger.info("\n" + "=" * 60)
+    logger.info("TEST: Invalid Hash Message")
+    logger.info("=" * 60)
 
     # Create processor
     processor = MessageProcessor()
@@ -83,33 +88,33 @@ async def test_invalid_hash():
     )
     message.constitutional_hash = "invalid_hash"
 
-    print("\nBefore processing:")
-    print(f"  Status: {message.status}")
-    print(f"  Hash: {message.constitutional_hash}")
+    logger.info("\nBefore processing:")
+    logger.info(f"  Status: {message.status}")
+    logger.info(f"  Hash: {message.constitutional_hash}")
 
     # Process message
     result = await processor.process(message)
 
-    print("\nAfter processing:")
-    print(f"  Status: {message.status}")
-    print(f"  Result valid: {result.is_valid}")
-    print(f"  Result errors: {result.errors}")
+    logger.info("\nAfter processing:")
+    logger.info(f"  Status: {message.status}")
+    logger.info(f"  Result valid: {result.is_valid}")
+    logger.error(f"  Result errors: {result.errors}")
 
     # Check expectations
     has_error = len(result.errors) > 0
     error_text = result.errors[0] if has_error else ""
     has_mismatch = "Constitutional hash mismatch" in error_text if has_error else False
 
-    print("\nExpectations:")
-    print(f"  result.is_valid should be False: {result.is_valid == False}")
-    print(f"  'Constitutional hash mismatch' in errors: {has_mismatch}")
-    print(f"  Error text: {error_text}")
+    logger.info("\nExpectations:")
+    logger.info(f"  result.is_valid should be False: {not result.is_valid}")
+    logger.error(f"  'Constitutional hash mismatch' in errors: {has_mismatch}")
+    logger.error(f"  Error text: {error_text}")
 
     if not result.is_valid and has_mismatch:
-        print("\n✓ TEST PASSED")
+        logger.info("\n✓ TEST PASSED")
         return True
     else:
-        print("\n✗ TEST FAILED")
+        logger.error("\n✗ TEST FAILED")
         return False
 
 
@@ -118,17 +123,17 @@ async def main():
     test1 = await test_basic()
     test2 = await test_invalid_hash()
 
-    print("\n" + "=" * 60)
-    print("SUMMARY")
-    print("=" * 60)
-    print(f"Test 1 (Valid Message): {'PASS' if test1 else 'FAIL'}")
-    print(f"Test 2 (Invalid Hash): {'PASS' if test2 else 'FAIL'}")
+    logger.info("\n" + "=" * 60)
+    logger.info("SUMMARY")
+    logger.info("=" * 60)
+    logger.error(f"Test 1 (Valid Message): {'PASS' if test1 else 'FAIL'}")
+    logger.error(f"Test 2 (Invalid Hash): {'PASS' if test2 else 'FAIL'}")
 
     if test1 and test2:
-        print("\n✓ ALL TESTS PASSED")
+        logger.info("\n✓ ALL TESTS PASSED")
         sys.exit(0)
     else:
-        print("\n✗ SOME TESTS FAILED")
+        logger.error("\n✗ SOME TESTS FAILED")
         sys.exit(1)
 
 

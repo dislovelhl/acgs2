@@ -9,22 +9,20 @@ Targets: batching, circuit breaker, health checks, global client functions.
 import asyncio
 from dataclasses import dataclass
 from typing import Any, Dict
-from unittest.mock import AsyncMock, MagicMock, patch, PropertyMock
-import time
+from unittest.mock import AsyncMock, MagicMock, PropertyMock, patch
 
-import pytest
 import httpx
+import pytest
 
 from audit_client import (
+    CONSTITUTIONAL_HASH,
+    AuditBatchResult,
     AuditClient,
     AuditClientConfig,
-    AuditBatchResult,
+    close_audit_client,
     get_audit_client,
     initialize_audit_client,
-    close_audit_client,
-    CONSTITUTIONAL_HASH,
 )
-
 
 # =============================================================================
 # Test Data Classes

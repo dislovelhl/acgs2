@@ -5,13 +5,13 @@ Constitutional Hash: cdd01ef066bc6cf2
 Comprehensive tests to expand health_aggregator.py coverage from 52.59% to 70%+.
 """
 
-import asyncio
 from datetime import datetime, timezone
-from typing import Any, Dict
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
+
 import pytest
 
 from health_aggregator import (
+    CONSTITUTIONAL_HASH,
     HealthAggregator,
     HealthAggregatorConfig,
     HealthSnapshot,
@@ -19,9 +19,7 @@ from health_aggregator import (
     SystemHealthStatus,
     get_health_aggregator,
     reset_health_aggregator,
-    CONSTITUTIONAL_HASH,
 )
-
 
 # =============================================================================
 # HealthSnapshot Tests
@@ -461,7 +459,7 @@ class TestGetHealthHistory:
         aggregator = HealthAggregator()
 
         # Add some snapshots directly
-        for i in range(5):
+        for _i in range(5):
             snapshot = HealthSnapshot(
                 timestamp=datetime.now(timezone.utc),
                 status=SystemHealthStatus.HEALTHY,
@@ -679,7 +677,7 @@ class TestEdgeCases:
         aggregator = HealthAggregator(config=config)
 
         # Add more than max size
-        for i in range(10):
+        for _i in range(10):
             snapshot = HealthSnapshot(
                 timestamp=datetime.now(timezone.utc),
                 status=SystemHealthStatus.HEALTHY,

@@ -3,11 +3,12 @@
 
 import re
 from pathlib import Path
+import logging
 
 
 def fix_deployment_file(filepath: Path):
     """Fix syntax errors in deployment files."""
-    print(f"Fixing {filepath}...")
+    logging.info(f"Fixing {filepath}...")
 
     with open(filepath, "r", encoding="utf-8") as f:
         content = f.read()
@@ -94,10 +95,10 @@ def fix_deployment_file(filepath: Path):
     if content != original_content:
         with open(filepath, "w", encoding="utf-8") as f:
             f.write(content)
-        print(f"  ✓ Fixed {filepath}")
+        logging.info(f"  ✓ Fixed {filepath}")
         return True
     else:
-        print(f"  - No changes needed for {filepath}")
+        logging.info(f"  - No changes needed for {filepath}")
         return False
 
 
@@ -119,9 +120,9 @@ def main():
             if fix_deployment_file(filepath):
                 fixed_count += 1
         else:
-            print(f"  ! File not found: {filepath}")
+            logging.info(f"  ! File not found: {filepath}")
 
-    print(f"\n✓ Fixed {fixed_count} files")
+    logging.info(f"\n✓ Fixed {fixed_count} files")
 
 
 if __name__ == "__main__":

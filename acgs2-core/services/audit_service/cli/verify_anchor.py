@@ -1,3 +1,4 @@
+import logging
 """
 ACGS-2 Audit Service - Anchor Verification CLI
 Constitutional Hash: cdd01ef066bc6cf2
@@ -17,24 +18,24 @@ from services.audit_service.core.anchor_mock import BlockchainAnchor
 def verify_root(root_hash: str):
     anchor = BlockchainAnchor()
     if anchor.verify_root(root_hash):
-        print(f"✅ ROOT VERIFIED: Hash {root_hash} is found in the blockchain anchor.")
+        logging.info(f"✅ ROOT VERIFIED: Hash {root_hash} is found in the blockchain anchor.")
         # Find the block
         for block in anchor.blocks:
             if block["root_hash"] == root_hash:
-                print(f"   Block Index: {block['index']}")
-                print(f"   Timestamp:   {block['timestamp']}")
-                print(f"   Block Hash:  {block['hash']}")
+                logging.info(f"   Block Index: {block['index']}")
+                logging.info(f"   Timestamp:   {block['timestamp']}")
+                logging.info(f"   Block Hash:  {block['hash']}")
                 break
     else:
-        print(f"❌ VERIFICATION FAILED: Hash {root_hash} NOT found in the blockchain anchor.")
+        logging.error(f"❌ VERIFICATION FAILED: Hash {root_hash} NOT found in the blockchain anchor.")
 
 
 def list_blocks():
     anchor = BlockchainAnchor()
-    print(f"Blockchain Anchor: {len(anchor.blocks)} blocks")
-    print("-" * 60)
+    logging.info(f"Blockchain Anchor: {len(anchor.blocks)
+    logging.info("-" * 60)
     for block in anchor.blocks:
-        print(f"B[{block['index']}] | {block['timestamp']} | Root: {block['root_hash'][:16]}...")
+        logging.info(f"B[{block['index']}] | {block['timestamp']} | Root: {block['root_hash'][:16]}...")
 
 
 if __name__ == "__main__":

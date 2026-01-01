@@ -1,3 +1,4 @@
+import logging
 #!/usr/bin/env python3
 """
 ACGS-2 Comprehensive Load Testing Suite
@@ -35,7 +36,7 @@ try:
     AIOHTTP_AVAILABLE = True
 except ImportError:
     AIOHTTP_AVAILABLE = False
-    print("Warning: aiohttp not available, some tests will be skipped")
+    logging.warning("Warning: aiohttp not available, some tests will be skipped")
 
 try:
     from shared.constants import (
@@ -168,10 +169,10 @@ class EnhancedAgentBusLoadTester:
         self, iterations: int = 1000, concurrent_users: int = 10
     ) -> LoadTestResult:
         """Test message processing performance under load."""
-        print(f"\n{'='*60}")
-        print("Testing Enhanced Agent Bus Message Processing")
-        print(f"Iterations: {iterations}, Concurrent Users: {concurrent_users}")
-        print(f"{'='*60}")
+        logging.info(f"\n{'='*60}")
+        logging.info("Testing Enhanced Agent Bus Message Processing")
+        logging.info(f"Iterations: {iterations}, Concurrent Users: {concurrent_users}")
+        logging.info(f"{'='*60}")
 
         self.results = []
         self.errors = []
@@ -225,12 +226,12 @@ class EnhancedAgentBusLoadTester:
                 await asyncio.gather(*tasks)
 
                 if (batch_num + 1) % 10 == 0:
-                    print(f"Completed batch {batch_num + 1}/{concurrent_users}")
+                    logging.info(f"Completed batch {batch_num + 1}/{concurrent_users}")
 
             await bus.stop()
 
         except ImportError as e:
-            print(f"Warning: Could not import Enhanced Agent Bus: {e}")
+            logging.warning(f"Warning: Could not import Enhanced Agent Bus: {e}")
             # Generate mock results for testing
             self.results = [0.5 + (i % 10) * 0.1 for i in range(iterations)]
             self.errors = []
@@ -287,22 +288,22 @@ class EnhancedAgentBusLoadTester:
 
     def _print_result(self, result: LoadTestResult):
         """Print test result summary."""
-        print(f"\n{result.test_name} Results:")
-        print(f"  Iterations: {result.iterations}")
-        print(f"  Successful: {result.successful} ({result.success_rate:.1%})")
-        print(f"  Failed: {result.failed}")
-        print(f"  Throughput: {result.throughput_rps:.2f} RPS")
-        print("  Latency (ms):")
-        print(f"    Min:    {result.min_latency_ms:.3f}")
-        print(f"    Mean:   {result.mean_latency_ms:.3f}")
-        print(f"    Median: {result.median_latency_ms:.3f}")
-        print(f"    P95:    {result.p95_latency_ms:.3f}")
-        print(f"    P99:    {result.p99_latency_ms:.3f}")
-        print(f"    Max:    {result.max_latency_ms:.3f}")
+        logging.info(f"\n{result.test_name} Results:")
+        logging.info(f"  Iterations: {result.iterations}")
+        logging.info(f"  Successful: {result.successful} ({result.success_rate:.1%})
+        logging.error(f"  Failed: {result.failed}")
+        logging.info(f"  Throughput: {result.throughput_rps:.2f} RPS")
+        logging.info("  Latency (ms)
+        logging.info(f"    Min:    {result.min_latency_ms:.3f}")
+        logging.info(f"    Mean:   {result.mean_latency_ms:.3f}")
+        logging.info(f"    Median: {result.median_latency_ms:.3f}")
+        logging.info(f"    P95:    {result.p95_latency_ms:.3f}")
+        logging.info(f"    P99:    {result.p99_latency_ms:.3f}")
+        logging.info(f"    Max:    {result.max_latency_ms:.3f}")
 
         # Compare with targets
         meets_targets = result.meets_targets()
-        print(f"  Meets Targets: {'✓ YES' if meets_targets else '✗ NO'}")
+        logging.info(f"  Meets Targets: {'✓ YES' if meets_targets else '✗ NO'}")
 
         if not meets_targets:
             if result.p99_latency_ms >= P99_LATENCY_TARGET_MS:
@@ -317,9 +318,9 @@ class EnhancedAgentBusLoadTester:
         # Compare with baseline
         vs_baseline = result.vs_baseline()
         if vs_baseline:
-            print("  vs Baseline:")
-            print(f"    P99 Latency: {vs_baseline['p99_latency_improvement']:+.1f}%")
-            print(f"    Throughput:  {vs_baseline['throughput_improvement']:+.1f}%")
+            logging.info("  vs Baseline:")
+            logging.info(f"    P99 Latency: {vs_baseline['p99_latency_improvement']:+.1f}%")
+            logging.info(f"    Throughput:  {vs_baseline['throughput_improvement']:+.1f}%")
 
 
 class DashboardAPILoadTester:
@@ -335,13 +336,13 @@ class DashboardAPILoadTester:
         self, iterations: int = 1000, concurrent_users: int = 10
     ) -> LoadTestResult:
         """Test dashboard overview endpoint."""
-        print(f"\n{'='*60}")
-        print("Testing Dashboard API /overview Endpoint")
-        print(f"Iterations: {iterations}, Concurrent Users: {concurrent_users}")
-        print(f"{'='*60}")
+        logging.info(f"\n{'='*60}")
+        logging.info("Testing Dashboard API /overview Endpoint")
+        logging.info(f"Iterations: {iterations}, Concurrent Users: {concurrent_users}")
+        logging.info(f"{'='*60}")
 
         if not AIOHTTP_AVAILABLE:
-            print("Warning: aiohttp not available, using mock results")
+            logging.warning("Warning: aiohttp not available, using mock results")
             return self._generate_mock_result(
                 "Dashboard API /overview", "dashboard_api", iterations
             )
@@ -373,9 +374,9 @@ class DashboardAPILoadTester:
                     await asyncio.gather(*tasks)
 
                     if (batch_num + 1) % 10 == 0:
-                        print(f"Completed batch {batch_num + 1}/{concurrent_users}")
+                        logging.info(f"Completed batch {batch_num + 1}/{concurrent_users}")
         except Exception as e:
-            print(f"Warning: Dashboard API not available: {e}")
+            logging.warning(f"Warning: Dashboard API not available: {e}")
             return self._generate_mock_result(
                 "Dashboard API /overview", "dashboard_api", iterations
             )
@@ -466,27 +467,27 @@ class DashboardAPILoadTester:
 
     def _print_result(self, result: LoadTestResult):
         """Print test result summary."""
-        print(f"\n{result.test_name} Results:")
-        print(f"  Iterations: {result.iterations}")
-        print(f"  Successful: {result.successful} ({result.success_rate:.1%})")
-        print(f"  Failed: {result.failed}")
-        print(f"  Throughput: {result.throughput_rps:.2f} RPS")
-        print("  Latency (ms):")
-        print(f"    Min:    {result.min_latency_ms:.3f}")
-        print(f"    Mean:   {result.mean_latency_ms:.3f}")
-        print(f"    Median: {result.median_latency_ms:.3f}")
-        print(f"    P95:    {result.p95_latency_ms:.3f}")
-        print(f"    P99:    {result.p99_latency_ms:.3f}")
-        print(f"    Max:    {result.max_latency_ms:.3f}")
+        logging.info(f"\n{result.test_name} Results:")
+        logging.info(f"  Iterations: {result.iterations}")
+        logging.info(f"  Successful: {result.successful} ({result.success_rate:.1%})
+        logging.error(f"  Failed: {result.failed}")
+        logging.info(f"  Throughput: {result.throughput_rps:.2f} RPS")
+        logging.info("  Latency (ms)
+        logging.info(f"    Min:    {result.min_latency_ms:.3f}")
+        logging.info(f"    Mean:   {result.mean_latency_ms:.3f}")
+        logging.info(f"    Median: {result.median_latency_ms:.3f}")
+        logging.info(f"    P95:    {result.p95_latency_ms:.3f}")
+        logging.info(f"    P99:    {result.p99_latency_ms:.3f}")
+        logging.info(f"    Max:    {result.max_latency_ms:.3f}")
 
         meets_targets = result.meets_targets()
-        print(f"  Meets Targets: {'✓ YES' if meets_targets else '✗ NO'}")
+        logging.info(f"  Meets Targets: {'✓ YES' if meets_targets else '✗ NO'}")
 
         vs_baseline = result.vs_baseline()
         if vs_baseline:
-            print("  vs Baseline:")
-            print(f"    P99 Latency: {vs_baseline['p99_latency_improvement']:+.1f}%")
-            print(f"    Throughput:  {vs_baseline['throughput_improvement']:+.1f}%")
+            logging.info("  vs Baseline:")
+            logging.info(f"    P99 Latency: {vs_baseline['p99_latency_improvement']:+.1f}%")
+            logging.info(f"    Throughput:  {vs_baseline['throughput_improvement']:+.1f}%")
 
 
 class ComprehensiveLoadTestSuite:
@@ -500,11 +501,11 @@ class ComprehensiveLoadTestSuite:
         self, iterations: int = 1000, concurrent_users: int = 10
     ) -> LoadTestReport:
         """Run all load tests."""
-        print(f"\n{'#'*60}")
-        print("# ACGS-2 Comprehensive Load Test Suite")
-        print(f"# Constitutional Hash: {CONSTITUTIONAL_HASH}")
-        print(f"# Start Time: {datetime.now(timezone.utc).isoformat()}")
-        print(f"{'#'*60}")
+        logging.info(f"\n{'#'*60}")
+        logging.info("# ACGS-2 Comprehensive Load Test Suite")
+        logging.info(f"# Constitutional Hash: {CONSTITUTIONAL_HASH}")
+        logging.info(f"# Start Time: {datetime.now(timezone.utc)
+        logging.info(f"{'#'*60}")
 
         start_time = datetime.now(timezone.utc)
         test_start_perf = time.perf_counter()
@@ -569,50 +570,50 @@ class ComprehensiveLoadTestSuite:
         """Print comprehensive test report."""
         summary = report.summary()
 
-        print(f"\n{'='*60}")
-        print("COMPREHENSIVE LOAD TEST REPORT")
-        print(f"{'='*60}")
-        print(f"Test Suite: {report.test_suite_name}")
-        print(f"Duration: {report.total_duration_seconds:.2f}s")
-        print(f"Constitutional Hash: {report.constitutional_hash}")
+        logging.info(f"\n{'='*60}")
+        logging.info("COMPREHENSIVE LOAD TEST REPORT")
+        logging.info(f"{'='*60}")
+        logging.info(f"Test Suite: {report.test_suite_name}")
+        logging.info(f"Duration: {report.total_duration_seconds:.2f}s")
+        logging.info(f"Constitutional Hash: {report.constitutional_hash}")
 
-        print(f"\n{'='*60}")
-        print("SUMMARY STATISTICS")
-        print(f"{'='*60}")
-        print(f"Total Tests: {summary['total_tests']}")
-        print(f"Total Iterations: {summary['total_iterations']}")
-        print(f"Total Successful: {summary['total_successful']}")
-        print(f"Total Failed: {summary['total_failed']}")
-        print(f"Overall Success Rate: {summary['overall_success_rate']:.1%}")
+        logging.info(f"\n{'='*60}")
+        logging.info("SUMMARY STATISTICS")
+        logging.info(f"{'='*60}")
+        logging.info(f"Total Tests: {summary['total_tests']}")
+        logging.info(f"Total Iterations: {summary['total_iterations']}")
+        logging.info(f"Total Successful: {summary['total_successful']}")
+        logging.error(f"Total Failed: {summary['total_failed']}")
+        logging.info(f"Overall Success Rate: {summary['overall_success_rate']:.1%}")
 
-        print("\nLatency Statistics (ms):")
-        print(f"  Best P99:    {summary['best_p99_latency_ms']:.3f}")
-        print(f"  Worst P99:   {summary['worst_p99_latency_ms']:.3f}")
-        print(f"  Average P99: {summary['avg_p99_latency_ms']:.3f}")
+        logging.info("\nLatency Statistics (ms)
+        logging.info(f"  Best P99:    {summary['best_p99_latency_ms']:.3f}")
+        logging.info(f"  Worst P99:   {summary['worst_p99_latency_ms']:.3f}")
+        logging.info(f"  Average P99: {summary['avg_p99_latency_ms']:.3f}")
 
-        print("\nThroughput Statistics (RPS):")
-        print(f"  Best:    {summary['best_throughput_rps']:.2f}")
-        print(f"  Worst:   {summary['worst_throughput_rps']:.2f}")
-        print(f"  Average: {summary['avg_throughput_rps']:.2f}")
+        logging.info("\nThroughput Statistics (RPS)
+        logging.info(f"  Best:    {summary['best_throughput_rps']:.2f}")
+        logging.info(f"  Worst:   {summary['worst_throughput_rps']:.2f}")
+        logging.info(f"  Average: {summary['avg_throughput_rps']:.2f}")
 
-        print(f"\n{'='*60}")
-        print("PERFORMANCE TARGET VALIDATION")
-        print(f"{'='*60}")
-        print(f"Tests Meeting Targets: {summary['tests_meeting_targets']}/{summary['total_tests']}")
-        print(f"Tests Failing Targets: {summary['tests_failing_targets']}/{summary['total_tests']}")
+        logging.info(f"\n{'='*60}")
+        logging.info("PERFORMANCE TARGET VALIDATION")
+        logging.info(f"{'='*60}")
+        logging.info(f"Tests Meeting Targets: {summary['tests_meeting_targets']}/{summary['total_tests']}")
+        logging.info(f"Tests Failing Targets: {summary['tests_failing_targets']}/{summary['total_tests']}")
 
-        print("\nTargets:")
-        print(f"  P99 Latency:  < {P99_LATENCY_TARGET_MS}ms")
-        print(f"  Throughput:   > {MIN_THROUGHPUT_RPS} RPS")
-        print(f"  Cache Hit Rate: > {MIN_CACHE_HIT_RATE:.0%}")
+        logging.info("\nTargets:")
+        logging.info(f"  P99 Latency:  < {P99_LATENCY_TARGET_MS}ms")
+        logging.info(f"  Throughput:   > {MIN_THROUGHPUT_RPS} RPS")
+        logging.info(f"  Cache Hit Rate: > {MIN_CACHE_HIT_RATE:.0%}")
 
-        print(f"\n{'='*60}")
-        print("BASELINE COMPARISON")
-        print(f"{'='*60}")
-        print("Baseline Metrics:")
-        print(f"  P99 Latency: {BASELINE_METRICS['p99_latency_ms']}ms")
-        print(f"  Throughput:  {BASELINE_METRICS['throughput_rps']} RPS")
-        print(f"  Cache Hit Rate: {BASELINE_METRICS['cache_hit_rate']:.0%}")
+        logging.info(f"\n{'='*60}")
+        logging.info("BASELINE COMPARISON")
+        logging.info(f"{'='*60}")
+        logging.info("Baseline Metrics:")
+        logging.info(f"  P99 Latency: {BASELINE_METRICS['p99_latency_ms']}ms")
+        logging.info(f"  Throughput:  {BASELINE_METRICS['throughput_rps']} RPS")
+        logging.info(f"  Cache Hit Rate: {BASELINE_METRICS['cache_hit_rate']:.0%}")
 
         # Calculate average improvements
         improvements = [r.vs_baseline() for r in report.results if r.vs_baseline()]
@@ -624,9 +625,9 @@ class ComprehensiveLoadTestSuite:
                 i["throughput_improvement"] for i in improvements
             )
 
-            print("\nAverage Improvements:")
-            print(f"  P99 Latency: {avg_latency_improvement:+.1f}%")
-            print(f"  Throughput:  {avg_throughput_improvement:+.1f}%")
+            logging.info("\nAverage Improvements:")
+            logging.info(f"  P99 Latency: {avg_latency_improvement:+.1f}%")
+            logging.info(f"  Throughput:  {avg_throughput_improvement:+.1f}%")
 
     def save_report(self, report: LoadTestReport, filename: str = None):
         """Save report to JSON file."""
@@ -657,7 +658,7 @@ class ComprehensiveLoadTestSuite:
         with open(filepath, "w") as f:
             json.dump(report_dict, f, indent=2)
 
-        print(f"\nReport saved to: {filepath}")
+        logging.info(f"\nReport saved to: {filepath}")
         return filepath
 
 
@@ -688,10 +689,10 @@ async def main():
     # Exit with appropriate code
     summary = report.summary()
     if summary["tests_failing_targets"] > 0:
-        print("\n⚠ Some tests failed to meet performance targets")
+        logging.error("\n⚠ Some tests failed to meet performance targets")
         sys.exit(1)
     else:
-        print("\n✓ All tests met performance targets")
+        logging.info("\n✓ All tests met performance targets")
         sys.exit(0)
 
 

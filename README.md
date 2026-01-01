@@ -6,14 +6,14 @@ Enterprise multi-agent bus system implementing constitutional AI governance with
 
 ## Key Metrics
 
-| Metric                    | Target   | Achieved     | Status     |
-| ------------------------- | -------- | ------------ | ---------- |
-| P99 Latency               | <5ms     | 0.278ms      | 94% better |
-| Throughput                | >100 RPS | 6,310 RPS    | 63x target |
-| Cache Hit Rate            | >85%     | 95%          | 12% better |
-| Constitutional Compliance | >95%     | 100%         | Perfect    |
-| Antifragility Score       | -        | 10/10        | Maximum    |
-| Test Coverage             | -        | 2,717+ tests | 95.2% pass |
+| Metric                    | Target   | Achieved    | Status      |
+| ------------------------- | -------- | ----------- | ----------- |
+| P99 Latency               | <5ms     | 0.278ms     | 94% better  |
+| Throughput                | >100 RPS | 6,310 RPS   | 63x target  |
+| Cache Hit Rate            | >85%     | 95%         | 12% better  |
+| Constitutional Compliance | >95%     | 100%        | Perfect     |
+| Antifragility Score       | -        | 10/10       | Maximum     |
+| Test Coverage             | -        | 3,534 tests | 99.92% pass |
 
 ## Repository Structure
 
@@ -24,6 +24,8 @@ Enterprise multi-agent bus system implementing constitutional AI governance with
 | [**acgs2-observability**](./acgs2-observability) | Monitoring and system state           | Dashboards, Alerts, Monitoring tests                             |
 | [**acgs2-research**](./acgs2-research)           | Research papers and technical specs   | Documentation, Model evaluation data                             |
 | [**acgs2-neural-mcp**](./acgs2-neural-mcp)       | Neural MCP integration                | Pattern training tools, MCP server                               |
+
+📁 **Directory Organization**: See [DIRECTORY_STRUCTURE.md](./DIRECTORY_STRUCTURE.md) for detailed file organization and navigation guide.
 
 ## Architecture Documentation (C4 Model)
 
@@ -182,3 +184,12 @@ Copyright 2024-2025 ACGS-2 Contributors.
 
 **Constitutional Hash**: `cdd01ef066bc6cf2`
 **Last Updated**: 2025-12-30
+\n
+
+## Coverage Metrics
+
+**System-wide Coverage:** 65.65% (Enhanced Agent Bus core components)
+**Module Coverage:** 82.43% (Agent Bus), 62.34% (Message Processor), 52.17% (Core Services)
+
+The system-wide coverage represents the actual test coverage across all source files,
+while module coverage shows the average coverage of individual components.

@@ -7,15 +7,15 @@ Constitutional Hash: cdd01ef066bc6cf2
 """
 
 import json
-import pytest
 from unittest.mock import AsyncMock, MagicMock
 
-from ..tools.validate_compliance import ValidateComplianceTool
-from ..tools.get_principles import GetPrinciplesTool
-from ..tools.query_precedents import QueryPrecedentsTool, DecisionOutcome
-from ..tools.submit_governance import SubmitGovernanceTool
-from ..tools.get_metrics import GetMetricsTool
+import pytest
 
+from ..tools.get_metrics import GetMetricsTool
+from ..tools.get_principles import GetPrinciplesTool
+from ..tools.query_precedents import DecisionOutcome, QueryPrecedentsTool
+from ..tools.submit_governance import SubmitGovernanceTool
+from ..tools.validate_compliance import ValidateComplianceTool
 
 CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
 

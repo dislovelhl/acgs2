@@ -16,7 +16,7 @@ import json
 import os
 import tempfile
 from datetime import datetime, timezone
-from unittest.mock import AsyncMock, MagicMock, patch, mock_open
+from unittest.mock import AsyncMock, MagicMock, mock_open, patch
 
 import pytest
 
@@ -46,15 +46,12 @@ except ImportError:
     from ..bundle_registry import (
         CONSTITUTIONAL_HASH,
         AWSECRAuthProvider,
-        BasicAuthProvider,
         BundleArtifact,
         BundleDistributionService,
         BundleManifest,
-        BundleStatus,
         OCIRegistryClient,
         RegistryType,
         close_distribution_service,
-        get_distribution_service,
         initialize_distribution_service,
     )
 
@@ -893,7 +890,7 @@ class TestOCIRegistryClientSigning:
         """sign_manifest raises on invalid key."""
         client = OCIRegistryClient("https://registry.example.com")
 
-        with pytest.raises(Exception):
+        with pytest.raises((ValueError, RuntimeError, TypeError)):
             await client.sign_manifest("repo", "v1.0", "sha256:abc", "invalid_key")
 
 

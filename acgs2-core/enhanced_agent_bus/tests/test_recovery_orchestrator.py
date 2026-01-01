@@ -176,7 +176,10 @@ class TestRecoveryPolicy:
 
     def test_custom_values(self):
         """Test custom policy values."""
-        health_fn = lambda: True
+
+        def health_fn():
+            return True
+
         policy = RecoveryPolicy(
             max_retry_attempts=10,
             backoff_multiplier=1.5,

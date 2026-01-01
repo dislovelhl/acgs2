@@ -1,3 +1,5 @@
+import logging
+
 #!/usr/bin/env python3
 """
 ACGS-2 Keyword Argument Type Hint Repair Tool
@@ -146,7 +148,7 @@ def process_file(filepath: Path, dry_run: bool = False) -> Tuple[bool, int]:
     try:
         content = filepath.read_text(encoding="utf-8")
     except Exception as e:
-        print(f"  Error reading {filepath}: {e}")
+        logging.error(f"  Error reading {filepath}: {e}")
         return False, 0
 
     total_fixes = 0
@@ -181,8 +183,8 @@ def main():
 
     args = parser.parse_args()
 
-    print("ACGS-2 Keyword Argument Type Hint Repair Tool")
-    print(f"Constitutional Hash: {CONSTITUTIONAL_HASH}")
+    logging.info("ACGS-2 Keyword Argument Type Hint Repair Tool")
+    logging.info(f"Constitutional Hash: {CONSTITUTIONAL_HASH}")
     print()
 
     total_files = 0
@@ -212,12 +214,12 @@ def main():
                 total_fixes += fixes
                 if args.verbose:
                     action = "Would fix" if args.dry_run else "Fixed"
-                    print(f"  {action} {fixes} patterns in {filepath}")
+                    logging.info(f"  {action} {fixes} patterns in {filepath}")
 
-    print("Summary:")
-    print(f"  Files scanned: {total_files}")
-    print(f"  Files modified: {modified_files}")
-    print(f"  Total fixes: {total_fixes}")
+    logging.info("Summary:")
+    logging.info(f"  Files scanned: {total_files}")
+    logging.info(f"  Files modified: {modified_files}")
+    logging.info(f"  Total fixes: {total_fixes}")
 
     return 0
 

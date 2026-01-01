@@ -460,7 +460,7 @@ class BasicSentimentAnalyzer(SentimentAnalyzer):
         negation = False
         intensity = 1.0
 
-        for i, word in enumerate(words):
+        for _i, word in enumerate(words):
             # Check for negation
             if word in self.negators:
                 negation = True

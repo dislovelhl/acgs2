@@ -12,11 +12,9 @@ These tests validate system resilience against:
 Goal: Prove fail-closed behavior under adversarial governance conditions.
 """
 
-import asyncio
 import time
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
-from unittest.mock import AsyncMock, MagicMock, patch
+from typing import Any, Dict, List
 
 import pytest
 
@@ -259,8 +257,8 @@ class TestMACIRoleDesynchronization:
         This is fail-closed behavior - preventing unauthorized actions.
         """
         try:
-            from enhanced_agent_bus.maci_enforcement import MACIRole, MACIAction, MACIEnforcer
             from enhanced_agent_bus.exceptions import MACIRoleViolationError
+            from enhanced_agent_bus.maci_enforcement import MACIAction, MACIEnforcer, MACIRole
 
             enforcer = MACIEnforcer()
 
@@ -282,8 +280,8 @@ class TestMACIRoleDesynchronization:
         This is fail-closed behavior - preventing unauthorized actions.
         """
         try:
-            from enhanced_agent_bus.maci_enforcement import MACIRole, MACIAction, MACIEnforcer
             from enhanced_agent_bus.exceptions import MACIRoleViolationError
+            from enhanced_agent_bus.maci_enforcement import MACIAction, MACIEnforcer, MACIRole
 
             enforcer = MACIEnforcer()
 
@@ -304,8 +302,8 @@ class TestMACIRoleDesynchronization:
         This is fail-closed behavior - preventing unauthorized actions.
         """
         try:
-            from enhanced_agent_bus.maci_enforcement import MACIRole, MACIAction, MACIEnforcer
             from enhanced_agent_bus.exceptions import MACIRoleViolationError
+            from enhanced_agent_bus.maci_enforcement import MACIAction, MACIEnforcer, MACIRole
 
             enforcer = MACIEnforcer()
 
@@ -326,8 +324,8 @@ class TestMACIRoleDesynchronization:
         This is fail-closed behavior - unknown agents cannot perform actions.
         """
         try:
-            from enhanced_agent_bus.maci_enforcement import MACIAction, MACIEnforcer
             from enhanced_agent_bus.exceptions import MACIRoleNotAssignedError
+            from enhanced_agent_bus.maci_enforcement import MACIAction, MACIEnforcer
 
             enforcer = MACIEnforcer()
 
@@ -341,7 +339,7 @@ class TestMACIRoleDesynchronization:
     async def test_all_roles_can_query(self) -> None:
         """Test that all roles can perform QUERY action."""
         try:
-            from enhanced_agent_bus.maci_enforcement import MACIRole, MACIAction, MACIEnforcer
+            from enhanced_agent_bus.maci_enforcement import MACIAction, MACIEnforcer, MACIRole
 
             enforcer = MACIEnforcer()
 
@@ -665,7 +663,7 @@ class TestCombinedAttackScenarios:
         assert len(attacks_attempted) == 3
 
         # Each attack produced detectable result
-        for attack_type, result in attacks_attempted:
+        for _attack_type, result in attacks_attempted:
             assert result is not None
 
 
@@ -762,7 +760,7 @@ class TestGovernanceEdgeCases:
         else:
             result = sum(approvals) / len(approvals) >= 0.5
 
-        assert result == False
+        assert not result
 
     def test_single_approver_requires_explicit_approval(self) -> None:
         """Test that single approver must explicitly approve."""
@@ -771,7 +769,7 @@ class TestGovernanceEdgeCases:
 
         # Need explicit vote, not default
         assert len(single_vote) == 1
-        assert single_vote[0] == True  # Explicit
+        assert single_vote[0]  # Explicit
 
     def test_max_int_voters_handled(self) -> None:
         """Test handling of unreasonably large voter counts."""

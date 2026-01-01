@@ -225,7 +225,7 @@ class TestCausalValidator:
     def test_validate_chain(self):
         """Test causal chain validation."""
         timeline = SpecTimeline()
-        for i, name in enumerate(["A", "B", "C"]):
+        for _i, name in enumerate(["A", "B", "C"]):
             import time
 
             time.sleep(0.001)

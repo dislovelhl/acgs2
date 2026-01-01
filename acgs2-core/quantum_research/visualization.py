@@ -1,3 +1,4 @@
+import logging
 #!/usr/bin/env python3
 """
 Visualization Utilities for PAG-QEC Framework
@@ -530,13 +531,13 @@ def demo_three_qubit():
     """Demonstrate 3-qubit code visualization."""
     viz = ThreeQubitVisualizer()
 
-    print("\n" + "=" * 60)
-    print("THREE-QUBIT BIT-FLIP CODE VISUALIZATION")
-    print("=" * 60)
+    logging.info("\n" + "=" * 60)
+    logging.info("THREE-QUBIT BIT-FLIP CODE VISUALIZATION")
+    logging.info("=" * 60)
 
     # Show encoding
-    print("\n" + viz.show_encoding(0))
-    print("\n" + viz.show_encoding(1))
+    logging.info("\n" + viz.show_encoding(0)
+    logging.info("\n" + viz.show_encoding(1)
 
     # Show error correction cycle
     print(
@@ -557,26 +558,26 @@ def demo_surface_code():
     """Demonstrate surface code visualization."""
     viz = SurfaceCodeVisualizer()
 
-    print("\n" + "=" * 60)
-    print("SURFACE CODE VISUALIZATION")
-    print("=" * 60)
+    logging.info("\n" + "=" * 60)
+    logging.info("SURFACE CODE VISUALIZATION")
+    logging.info("=" * 60)
 
     # Distance-3 with errors
-    print("\n" + viz.show_lattice(distance=3, x_errors={4}, z_errors={0, 8}))  # Center qubit
+    logging.error("\n" + viz.show_lattice(distance=3, x_errors={4}, z_errors={0, 8})
 
     # Syndrome pattern
     x_syn = np.array([1, 0, 0, 1])
     z_syn = np.array([0, 1, 0, 0])
-    print("\n" + viz.show_syndrome_pattern(3, x_syn, z_syn))
+    logging.info("\n" + viz.show_syndrome_pattern(3, x_syn, z_syn)
 
 
 def demo_performance():
     """Demonstrate performance visualization."""
     viz = PerformanceVisualizer()
 
-    print("\n" + "=" * 60)
-    print("PERFORMANCE VISUALIZATION")
-    print("=" * 60)
+    logging.info("\n" + "=" * 60)
+    logging.info("PERFORMANCE VISUALIZATION")
+    logging.info("=" * 60)
 
     # Comparison table
     results = {
@@ -585,11 +586,11 @@ def demo_performance():
         "Neural (INT8)": {"accuracy": 0.96, "latency_ns": 2000},
         "Speculative": {"accuracy": 0.97, "latency_ns": 1500},
     }
-    print("\n" + viz.show_comparison_table(results))
+    logging.info("\n" + viz.show_comparison_table(results)
 
     # Latency histogram
     latencies = np.random.exponential(2000, 1000).tolist()
-    print("\n" + viz.show_latency_histogram(latencies, num_bins=8))
+    logging.info("\n" + viz.show_latency_histogram(latencies, num_bins=8)
 
     # Training curve
     epochs = 100
@@ -597,7 +598,7 @@ def demo_performance():
     accuracies = [
         0.5 + 0.45 * (1 - np.exp(-i / 20)) + 0.02 * np.random.random() for i in range(epochs)
     ]
-    print("\n" + viz.show_training_curve(losses, accuracies))
+    logging.info("\n" + viz.show_training_curve(losses, accuracies)
 
 
 def main():
@@ -615,9 +616,9 @@ def main():
     demo_surface_code()
     demo_performance()
 
-    print("\n" + "=" * 60)
-    print("VISUALIZATION UTILITIES READY")
-    print("=" * 60)
+    logging.info("\n" + "=" * 60)
+    logging.info("VISUALIZATION UTILITIES READY")
+    logging.info("=" * 60)
 
 
 if __name__ == "__main__":

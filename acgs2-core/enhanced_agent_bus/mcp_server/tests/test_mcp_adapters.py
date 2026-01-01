@@ -6,13 +6,13 @@ Tests for MCP adapters connecting to external services.
 Constitutional Hash: cdd01ef066bc6cf2
 """
 
+from unittest.mock import AsyncMock, MagicMock
+
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
 
 from ..adapters.agent_bus import AgentBusAdapter
-from ..adapters.policy_client import PolicyClientAdapter
 from ..adapters.audit_client import AuditClientAdapter
-
+from ..adapters.policy_client import PolicyClientAdapter
 
 CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
 

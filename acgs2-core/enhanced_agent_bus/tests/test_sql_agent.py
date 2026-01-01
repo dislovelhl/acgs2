@@ -10,8 +10,9 @@ Comprehensive tests for the SQL Agent 2.0 module including:
 """
 
 import asyncio
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
 
 # Import SQL agent module
 try:
@@ -364,7 +365,6 @@ class TestLogging:
     @pytest.mark.asyncio
     async def test_execution_failure_logged(self):
         """Test that execution failures are logged."""
-        import logging
 
         agent = SQLAgent()
 

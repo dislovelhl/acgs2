@@ -353,7 +353,7 @@ class SpecArchitectureContext:
 
     def validate_constitutional_compliance(self) -> bool:
         """Validate constitutional hash across all layers."""
-        for layer, ctx in self.layers.items():
+        for _layer, ctx in self.layers.items():
             if ctx.constitutional_hash != CONSTITUTIONAL_HASH:
                 return False
             for component in ctx.components.values():

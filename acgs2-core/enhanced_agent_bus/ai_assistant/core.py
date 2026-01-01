@@ -154,7 +154,7 @@ class AIAssistant:
             message="What is my order status?"
         )
 
-        print(result.response_text)
+        logger.info(result.response_text)
 
         await assistant.shutdown()
     """

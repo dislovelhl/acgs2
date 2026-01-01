@@ -15,6 +15,9 @@ Output:
     - Prometheus metrics (if enabled)
 """
 
+import logging
+
+logger = logging.getLogger(__name__)
 import argparse
 import json
 import random
@@ -124,25 +127,25 @@ class GPUBenchmark:
 
             return ImpactScorer, get_impact_scorer, get_profiling_report, get_gpu_decision_matrix
         except ImportError as e:
-            print(f"⚠️  Warning: Could not import ImpactScorer: {e}")
-            print("    Running with mock scorer for demonstration...")
+            logger.warning(f"⚠️  Warning: Could not import ImpactScorer: {e}")
+            logger.info("    Running with mock scorer for demonstration...")
             return None, None, None, None
 
     def run_warmup(self, scorer) -> None:
         """Warm up the model to ensure stable measurements."""
-        print(f"🔥 Warming up with {self.warmup_samples} samples...")
+        logger.info(f"🔥 Warming up with {self.warmup_samples} samples...")
 
-        for i in range(self.warmup_samples):
+        for _i in range(self.warmup_samples):
             msg = generate_random_message()
             scorer.calculate_impact_score(msg, {"agent_id": msg.get("agent_id", "warmup")})
 
         # Reset profiler after warmup to get clean measurements
         self.profiler.reset()
-        print("   Warmup complete, profiler reset.\n")
+        logger.info("   Warmup complete, profiler reset.\n")
 
     def run_sequential_benchmark(self, scorer) -> float:
         """Run sequential (single-threaded) benchmark."""
-        print(f"📊 Running sequential benchmark ({self.num_samples} samples)...")
+        logger.info(f"📊 Running sequential benchmark ({self.num_samples} samples)...")
 
         start = time.perf_counter()
         for i in range(self.num_samples):
@@ -150,16 +153,16 @@ class GPUBenchmark:
             scorer.calculate_impact_score(msg, {"agent_id": msg.get("agent_id", "bench")})
 
             if (i + 1) % 50 == 0:
-                print(f"   Progress: {i + 1}/{self.num_samples}")
+                logger.info(f"   Progress: {i + 1}/{self.num_samples}")
 
         elapsed = time.perf_counter() - start
         rps = self.num_samples / elapsed
-        print(f"   Sequential: {elapsed:.2f}s, {rps:.1f} RPS\n")
+        logger.info(f"   Sequential: {elapsed:.2f}s, {rps:.1f} RPS\n")
         return rps
 
     def run_concurrent_benchmark(self, scorer) -> float:
         """Run concurrent (multi-threaded) benchmark."""
-        print(
+        logger.info(
             f"🚀 Running concurrent benchmark ({self.num_samples} samples, {self.concurrency} threads)..."
         )
 
@@ -173,17 +176,17 @@ class GPUBenchmark:
 
         elapsed = time.perf_counter() - start
         rps = self.num_samples / elapsed
-        print(f"   Concurrent: {elapsed:.2f}s, {rps:.1f} RPS\n")
+        logger.info(f"   Concurrent: {elapsed:.2f}s, {rps:.1f} RPS\n")
         return rps
 
     def run(self) -> Dict[str, Any]:
         """Run the complete benchmark suite."""
-        print("=" * 70)
-        print("ACGS-2 GPU ACCELERATION BENCHMARK")
-        print("Constitutional Hash: cdd01ef066bc6cf2")
-        print(f"Started: {datetime.now(timezone.utc).isoformat()}")
-        print("=" * 70)
-        print()
+        logger.info("=" * 70)
+        logger.info("ACGS-2 GPU ACCELERATION BENCHMARK")
+        logger.info("Constitutional Hash: cdd01ef066bc6cf2")
+        logger.info(f"Started: {datetime.now(timezone.utc).isoformat()}")
+        logger.info("=" * 70)
+        logger.info()
 
         # Import scorer
         ImpactScorer, get_impact_scorer, get_profiling_report, get_gpu_decision_matrix = (
@@ -195,16 +198,16 @@ class GPUBenchmark:
             return self._run_mock_benchmark()
 
         # Initialize scorer
-        print("📦 Initializing ImpactScorer...")
+        logger.info("📦 Initializing ImpactScorer...")
         try:
             scorer = get_impact_scorer()
-            print(f"   Model: {scorer.model_name}")
-            print(f"   BERT enabled: {scorer._bert_enabled}")
-            print(f"   ONNX enabled: {scorer._onnx_enabled}")
-            print()
+            logger.info(f"   Model: {scorer.model_name}")
+            logger.info(f"   BERT enabled: {scorer._bert_enabled}")
+            logger.info(f"   ONNX enabled: {scorer._onnx_enabled}")
+            logger.info()
         except Exception as e:
-            print(f"   ⚠️  Scorer initialization failed: {e}")
-            print("   Running with mock benchmark...")
+            logger.error(f"   ⚠️  Scorer initialization failed: {e}")
+            logger.info("   Running with mock benchmark...")
             return self._run_mock_benchmark()
 
         # Run benchmarks
@@ -214,7 +217,7 @@ class GPUBenchmark:
         concurrent_rps = self.run_concurrent_benchmark(scorer)
 
         # Get profiling results
-        print("📈 Generating profiling report...")
+        logger.info("📈 Generating profiling report...")
         report = get_profiling_report()
         gpu_matrix = get_gpu_decision_matrix()
 
@@ -238,20 +241,20 @@ class GPUBenchmark:
         }
 
         # Print report
-        print()
-        print(report)
-        print()
+        logger.info()
+        logger.info(report)
+        logger.info()
         self._print_summary()
 
         return self.results
 
     def _run_mock_benchmark(self) -> Dict[str, Any]:
         """Run mock benchmark when scorer is not available."""
-        print("\n⚠️  Running mock benchmark (scorer not available)")
-        print("   This demonstrates the profiling infrastructure.\n")
+        logger.info("\n⚠️  Running mock benchmark (scorer not available)")
+        logger.info("   This demonstrates the profiling infrastructure.\n")
 
         # Simulate some profiling data
-        for i in range(100):
+        for _i in range(100):
             with self.profiler.track("mock_model"):
                 time.sleep(random.uniform(0.001, 0.005))  # 1-5ms simulated inference
 
@@ -270,7 +273,7 @@ class GPUBenchmark:
             },
         }
 
-        print(report)
+        logger.info(report)
         return self.results
 
     def _generate_summary(
@@ -329,26 +332,26 @@ class GPUBenchmark:
         summary = self.results.get("summary", {})
         throughput = self.results.get("throughput", {})
 
-        print("=" * 70)
-        print("EXECUTIVE SUMMARY")
-        print("=" * 70)
-        print()
-        print(f"Recommendation: {summary.get('overall_recommendation', 'N/A')}")
-        print()
-        print("Throughput:")
-        print(f"  - Sequential: {throughput.get('sequential_rps', 0):.1f} RPS")
-        print(f"  - Concurrent: {throughput.get('concurrent_rps', 0):.1f} RPS")
-        print(f"  - Scaling factor: {throughput.get('concurrency_scaling', 0):.2f}x")
-        print()
-        print("Analysis:")
+        logger.info("=" * 70)
+        logger.info("EXECUTIVE SUMMARY")
+        logger.info("=" * 70)
+        logger.info()
+        logger.info(f"Recommendation: {summary.get('overall_recommendation', 'N/A')}")
+        logger.info()
+        logger.info("Throughput:")
+        logger.info(f"  - Sequential: {throughput.get('sequential_rps', 0):.1f} RPS")
+        logger.info(f"  - Concurrent: {throughput.get('concurrent_rps', 0):.1f} RPS")
+        logger.info(f"  - Scaling factor: {throughput.get('concurrency_scaling', 0):.2f}x")
+        logger.info()
+        logger.info("Analysis:")
         for reason in summary.get("reasons", []):
-            print(f"  • {reason}")
-        print()
-        print("Action Items:")
+            logger.info(f"  • {reason}")
+        logger.info()
+        logger.info("Action Items:")
         for item in summary.get("action_items", []):
-            print(f"  → {item}")
-        print()
-        print("=" * 70)
+            logger.info(f"  → {item}")
+        logger.info()
+        logger.info("=" * 70)
 
     def save_results(self, output_path: str = None) -> str:
         """Save results to JSON file."""
@@ -358,7 +361,7 @@ class GPUBenchmark:
         with open(output_path, "w") as f:
             json.dump(self.results, f, indent=2, default=str)
 
-        print(f"\n📁 Results saved to: {output_path}")
+        logger.info(f"\n📁 Results saved to: {output_path}")
         return output_path
 
 

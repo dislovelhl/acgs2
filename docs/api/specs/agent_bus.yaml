@@ -1,0 +1,83 @@
+openapi: 3.0.3
+info:
+  title: ACGS-2 Enhanced Agent Bus API
+  description: |
+    High-performance agent communication bus with constitutional validation.
+    Constitutional Hash: cdd01ef066bc6cf2
+  version: "2.0.0"
+  contact:
+    name: ACGS-2 Governance Team
+
+servers:
+  - url: http://localhost:8080
+    description: Local development server
+
+paths:
+  /health:
+    get:
+      summary: Health check endpoint
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "healthy"
+                  constitutional_hash:
+                    type: string
+                    example: "cdd01ef066bc6cf2"
+
+  /agents:
+    post:
+      summary: Register a new agent
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                agent_id:
+                  type: string
+                agent_type:
+                  type: string
+                capabilities:
+                  type: array
+                  items:
+                    type: string
+                constitutional_hash:
+                  type: string
+                  example: "cdd01ef066bc6cf2"
+      responses:
+        '201':
+          description: Agent registered successfully
+
+  /messages:
+    post:
+      summary: Send a message through the agent bus
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                sender:
+                  type: string
+                recipient:
+                  type: string
+                content:
+                  type: object
+                priority:
+                  type: string
+                  enum: [LOW, MEDIUM, HIGH, CRITICAL]
+                constitutional_hash:
+                  type: string
+                  example: "cdd01ef066bc6cf2"
+      responses:
+        '202':
+          description: Message accepted for processing

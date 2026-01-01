@@ -22,6 +22,9 @@ from .core import (
     EnhancedAgentBus,
     MessageProcessor,
 )
+from .examples.validation_integration_example import (
+    IntegratedValidationSystem,
+)
 from .exceptions import (
     AgentAlreadyRegisteredError,
     # Base
@@ -96,9 +99,6 @@ from .registry import (
     RedisAgentRegistry,
     RustValidationStrategy,
     StaticHashValidationStrategy,
-)
-from .validation_integration_example import (
-    IntegratedValidationSystem,
 )
 from .validators import (
     ValidationResult,

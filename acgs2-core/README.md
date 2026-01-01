@@ -1,6 +1,6 @@
 # ACGS-2
 
-> **宪法哈希**: `cdd01ef066bc6cf2` [🔍 验证要求](docs/ENHANCED_AGENT_BUS_DOCUMENTATION.md#constitutional-validation) > **版本**: 2.3.0
+> **宪法哈希**: `cdd01ef066bc6cf2` [🔍 验证要求](docs/architecture/ENHANCED_AGENT_BUS_DOCUMENTATION.md#constitutional-validation) > **版本**: 2.3.0
 > **状态**: 生产就绪
 > **测试**: 99.8% 通过率 | **覆盖率**: 100%
 > **最后更新**: 2025-12-31
@@ -22,7 +22,7 @@ ACGS-2 是一个为高安全性、高合规环境设计的多代理编排平台�
 - CI/CD 整合 Dependabot
 - 达到性能目标 (99.8% 测试通过、100% 覆盖)
 
-[English README](README.en.md) | [API 参考](docs/api_reference.md) | [部署指南](deployment_guide.md)
+[English README](docs/README.en.md) | [API 参考](docs/api_reference.md) | [部署指南](deploy/deployment_guide.md)
 
 ## 🏗️ 架构概述
 
@@ -51,7 +51,7 @@ graph TD
 ```bash
 git clone https://github.com/ACGS-Project/ACGS-2.git acgs2-core
 cd acgs2-core
-pip install -r requirements_optimized.txt
+pip install -r config/requirements_optimized.txt
 # 构建 Rust 扩展 (可选全性能)
 cd enhanced_agent_bus/rust && cargo build --release && cd ../.. && pip install -e .
 ```
@@ -86,7 +86,7 @@ curl http://localhost:8080/health
 | **审计**     | Solana 区块链                    | 主网                 |
 | **CI/CD**    | GitHub Actions, Dependabot       | 已整合               |
 
-详细依赖: [`pyproject.toml`](acgs2-core/pyproject.toml), [`Cargo.toml`](acgs2-core/enhanced_agent_bus/rust/Cargo.toml), [`requirements_optimized.txt`](acgs2-core/requirements_optimized.txt)
+详细依赖: [`pyproject.toml`](config/pyproject.toml), [`Cargo.toml`](enhanced_agent_bus/rust/Cargo.toml), [`requirements_optimized.txt`](config/requirements_optimized.txt)
 
 ## 📖 文档
 
@@ -94,7 +94,7 @@ curl http://localhost:8080/health
 - **C4 模型**: [`C4-Documentation/`](C4-Documentation/)
 - **用户指南**: [`docs/user-guides/`](docs/user-guides/)
 - **API 规范**: [`docs/api/specs/`](docs/api/specs/) → [`api_reference.md`](docs/api_reference.md)
-- **部署**: [`deployment_guide.md`](deployment_guide.md)
+- **部署**: [`deployment_guide.md`](deploy/deployment_guide.md)
 - **混沌测试**: [`chaos_testing_guide.md`](docs/chaos_testing_guide.md)
 - **安全**: [`SECURITY_HARDENING.md`](docs/security/SECURITY_HARDENING.md)
 - **CI 迁移**: [`docs/CI-MIGRATION.md`](docs/CI-MIGRATION.md)

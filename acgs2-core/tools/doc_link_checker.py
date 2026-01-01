@@ -2,6 +2,7 @@
 import re
 import sys
 from pathlib import Path
+import logging
 
 # Constitutional Hash: cdd01ef066bc6cf2
 
@@ -61,12 +62,12 @@ def check_links():
                     )
 
     if errors:
-        print("Found broken internal links:")
+        logging.info("Found broken internal links:")
         for error in errors:
-            print(f"  - {error}")
+            logging.error(f"  - {error}")
         return False
 
-    print("All internal links are valid.")
+    logging.info("All internal links are valid.")
     return True
 
 

@@ -20,4 +20,4 @@ if _parent_dir not in sys.path:
     sys.path.insert(0, _parent_dir)
 
 # Set PYTHONPATH environment variable for subprocesses
-os.environ['PYTHONPATH'] = f"{_root_dir}:{_parent_dir}:{os.environ.get('PYTHONPATH', '')}"
+os.environ["PYTHONPATH"] = f"{_root_dir}:{_parent_dir}:{os.environ.get('PYTHONPATH', '')}"

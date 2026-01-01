@@ -56,7 +56,9 @@ class PermissionScoper:
         if not self._private_key:
             raise ValueError("Private key not configured for PermissionScoper")
 
-        payload = {
+        # TODO: Extend CryptoService.issue_agent_token to accept extra claims
+        # Currently the payload with permissions is prepared but not passed to signing
+        _payload = {  # noqa: F841 - prepared for future CryptoService extension
             "sub": f"spiffe://acgs.io/tenant/{tenant_id}/agent/{agent_id}",
             "tid": tenant_id,
             "task_id": task_id,

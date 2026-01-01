@@ -1,3 +1,4 @@
+import logging
 #!/usr/bin/env python3
 """
 PAG-QEC Framework: Predictive AI-Guided Quantum Error Correction
@@ -337,7 +338,7 @@ class DecoderTrainer:
         """
         Supervised training on syndrome → correction mapping.
         """
-        print(f"Generating training dataset ({dataset_size} samples)...")
+        logging.info(f"Generating training dataset ({dataset_size} samples)
         dataset = self.env.generate_dataset(dataset_size)
 
         # Convert to tensors
@@ -348,7 +349,7 @@ class DecoderTrainer:
         tensor_dataset = torch.utils.data.TensorDataset(syndromes, labels)
         loader = torch.utils.data.DataLoader(tensor_dataset, batch_size=batch_size, shuffle=True)
 
-        print(f"Training for {num_epochs} epochs...")
+        logging.info(f"Training for {num_epochs} epochs...")
         self.decoder.train()
 
         for epoch in range(num_epochs):
@@ -598,27 +599,27 @@ def run_benchmark(num_iterations: int = 10000) -> Dict[str, Dict]:
     """
     Comprehensive benchmark comparing all decoding approaches.
     """
-    print("\n" + "=" * 60)
-    print("PAG-QEC FRAMEWORK BENCHMARK")
-    print(f"Constitutional Hash: {CONSTITUTIONAL_HASH}")
-    print("=" * 60)
+    logging.info("\n" + "=" * 60)
+    logging.info("PAG-QEC FRAMEWORK BENCHMARK")
+    logging.info(f"Constitutional Hash: {CONSTITUTIONAL_HASH}")
+    logging.info("=" * 60)
 
     # Setup
     env = ThreeQubitCodeEnvironment(error_probability=0.25)
     results = {}
 
     # 1. Train Neural Decoder
-    print("\n[1/4] Training Neural Decoder...")
+    logging.info("\n[1/4] Training Neural Decoder...")
     neural_decoder = NeuralDecoder(syndrome_size=2, num_qubits=3, hidden_dim=32)
     trainer = DecoderTrainer(neural_decoder, env)
     trainer.train_supervised(num_epochs=100, dataset_size=5000)
 
     # 2. Quantize for deployment
-    print("\n[2/4] Quantizing for FPGA deployment...")
+    logging.info("\n[2/4] Quantizing for FPGA deployment...")
     _quantized_decoder = neural_decoder.quantize_for_deployment()
 
     # 3. Setup speculative engine
-    print("\n[3/4] Initializing Speculative Execution Engine...")
+    logging.info("\n[3/4] Initializing Speculative Execution Engine...")
     spec_engine = SpeculativeExecutionEngine(neural_decoder, top_k=4)
     spec_engine.precompute_likely_syndromes()
 
@@ -628,10 +629,10 @@ def run_benchmark(num_iterations: int = 10000) -> Dict[str, Dict]:
     # Generate test syndromes
     test_data = env.generate_dataset(num_iterations)
 
-    print(f"\n[4/4] Running benchmark ({num_iterations} iterations)...")
+    logging.info(f"\n[4/4] Running benchmark ({num_iterations} iterations)
 
     # Benchmark: Lookup Table
-    print("  - Lookup Table Decoder...")
+    logging.info("  - Lookup Table Decoder...")
     lookup_correct = 0
     for dp in test_data:
         pred, _ = lookup_decoder.decode(dp.syndrome)
@@ -645,7 +646,7 @@ def run_benchmark(num_iterations: int = 10000) -> Dict[str, Dict]:
     }
 
     # Benchmark: Neural Decoder (FP32)
-    print("  - Neural Decoder (FP32)...")
+    logging.info("  - Neural Decoder (FP32)
     neural_decoder.inference_count = 0
     neural_decoder.total_inference_time_ns = 0
     neural_correct = 0
@@ -662,7 +663,7 @@ def run_benchmark(num_iterations: int = 10000) -> Dict[str, Dict]:
     }
 
     # Benchmark: Speculative Execution
-    print("  - Speculative Execution Engine...")
+    logging.info("  - Speculative Execution Engine...")
     spec_engine.reset_statistics()
     spec_correct = 0
     spec_latencies = []
@@ -688,32 +689,32 @@ def run_benchmark(num_iterations: int = 10000) -> Dict[str, Dict]:
     }
 
     # Print results
-    print("\n" + "=" * 60)
-    print("BENCHMARK RESULTS")
-    print("=" * 60)
+    logging.info("\n" + "=" * 60)
+    logging.info("BENCHMARK RESULTS")
+    logging.info("=" * 60)
 
     for _name, data in results.items():
-        print(f"\n{data['description']}:")
-        print(f"  Accuracy:     {data['accuracy']:.2%}")
+        logging.info(f"\n{data['description']}:")
+        logging.info(f"  Accuracy:     {data['accuracy']:.2%}")
         latency_us = data["avg_latency_ns"] / 1000
-        print(f"  Avg Latency:  {data['avg_latency_ns']:.0f} ns ({latency_us:.2f} µs)")
+        logging.info(f"  Avg Latency:  {data['avg_latency_ns']:.0f} ns ({latency_us:.2f} µs)
         if "cache_hit_rate" in data:
-            print(f"  Cache Hit:    {data['cache_hit_rate']:.2%}")
-            print(f"  P99 Latency:  {data['p99_latency_ns']:.0f} ns")
+            logging.info(f"  Cache Hit:    {data['cache_hit_rate']:.2%}")
+            logging.info(f"  P99 Latency:  {data['p99_latency_ns']:.0f} ns")
 
     # Comparison to 2025 systems
-    print("\n" + "=" * 60)
-    print("COMPARISON TO 2025 PRODUCTION SYSTEMS")
-    print("=" * 60)
+    logging.info("\n" + "=" * 60)
+    logging.info("COMPARISON TO 2025 PRODUCTION SYSTEMS")
+    logging.info("=" * 60)
     spec_latency_us = results["speculative"]["avg_latency_ns"] / 1000
-    print(f"\nOur speculative engine:  {spec_latency_us:.2f} µs")
-    print("Google Willow (2024):     63.00 µs")
-    print("IBM qLDPC (2025):          0.48 µs (480 ns)")
+    logging.info(f"\nOur speculative engine:  {spec_latency_us:.2f} µs")
+    logging.info("Google Willow (2024)
+    logging.info("IBM qLDPC (2025)
 
     if spec_latency_us < 63:
-        print(f"\n>> {63/spec_latency_us:.1f}x faster than Google Willow!")
+        logging.info(f"\n>> {63/spec_latency_us:.1f}x faster than Google Willow!")
     if spec_latency_us < 0.48:
-        print(f">> {0.48/spec_latency_us:.1f}x faster than IBM qLDPC!")
+        logging.info(f">> {0.48/spec_latency_us:.1f}x faster than IBM qLDPC!")
 
     return results
 
@@ -739,9 +740,9 @@ def main():
     # Run full benchmark
     results = run_benchmark(num_iterations=10000)
 
-    print("\n" + "=" * 60)
-    print("FRAMEWORK READY FOR DEPLOYMENT")
-    print("=" * 60)
+    logging.info("\n" + "=" * 60)
+    logging.info("FRAMEWORK READY FOR DEPLOYMENT")
+    logging.info("=" * 60)
     print(
         """
     Next steps for production deployment:

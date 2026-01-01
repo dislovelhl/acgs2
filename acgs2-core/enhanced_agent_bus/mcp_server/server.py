@@ -12,9 +12,13 @@ import json
 import logging
 import sys
 from dataclasses import dataclass, field
-from typing import Any, Callable, Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional
 
+from .adapters.agent_bus import AgentBusAdapter
+from .adapters.audit_client import AuditClientAdapter
+from .adapters.policy_client import PolicyClientAdapter
 from .config import MCPConfig, TransportType
+from .protocol.handler import MCPHandler
 from .protocol.types import (
     MCPError,
     MCPRequest,
@@ -23,19 +27,15 @@ from .protocol.types import (
     ServerCapabilities,
     ToolDefinition,
 )
-from .protocol.handler import MCPHandler
-from .tools.validate_compliance import ValidateComplianceTool
+from .resources.audit_trail import AuditEventType, AuditTrailResource
+from .resources.decisions import DecisionsResource
+from .resources.metrics import MetricsResource
+from .resources.principles import PrinciplesResource
+from .tools.get_metrics import GetMetricsTool
 from .tools.get_principles import GetPrinciplesTool
 from .tools.query_precedents import QueryPrecedentsTool
 from .tools.submit_governance import SubmitGovernanceTool
-from .tools.get_metrics import GetMetricsTool
-from .resources.principles import PrinciplesResource
-from .resources.metrics import MetricsResource
-from .resources.decisions import DecisionsResource
-from .resources.audit_trail import AuditTrailResource, AuditEventType
-from .adapters.agent_bus import AgentBusAdapter
-from .adapters.policy_client import PolicyClientAdapter
-from .adapters.audit_client import AuditClientAdapter
+from .tools.validate_compliance import ValidateComplianceTool
 
 logger = logging.getLogger(__name__)
 
@@ -106,7 +106,7 @@ class MCPServer:
         }
 
         # Register tools with handler
-        for name, tool in self._tools.items():
+        for _name, tool in self._tools.items():
             definition = tool.get_definition()
             self._handler.register_tool(definition, tool.execute)
 
@@ -134,7 +134,7 @@ class MCPServer:
         }
 
         # Register resources with handler
-        for name, resource in self._resources.items():
+        for _name, resource in self._resources.items():
             definition = resource.get_definition()
             self._handler.register_resource(definition, resource.read)
 

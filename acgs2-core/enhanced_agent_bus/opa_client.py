@@ -14,41 +14,46 @@ import os
 import re
 import ssl
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 import httpx
 
 try:
+    from .config import settings
     from .exceptions import (
         OPAConnectionError,
         OPANotInitializedError,
         PolicyEvaluationError,
     )
     from .models import CONSTITUTIONAL_HASH, AgentMessage
-    from .config import settings
     from .validators import ValidationResult
 except (ImportError, ValueError):
     try:
-        from exceptions import ( # type: ignore
-            OPAConnectionError, OPANotInitializedError, PolicyEvaluationError
+        from config import settings  # type: ignore
+        from exceptions import (  # type: ignore
+            OPAConnectionError,
+            OPANotInitializedError,
+            PolicyEvaluationError,
         )
-        from models import CONSTITUTIONAL_HASH, AgentMessage # type: ignore
-        from config import settings # type: ignore
-        from validators import ValidationResult # type: ignore
+        from models import CONSTITUTIONAL_HASH, AgentMessage  # type: ignore
+        from validators import ValidationResult  # type: ignore
     except ImportError:
         try:
+            from enhanced_agent_bus.config import settings
             from enhanced_agent_bus.exceptions import (
-                OPAConnectionError, OPANotInitializedError, PolicyEvaluationError
+                OPAConnectionError,
+                OPANotInitializedError,
+                PolicyEvaluationError,
             )
             from enhanced_agent_bus.models import CONSTITUTIONAL_HASH, AgentMessage
-            from enhanced_agent_bus.config import settings
             from enhanced_agent_bus.validators import ValidationResult
         except ImportError:
             # Fallback for sharing with shared package
-            from shared.config import settings # type: ignore
-            from models import CONSTITUTIONAL_HASH # type: ignore
-            from validators import ValidationResult # type: ignore
-            from exceptions import OPANotInitializedError # type: ignore
+            from shared.config import settings  # type: ignore
+
+            from exceptions import OPANotInitializedError  # type: ignore
+            from models import CONSTITUTIONAL_HASH  # type: ignore
+            from validators import ValidationResult  # type: ignore
 
 # Import centralized Redis config for caching
 try:
@@ -161,7 +166,7 @@ class OPAClient:
                 self._http_client = httpx.AsyncClient(
                     timeout=self.timeout,
                     limits=httpx.Limits(max_keepalive_connections=10, max_connections=20),
-                    verify=ssl_context if ssl_context else self.ssl_verify
+                    verify=ssl_context if ssl_context else self.ssl_verify,
                 )
 
         if self.mode == "embedded" and OPA_SDK_AVAILABLE:

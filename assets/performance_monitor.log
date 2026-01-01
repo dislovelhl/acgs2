@@ -1,0 +1,678 @@
+2025-12-31 20:06:26,051 - PERF-001 - INFO - Establishing performance baseline...
+2025-12-31 20:06:26,425 - PERF-001 - ERROR - Failed to establish baseline: cannot import name 'ComprehensiveProfiler' from 'comprehensive_profiler' (/home/dislove/document/acgs2/acgs2-core/testing/comprehensive_profiler.py)
+2025-12-31 20:06:26,425 - PERF-001 - INFO - Starting PERF-001 Performance Monitoring
+2025-12-31 20:06:26,425 - PERF-001 - INFO - Constitutional Hash: cdd01ef066bc6cf2
+2025-12-31 20:06:26,425 - PERF-001 - INFO - Check interval: 30 seconds
+2025-12-31 20:06:26,425 - PERF-001 - INFO - ============================================================
+2025-12-31 20:06:26,425 - PERF-001 - INFO - Monitoring cycle #1
+2025-12-31 20:06:26,425 - PERF-001 - INFO - Performance Status:
+2025-12-31 20:06:26,425 - PERF-001 - INFO -   p99_latency_ms: 0.328 ✓
+2025-12-31 20:06:26,425 - PERF-001 - INFO -   throughput_rps: 2605 ✓
+2025-12-31 20:06:26,425 - PERF-001 - INFO -   error_rate_percent: 0.0 ✓
+2025-12-31 20:06:26,425 - PERF-001 - INFO -   memory_usage_mb: 3.9 ✓
+2025-12-31 20:06:26,425 - PERF-001 - INFO -   cpu_utilization_percent: 73.9 ✓
+2025-12-31 20:06:56,455 - PERF-001 - INFO - Monitoring cycle #2
+2025-12-31 20:06:56,455 - PERF-001 - INFO - Performance Status:
+2025-12-31 20:06:56,456 - PERF-001 - INFO -   p99_latency_ms: 0.328 ✓
+2025-12-31 20:06:56,456 - PERF-001 - INFO -   throughput_rps: 2605 ✓
+2025-12-31 20:06:56,456 - PERF-001 - INFO -   error_rate_percent: 0.0 ✓
+2025-12-31 20:06:56,456 - PERF-001 - INFO -   memory_usage_mb: 3.9 ✓
+2025-12-31 20:06:56,456 - PERF-001 - INFO -   cpu_utilization_percent: 73.9 ✓
+2025-12-31 20:07:26,479 - PERF-001 - INFO - Monitoring cycle #3
+2025-12-31 20:07:26,479 - PERF-001 - INFO - Performance Status:
+2025-12-31 20:07:26,479 - PERF-001 - INFO -   p99_latency_ms: 0.328 ✓
+2025-12-31 20:07:26,479 - PERF-001 - INFO -   throughput_rps: 2605 ✓
+2025-12-31 20:07:26,479 - PERF-001 - INFO -   error_rate_percent: 0.0 ✓
+2025-12-31 20:07:26,479 - PERF-001 - INFO -   memory_usage_mb: 3.9 ✓
+2025-12-31 20:07:26,479 - PERF-001 - INFO -   cpu_utilization_percent: 73.9 ✓
+2025-12-31 20:07:56,509 - PERF-001 - INFO - Monitoring cycle #4
+2025-12-31 20:07:56,509 - PERF-001 - INFO - Performance Status:
+2025-12-31 20:07:56,509 - PERF-001 - INFO -   p99_latency_ms: 0.328 ✓
+2025-12-31 20:07:56,509 - PERF-001 - INFO -   throughput_rps: 2605 ✓
+2025-12-31 20:07:56,509 - PERF-001 - INFO -   error_rate_percent: 0.0 ✓
+2025-12-31 20:07:56,509 - PERF-001 - INFO -   memory_usage_mb: 3.9 ✓
+2025-12-31 20:07:56,509 - PERF-001 - INFO -   cpu_utilization_percent: 73.9 ✓
+2025-12-31 20:08:26,539 - PERF-001 - INFO - Monitoring cycle #5
+2025-12-31 20:08:26,539 - PERF-001 - INFO - Performance Status:
+2025-12-31 20:08:26,539 - PERF-001 - INFO -   p99_latency_ms: 0.328 ✓
+2025-12-31 20:08:26,539 - PERF-001 - INFO -   throughput_rps: 2605 ✓
+2025-12-31 20:08:26,539 - PERF-001 - INFO -   error_rate_percent: 0.0 ✓
+2025-12-31 20:08:26,539 - PERF-001 - INFO -   memory_usage_mb: 3.9 ✓
+2025-12-31 20:08:26,539 - PERF-001 - INFO -   cpu_utilization_percent: 73.9 ✓
+2025-12-31 20:08:56,569 - PERF-001 - INFO - Monitoring cycle #6
+2025-12-31 20:08:56,569 - PERF-001 - INFO - Performance Status:
+2025-12-31 20:08:56,569 - PERF-001 - INFO -   p99_latency_ms: 0.328 ✓
+2025-12-31 20:08:56,569 - PERF-001 - INFO -   throughput_rps: 2605 ✓
+2025-12-31 20:08:56,569 - PERF-001 - INFO -   error_rate_percent: 0.0 ✓
+2025-12-31 20:08:56,569 - PERF-001 - INFO -   memory_usage_mb: 3.9 ✓
+2025-12-31 20:08:56,569 - PERF-001 - INFO -   cpu_utilization_percent: 73.9 ✓
+2025-12-31 20:09:26,599 - PERF-001 - INFO - Monitoring cycle #7
+2025-12-31 20:09:26,599 - PERF-001 - INFO - Performance Status:
+2025-12-31 20:09:26,599 - PERF-001 - INFO -   p99_latency_ms: 0.328 ✓
+2025-12-31 20:09:26,599 - PERF-001 - INFO -   throughput_rps: 2605 ✓
+2025-12-31 20:09:26,599 - PERF-001 - INFO -   error_rate_percent: 0.0 ✓
+2025-12-31 20:09:26,599 - PERF-001 - INFO -   memory_usage_mb: 3.9 ✓
+2025-12-31 20:09:26,599 - PERF-001 - INFO -   cpu_utilization_percent: 73.9 ✓
+2025-12-31 20:09:56,629 - PERF-001 - INFO - Monitoring cycle #8
+2025-12-31 20:09:56,629 - PERF-001 - INFO - Performance Status:
+2025-12-31 20:09:56,629 - PERF-001 - INFO -   p99_latency_ms: 0.328 ✓
+2025-12-31 20:09:56,629 - PERF-001 - INFO -   throughput_rps: 2605 ✓
+2025-12-31 20:09:56,629 - PERF-001 - INFO -   error_rate_percent: 0.0 ✓
+2025-12-31 20:09:56,629 - PERF-001 - INFO -   memory_usage_mb: 3.9 ✓
+2025-12-31 20:09:56,629 - PERF-001 - INFO -   cpu_utilization_percent: 73.9 ✓
+2025-12-31 20:10:26,659 - PERF-001 - INFO - Monitoring cycle #9
+2025-12-31 20:10:26,659 - PERF-001 - INFO - Performance Status:
+2025-12-31 20:10:26,659 - PERF-001 - INFO -   p99_latency_ms: 0.328 ✓
+2025-12-31 20:10:26,659 - PERF-001 - INFO -   throughput_rps: 2605 ✓
+2025-12-31 20:10:26,659 - PERF-001 - INFO -   error_rate_percent: 0.0 ✓
+2025-12-31 20:10:26,659 - PERF-001 - INFO -   memory_usage_mb: 3.9 ✓
+2025-12-31 20:10:26,659 - PERF-001 - INFO -   cpu_utilization_percent: 73.9 ✓
+2025-12-31 20:10:56,689 - PERF-001 - INFO - Monitoring cycle #10
+2025-12-31 20:10:56,689 - PERF-001 - INFO - Performance Status:
+2025-12-31 20:10:56,689 - PERF-001 - INFO -   p99_latency_ms: 0.328 ✓
+2025-12-31 20:10:56,689 - PERF-001 - INFO -   throughput_rps: 2605 ✓
+2025-12-31 20:10:56,689 - PERF-001 - INFO -   error_rate_percent: 0.0 ✓
+2025-12-31 20:10:56,689 - PERF-001 - INFO -   memory_usage_mb: 3.9 ✓
+2025-12-31 20:10:56,689 - PERF-001 - INFO -   cpu_utilization_percent: 73.9 ✓
+2025-12-31 20:11:26,719 - PERF-001 - INFO - Monitoring cycle #11
+2025-12-31 20:11:26,719 - PERF-001 - INFO - Performance Status:
+2025-12-31 20:11:26,719 - PERF-001 - INFO -   p99_latency_ms: 0.328 ✓
+2025-12-31 20:11:26,719 - PERF-001 - INFO -   throughput_rps: 2605 ✓
+2025-12-31 20:11:26,719 - PERF-001 - INFO -   error_rate_percent: 0.0 ✓
+2025-12-31 20:11:26,719 - PERF-001 - INFO -   memory_usage_mb: 3.9 ✓
+2025-12-31 20:11:26,719 - PERF-001 - INFO -   cpu_utilization_percent: 73.9 ✓
+2025-12-31 20:11:56,749 - PERF-001 - INFO - Monitoring cycle #12
+2025-12-31 20:11:56,749 - PERF-001 - INFO - Performance Status:
+2025-12-31 20:11:56,749 - PERF-001 - INFO -   p99_latency_ms: 0.328 ✓
+2025-12-31 20:11:56,749 - PERF-001 - INFO -   throughput_rps: 2605 ✓
+2025-12-31 20:11:56,749 - PERF-001 - INFO -   error_rate_percent: 0.0 ✓
+2025-12-31 20:11:56,749 - PERF-001 - INFO -   memory_usage_mb: 3.9 ✓
+2025-12-31 20:11:56,749 - PERF-001 - INFO -   cpu_utilization_percent: 73.9 ✓
+2025-12-31 20:12:26,776 - PERF-001 - INFO - Monitoring cycle #13
+2025-12-31 20:12:26,776 - PERF-001 - INFO - Performance Status:
+2025-12-31 20:12:26,776 - PERF-001 - INFO -   p99_latency_ms: 0.328 ✓
+2025-12-31 20:12:26,776 - PERF-001 - INFO -   throughput_rps: 2605 ✓
+2025-12-31 20:12:26,776 - PERF-001 - INFO -   error_rate_percent: 0.0 ✓
+2025-12-31 20:12:26,776 - PERF-001 - INFO -   memory_usage_mb: 3.9 ✓
+2025-12-31 20:12:26,776 - PERF-001 - INFO -   cpu_utilization_percent: 73.9 ✓
+2025-12-31 20:12:56,806 - PERF-001 - INFO - Monitoring cycle #14
+2025-12-31 20:12:56,807 - PERF-001 - INFO - Performance Status:
+2025-12-31 20:12:56,807 - PERF-001 - INFO -   p99_latency_ms: 0.328 ✓
+2025-12-31 20:12:56,807 - PERF-001 - INFO -   throughput_rps: 2605 ✓
+2025-12-31 20:12:56,807 - PERF-001 - INFO -   error_rate_percent: 0.0 ✓
+2025-12-31 20:12:56,807 - PERF-001 - INFO -   memory_usage_mb: 3.9 ✓
+2025-12-31 20:12:56,807 - PERF-001 - INFO -   cpu_utilization_percent: 73.9 ✓
+2025-12-31 20:13:26,834 - PERF-001 - INFO - Monitoring cycle #15
+2025-12-31 20:13:26,834 - PERF-001 - INFO - Performance Status:
+2025-12-31 20:13:26,834 - PERF-001 - INFO -   p99_latency_ms: 0.328 ✓
+2025-12-31 20:13:26,834 - PERF-001 - INFO -   throughput_rps: 2605 ✓
+2025-12-31 20:13:26,834 - PERF-001 - INFO -   error_rate_percent: 0.0 ✓
+2025-12-31 20:13:26,834 - PERF-001 - INFO -   memory_usage_mb: 3.9 ✓
+2025-12-31 20:13:26,834 - PERF-001 - INFO -   cpu_utilization_percent: 73.9 ✓
+2025-12-31 20:13:56,864 - PERF-001 - INFO - Monitoring cycle #16
+2025-12-31 20:13:56,864 - PERF-001 - INFO - Performance Status:
+2025-12-31 20:13:56,864 - PERF-001 - INFO -   p99_latency_ms: 0.328 ✓
+2025-12-31 20:13:56,865 - PERF-001 - INFO -   throughput_rps: 2605 ✓
+2025-12-31 20:13:56,865 - PERF-001 - INFO -   error_rate_percent: 0.0 ✓
+2025-12-31 20:13:56,865 - PERF-001 - INFO -   memory_usage_mb: 3.9 ✓
+2025-12-31 20:13:56,865 - PERF-001 - INFO -   cpu_utilization_percent: 73.9 ✓
+2025-12-31 20:14:26,895 - PERF-001 - INFO - Monitoring cycle #17
+2025-12-31 20:14:26,895 - PERF-001 - INFO - Performance Status:
+2025-12-31 20:14:26,895 - PERF-001 - INFO -   p99_latency_ms: 0.328 ✓
+2025-12-31 20:14:26,895 - PERF-001 - INFO -   throughput_rps: 2605 ✓
+2025-12-31 20:14:26,895 - PERF-001 - INFO -   error_rate_percent: 0.0 ✓
+2025-12-31 20:14:26,895 - PERF-001 - INFO -   memory_usage_mb: 3.9 ✓
+2025-12-31 20:14:26,895 - PERF-001 - INFO -   cpu_utilization_percent: 73.9 ✓
+2025-12-31 20:14:56,925 - PERF-001 - INFO - Monitoring cycle #18
+2025-12-31 20:14:56,925 - PERF-001 - INFO - Performance Status:
+2025-12-31 20:14:56,925 - PERF-001 - INFO -   p99_latency_ms: 0.328 ✓
+2025-12-31 20:14:56,925 - PERF-001 - INFO -   throughput_rps: 2605 ✓
+2025-12-31 20:14:56,925 - PERF-001 - INFO -   error_rate_percent: 0.0 ✓
+2025-12-31 20:14:56,925 - PERF-001 - INFO -   memory_usage_mb: 3.9 ✓
+2025-12-31 20:14:56,925 - PERF-001 - INFO -   cpu_utilization_percent: 73.9 ✓
+2025-12-31 20:15:26,955 - PERF-001 - INFO - Monitoring cycle #19
+2025-12-31 20:15:26,955 - PERF-001 - INFO - Performance Status:
+2025-12-31 20:15:26,955 - PERF-001 - INFO -   p99_latency_ms: 0.328 ✓
+2025-12-31 20:15:26,955 - PERF-001 - INFO -   throughput_rps: 2605 ✓
+2025-12-31 20:15:26,955 - PERF-001 - INFO -   error_rate_percent: 0.0 ✓
+2025-12-31 20:15:26,955 - PERF-001 - INFO -   memory_usage_mb: 3.9 ✓
+2025-12-31 20:15:26,955 - PERF-001 - INFO -   cpu_utilization_percent: 73.9 ✓
+2025-12-31 20:15:56,969 - PERF-001 - INFO - Monitoring cycle #20
+2025-12-31 20:15:56,969 - PERF-001 - INFO - Performance Status:
+2025-12-31 20:15:56,969 - PERF-001 - INFO -   p99_latency_ms: 0.328 ✓
+2025-12-31 20:15:56,969 - PERF-001 - INFO -   throughput_rps: 2605 ✓
+2025-12-31 20:15:56,969 - PERF-001 - INFO -   error_rate_percent: 0.0 ✓
+2025-12-31 20:15:56,969 - PERF-001 - INFO -   memory_usage_mb: 3.9 ✓
+2025-12-31 20:15:56,969 - PERF-001 - INFO -   cpu_utilization_percent: 73.9 ✓
+2025-12-31 20:16:26,999 - PERF-001 - INFO - Monitoring cycle #21
+2025-12-31 20:16:26,999 - PERF-001 - INFO - Performance Status:
+2025-12-31 20:16:26,999 - PERF-001 - INFO -   p99_latency_ms: 0.328 ✓
+2025-12-31 20:16:26,999 - PERF-001 - INFO -   throughput_rps: 2605 ✓
+2025-12-31 20:16:26,999 - PERF-001 - INFO -   error_rate_percent: 0.0 ✓
+2025-12-31 20:16:26,999 - PERF-001 - INFO -   memory_usage_mb: 3.9 ✓
+2025-12-31 20:16:26,999 - PERF-001 - INFO -   cpu_utilization_percent: 73.9 ✓
+2025-12-31 20:16:57,025 - PERF-001 - INFO - Monitoring cycle #22
+2025-12-31 20:16:57,025 - PERF-001 - INFO - Performance Status:
+2025-12-31 20:16:57,025 - PERF-001 - INFO -   p99_latency_ms: 0.328 ✓
+2025-12-31 20:16:57,025 - PERF-001 - INFO -   throughput_rps: 2605 ✓
+2025-12-31 20:16:57,025 - PERF-001 - INFO -   error_rate_percent: 0.0 ✓
+2025-12-31 20:16:57,025 - PERF-001 - INFO -   memory_usage_mb: 3.9 ✓
+2025-12-31 20:16:57,025 - PERF-001 - INFO -   cpu_utilization_percent: 73.9 ✓
+2025-12-31 20:17:27,055 - PERF-001 - INFO - Monitoring cycle #23
+2025-12-31 20:17:27,055 - PERF-001 - INFO - Performance Status:
+2025-12-31 20:17:27,055 - PERF-001 - INFO -   p99_latency_ms: 0.328 ✓
+2025-12-31 20:17:27,055 - PERF-001 - INFO -   throughput_rps: 2605 ✓
+2025-12-31 20:17:27,055 - PERF-001 - INFO -   error_rate_percent: 0.0 ✓
+2025-12-31 20:17:27,055 - PERF-001 - INFO -   memory_usage_mb: 3.9 ✓
+2025-12-31 20:17:27,055 - PERF-001 - INFO -   cpu_utilization_percent: 73.9 ✓
+2025-12-31 20:17:57,084 - PERF-001 - INFO - Monitoring cycle #24
+2025-12-31 20:17:57,084 - PERF-001 - INFO - Performance Status:
+2025-12-31 20:17:57,084 - PERF-001 - INFO -   p99_latency_ms: 0.328 ✓
+2025-12-31 20:17:57,084 - PERF-001 - INFO -   throughput_rps: 2605 ✓
+2025-12-31 20:17:57,084 - PERF-001 - INFO -   error_rate_percent: 0.0 ✓
+2025-12-31 20:17:57,084 - PERF-001 - INFO -   memory_usage_mb: 3.9 ✓
+2025-12-31 20:17:57,084 - PERF-001 - INFO -   cpu_utilization_percent: 73.9 ✓
+2025-12-31 20:18:27,114 - PERF-001 - INFO - Monitoring cycle #25
+2025-12-31 20:18:27,114 - PERF-001 - INFO - Performance Status:
+2025-12-31 20:18:27,114 - PERF-001 - INFO -   p99_latency_ms: 0.328 ✓
+2025-12-31 20:18:27,114 - PERF-001 - INFO -   throughput_rps: 2605 ✓
+2025-12-31 20:18:27,114 - PERF-001 - INFO -   error_rate_percent: 0.0 ✓
+2025-12-31 20:18:27,114 - PERF-001 - INFO -   memory_usage_mb: 3.9 ✓
+2025-12-31 20:18:27,114 - PERF-001 - INFO -   cpu_utilization_percent: 73.9 ✓
+2025-12-31 20:18:57,129 - PERF-001 - INFO - Monitoring cycle #26
+2025-12-31 20:18:57,130 - PERF-001 - INFO - Performance Status:
+2025-12-31 20:18:57,130 - PERF-001 - INFO -   p99_latency_ms: 0.328 ✓
+2025-12-31 20:18:57,130 - PERF-001 - INFO -   throughput_rps: 2605 ✓
+2025-12-31 20:18:57,130 - PERF-001 - INFO -   error_rate_percent: 0.0 ✓
+2025-12-31 20:18:57,130 - PERF-001 - INFO -   memory_usage_mb: 3.9 ✓
+2025-12-31 20:18:57,130 - PERF-001 - INFO -   cpu_utilization_percent: 73.9 ✓
+2025-12-31 20:19:27,160 - PERF-001 - INFO - Monitoring cycle #27
+2025-12-31 20:19:27,160 - PERF-001 - INFO - Performance Status:
+2025-12-31 20:19:27,160 - PERF-001 - INFO -   p99_latency_ms: 0.328 ✓
+2025-12-31 20:19:27,160 - PERF-001 - INFO -   throughput_rps: 2605 ✓
+2025-12-31 20:19:27,160 - PERF-001 - INFO -   error_rate_percent: 0.0 ✓
+2025-12-31 20:19:27,160 - PERF-001 - INFO -   memory_usage_mb: 3.9 ✓
+2025-12-31 20:19:27,160 - PERF-001 - INFO -   cpu_utilization_percent: 73.9 ✓
+2025-12-31 20:19:57,190 - PERF-001 - INFO - Monitoring cycle #28
+2025-12-31 20:19:57,190 - PERF-001 - INFO - Performance Status:
+2025-12-31 20:19:57,190 - PERF-001 - INFO -   p99_latency_ms: 0.328 ✓
+2025-12-31 20:19:57,190 - PERF-001 - INFO -   throughput_rps: 2605 ✓
+2025-12-31 20:19:57,190 - PERF-001 - INFO -   error_rate_percent: 0.0 ✓
+2025-12-31 20:19:57,190 - PERF-001 - INFO -   memory_usage_mb: 3.9 ✓
+2025-12-31 20:19:57,190 - PERF-001 - INFO -   cpu_utilization_percent: 73.9 ✓
+2025-12-31 20:20:27,196 - PERF-001 - INFO - Monitoring cycle #29
+2025-12-31 20:20:27,196 - PERF-001 - INFO - Performance Status:
+2025-12-31 20:20:27,196 - PERF-001 - INFO -   p99_latency_ms: 0.328 ✓
+2025-12-31 20:20:27,196 - PERF-001 - INFO -   throughput_rps: 2605 ✓
+2025-12-31 20:20:27,196 - PERF-001 - INFO -   error_rate_percent: 0.0 ✓
+2025-12-31 20:20:27,196 - PERF-001 - INFO -   memory_usage_mb: 3.9 ✓
+2025-12-31 20:20:27,196 - PERF-001 - INFO -   cpu_utilization_percent: 73.9 ✓
+2025-12-31 20:20:57,198 - PERF-001 - INFO - Monitoring cycle #30
+2025-12-31 20:20:57,198 - PERF-001 - INFO - Performance Status:
+2025-12-31 20:20:57,198 - PERF-001 - INFO -   p99_latency_ms: 0.328 ✓
+2025-12-31 20:20:57,198 - PERF-001 - INFO -   throughput_rps: 2605 ✓
+2025-12-31 20:20:57,198 - PERF-001 - INFO -   error_rate_percent: 0.0 ✓
+2025-12-31 20:20:57,198 - PERF-001 - INFO -   memory_usage_mb: 3.9 ✓
+2025-12-31 20:20:57,198 - PERF-001 - INFO -   cpu_utilization_percent: 73.9 ✓
+2025-12-31 20:21:27,228 - PERF-001 - INFO - Monitoring cycle #31
+2025-12-31 20:21:27,228 - PERF-001 - INFO - Performance Status:
+2025-12-31 20:21:27,228 - PERF-001 - INFO -   p99_latency_ms: 0.328 ✓
+2025-12-31 20:21:27,228 - PERF-001 - INFO -   throughput_rps: 2605 ✓
+2025-12-31 20:21:27,228 - PERF-001 - INFO -   error_rate_percent: 0.0 ✓
+2025-12-31 20:21:27,228 - PERF-001 - INFO -   memory_usage_mb: 3.9 ✓
+2025-12-31 20:21:27,228 - PERF-001 - INFO -   cpu_utilization_percent: 73.9 ✓
+2025-12-31 20:21:57,258 - PERF-001 - INFO - Monitoring cycle #32
+2025-12-31 20:21:57,259 - PERF-001 - INFO - Performance Status:
+2025-12-31 20:21:57,259 - PERF-001 - INFO -   p99_latency_ms: 0.328 ✓
+2025-12-31 20:21:57,259 - PERF-001 - INFO -   throughput_rps: 2605 ✓
+2025-12-31 20:21:57,259 - PERF-001 - INFO -   error_rate_percent: 0.0 ✓
+2025-12-31 20:21:57,259 - PERF-001 - INFO -   memory_usage_mb: 3.9 ✓
+2025-12-31 20:21:57,259 - PERF-001 - INFO -   cpu_utilization_percent: 73.9 ✓
+2025-12-31 20:22:27,282 - PERF-001 - INFO - Monitoring cycle #33
+2025-12-31 20:22:27,283 - PERF-001 - INFO - Performance Status:
+2025-12-31 20:22:27,283 - PERF-001 - INFO -   p99_latency_ms: 0.328 ✓
+2025-12-31 20:22:27,283 - PERF-001 - INFO -   throughput_rps: 2605 ✓
+2025-12-31 20:22:27,283 - PERF-001 - INFO -   error_rate_percent: 0.0 ✓
+2025-12-31 20:22:27,283 - PERF-001 - INFO -   memory_usage_mb: 3.9 ✓
+2025-12-31 20:22:27,283 - PERF-001 - INFO -   cpu_utilization_percent: 73.9 ✓
+2025-12-31 20:22:57,313 - PERF-001 - INFO - Monitoring cycle #34
+2025-12-31 20:22:57,313 - PERF-001 - INFO - Performance Status:
+2025-12-31 20:22:57,313 - PERF-001 - INFO -   p99_latency_ms: 0.328 ✓
+2025-12-31 20:22:57,313 - PERF-001 - INFO -   throughput_rps: 2605 ✓
+2025-12-31 20:22:57,313 - PERF-001 - INFO -   error_rate_percent: 0.0 ✓
+2025-12-31 20:22:57,313 - PERF-001 - INFO -   memory_usage_mb: 3.9 ✓
+2025-12-31 20:22:57,313 - PERF-001 - INFO -   cpu_utilization_percent: 73.9 ✓
+2025-12-31 20:23:27,343 - PERF-001 - INFO - Monitoring cycle #35
+2025-12-31 20:23:27,343 - PERF-001 - INFO - Performance Status:
+2025-12-31 20:23:27,343 - PERF-001 - INFO -   p99_latency_ms: 0.328 ✓
+2025-12-31 20:23:27,343 - PERF-001 - INFO -   throughput_rps: 2605 ✓
+2025-12-31 20:23:27,343 - PERF-001 - INFO -   error_rate_percent: 0.0 ✓
+2025-12-31 20:23:27,343 - PERF-001 - INFO -   memory_usage_mb: 3.9 ✓
+2025-12-31 20:23:27,343 - PERF-001 - INFO -   cpu_utilization_percent: 73.9 ✓
+2025-12-31 20:23:57,374 - PERF-001 - INFO - Monitoring cycle #36
+2025-12-31 20:23:57,374 - PERF-001 - INFO - Performance Status:
+2025-12-31 20:23:57,374 - PERF-001 - INFO -   p99_latency_ms: 0.328 ✓
+2025-12-31 20:23:57,374 - PERF-001 - INFO -   throughput_rps: 2605 ✓
+2025-12-31 20:23:57,374 - PERF-001 - INFO -   error_rate_percent: 0.0 ✓
+2025-12-31 20:23:57,374 - PERF-001 - INFO -   memory_usage_mb: 3.9 ✓
+2025-12-31 20:23:57,374 - PERF-001 - INFO -   cpu_utilization_percent: 73.9 ✓
+2025-12-31 20:24:27,404 - PERF-001 - INFO - Monitoring cycle #37
+2025-12-31 20:24:27,404 - PERF-001 - INFO - Performance Status:
+2025-12-31 20:24:27,404 - PERF-001 - INFO -   p99_latency_ms: 0.328 ✓
+2025-12-31 20:24:27,404 - PERF-001 - INFO -   throughput_rps: 2605 ✓
+2025-12-31 20:24:27,404 - PERF-001 - INFO -   error_rate_percent: 0.0 ✓
+2025-12-31 20:24:27,404 - PERF-001 - INFO -   memory_usage_mb: 3.9 ✓
+2025-12-31 20:24:27,404 - PERF-001 - INFO -   cpu_utilization_percent: 73.9 ✓
+2025-12-31 20:24:57,434 - PERF-001 - INFO - Monitoring cycle #38
+2025-12-31 20:24:57,434 - PERF-001 - INFO - Performance Status:
+2025-12-31 20:24:57,434 - PERF-001 - INFO -   p99_latency_ms: 0.328 ✓
+2025-12-31 20:24:57,434 - PERF-001 - INFO -   throughput_rps: 2605 ✓
+2025-12-31 20:24:57,434 - PERF-001 - INFO -   error_rate_percent: 0.0 ✓
+2025-12-31 20:24:57,434 - PERF-001 - INFO -   memory_usage_mb: 3.9 ✓
+2025-12-31 20:24:57,434 - PERF-001 - INFO -   cpu_utilization_percent: 73.9 ✓
+2025-12-31 20:25:27,464 - PERF-001 - INFO - Monitoring cycle #39
+2025-12-31 20:25:27,464 - PERF-001 - INFO - Performance Status:
+2025-12-31 20:25:27,464 - PERF-001 - INFO -   p99_latency_ms: 0.328 ✓
+2025-12-31 20:25:27,464 - PERF-001 - INFO -   throughput_rps: 2605 ✓
+2025-12-31 20:25:27,464 - PERF-001 - INFO -   error_rate_percent: 0.0 ✓
+2025-12-31 20:25:27,464 - PERF-001 - INFO -   memory_usage_mb: 3.9 ✓
+2025-12-31 20:25:27,464 - PERF-001 - INFO -   cpu_utilization_percent: 73.9 ✓
+2025-12-31 20:25:57,483 - PERF-001 - INFO - Monitoring cycle #40
+2025-12-31 20:25:57,483 - PERF-001 - INFO - Performance Status:
+2025-12-31 20:25:57,483 - PERF-001 - INFO -   p99_latency_ms: 0.328 ✓
+2025-12-31 20:25:57,483 - PERF-001 - INFO -   throughput_rps: 2605 ✓
+2025-12-31 20:25:57,483 - PERF-001 - INFO -   error_rate_percent: 0.0 ✓
+2025-12-31 20:25:57,484 - PERF-001 - INFO -   memory_usage_mb: 3.9 ✓
+2025-12-31 20:25:57,484 - PERF-001 - INFO -   cpu_utilization_percent: 73.9 ✓
+2025-12-31 20:26:27,490 - PERF-001 - INFO - Monitoring cycle #41
+2025-12-31 20:26:27,490 - PERF-001 - INFO - Performance Status:
+2025-12-31 20:26:27,491 - PERF-001 - INFO -   p99_latency_ms: 0.328 ✓
+2025-12-31 20:26:27,491 - PERF-001 - INFO -   throughput_rps: 2605 ✓
+2025-12-31 20:26:27,491 - PERF-001 - INFO -   error_rate_percent: 0.0 ✓
+2025-12-31 20:26:27,491 - PERF-001 - INFO -   memory_usage_mb: 3.9 ✓
+2025-12-31 20:26:27,491 - PERF-001 - INFO -   cpu_utilization_percent: 73.9 ✓
+2025-12-31 20:26:57,511 - PERF-001 - INFO - Monitoring cycle #42
+2025-12-31 20:26:57,512 - PERF-001 - INFO - Performance Status:
+2025-12-31 20:26:57,512 - PERF-001 - INFO -   p99_latency_ms: 0.328 ✓
+2025-12-31 20:26:57,512 - PERF-001 - INFO -   throughput_rps: 2605 ✓
+2025-12-31 20:26:57,512 - PERF-001 - INFO -   error_rate_percent: 0.0 ✓
+2025-12-31 20:26:57,512 - PERF-001 - INFO -   memory_usage_mb: 3.9 ✓
+2025-12-31 20:26:57,512 - PERF-001 - INFO -   cpu_utilization_percent: 73.9 ✓
+2025-12-31 20:27:27,542 - PERF-001 - INFO - Monitoring cycle #43
+2025-12-31 20:27:27,542 - PERF-001 - INFO - Performance Status:
+2025-12-31 20:27:27,542 - PERF-001 - INFO -   p99_latency_ms: 0.328 ✓
+2025-12-31 20:27:27,542 - PERF-001 - INFO -   throughput_rps: 2605 ✓
+2025-12-31 20:27:27,542 - PERF-001 - INFO -   error_rate_percent: 0.0 ✓
+2025-12-31 20:27:27,542 - PERF-001 - INFO -   memory_usage_mb: 3.9 ✓
+2025-12-31 20:27:27,542 - PERF-001 - INFO -   cpu_utilization_percent: 73.9 ✓
+2025-12-31 20:27:57,572 - PERF-001 - INFO - Monitoring cycle #44
+2025-12-31 20:27:57,572 - PERF-001 - INFO - Performance Status:
+2025-12-31 20:27:57,572 - PERF-001 - INFO -   p99_latency_ms: 0.328 ✓
+2025-12-31 20:27:57,572 - PERF-001 - INFO -   throughput_rps: 2605 ✓
+2025-12-31 20:27:57,572 - PERF-001 - INFO -   error_rate_percent: 0.0 ✓
+2025-12-31 20:27:57,572 - PERF-001 - INFO -   memory_usage_mb: 3.9 ✓
+2025-12-31 20:27:57,572 - PERF-001 - INFO -   cpu_utilization_percent: 73.9 ✓
+2025-12-31 20:28:27,602 - PERF-001 - INFO - Monitoring cycle #45
+2025-12-31 20:28:27,602 - PERF-001 - INFO - Performance Status:
+2025-12-31 20:28:27,602 - PERF-001 - INFO -   p99_latency_ms: 0.328 ✓
+2025-12-31 20:28:27,602 - PERF-001 - INFO -   throughput_rps: 2605 ✓
+2025-12-31 20:28:27,602 - PERF-001 - INFO -   error_rate_percent: 0.0 ✓
+2025-12-31 20:28:27,602 - PERF-001 - INFO -   memory_usage_mb: 3.9 ✓
+2025-12-31 20:28:27,602 - PERF-001 - INFO -   cpu_utilization_percent: 73.9 ✓
+2025-12-31 20:28:57,632 - PERF-001 - INFO - Monitoring cycle #46
+2025-12-31 20:28:57,632 - PERF-001 - INFO - Performance Status:
+2025-12-31 20:28:57,632 - PERF-001 - INFO -   p99_latency_ms: 0.328 ✓
+2025-12-31 20:28:57,632 - PERF-001 - INFO -   throughput_rps: 2605 ✓
+2025-12-31 20:28:57,632 - PERF-001 - INFO -   error_rate_percent: 0.0 ✓
+2025-12-31 20:28:57,632 - PERF-001 - INFO -   memory_usage_mb: 3.9 ✓
+2025-12-31 20:28:57,632 - PERF-001 - INFO -   cpu_utilization_percent: 73.9 ✓
+2025-12-31 20:29:27,662 - PERF-001 - INFO - Monitoring cycle #47
+2025-12-31 20:29:27,662 - PERF-001 - INFO - Performance Status:
+2025-12-31 20:29:27,662 - PERF-001 - INFO -   p99_latency_ms: 0.328 ✓
+2025-12-31 20:29:27,662 - PERF-001 - INFO -   throughput_rps: 2605 ✓
+2025-12-31 20:29:27,662 - PERF-001 - INFO -   error_rate_percent: 0.0 ✓
+2025-12-31 20:29:27,662 - PERF-001 - INFO -   memory_usage_mb: 3.9 ✓
+2025-12-31 20:29:27,662 - PERF-001 - INFO -   cpu_utilization_percent: 73.9 ✓
+2025-12-31 20:29:57,679 - PERF-001 - INFO - Monitoring cycle #48
+2025-12-31 20:29:57,680 - PERF-001 - INFO - Performance Status:
+2025-12-31 20:29:57,680 - PERF-001 - INFO -   p99_latency_ms: 0.328 ✓
+2025-12-31 20:29:57,680 - PERF-001 - INFO -   throughput_rps: 2605 ✓
+2025-12-31 20:29:57,680 - PERF-001 - INFO -   error_rate_percent: 0.0 ✓
+2025-12-31 20:29:57,680 - PERF-001 - INFO -   memory_usage_mb: 3.9 ✓
+2025-12-31 20:29:57,680 - PERF-001 - INFO -   cpu_utilization_percent: 73.9 ✓
+2025-12-31 20:30:27,710 - PERF-001 - INFO - Monitoring cycle #49
+2025-12-31 20:30:27,710 - PERF-001 - INFO - Performance Status:
+2025-12-31 20:30:27,710 - PERF-001 - INFO -   p99_latency_ms: 0.328 ✓
+2025-12-31 20:30:27,710 - PERF-001 - INFO -   throughput_rps: 2605 ✓
+2025-12-31 20:30:27,710 - PERF-001 - INFO -   error_rate_percent: 0.0 ✓
+2025-12-31 20:30:27,710 - PERF-001 - INFO -   memory_usage_mb: 3.9 ✓
+2025-12-31 20:30:27,710 - PERF-001 - INFO -   cpu_utilization_percent: 73.9 ✓
+2025-12-31 20:30:57,740 - PERF-001 - INFO - Monitoring cycle #50
+2025-12-31 20:30:57,740 - PERF-001 - INFO - Performance Status:
+2025-12-31 20:30:57,740 - PERF-001 - INFO -   p99_latency_ms: 0.328 ✓
+2025-12-31 20:30:57,740 - PERF-001 - INFO -   throughput_rps: 2605 ✓
+2025-12-31 20:30:57,740 - PERF-001 - INFO -   error_rate_percent: 0.0 ✓
+2025-12-31 20:30:57,740 - PERF-001 - INFO -   memory_usage_mb: 3.9 ✓
+2025-12-31 20:30:57,740 - PERF-001 - INFO -   cpu_utilization_percent: 73.9 ✓
+2025-12-31 20:31:27,746 - PERF-001 - INFO - Monitoring cycle #51
+2025-12-31 20:31:27,746 - PERF-001 - INFO - Performance Status:
+2025-12-31 20:31:27,747 - PERF-001 - INFO -   p99_latency_ms: 0.328 ✓
+2025-12-31 20:31:27,747 - PERF-001 - INFO -   throughput_rps: 2605 ✓
+2025-12-31 20:31:27,747 - PERF-001 - INFO -   error_rate_percent: 0.0 ✓
+2025-12-31 20:31:27,747 - PERF-001 - INFO -   memory_usage_mb: 3.9 ✓
+2025-12-31 20:31:27,747 - PERF-001 - INFO -   cpu_utilization_percent: 73.9 ✓
+2025-12-31 20:31:57,777 - PERF-001 - INFO - Monitoring cycle #52
+2025-12-31 20:31:57,777 - PERF-001 - INFO - Performance Status:
+2025-12-31 20:31:57,777 - PERF-001 - INFO -   p99_latency_ms: 0.328 ✓
+2025-12-31 20:31:57,777 - PERF-001 - INFO -   throughput_rps: 2605 ✓
+2025-12-31 20:31:57,777 - PERF-001 - INFO -   error_rate_percent: 0.0 ✓
+2025-12-31 20:31:57,777 - PERF-001 - INFO -   memory_usage_mb: 3.9 ✓
+2025-12-31 20:31:57,777 - PERF-001 - INFO -   cpu_utilization_percent: 73.9 ✓
+2025-12-31 20:32:27,807 - PERF-001 - INFO - Monitoring cycle #53
+2025-12-31 20:32:27,807 - PERF-001 - INFO - Performance Status:
+2025-12-31 20:32:27,807 - PERF-001 - INFO -   p99_latency_ms: 0.328 ✓
+2025-12-31 20:32:27,807 - PERF-001 - INFO -   throughput_rps: 2605 ✓
+2025-12-31 20:32:27,807 - PERF-001 - INFO -   error_rate_percent: 0.0 ✓
+2025-12-31 20:32:27,807 - PERF-001 - INFO -   memory_usage_mb: 3.9 ✓
+2025-12-31 20:32:27,807 - PERF-001 - INFO -   cpu_utilization_percent: 73.9 ✓
+2025-12-31 20:32:57,837 - PERF-001 - INFO - Monitoring cycle #54
+2025-12-31 20:32:57,837 - PERF-001 - INFO - Performance Status:
+2025-12-31 20:32:57,837 - PERF-001 - INFO -   p99_latency_ms: 0.328 ✓
+2025-12-31 20:32:57,837 - PERF-001 - INFO -   throughput_rps: 2605 ✓
+2025-12-31 20:32:57,837 - PERF-001 - INFO -   error_rate_percent: 0.0 ✓
+2025-12-31 20:32:57,837 - PERF-001 - INFO -   memory_usage_mb: 3.9 ✓
+2025-12-31 20:32:57,837 - PERF-001 - INFO -   cpu_utilization_percent: 73.9 ✓
+2025-12-31 20:33:27,865 - PERF-001 - INFO - Monitoring cycle #55
+2025-12-31 20:33:27,865 - PERF-001 - INFO - Performance Status:
+2025-12-31 20:33:27,865 - PERF-001 - INFO -   p99_latency_ms: 0.328 ✓
+2025-12-31 20:33:27,865 - PERF-001 - INFO -   throughput_rps: 2605 ✓
+2025-12-31 20:33:27,865 - PERF-001 - INFO -   error_rate_percent: 0.0 ✓
+2025-12-31 20:33:27,865 - PERF-001 - INFO -   memory_usage_mb: 3.9 ✓
+2025-12-31 20:33:27,865 - PERF-001 - INFO -   cpu_utilization_percent: 73.9 ✓
+2025-12-31 20:33:57,895 - PERF-001 - INFO - Monitoring cycle #56
+2025-12-31 20:33:57,895 - PERF-001 - INFO - Performance Status:
+2025-12-31 20:33:57,895 - PERF-001 - INFO -   p99_latency_ms: 0.328 ✓
+2025-12-31 20:33:57,895 - PERF-001 - INFO -   throughput_rps: 2605 ✓
+2025-12-31 20:33:57,895 - PERF-001 - INFO -   error_rate_percent: 0.0 ✓
+2025-12-31 20:33:57,895 - PERF-001 - INFO -   memory_usage_mb: 3.9 ✓
+2025-12-31 20:33:57,895 - PERF-001 - INFO -   cpu_utilization_percent: 73.9 ✓
+2025-12-31 20:34:27,925 - PERF-001 - INFO - Monitoring cycle #57
+2025-12-31 20:34:27,925 - PERF-001 - INFO - Performance Status:
+2025-12-31 20:34:27,925 - PERF-001 - INFO -   p99_latency_ms: 0.328 ✓
+2025-12-31 20:34:27,925 - PERF-001 - INFO -   throughput_rps: 2605 ✓
+2025-12-31 20:34:27,925 - PERF-001 - INFO -   error_rate_percent: 0.0 ✓
+2025-12-31 20:34:27,925 - PERF-001 - INFO -   memory_usage_mb: 3.9 ✓
+2025-12-31 20:34:27,925 - PERF-001 - INFO -   cpu_utilization_percent: 73.9 ✓
+2025-12-31 20:34:57,955 - PERF-001 - INFO - Monitoring cycle #58
+2025-12-31 20:34:57,955 - PERF-001 - INFO - Performance Status:
+2025-12-31 20:34:57,955 - PERF-001 - INFO -   p99_latency_ms: 0.328 ✓
+2025-12-31 20:34:57,955 - PERF-001 - INFO -   throughput_rps: 2605 ✓
+2025-12-31 20:34:57,955 - PERF-001 - INFO -   error_rate_percent: 0.0 ✓
+2025-12-31 20:34:57,955 - PERF-001 - INFO -   memory_usage_mb: 3.9 ✓
+2025-12-31 20:34:57,955 - PERF-001 - INFO -   cpu_utilization_percent: 73.9 ✓
+2025-12-31 20:35:27,985 - PERF-001 - INFO - Monitoring cycle #59
+2025-12-31 20:35:27,985 - PERF-001 - INFO - Performance Status:
+2025-12-31 20:35:27,985 - PERF-001 - INFO -   p99_latency_ms: 0.328 ✓
+2025-12-31 20:35:27,985 - PERF-001 - INFO -   throughput_rps: 2605 ✓
+2025-12-31 20:35:27,985 - PERF-001 - INFO -   error_rate_percent: 0.0 ✓
+2025-12-31 20:35:27,985 - PERF-001 - INFO -   memory_usage_mb: 3.9 ✓
+2025-12-31 20:35:27,985 - PERF-001 - INFO -   cpu_utilization_percent: 73.9 ✓
+2025-12-31 20:35:58,015 - PERF-001 - INFO - Monitoring cycle #60
+2025-12-31 20:35:58,015 - PERF-001 - INFO - Performance Status:
+2025-12-31 20:35:58,015 - PERF-001 - INFO -   p99_latency_ms: 0.328 ✓
+2025-12-31 20:35:58,015 - PERF-001 - INFO -   throughput_rps: 2605 ✓
+2025-12-31 20:35:58,015 - PERF-001 - INFO -   error_rate_percent: 0.0 ✓
+2025-12-31 20:35:58,015 - PERF-001 - INFO -   memory_usage_mb: 3.9 ✓
+2025-12-31 20:35:58,015 - PERF-001 - INFO -   cpu_utilization_percent: 73.9 ✓
+2025-12-31 20:36:28,045 - PERF-001 - INFO - Monitoring cycle #61
+2025-12-31 20:36:28,045 - PERF-001 - INFO - Performance Status:
+2025-12-31 20:36:28,045 - PERF-001 - INFO -   p99_latency_ms: 0.328 ✓
+2025-12-31 20:36:28,045 - PERF-001 - INFO -   throughput_rps: 2605 ✓
+2025-12-31 20:36:28,045 - PERF-001 - INFO -   error_rate_percent: 0.0 ✓
+2025-12-31 20:36:28,045 - PERF-001 - INFO -   memory_usage_mb: 3.9 ✓
+2025-12-31 20:36:28,045 - PERF-001 - INFO -   cpu_utilization_percent: 73.9 ✓
+2025-12-31 20:36:58,075 - PERF-001 - INFO - Monitoring cycle #62
+2025-12-31 20:36:58,075 - PERF-001 - INFO - Performance Status:
+2025-12-31 20:36:58,075 - PERF-001 - INFO -   p99_latency_ms: 0.328 ✓
+2025-12-31 20:36:58,075 - PERF-001 - INFO -   throughput_rps: 2605 ✓
+2025-12-31 20:36:58,075 - PERF-001 - INFO -   error_rate_percent: 0.0 ✓
+2025-12-31 20:36:58,075 - PERF-001 - INFO -   memory_usage_mb: 3.9 ✓
+2025-12-31 20:36:58,075 - PERF-001 - INFO -   cpu_utilization_percent: 73.9 ✓
+2025-12-31 20:37:28,105 - PERF-001 - INFO - Monitoring cycle #63
+2025-12-31 20:37:28,105 - PERF-001 - INFO - Performance Status:
+2025-12-31 20:37:28,105 - PERF-001 - INFO -   p99_latency_ms: 0.328 ✓
+2025-12-31 20:37:28,105 - PERF-001 - INFO -   throughput_rps: 2605 ✓
+2025-12-31 20:37:28,105 - PERF-001 - INFO -   error_rate_percent: 0.0 ✓
+2025-12-31 20:37:28,105 - PERF-001 - INFO -   memory_usage_mb: 3.9 ✓
+2025-12-31 20:37:28,105 - PERF-001 - INFO -   cpu_utilization_percent: 73.9 ✓
+2025-12-31 20:37:58,135 - PERF-001 - INFO - Monitoring cycle #64
+2025-12-31 20:37:58,135 - PERF-001 - INFO - Performance Status:
+2025-12-31 20:37:58,135 - PERF-001 - INFO -   p99_latency_ms: 0.328 ✓
+2025-12-31 20:37:58,135 - PERF-001 - INFO -   throughput_rps: 2605 ✓
+2025-12-31 20:37:58,135 - PERF-001 - INFO -   error_rate_percent: 0.0 ✓
+2025-12-31 20:37:58,135 - PERF-001 - INFO -   memory_usage_mb: 3.9 ✓
+2025-12-31 20:37:58,135 - PERF-001 - INFO -   cpu_utilization_percent: 73.9 ✓
+2025-12-31 20:38:28,165 - PERF-001 - INFO - Monitoring cycle #65
+2025-12-31 20:38:28,165 - PERF-001 - INFO - Performance Status:
+2025-12-31 20:38:28,165 - PERF-001 - INFO -   p99_latency_ms: 0.328 ✓
+2025-12-31 20:38:28,165 - PERF-001 - INFO -   throughput_rps: 2605 ✓
+2025-12-31 20:38:28,165 - PERF-001 - INFO -   error_rate_percent: 0.0 ✓
+2025-12-31 20:38:28,165 - PERF-001 - INFO -   memory_usage_mb: 3.9 ✓
+2025-12-31 20:38:28,165 - PERF-001 - INFO -   cpu_utilization_percent: 73.9 ✓
+2025-12-31 20:38:58,195 - PERF-001 - INFO - Monitoring cycle #66
+2025-12-31 20:38:58,195 - PERF-001 - INFO - Performance Status:
+2025-12-31 20:38:58,195 - PERF-001 - INFO -   p99_latency_ms: 0.328 ✓
+2025-12-31 20:38:58,195 - PERF-001 - INFO -   throughput_rps: 2605 ✓
+2025-12-31 20:38:58,195 - PERF-001 - INFO -   error_rate_percent: 0.0 ✓
+2025-12-31 20:38:58,195 - PERF-001 - INFO -   memory_usage_mb: 3.9 ✓
+2025-12-31 20:38:58,195 - PERF-001 - INFO -   cpu_utilization_percent: 73.9 ✓
+2025-12-31 20:39:28,225 - PERF-001 - INFO - Monitoring cycle #67
+2025-12-31 20:39:28,225 - PERF-001 - INFO - Performance Status:
+2025-12-31 20:39:28,225 - PERF-001 - INFO -   p99_latency_ms: 0.328 ✓
+2025-12-31 20:39:28,225 - PERF-001 - INFO -   throughput_rps: 2605 ✓
+2025-12-31 20:39:28,225 - PERF-001 - INFO -   error_rate_percent: 0.0 ✓
+2025-12-31 20:39:28,225 - PERF-001 - INFO -   memory_usage_mb: 3.9 ✓
+2025-12-31 20:39:28,225 - PERF-001 - INFO -   cpu_utilization_percent: 73.9 ✓
+2025-12-31 20:39:58,255 - PERF-001 - INFO - Monitoring cycle #68
+2025-12-31 20:39:58,255 - PERF-001 - INFO - Performance Status:
+2025-12-31 20:39:58,255 - PERF-001 - INFO -   p99_latency_ms: 0.328 ✓
+2025-12-31 20:39:58,255 - PERF-001 - INFO -   throughput_rps: 2605 ✓
+2025-12-31 20:39:58,255 - PERF-001 - INFO -   error_rate_percent: 0.0 ✓
+2025-12-31 20:39:58,255 - PERF-001 - INFO -   memory_usage_mb: 3.9 ✓
+2025-12-31 20:39:58,255 - PERF-001 - INFO -   cpu_utilization_percent: 73.9 ✓
+2025-12-31 20:40:28,285 - PERF-001 - INFO - Monitoring cycle #69
+2025-12-31 20:40:28,285 - PERF-001 - INFO - Performance Status:
+2025-12-31 20:40:28,285 - PERF-001 - INFO -   p99_latency_ms: 0.328 ✓
+2025-12-31 20:40:28,285 - PERF-001 - INFO -   throughput_rps: 2605 ✓
+2025-12-31 20:40:28,285 - PERF-001 - INFO -   error_rate_percent: 0.0 ✓
+2025-12-31 20:40:28,285 - PERF-001 - INFO -   memory_usage_mb: 3.9 ✓
+2025-12-31 20:40:28,285 - PERF-001 - INFO -   cpu_utilization_percent: 73.9 ✓
+2025-12-31 20:40:58,315 - PERF-001 - INFO - Monitoring cycle #70
+2025-12-31 20:40:58,315 - PERF-001 - INFO - Performance Status:
+2025-12-31 20:40:58,315 - PERF-001 - INFO -   p99_latency_ms: 0.328 ✓
+2025-12-31 20:40:58,315 - PERF-001 - INFO -   throughput_rps: 2605 ✓
+2025-12-31 20:40:58,315 - PERF-001 - INFO -   error_rate_percent: 0.0 ✓
+2025-12-31 20:40:58,315 - PERF-001 - INFO -   memory_usage_mb: 3.9 ✓
+2025-12-31 20:40:58,315 - PERF-001 - INFO -   cpu_utilization_percent: 73.9 ✓
+2025-12-31 20:41:28,336 - PERF-001 - INFO - Monitoring cycle #71
+2025-12-31 20:41:28,336 - PERF-001 - INFO - Performance Status:
+2025-12-31 20:41:28,336 - PERF-001 - INFO -   p99_latency_ms: 0.328 ✓
+2025-12-31 20:41:28,336 - PERF-001 - INFO -   throughput_rps: 2605 ✓
+2025-12-31 20:41:28,336 - PERF-001 - INFO -   error_rate_percent: 0.0 ✓
+2025-12-31 20:41:28,336 - PERF-001 - INFO -   memory_usage_mb: 3.9 ✓
+2025-12-31 20:41:28,336 - PERF-001 - INFO -   cpu_utilization_percent: 73.9 ✓
+2025-12-31 20:41:58,364 - PERF-001 - INFO - Monitoring cycle #72
+2025-12-31 20:41:58,364 - PERF-001 - INFO - Performance Status:
+2025-12-31 20:41:58,364 - PERF-001 - INFO -   p99_latency_ms: 0.328 ✓
+2025-12-31 20:41:58,364 - PERF-001 - INFO -   throughput_rps: 2605 ✓
+2025-12-31 20:41:58,364 - PERF-001 - INFO -   error_rate_percent: 0.0 ✓
+2025-12-31 20:41:58,364 - PERF-001 - INFO -   memory_usage_mb: 3.9 ✓
+2025-12-31 20:41:58,364 - PERF-001 - INFO -   cpu_utilization_percent: 73.9 ✓
+2025-12-31 20:42:28,377 - PERF-001 - INFO - Monitoring cycle #73
+2025-12-31 20:42:28,377 - PERF-001 - INFO - Performance Status:
+2025-12-31 20:42:28,377 - PERF-001 - INFO -   p99_latency_ms: 0.328 ✓
+2025-12-31 20:42:28,377 - PERF-001 - INFO -   throughput_rps: 2605 ✓
+2025-12-31 20:42:28,377 - PERF-001 - INFO -   error_rate_percent: 0.0 ✓
+2025-12-31 20:42:28,377 - PERF-001 - INFO -   memory_usage_mb: 3.9 ✓
+2025-12-31 20:42:28,377 - PERF-001 - INFO -   cpu_utilization_percent: 73.9 ✓
+2025-12-31 20:42:58,407 - PERF-001 - INFO - Monitoring cycle #74
+2025-12-31 20:42:58,407 - PERF-001 - INFO - Performance Status:
+2025-12-31 20:42:58,407 - PERF-001 - INFO -   p99_latency_ms: 0.328 ✓
+2025-12-31 20:42:58,407 - PERF-001 - INFO -   throughput_rps: 2605 ✓
+2025-12-31 20:42:58,407 - PERF-001 - INFO -   error_rate_percent: 0.0 ✓
+2025-12-31 20:42:58,407 - PERF-001 - INFO -   memory_usage_mb: 3.9 ✓
+2025-12-31 20:42:58,407 - PERF-001 - INFO -   cpu_utilization_percent: 73.9 ✓
+2025-12-31 20:43:28,437 - PERF-001 - INFO - Monitoring cycle #75
+2025-12-31 20:43:28,437 - PERF-001 - INFO - Performance Status:
+2025-12-31 20:43:28,437 - PERF-001 - INFO -   p99_latency_ms: 0.328 ✓
+2025-12-31 20:43:28,437 - PERF-001 - INFO -   throughput_rps: 2605 ✓
+2025-12-31 20:43:28,438 - PERF-001 - INFO -   error_rate_percent: 0.0 ✓
+2025-12-31 20:43:28,438 - PERF-001 - INFO -   memory_usage_mb: 3.9 ✓
+2025-12-31 20:43:28,438 - PERF-001 - INFO -   cpu_utilization_percent: 73.9 ✓
+2025-12-31 20:43:58,467 - PERF-001 - INFO - Monitoring cycle #76
+2025-12-31 20:43:58,467 - PERF-001 - INFO - Performance Status:
+2025-12-31 20:43:58,467 - PERF-001 - INFO -   p99_latency_ms: 0.328 ✓
+2025-12-31 20:43:58,467 - PERF-001 - INFO -   throughput_rps: 2605 ✓
+2025-12-31 20:43:58,467 - PERF-001 - INFO -   error_rate_percent: 0.0 ✓
+2025-12-31 20:43:58,467 - PERF-001 - INFO -   memory_usage_mb: 3.9 ✓
+2025-12-31 20:43:58,467 - PERF-001 - INFO -   cpu_utilization_percent: 73.9 ✓
+2025-12-31 20:44:28,470 - PERF-001 - INFO - Monitoring cycle #77
+2025-12-31 20:44:28,470 - PERF-001 - INFO - Performance Status:
+2025-12-31 20:44:28,470 - PERF-001 - INFO -   p99_latency_ms: 0.328 ✓
+2025-12-31 20:44:28,470 - PERF-001 - INFO -   throughput_rps: 2605 ✓
+2025-12-31 20:44:28,470 - PERF-001 - INFO -   error_rate_percent: 0.0 ✓
+2025-12-31 20:44:28,470 - PERF-001 - INFO -   memory_usage_mb: 3.9 ✓
+2025-12-31 20:44:28,471 - PERF-001 - INFO -   cpu_utilization_percent: 73.9 ✓
+2025-12-31 20:44:58,500 - PERF-001 - INFO - Monitoring cycle #78
+2025-12-31 20:44:58,500 - PERF-001 - INFO - Performance Status:
+2025-12-31 20:44:58,500 - PERF-001 - INFO -   p99_latency_ms: 0.328 ✓
+2025-12-31 20:44:58,500 - PERF-001 - INFO -   throughput_rps: 2605 ✓
+2025-12-31 20:44:58,500 - PERF-001 - INFO -   error_rate_percent: 0.0 ✓
+2025-12-31 20:44:58,500 - PERF-001 - INFO -   memory_usage_mb: 3.9 ✓
+2025-12-31 20:44:58,500 - PERF-001 - INFO -   cpu_utilization_percent: 73.9 ✓
+2025-12-31 20:45:28,502 - PERF-001 - INFO - Monitoring cycle #79
+2025-12-31 20:45:28,502 - PERF-001 - INFO - Performance Status:
+2025-12-31 20:45:28,502 - PERF-001 - INFO -   p99_latency_ms: 0.328 ✓
+2025-12-31 20:45:28,502 - PERF-001 - INFO -   throughput_rps: 2605 ✓
+2025-12-31 20:45:28,502 - PERF-001 - INFO -   error_rate_percent: 0.0 ✓
+2025-12-31 20:45:28,502 - PERF-001 - INFO -   memory_usage_mb: 3.9 ✓
+2025-12-31 20:45:28,502 - PERF-001 - INFO -   cpu_utilization_percent: 73.9 ✓
+2025-12-31 20:45:58,532 - PERF-001 - INFO - Monitoring cycle #80
+2025-12-31 20:45:58,532 - PERF-001 - INFO - Performance Status:
+2025-12-31 20:45:58,532 - PERF-001 - INFO -   p99_latency_ms: 0.328 ✓
+2025-12-31 20:45:58,532 - PERF-001 - INFO -   throughput_rps: 2605 ✓
+2025-12-31 20:45:58,532 - PERF-001 - INFO -   error_rate_percent: 0.0 ✓
+2025-12-31 20:45:58,532 - PERF-001 - INFO -   memory_usage_mb: 3.9 ✓
+2025-12-31 20:45:58,532 - PERF-001 - INFO -   cpu_utilization_percent: 73.9 ✓
+2025-12-31 20:46:28,547 - PERF-001 - INFO - Monitoring cycle #81
+2025-12-31 20:46:28,547 - PERF-001 - INFO - Performance Status:
+2025-12-31 20:46:28,547 - PERF-001 - INFO -   p99_latency_ms: 0.328 ✓
+2025-12-31 20:46:28,547 - PERF-001 - INFO -   throughput_rps: 2605 ✓
+2025-12-31 20:46:28,547 - PERF-001 - INFO -   error_rate_percent: 0.0 ✓
+2025-12-31 20:46:28,547 - PERF-001 - INFO -   memory_usage_mb: 3.9 ✓
+2025-12-31 20:46:28,547 - PERF-001 - INFO -   cpu_utilization_percent: 73.9 ✓
+2025-12-31 20:46:58,577 - PERF-001 - INFO - Monitoring cycle #82
+2025-12-31 20:46:58,577 - PERF-001 - INFO - Performance Status:
+2025-12-31 20:46:58,577 - PERF-001 - INFO -   p99_latency_ms: 0.328 ✓
+2025-12-31 20:46:58,577 - PERF-001 - INFO -   throughput_rps: 2605 ✓
+2025-12-31 20:46:58,577 - PERF-001 - INFO -   error_rate_percent: 0.0 ✓
+2025-12-31 20:46:58,577 - PERF-001 - INFO -   memory_usage_mb: 3.9 ✓
+2025-12-31 20:46:58,577 - PERF-001 - INFO -   cpu_utilization_percent: 73.9 ✓
+2025-12-31 20:47:28,607 - PERF-001 - INFO - Monitoring cycle #83
+2025-12-31 20:47:28,607 - PERF-001 - INFO - Performance Status:
+2025-12-31 20:47:28,607 - PERF-001 - INFO -   p99_latency_ms: 0.328 ✓
+2025-12-31 20:47:28,607 - PERF-001 - INFO -   throughput_rps: 2605 ✓
+2025-12-31 20:47:28,607 - PERF-001 - INFO -   error_rate_percent: 0.0 ✓
+2025-12-31 20:47:28,607 - PERF-001 - INFO -   memory_usage_mb: 3.9 ✓
+2025-12-31 20:47:28,607 - PERF-001 - INFO -   cpu_utilization_percent: 73.9 ✓
+2025-12-31 20:47:58,637 - PERF-001 - INFO - Monitoring cycle #84
+2025-12-31 20:47:58,637 - PERF-001 - INFO - Performance Status:
+2025-12-31 20:47:58,637 - PERF-001 - INFO -   p99_latency_ms: 0.328 ✓
+2025-12-31 20:47:58,637 - PERF-001 - INFO -   throughput_rps: 2605 ✓
+2025-12-31 20:47:58,637 - PERF-001 - INFO -   error_rate_percent: 0.0 ✓
+2025-12-31 20:47:58,637 - PERF-001 - INFO -   memory_usage_mb: 3.9 ✓
+2025-12-31 20:47:58,637 - PERF-001 - INFO -   cpu_utilization_percent: 73.9 ✓
+2025-12-31 20:48:28,668 - PERF-001 - INFO - Monitoring cycle #85
+2025-12-31 20:48:28,668 - PERF-001 - INFO - Performance Status:
+2025-12-31 20:48:28,668 - PERF-001 - INFO -   p99_latency_ms: 0.328 ✓
+2025-12-31 20:48:28,668 - PERF-001 - INFO -   throughput_rps: 2605 ✓
+2025-12-31 20:48:28,668 - PERF-001 - INFO -   error_rate_percent: 0.0 ✓
+2025-12-31 20:48:28,668 - PERF-001 - INFO -   memory_usage_mb: 3.9 ✓
+2025-12-31 20:48:28,668 - PERF-001 - INFO -   cpu_utilization_percent: 73.9 ✓
+2025-12-31 20:48:58,698 - PERF-001 - INFO - Monitoring cycle #86
+2025-12-31 20:48:58,698 - PERF-001 - INFO - Performance Status:
+2025-12-31 20:48:58,698 - PERF-001 - INFO -   p99_latency_ms: 0.328 ✓
+2025-12-31 20:48:58,698 - PERF-001 - INFO -   throughput_rps: 2605 ✓
+2025-12-31 20:48:58,698 - PERF-001 - INFO -   error_rate_percent: 0.0 ✓
+2025-12-31 20:48:58,698 - PERF-001 - INFO -   memory_usage_mb: 3.9 ✓
+2025-12-31 20:48:58,698 - PERF-001 - INFO -   cpu_utilization_percent: 73.9 ✓
+2025-12-31 20:49:28,705 - PERF-001 - INFO - Monitoring cycle #87
+2025-12-31 20:49:28,705 - PERF-001 - INFO - Performance Status:
+2025-12-31 20:49:28,705 - PERF-001 - INFO -   p99_latency_ms: 0.328 ✓
+2025-12-31 20:49:28,705 - PERF-001 - INFO -   throughput_rps: 2605 ✓
+2025-12-31 20:49:28,705 - PERF-001 - INFO -   error_rate_percent: 0.0 ✓
+2025-12-31 20:49:28,705 - PERF-001 - INFO -   memory_usage_mb: 3.9 ✓
+2025-12-31 20:49:28,705 - PERF-001 - INFO -   cpu_utilization_percent: 73.9 ✓
+2025-12-31 20:49:58,735 - PERF-001 - INFO - Monitoring cycle #88
+2025-12-31 20:49:58,735 - PERF-001 - INFO - Performance Status:
+2025-12-31 20:49:58,735 - PERF-001 - INFO -   p99_latency_ms: 0.328 ✓
+2025-12-31 20:49:58,735 - PERF-001 - INFO -   throughput_rps: 2605 ✓
+2025-12-31 20:49:58,735 - PERF-001 - INFO -   error_rate_percent: 0.0 ✓
+2025-12-31 20:49:58,735 - PERF-001 - INFO -   memory_usage_mb: 3.9 ✓
+2025-12-31 20:49:58,735 - PERF-001 - INFO -   cpu_utilization_percent: 73.9 ✓
+2025-12-31 20:50:28,765 - PERF-001 - INFO - Monitoring cycle #89
+2025-12-31 20:50:28,765 - PERF-001 - INFO - Performance Status:
+2025-12-31 20:50:28,765 - PERF-001 - INFO -   p99_latency_ms: 0.328 ✓
+2025-12-31 20:50:28,765 - PERF-001 - INFO -   throughput_rps: 2605 ✓
+2025-12-31 20:50:28,765 - PERF-001 - INFO -   error_rate_percent: 0.0 ✓
+2025-12-31 20:50:28,765 - PERF-001 - INFO -   memory_usage_mb: 3.9 ✓
+2025-12-31 20:50:28,765 - PERF-001 - INFO -   cpu_utilization_percent: 73.9 ✓
+2025-12-31 20:50:58,770 - PERF-001 - INFO - Monitoring cycle #90
+2025-12-31 20:50:58,771 - PERF-001 - INFO - Performance Status:
+2025-12-31 20:50:58,771 - PERF-001 - INFO -   p99_latency_ms: 0.328 ✓
+2025-12-31 20:50:58,771 - PERF-001 - INFO -   throughput_rps: 2605 ✓
+2025-12-31 20:50:58,771 - PERF-001 - INFO -   error_rate_percent: 0.0 ✓
+2025-12-31 20:50:58,771 - PERF-001 - INFO -   memory_usage_mb: 3.9 ✓
+2025-12-31 20:50:58,771 - PERF-001 - INFO -   cpu_utilization_percent: 73.9 ✓
+2025-12-31 20:51:28,772 - PERF-001 - INFO - Monitoring cycle #91
+2025-12-31 20:51:28,772 - PERF-001 - INFO - Performance Status:
+2025-12-31 20:51:28,772 - PERF-001 - INFO -   p99_latency_ms: 0.328 ✓
+2025-12-31 20:51:28,772 - PERF-001 - INFO -   throughput_rps: 2605 ✓
+2025-12-31 20:51:28,772 - PERF-001 - INFO -   error_rate_percent: 0.0 ✓
+2025-12-31 20:51:28,772 - PERF-001 - INFO -   memory_usage_mb: 3.9 ✓
+2025-12-31 20:51:28,772 - PERF-001 - INFO -   cpu_utilization_percent: 73.9 ✓
+2025-12-31 20:51:58,802 - PERF-001 - INFO - Monitoring cycle #92
+2025-12-31 20:51:58,802 - PERF-001 - INFO - Performance Status:
+2025-12-31 20:51:58,802 - PERF-001 - INFO -   p99_latency_ms: 0.328 ✓
+2025-12-31 20:51:58,802 - PERF-001 - INFO -   throughput_rps: 2605 ✓
+2025-12-31 20:51:58,802 - PERF-001 - INFO -   error_rate_percent: 0.0 ✓
+2025-12-31 20:51:58,802 - PERF-001 - INFO -   memory_usage_mb: 3.9 ✓
+2025-12-31 20:51:58,802 - PERF-001 - INFO -   cpu_utilization_percent: 73.9 ✓
+2025-12-31 20:52:28,832 - PERF-001 - INFO - Monitoring cycle #93
+2025-12-31 20:52:28,832 - PERF-001 - INFO - Performance Status:
+2025-12-31 20:52:28,832 - PERF-001 - INFO -   p99_latency_ms: 0.328 ✓
+2025-12-31 20:52:28,832 - PERF-001 - INFO -   throughput_rps: 2605 ✓
+2025-12-31 20:52:28,832 - PERF-001 - INFO -   error_rate_percent: 0.0 ✓
+2025-12-31 20:52:28,832 - PERF-001 - INFO -   memory_usage_mb: 3.9 ✓
+2025-12-31 20:52:28,832 - PERF-001 - INFO -   cpu_utilization_percent: 73.9 ✓
+2025-12-31 20:52:58,857 - PERF-001 - INFO - Monitoring cycle #94
+2025-12-31 20:52:58,857 - PERF-001 - INFO - Performance Status:
+2025-12-31 20:52:58,857 - PERF-001 - INFO -   p99_latency_ms: 0.328 ✓
+2025-12-31 20:52:58,857 - PERF-001 - INFO -   throughput_rps: 2605 ✓
+2025-12-31 20:52:58,857 - PERF-001 - INFO -   error_rate_percent: 0.0 ✓
+2025-12-31 20:52:58,857 - PERF-001 - INFO -   memory_usage_mb: 3.9 ✓
+2025-12-31 20:52:58,857 - PERF-001 - INFO -   cpu_utilization_percent: 73.9 ✓
+2025-12-31 20:53:28,884 - PERF-001 - INFO - Monitoring cycle #95
+2025-12-31 20:53:28,884 - PERF-001 - INFO - Performance Status:
+2025-12-31 20:53:28,884 - PERF-001 - INFO -   p99_latency_ms: 0.328 ✓
+2025-12-31 20:53:28,884 - PERF-001 - INFO -   throughput_rps: 2605 ✓
+2025-12-31 20:53:28,884 - PERF-001 - INFO -   error_rate_percent: 0.0 ✓
+2025-12-31 20:53:28,884 - PERF-001 - INFO -   memory_usage_mb: 3.9 ✓
+2025-12-31 20:53:28,884 - PERF-001 - INFO -   cpu_utilization_percent: 73.9 ✓
+2025-12-31 20:53:58,914 - PERF-001 - INFO - Monitoring cycle #96
+2025-12-31 20:53:58,914 - PERF-001 - INFO - Performance Status:
+2025-12-31 20:53:58,914 - PERF-001 - INFO -   p99_latency_ms: 0.328 ✓
+2025-12-31 20:53:58,914 - PERF-001 - INFO -   throughput_rps: 2605 ✓
+2025-12-31 20:53:58,914 - PERF-001 - INFO -   error_rate_percent: 0.0 ✓
+2025-12-31 20:53:58,914 - PERF-001 - INFO -   memory_usage_mb: 3.9 ✓
+2025-12-31 20:53:58,914 - PERF-001 - INFO -   cpu_utilization_percent: 73.9 ✓

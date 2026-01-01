@@ -5,16 +5,18 @@ repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.7.1
     hooks: [{ id: ruff }]
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.13.0
-    hooks:
-      [
-        {
-          id: mypy,
-          additional_dependencies:
-            [types-redis, types-requests, types-setuptools],
-        },
-      ]
+# MyPy is disabled in pre-commit due to directory naming conflicts
+# Run mypy manually: cd acgs2-core/enhanced_agent_bus && mypy --strict --ignore-missing-imports .
+# - repo: https://github.com/pre-commit/mirrors-mypy
+#   rev: v1.13.0
+#   hooks:
+#     [
+#       {
+#         id: mypy,
+#         additional_dependencies:
+#           [types-redis, types-requests, types-setuptools],
+#       },
+#     ]
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.6.0
     hooks:

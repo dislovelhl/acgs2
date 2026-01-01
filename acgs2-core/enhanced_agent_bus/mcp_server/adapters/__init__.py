@@ -5,8 +5,8 @@ Constitutional Hash: cdd01ef066bc6cf2
 """
 
 from .agent_bus import AgentBusAdapter
-from .policy_client import PolicyClientAdapter
 from .audit_client import AuditClientAdapter
+from .policy_client import PolicyClientAdapter
 
 __all__ = [
     "AgentBusAdapter",

@@ -1,3 +1,4 @@
+logger = logging.getLogger(__name__)
 """
 ACGS-2 Policy Bundle Manager
 Constitutional Hash: cdd01ef066bc6cf2
@@ -134,4 +135,4 @@ if __name__ == "__main__":
         meta_data = manager.sign_bundle(bundle_file, priv)
         manager.simulate_oci_push(bundle_file)
     else:
-        print(f"Source directory {source_path} not found.")
+        logging.info(f"Source directory {source_path} not found.")

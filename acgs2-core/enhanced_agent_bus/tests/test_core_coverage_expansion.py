@@ -19,33 +19,33 @@ try:
         USE_RUST,
         # Core Classes
         AgentMessage,
-        DecisionLog,
-        EnhancedAgentBus,
-        MessageProcessor,
-        MessageStatus,
-        MessageType,
-        Priority,
-        ValidationResult,
         # Protocol Interfaces
         AgentRegistry,
-        MessageRouter,
-        ProcessingStrategy,
-        ValidationStrategy,
         # Implementation Classes
         CompositeProcessingStrategy,
+        # Backward Compatibility
+        ConstitutionalValidationStrategy,
+        DecisionLog,
         DirectMessageRouter,
         DynamicPolicyProcessingStrategy,
         DynamicPolicyValidationStrategy,
+        EnhancedAgentBus,
         InMemoryAgentRegistry,
+        MessagePriority,
+        MessageProcessor,
+        MessageRouter,
+        MessageStatus,
+        MessageType,
         OPAProcessingStrategy,
         OPAValidationStrategy,
+        Priority,
+        ProcessingStrategy,
         PythonProcessingStrategy,
         RustProcessingStrategy,
         RustValidationStrategy,
         StaticHashValidationStrategy,
-        # Backward Compatibility
-        ConstitutionalValidationStrategy,
-        MessagePriority,
+        ValidationResult,
+        ValidationStrategy,
         # Functions
         get_agent_bus,
         reset_agent_bus,
@@ -60,30 +60,30 @@ except ImportError:
         METRICS_ENABLED,
         USE_RUST,
         AgentMessage,
-        DecisionLog,
-        EnhancedAgentBus,
-        MessageProcessor,
-        MessageStatus,
-        MessageType,
-        Priority,
-        ValidationResult,
         AgentRegistry,
-        MessageRouter,
-        ProcessingStrategy,
-        ValidationStrategy,
         CompositeProcessingStrategy,
+        ConstitutionalValidationStrategy,
+        DecisionLog,
         DirectMessageRouter,
         DynamicPolicyProcessingStrategy,
         DynamicPolicyValidationStrategy,
+        EnhancedAgentBus,
         InMemoryAgentRegistry,
+        MessagePriority,
+        MessageProcessor,
+        MessageRouter,
+        MessageStatus,
+        MessageType,
         OPAProcessingStrategy,
         OPAValidationStrategy,
+        Priority,
+        ProcessingStrategy,
         PythonProcessingStrategy,
         RustProcessingStrategy,
         RustValidationStrategy,
         StaticHashValidationStrategy,
-        ConstitutionalValidationStrategy,
-        MessagePriority,
+        ValidationResult,
+        ValidationStrategy,
         get_agent_bus,
         reset_agent_bus,
     )
@@ -163,7 +163,7 @@ class TestCoreProcessingStrategies:
         strategy = PythonProcessingStrategy()
         # Check ProcessingStrategy protocol methods
         assert hasattr(strategy, "process")
-        assert callable(getattr(strategy, "process"))
+        assert callable(strategy.process)
 
 
 class TestCoreMeteringExportsExpanded:
@@ -179,8 +179,8 @@ class TestCoreMeteringExportsExpanded:
                 MeteringMixin,
                 get_metering_hooks,
                 get_metering_queue,
-                reset_metering,
                 metered_operation,
+                reset_metering,
             )
         except ImportError:
             from core import (
@@ -190,8 +190,8 @@ class TestCoreMeteringExportsExpanded:
                 MeteringMixin,
                 get_metering_hooks,
                 get_metering_queue,
-                reset_metering,
                 metered_operation,
+                reset_metering,
             )
 
         if METERING_AVAILABLE:
@@ -278,7 +278,7 @@ class TestCoreRegistryExports:
         assert registry is not None
         # Should have register method from AgentRegistry protocol
         assert hasattr(registry, "register")
-        assert callable(getattr(registry, "register"))
+        assert callable(registry.register)
 
     def test_direct_message_router_exported(self):
         """DirectMessageRouter is properly exported."""

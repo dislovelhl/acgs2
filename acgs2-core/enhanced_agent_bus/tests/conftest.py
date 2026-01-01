@@ -5,6 +5,9 @@ Constitutional Hash: cdd01ef066bc6cf2
 Provides common fixtures for all test modules.
 """
 
+import logging
+
+logger = logging.getLogger(__name__)
 import os
 import sys
 
@@ -14,8 +17,6 @@ if not _test_with_rust:
     sys.modules["enhanced_agent_bus_rust"] = None
 
 import asyncio
-from datetime import datetime, timezone
-from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -28,13 +29,13 @@ if enhanced_agent_bus_dir not in sys.path:
 try:
     import enhanced_agent_bus.core as _core
     import enhanced_agent_bus.exceptions as _exceptions
+    import enhanced_agent_bus.imports as _imports
     import enhanced_agent_bus.interfaces as _interfaces
     import enhanced_agent_bus.maci_enforcement as _maci_enforcement
     import enhanced_agent_bus.models as _models
     import enhanced_agent_bus.registry as _registry
-    import enhanced_agent_bus.validators as _validators
     import enhanced_agent_bus.utils as _utils
-    import enhanced_agent_bus.imports as _imports
+    import enhanced_agent_bus.validators as _validators
 
     # Patch sys.models to point flat names to package-qualified modules
     sys.modules["models"] = _models
@@ -52,13 +53,13 @@ except ImportError:
     try:
         import core as _core
         import exceptions as _exceptions
+        import imports as _imports
         import interfaces as _interfaces
         import maci_enforcement as _maci_enforcement
         import models as _models
         import registry as _registry
-        import validators as _validators
         import utils as _utils
-        import imports as _imports
+        import validators as _validators
 
         # Patch package names to point to flat modules
         sys.modules["enhanced_agent_bus.models"] = _models
@@ -72,9 +73,10 @@ except ImportError:
         sys.modules["enhanced_agent_bus.imports"] = _imports
         sys.modules["agent_bus"] = sys.modules.get("enhanced_agent_bus.agent_bus") or _core
     except ImportError as e:
-        print(f"CRITICAL: Failed to load test dependencies: {e}")
+        logger.error(f"CRITICAL: Failed to load test dependencies: {e}")
         # Final desperate attempt to find utils if it's being shadowed
         import importlib.util
+
         u_path = os.path.join(enhanced_agent_bus_dir, "utils.py")
         if os.path.exists(u_path):
             spec = importlib.util.spec_from_file_location("utils", u_path)
@@ -89,6 +91,7 @@ if not _test_with_rust:
 else:
     try:
         import enhanced_agent_bus_rust as _rust_bus
+
         RUST_AVAILABLE = True
         _core.USE_RUST = True
     except ImportError:
@@ -105,10 +108,12 @@ ValidationResult = _validators.ValidationResult
 MessageProcessor = _core.MessageProcessor
 EnhancedAgentBus = _core.EnhancedAgentBus
 
+
 @pytest.fixture(scope="session")
 def event_loop():
     loop = asyncio.new_event_loop()
     yield loop
     loop.close()
+
 
 # ... (rest of the fixtures)

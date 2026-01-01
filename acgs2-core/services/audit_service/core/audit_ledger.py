@@ -27,7 +27,6 @@ try:
         AnchorManagerConfig,
         AnchorResult,
         BlockchainAnchorManager,
-        get_anchor_manager,
     )
 
     ANCHOR_MANAGER_AVAILABLE = True
@@ -478,7 +477,7 @@ class AuditLedger:
             self._anchor_stats["by_backend"][backend_name] = {
                 "successful": 0,
                 "failed": 0,
-                "avg_latency": 0
+                "avg_latency": 0,
             }
 
         if result.status.value in ("confirmed", "submitted"):
@@ -642,11 +641,7 @@ class AuditLedger:
         if entry.batch_id and entry.batch_id in self.batches:
             tree = self.batches[entry.batch_id]["merkle_tree"]
 
-        return (
-            tree.verify_proof(entry_data, merkle_proof, root_hash)
-            if tree
-            else False
-        )
+        return tree.verify_proof(entry_data, merkle_proof, root_hash) if tree else False
 
     async def get_entries_by_batch(self, batch_id: str) -> List[AuditEntry]:
         async with self._lock:

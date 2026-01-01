@@ -10,14 +10,15 @@ Comprehensive tests for the DX Ecosystem module including:
 """
 
 import asyncio
+from unittest.mock import patch
+
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
 
 # Import dx_ecosystem module
 try:
     from enhanced_agent_bus.dx_ecosystem import (
-        MCPBridge,
         GenUIController,
+        MCPBridge,
     )
 except ImportError:
     import os
@@ -25,8 +26,8 @@ except ImportError:
 
     sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
     from dx_ecosystem import (
-        MCPBridge,
         GenUIController,
+        MCPBridge,
     )
 
 

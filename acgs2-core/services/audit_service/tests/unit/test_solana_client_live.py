@@ -2,6 +2,8 @@ import pytest
 import asyncio
 import os
 from services.audit_service.blockchain.solana.solana_client import SolanaClient
+import logging
+
 
 @pytest.fixture
 def solana_config():
@@ -10,8 +12,9 @@ def solana_config():
         "rpc_url": "https://api.devnet.solana.com",
         "commitment": "confirmed",
         "live": True,  # Test live connectivity
-        "wallet_path": os.path.expanduser("~/.config/solana/id.json")
+        "wallet_path": os.path.expanduser("~/.config/solana/id.json"),
     }
+
 
 @pytest.fixture
 async def client(solana_config):
@@ -20,6 +23,7 @@ async def client(solana_config):
     await client.connect()
     yield client
     await client.disconnect()
+
 
 @pytest.mark.asyncio
 class TestSolanaClientLive:
@@ -32,7 +36,7 @@ class TestSolanaClientLive:
         stats = await client.get_network_stats()
         assert stats["connected"] is True
         assert "wallet_balance_sol" in stats
-        print(f"\nWallet Balance: {stats['wallet_balance_sol']} SOL")
+        logging.info(f"\nWallet Balance: {stats['wallet_balance_sol']} SOL")
 
         await client.disconnect()
 
@@ -45,7 +49,7 @@ class TestSolanaClientLive:
 
         signature = await client.submit_audit_batch(batch_data)
         assert signature is not None
-        print(f"\nLive Transaction Signature: {signature}")
+        logging.info(f"\nLive Transaction Signature: {signature}")
         # Signature should be a base58 string, usually long
         assert len(signature) > 30
 

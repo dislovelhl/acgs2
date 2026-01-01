@@ -2,14 +2,16 @@ import pytest
 import asyncio
 from services.audit_service.blockchain.solana.solana_client import SolanaClient
 
+
 @pytest.fixture
 def solana_config():
     return {
         "network": "devnet",
         "rpc_url": "https://api.devnet.solana.com",
         "commitment": "confirmed",
-        "program_id": "ExWhj4zubqb1wwCcFfFLmgYGR5fpQAmSjB9N4MQZRW9B"
+        "program_id": "ExWhj4zubqb1wwCcFfFLmgYGR5fpQAmSjB9N4MQZRW9B",
     }
+
 
 @pytest.fixture
 async def client(solana_config):
@@ -19,6 +21,7 @@ async def client(solana_config):
     await client.connect()
     yield client
     await client.disconnect()
+
 
 @pytest.mark.asyncio
 class TestSolanaClient:
@@ -36,7 +39,7 @@ class TestSolanaClient:
             "root_hash": "test_root_hash_solana",
             "entry_count": 5,
             "timestamp": 1234567890,
-            "entries_hashes": ["hash1", "hash2"]
+            "entries_hashes": ["hash1", "hash2"],
         }
 
         signature = await client.submit_audit_batch(batch_data)

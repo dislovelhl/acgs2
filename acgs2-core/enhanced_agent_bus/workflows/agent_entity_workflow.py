@@ -15,7 +15,6 @@ from enum import Enum
 from typing import Any, Dict, List, Optional
 
 from .workflow_base import (
-    Activity,
     WorkflowContext,
     WorkflowDefinition,
     query,

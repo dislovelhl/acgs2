@@ -37,6 +37,7 @@ logger = logging.getLogger(__name__)
 
 class ApprovalStatus(Enum):
     """Status of an approval request."""
+
     PENDING = "pending"
     APPROVED = "approved"
     REJECTED = "rejected"
@@ -47,6 +48,7 @@ class ApprovalStatus(Enum):
 
 class ApproverRole(Enum):
     """Roles that can approve requests."""
+
     SECURITY_TEAM = "security_team"
     COMPLIANCE_TEAM = "compliance_team"
     PLATFORM_ADMIN = "platform_admin"
@@ -58,6 +60,7 @@ class ApproverRole(Enum):
 
 class EscalationLevel(Enum):
     """Escalation levels for overdue approvals."""
+
     LEVEL_1 = 1  # Initial notification
     LEVEL_2 = 2  # First escalation
     LEVEL_3 = 3  # Critical escalation
@@ -67,6 +70,7 @@ class EscalationLevel(Enum):
 @dataclass
 class Approver:
     """Represents an individual approver."""
+
     id: str
     name: str
     email: str
@@ -83,6 +87,7 @@ class Approver:
 @dataclass
 class ApprovalDecision:
     """Record of a single approver's decision."""
+
     approver_id: str
     approver_name: str
     decision: ApprovalStatus
@@ -97,13 +102,14 @@ class ApprovalDecision:
             "decision": self.decision.value,
             "reasoning": self.reasoning,
             "timestamp": self.timestamp.isoformat(),
-            "metadata": self.metadata
+            "metadata": self.metadata,
         }
 
 
 @dataclass
 class ApprovalPolicy:
     """Defines approval requirements for a type of request."""
+
     name: str
     required_roles: List[ApproverRole]
     min_approvers: int = 1
@@ -116,10 +122,7 @@ class ApprovalPolicy:
     risk_threshold: float = 0.5
 
     def validate_approvers(
-        self,
-        decisions: List[ApprovalDecision],
-        approvers: Dict[str, Approver],
-        requester_id: str
+        self, decisions: List[ApprovalDecision], approvers: Dict[str, Approver], requester_id: str
     ) -> tuple[bool, str]:
         """
         Validate if approval requirements are met.
@@ -160,7 +163,10 @@ class ApprovalPolicy:
                     break
 
             if not has_required_role and self.required_roles:
-                return False, f"No approver with required role: {[r.value for r in self.required_roles]}"
+                return (
+                    False,
+                    f"No approver with required role: {[r.value for r in self.required_roles]}",
+                )
 
         return True, "All requirements met"
 
@@ -168,6 +174,7 @@ class ApprovalPolicy:
 @dataclass
 class ApprovalRequest:
     """A request requiring multi-approver workflow."""
+
     id: str
     request_type: str
     requester_id: str
@@ -195,15 +202,18 @@ class ApprovalRequest:
 
     def compute_hash(self) -> str:
         """Compute unique hash for audit purposes."""
-        content = json.dumps({
-            "id": self.id,
-            "request_type": self.request_type,
-            "requester_id": self.requester_id,
-            "title": self.title,
-            "risk_score": self.risk_score,
-            "created_at": self.created_at.isoformat(),
-            "constitutional_hash": self.constitutional_hash
-        }, sort_keys=True)
+        content = json.dumps(
+            {
+                "id": self.id,
+                "request_type": self.request_type,
+                "requester_id": self.requester_id,
+                "title": self.title,
+                "risk_score": self.risk_score,
+                "created_at": self.created_at.isoformat(),
+                "constitutional_hash": self.constitutional_hash,
+            },
+            sort_keys=True,
+        )
         return hashlib.sha256(content.encode()).hexdigest()[:16]
 
     def to_dict(self) -> Dict[str, Any]:
@@ -223,7 +233,7 @@ class ApprovalRequest:
             "updated_at": self.updated_at.isoformat(),
             "deadline": self.deadline.isoformat() if self.deadline else None,
             "constitutional_hash": self.constitutional_hash,
-            "request_hash": self.compute_hash()
+            "request_hash": self.compute_hash(),
         }
 
 
@@ -232,25 +242,19 @@ class NotificationChannel(ABC):
 
     @abstractmethod
     async def send_approval_request(
-        self,
-        request: ApprovalRequest,
-        approvers: List[Approver]
+        self, request: ApprovalRequest, approvers: List[Approver]
     ) -> bool:
         pass
 
     @abstractmethod
     async def send_decision_notification(
-        self,
-        request: ApprovalRequest,
-        decision: ApprovalDecision
+        self, request: ApprovalRequest, decision: ApprovalDecision
     ) -> bool:
         pass
 
     @abstractmethod
     async def send_escalation_notification(
-        self,
-        request: ApprovalRequest,
-        escalation_level: EscalationLevel
+        self, request: ApprovalRequest, escalation_level: EscalationLevel
     ) -> bool:
         pass
 
@@ -263,14 +267,10 @@ class SlackNotificationChannel(NotificationChannel):
         self.bot_token = bot_token or os.environ.get("SLACK_BOT_TOKEN")
 
     async def send_approval_request(
-        self,
-        request: ApprovalRequest,
-        approvers: List[Approver]
+        self, request: ApprovalRequest, approvers: List[Approver]
     ) -> bool:
         risk_emoji = self._get_risk_emoji(request.risk_score)
-        approver_mentions = " ".join(
-            f"<@{a.slack_id}>" for a in approvers if a.slack_id
-        )
+        approver_mentions = " ".join(f"<@{a.slack_id}>" for a in approvers if a.slack_id)
 
         payload = {
             "blocks": [
@@ -278,8 +278,8 @@ class SlackNotificationChannel(NotificationChannel):
                     "type": "header",
                     "text": {
                         "type": "plain_text",
-                        "text": f"{risk_emoji} Approval Required: {request.title}"
-                    }
+                        "text": f"{risk_emoji} Approval Required: {request.title}",
+                    },
                 },
                 {
                     "type": "section",
@@ -287,22 +287,25 @@ class SlackNotificationChannel(NotificationChannel):
                         {"type": "mrkdwn", "text": f"*Requester:*\n{request.requester_name}"},
                         {"type": "mrkdwn", "text": f"*Risk Score:*\n{request.risk_score:.2f}"},
                         {"type": "mrkdwn", "text": f"*Type:*\n{request.request_type}"},
-                        {"type": "mrkdwn", "text": f"*Deadline:*\n{request.deadline.strftime('%Y-%m-%d %H:%M UTC') if request.deadline else 'N/A'}"}
-                    ]
+                        {
+                            "type": "mrkdwn",
+                            "text": f"*Deadline:*\n{request.deadline.strftime('%Y-%m-%d %H:%M UTC') if request.deadline else 'N/A'}",
+                        },
+                    ],
                 },
                 {
                     "type": "section",
                     "text": {
                         "type": "mrkdwn",
-                        "text": f"*Description:*\n{request.description[:500]}"
-                    }
+                        "text": f"*Description:*\n{request.description[:500]}",
+                    },
                 },
                 {
                     "type": "section",
                     "text": {
                         "type": "mrkdwn",
-                        "text": f"*Approvers Needed:*\n{approver_mentions or 'See policy requirements'}"
-                    }
+                        "text": f"*Approvers Needed:*\n{approver_mentions or 'See policy requirements'}",
+                    },
                 },
                 {
                     "type": "actions",
@@ -311,30 +314,30 @@ class SlackNotificationChannel(NotificationChannel):
                             "type": "button",
                             "text": {"type": "plain_text", "text": "Approve"},
                             "style": "primary",
-                            "action_id": f"approve_{request.id}"
+                            "action_id": f"approve_{request.id}",
                         },
                         {
                             "type": "button",
                             "text": {"type": "plain_text", "text": "Reject"},
                             "style": "danger",
-                            "action_id": f"reject_{request.id}"
+                            "action_id": f"reject_{request.id}",
                         },
                         {
                             "type": "button",
                             "text": {"type": "plain_text", "text": "View Details"},
-                            "action_id": f"details_{request.id}"
-                        }
-                    ]
+                            "action_id": f"details_{request.id}",
+                        },
+                    ],
                 },
                 {
                     "type": "context",
                     "elements": [
                         {
                             "type": "mrkdwn",
-                            "text": f"Request ID: `{request.id}` | Constitutional Hash: `{request.constitutional_hash}`"
+                            "text": f"Request ID: `{request.id}` | Constitutional Hash: `{request.constitutional_hash}`",
                         }
-                    ]
-                }
+                    ],
+                },
             ]
         }
 
@@ -343,9 +346,7 @@ class SlackNotificationChannel(NotificationChannel):
         return True
 
     async def send_decision_notification(
-        self,
-        request: ApprovalRequest,
-        decision: ApprovalDecision
+        self, request: ApprovalRequest, decision: ApprovalDecision
     ) -> bool:
         emoji = "\u2705" if decision.decision == ApprovalStatus.APPROVED else "\u274c"
         payload = {
@@ -353,25 +354,21 @@ class SlackNotificationChannel(NotificationChannel):
             "attachments": [
                 {
                     "color": "good" if decision.decision == ApprovalStatus.APPROVED else "danger",
-                    "fields": [
-                        {"title": "Reasoning", "value": decision.reasoning, "short": False}
-                    ]
+                    "fields": [{"title": "Reasoning", "value": decision.reasoning, "short": False}],
                 }
-            ]
+            ],
         }
         logger.info(f"Slack decision notification: {json.dumps(payload, indent=2)}")
         return True
 
     async def send_escalation_notification(
-        self,
-        request: ApprovalRequest,
-        escalation_level: EscalationLevel
+        self, request: ApprovalRequest, escalation_level: EscalationLevel
     ) -> bool:
         level_config = {
             EscalationLevel.LEVEL_1: ("Reminder", "\u23f0"),
             EscalationLevel.LEVEL_2: ("Escalation", "\u26a0\ufe0f"),
             EscalationLevel.LEVEL_3: ("Critical", "\ud83d\udea8"),
-            EscalationLevel.EXECUTIVE: ("Executive Override Required", "\ud83d\udd34")
+            EscalationLevel.EXECUTIVE: ("Executive Override Required", "\ud83d\udd34"),
         }
         title, emoji = level_config.get(escalation_level, ("Notification", "\ud83d\udce2"))
 
@@ -382,10 +379,14 @@ class SlackNotificationChannel(NotificationChannel):
                     "color": "warning",
                     "fields": [
                         {"title": "Request", "value": request.title, "short": True},
-                        {"title": "Escalation Level", "value": str(escalation_level.value), "short": True}
-                    ]
+                        {
+                            "title": "Escalation Level",
+                            "value": str(escalation_level.value),
+                            "short": True,
+                        },
+                    ],
                 }
-            ]
+            ],
         }
         logger.info(f"Slack escalation notification: {json.dumps(payload, indent=2)}")
         return True
@@ -408,9 +409,7 @@ class TeamsNotificationChannel(NotificationChannel):
         self.webhook_url = webhook_url or os.environ.get("TEAMS_WEBHOOK_URL")
 
     async def send_approval_request(
-        self,
-        request: ApprovalRequest,
-        approvers: List[Approver]
+        self, request: ApprovalRequest, approvers: List[Approver]
     ) -> bool:
         card = {
             "@type": "MessageCard",
@@ -424,9 +423,9 @@ class TeamsNotificationChannel(NotificationChannel):
                         {"name": "Requester", "value": request.requester_name},
                         {"name": "Risk Score", "value": f"{request.risk_score:.2f}"},
                         {"name": "Type", "value": request.request_type},
-                        {"name": "Request ID", "value": request.id}
+                        {"name": "Request ID", "value": request.id},
                     ],
-                    "text": request.description[:500]
+                    "text": request.description[:500],
                 }
             ],
             "potentialAction": [
@@ -434,42 +433,34 @@ class TeamsNotificationChannel(NotificationChannel):
                     "@type": "ActionCard",
                     "name": "Respond",
                     "inputs": [
-                        {
-                            "@type": "TextInput",
-                            "id": "reasoning",
-                            "title": "Reasoning (required)"
-                        }
+                        {"@type": "TextInput", "id": "reasoning", "title": "Reasoning (required)"}
                     ],
                     "actions": [
                         {
                             "@type": "HttpPOST",
                             "name": "Approve",
-                            "target": f"{{{{ACGS_API_URL}}}}/approvals/{request.id}/approve"
+                            "target": f"{{{{ACGS_API_URL}}}}/approvals/{request.id}/approve",
                         },
                         {
                             "@type": "HttpPOST",
                             "name": "Reject",
-                            "target": f"{{{{ACGS_API_URL}}}}/approvals/{request.id}/reject"
-                        }
-                    ]
+                            "target": f"{{{{ACGS_API_URL}}}}/approvals/{request.id}/reject",
+                        },
+                    ],
                 }
-            ]
+            ],
         }
         logger.info(f"Teams notification for request {request.id}: {json.dumps(card, indent=2)}")
         return True
 
     async def send_decision_notification(
-        self,
-        request: ApprovalRequest,
-        decision: ApprovalDecision
+        self, request: ApprovalRequest, decision: ApprovalDecision
     ) -> bool:
         logger.info(f"Teams decision notification for {request.id}: {decision.decision.value}")
         return True
 
     async def send_escalation_notification(
-        self,
-        request: ApprovalRequest,
-        escalation_level: EscalationLevel
+        self, request: ApprovalRequest, escalation_level: EscalationLevel
     ) -> bool:
         logger.info(f"Teams escalation for {request.id}: level {escalation_level.value}")
         return True
@@ -500,7 +491,7 @@ class MultiApproverWorkflowEngine:
     def __init__(
         self,
         notification_channels: Optional[List[NotificationChannel]] = None,
-        audit_callback: Optional[Callable[[ApprovalRequest, ApprovalDecision], None]] = None
+        audit_callback: Optional[Callable[[ApprovalRequest, ApprovalDecision], None]] = None,
     ):
         self.notification_channels = notification_channels or [SlackNotificationChannel()]
         self.audit_callback = audit_callback
@@ -527,7 +518,7 @@ class MultiApproverWorkflowEngine:
                 require_all_roles=True,
                 timeout_hours=24.0,
                 escalation_hours=4.0,
-                risk_threshold=0.8
+                risk_threshold=0.8,
             ),
             "policy_change": ApprovalPolicy(
                 name="Policy Change",
@@ -536,20 +527,20 @@ class MultiApproverWorkflowEngine:
                 require_all_roles=True,
                 timeout_hours=48.0,
                 escalation_hours=8.0,
-                risk_threshold=0.5
+                risk_threshold=0.5,
             ),
             "critical_deployment": ApprovalPolicy(
                 name="Critical Deployment",
                 required_roles=[
                     ApproverRole.ENGINEERING_LEAD,
                     ApproverRole.SECURITY_TEAM,
-                    ApproverRole.ON_CALL
+                    ApproverRole.ON_CALL,
                 ],
                 min_approvers=3,
                 require_all_roles=True,
                 timeout_hours=4.0,
                 escalation_hours=1.0,
-                risk_threshold=0.9
+                risk_threshold=0.9,
             ),
             "standard_request": ApprovalPolicy(
                 name="Standard Request",
@@ -559,8 +550,8 @@ class MultiApproverWorkflowEngine:
                 timeout_hours=72.0,
                 escalation_hours=24.0,
                 auto_approve_low_risk=True,
-                risk_threshold=0.3
-            )
+                risk_threshold=0.3,
+            ),
         }
 
     async def start(self):
@@ -601,7 +592,7 @@ class MultiApproverWorkflowEngine:
         risk_score: float,
         payload: Dict[str, Any],
         policy_id: Optional[str] = None,
-        metadata: Optional[Dict[str, Any]] = None
+        metadata: Optional[Dict[str, Any]] = None,
     ) -> ApprovalRequest:
         """
         Create a new approval request.
@@ -644,7 +635,7 @@ class MultiApproverWorkflowEngine:
                 policy=policy,
                 payload=payload,
                 status=ApprovalStatus.APPROVED,
-                metadata=metadata or {}
+                metadata=metadata or {},
             )
             self._requests[request.id] = request
             return request
@@ -661,7 +652,7 @@ class MultiApproverWorkflowEngine:
             risk_score=risk_score,
             policy=policy,
             payload=payload,
-            metadata=metadata or {}
+            metadata=metadata or {},
         )
 
         self._requests[request.id] = request
@@ -683,7 +674,7 @@ class MultiApproverWorkflowEngine:
         approver_id: str,
         decision: ApprovalStatus,
         reasoning: str,
-        metadata: Optional[Dict[str, Any]] = None
+        metadata: Optional[Dict[str, Any]] = None,
     ) -> tuple[bool, str]:
         """
         Submit an approval decision.
@@ -716,7 +707,7 @@ class MultiApproverWorkflowEngine:
             approver_name=approver.name,
             decision=decision,
             reasoning=reasoning,
-            metadata=metadata or {}
+            metadata=metadata or {},
         )
         request.decisions.append(approval_decision)
         request.updated_at = datetime.now(timezone.utc)
@@ -744,9 +735,7 @@ class MultiApproverWorkflowEngine:
 
         # Check if approval requirements are met
         is_valid, reason = request.policy.validate_approvers(
-            request.decisions,
-            self._approvers,
-            request.requester_id
+            request.decisions, self._approvers, request.requester_id
         )
 
         if is_valid:
@@ -775,15 +764,10 @@ class MultiApproverWorkflowEngine:
         return self._requests.get(request_id)
 
     def get_pending_requests(
-        self,
-        tenant_id: Optional[str] = None,
-        approver_id: Optional[str] = None
+        self, tenant_id: Optional[str] = None, approver_id: Optional[str] = None
     ) -> List[ApprovalRequest]:
         """Get pending requests, optionally filtered."""
-        requests = [
-            r for r in self._requests.values()
-            if r.status == ApprovalStatus.PENDING
-        ]
+        requests = [r for r in self._requests.values() if r.status == ApprovalStatus.PENDING]
 
         if tenant_id:
             requests = [r for r in requests if r.tenant_id == tenant_id]
@@ -792,7 +776,8 @@ class MultiApproverWorkflowEngine:
             approver = self._approvers.get(approver_id)
             if approver:
                 requests = [
-                    r for r in requests
+                    r
+                    for r in requests
                     if any(role in r.policy.required_roles for role in approver.roles)
                     and not any(d.approver_id == approver_id for d in r.decisions)
                 ]
@@ -804,16 +789,16 @@ class MultiApproverWorkflowEngine:
         total = len(self._requests)
         by_status = {}
         for status in ApprovalStatus:
-            by_status[status.value] = len([
-                r for r in self._requests.values() if r.status == status
-            ])
+            by_status[status.value] = len(
+                [r for r in self._requests.values() if r.status == status]
+            )
 
         return {
             "total_requests": total,
             "by_status": by_status,
             "registered_approvers": len(self._approvers),
             "registered_policies": len(self._policies),
-            "constitutional_hash": CONSTITUTIONAL_HASH
+            "constitutional_hash": CONSTITUTIONAL_HASH,
         }
 
     def _select_policy_for_risk(self, risk_score: float) -> str:
@@ -827,14 +812,11 @@ class MultiApproverWorkflowEngine:
         else:
             return "standard_request"
 
-    def _get_eligible_approvers(
-        self,
-        policy: ApprovalPolicy,
-        tenant_id: str
-    ) -> List[Approver]:
+    def _get_eligible_approvers(self, policy: ApprovalPolicy, tenant_id: str) -> List[Approver]:
         """Get approvers eligible for a policy."""
         return [
-            a for a in self._approvers.values()
+            a
+            for a in self._approvers.values()
             if a.is_active and any(r in policy.required_roles for r in a.roles)
         ]
 
@@ -894,13 +876,12 @@ def get_workflow_engine() -> Optional[MultiApproverWorkflowEngine]:
 
 async def initialize_workflow_engine(
     notification_channels: Optional[List[NotificationChannel]] = None,
-    audit_callback: Optional[Callable[[ApprovalRequest, ApprovalDecision], None]] = None
+    audit_callback: Optional[Callable[[ApprovalRequest, ApprovalDecision], None]] = None,
 ) -> MultiApproverWorkflowEngine:
     """Initialize the global workflow engine."""
     global _workflow_engine
     _workflow_engine = MultiApproverWorkflowEngine(
-        notification_channels=notification_channels,
-        audit_callback=audit_callback
+        notification_channels=notification_channels, audit_callback=audit_callback
     )
     await _workflow_engine.start()
     return _workflow_engine
@@ -929,5 +910,5 @@ __all__ = [
     "MultiApproverWorkflowEngine",
     "get_workflow_engine",
     "initialize_workflow_engine",
-    "shutdown_workflow_engine"
+    "shutdown_workflow_engine",
 ]

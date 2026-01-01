@@ -86,7 +86,7 @@ class TestChaosScenario:
 
         assert scenario.chaos_type == ChaosType.ERROR
         assert scenario.error_rate == 0.5
-        assert scenario.error_type == ValueError
+        assert scenario.error_type is ValueError
         assert scenario.duration_s == 10.0
 
     def test_create_circuit_breaker_scenario(self):
@@ -292,7 +292,7 @@ class TestChaosEngine:
         assert scenario.active
         assert scenario.chaos_type == ChaosType.ERROR
         assert scenario.error_rate == 0.5
-        assert scenario.error_type == RuntimeError
+        assert scenario.error_type is RuntimeError
 
     @pytest.mark.asyncio
     async def test_force_circuit_open(self, engine):
@@ -523,7 +523,7 @@ class TestErrorInjection:
         )
 
         error_type = engine.should_inject_error("test_target")
-        assert error_type == RuntimeError
+        assert error_type is RuntimeError
 
         await engine.deactivate_scenario(scenario.name)
 
@@ -539,7 +539,7 @@ class TestErrorInjection:
         )
 
         # Should inject for allowed target
-        assert engine.should_inject_error("allowed_target") == ValueError
+        assert engine.should_inject_error("allowed_target") is ValueError
 
         # Should NOT inject for other targets
         assert engine.should_inject_error("other_target") is None

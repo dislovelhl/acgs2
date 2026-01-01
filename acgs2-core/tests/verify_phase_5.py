@@ -1,3 +1,4 @@
+import logging
 """
 ACGS-2 Phase 5 Verification Script
 Verifies:
@@ -20,7 +21,7 @@ from services.audit_service.core.audit_ledger import AuditLedger
 
 
 async def verify_phase_5():
-    print("🚀 Starting Phase 5 Verification...")
+    logging.info("🚀 Starting Phase 5 Verification...")
 
     # 1. Setup Bus with Deliberation
     bus = EnhancedAgentBus(
@@ -46,7 +47,7 @@ async def verify_phase_5():
     await bus.register_agent("agent-beta", tenant_id="tenant-1")
 
     # 3. Test Deliberation Diversion (High Impact)
-    print("\n--- Testing Deliberation Layer ---")
+    logging.info("\n--- Testing Deliberation Layer ---")
     # A message that should score high (Risk: high-value-transfer)
     msg_high_impact = AgentMessage(
         from_agent="agent-alpha",
@@ -67,20 +68,20 @@ async def verify_phase_5():
     # catches 'high-value-transfer' which I added patterns for earlier.
 
     result = await bus.send_message(msg_high_impact)
-    print(f"Validation Result: {result.is_valid}")
-    print(f"Impact Score: {result.metadata.get('impact_score', 0)}")
+    logging.info(f"Validation Result: {result.is_valid}")
+    logging.info(f"Impact Score: {result.metadata.get('impact_score', 0)
 
     # Check deliberation queue
     pending_tasks = bus._deliberation_queue.get_pending_tasks()
-    print(f"Pending Deliberation Tasks: {len(pending_tasks)}")
+    logging.info(f"Pending Deliberation Tasks: {len(pending_tasks)
 
     if len(pending_tasks) > 0:
-        print("✅ SUCCESS: High-impact message diverted to Deliberation Queue.")
+        logging.info("✅ SUCCESS: High-impact message diverted to Deliberation Queue.")
     else:
-        print("⚠️ WARNING: Message not diverted. check impact scoring rules.")
+        logging.warning("⚠️ WARNING: Message not diverted. check impact scoring rules.")
 
     # 4. Test Auditing & Anchoring
-    print("\n--- Testing Immutable Auditing ---")
+    logging.info("\n--- Testing Immutable Auditing ---")
     ledger = AuditLedger(batch_size=2)  # Small batch for testing
 
     # Add two entries
@@ -96,15 +97,15 @@ async def verify_phase_5():
 
     anchor = BlockchainAnchor()
     latest_block = anchor.get_latest_block()
-    print(f"Latest Anchored Block: {latest_block['index']} | Root: {latest_block['root_hash']}")
+    logging.info(f"Latest Anchored Block: {latest_block['index']} | Root: {latest_block['root_hash']}")
 
     if latest_block["index"] > 0:
-        print("✅ SUCCESS: Merkle root anchored to Blockchain Mock.")
+        logging.info("✅ SUCCESS: Merkle root anchored to Blockchain Mock.")
     else:
-        print("❌ FAILURE: No roots anchored.")
+        logging.error("❌ FAILURE: No roots anchored.")
 
     await bus.stop()
-    print("\n🏁 Phase 5 Verification Complete.")
+    logging.info("\n🏁 Phase 5 Verification Complete.")
 
 
 if __name__ == "__main__":

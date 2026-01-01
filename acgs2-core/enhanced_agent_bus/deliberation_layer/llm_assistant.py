@@ -1,21 +1,33 @@
-from datetime import datetime, timezone
 import logging
 from typing import Any, Dict, List, Optional
+
 try:
+    from ..models import CONSTITUTIONAL_HASH, AgentMessage, MessageType, get_enum_value
     from ..utils import get_iso_timestamp
-    from ..models import AgentMessage, get_enum_value, MessageType, CONSTITUTIONAL_HASH
 except ImportError:
     try:
+        from models import (  # type: ignore
+            CONSTITUTIONAL_HASH,
+            AgentMessage,
+            MessageType,
+            get_enum_value,
+        )
         from utils import get_iso_timestamp  # type: ignore
-        from models import AgentMessage, get_enum_value, MessageType, CONSTITUTIONAL_HASH  # type: ignore
     except ImportError:
-        import sys, os
+        import os
+        import sys
+
         d = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        if d not in sys.path: sys.path.append(d)
+        if d not in sys.path:
+            sys.path.append(d)
+        from models import (  # type: ignore
+            CONSTITUTIONAL_HASH,
+            AgentMessage,
+        )
         from utils import get_iso_timestamp  # type: ignore
-        from models import AgentMessage, get_enum_value, MessageType, CONSTITUTIONAL_HASH  # type: ignore
 
 logger = logging.getLogger(__name__)
+
 
 # Mock classes for test friendliness when LangChain is missing
 class ChatPromptTemplate:
@@ -25,29 +37,45 @@ class ChatPromptTemplate:
         mock.format_messages.return_value = []
         return mock
 
-class SystemMessagePromptTemplate: pass
-class HumanMessagePromptTemplate: pass
+
+class SystemMessagePromptTemplate:
+    pass
+
+
+class HumanMessagePromptTemplate:
+    pass
+
+
 class JsonOutputParser:
-    def parse(self, text: str): return {}
+    def parse(self, text: str):
+        return {}
+
+
 class ChatOpenAI:
-    def __init__(self, *args, **kwargs): pass
+    def __init__(self, *args, **kwargs):
+        pass
+
     async def ainvoke(self, *args, **kwargs):
         mock = MagicMock()
         mock.content = "{}"
         return mock
 
+
 try:
     from langchain_core.output_parsers import JsonOutputParser
     from langchain_core.prompts import (
         ChatPromptTemplate,
+        HumanMessagePromptTemplate,
         SystemMessagePromptTemplate,
-        HumanMessagePromptTemplate
     )
     from langchain_openai import ChatOpenAI
+
     LANGCHAIN_AVAILABLE = True
 except ImportError:
     from unittest.mock import MagicMock
+
     LANGCHAIN_AVAILABLE = False
+
 
 class LLMAssistant:
     """LLM-powered assistant for deliberation decision support."""
@@ -56,21 +84,29 @@ class LLMAssistant:
         self.model_name = model_name
         self.llm = None
         if LANGCHAIN_AVAILABLE:
-            try: self.llm = ChatOpenAI(model_name=model_name, temperature=0.1, openai_api_key=api_key)
-            except Exception as e: logger.warning(f"LLM init failed: {e}")
+            try:
+                self.llm = ChatOpenAI(
+                    model_name=model_name, temperature=0.1, openai_api_key=api_key
+                )
+            except Exception as e:
+                logger.warning(f"LLM init failed: {e}")
 
     async def _invoke_llm(self, prompt_tmpl: str, **kwargs) -> Dict[str, Any]:
-        if not self.llm: return {}
+        if not self.llm:
+            return {}
         try:
             prompt = ChatPromptTemplate.from_template(prompt_tmpl)
-            resp = await self.llm.ainvoke(prompt.format_messages(**kwargs, constitutional_hash=CONSTITUTIONAL_HASH))
+            resp = await self.llm.ainvoke(
+                prompt.format_messages(**kwargs, constitutional_hash=CONSTITUTIONAL_HASH)
+            )
             return JsonOutputParser().parse(resp.content)
         except Exception as e:
             logger.error(f"LLM invoke failed: {e}")
             return {}
 
     async def analyze_message_impact(self, message: AgentMessage) -> Dict[str, Any]:
-        if not self.llm: return self._fallback_analysis(message)
+        if not self.llm:
+            return self._fallback_analysis(message)
         template = """
         CONSTITUTIONAL CONSTRAINT: All analysis must validate against hash {constitutional_hash}
 
@@ -89,14 +125,31 @@ class LLMAssistant:
             from_agent=message.from_agent,
             to_agent=message.to_agent,
             content=str(message.content)[:500],
-            message_type=message.message_type.value if hasattr(message.message_type, "value") else message.message_type
+            message_type=(
+                message.message_type.value
+                if hasattr(message.message_type, "value")
+                else message.message_type
+            ),
         )
-        if not res: return self._fallback_analysis(message)
-        res.update({"analyzed_by": "llm_analyzer", "timestamp": get_iso_timestamp(), "message_id": message.message_id})
+        if not res:
+            return self._fallback_analysis(message)
+        res.update(
+            {
+                "analyzed_by": "llm_analyzer",
+                "timestamp": get_iso_timestamp(),
+                "message_id": message.message_id,
+            }
+        )
         return res
 
-    async def generate_decision_reasoning(self, message: AgentMessage, votes: List[Dict[str, Any]], human_decision: Optional[str] = None) -> Dict[str, Any]:
-        if not self.llm: return self._fallback_reasoning(message, votes, human_decision)
+    async def generate_decision_reasoning(
+        self,
+        message: AgentMessage,
+        votes: List[Dict[str, Any]],
+        human_decision: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        if not self.llm:
+            return self._fallback_reasoning(message, votes, human_decision)
         template = """
         **Action Under Review:** {message_type}
 
@@ -111,13 +164,18 @@ class LLMAssistant:
         """
         res = await self._invoke_llm(
             template,
-            message_type=message.message_type.value if hasattr(message.message_type, "value") else message.message_type,
+            message_type=(
+                message.message_type.value
+                if hasattr(message.message_type, "value")
+                else message.message_type
+            ),
             message_id=message.message_id,
             recipient=message.to_agent,
             votes=str(votes)[:500],
-            human_decision=human_decision or "None"
+            human_decision=human_decision or "None",
         )
-        if not res: return self._fallback_reasoning(message, votes, human_decision)
+        if not res:
+            return self._fallback_reasoning(message, votes, human_decision)
         res.update({"generated_by": "llm_reasoner", "timestamp": get_iso_timestamp()})
         return res
 
@@ -129,7 +187,7 @@ class LLMAssistant:
             return {
                 "patterns": [],
                 "threshold_recommendations": "Maintain current threshold",
-                "risk_trends": "stable"
+                "risk_trends": "stable",
             }
 
         approved = sum(1 for h in history if h.get("outcome") == "approved")
@@ -137,37 +195,58 @@ class LLMAssistant:
         rate = approved / total if total > 0 else 0
 
         rec = "Maintain current threshold"
-        if rate > 0.8: rec = "Systematic high approval observed. Consider lowering deliberation threshold for efficiency."
-        elif rate < 0.4: rec = "High rejection rate observed. Consider raising deliberation threshold or updating policies."
+        if rate > 0.8:
+            rec = "Systematic high approval observed. Consider lowering deliberation threshold for efficiency."
+        elif rate < 0.4:
+            rec = "High rejection rate observed. Consider raising deliberation threshold or updating policies."
 
         return {
             "patterns": [f"Approval rate: {rate:.1%}"],
             "threshold_recommendations": rec,
-            "risk_trends": "improving" if rate > 0.6 else "stable"
+            "risk_trends": "improving" if rate > 0.6 else "stable",
         }
 
     def _fallback_analysis(self, message: AgentMessage) -> Dict[str, Any]:
         text = str(message.content).lower()
         risk = "low"
-        if "breach" in text: risk = "critical"
-        elif any(k in text for k in ["emergency", "critical", "security", "violation"]): risk = "high"
+        if "breach" in text:
+            risk = "critical"
+        elif any(k in text for k in ["emergency", "critical", "security", "violation"]):
+            risk = "high"
 
         rev = risk in ["critical", "high"]
         return {
-            "risk_level": risk, "requires_human_review": rev, "recommended_decision": "review" if rev else "approve",
-            "confidence": 0.5, "reasoning": ["Fallback rule-based analysis"], "impact_areas": {"security": "Medium" if "security" in text else "Low"},
-            "mitigations": ["Monitor execution"], "analyzed_by": "enhanced_fallback_analyzer", "timestamp": get_iso_timestamp(), "constitutional_hash": CONSTITUTIONAL_HASH
+            "risk_level": risk,
+            "requires_human_review": rev,
+            "recommended_decision": "review" if rev else "approve",
+            "confidence": 0.5,
+            "reasoning": ["Fallback rule-based analysis"],
+            "impact_areas": {"security": "Medium" if "security" in text else "Low"},
+            "mitigations": ["Monitor execution"],
+            "analyzed_by": "enhanced_fallback_analyzer",
+            "timestamp": get_iso_timestamp(),
+            "constitutional_hash": CONSTITUTIONAL_HASH,
         }
 
-    def _fallback_reasoning(self, message: AgentMessage, votes: List[Dict[str, Any]], human_decision: Optional[str]) -> Dict[str, Any]:
+    def _fallback_reasoning(
+        self, message: AgentMessage, votes: List[Dict[str, Any]], human_decision: Optional[str]
+    ) -> Dict[str, Any]:
         app = sum(1 for v in votes if str(v.get("vote")).lower() == "approve")
         total = len(votes)
         rate = app / total if total > 0 else 0
-        final = human_decision.lower() if human_decision else ("approve" if rate >= 0.6 else "review")
+        final = (
+            human_decision.lower() if human_decision else ("approve" if rate >= 0.6 else "review")
+        )
         return {
-            "process_summary": f"Fallback deliberation: {app}/{total} approved", "consensus_analysis": f"Strength: {rate:.1%}",
-            "final_recommendation": final, "reasoning": "Fallback vote synthesis", "concerns": [], "follow_up_actions": ["Monitor"],
-            "generated_by": "enhanced_fallback_reasoner", "timestamp": get_iso_timestamp(), "constitutional_hash": CONSTITUTIONAL_HASH
+            "process_summary": f"Fallback deliberation: {app}/{total} approved",
+            "consensus_analysis": f"Strength: {rate:.1%}",
+            "final_recommendation": final,
+            "reasoning": "Fallback vote synthesis",
+            "concerns": [],
+            "follow_up_actions": ["Monitor"],
+            "generated_by": "enhanced_fallback_reasoner",
+            "timestamp": get_iso_timestamp(),
+            "constitutional_hash": CONSTITUTIONAL_HASH,
         }
 
     def _extract_message_summary(self, message: AgentMessage) -> str:
@@ -179,7 +258,7 @@ class LLMAssistant:
             f"Type: {message.message_type.value}",
             f"From Agent: {message.from_agent}",
             f"To Agent: {message.to_agent}",
-            f"Content: {content_str}"
+            f"Content: {content_str}",
         ]
         if message.payload:
             payload_str = str(message.payload)
@@ -199,7 +278,7 @@ class LLMAssistant:
             f"Total votes: {total}",
             f"Approve: {approvals}",
             f"Reject: {rejections}",
-            "Sample reasoning:"
+            "Sample reasoning:",
         ]
         for v in votes[:3]:
             # Handle list or dict for votes
@@ -231,13 +310,28 @@ class LLMAssistant:
             f"Average impact score: {avg_impact:.2f}"
         )
 
+
 _llm_assistant = None
+
+
 def get_llm_assistant(**kwargs) -> LLMAssistant:
     global _llm_assistant
-    if not _llm_assistant: _llm_assistant = LLMAssistant(**kwargs)
+    if not _llm_assistant:
+        _llm_assistant = LLMAssistant(**kwargs)
     return _llm_assistant
+
+
 def reset_llm_assistant():
     global _llm_assistant
     _llm_assistant = None
 
-__all__ = ["LLMAssistant", "get_llm_assistant", "reset_llm_assistant", "ChatPromptTemplate", "SystemMessagePromptTemplate", "HumanMessagePromptTemplate", "JsonOutputParser"]
+
+__all__ = [
+    "LLMAssistant",
+    "get_llm_assistant",
+    "reset_llm_assistant",
+    "ChatPromptTemplate",
+    "SystemMessagePromptTemplate",
+    "HumanMessagePromptTemplate",
+    "JsonOutputParser",
+]

@@ -6,14 +6,13 @@ Tests for the main MCP Server implementation and lifecycle.
 Constitutional Hash: cdd01ef066bc6cf2
 """
 
+from unittest.mock import MagicMock
+
 import pytest
-import asyncio
-from unittest.mock import AsyncMock, MagicMock, patch
 
+from ..config import MCPConfig
+from ..protocol.types import MCPRequest
 from ..server import MCPServer, create_mcp_server
-from ..config import MCPConfig, TransportType
-from ..protocol.types import MCPRequest, MCPResponse
-
 
 CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
 

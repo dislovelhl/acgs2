@@ -4,8 +4,9 @@ Constitutional Hash: cdd01ef066bc6cf2
 """
 
 import re
-from typing import Any, Dict, List, Optional
 from datetime import datetime, timezone
+from typing import Any
+
 
 def redact_error_message(error: Exception) -> str:
     """Redact sensitive information from error messages (VULN-008)."""
@@ -20,22 +21,33 @@ def redact_error_message(error: Exception) -> str:
     redacted = re.sub(r"/(?:[a-zA-Z0-9._-]+/)+[a-zA-Z0-9._-]+", "[REDACTED_PATH]", redacted)
     return redacted
 
+
 def get_iso_timestamp() -> str:
     """Get current UTC timestamp in ISO format."""
     return datetime.now(timezone.utc).isoformat()
 
+
 class LRUCache:
     """Simple LRU cache for validation results."""
+
     def __init__(self, maxsize: int = 1000):
         from collections import OrderedDict
+
         self._cache = OrderedDict()
         self._maxsize = maxsize
+
     def get(self, key: Any) -> Any:
-        if key not in self._cache: return None
+        if key not in self._cache:
+            return None
         self._cache.move_to_end(key)
         return self._cache[key]
+
     def set(self, key: Any, value: Any) -> None:
-        if key in self._cache: self._cache.move_to_end(key)
+        if key in self._cache:
+            self._cache.move_to_end(key)
         self._cache[key] = value
-        if len(self._cache) > self._maxsize: self._cache.popitem(last=False)
-    def clear(self) -> None: self._cache.clear()
+        if len(self._cache) > self._maxsize:
+            self._cache.popitem(last=False)
+
+    def clear(self) -> None:
+        self._cache.clear()

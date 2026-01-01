@@ -6,22 +6,22 @@ Tests for MCP protocol types and handler.
 Constitutional Hash: cdd01ef066bc6cf2
 """
 
-import pytest
 from unittest.mock import AsyncMock
 
+import pytest
+
+from ..config import MCPConfig
+from ..protocol.handler import MCPHandler
 from ..protocol.types import (
-    MCPRequest,
-    MCPResponse,
     MCPError,
     MCPErrorCode,
-    ToolDefinition,
-    ToolInputSchema,
+    MCPRequest,
+    MCPResponse,
     ResourceDefinition,
     ServerCapabilities,
+    ToolDefinition,
+    ToolInputSchema,
 )
-from ..protocol.handler import MCPHandler
-from ..config import MCPConfig
-
 
 CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
 

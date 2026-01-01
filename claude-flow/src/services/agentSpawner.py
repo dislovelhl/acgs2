@@ -11,16 +11,14 @@ import asyncio
 import os
 
 # Add the ACGS-2 core to the path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../../acgs2-core'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../../../acgs2-core"))
 
 try:
     from enhanced_agent_bus import EnhancedAgentBus, CONSTITUTIONAL_HASH
 except ImportError as e:
-    print(json.dumps({
-        "success": False,
-        "error": f"Failed to import EnhancedAgentBus: {e}"
-    }))
+    print(json.dumps({"success": False, "error": f"Failed to import EnhancedAgentBus: {e}"}))
     sys.exit(1)
+
 
 async def spawn_agent(agent_name: str, agent_type: str, skills: list):
     """Spawn an agent using the EnhancedAgentBus"""
@@ -36,11 +34,16 @@ async def spawn_agent(agent_name: str, agent_type: str, skills: list):
 
         # Map agent types to capabilities
         base_capabilities = {
-            'coder': ['python', 'javascript', 'typescript', 'coding', 'development'],
-            'researcher': ['research', 'analysis', 'data-collection', 'synthesis'],
-            'analyst': ['data-analysis', 'reporting', 'insights', 'visualization'],
-            'tester': ['testing', 'qa', 'validation', 'automation'],
-            'coordinator': ['coordination', 'orchestration', 'workflow-management', 'task-distribution']
+            "coder": ["python", "javascript", "typescript", "coding", "development"],
+            "researcher": ["research", "analysis", "data-collection", "synthesis"],
+            "analyst": ["data-analysis", "reporting", "insights", "visualization"],
+            "tester": ["testing", "qa", "validation", "automation"],
+            "coordinator": [
+                "coordination",
+                "orchestration",
+                "workflow-management",
+                "task-distribution",
+            ],
         }
 
         # Combine base capabilities with provided skills
@@ -51,7 +54,7 @@ async def spawn_agent(agent_name: str, agent_type: str, skills: list):
             agent_id=agent_id,
             agent_type=agent_type,
             capabilities=capabilities,
-            tenant_id="default"  # TODO: Make configurable
+            tenant_id="default",  # TODO: Make configurable
         )
 
         # Stop the bus
@@ -62,27 +65,26 @@ async def spawn_agent(agent_name: str, agent_type: str, skills: list):
                 "success": True,
                 "agentId": agent_id,
                 "agentType": agent_type,
-                "capabilities": capabilities
+                "capabilities": capabilities,
             }
         else:
-            return {
-                "success": False,
-                "error": "Failed to register agent with bus"
-            }
+            return {"success": False, "error": "Failed to register agent with bus"}
 
     except Exception as e:
-        return {
-            "success": False,
-            "error": f"Exception during agent spawning: {str(e)}"
-        }
+        return {"success": False, "error": f"Exception during agent spawning: {str(e)}"}
+
 
 def main():
     """Main entry point for the script"""
     if len(sys.argv) < 4:
-        print(json.dumps({
-            "success": False,
-            "error": "Usage: python agentSpawner.py <agent_name> <agent_type> <skills_json>"
-        }))
+        print(
+            json.dumps(
+                {
+                    "success": False,
+                    "error": "Usage: python agentSpawner.py <agent_name> <agent_type> <skills_json>",
+                }
+            )
+        )
         sys.exit(1)
 
     agent_name = sys.argv[1]
@@ -96,6 +98,7 @@ def main():
     # Run the async function
     result = asyncio.run(spawn_agent(agent_name, agent_type, skills))
     print(json.dumps(result))
+
 
 if __name__ == "__main__":
     main()

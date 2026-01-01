@@ -153,7 +153,7 @@ class TestModelDefaultValues:
         assert msg.conversation_id is not None
 
 
-class TestMetricsCollectorProtocol:
+class TestMetricsCollectorProtocolAdditional:
     """Tests for MetricsCollector protocol additional methods."""
 
     def test_has_record_agent_registered(self):
@@ -165,7 +165,7 @@ class TestMetricsCollectorProtocol:
         assert hasattr(MetricsCollector, "record_agent_unregistered")
 
 
-class TestProcessingStrategyProtocol:
+class TestProcessingStrategyProtocolAdditional:
     """Tests for ProcessingStrategy protocol additional methods."""
 
     def test_has_is_available_method(self):

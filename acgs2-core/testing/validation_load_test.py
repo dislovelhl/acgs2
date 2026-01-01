@@ -1,3 +1,4 @@
+import logging
 #!/usr/bin/env python3
 """
 ACGS-2 Performance Validation Load Test
@@ -113,11 +114,11 @@ class MessageProcessingBenchmark:
 
     async def run(self, iterations: int = 1000) -> PerformanceResult:
         """Run message processing benchmark."""
-        print(f"\n{'='*60}")
-        print("Message Processing Performance Benchmark")
-        print(f"Iterations: {iterations}")
-        print(f"Constitutional Hash: {CONSTITUTIONAL_HASH}")
-        print(f"{'='*60}\n")
+        logging.info(f"\n{'='*60}")
+        logging.info("Message Processing Performance Benchmark")
+        logging.info(f"Iterations: {iterations}")
+        logging.info(f"Constitutional Hash: {CONSTITUTIONAL_HASH}")
+        logging.info(f"{'='*60}\n")
 
         self.results = []
         start_time = time.perf_counter()
@@ -137,11 +138,11 @@ class MessageProcessingBenchmark:
                 successful += 1
 
                 if (i + 1) % 100 == 0:
-                    print(f"Progress: {i + 1}/{iterations} messages processed")
+                    logging.info(f"Progress: {i + 1}/{iterations} messages processed")
 
             except Exception as e:
                 failed += 1
-                print(f"Error processing message {i}: {e}")
+                logging.error(f"Error processing message {i}: {e}")
 
         end_time = time.perf_counter()
         duration = end_time - start_time
@@ -187,28 +188,28 @@ class MessageProcessingBenchmark:
 
     def _print_result(self, result: PerformanceResult):
         """Print test result summary."""
-        print(f"\n{'-'*60}")
-        print("Results:")
-        print(f"{'-'*60}")
-        print(f"Iterations:     {result.iterations}")
-        print(f"Successful:     {result.successful} ({result.success_rate:.1%})")
-        print(f"Failed:         {result.failed}")
-        print(f"Throughput:     {result.throughput_rps:.2f} RPS")
-        print("\nLatency (ms):")
-        print(f"  Min:          {result.min_latency_ms:.3f}")
-        print(f"  Mean:         {result.mean_latency_ms:.3f}")
-        print(f"  Median:       {result.median_latency_ms:.3f}")
-        print(f"  P50:          {result.p50_latency_ms:.3f}")
-        print(f"  P95:          {result.p95_latency_ms:.3f}")
-        print(f"  P99:          {result.p99_latency_ms:.3f}")
-        print(f"  Max:          {result.max_latency_ms:.3f}")
+        logging.info(f"\n{'-'*60}")
+        logging.info("Results:")
+        logging.info(f"{'-'*60}")
+        logging.info(f"Iterations:     {result.iterations}")
+        logging.info(f"Successful:     {result.successful} ({result.success_rate:.1%})
+        logging.error(f"Failed:         {result.failed}")
+        logging.info(f"Throughput:     {result.throughput_rps:.2f} RPS")
+        logging.info("\nLatency (ms)
+        logging.info(f"  Min:          {result.min_latency_ms:.3f}")
+        logging.info(f"  Mean:         {result.mean_latency_ms:.3f}")
+        logging.info(f"  Median:       {result.median_latency_ms:.3f}")
+        logging.info(f"  P50:          {result.p50_latency_ms:.3f}")
+        logging.info(f"  P95:          {result.p95_latency_ms:.3f}")
+        logging.info(f"  P99:          {result.p99_latency_ms:.3f}")
+        logging.info(f"  Max:          {result.max_latency_ms:.3f}")
 
-        print(f"\n{'-'*60}")
-        print("Target Validation:")
-        print(f"{'-'*60}")
+        logging.info(f"\n{'-'*60}")
+        logging.info("Target Validation:")
+        logging.info(f"{'-'*60}")
 
         meets_targets = result.meets_targets()
-        print(f"Overall:        {'✓ PASS' if meets_targets else '✗ FAIL'}")
+        logging.info(f"Overall:        {'✓ PASS' if meets_targets else '✗ FAIL'}")
 
         # Check individual targets
         p99_pass = result.p99_latency_ms < P99_LATENCY_TARGET_MS
@@ -225,31 +226,31 @@ class MessageProcessingBenchmark:
             f"Success Rate:   {'✓' if success_pass else '✗'} {result.success_rate:.1%} (target: >95%)"
         )
 
-        print(f"\n{'-'*60}")
-        print("Baseline Comparison:")
-        print(f"{'-'*60}")
-        print(f"Baseline ({BASELINE_METRICS['phase']}):")
-        print(f"  P99 Latency:  {BASELINE_METRICS['p99_latency_ms']}ms")
-        print(f"  Throughput:   {BASELINE_METRICS['throughput_rps']} RPS")
+        logging.info(f"\n{'-'*60}")
+        logging.info("Baseline Comparison:")
+        logging.info(f"{'-'*60}")
+        logging.info(f"Baseline ({BASELINE_METRICS['phase']})
+        logging.info(f"  P99 Latency:  {BASELINE_METRICS['p99_latency_ms']}ms")
+        logging.info(f"  Throughput:   {BASELINE_METRICS['throughput_rps']} RPS")
 
         vs_baseline = result.vs_baseline()
-        print("\nCurrent vs Baseline:")
-        print(f"  P99 Latency:  {vs_baseline['p99_vs_baseline']}")
-        print(f"  Throughput:   {vs_baseline['throughput_vs_baseline']}")
+        logging.info("\nCurrent vs Baseline:")
+        logging.info(f"  P99 Latency:  {vs_baseline['p99_vs_baseline']}")
+        logging.info(f"  Throughput:   {vs_baseline['throughput_vs_baseline']}")
 
         # Determine if optimization was successful
         latency_improved = vs_baseline["p99_latency_improvement_pct"] > 0
         throughput_improved = vs_baseline["throughput_improvement_pct"] > 0
 
-        print("\nOptimization Status:")
+        logging.info("\nOptimization Status:")
         if latency_improved and throughput_improved:
-            print("  ✓ Both latency and throughput improved")
+            logging.info("  ✓ Both latency and throughput improved")
         elif latency_improved:
-            print("  ~ Latency improved but throughput regressed")
+            logging.info("  ~ Latency improved but throughput regressed")
         elif throughput_improved:
-            print("  ~ Throughput improved but latency regressed")
+            logging.info("  ~ Throughput improved but latency regressed")
         else:
-            print("  ✗ Performance regressed compared to baseline")
+            logging.info("  ✗ Performance regressed compared to baseline")
 
 
 class ValidationReport:
@@ -370,7 +371,7 @@ by comparing current performance against baseline metrics.
         with open(filepath, "w") as f:
             f.write(self.generate_markdown())
 
-        print(f"\nMarkdown report saved to: {filepath}")
+        logging.info(f"\nMarkdown report saved to: {filepath}")
         return filepath
 
     def save_json(self, filename: str = None):
@@ -392,7 +393,7 @@ by comparing current performance against baseline metrics.
         with open(filepath, "w") as f:
             json.dump(report_data, f, indent=2)
 
-        print(f"JSON report saved to: {filepath}")
+        logging.info(f"JSON report saved to: {filepath}")
         return filepath
 
 
@@ -412,11 +413,11 @@ async def main():
 
     args = parser.parse_args()
 
-    print(f"\n{'#'*60}")
-    print("# ACGS-2 Performance Validation Load Test")
-    print(f"# Constitutional Hash: {CONSTITUTIONAL_HASH}")
-    print(f"# Start Time: {datetime.now(timezone.utc).isoformat()}")
-    print(f"{'#'*60}\n")
+    logging.info(f"\n{'#'*60}")
+    logging.info("# ACGS-2 Performance Validation Load Test")
+    logging.info(f"# Constitutional Hash: {CONSTITUTIONAL_HASH}")
+    logging.info(f"# Start Time: {datetime.now(timezone.utc)
+    logging.info(f"{'#'*60}\n")
 
     # Run benchmark
     benchmark = MessageProcessingBenchmark()
@@ -427,16 +428,16 @@ async def main():
     report.save_markdown(args.markdown_output)
     report.save_json(args.json_output)
 
-    print(f"\n{'='*60}")
-    print("Performance Validation Complete")
-    print(f"{'='*60}\n")
+    logging.info(f"\n{'='*60}")
+    logging.info("Performance Validation Complete")
+    logging.info(f"{'='*60}\n")
 
     # Exit with appropriate code
     if result.meets_targets():
-        print("✓ All performance targets met")
+        logging.info("✓ All performance targets met")
         sys.exit(0)
     else:
-        print("⚠ Some performance targets not met")
+        logging.info("⚠ Some performance targets not met")
         sys.exit(1)
 
 

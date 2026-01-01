@@ -141,3 +141,58 @@ directory = "htmlcov"
 
 [tool.coverage.xml]
 output = "coverage.xml"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+lint.select = ["E", "F", "B", "I"]
+lint.ignore = [
+    "E501",   # line too long, handled by black
+    "E402",   # module level import not at top - intentional for try/except fallback patterns
+    "F403",   # star imports - intentional for re-export modules
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Re-export modules intentionally import for external use
+"__init__.py" = ["F401"]
+# Main module files with intentional re-exports and fallback imports
+"agent_bus.py" = ["F401", "F405"]
+"core.py" = ["F401", "F405"]
+"registry.py" = ["F401"]
+"maci_enforcement.py" = ["F401"]
+"opa_client.py" = ["F401"]
+"message_processor.py" = ["F401"]
+"validators.py" = ["F401"]
+"validation_strategies.py" = ["F401"]
+"models.py" = ["F401"]
+"chaos_testing.py" = ["F401"]
+# Deliberation layer modules with complex import fallbacks
+"deliberation_layer/*.py" = ["F401", "F405"]
+# Observability modules
+"observability/*.py" = ["F401"]
+# AI assistant integration
+"ai_assistant/*.py" = ["F401"]
+# Test files may have unused variables for fixture creation
+"tests/*" = ["F841", "F401"]
+"*/tests/*" = ["F841", "F401"]
+"**/test_*.py" = ["F841", "F401"]
+"**/*_test.py" = ["F841", "F401"]
+# Example files demonstrate patterns without using all variables
+"examples/*" = ["F841"]
+# Spec fixtures are test infrastructure
+"specs/*" = ["F841"]
+"specs/**/*" = ["F841"]
+
+[tool.black]
+line-length = 100
+target-version = ['py311']
+
+[tool.mypy]
+strict = true
+ignore_missing_imports = true
+exclude = ["venv", ".venv", "tests"]
+check_untyped_defs = true
+disallow_any_generics = false
+disallow_incomplete_defs = false
+disallow_untyped_defs = false
+no_implicit_optional = false

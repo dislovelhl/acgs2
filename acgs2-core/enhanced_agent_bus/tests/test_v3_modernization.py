@@ -3,17 +3,20 @@ v3.0.0 Modernization Tests
 Constitutional Hash: cdd01ef066bc6cf2
 """
 
-import pytest
 import uuid
-import asyncio
-from unittest.mock import MagicMock, AsyncMock
+from unittest.mock import AsyncMock, MagicMock
 
+import pytest
 from enhanced_agent_bus.agent_bus import EnhancedAgentBus
-from enhanced_agent_bus.models import AgentMessage, MessageType, Priority, CONSTITUTIONAL_HASH
 from enhanced_agent_bus.exceptions import AgentBusError, AlignmentViolationError
+from enhanced_agent_bus.models import CONSTITUTIONAL_HASH, AgentMessage, MessageType, Priority
 
-class BusError(AgentBusError): # Maintain compatibility with my test code if needed OR just use AgentBusError
+
+class BusError(
+    AgentBusError
+):  # Maintain compatibility with my test code if needed OR just use AgentBusError
     pass
+
 
 @pytest.fixture
 async def bus():
@@ -21,6 +24,7 @@ async def bus():
     await bus.start()
     yield bus
     await bus.stop()
+
 
 @pytest.mark.asyncio
 async def test_maci_zk_vote(bus):
@@ -36,19 +40,22 @@ async def test_maci_zk_vote(bus):
         content={
             "action": "vote",
             "vote_data": "encrypted_payload",
-            "zk_proof": "0xdeadbeef" # Simulated ZK proof
+            "zk_proof": "0xdeadbeef",  # Simulated ZK proof
         },
         priority=Priority.HIGH,
         constitutional_hash=CONSTITUTIONAL_HASH,
-        tenant_id="tenant-1"
+        tenant_id="tenant-1",
     )
 
     # Send message and verify it passes (mocking the processor to expect ZK)
-    bus.processor.process = AsyncMock(return_value=MagicMock(is_valid=True, metadata={"zk_verified": True}))
+    bus.processor.process = AsyncMock(
+        return_value=MagicMock(is_valid=True, metadata={"zk_verified": True})
+    )
 
     result = await bus.send_message(message)
     assert result.is_valid is True
     assert result.metadata["zk_verified"] is True
+
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("p_failure", [0.1, 0.5])
@@ -59,6 +66,7 @@ async def test_chaos_inject_failure(bus, p_failure):
 
     async def flaky_process(*args, **kwargs):
         import random
+
         if random.random() < p_failure:
             raise AlignmentViolationError("Chaos injection: Alignment violation!")
         return await original_process(*args, **kwargs)
@@ -72,7 +80,7 @@ async def test_chaos_inject_failure(bus, p_failure):
         message_type=MessageType.EVENT,
         content={"data": "test"},
         priority=Priority.MEDIUM,
-        constitutional_hash=CONSTITUTIONAL_HASH
+        constitutional_hash=CONSTITUTIONAL_HASH,
     )
 
     # Try sending 10 messages and check if we handle the AlignmentViolationError
@@ -88,6 +96,7 @@ async def test_chaos_inject_failure(bus, p_failure):
     # Typically, a robust bus should catch and log or enter DEGRADED mode.
     pass
 
+
 @pytest.mark.asyncio
 async def test_alignment_error_handling(bus):
     """Verify that specific AlignmentViolationErrors are captured and reported."""
@@ -100,11 +109,11 @@ async def test_alignment_error_handling(bus):
         message_type=MessageType.EVENT,
         content={"data": "test"},
         priority=Priority.MEDIUM,
-        constitutional_hash=CONSTITUTIONAL_HASH
+        constitutional_hash=CONSTITUTIONAL_HASH,
     )
 
     # When processor fails with AlignmentViolationError, the bus falls back to DEGRADED mode
     # In DEGRADED mode, if the hash matches, it currently ALLOWS the message for antifragility
     result = await bus.send_message(message)
     assert result.metadata["governance_mode"] == "DEGRADED"
-    assert result.is_valid is True # Antifragile fallback allows if hash matches
+    assert result.is_valid is True  # Antifragile fallback allows if hash matches

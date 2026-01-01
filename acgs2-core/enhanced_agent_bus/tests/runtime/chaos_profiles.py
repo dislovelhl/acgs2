@@ -10,12 +10,11 @@ Deterministic chaos testing profiles for controlled failure injection:
 These profiles enable reproducible chaos testing without random behavior.
 """
 
+import logging
+import time
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional, Set
-import asyncio
-import time
-import logging
+from typing import Any, Dict, List, Optional, Set
 
 # Constitutional Hash - Required for all governance operations
 CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"

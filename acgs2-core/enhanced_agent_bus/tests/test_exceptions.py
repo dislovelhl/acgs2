@@ -106,7 +106,7 @@ class TestAgentBusError:
 
     def test_inheritance(self):
         """Test exception can be caught as Exception."""
-        with pytest.raises(Exception):
+        with pytest.raises(AgentBusError):
             raise AgentBusError("Test")
 
     def test_none_details_becomes_empty_dict(self):

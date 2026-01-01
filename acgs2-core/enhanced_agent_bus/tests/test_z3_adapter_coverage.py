@@ -7,23 +7,19 @@ Tests cover: Z3AdapterConfig, Z3Request, Z3Response, Z3Adapter, convenience func
 """
 
 import asyncio
-import hashlib
-from dataclasses import dataclass
-from typing import Any
-from unittest.mock import MagicMock, patch, AsyncMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
 from acl_adapters.z3_adapter import (
+    CONSTITUTIONAL_HASH,
+    Z3Adapter,
     Z3AdapterConfig,
     Z3Request,
     Z3Response,
-    Z3Adapter,
     check_satisfiability,
     prove_property,
-    CONSTITUTIONAL_HASH,
 )
-
 
 # =============================================================================
 # Z3AdapterConfig Tests

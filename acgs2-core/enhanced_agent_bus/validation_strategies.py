@@ -9,11 +9,10 @@ import logging
 from typing import Any, Optional
 
 try:
-    from .models import AgentMessage
     from .imports import OPA_CLIENT_AVAILABLE, get_opa_client
+    from .models import AgentMessage
 except (ImportError, ValueError):
     from models import AgentMessage  # type: ignore
-    from imports import OPA_CLIENT_AVAILABLE, get_opa_client  # type: ignore
 
 try:
     from .models import CONSTITUTIONAL_HASH, AgentMessage

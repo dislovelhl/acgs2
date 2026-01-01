@@ -8,6 +8,7 @@ Comprehensive tests for KafkaEventBus, Orchestrator, and Blackboard classes.
 from unittest.mock import AsyncMock
 
 import pytest
+
 from exceptions import MessageDeliveryError
 from kafka_bus import (
     KAFKA_AVAILABLE,
