@@ -371,6 +371,25 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
   };
 });
 
+// Type definitions for domain metadata
+interface DomainMetadata {
+  size?: number;
+  complexity?: number;
+  stability?: number;
+  dependencies?: string[];
+  lastUpdated?: number;
+  version?: string;
+}
+
+// Type definitions for relationship metadata
+interface RelationshipMetadata {
+  frequency?: number;
+  latency?: number;
+  reliability?: number;
+  bandwidth?: number;
+  direction?: "bidirectional" | "unidirectional";
+}
+
 // Type definitions for tool arguments
 interface LoadDomainsArgs {
   preset?: "enhanced_agent_bus";
@@ -378,13 +397,14 @@ interface LoadDomainsArgs {
     id: string;
     name: string;
     type: "functional" | "technical" | "business" | "integration" | "data" | "ui" | "api";
-    metadata?: any;
+    metadata?: DomainMetadata;
   }>;
   relationships?: Array<{
     source: string;
     target: string;
     type: "dependency" | "communication" | "data-flow" | "inheritance" | "composition" | "aggregation";
     weight?: number;
+    metadata?: RelationshipMetadata;
   }>;
 }
 
@@ -463,28 +483,37 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       // Generate synthetic training data from the loaded graph
+      // Create properly typed training data structures
+      const syntheticInputs = Array.from({ length: 100 }, (_, i) => ({
+        id: `pattern_${i}`,
+        features: Array.from({ length: 16 }, () => Math.random()),
+        label: Math.random() > 0.5 ? 1 : 0,
+      }));
+
+      const syntheticOutputs = syntheticInputs.map((input) => input.label);
+
       const trainingData = {
-        patterns: Array.from({ length: 100 }, (_, i) => ({
-          id: `pattern_${i}`,
-          features: Array.from({ length: 16 }, () => Math.random()),
-          label: Math.random() > 0.5 ? 1 : 0,
-        })),
-        metadata: {
-          source: "enhanced_agent_bus",
-          timestamp: Date.now(),
-        },
+        inputs: syntheticInputs,
+        outputs: syntheticOutputs,
+        batchSize: 32,
+        epochs: typedArgs.epochs || 100,
       };
 
+      const validationInputs = Array.from({ length: 20 }, (_, i) => ({
+        id: `val_pattern_${i}`,
+        features: Array.from({ length: 16 }, () => Math.random()),
+        label: Math.random() > 0.5 ? 1 : 0,
+      }));
+
       const validationData = {
-        patterns: Array.from({ length: 20 }, (_, i) => ({
-          id: `val_pattern_${i}`,
-          features: Array.from({ length: 16 }, () => Math.random()),
-          label: Math.random() > 0.5 ? 1 : 0,
-        })),
+        inputs: validationInputs,
+        outputs: validationInputs.map((input) => input.label),
+        batchSize: 32,
+        epochs: 1,
       };
 
       try {
-        const result = await mapper.train(trainingData as any, validationData as any);
+        const result = await mapper.train(trainingData, validationData);
         const lastEpoch = result.trainingHistory[result.trainingHistory.length - 1];
 
         return {
@@ -510,8 +539,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             },
           ],
         };
-      } catch (trainError: any) {
+      } catch (trainError: unknown) {
         // Fallback to simulation if actual training fails
+        const errorMessage = trainError instanceof Error ? trainError.message : String(trainError);
+        console.error("Training error:", errorMessage);
         return {
           content: [
             {
@@ -587,12 +618,13 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     }
 
     throw new Error(`Unknown tool: ${name}`);
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
     return {
       content: [
         {
           type: "text",
-          text: `Error executing ${name}: ${error.message}`,
+          text: `Error executing ${name}: ${errorMessage}`,
         },
       ],
       isError: true,

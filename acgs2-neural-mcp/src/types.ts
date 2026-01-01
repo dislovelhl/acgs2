@@ -7,7 +7,29 @@
 
 // Define simple stubs for types that were previously imported
 export type HookType = string;
-export type HookResult = any;
+export type HookResult = {
+  success: boolean;
+  data?: unknown;
+  error?: Error;
+  metadata?: Record<string, unknown>;
+};
+
+// ===== JSON Schema Types =====
+
+export type JSONSchemaType =
+  | { type: "string"; enum?: string[]; description?: string }
+  | { type: "number"; minimum?: number; maximum?: number; description?: string }
+  | { type: "integer"; minimum?: number; maximum?: number; description?: string }
+  | { type: "boolean"; description?: string }
+  | { type: "array"; items: JSONSchemaType; description?: string }
+  | { type: "object"; properties?: Record<string, JSONSchemaType>; required?: string[]; description?: string }
+  | { type: "null"; description?: string };
+
+export interface FunctionDefinition {
+  name: string;
+  description?: string;
+  parameters?: Record<string, JSONSchemaType>;
+}
 
 // ===== Core Hook Types =====
 
@@ -15,7 +37,7 @@ export interface AgenticHookContext {
   sessionId: string;
   timestamp: number;
   correlationId: string;
-  metadata: Record<string, any>;
+  metadata: Record<string, unknown>;
   memory: MemoryContext;
   neural: NeuralContext;
   performance: PerformanceContext;
@@ -25,7 +47,7 @@ export interface MemoryContext {
   namespace: string;
   provider: string;
   ttl?: number;
-  cache: Map<string, any>;
+  cache: Map<string, unknown>;
 }
 
 export interface NeuralContext {
@@ -77,11 +99,11 @@ export interface LLMRequest {
   functions?: Array<{
     name: string;
     description: string;
-    parameters: Record<string, any>;
+    parameters: Record<string, JSONSchemaType>;
   }>;
   tools?: Array<{
     type: string;
-    function: Record<string, any>;
+    function: FunctionDefinition;
   }>;
 }
 
@@ -133,7 +155,7 @@ export interface MemoryHookPayload {
   operation: "store" | "retrieve" | "sync" | "persist" | "expire";
   namespace: string;
   key?: string;
-  value?: any;
+  value?: unknown;
   ttl?: number;
   provider: string;
   crossProvider?: boolean;
@@ -164,12 +186,18 @@ export interface Pattern {
   type: "success" | "failure" | "optimization" | "behavior";
   confidence: number;
   occurrences: number;
-  context: Record<string, any>;
+  context: Record<string, unknown>;
+}
+
+export interface TrainingDataSample {
+  id?: string;
+  features: number[];
+  label?: number | string;
 }
 
 export interface TrainingData {
-  inputs: any[];
-  outputs: any[];
+  inputs: TrainingDataSample[];
+  outputs: (number | number[])[];
   labels?: string[];
   weights?: number[];
   batchSize: number;
@@ -177,20 +205,22 @@ export interface TrainingData {
 }
 
 export interface Prediction {
-  input: any;
-  output: any;
+  input: TrainingDataSample | number[];
+  output: number | number[];
   confidence: number;
   alternatives: Array<{
-    output: any;
+    output: number | number[];
     confidence: number;
   }>;
 }
 
+export type AdaptationValue = string | number | boolean | Record<string, unknown>;
+
 export interface Adaptation {
   type: "parameter" | "architecture" | "strategy";
   target: string;
-  oldValue: any;
-  newValue: any;
+  oldValue: AdaptationValue;
+  newValue: AdaptationValue;
   reason: string;
   impact: number; // -1 to 1
 }
@@ -210,7 +240,7 @@ export interface PerformanceHookPayload {
   threshold?: number;
   bottleneck?: BottleneckInfo;
   optimization?: OptimizationInfo;
-  context: Record<string, any>;
+  context: Record<string, unknown>;
 }
 
 export interface PerformanceMetric {
@@ -263,7 +293,7 @@ export interface WorkflowHookPayload {
   workflowId: string;
   step?: string;
   decision?: WorkflowDecision;
-  state: Record<string, any>;
+  state: Record<string, unknown>;
   metrics?: WorkflowMetrics;
   error?: Error;
 }
@@ -280,7 +310,7 @@ export interface WorkflowDecision {
 export interface Learning {
   type: "success" | "failure" | "optimization";
   context: string;
-  value: any;
+  value: string | number | boolean | Record<string, unknown>;
   applicability: number; // 0-1
 }
 
@@ -327,16 +357,18 @@ export type HookPayload =
 export interface HookHandlerResult {
   continue: boolean;
   modified?: boolean;
-  payload?: any;
-  metadata?: Record<string, any>;
+  payload?: HookPayload;
+  metadata?: Record<string, unknown>;
   sideEffects?: SideEffect[];
 }
 
 export interface SideEffect {
   type: "memory" | "neural" | "metric" | "notification" | "log";
   action: string;
-  data: any;
+  data: Record<string, unknown>;
 }
+
+export type FilterValue = string | number | boolean | string[] | number[] | RegExp;
 
 export interface HookFilter {
   providers?: string[];
@@ -356,7 +388,7 @@ export interface HookFilter {
       | "in"
       | "nin"
       | "regex";
-    value: any;
+    value: FilterValue;
   }>;
 }
 
@@ -434,11 +466,13 @@ export interface SelfImprovementConfig {
   adaptation: AdaptationConfig;
 }
 
+export type StrategyParameter = string | number | boolean | string[] | number[];
+
 export interface ImprovementStrategy {
   name: string;
   type: "reinforcement" | "evolutionary" | "gradient" | "heuristic";
   target: "latency" | "accuracy" | "cost" | "reliability";
-  parameters: Record<string, any>;
+  parameters: Record<string, StrategyParameter>;
 }
 
 export interface EvaluationConfig {
@@ -462,11 +496,20 @@ export interface HookContextBuilder {
   withMemory(namespace: string, provider: string): HookContextBuilder;
   withNeural(modelId: string): HookContextBuilder;
   withPerformance(metrics: PerformanceMetric[]): HookContextBuilder;
-  withMetadata(metadata: Record<string, any>): HookContextBuilder;
+  withMetadata(metadata: Record<string, unknown>): HookContextBuilder;
   build(): AgenticHookContext;
 }
 
 // ===== Hook Registry Interface =====
+
+export interface RegistryMetrics {
+  totalHooks: number;
+  activeHooks: number;
+  executionCount: number;
+  averageExecutionTime: number;
+  errorCount: number;
+  byType: Record<string, number>;
+}
 
 export interface HookRegistry {
   register(registration: HookRegistration): void;
@@ -478,7 +521,7 @@ export interface HookRegistry {
     context: AgenticHookContext
   ): Promise<HookHandlerResult[]>;
   createPipeline(config: Partial<HookPipeline>): HookPipeline;
-  getMetrics(): Record<string, any>;
+  getMetrics(): RegistryMetrics;
 }
 
 // ===== Pattern Store =====

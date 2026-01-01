@@ -26,13 +26,60 @@ export interface CoordinationReportOptions {
   includeCompleted?: boolean;
 }
 
-export interface CoordinationResult {
+// Type definitions for coordination tasks
+export interface CoordinationTask {
+  id: string;
+  name?: string;
+  priority?: string;
+  status?: string;
+  agentType?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface TaskExecutionResult {
   success: boolean;
-  data?: any;
+  taskId: string;
+  status?: string;
+  executionTime?: number;
+  agentAssigned?: string;
+  details?: Record<string, unknown>;
   error?: string;
 }
 
-export async function listCoordinationTasks(filters: CoordinationTaskFilters = {}): Promise<any[]> {
+export interface CoordinationStatus {
+  activeTasks?: number;
+  completedTasks?: number;
+  pendingTasks?: number;
+  agentStatuses?: Record<string, string>;
+  lastUpdate?: string;
+}
+
+export interface CoordinationReport {
+  period: number;
+  format: string;
+  summary?: {
+    totalTasks: number;
+    completedTasks: number;
+    failedTasks: number;
+  };
+  details?: CoordinationTask[];
+}
+
+// Script result type for internal use
+interface ScriptResult {
+  success: boolean;
+  tasks?: CoordinationTask[];
+  status?: CoordinationStatus;
+  report?: CoordinationReport;
+  executionTime?: number;
+  agentAssigned?: string;
+  details?: Record<string, unknown>;
+  error?: string;
+}
+
+export async function listCoordinationTasks(filters: CoordinationTaskFilters = {}): Promise<CoordinationTask[]> {
   try {
     const args = ['list'];
     if (filters.priority) args.push('--priority', filters.priority);
@@ -53,7 +100,7 @@ export async function listCoordinationTasks(filters: CoordinationTaskFilters = {
   }
 }
 
-export async function executeCoordinationTask(options: CoordinationTaskExecution): Promise<any> {
+export async function executeCoordinationTask(options: CoordinationTaskExecution): Promise<TaskExecutionResult> {
   try {
     const args = ['execute', options.taskId];
     if (options.dryRun) args.push('--dry-run');
@@ -66,7 +113,7 @@ export async function executeCoordinationTask(options: CoordinationTaskExecution
       return {
         success: true,
         taskId: options.taskId,
-        status: result.status || 'completed',
+        status: typeof result.status === 'object' ? 'completed' : (result.status as string) || 'completed',
         executionTime: result.executionTime,
         agentAssigned: result.agentAssigned,
         details: result.details
@@ -74,6 +121,7 @@ export async function executeCoordinationTask(options: CoordinationTaskExecution
     } else {
       return {
         success: false,
+        taskId: options.taskId,
         error: result.error,
         details: result.details
       };
@@ -81,12 +129,13 @@ export async function executeCoordinationTask(options: CoordinationTaskExecution
   } catch (error) {
     return {
       success: false,
+      taskId: options.taskId,
       error: error instanceof Error ? error.message : 'Unknown error occurred'
     };
   }
 }
 
-export async function getCoordinationStatus(options: CoordinationStatusOptions = {}): Promise<any> {
+export async function getCoordinationStatus(options: CoordinationStatusOptions = {}): Promise<CoordinationStatus | CoordinationTask[]> {
   try {
     const args = ['status'];
     if (options.taskId) args.push('--task-id', options.taskId);
@@ -107,7 +156,7 @@ export async function getCoordinationStatus(options: CoordinationStatusOptions =
   }
 }
 
-export async function generateCoordinationReport(options: CoordinationReportOptions): Promise<any> {
+export async function generateCoordinationReport(options: CoordinationReportOptions): Promise<CoordinationReport> {
   try {
     const args = ['report', '--format', options.format, '--period', options.period.toString()];
     if (options.includeCompleted) args.push('--include-completed');
@@ -115,7 +164,7 @@ export async function generateCoordinationReport(options: CoordinationReportOpti
     const result = await runCoordinationScript(args);
 
     if (result.success) {
-      return result.report || {};
+      return result.report || { period: options.period, format: options.format };
     } else {
       throw new Error(result.error || 'Failed to generate report');
     }
@@ -124,7 +173,7 @@ export async function generateCoordinationReport(options: CoordinationReportOpti
   }
 }
 
-async function runCoordinationScript(args: string[]): Promise<any> {
+async function runCoordinationScript(args: string[]): Promise<ScriptResult> {
   return new Promise((resolve, reject) => {
     // Path to the Python coordination script
     let scriptPath = path.join(__dirname, 'coordinationManager.py');
