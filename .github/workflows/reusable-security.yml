@@ -55,12 +55,17 @@ jobs:
           pip install bandit
           bandit -r acgs2-core/ -f json -o bandit-report.json || true
 
+      - name: Convert Bandit JSON to SARIF
+        if: always()
+        run: |
+          pip install bandit-to-sarif
+          bandit-to-sarif bandit-report.json bandit-report.sarif || echo "Bandit SARIF conversion failed, skipping upload"
+
       - name: Upload Bandit results
         uses: github/codeql-action/upload-sarif@v3
         if: always()
         with:
           sarif_file: bandit-report.sarif
-        # Note: Would need sarif conversion for bandit
 
   compliance-check:
     name: Compliance & License Check
