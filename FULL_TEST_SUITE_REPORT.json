@@ -1,0 +1,66 @@
+{
+  "execution_info": {
+    "timestamp": "2026-01-01T07:58:16.969974+00:00",
+    "constitutional_hash": "cdd01ef066bc6cf2",
+    "project_root": "/home/dislove/document/acgs2",
+    "virtual_environment": "/home/dislove/document/acgs2/acgs2-core/venv"
+  },
+  "summary": {
+    "total_tests": 1,
+    "passed": 0,
+    "failed": 1,
+    "skipped": 0,
+    "pass_rate_percent": 0.0,
+    "overall_coverage_percent": null,
+    "total_execution_time_seconds": 0.042026519775390625,
+    "overall_status": "FAILED"
+  },
+  "component_results": [
+    {
+      "component": "Core Tests",
+      "tests_run": 0,
+      "passed": 0,
+      "failed": 0,
+      "skipped": 0,
+      "coverage_percent": null,
+      "execution_time_seconds": 0.010159015655517578,
+      "status": "FAILED"
+    },
+    {
+      "component": "Enhanced Agent Bus",
+      "tests_run": 0,
+      "passed": 0,
+      "failed": 0,
+      "skipped": 0,
+      "coverage_percent": null,
+      "execution_time_seconds": 0.009894847869873047,
+      "status": "FAILED"
+    },
+    {
+      "component": "Metering Integration",
+      "tests_run": 0,
+      "passed": 0,
+      "failed": 0,
+      "skipped": 0,
+      "coverage_percent": null,
+      "execution_time_seconds": 0.009243011474609375,
+      "status": "FAILED"
+    },
+    {
+      "component": "Performance Validation",
+      "tests_run": 1,
+      "passed": 0,
+      "failed": 1,
+      "skipped": 0,
+      "coverage_percent": null,
+      "execution_time_seconds": 0.012729644775390625,
+      "status": "FAILED"
+    }
+  ],
+  "performance_targets": {
+    "p99_latency_target_ms": 5.0,
+    "throughput_target_rps": 100,
+    "coverage_minimum_percent": 40.0,
+    "test_pass_rate_minimum_percent": 99.0
+  }
+}

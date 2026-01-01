@@ -7,7 +7,6 @@ Implements various orchestration strategies and priority handling.
 """
 
 import asyncio
-import json
 import sys
 import uuid
 from datetime import datetime, timezone
@@ -16,11 +15,16 @@ from typing import Any, Dict
 # Add the ACGS-2 core to the path
 sys.path.insert(0, "/home/dislove/document/acgs2/acgs2-core")
 
+from ..utils.logging_config import log_error_result, log_success_result, setup_logging
+
+# Setup logging
+logger = setup_logging(__name__, json_format=True)
+
 try:
     from enhanced_agent_bus import CONSTITUTIONAL_HASH, EnhancedAgentBus
     from enhanced_agent_bus.models import AgentMessage, MessageType, Priority
 except ImportError as e:
-    print(json.dumps({"success": False, "error": f"Failed to import ACGS-2 modules: {e}"}))
+    log_error_result(logger, f"Failed to import ACGS-2 modules: {e}")
     sys.exit(1)
 
 
@@ -203,7 +207,7 @@ def main():
 
     if len(sys.argv) < 4:
         error_msg = "Usage: python taskOrchestrator.py " "<task_description> <strategy> <priority>"
-        print(json.dumps({"success": False, "error": error_msg}))
+        log_error_result(logger, error_msg)
         sys.exit(1)
 
     task_description = sys.argv[1]
@@ -215,30 +219,20 @@ def main():
     valid_priorities = ["low", "medium", "high", "critical"]
 
     if strategy.lower() not in valid_strategies:
-        print(
-            json.dumps(
-                {
-                    "success": False,
-                    "error": f"Invalid strategy. Valid strategies: {', '.join(valid_strategies)}",
-                }
-            )
+        log_error_result(
+            logger, f"Invalid strategy. Valid strategies: {', '.join(valid_strategies)}"
         )
         sys.exit(1)
 
     if priority.lower() not in valid_priorities:
-        print(
-            json.dumps(
-                {
-                    "success": False,
-                    "error": f"Invalid priority. Valid priorities: {', '.join(valid_priorities)}",
-                }
-            )
+        log_error_result(
+            logger, f"Invalid priority. Valid priorities: {', '.join(valid_priorities)}"
         )
         sys.exit(1)
 
     # Run the async function
     result = asyncio.run(orchestrate_task(task_description, strategy, priority))
-    print(json.dumps(result))
+    log_success_result(logger, result)
 
 
 if __name__ == "__main__":

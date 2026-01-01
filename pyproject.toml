@@ -36,27 +36,28 @@ target-version = ['py311']
 # See individual package mypy.ini files for configuration
 
 [tool.pytest.ini_options]
-# Note: --dist=loadfile requires pytest-xdist. Install with: pip install ".[test]"
-# For minimal testing without xdist, run: pytest -p no:randomly tests/
+# NOTE: This configuration is for individual component testing only.
+# For running all tests across components, use: ./scripts/run_all_tests.sh
+# This avoids pytest configuration conflicts between root and component-specific configs.
 addopts = "-q --maxfail=3"
-testpaths = [
-    "acgs2-core/enhanced_agent_bus/tests",
-    "acgs2-core/services/policy_registry/tests",
-    "acgs2-core/services/metering/tests",
-    "acgs2-observability/tests",
-    "acgs2-research/governance-experiments/tests"
+markers = [
+    "constitutional: marks tests as related to constitutional compliance",
 ]
+# Only run tests in the immediate directory to avoid conflicts
+testpaths = ["."]
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
 pythonpath = [
     ".",
     "acgs2-core",
-    "acgs2-core/enhanced_agent_bus",
-    "acgs2-research/governance-experiments/src"
+    "acgs2-core/enhanced_agent_bus"
 ]
 
 [tool.coverage.run]
 branch = true
-source = ["acgs2-core", "acgs2-observability", "acgs2-research"]
-omit = ["*/tests/*", "*/venv/*", ".venv/*"]
+source = ["acgs2-core", "acgs2-observability", "acgs2-research", "acgs2-infra", "acgs2-neural-mcp"]
+omit = ["*/tests/*", "*/venv/*", ".venv/*", "*/node_modules/*", "*/__pycache__/*"]
 
 [tool.coverage.report]
 exclude_lines = [

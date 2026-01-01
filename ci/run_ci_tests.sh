@@ -28,7 +28,7 @@ if [ ! -d "$VENV_DIR" ]; then
 fi
 source venv/bin/activate
 pip install --upgrade pip
-pip install -r requirements_optimized.txt
+pip install -r config/requirements_optimized.txt
 pip install pytest pytest-asyncio pytest-cov pybreaker pydantic
 pip install black isort flake8 bandit pip-audit pycln
 
@@ -116,10 +116,15 @@ run_test_component() {
 }
 
 # Run test components (focus on working tests)
-run_test_component "Core Security Tests" "python -m pytest tests/security/test_cors_config.py tests/security/test_rate_limiter.py -v --tb=short" 59
-run_test_component "CEOS Tests" "python -m pytest tests/ceos/ -v --tb=short" 6
-run_test_component "Enhanced Agent Bus Core" "python -m pytest enhanced_agent_bus/tests/test_metering_integration.py enhanced_agent_bus/tests/test_health_aggregator.py -v --tb=short" 35
-run_test_component "Performance Validation" "python testing/comprehensive_profiler.py --iterations 50 --baseline 2>/dev/null && echo 'Performance test completed successfully'" 1
+run_test_component "Enhanced Agent Bus Tests" "cd acgs2-core/enhanced_agent_bus && python -m pytest tests/ -q --tb=short" 4570
+run_test_component "Policy Registry Tests" "cd acgs2-core && python -m pytest services/policy_registry/tests/ -q --tb=short" 120
+run_test_component "Metering Tests" "cd acgs2-core && python -m pytest services/metering/tests/ -q --tb=short" 9
+run_test_component "Shared Tests" "cd acgs2-core && python -m pytest shared/tests/ -q --tb=short" 10
+run_test_component "Core Tests" "cd acgs2-core && python -m pytest tests/ -q --tb=short" 6
+run_test_component "Observability Tests" "cd acgs2-observability && python -m pytest tests/ -q --tb=short" 28
+run_test_component "Governance Experiments" "cd acgs2-research && python -m pytest governance-experiments/tests/ -q --tb=short" 4
+run_test_component "Research Tests" "cd acgs2-research && python -m pytest tests/ -q --tb=short" 5
+run_test_component "Performance Validation" "cd acgs2-core && python testing/comprehensive_profiler.py --iterations 50 --baseline 2>/dev/null && echo 'Performance test completed successfully'" 1
 
 # Calculate pass rate
 if [ $TOTAL_TESTS -gt 0 ]; then

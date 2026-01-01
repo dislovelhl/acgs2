@@ -5,7 +5,6 @@ Enforces the principle of least privilege.
 """
 
 import logging
-import time
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 
@@ -56,35 +55,23 @@ class PermissionScoper:
         if not self._private_key:
             raise ValueError("Private key not configured for PermissionScoper")
 
-        # TODO: Extend CryptoService.issue_agent_token to accept extra claims
-        # Currently the payload with permissions is prepared but not passed to signing
-        _payload = {  # noqa: F841 - prepared for future CryptoService extension
-            "sub": f"spiffe://acgs.io/tenant/{tenant_id}/agent/{agent_id}",
-            "tid": tenant_id,
+        # Prepare extra claims for permissions and task context
+        extra_claims = {
             "task_id": task_id,
             "permissions": [
                 {"resource": p.resource, "action": p.action, "constraints": p.constraints}
                 for p in permissions
             ],
-            "iat": int(time.time()),
-            "exp": int(time.time()) + expires_in_seconds,
-            "iss": "acgs-permission-scoper",
-            "aud": "acgs-services",
         }
 
-        # Use CryptoService to sign the token if possible, otherwise manual sign for now
-        # Actually, CryptoService.issue_agent_token is already implemented.
-        # But we need to support extra claims for permissions.
-
-        # For now, let's use a specialized method if it exists or implement signing here.
-        # CryptoService is already optimized for Ed25519.
-
+        # Use CryptoService with extra claims support
         return CryptoService.issue_agent_token(
             agent_id=agent_id,
             tenant_id=tenant_id,
+            capabilities=[],  # Capabilities handled via permissions now
             private_key_b64=self._private_key,
-            # We should probably extend issue_agent_token to support extra claims
-            # But for this task, I'll ensure we have a robust implementation.
+            ttl_hours=max(1, round(expires_in_seconds / 3600)),  # Convert to hours, minimum 1 hour
+            extra_claims=extra_claims,
         )
 
     def scope_permissions_for_task(

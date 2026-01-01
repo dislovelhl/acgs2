@@ -27,6 +27,7 @@ if enhanced_agent_bus_dir not in sys.path:
 
 # Ensure consistent class identity by patching sys.modules
 try:
+    import enhanced_agent_bus.audit_client as _audit_client
     import enhanced_agent_bus.core as _core
     import enhanced_agent_bus.exceptions as _exceptions
     import enhanced_agent_bus.imports as _imports
@@ -38,6 +39,7 @@ try:
     import enhanced_agent_bus.validators as _validators
 
     # Patch sys.models to point flat names to package-qualified modules
+    sys.modules["audit_client"] = _audit_client
     sys.modules["models"] = _models
     sys.modules["validators"] = _validators
     sys.modules["exceptions"] = _exceptions
@@ -51,6 +53,7 @@ try:
 except ImportError:
     # Fallback if the package structure is not respected during execution
     try:
+        import audit_client as _audit_client
         import core as _core
         import exceptions as _exceptions
         import imports as _imports
@@ -62,6 +65,8 @@ except ImportError:
         import validators as _validators
 
         # Patch package names to point to flat modules
+        sys.modules["audit_client"] = _audit_client
+        sys.modules["enhanced_agent_bus.audit_client"] = _audit_client
         sys.modules["enhanced_agent_bus.models"] = _models
         sys.modules["enhanced_agent_bus.validators"] = _validators
         sys.modules["enhanced_agent_bus.exceptions"] = _exceptions

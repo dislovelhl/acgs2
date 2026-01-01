@@ -14,14 +14,19 @@ from datetime import datetime
 # Add the ACGS-2 core to the path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../../../acgs2-core"))
 
+from ..utils.logging_config import log_error_result, log_success_result, log_warning, setup_logging
+
+# Setup logging
+logger = setup_logging(__name__, json_format=True)
+
 try:
     from enhanced_agent_bus import EnhancedAgentBus
 except ImportError as e:
-    print(json.dumps({"success": False, "error": f"Failed to import EnhancedAgentBus: {e}"}))
+    log_error_result(logger, f"Failed to import EnhancedAgentBus: {e}")
     sys.exit(1)
 
 
-async def spawn_agent(agent_name: str, agent_type: str, skills: list):
+async def spawn_agent(agent_name: str, agent_type: str, skills: list, tenant_id: str = "default"):
     """Spawn an agent using the EnhancedAgentBus"""
     try:
         # Create bus instance
@@ -55,7 +60,7 @@ async def spawn_agent(agent_name: str, agent_type: str, skills: list):
             agent_id=agent_id,
             agent_type=agent_type,
             capabilities=capabilities,
-            tenant_id="default",  # TODO: Make configurable
+            tenant_id=tenant_id,
         )
 
         # Persist agent information if registration was successful
@@ -109,14 +114,14 @@ async def _persist_agent_info(agent_id: str, agent_info: dict):
 
     except Exception as e:
         # Log error but don't fail spawning
-        print(f"Warning: Failed to persist agent info: {e}", file=sys.stderr)
+        log_warning(logger, f"Warning: Failed to persist agent info: {e}")
 
 
 def main():
     """Main entry point for the script"""
     if len(sys.argv) < 4:
         error_msg = "Usage: python agentSpawner.py <agent_name> <agent_type> <skills_json>"
-        print(json.dumps({"success": False, "error": error_msg}))
+        log_error_result(logger, error_msg)
         sys.exit(1)
 
     agent_name = sys.argv[1]
@@ -129,7 +134,7 @@ def main():
 
     # Run the async function
     result = asyncio.run(spawn_agent(agent_name, agent_type, skills))
-    print(json.dumps(result))
+    log_success_result(logger, result)
 
 
 if __name__ == "__main__":

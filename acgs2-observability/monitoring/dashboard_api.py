@@ -31,10 +31,24 @@ from typing import Any, Callable, Dict, List, Optional, Set
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 try:
-    from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+    from contextlib import asynccontextmanager
+
+    from fastapi import FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
     from fastapi.middleware.cors import CORSMiddleware
     from fastapi.responses import JSONResponse
     from pydantic import BaseModel, Field
+
+    # Try to import memory profiler for integration
+    try:
+        import os
+        import sys
+
+        sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../../acgs2-core"))
+        from enhanced_agent_bus.memory_profiler import MemorySnapshot, get_memory_profiler
+
+        MEMORY_PROFILER_AVAILABLE = True
+    except ImportError:
+        MEMORY_PROFILER_AVAILABLE = False
 
     FASTAPI_AVAILABLE = True
 except ImportError:
@@ -42,7 +56,7 @@ except ImportError:
     FastAPI = None
     WebSocket = None
     # Provide fallback BaseModel for when pydantic is not available
-    from dataclasses import dataclass, field as dataclass_field
+    from dataclasses import field as dataclass_field
 
     class BaseModel:
         """Fallback BaseModel when pydantic is not available."""
@@ -706,10 +720,20 @@ def create_dashboard_app() -> FastAPI:
     if not FASTAPI_AVAILABLE:
         raise RuntimeError("FastAPI not available. Install with: pip install fastapi uvicorn")
 
+    @asynccontextmanager
+    async def lifespan(app: FastAPI):
+        """Application lifespan context manager."""
+        dashboard_service = DashboardService()
+        await dashboard_service.start()
+        app.state.dashboard_service = dashboard_service
+        yield
+        await dashboard_service.stop()
+
     app = FastAPI(
         title="ACGS-2 Monitoring Dashboard API",
         description="Unified monitoring dashboard for AI Constitutional Governance System",
         version="1.0.0",
+        lifespan=lifespan,
     )
 
     # Add CORS middleware
@@ -721,46 +745,62 @@ def create_dashboard_app() -> FastAPI:
         allow_headers=["*"],
     )
 
-    dashboard_service = DashboardService()
-
-    @app.on_event("startup")
-    async def startup():
-        await dashboard_service.start()
-
-    @app.on_event("shutdown")
-    async def shutdown():
-        await dashboard_service.stop()
-
     @app.get("/dashboard/overview", response_model=DashboardOverview)
-    async def get_overview():
+    async def get_overview(request: Request):
         """Get complete dashboard overview."""
-        return await dashboard_service.get_overview()
+        return await request.app.state.dashboard_service.get_overview()
 
     @app.get("/dashboard/health", response_model=HealthAggregateResponse)
-    async def get_health():
+    async def get_health(request: Request):
         """Get aggregated health status."""
-        return await dashboard_service.get_health()
+        return await request.app.state.dashboard_service.get_health()
 
     @app.get("/dashboard/metrics", response_model=MetricsResponse)
-    async def get_metrics():
+    async def get_metrics(request: Request):
         """Get performance metrics."""
-        return await dashboard_service.get_metrics()
+        return await request.app.state.dashboard_service.get_metrics()
 
     @app.get("/dashboard/alerts", response_model=List[AlertInfo])
-    async def get_alerts():
+    async def get_alerts(request: Request):
         """Get active alerts."""
-        return dashboard_service.alert_manager.get_active_alerts()
+        return request.app.state.dashboard_service.alert_manager.get_active_alerts()
+
+    @app.get("/dashboard/memory", response_model=Dict[str, Any])
+    async def get_memory_profile():
+        """Get memory profiling information."""
+        if not MEMORY_PROFILER_AVAILABLE:
+            return {"status": "memory_profiler_not_available"}
+
+        try:
+            from enhanced_agent_bus.memory_profiler import get_memory_profiler
+
+            profiler = get_memory_profiler()
+            if not profiler:
+                return {"status": "memory_profiling_disabled"}
+
+            # Get current memory snapshot
+            snapshot = await profiler.take_snapshot("dashboard_request")
+
+            return {
+                "status": "active",
+                "current_mb": round(snapshot.current_mb, 2),
+                "peak_mb": round(snapshot.peak_bytes / (1024 * 1024), 2),
+                "timestamp": snapshot.timestamp,
+                "operation": snapshot.operation or "unknown",
+            }
+        except Exception as e:
+            return {"status": "error", "message": str(e)}
 
     @app.get("/dashboard/services", response_model=List[ServiceHealth])
-    async def get_services():
+    async def get_services(request: Request):
         """Get detailed service status."""
-        return await dashboard_service.health_checker.check_all_services()
+        return await request.app.state.dashboard_service.health_checker.check_all_services()
 
     @app.websocket("/dashboard/ws")
     async def websocket_endpoint(websocket: WebSocket):
         """WebSocket endpoint for real-time updates."""
         await websocket.accept()
-        await dashboard_service.register_websocket(websocket)
+        await websocket.app.state.dashboard_service.register_websocket(websocket)
 
         try:
             while True:
@@ -769,7 +809,7 @@ def create_dashboard_app() -> FastAPI:
                 # Echo back for ping/pong
                 await websocket.send_text(data)
         except WebSocketDisconnect:
-            await dashboard_service.unregister_websocket(websocket)
+            await websocket.app.state.dashboard_service.unregister_websocket(websocket)
 
     @app.get("/health")
     async def health_check():

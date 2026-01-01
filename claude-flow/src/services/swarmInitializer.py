@@ -14,10 +14,15 @@ import uuid
 # Add the ACGS-2 core to the path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../../../acgs2-core"))
 
+from ..utils.logging_config import log_error_result, log_success_result, log_warning, setup_logging
+
+# Setup logging
+logger = setup_logging(__name__, json_format=True)
+
 try:
     from enhanced_agent_bus import CONSTITUTIONAL_HASH, EnhancedAgentBus
 except ImportError as e:
-    print(json.dumps({"success": False, "error": f"Failed to import EnhancedAgentBus: {e}"}))
+    log_error_result(logger, f"Failed to import EnhancedAgentBus: {e}")
     sys.exit(1)
 
 
@@ -113,7 +118,7 @@ async def _persist_swarm_config(swarm_id: str, config: dict):
 
     except Exception as e:
         # Log error but don't fail initialization
-        print(f"Warning: Failed to persist swarm config: {e}", file=sys.stderr)
+        log_warning(logger, f"Failed to persist swarm config: {e}")
 
 
 async def _load_swarm_configs() -> dict:
@@ -131,11 +136,9 @@ async def _load_swarm_configs() -> dict:
                             if swarm_id:
                                 swarms[swarm_id] = config
                     except Exception as e:
-                        print(
-                            f"Warning: Failed to load swarm config {filename}: {e}", file=sys.stderr
-                        )
+                        log_warning(logger, f"Failed to load swarm config {filename}: {e}")
     except Exception as e:
-        print(f"Warning: Failed to load swarm configs: {e}", file=sys.stderr)
+        log_warning(logger, f"Failed to load swarm configs: {e}")
 
     return swarms
 
@@ -147,7 +150,7 @@ def main():
             "Usage: python swarmInitializer.py "
             "<topology> <max_agents> <strategy> <auto_spawn> <memory> <github>"
         )
-        print(json.dumps({"success": False, "error": error_msg}))
+        log_error_result(logger, error_msg)
         sys.exit(1)
 
     topology = sys.argv[1]
@@ -162,43 +165,26 @@ def main():
     valid_strategies = ["balanced", "parallel", "sequential"]
 
     if topology not in valid_topologies:
-        print(
-            json.dumps(
-                {
-                    "success": False,
-                    "error": f"Invalid topology: {topology}. Valid: {', '.join(valid_topologies)}",
-                }
-            )
+        log_error_result(
+            logger, f"Invalid topology: {topology}. Valid: {', '.join(valid_topologies)}"
         )
         sys.exit(1)
 
     if strategy not in valid_strategies:
-        print(
-            json.dumps(
-                {
-                    "success": False,
-                    "error": f"Invalid strategy: {strategy}. Valid: {', '.join(valid_strategies)}",
-                }
-            )
+        log_error_result(
+            logger, f"Invalid strategy: {strategy}. Valid: {', '.join(valid_strategies)}"
         )
         sys.exit(1)
 
     if not (1 <= max_agents <= 100):
-        print(
-            json.dumps(
-                {
-                    "success": False,
-                    "error": f"Invalid max_agents: {max_agents}. Must be between 1 and 100",
-                }
-            )
-        )
+        log_error_result(logger, f"Invalid max_agents: {max_agents}. Must be between 1 and 100")
         sys.exit(1)
 
     # Run the async function
     result = asyncio.run(
         initialize_swarm(topology, max_agents, strategy, auto_spawn, memory, github)
     )
-    print(json.dumps(result))
+    log_success_result(logger, result)
 
 
 if __name__ == "__main__":

@@ -14,10 +14,15 @@ from datetime import datetime, timezone
 # Add the ACGS-2 core to the path - validates ACGS-2 availability
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../../../acgs2-core"))
 
+from ..utils.logging_config import log_error_result, log_success_result, log_warning, setup_logging
+
+# Setup logging
+logger = setup_logging(__name__, json_format=True)
+
 try:
     import enhanced_agent_bus  # noqa: F401 - validates ACGS-2 availability
 except ImportError as e:
-    print(json.dumps({"success": False, "error": f"Failed to import EnhancedAgentBus: {e}"}))
+    log_error_result(logger, f"Failed to import EnhancedAgentBus: {e}")
     sys.exit(1)
 
 
@@ -87,11 +92,9 @@ async def _load_agent_info() -> list:
                             }
                             agents.append(agent)
                     except Exception as e:
-                        print(
-                            f"Warning: Failed to load agent info {filename}: {e}", file=sys.stderr
-                        )
+                        log_warning(logger, f"Failed to load agent info {filename}: {e}")
     except Exception as e:
-        print(f"Warning: Failed to load agent info: {e}", file=sys.stderr)
+        log_warning(logger, f"Warning: Failed to load agent info: {e}")
 
     return agents
 
@@ -111,11 +114,9 @@ async def _load_swarm_configs() -> dict:
                             if swarm_id:
                                 swarms[swarm_id] = config
                     except Exception as e:
-                        print(
-                            f"Warning: Failed to load swarm config {filename}: {e}", file=sys.stderr
-                        )
+                        log_warning(logger, f"Failed to load swarm config {filename}: {e}")
     except Exception as e:
-        print(f"Warning: Failed to load swarm configs: {e}", file=sys.stderr)
+        log_warning(logger, f"Warning: Failed to load swarm configs: {e}")
 
     return swarms
 
@@ -124,7 +125,7 @@ def main():
     """Main entry point"""
     # Run the async function
     result = asyncio.run(list_agents())
-    print(json.dumps(result))
+    log_success_result(logger, result)
 
 
 if __name__ == "__main__":

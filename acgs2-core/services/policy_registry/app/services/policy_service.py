@@ -125,7 +125,7 @@ class PolicyService:
             version,
             {
                 "content": content,
-                "signature": signature.dict(),
+                "signature": signature.model_dump(),
                 "status": policy_version.status.value,
             },
         )

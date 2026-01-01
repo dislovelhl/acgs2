@@ -23,7 +23,7 @@ async def list_policies(
     """List all policies (tenant-scoped)"""
     tenant_id = current_user.get("tenant_id")
     policies = await policy_service.list_policies(status, tenant_id=tenant_id)
-    return [policy.dict() for policy in policies]
+    return [policy.model_dump() for policy in policies]
 
 
 @router.post("/", response_model=Dict[str, Any])
@@ -43,7 +43,7 @@ async def create_policy(
         policy = await policy_service.create_policy(
             name=name, tenant_id=tenant_id, content=content, format=format, description=description
         )
-        return policy.dict()
+        return policy.model_dump()
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -54,14 +54,14 @@ async def get_policy(policy_id: str, policy_service=Depends(get_policy_service))
     policy = await policy_service.get_policy(policy_id)
     if not policy:
         raise HTTPException(status_code=404, detail="Policy not found")
-    return policy.dict()
+    return policy.model_dump()
 
 
 @router.get("/{policy_id}/versions", response_model=List[Dict[str, Any]])
 async def list_policy_versions(policy_id: str, policy_service=Depends(get_policy_service)):
     """List all versions of a policy"""
     versions = await policy_service.list_policy_versions(policy_id)
-    return [version.dict() for version in versions]
+    return [version.model_dump() for version in versions]
 
 
 @router.post("/{policy_id}/versions", response_model=Dict[str, Any])
@@ -92,7 +92,7 @@ async def create_policy_version(
             public_key_b64=public_key_b64,
             ab_test_group=ab_group,
         )
-        return policy_version.dict()
+        return policy_version.model_dump()
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -105,7 +105,7 @@ async def get_policy_version(
     policy_version = await policy_service.get_policy_version(policy_id, version)
     if not policy_version:
         raise HTTPException(status_code=404, detail="Policy version not found")
-    return policy_version.dict()
+    return policy_version.model_dump()
 
 
 @router.put("/{policy_id}/activate", response_model=Dict[str, Any])

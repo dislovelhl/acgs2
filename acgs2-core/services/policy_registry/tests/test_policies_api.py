@@ -720,7 +720,7 @@ class TestConstitutionalCompliance:
         )
 
         assert policy.constitutional_hash == CONSTITUTIONAL_HASH
-        assert policy.dict()["constitutional_hash"] == CONSTITUTIONAL_HASH
+        assert policy.model_dump()["constitutional_hash"] == CONSTITUTIONAL_HASH
 
 
 # =============================================================================
@@ -870,7 +870,7 @@ class TestPolicyStatus:
             status="active",
         )
 
-        policy_dict = policy.dict()
+        policy_dict = policy.model_dump()
         assert policy_dict["status"] == "active"
 
 

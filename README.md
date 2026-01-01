@@ -122,19 +122,20 @@ docker-compose up -d
 ### Test Commands
 
 ```bash
-# All tests with coverage
+# Run ALL tests across all components (recommended)
+./scripts/run_all_tests.sh
+
+# Run tests for specific components
+cd acgs2-core/enhanced_agent_bus && python -m pytest tests/ -v
+cd acgs2-core && python -m pytest services/policy_registry/tests/ -v
+
+# Legacy single-directory testing (limited scope)
 python3 -m pytest tests/ --cov=. --cov-report=html
 
-# By marker
+# By marker (component-specific)
 python3 -m pytest -m constitutional      # Constitutional validation tests
 python3 -m pytest -m integration          # Integration tests
 python3 -m pytest -m "not slow"           # Skip slow tests
-
-# Antifragility tests
-python3 -m pytest tests/test_health_aggregator.py tests/test_chaos_framework.py -v
-
-# MACI role separation tests (108 tests)
-python3 -m pytest tests/test_maci*.py -v
 ```
 
 ### Environment Variables
