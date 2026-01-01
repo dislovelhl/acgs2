@@ -100,6 +100,16 @@ from .registry import (
     RustValidationStrategy,
     StaticHashValidationStrategy,
 )
+from .runtime_security import (
+    RuntimeSecurityConfig,
+    RuntimeSecurityScanner,
+    SecurityEvent,
+    SecurityEventType,
+    SecurityScanResult,
+    SecuritySeverity,
+    get_runtime_security_scanner,
+    scan_content,
+)
 from .validators import (
     ValidationResult,
 )
@@ -179,4 +189,13 @@ __all__ = [
     "HandlerExecutionError",
     # Exceptions - Configuration
     "ConfigurationError",
+    # Runtime Security
+    "RuntimeSecurityConfig",
+    "RuntimeSecurityScanner",
+    "SecurityEvent",
+    "SecurityEventType",
+    "SecurityScanResult",
+    "SecuritySeverity",
+    "get_runtime_security_scanner",
+    "scan_content",
 ]

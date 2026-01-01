@@ -68,7 +68,7 @@ class CoordinationManager:
                 "skills": ["security", "code-review", "vulnerability-assessment"],
                 "estimated_effort": "3-4 hours",
                 "impact": "high",
-                "status": "completed",  # Audited: only PyTorch .eval() (safe), no dangerous patterns
+                "status": "completed",  # Audited: PyTorch .eval() only (safe)
                 "created_at": datetime.now(timezone.utc).isoformat(),
                 "progress": 100,
                 "completed_at": datetime.now(timezone.utc).isoformat(),
@@ -124,9 +124,10 @@ class CoordinationManager:
                 "skills": ["security", "runtime-analysis", "hardening"],
                 "estimated_effort": "6-8 hours",
                 "impact": "high",
-                "status": "pending",
+                "status": "completed",  # RuntimeSecurityScanner: 36 tests, XSS/SQLi detection
                 "created_at": datetime.now(timezone.utc).isoformat(),
-                "progress": 0,
+                "progress": 100,
+                "completed_at": datetime.now(timezone.utc).isoformat(),
             },
         ]
 
