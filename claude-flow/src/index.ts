@@ -6,6 +6,7 @@ import { agentCommand } from './commands/agent';
 import { swarmCommand } from './commands/swarm';
 import { analyzeCommand } from './commands/analyze';
 import { taskCommand } from './commands/task';
+import { coordinationCommand } from './commands/coordination';
 
 const program = new Command();
 
@@ -25,6 +26,9 @@ program.addCommand(analyzeCommand);
 
 // Add task command
 program.addCommand(taskCommand);
+
+// Add coordination command
+program.addCommand(coordinationCommand);
 
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (error) => {
