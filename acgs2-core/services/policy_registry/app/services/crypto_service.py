@@ -7,7 +7,7 @@ import hashlib
 import json
 import logging
 from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import jwt
 from cryptography.exceptions import InvalidSignature
@@ -177,9 +177,21 @@ class CryptoService:
         capabilities: List[str],
         private_key_b64: str,
         ttl_hours: int = 24,
+        extra_claims: Optional[Dict[str, Any]] = None,
     ) -> str:
         """
         Issue a SPIFFE-compatible SVID (JWT) for an agent using Ed25519.
+
+        Args:
+            agent_id: Unique agent identifier
+            tenant_id: Tenant identifier
+            capabilities: List of agent capabilities
+            private_key_b64: Base64-encoded Ed25519 private key
+            ttl_hours: Token time-to-live in hours
+            extra_claims: Optional additional claims to include in the token
+
+        Returns:
+            JWT token string
         """
         # Load private key
         private_bytes = base64.b64decode(private_key_b64)
@@ -202,6 +214,10 @@ class CryptoService:
             "constitutional_hash": "cdd01ef066bc6cf2",
         }
 
+        # Add extra claims if provided
+        if extra_claims:
+            payload.update(extra_claims)
+
         # Use EdDSA (Ed25519) algorithm
         token = jwt.encode(payload, private_key, algorithm="EdDSA")
         return token
@@ -223,9 +239,9 @@ class CryptoService:
                 audience=["acgs2-agent-bus", "acgs2-deliberation-layer"],
             )
             return payload
-        except jwt.ExpiredSignatureError:
-            raise ValueError("Token has expired")
+        except jwt.ExpiredSignatureError as e:
+            raise ValueError("Token has expired") from e
         except jwt.InvalidTokenError as e:
-            raise ValueError(f"Invalid token: {e}")
+            raise ValueError(f"Invalid token: {e}") from e
         except Exception as e:
-            raise ValueError(f"Token verification failed: {e}")
+            raise ValueError(f"Token verification failed: {e}") from e
