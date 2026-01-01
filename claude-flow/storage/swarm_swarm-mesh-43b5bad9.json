@@ -1,0 +1,14 @@
+{
+  "swarm_id": "swarm-mesh-43b5bad9",
+  "topology": "mesh",
+  "max_agents": 5,
+  "strategy": "balanced",
+  "auto_spawn": false,
+  "memory_enabled": false,
+  "github_enabled": false,
+  "created_at": 143276.803020123,
+  "active_agents": 0,
+  "tenant_id": "default",
+  "constitutional_hash": "cdd01ef066bc6cf2",
+  "persisted_at": 143276.803142543
+}

@@ -5,16 +5,17 @@ Agent Spawner for ACGS-2 Claude Flow CLI
 This script provides a bridge between the Node.js CLI and the Python EnhancedAgentBus.
 """
 
-import sys
-import json
 import asyncio
+import json
 import os
+import sys
+from datetime import datetime
 
 # Add the ACGS-2 core to the path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../../../acgs2-core"))
 
 try:
-    from enhanced_agent_bus import EnhancedAgentBus, CONSTITUTIONAL_HASH
+    from enhanced_agent_bus import EnhancedAgentBus
 except ImportError as e:
     print(json.dumps({"success": False, "error": f"Failed to import EnhancedAgentBus: {e}"}))
     sys.exit(1)
@@ -57,6 +58,22 @@ async def spawn_agent(agent_name: str, agent_type: str, skills: list):
             tenant_id="default",  # TODO: Make configurable
         )
 
+        # Persist agent information if registration was successful
+        if success:
+            await _persist_agent_info(
+                agent_id,
+                {
+                    "name": agent_name,
+                    "type": agent_type,
+                    "capabilities": capabilities,
+                    "status": "active",
+                    "created_at": datetime.now().timestamp(),
+                    "last_active": datetime.now().timestamp(),
+                    "tenant_id": "default",
+                    "swarm_id": None,  # TODO: Associate with current swarm
+                },
+            )
+
         # Stop the bus
         await bus.stop()
 
@@ -74,17 +91,32 @@ async def spawn_agent(agent_name: str, agent_type: str, skills: list):
         return {"success": False, "error": f"Exception during agent spawning: {str(e)}"}
 
 
+async def _persist_agent_info(agent_id: str, agent_info: dict):
+    """Persist agent information to file storage"""
+    try:
+        # Create storage directory if it doesn't exist
+        storage_dir = os.path.join(os.path.dirname(__file__), "../../storage")
+        os.makedirs(storage_dir, exist_ok=True)
+
+        # Save agent information
+        agent_file = os.path.join(storage_dir, f"agent_{agent_id}.json")
+        with open(agent_file, "w") as f:
+            json.dump(
+                {"agent_id": agent_id, **agent_info, "persisted_at": datetime.now().timestamp()},
+                f,
+                indent=2,
+            )
+
+    except Exception as e:
+        # Log error but don't fail spawning
+        print(f"Warning: Failed to persist agent info: {e}", file=sys.stderr)
+
+
 def main():
     """Main entry point for the script"""
     if len(sys.argv) < 4:
-        print(
-            json.dumps(
-                {
-                    "success": False,
-                    "error": "Usage: python agentSpawner.py <agent_name> <agent_type> <skills_json>",
-                }
-            )
-        )
+        error_msg = "Usage: python agentSpawner.py <agent_name> <agent_type> <skills_json>"
+        print(json.dumps({"success": False, "error": error_msg}))
         sys.exit(1)
 
     agent_name = sys.argv[1]

@@ -1,0 +1,18 @@
+{
+  "agent_id": "coder-claude-flow-dev-541",
+  "name": "claude-flow-dev",
+  "type": "coder",
+  "capabilities": [
+    "python",
+    "javascript",
+    "typescript",
+    "coding",
+    "development"
+  ],
+  "status": "active",
+  "created_at": 1767234615.895747,
+  "last_active": 1767234615.895748,
+  "tenant_id": "default",
+  "swarm_id": null,
+  "persisted_at": 1767234615.895884
+}

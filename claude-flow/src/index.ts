@@ -5,6 +5,7 @@ import chalk from 'chalk';
 import { agentCommand } from './commands/agent';
 import { swarmCommand } from './commands/swarm';
 import { analyzeCommand } from './commands/analyze';
+import { taskCommand } from './commands/task';
 
 const program = new Command();
 
@@ -21,6 +22,9 @@ program.addCommand(swarmCommand);
 
 // Add analyze command
 program.addCommand(analyzeCommand);
+
+// Add task command
+program.addCommand(taskCommand);
 
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (error) => {

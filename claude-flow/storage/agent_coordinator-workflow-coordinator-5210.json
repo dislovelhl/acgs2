@@ -1,0 +1,17 @@
+{
+  "agent_id": "coordinator-workflow-coordinator-5210",
+  "name": "workflow-coordinator",
+  "type": "coordinator",
+  "capabilities": [
+    "coordination",
+    "orchestration",
+    "workflow-management",
+    "task-distribution"
+  ],
+  "status": "active",
+  "created_at": 1767234625.677571,
+  "last_active": 1767234625.677572,
+  "tenant_id": "default",
+  "swarm_id": null,
+  "persisted_at": 1767234625.677692
+}

@@ -5,17 +5,17 @@ Swarm Initializer for ACGS-2 Claude Flow CLI
 This script initializes a swarm with specified topology and configuration.
 """
 
-import sys
-import json
 import asyncio
+import json
 import os
+import sys
 import uuid
 
 # Add the ACGS-2 core to the path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../../../acgs2-core"))
 
 try:
-    from enhanced_agent_bus import EnhancedAgentBus, CONSTITUTIONAL_HASH
+    from enhanced_agent_bus import CONSTITUTIONAL_HASH, EnhancedAgentBus
 except ImportError as e:
     print(json.dumps({"success": False, "error": f"Failed to import EnhancedAgentBus: {e}"}))
     sys.exit(1)
@@ -50,9 +50,10 @@ async def initialize_swarm(
             "constitutional_hash": CONSTITUTIONAL_HASH,
         }
 
-        # Store swarm configuration in the bus
-        # Note: This is a simplified implementation. In a real system,
-        # you'd want to persist this configuration to a database
+        # Store swarm configuration persistently
+        await _persist_swarm_config(swarm_id, swarm_config)
+
+        # Also store in bus memory for immediate access
         bus._swarms = getattr(bus, "_swarms", {})
         bus._swarms[swarm_id] = swarm_config
 
@@ -98,17 +99,55 @@ async def initialize_swarm(
         return {"success": False, "error": f"Exception during swarm initialization: {str(e)}"}
 
 
+async def _persist_swarm_config(swarm_id: str, config: dict):
+    """Persist swarm configuration to file storage"""
+    try:
+        # Create storage directory if it doesn't exist
+        storage_dir = os.path.join(os.path.dirname(__file__), "../../storage")
+        os.makedirs(storage_dir, exist_ok=True)
+
+        # Save swarm configuration
+        config_file = os.path.join(storage_dir, f"swarm_{swarm_id}.json")
+        with open(config_file, "w") as f:
+            json.dump({**config, "persisted_at": asyncio.get_event_loop().time()}, f, indent=2)
+
+    except Exception as e:
+        # Log error but don't fail initialization
+        print(f"Warning: Failed to persist swarm config: {e}", file=sys.stderr)
+
+
+async def _load_swarm_configs() -> dict:
+    """Load all persisted swarm configurations"""
+    swarms = {}
+    try:
+        storage_dir = os.path.join(os.path.dirname(__file__), "../../storage")
+        if os.path.exists(storage_dir):
+            for filename in os.listdir(storage_dir):
+                if filename.startswith("swarm_") and filename.endswith(".json"):
+                    try:
+                        with open(os.path.join(storage_dir, filename), "r") as f:
+                            config = json.load(f)
+                            swarm_id = config.get("swarm_id")
+                            if swarm_id:
+                                swarms[swarm_id] = config
+                    except Exception as e:
+                        print(
+                            f"Warning: Failed to load swarm config {filename}: {e}", file=sys.stderr
+                        )
+    except Exception as e:
+        print(f"Warning: Failed to load swarm configs: {e}", file=sys.stderr)
+
+    return swarms
+
+
 def main():
     """Main entry point for the script"""
     if len(sys.argv) < 7:
-        print(
-            json.dumps(
-                {
-                    "success": False,
-                    "error": "Usage: python swarmInitializer.py <topology> <max_agents> <strategy> <auto_spawn> <memory> <github>",
-                }
-            )
+        error_msg = (
+            "Usage: python swarmInitializer.py "
+            "<topology> <max_agents> <strategy> <auto_spawn> <memory> <github>"
         )
+        print(json.dumps({"success": False, "error": error_msg}))
         sys.exit(1)
 
     topology = sys.argv[1]

@@ -1,0 +1,20 @@
+{
+  "agent_id": "tester-qa-engineer-537",
+  "name": "qa-engineer",
+  "type": "tester",
+  "capabilities": [
+    "testing",
+    "qa",
+    "validation",
+    "automation",
+    "automation",
+    "testing",
+    "ci-cd"
+  ],
+  "status": "active",
+  "created_at": 1767234133.37502,
+  "last_active": 1767234133.375022,
+  "tenant_id": "default",
+  "swarm_id": null,
+  "persisted_at": 1767234133.375168
+}

@@ -93,8 +93,28 @@ async function runPythonScript(args: string[]): Promise<any> {
 }
 
 export async function listAgents(): Promise<any[]> {
-  // TODO: Implement listing agents from the bus
-  return [];
+  try {
+    // Path to the Python agent list script
+    let listPath = path.join(__dirname, 'agentList.py');
+    if (!require('fs').existsSync(listPath)) {
+      // Try the src path from dist
+      listPath = path.join(__dirname, '../../src/services/agentList.py');
+    }
+
+    // Run the Python script to get agent list
+    const result = await runPythonScript([listPath]);
+
+    if (result.success) {
+      return result.agents || [];
+    } else {
+      console.warn('Failed to list agents:', result.error);
+      return [];
+    }
+
+  } catch (error) {
+    console.warn('Error listing agents:', error);
+    return [];
+  }
 }
 
 export async function removeAgent(agentId: string): Promise<boolean> {

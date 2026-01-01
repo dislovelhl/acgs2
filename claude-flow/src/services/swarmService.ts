@@ -99,8 +99,28 @@ async function runPythonScript(args: string[]): Promise<any> {
 }
 
 export async function getSwarmStatus(): Promise<any> {
-  // TODO: Implement getting swarm status
-  return {};
+  try {
+    // Path to the Python swarm status script
+    let statusPath = path.join(__dirname, 'swarmStatus.py');
+    if (!require('fs').existsSync(statusPath)) {
+      // Try the src path from dist
+      statusPath = path.join(__dirname, '../../src/services/swarmStatus.py');
+    }
+
+    // Run the Python script to get swarm status
+    const result = await runPythonScript([statusPath]);
+
+    if (result.success) {
+      return result.status || {};
+    } else {
+      console.warn('Failed to get swarm status:', result.error);
+      return {};
+    }
+
+  } catch (error) {
+    console.warn('Error getting swarm status:', error);
+    return {};
+  }
 }
 
 export async function shutdownSwarm(): Promise<boolean> {

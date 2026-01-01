@@ -1,0 +1,17 @@
+{
+  "agent_id": "tester-integration-tester-1313",
+  "name": "integration-tester",
+  "type": "tester",
+  "capabilities": [
+    "testing",
+    "qa",
+    "validation",
+    "automation"
+  ],
+  "status": "active",
+  "created_at": 1767234616.864141,
+  "last_active": 1767234616.864142,
+  "tenant_id": "default",
+  "swarm_id": null,
+  "persisted_at": 1767234616.864264
+}
