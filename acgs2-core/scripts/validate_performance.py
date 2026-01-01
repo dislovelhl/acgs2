@@ -213,7 +213,7 @@ def print_results(results: List[ValidationResult], format_type: str = "text") ->
         logging.info(f"Constitutional Hash: {CONSTITUTIONAL_HASH}")
         logging.info(f"Timestamp: {datetime.now(timezone.utc)}")
         logging.info("=" * 70)
-        print()
+        logging.info("")
 
         for result in results:
             status_icon = {Status.PASS: "[PASS]", Status.WARNING: "[WARN]", Status.FAIL: "[FAIL]"}[
@@ -225,7 +225,7 @@ def print_results(results: List[ValidationResult], format_type: str = "text") ->
             logging.warning(f"       Warning Threshold: {result.threshold_warning}")
             logging.error(f"       Critical Threshold: {result.threshold_critical}")
             logging.info(f"       Message: {result.message}")
-            print()
+            logging.info("")
 
         logging.info("=" * 70)
 
@@ -235,7 +235,7 @@ def print_results(results: List[ValidationResult], format_type: str = "text") ->
             else "WARNING" if any(r.status == Status.WARNING for r in results) else "PASS"
         )
         logging.info(f"Overall Status: {overall_status}")
-        print()
+        logging.info("")
 
 
 def generate_github_annotations(results: List[ValidationResult]) -> None:

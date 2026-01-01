@@ -413,7 +413,7 @@ class PerformanceProfiler:
         logging.info("-" * 80)
 
         for bottleneck in bottlenecks:
-            print(
+            logging.info(
                 f"{bottleneck.component:<30} "
                 f"{bottleneck.p99_latency_ms:>8.3f}ms    "
                 f"{bottleneck.percentage_of_total:>7.1f}%     "

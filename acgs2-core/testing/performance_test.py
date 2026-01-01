@@ -201,7 +201,7 @@ class TestPerformance:
                 assert (
                     stats["mean_latency_ms"] < 1000
                 ), f"{service_name} mean latency {stats['mean_latency_ms']:.2f}ms too high"
-                print(
+                logging.info(
                     f"{service_name}: {stats['mean_latency_ms']:.2f}ms mean, {stats['p95_latency_ms']:.2f}ms p95"
                 )
             else:

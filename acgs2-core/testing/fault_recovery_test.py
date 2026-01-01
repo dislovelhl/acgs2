@@ -1,4 +1,5 @@
 import logging
+
 #!/usr/bin/env python3
 """
 ACGS-2 Fault Recovery Test Suite
@@ -56,7 +57,7 @@ class FaultInjector:
                 rust_strategy._original_process = rust_strategy.process
 
             async def failing_process(*args, **kwargs):
-                logging.debug("DEBUG: Executing failing Rust process (FAULT INJECTION)
+                logging.debug("DEBUG: Executing failing Rust process (FAULT INJECTION)")
                 raise RuntimeError("Simulated Rust Backend Crash (Fault Injection)")
 
             rust_strategy.process = failing_process
@@ -422,7 +423,7 @@ class FaultRecoveryTester:
             # outline says process(self, message)
             validation_result = await processor.process(message)
             results["fallback_triggered"] = True
-            logging.debug(f"DEBUG: Processed message status: {getattr(message, 'status', 'N/A')
+            logging.debug(f"DEBUG: Processed message status: {getattr(message, 'status', 'N/A')}")
 
             # 4. Verify integrity
             # message should remain unchanged (except for status/metadata)
@@ -492,8 +493,8 @@ class FaultRecoveryTester:
         if rust_strategy and rust_strategy._breaker_tripped:
             results["breaker_tripped"] = True
         else:
-            print(
-                f"Warning: Breaker did not trip. Fail count: {getattr(rust_strategy, '_failure_count', 'N/A')}"
+            logging.warning(
+                f"Breaker did not trip. Fail count: {getattr(rust_strategy, '_failure_count', 'N/A')}"
             )
 
         # 2. Run high concurrent load via Python (while breaker is OPEN)

@@ -1,4 +1,5 @@
 import logging
+
 #!/usr/bin/env python3
 """
 Surface Code Extension for PAG-QEC Framework
@@ -604,7 +605,9 @@ class CurriculumTrainer:
         logging.info("=" * 60)
 
         for stage, error_rate in enumerate(self.error_rates):
-            logging.error(f"\nStage {stage + 1}/{self.num_stages}: " f"Error Rate = {error_rate:.4f}")
+            logging.error(
+                f"\nStage {stage + 1}/{self.num_stages}: " f"Error Rate = {error_rate:.4f}"
+            )
 
             # Create environment for this stage
             env = SurfaceCodeEnvironment(distance=self.distance, physical_error_rate=error_rate)
@@ -624,7 +627,7 @@ class CurriculumTrainer:
             self.history["train_accuracy"].append(stage_acc)
             self.history["logical_error_rate"].append(ler)
 
-            print(
+            logging.info(
                 f"  Loss: {stage_loss:.4f}, Accuracy: {stage_acc:.2%}, "
                 f"Logical Error Rate: {ler:.4f}"
             )
@@ -751,7 +754,7 @@ def run_surface_code_benchmark(
         env = SurfaceCodeEnvironment(distance=d, physical_error_rate=error_rate)
 
         # Train neural decoder with curriculum
-        logging.info("\n[1/3] Training Neural Decoder (Curriculum)
+        logging.info("\n[1/3] Training Neural Decoder (Curriculum)...")
         neural_decoder = SurfaceCodeNeuralDecoder(
             distance=d, hidden_multiplier=4, num_layers=2, num_heads=2
         )
@@ -772,7 +775,7 @@ def run_surface_code_benchmark(
         mwpm_decoder = MWPMDecoder(env.geometry)
 
         # Generate test data
-        logging.info(f"\n[3/3] Running benchmark ({num_samples} samples)
+        logging.info(f"\n[3/3] Running benchmark ({num_samples} samples)")
         test_data = env.generate_dataset(num_samples)
 
         # Benchmark Neural Decoder
@@ -814,10 +817,10 @@ def run_surface_code_benchmark(
         logging.info(f"\nResults for Distance-{d}:")
         logging.info("  Neural Decoder:")
         logging.error(f"    Logical Error Rate: {neural_logical_errors/num_samples:.4f}")
-        logging.info(f"    Avg Latency: {neural_decoder.get_avg_inference_time_ns()
+        logging.info(f"    Avg Latency: {neural_decoder.get_avg_inference_time_ns()} ns")
         logging.info("  MWPM Decoder:")
         logging.error(f"    Logical Error Rate: {mwpm_logical_errors/num_samples:.4f}")
-        logging.info(f"    Avg Latency: {mwpm_decoder.get_avg_inference_time_ns()
+        logging.info(f"    Avg Latency: {mwpm_decoder.get_avg_inference_time_ns()} ns")
 
     # Summary
     logging.info("\n" + "=" * 60)
@@ -851,7 +854,7 @@ def run_surface_code_benchmark(
 
 def main():
     """Main entry point for surface code extension."""
-    print(
+    logging.info(
         """
     ╔═══════════════════════════════════════════════════════════════╗
     ║  Surface Code Extension for PAG-QEC Framework                 ║
@@ -866,7 +869,7 @@ def main():
     logging.info("\n" + "=" * 60)
     logging.info("SURFACE CODE EXTENSION READY")
     logging.info("=" * 60)
-    print(
+    logging.info(
         """
     Next steps:
     1. Scale to distance-7 (49 data qubits, 48 syndrome bits)

@@ -1,4 +1,5 @@
 import logging
+
 #!/usr/bin/env python3
 """
 ACGS-2 Comprehensive Load Testing Suite
@@ -290,10 +291,10 @@ class EnhancedAgentBusLoadTester:
         """Print test result summary."""
         logging.info(f"\n{result.test_name} Results:")
         logging.info(f"  Iterations: {result.iterations}")
-        logging.info(f"  Successful: {result.successful} ({result.success_rate:.1%})
+        logging.info(f"  Successful: {result.successful} ({result.success_rate:.1%})")
         logging.error(f"  Failed: {result.failed}")
         logging.info(f"  Throughput: {result.throughput_rps:.2f} RPS")
-        logging.info("  Latency (ms)
+        logging.info("  Latency (ms):")
         logging.info(f"    Min:    {result.min_latency_ms:.3f}")
         logging.info(f"    Mean:   {result.mean_latency_ms:.3f}")
         logging.info(f"    Median: {result.median_latency_ms:.3f}")
@@ -307,11 +308,11 @@ class EnhancedAgentBusLoadTester:
 
         if not meets_targets:
             if result.p99_latency_ms >= P99_LATENCY_TARGET_MS:
-                print(
+                logging.warning(
                     f"    ⚠ P99 latency {result.p99_latency_ms:.3f}ms exceeds target {P99_LATENCY_TARGET_MS}ms"
                 )
             if result.throughput_rps < MIN_THROUGHPUT_RPS:
-                print(
+                logging.warning(
                     f"    ⚠ Throughput {result.throughput_rps:.2f} RPS below target {MIN_THROUGHPUT_RPS} RPS"
                 )
 
@@ -469,10 +470,10 @@ class DashboardAPILoadTester:
         """Print test result summary."""
         logging.info(f"\n{result.test_name} Results:")
         logging.info(f"  Iterations: {result.iterations}")
-        logging.info(f"  Successful: {result.successful} ({result.success_rate:.1%})
+        logging.info(f"  Successful: {result.successful} ({result.success_rate:.1%})")
         logging.error(f"  Failed: {result.failed}")
         logging.info(f"  Throughput: {result.throughput_rps:.2f} RPS")
-        logging.info("  Latency (ms)
+        logging.info("  Latency (ms):")
         logging.info(f"    Min:    {result.min_latency_ms:.3f}")
         logging.info(f"    Mean:   {result.mean_latency_ms:.3f}")
         logging.info(f"    Median: {result.median_latency_ms:.3f}")
@@ -504,7 +505,7 @@ class ComprehensiveLoadTestSuite:
         logging.info(f"\n{'#'*60}")
         logging.info("# ACGS-2 Comprehensive Load Test Suite")
         logging.info(f"# Constitutional Hash: {CONSTITUTIONAL_HASH}")
-        logging.info(f"# Start Time: {datetime.now(timezone.utc)
+        logging.info(f"# Start Time: {datetime.now(timezone.utc)}")
         logging.info(f"{'#'*60}")
 
         start_time = datetime.now(timezone.utc)
@@ -586,12 +587,12 @@ class ComprehensiveLoadTestSuite:
         logging.error(f"Total Failed: {summary['total_failed']}")
         logging.info(f"Overall Success Rate: {summary['overall_success_rate']:.1%}")
 
-        logging.info("\nLatency Statistics (ms)
+        logging.info("\nLatency Statistics (ms):")
         logging.info(f"  Best P99:    {summary['best_p99_latency_ms']:.3f}")
         logging.info(f"  Worst P99:   {summary['worst_p99_latency_ms']:.3f}")
         logging.info(f"  Average P99: {summary['avg_p99_latency_ms']:.3f}")
 
-        logging.info("\nThroughput Statistics (RPS)
+        logging.info("\nThroughput Statistics (RPS):")
         logging.info(f"  Best:    {summary['best_throughput_rps']:.2f}")
         logging.info(f"  Worst:   {summary['worst_throughput_rps']:.2f}")
         logging.info(f"  Average: {summary['avg_throughput_rps']:.2f}")
@@ -599,8 +600,12 @@ class ComprehensiveLoadTestSuite:
         logging.info(f"\n{'='*60}")
         logging.info("PERFORMANCE TARGET VALIDATION")
         logging.info(f"{'='*60}")
-        logging.info(f"Tests Meeting Targets: {summary['tests_meeting_targets']}/{summary['total_tests']}")
-        logging.info(f"Tests Failing Targets: {summary['tests_failing_targets']}/{summary['total_tests']}")
+        logging.info(
+            f"Tests Meeting Targets: {summary['tests_meeting_targets']}/{summary['total_tests']}"
+        )
+        logging.info(
+            f"Tests Failing Targets: {summary['tests_failing_targets']}/{summary['total_tests']}"
+        )
 
         logging.info("\nTargets:")
         logging.info(f"  P99 Latency:  < {P99_LATENCY_TARGET_MS}ms")

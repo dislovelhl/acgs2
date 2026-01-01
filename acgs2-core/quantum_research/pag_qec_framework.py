@@ -1,4 +1,5 @@
 import logging
+
 #!/usr/bin/env python3
 """
 PAG-QEC Framework: Predictive AI-Guided Quantum Error Correction
@@ -338,7 +339,7 @@ class DecoderTrainer:
         """
         Supervised training on syndrome → correction mapping.
         """
-        logging.info(f"Generating training dataset ({dataset_size} samples)
+        logging.info(f"Generating training dataset ({dataset_size} samples)")
         dataset = self.env.generate_dataset(dataset_size)
 
         # Convert to tensors
@@ -390,7 +391,7 @@ class DecoderTrainer:
             self.training_history["accuracy"].append(accuracy)
 
             if (epoch + 1) % 20 == 0:
-                print(
+                logging.info(
                     f"  Epoch {epoch+1}/{num_epochs} | Loss: {avg_loss:.4f} | Acc: {accuracy:.2%}"
                 )
 
@@ -629,7 +630,7 @@ def run_benchmark(num_iterations: int = 10000) -> Dict[str, Dict]:
     # Generate test syndromes
     test_data = env.generate_dataset(num_iterations)
 
-    logging.info(f"\n[4/4] Running benchmark ({num_iterations} iterations)
+    logging.info(f"\n[4/4] Running benchmark ({num_iterations} iterations)")
 
     # Benchmark: Lookup Table
     logging.info("  - Lookup Table Decoder...")
@@ -646,7 +647,7 @@ def run_benchmark(num_iterations: int = 10000) -> Dict[str, Dict]:
     }
 
     # Benchmark: Neural Decoder (FP32)
-    logging.info("  - Neural Decoder (FP32)
+    logging.info("  - Neural Decoder (FP32)...")
     neural_decoder.inference_count = 0
     neural_decoder.total_inference_time_ns = 0
     neural_correct = 0
@@ -697,7 +698,7 @@ def run_benchmark(num_iterations: int = 10000) -> Dict[str, Dict]:
         logging.info(f"\n{data['description']}:")
         logging.info(f"  Accuracy:     {data['accuracy']:.2%}")
         latency_us = data["avg_latency_ns"] / 1000
-        logging.info(f"  Avg Latency:  {data['avg_latency_ns']:.0f} ns ({latency_us:.2f} µs)
+        logging.info(f"  Avg Latency:  {data['avg_latency_ns']:.0f} ns ({latency_us:.2f} µs)")
         if "cache_hit_rate" in data:
             logging.info(f"  Cache Hit:    {data['cache_hit_rate']:.2%}")
             logging.info(f"  P99 Latency:  {data['p99_latency_ns']:.0f} ns")
@@ -708,8 +709,8 @@ def run_benchmark(num_iterations: int = 10000) -> Dict[str, Dict]:
     logging.info("=" * 60)
     spec_latency_us = results["speculative"]["avg_latency_ns"] / 1000
     logging.info(f"\nOur speculative engine:  {spec_latency_us:.2f} µs")
-    logging.info("Google Willow (2024)
-    logging.info("IBM qLDPC (2025)
+    logging.info("Google Willow (2024):     ~63 µs (quantum error correction)")
+    logging.info("IBM qLDPC (2025):         ~0.48 µs (theoretical)")
 
     if spec_latency_us < 63:
         logging.info(f"\n>> {63/spec_latency_us:.1f}x faster than Google Willow!")
@@ -728,7 +729,7 @@ def main():
     """
     Main entry point for PAG-QEC framework demonstration.
     """
-    print(
+    logging.info(
         """
     ╔═══════════════════════════════════════════════════════════════╗
     ║  PAG-QEC: Predictive AI-Guided Quantum Error Correction       ║
@@ -743,7 +744,7 @@ def main():
     logging.info("\n" + "=" * 60)
     logging.info("FRAMEWORK READY FOR DEPLOYMENT")
     logging.info("=" * 60)
-    print(
+    logging.info(
         """
     Next steps for production deployment:
     1. Export quantized model: decoder.quantize_for_deployment()

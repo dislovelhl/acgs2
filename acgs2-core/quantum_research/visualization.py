@@ -1,4 +1,5 @@
 import logging
+
 #!/usr/bin/env python3
 """
 Visualization Utilities for PAG-QEC Framework
@@ -536,11 +537,11 @@ def demo_three_qubit():
     logging.info("=" * 60)
 
     # Show encoding
-    logging.info("\n" + viz.show_encoding(0)
-    logging.info("\n" + viz.show_encoding(1)
+    logging.info("\n" + viz.show_encoding(0))
+    logging.info("\n" + viz.show_encoding(1))
 
     # Show error correction cycle
-    print(
+    logging.info(
         "\n"
         + viz.show_error_correction_cycle(
             initial=(0, 0, 0), error_qubit=1, syndrome=(1, 1), correction=1
@@ -548,7 +549,7 @@ def demo_three_qubit():
     )
 
     # Show state with error
-    print(
+    logging.info(
         "\n"
         + viz.show_state(qubit_values=(0, 1, 0), syndrome=(1, 1), error_qubit=1, correction_qubit=1)
     )
@@ -563,12 +564,12 @@ def demo_surface_code():
     logging.info("=" * 60)
 
     # Distance-3 with errors
-    logging.error("\n" + viz.show_lattice(distance=3, x_errors={4}, z_errors={0, 8})
+    logging.error("\n" + viz.show_lattice(distance=3, x_errors={4}, z_errors={0, 8}))
 
     # Syndrome pattern
     x_syn = np.array([1, 0, 0, 1])
     z_syn = np.array([0, 1, 0, 0])
-    logging.info("\n" + viz.show_syndrome_pattern(3, x_syn, z_syn)
+    logging.info("\n" + viz.show_syndrome_pattern(3, x_syn, z_syn))
 
 
 def demo_performance():
@@ -586,11 +587,11 @@ def demo_performance():
         "Neural (INT8)": {"accuracy": 0.96, "latency_ns": 2000},
         "Speculative": {"accuracy": 0.97, "latency_ns": 1500},
     }
-    logging.info("\n" + viz.show_comparison_table(results)
+    logging.info("\n" + viz.show_comparison_table(results))
 
     # Latency histogram
     latencies = np.random.exponential(2000, 1000).tolist()
-    logging.info("\n" + viz.show_latency_histogram(latencies, num_bins=8)
+    logging.info("\n" + viz.show_latency_histogram(latencies, num_bins=8))
 
     # Training curve
     epochs = 100
@@ -598,12 +599,12 @@ def demo_performance():
     accuracies = [
         0.5 + 0.45 * (1 - np.exp(-i / 20)) + 0.02 * np.random.random() for i in range(epochs)
     ]
-    logging.info("\n" + viz.show_training_curve(losses, accuracies)
+    logging.info("\n" + viz.show_training_curve(losses, accuracies))
 
 
 def main():
     """Run all visualization demos."""
-    print(
+    logging.info(
         """
     ╔═══════════════════════════════════════════════════════════════╗
     ║  PAG-QEC Visualization Utilities                              ║

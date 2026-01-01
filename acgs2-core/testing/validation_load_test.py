@@ -1,4 +1,5 @@
 import logging
+
 #!/usr/bin/env python3
 """
 ACGS-2 Performance Validation Load Test
@@ -192,10 +193,10 @@ class MessageProcessingBenchmark:
         logging.info("Results:")
         logging.info(f"{'-'*60}")
         logging.info(f"Iterations:     {result.iterations}")
-        logging.info(f"Successful:     {result.successful} ({result.success_rate:.1%})
+        logging.info(f"Successful:     {result.successful} ({result.success_rate:.1%})")
         logging.error(f"Failed:         {result.failed}")
         logging.info(f"Throughput:     {result.throughput_rps:.2f} RPS")
-        logging.info("\nLatency (ms)
+        logging.info("\nLatency (ms):")
         logging.info(f"  Min:          {result.min_latency_ms:.3f}")
         logging.info(f"  Mean:         {result.mean_latency_ms:.3f}")
         logging.info(f"  Median:       {result.median_latency_ms:.3f}")
@@ -216,20 +217,20 @@ class MessageProcessingBenchmark:
         throughput_pass = result.throughput_rps >= MIN_THROUGHPUT_RPS
         success_pass = result.success_rate >= 0.95
 
-        print(
+        logging.info(
             f"P99 Latency:    {'✓' if p99_pass else '✗'} {result.p99_latency_ms:.3f}ms (target: <{P99_LATENCY_TARGET_MS}ms)"
         )
-        print(
+        logging.info(
             f"Throughput:     {'✓' if throughput_pass else '✗'} {result.throughput_rps:.0f} RPS (target: >{MIN_THROUGHPUT_RPS} RPS)"
         )
-        print(
+        logging.info(
             f"Success Rate:   {'✓' if success_pass else '✗'} {result.success_rate:.1%} (target: >95%)"
         )
 
         logging.info(f"\n{'-'*60}")
         logging.info("Baseline Comparison:")
         logging.info(f"{'-'*60}")
-        logging.info(f"Baseline ({BASELINE_METRICS['phase']})
+        logging.info(f"Baseline ({BASELINE_METRICS['phase']}):")
         logging.info(f"  P99 Latency:  {BASELINE_METRICS['p99_latency_ms']}ms")
         logging.info(f"  Throughput:   {BASELINE_METRICS['throughput_rps']} RPS")
 
@@ -416,7 +417,7 @@ async def main():
     logging.info(f"\n{'#'*60}")
     logging.info("# ACGS-2 Performance Validation Load Test")
     logging.info(f"# Constitutional Hash: {CONSTITUTIONAL_HASH}")
-    logging.info(f"# Start Time: {datetime.now(timezone.utc)
+    logging.info(f"# Start Time: {datetime.now(timezone.utc)}")
     logging.info(f"{'#'*60}\n")
 
     # Run benchmark
