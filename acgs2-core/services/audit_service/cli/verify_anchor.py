@@ -1,4 +1,5 @@
 import logging
+
 """
 ACGS-2 Audit Service - Anchor Verification CLI
 Constitutional Hash: cdd01ef066bc6cf2
@@ -27,15 +28,19 @@ def verify_root(root_hash: str):
                 logging.info(f"   Block Hash:  {block['hash']}")
                 break
     else:
-        logging.error(f"❌ VERIFICATION FAILED: Hash {root_hash} NOT found in the blockchain anchor.")
+        logging.error(
+            f"❌ VERIFICATION FAILED: Hash {root_hash} NOT found in the blockchain anchor."
+        )
 
 
 def list_blocks():
     anchor = BlockchainAnchor()
-    logging.info(f"Blockchain Anchor: {len(anchor.blocks)
+    logging.info(f"Blockchain Anchor: {len(anchor.blocks)} blocks")
     logging.info("-" * 60)
     for block in anchor.blocks:
-        logging.info(f"B[{block['index']}] | {block['timestamp']} | Root: {block['root_hash'][:16]}...")
+        logging.info(
+            f"B[{block['index']}] | {block['timestamp']} | Root: {block['root_hash'][:16]}..."
+        )
 
 
 if __name__ == "__main__":

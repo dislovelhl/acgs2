@@ -10,7 +10,6 @@ from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-
 from enhanced_agent_bus.runtime_security import (
     SecurityEvent,
     SecurityEventType,
@@ -31,7 +30,6 @@ from enhanced_agent_bus.siem_integration import (
     log_security_event,
     security_audit,
 )
-
 
 # --- Test Fixtures ---
 

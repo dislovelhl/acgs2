@@ -73,7 +73,7 @@ async def test_enhanced_stats():
     client.current_rpc_index = 1
 
     stats = await client.get_network_stats()
-    logging.info(f"Stats: {json.dumps(stats, indent=2)
+    logging.info(f"Stats: {json.dumps(stats, indent=2)}")
 
     if stats["rpc_pool_size"] == 2 and stats["failover_count"] == 5:
         logging.info("PASS: Enhanced stats reported correctly")

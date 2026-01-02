@@ -6,20 +6,17 @@ Implements ML-based adaptive governance with dynamic impact scoring and
 self-evolving constitutional thresholds for intelligent AI safety governance.
 """
 
-import asyncio
-import json
 import logging
 import threading
 import time
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 from sklearn.ensemble import IsolationForest, RandomForestRegressor
 from sklearn.preprocessing import StandardScaler
-from sklearn.model_selection import train_test_split
 
 # Constitutional imports
 try:
@@ -30,9 +27,7 @@ try:
     )
 except ImportError:
     from exceptions import (
-        ConstitutionalValidationError,
         GovernanceError,
-        ImpactAssessmentError,
     )
 
 logger = logging.getLogger(__name__)

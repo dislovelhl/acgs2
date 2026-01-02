@@ -1,10 +1,11 @@
 import asyncio
 import logging
+
 from services.audit_service.core.blockchain_anchor_manager import (
-    BlockchainAnchorManager,
-    AnchorManagerConfig,
     AnchorBackend,
+    AnchorManagerConfig,
     AnchorStatus,
+    BlockchainAnchorManager,
 )
 
 # Configure logging

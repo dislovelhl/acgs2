@@ -6,9 +6,9 @@ Replaces all print() statements with proper logging in the enhanced_agent_bus mo
 Part of QUAL-001: Remove Print Statements task execution.
 """
 
+import logging
 import os
 import re
-import logging
 from pathlib import Path
 
 # Configure logging for this script
@@ -138,7 +138,7 @@ class PrintStatementFixer:
         else:
             logger_name = f"enhanced_agent_bus.{logger_name}"
 
-        logger_line = f"logger = logging.getLogger(__name__)"
+        logger_line = "logger = logging.getLogger(__name__)"
 
         # Insert logger after imports
         lines.insert(insert_index, "")

@@ -8,6 +8,7 @@ NeMo-Agent-Toolkit's agent optimization pipeline.
 
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import json
 import logging

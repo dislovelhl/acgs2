@@ -7,10 +7,9 @@ Simplifies complex import patterns by removing unnecessary try/except blocks.
 """
 
 import ast
-import re
-from pathlib import Path
-from typing import Dict, List, Set, Tuple, Optional
 import logging
+from pathlib import Path
+from typing import Dict
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(levelname)s - %(message)s")

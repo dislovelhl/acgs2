@@ -2,11 +2,11 @@ import asyncio
 import logging
 
 from enhanced_agent_bus.deliberation_layer.workflows.constitutional_saga import (
-
-logger = logging.getLogger(__name__)
     SagaContext,
     create_constitutional_validation_saga,
 )
+
+logger = logging.getLogger(__name__)
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)

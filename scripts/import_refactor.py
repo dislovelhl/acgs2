@@ -7,10 +7,9 @@ Refactors complex import patterns to use centralized import management.
 """
 
 import ast
-import re
-from pathlib import Path
-from typing import Dict, List, Set, Tuple, Optional
 import logging
+from pathlib import Path
+from typing import Dict, List
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(levelname)s - %(message)s")
@@ -216,7 +215,7 @@ def main():
     # Identify refactoring candidates
     candidates = identify_refactoring_candidates(root_path)
 
-    print(f"📊 ANALYSIS RESULTS")
+    print("📊 ANALYSIS RESULTS")
     print(
         f"Files analyzed in enhanced_agent_bus: {len(list(Path(root_path).glob('enhanced_agent_bus/*.py')))}"
     )

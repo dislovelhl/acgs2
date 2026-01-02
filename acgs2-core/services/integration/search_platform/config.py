@@ -10,6 +10,10 @@ import os
 from dataclasses import dataclass, field
 from typing import List, Optional
 
+# Forward reference for type annotations
+if False:  # TYPE_CHECKING block to avoid circular imports
+    from .client import SearchPlatformConfig
+
 
 @dataclass
 class SearchPlatformSettings:
@@ -70,17 +74,12 @@ class SearchPlatformSettings:
             max_connections=int(os.getenv("SEARCH_PLATFORM_MAX_CONNECTIONS", "100")),
             max_retries=int(os.getenv("SEARCH_PLATFORM_MAX_RETRIES", "3")),
             retry_delay_seconds=float(os.getenv("SEARCH_PLATFORM_RETRY_DELAY", "1.0")),
-            circuit_breaker_threshold=int(
-                os.getenv("SEARCH_PLATFORM_CIRCUIT_THRESHOLD", "5")
-            ),
-            circuit_breaker_timeout=float(
-                os.getenv("SEARCH_PLATFORM_CIRCUIT_TIMEOUT", "30.0")
-            ),
+            circuit_breaker_threshold=int(os.getenv("SEARCH_PLATFORM_CIRCUIT_THRESHOLD", "5")),
+            circuit_breaker_timeout=float(os.getenv("SEARCH_PLATFORM_CIRCUIT_TIMEOUT", "30.0")),
             default_code_paths=parse_paths("SEARCH_PLATFORM_CODE_PATHS"),
             default_log_paths=parse_paths("SEARCH_PLATFORM_LOG_PATHS"),
-            enable_compliance_checks=os.getenv(
-                "SEARCH_PLATFORM_ENABLE_COMPLIANCE", "true"
-            ).lower() == "true",
+            enable_compliance_checks=os.getenv("SEARCH_PLATFORM_ENABLE_COMPLIANCE", "true").lower()
+            == "true",
         )
 
     def to_client_config(self) -> "SearchPlatformConfig":

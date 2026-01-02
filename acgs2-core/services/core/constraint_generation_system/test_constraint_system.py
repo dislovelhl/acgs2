@@ -6,16 +6,15 @@ Modernized to use pytest and pytest-asyncio
 
 import os
 import sys
+
 import pytest
-import asyncio
 
 # Add project root to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))))
 
 from constraint_generator import ConstraintGenerator, GenerationRequest, GenerationResult
-from language_constraints import LanguageConstraints
-from dynamic_updater import DynamicConstraintUpdater
 from feedback_loop import FeedbackLoop
+from language_constraints import LanguageConstraints
 from quality_scorer import QualityScorer
 from unit_test_generator import UnitTestGenerator
 

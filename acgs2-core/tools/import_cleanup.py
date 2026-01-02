@@ -13,12 +13,11 @@ Usage:
 Author: ACGS-2 Development Team
 """
 
-import ast
 import argparse
+import ast
 import os
 import sys
-from typing import Dict, List, Tuple, Set
-from pathlib import Path
+from typing import Dict, List, Tuple
 
 
 class ImportAnalyzer:
@@ -249,7 +248,7 @@ def main():
                 print()
 
     # Summary
-    print(f"\n📊 Summary:")
+    print("\n📊 Summary:")
     print(f"  Files checked: {len(files_to_check)}")
     print(
         f"  Files with issues: {len([f for f in files_to_check if analyzer.find_unused_imports(f)])}"

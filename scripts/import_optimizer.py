@@ -7,10 +7,9 @@ Optimizes complex import patterns and reduces import relationship complexity.
 """
 
 import ast
-import re
-from pathlib import Path
-from typing import Dict, List, Set, Tuple, Optional
 import logging
+from pathlib import Path
+from typing import Dict, List, Optional
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(levelname)s - %(message)s")
@@ -250,7 +249,7 @@ def main():
     # Find files needing optimization
     files_needing_optimization = find_files_needing_optimization(root_path)
 
-    print(f"📊 ANALYSIS RESULTS")
+    print("📊 ANALYSIS RESULTS")
     print(f"Files analyzed: {len(list(Path(root_path).rglob('*.py')))}")
     print(f"Files needing optimization: {len(files_needing_optimization)}")
     print()

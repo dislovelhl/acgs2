@@ -1,5 +1,6 @@
 import asyncio
 import logging
+
 from enhanced_agent_bus.opa_client import OPAClient
 
 logger = logging.getLogger(__name__)

@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
+import logging
 import re
 import sys
 from pathlib import Path
-import logging
 
 # Constitutional Hash: cdd01ef066bc6cf2
 

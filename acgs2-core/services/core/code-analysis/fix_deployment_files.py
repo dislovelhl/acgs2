@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Fix syntax errors in deployment files."""
 
+import logging
 import re
 from pathlib import Path
-import logging
 
 
 def fix_deployment_file(filepath: Path):

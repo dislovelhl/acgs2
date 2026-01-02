@@ -5,6 +5,7 @@ Constitutional Hash: cdd01ef066bc6cf2
 Provides centralized Redis configuration for all services.
 """
 
+import os
 from dataclasses import dataclass
 
 from shared.config import settings

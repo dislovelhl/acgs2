@@ -9,10 +9,9 @@ and import optimization opportunities.
 
 import ast
 import os
-import sys
-from collections import defaultdict, deque
+from collections import defaultdict
 from pathlib import Path
-from typing import Dict, List, Optional, Set, Tuple
+from typing import Dict, List, Optional, Set
 
 import matplotlib.pyplot as plt
 import networkx as nx
@@ -286,7 +285,7 @@ def main():
     analyzer = ImportStructureAnalyzer("acgs2-core")
     results = analyzer.analyze_codebase()
 
-    print(f"📊 ANALYSIS RESULTS")
+    print("📊 ANALYSIS RESULTS")
     print(f"Files analyzed: {results['files_analyzed']}")
     print(f"Total imports: {results['total_imports']}")
     print(f"Circular dependencies found: {len(results['circular_dependencies'])}")

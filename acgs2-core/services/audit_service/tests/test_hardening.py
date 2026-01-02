@@ -15,7 +15,7 @@ async def test_env_wallet_loading():
     loaded = await client._load_wallet()
 
     if loaded and client._keypair:
-        logging.info(f"PASS: Wallet loaded from ENV. Pubkey: {client._keypair.pubkey()
+        logging.info(f"PASS: Wallet loaded from ENV. Pubkey: {client._keypair.pubkey()}")
     else:
         logging.info("FAIL: Wallet NOT loaded from ENV")
 
@@ -49,7 +49,7 @@ async def test_network_stats():
     logging.info("\n--- Testing Network Stats ---")
     client = SolanaClient({"compute_unit_price": 5000})
     stats = await client.get_network_stats()
-    logging.info(f"Stats: {json.dumps(stats, indent=2)
+    logging.info(f"Stats: {json.dumps(stats, indent=2)}")
 
     if stats["compute_unit_price"] == 5000:
         logging.info("PASS: Compute unit price correctly reported")

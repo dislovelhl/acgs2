@@ -7,7 +7,7 @@ Uses pydantic-settings for type-safe environment configuration.
 
 import os
 from functools import lru_cache
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 from pydantic import Field, SecretStr, field_validator, model_validator
 
@@ -148,7 +148,7 @@ if HAS_PYDANTIC_SETTINGS:
 else:
     # Fallback to pure os.getenv for environment mapping
     from dataclasses import dataclass, field
-    from typing import Dict, Any
+    from typing import Any, Dict
 
     @dataclass
     class RedisSettings:

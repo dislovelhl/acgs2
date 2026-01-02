@@ -13,7 +13,7 @@ import os
 import re
 import sys
 from pathlib import Path
-from typing import Dict, List, Set, Tuple
+from typing import Dict, List, Tuple
 
 # Configure logging for this tool
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -307,7 +307,7 @@ class PrintToLoggingConverter:
                 elif line.strip() and not line.startswith("#"):
                     break
 
-            logger_definition = f"logger = logging.getLogger(__name__)"
+            logger_definition = "logger = logging.getLogger(__name__)"
             modified_lines.insert(insert_pos, "")
             modified_lines.insert(insert_pos + 1, logger_definition)
             changes.insert(0, f"Added: {logger_definition}")

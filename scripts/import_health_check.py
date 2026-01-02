@@ -9,8 +9,7 @@ Checks for import-time errors and circular dependencies by attempting to import 
 import importlib
 import sys
 from pathlib import Path
-import traceback
-from typing import Dict, List, Set, Tuple
+from typing import Dict, List, Tuple
 
 # Constitutional hash for validation
 CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"

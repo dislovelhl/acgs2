@@ -10,7 +10,7 @@ from enum import Enum
 from typing import Any, Dict, Optional
 from uuid import UUID, uuid4
 
-from pydantic import BaseModel, field_serializer, Field
+from pydantic import BaseModel, Field, field_serializer
 
 CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
 

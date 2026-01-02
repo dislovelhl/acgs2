@@ -16,7 +16,7 @@ import time
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, List, Any, Optional
+from typing import Any, Dict, List, Optional
 
 # Constitutional hash for governance validation
 CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"

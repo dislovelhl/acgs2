@@ -1,5 +1,4 @@
 import pytest
-import asyncio
 from services.audit_service.blockchain.solana.solana_client import SolanaClient
 
 

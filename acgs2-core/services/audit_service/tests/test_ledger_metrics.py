@@ -1,8 +1,9 @@
 import asyncio
 import time
 from services.audit_service.core.audit_ledger import AuditLedger, AuditLedgerConfig
-from services.audit_service.core.blockchain_anchor_manager import (
 import logging
+
+from services.audit_service.core.blockchain_anchor_manager import (
     AnchorBackend,
     AnchorResult,
     AnchorStatus,

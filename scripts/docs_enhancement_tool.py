@@ -6,16 +6,13 @@ Constitutional Hash: cdd01ef066bc6cf2
 Generates automated API documentation and enhances coverage analysis.
 """
 
-import ast
+import importlib.util
 import inspect
 import json
 import os
-import re
-import sys
-from pathlib import Path
-from typing import Dict, List, Any, Optional, Set
-import importlib.util
 import subprocess
+from pathlib import Path
+from typing import Any, Dict, Optional
 
 # Constitutional hash for validation
 CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"

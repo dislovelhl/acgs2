@@ -4,21 +4,21 @@ Constitutional Hash: cdd01ef066bc6cf2
 """
 
 import asyncio
-import pytest
 from unittest.mock import AsyncMock, MagicMock
 
+import pytest
 from enhanced_agent_bus.adaptive_governance import (
     AdaptiveGovernanceEngine,
     AdaptiveThresholds,
-    ImpactScorer,
     GovernanceDecision,
-    GovernanceMode,
-    ImpactLevel,
-    ImpactFeatures,
     GovernanceMetrics,
-    initialize_adaptive_governance,
-    get_adaptive_governance,
+    GovernanceMode,
+    ImpactFeatures,
+    ImpactLevel,
+    ImpactScorer,
     evaluate_message_governance,
+    get_adaptive_governance,
+    initialize_adaptive_governance,
     provide_governance_feedback,
 )
 

@@ -6,9 +6,9 @@ Constitutional Hash: cdd01ef066bc6cf2
 Simplified, more robust version that handles edge cases better.
 """
 
+import logging
 import os
 import re
-import logging
 from pathlib import Path
 
 # Configure logging

@@ -16,13 +16,11 @@ import json
 import logging
 import statistics
 import time
-from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 import aiohttp
-import numpy as np
 import requests
 from tqdm import tqdm
 
