@@ -72,6 +72,18 @@ class BusConfiguration:
     enable_maci: bool = True
     maci_strict_mode: bool = True
 
+    # LLM classification settings
+    # Controls hybrid intent classification with LLM fallback for ambiguous cases
+    llm_enabled: bool = True
+    llm_model_version: str = "openai/gpt-4o-mini"
+    llm_cache_ttl: int = 3600  # seconds
+    llm_confidence_threshold: float = 0.7  # Below this, use LLM
+    llm_max_tokens: int = 100  # Required for Anthropic models
+
+    # A/B testing settings for LLM vs rule-based comparison
+    enable_ab_testing: bool = False
+    ab_test_llm_percentage: int = 20  # Percentage of ambiguous cases routed to LLM
+
     # Optional dependency injections (set to None for defaults)
     # Note: These are typed as Any to avoid circular imports at runtime
     registry: Optional[Any] = None
@@ -103,6 +115,13 @@ class BusConfiguration:
             USE_REDIS_REGISTRY: Use Redis registry (true/false)
             USE_RUST_BACKEND: Enable Rust backend (true/false)
             METERING_ENABLED: Enable metering (true/false)
+            LLM_ENABLED: Enable LLM classification (true/false)
+            LLM_MODEL_VERSION: LLM model version (e.g., openai/gpt-4o-mini)
+            LLM_CACHE_TTL: LLM cache TTL in seconds
+            LLM_CONFIDENCE_THRESHOLD: Confidence threshold for LLM fallback (0.0-1.0)
+            LLM_MAX_TOKENS: Maximum tokens for LLM response
+            ENABLE_AB_TESTING: Enable A/B testing (true/false)
+            AB_TEST_LLM_PERCENTAGE: Percentage of ambiguous cases for LLM (0-100)
         """
         import os
 
@@ -110,6 +129,22 @@ class BusConfiguration:
             if value is None:
                 return default
             return value.lower() in ("true", "1", "yes", "on")
+
+        def _parse_int(value: Optional[str], default: int) -> int:
+            if value is None:
+                return default
+            try:
+                return int(value)
+            except ValueError:
+                return default
+
+        def _parse_float(value: Optional[str], default: float) -> float:
+            if value is None:
+                return default
+            try:
+                return float(value)
+            except ValueError:
+                return default
 
         return cls(
             redis_url=os.environ.get("REDIS_URL", DEFAULT_REDIS_URL),
@@ -124,6 +159,15 @@ class BusConfiguration:
             # SECURITY FIX: Default to True per audit finding 2025-12
             enable_maci=_parse_bool(os.environ.get("MACI_ENABLED"), True),
             maci_strict_mode=_parse_bool(os.environ.get("MACI_STRICT_MODE"), True),
+            # LLM classification settings
+            llm_enabled=_parse_bool(os.environ.get("LLM_ENABLED"), True),
+            llm_model_version=os.environ.get("LLM_MODEL_VERSION", "openai/gpt-4o-mini"),
+            llm_cache_ttl=_parse_int(os.environ.get("LLM_CACHE_TTL"), 3600),
+            llm_confidence_threshold=_parse_float(os.environ.get("LLM_CONFIDENCE_THRESHOLD"), 0.7),
+            llm_max_tokens=_parse_int(os.environ.get("LLM_MAX_TOKENS"), 100),
+            # A/B testing settings
+            enable_ab_testing=_parse_bool(os.environ.get("ENABLE_AB_TESTING"), False),
+            ab_test_llm_percentage=_parse_int(os.environ.get("AB_TEST_LLM_PERCENTAGE"), 20),
         )
 
     @classmethod
@@ -141,6 +185,9 @@ class BusConfiguration:
             enable_metering=False,
             enable_maci=False,
             maci_strict_mode=False,
+            # Disable LLM for testing to avoid external API calls
+            llm_enabled=False,
+            enable_ab_testing=False,
         )
 
     @classmethod
@@ -158,6 +205,10 @@ class BusConfiguration:
             enable_metering=True,
             enable_maci=True,
             maci_strict_mode=True,
+            # Enable LLM classification for production
+            llm_enabled=True,
+            llm_confidence_threshold=0.7,
+            enable_ab_testing=False,
         )
 
     def with_registry(self, registry: Any) -> "BusConfiguration":
@@ -191,6 +242,16 @@ class BusConfiguration:
             "enable_maci": self.enable_maci,
             "maci_strict_mode": self.maci_strict_mode,
             "constitutional_hash": self.constitutional_hash,
+            # LLM classification settings
+            "llm_enabled": self.llm_enabled,
+            "llm_model_version": self.llm_model_version,
+            "llm_cache_ttl": self.llm_cache_ttl,
+            "llm_confidence_threshold": self.llm_confidence_threshold,
+            "llm_max_tokens": self.llm_max_tokens,
+            # A/B testing settings
+            "enable_ab_testing": self.enable_ab_testing,
+            "ab_test_llm_percentage": self.ab_test_llm_percentage,
+            # Dependency injection status
             "has_custom_registry": self.registry is not None,
             "has_custom_router": self.router is not None,
             "has_custom_validator": self.validator is not None,
