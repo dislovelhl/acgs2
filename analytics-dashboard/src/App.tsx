@@ -4,6 +4,8 @@
  * Main application component for advanced analytics and insights
  */
 
+import { InsightWidget } from "./components/widgets/InsightWidget";
+
 function App(): JSX.Element {
   return (
     <div className="min-h-screen bg-gray-100">
@@ -18,8 +20,19 @@ function App(): JSX.Element {
         </div>
       </header>
       <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-        <div className="rounded-lg border border-dashed border-gray-300 bg-white p-12 text-center">
-          <p className="text-gray-500">Dashboard widgets will be implemented here</p>
+        {/* Dashboard Grid - widgets will be arranged via react-grid-layout in DashboardGrid.tsx */}
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          {/* AI Insights Widget */}
+          <div className="h-96">
+            <InsightWidget />
+          </div>
+
+          {/* Placeholder for additional widgets */}
+          <div className="h-96 rounded-lg border border-dashed border-gray-300 bg-white p-6">
+            <p className="text-center text-gray-500">
+              Additional widgets will be implemented here
+            </p>
+          </div>
         </div>
       </main>
     </div>
