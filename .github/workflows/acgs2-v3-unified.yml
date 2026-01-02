@@ -91,9 +91,62 @@ jobs:
         run: |
           cd acgs2-core/enhanced_agent_bus/rust && cargo test
 
+  test-typescript:
+    name: TypeScript Tests with Coverage (Node 20)
+    needs: security-audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: |
+            claude-flow/package-lock.json
+            acgs2-neural-mcp/package-lock.json
+      - name: Install claude-flow dependencies
+        run: |
+          cd claude-flow
+          npm ci || npm install
+      - name: Install acgs2-neural-mcp dependencies
+        run: |
+          cd acgs2-neural-mcp
+          npm ci || npm install
+      - name: Run claude-flow Tests with Coverage
+        run: |
+          cd claude-flow
+          npm test -- --coverage --coverageReporters=text --coverageReporters=lcov --coverageDirectory=coverage
+      - name: Run acgs2-neural-mcp Tests with Coverage
+        run: |
+          cd acgs2-neural-mcp
+          npm test -- --coverage --coverageReporters=text --coverageReporters=lcov --coverageDirectory=coverage
+      - name: Upload claude-flow Coverage Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: claude-flow-coverage
+          path: claude-flow/coverage/lcov.info
+          retention-days: 30
+      - name: Upload acgs2-neural-mcp Coverage Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: acgs2-neural-mcp-coverage
+          path: acgs2-neural-mcp/coverage/lcov.info
+          retention-days: 30
+      - name: Upload TypeScript Coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: claude-flow/coverage/lcov.info,acgs2-neural-mcp/coverage/lcov.info
+          flags: typescript,claude-flow,neural-mcp
+          name: TypeScript Coverage
+          fail_ci_if_error: false
+          verbose: true
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
   build-and-scan:
     name: Build and Trivy Scan
-    needs: [test-python, test-rust]
+    needs: [test-python, test-rust, test-typescript]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
