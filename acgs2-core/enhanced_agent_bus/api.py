@@ -5,11 +5,11 @@ FastAPI application for the Enhanced Agent Bus service
 
 import asyncio
 import logging
-from typing import Dict, Any, Optional
-from fastapi import FastAPI, HTTPException, BackgroundTasks
+from typing import Any, Dict, Optional
+
+from fastapi import BackgroundTasks, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
-import os
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -68,16 +68,58 @@ class HealthResponse(BaseModel):
 # Startup event
 @app.on_event("startup")
 async def startup_event():
-    """Initialize the agent bus on startup"""
+    """Initialize the agent bus and warm caches on startup"""
     global agent_bus
     try:
         logger.info("Initializing Enhanced Agent Bus (simplified for development)...")
         # Simplified initialization for development
         agent_bus = {"status": "initialized", "services": ["redis", "kafka", "opa"]}
         logger.info("Enhanced Agent Bus initialized successfully (dev mode)")
+
+        # Cache warming - pre-populate L1 and L2 caches
+        await _warm_caches()
+
     except Exception as e:
         logger.error(f"Failed to initialize agent bus: {e}")
         raise
+
+
+async def _warm_caches():
+    """
+    Warm caches at startup to prevent cold start performance degradation.
+
+    Loads top 100 keys to L2 (Redis), top 10 to L1 (in-process) based on
+    access patterns from L3 cache. Rate limited to 100 keys/sec.
+    """
+    try:
+        from . import CACHE_WARMING_AVAILABLE, warm_cache_on_startup
+
+        if not CACHE_WARMING_AVAILABLE:
+            logger.info("Cache warming not available - skipping")
+            return
+
+        logger.info("Starting cache warming...")
+        result = await warm_cache_on_startup(rate_limit=100)
+
+        if result and result.success:
+            logger.info(
+                f"Cache warming completed: warmed {result.keys_warmed} keys "
+                f"(L1: {result.l1_keys}, L2: {result.l2_keys}) "
+                f"in {result.duration_seconds:.2f}s"
+            )
+        elif result:
+            logger.warning(
+                f"Cache warming finished with status {result.status.value}: "
+                f"{result.error_message or 'unknown error'}"
+            )
+        else:
+            logger.warning("Cache warming returned no result")
+
+    except ImportError as e:
+        logger.info(f"Cache warming module not available: {e}")
+    except Exception as e:
+        # Don't fail startup if cache warming fails - it's an optimization
+        logger.warning(f"Cache warming failed (non-fatal): {e}")
 
 
 # Shutdown event
@@ -85,6 +127,19 @@ async def startup_event():
 async def shutdown_event():
     """Clean up on shutdown"""
     global agent_bus
+
+    # Cancel any ongoing cache warming
+    try:
+        from . import CACHE_WARMING_AVAILABLE, get_cache_warmer
+
+        if CACHE_WARMING_AVAILABLE and get_cache_warmer is not None:
+            warmer = get_cache_warmer()
+            if warmer.is_warming:
+                logger.info("Cancelling ongoing cache warming...")
+                warmer.cancel()
+    except Exception as e:
+        logger.debug(f"Cache warming cleanup: {e}")
+
     logger.info("Enhanced Agent Bus stopped (dev mode)")
 
 
@@ -133,7 +188,7 @@ async def send_message(request: MessageRequest, background_tasks: BackgroundTask
 
     except Exception as e:
         logger.error(f"Error sending message: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @app.get("/messages/{message_id}")
@@ -152,7 +207,7 @@ async def get_message_status(message_id: str):
         }
     except Exception as e:
         logger.error(f"Error getting message status: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @app.get("/stats")
@@ -171,7 +226,7 @@ async def get_stats():
         }
     except Exception as e:
         logger.error(f"Error getting stats: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @app.post("/policies/validate")
@@ -190,7 +245,7 @@ async def validate_policy(policy_data: Dict[str, Any]):
         }
     except Exception as e:
         logger.error(f"Error validating policy: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 if __name__ == "__main__":

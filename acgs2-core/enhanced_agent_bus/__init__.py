@@ -129,6 +129,33 @@ from .validators import (
     ValidationResult,
 )
 
+# Cache Warming Integration for FastAPI startup
+# Import cache warming module for pre-populating caches at service startup
+try:
+    from shared.cache_warming import (
+        CacheWarmer,
+        WarmingConfig,
+        WarmingProgress,
+        WarmingResult,
+        WarmingStatus,
+        get_cache_warmer,
+        reset_cache_warmer,
+        warm_cache_on_startup,
+    )
+
+    CACHE_WARMING_AVAILABLE = True
+except ImportError:
+    # Fallback for environments without cache warming module
+    CACHE_WARMING_AVAILABLE = False
+    CacheWarmer = None
+    WarmingConfig = None
+    WarmingProgress = None
+    WarmingResult = None
+    WarmingStatus = None
+    get_cache_warmer = None
+    reset_cache_warmer = None
+    warm_cache_on_startup = None
+
 __all__ = [
     "CONSTITUTIONAL_HASH",
     # Refactored Configuration
@@ -227,4 +254,14 @@ __all__ = [
     "get_siem_integration",
     "log_security_event",
     "security_audit",
+    # Cache Warming
+    "CACHE_WARMING_AVAILABLE",
+    "CacheWarmer",
+    "WarmingConfig",
+    "WarmingProgress",
+    "WarmingResult",
+    "WarmingStatus",
+    "get_cache_warmer",
+    "reset_cache_warmer",
+    "warm_cache_on_startup",
 ]
