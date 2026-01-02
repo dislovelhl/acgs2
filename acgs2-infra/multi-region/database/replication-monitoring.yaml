@@ -1,0 +1,738 @@
+# PostgreSQL Cross-Region Replication Monitoring ConfigMap
+# Purpose: Prometheus alerting rules, recording rules, and Grafana dashboard
+# for PostgreSQL streaming replication across multi-region deployment
+#
+# Usage:
+#   kubectl apply -f replication-monitoring.yaml -n monitoring
+#
+# This ConfigMap works with:
+#   - postgres_exporter custom metrics defined in postgresql-primary-values.yaml
+#   - postgres_exporter custom metrics defined in postgresql-standby-values.yaml
+#   - Prometheus Operator for alerting rules
+#   - Grafana for dashboard visualization
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgresql-replication-monitoring
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/name: postgresql-monitoring
+    app.kubernetes.io/component: database
+    app.kubernetes.io/part-of: acgs2-multi-region
+    acgs.io/monitoring-type: replication
+  annotations:
+    description: "PostgreSQL cross-region replication monitoring configuration"
+data:
+  # Alert thresholds configuration
+  # These values can be overridden per environment
+  alert-thresholds.yaml: |
+    # Replication lag thresholds
+    replication:
+      # Warning threshold for replay lag (seconds)
+      lag_warning_seconds: 30
+      # Critical threshold for replay lag (seconds)
+      lag_critical_seconds: 60
+      # Maximum acceptable lag for compliance (seconds)
+      lag_compliance_max_seconds: 120
+
+    # Replication slot thresholds
+    slots:
+      # Warning threshold for retained WAL (bytes)
+      retained_bytes_warning: 1073741824   # 1GB
+      # Critical threshold for retained WAL (bytes)
+      retained_bytes_critical: 5368709120  # 5GB
+      # Alert if slot inactive for this duration
+      inactive_duration_warning: 5m
+      inactive_duration_critical: 15m
+
+    # Connection thresholds
+    connection:
+      # Alert if no streaming standbys
+      min_streaming_standbys: 1
+      # Alert if streaming interruption exceeds this duration
+      streaming_interruption_warning: 30s
+      streaming_interruption_critical: 60s
+
+    # Disk usage thresholds
+    disk:
+      # WAL directory usage warning percentage
+      wal_usage_warning_percent: 70
+      # WAL directory usage critical percentage
+      wal_usage_critical_percent: 85
+
+  # Prometheus alerting rules
+  # Deploy to Prometheus via PrometheusRule CRD or file-based rules
+  alerting-rules.yaml: |
+    groups:
+      - name: postgresql_replication_alerts
+        interval: 30s
+        rules:
+          # Replication Lag Alerts
+          - alert: PostgreSQLReplicationLagWarning
+            expr: |
+              pg_replication_replay_lag_seconds > 30
+            for: 2m
+            labels:
+              severity: warning
+              service: postgresql
+              component: replication
+              region: "{{ $labels.acgs_io_region }}"
+            annotations:
+              summary: "PostgreSQL replication lag warning"
+              description: |
+                Replication lag for standby {{ $labels.application_name }} is {{ $value | humanizeDuration }}.
+                This may indicate network issues or high write load on primary.
+              runbook_url: "https://wiki.acgs.io/runbooks/postgresql-replication-lag"
+              dashboard_url: "https://grafana.acgs.io/d/postgresql-replication"
+
+          - alert: PostgreSQLReplicationLagCritical
+            expr: |
+              pg_replication_replay_lag_seconds > 60
+            for: 1m
+            labels:
+              severity: critical
+              service: postgresql
+              component: replication
+              region: "{{ $labels.acgs_io_region }}"
+            annotations:
+              summary: "PostgreSQL replication lag critical"
+              description: |
+                Replication lag for standby {{ $labels.application_name }} is {{ $value | humanizeDuration }}.
+                Immediate investigation required. Data consistency may be at risk.
+              runbook_url: "https://wiki.acgs.io/runbooks/postgresql-replication-lag-critical"
+              dashboard_url: "https://grafana.acgs.io/d/postgresql-replication"
+
+          # Streaming Status Alerts
+          - alert: PostgreSQLStandbyNotStreaming
+            expr: |
+              pg_replication_is_streaming == 0
+            for: 1m
+            labels:
+              severity: critical
+              service: postgresql
+              component: replication
+              region: "{{ $labels.acgs_io_region }}"
+            annotations:
+              summary: "PostgreSQL standby not streaming"
+              description: |
+                Standby {{ $labels.application_name }} ({{ $labels.client_addr }}) is not in streaming state.
+                Current state: {{ $labels.state }}.
+                Check network connectivity and standby health.
+              runbook_url: "https://wiki.acgs.io/runbooks/postgresql-standby-not-streaming"
+
+          - alert: PostgreSQLNoStreamingStandbys
+            expr: |
+              count(pg_replication_is_streaming == 1) == 0 or absent(pg_replication_is_streaming)
+            for: 2m
+            labels:
+              severity: critical
+              service: postgresql
+              component: replication
+            annotations:
+              summary: "No PostgreSQL streaming standbys"
+              description: |
+                Primary database has no active streaming standbys.
+                Cross-region replication is not operational.
+                Disaster recovery capability is compromised.
+              runbook_url: "https://wiki.acgs.io/runbooks/postgresql-no-standbys"
+
+          # Replication Slot Alerts
+          - alert: PostgreSQLReplicationSlotInactive
+            expr: |
+              pg_replication_slots_active == 0
+            for: 5m
+            labels:
+              severity: warning
+              service: postgresql
+              component: replication
+            annotations:
+              summary: "PostgreSQL replication slot inactive"
+              description: |
+                Replication slot {{ $labels.slot_name }} is inactive.
+                WAL segments are being retained, consuming disk space.
+                Consider dropping unused slots or investigating standby health.
+              runbook_url: "https://wiki.acgs.io/runbooks/postgresql-slot-inactive"
+
+          - alert: PostgreSQLReplicationSlotRetainedWALWarning
+            expr: |
+              pg_replication_slots_retained_bytes > 1073741824
+            for: 5m
+            labels:
+              severity: warning
+              service: postgresql
+              component: replication
+            annotations:
+              summary: "PostgreSQL replication slot retaining excessive WAL"
+              description: |
+                Replication slot {{ $labels.slot_name }} is retaining {{ $value | humanize1024 }}B of WAL.
+                This may indicate a slow or disconnected standby.
+              runbook_url: "https://wiki.acgs.io/runbooks/postgresql-slot-wal-retention"
+
+          - alert: PostgreSQLReplicationSlotRetainedWALCritical
+            expr: |
+              pg_replication_slots_retained_bytes > 5368709120
+            for: 2m
+            labels:
+              severity: critical
+              service: postgresql
+              component: replication
+            annotations:
+              summary: "PostgreSQL replication slot WAL retention critical"
+              description: |
+                Replication slot {{ $labels.slot_name }} is retaining {{ $value | humanize1024 }}B of WAL.
+                Disk exhaustion is imminent. Consider dropping the slot if standby is lost.
+              runbook_url: "https://wiki.acgs.io/runbooks/postgresql-slot-wal-critical"
+
+          # WAL Statistics Alerts
+          - alert: PostgreSQLWALGenerationHigh
+            expr: |
+              rate(pg_stat_wal_wal_bytes[5m]) > 104857600
+            for: 10m
+            labels:
+              severity: warning
+              service: postgresql
+              component: wal
+            annotations:
+              summary: "High WAL generation rate"
+              description: |
+                WAL generation rate is {{ $value | humanize1024 }}B/s.
+                This may indicate unusually high write activity.
+                Consider investigating application behavior.
+              runbook_url: "https://wiki.acgs.io/runbooks/postgresql-wal-high"
+
+          # Standby-specific Alerts
+          - alert: PostgreSQLStandbyRecoveryPaused
+            expr: |
+              pg_replication_lag_is_in_recovery == 0 and pg_standby_status_is_streaming == 0
+            for: 1m
+            labels:
+              severity: critical
+              service: postgresql
+              component: standby
+              region: "{{ $labels.acgs_io_region }}"
+            annotations:
+              summary: "PostgreSQL standby recovery paused or stopped"
+              description: |
+                Standby database is not in recovery mode and not streaming.
+                This may indicate an unintended promotion or failure.
+              runbook_url: "https://wiki.acgs.io/runbooks/postgresql-standby-recovery"
+
+          - alert: PostgreSQLStandbyLastMessageOld
+            expr: |
+              pg_standby_status_last_msg_age_seconds > 120
+            for: 2m
+            labels:
+              severity: warning
+              service: postgresql
+              component: standby
+              region: "{{ $labels.acgs_io_region }}"
+            annotations:
+              summary: "PostgreSQL standby last message from primary is old"
+              description: |
+                Last message from primary received {{ $value | humanizeDuration }} ago.
+                Check network connectivity between regions.
+              runbook_url: "https://wiki.acgs.io/runbooks/postgresql-standby-connectivity"
+
+          # Conflict Alerts (Hot Standby)
+          - alert: PostgreSQLHotStandbyConflicts
+            expr: |
+              increase(pg_stat_database_conflicts_confl_snapshot[5m]) > 10
+            for: 5m
+            labels:
+              severity: warning
+              service: postgresql
+              component: standby
+            annotations:
+              summary: "High rate of hot standby conflicts"
+              description: |
+                Database {{ $labels.datname }} experiencing {{ $value }} snapshot conflicts in 5 minutes.
+                Consider adjusting max_standby_streaming_delay or hot_standby_feedback settings.
+              runbook_url: "https://wiki.acgs.io/runbooks/postgresql-standby-conflicts"
+
+      - name: postgresql_replication_compliance
+        interval: 60s
+        rules:
+          # Compliance-specific alerts for GDPR/data residency
+          - alert: PostgreSQLReplicationComplianceRisk
+            expr: |
+              pg_replication_replay_lag_seconds > 120
+            for: 5m
+            labels:
+              severity: critical
+              service: postgresql
+              component: compliance
+              compliance: data-residency
+            annotations:
+              summary: "Replication lag exceeds compliance threshold"
+              description: |
+                Replication lag of {{ $value | humanizeDuration }} exceeds the 2-minute compliance threshold.
+                This may impact data residency guarantees for regulated workloads.
+              runbook_url: "https://wiki.acgs.io/runbooks/postgresql-compliance-lag"
+
+          - alert: PostgreSQLCrossRegionReplicationDown
+            expr: |
+              sum(pg_replication_is_streaming) by (acgs_io_region) == 0
+            for: 2m
+            labels:
+              severity: critical
+              service: postgresql
+              component: compliance
+              compliance: disaster-recovery
+            annotations:
+              summary: "Cross-region replication down"
+              description: |
+                No active streaming replication to region {{ $labels.acgs_io_region }}.
+                Disaster recovery capability is not available for this region.
+              runbook_url: "https://wiki.acgs.io/runbooks/postgresql-cross-region-down"
+
+  # Prometheus recording rules for pre-computed metrics
+  recording-rules.yaml: |
+    groups:
+      - name: postgresql_replication_recording
+        interval: 30s
+        rules:
+          # Pre-compute average replication lag across all standbys
+          - record: postgresql:replication_lag_seconds:avg
+            expr: |
+              avg(pg_replication_replay_lag_seconds) by (job)
+
+          # Pre-compute maximum replication lag
+          - record: postgresql:replication_lag_seconds:max
+            expr: |
+              max(pg_replication_replay_lag_seconds) by (job)
+
+          # Count of healthy streaming standbys
+          - record: postgresql:streaming_standbys:count
+            expr: |
+              count(pg_replication_is_streaming == 1) by (job)
+
+          # Total WAL retained by all replication slots
+          - record: postgresql:replication_slots_retained_bytes:sum
+            expr: |
+              sum(pg_replication_slots_retained_bytes) by (job)
+
+          # WAL generation rate (bytes per second)
+          - record: postgresql:wal_bytes_rate:5m
+            expr: |
+              rate(pg_stat_wal_wal_bytes[5m])
+
+          # Standby lag aggregated by region
+          - record: postgresql:replication_lag_by_region:avg
+            expr: |
+              avg(pg_replication_replay_lag_seconds) by (acgs_io_region)
+
+          # Replication health score (0-100)
+          # 100 = all standbys streaming with <10s lag
+          # Decreases based on lag and inactive standbys
+          - record: postgresql:replication_health_score
+            expr: |
+              clamp_max(
+                100 * (
+                  (count(pg_replication_is_streaming == 1) / count(pg_replication_is_streaming)) *
+                  (1 - clamp_max(avg(pg_replication_replay_lag_seconds) / 60, 1))
+                ),
+                100
+              )
+
+  # Grafana dashboard JSON configuration
+  grafana-dashboard.json: |
+    {
+      "annotations": {
+        "list": []
+      },
+      "description": "PostgreSQL Cross-Region Replication Monitoring",
+      "editable": true,
+      "fiscalYearStartMonth": 0,
+      "graphTooltip": 1,
+      "id": null,
+      "links": [],
+      "liveNow": false,
+      "panels": [
+        {
+          "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+          "id": 1,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": ["lastNotNull"],
+              "fields": "",
+              "values": false
+            }
+          },
+          "targets": [
+            {
+              "expr": "count(pg_replication_is_streaming == 1)",
+              "refId": "A"
+            }
+          ],
+          "title": "Streaming Standbys",
+          "type": "stat"
+        },
+        {
+          "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
+          "id": 2,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": ["lastNotNull"],
+              "fields": "",
+              "values": false
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                { "color": "green", "value": null },
+                { "color": "yellow", "value": 30 },
+                { "color": "red", "value": 60 }
+              ]
+            }
+          },
+          "targets": [
+            {
+              "expr": "max(pg_replication_replay_lag_seconds)",
+              "refId": "A"
+            }
+          ],
+          "title": "Max Replication Lag",
+          "type": "stat",
+          "unit": "s"
+        },
+        {
+          "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
+          "id": 3,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": ["lastNotNull"],
+              "fields": "",
+              "values": false
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                { "color": "red", "value": null },
+                { "color": "yellow", "value": 50 },
+                { "color": "green", "value": 80 }
+              ]
+            }
+          },
+          "targets": [
+            {
+              "expr": "postgresql:replication_health_score",
+              "refId": "A"
+            }
+          ],
+          "title": "Replication Health Score",
+          "type": "stat"
+        },
+        {
+          "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
+          "id": 4,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": ["lastNotNull"],
+              "fields": "",
+              "values": false
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                { "color": "green", "value": null },
+                { "color": "yellow", "value": 1073741824 },
+                { "color": "red", "value": 5368709120 }
+              ]
+            }
+          },
+          "targets": [
+            {
+              "expr": "sum(pg_replication_slots_retained_bytes)",
+              "refId": "A"
+            }
+          ],
+          "title": "Total WAL Retained",
+          "type": "stat",
+          "unit": "bytes"
+        },
+        {
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
+          "id": 5,
+          "options": {
+            "legend": { "displayMode": "table", "placement": "right" },
+            "tooltip": { "mode": "multi" }
+          },
+          "targets": [
+            {
+              "expr": "pg_replication_replay_lag_seconds",
+              "legendFormat": "{{ application_name }} ({{ acgs_io_region }})",
+              "refId": "A"
+            }
+          ],
+          "title": "Replication Lag by Standby",
+          "type": "timeseries",
+          "fieldConfig": {
+            "defaults": {
+              "unit": "s",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "green", "value": null },
+                  { "color": "yellow", "value": 30 },
+                  { "color": "red", "value": 60 }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
+          "id": 6,
+          "options": {
+            "legend": { "displayMode": "table", "placement": "right" },
+            "tooltip": { "mode": "multi" }
+          },
+          "targets": [
+            {
+              "expr": "pg_replication_slots_retained_bytes",
+              "legendFormat": "{{ slot_name }}",
+              "refId": "A"
+            }
+          ],
+          "title": "WAL Retained per Slot",
+          "type": "timeseries",
+          "fieldConfig": {
+            "defaults": {
+              "unit": "bytes"
+            }
+          }
+        },
+        {
+          "gridPos": { "h": 8, "w": 24, "x": 0, "y": 12 },
+          "id": 7,
+          "options": {
+            "legend": { "displayMode": "table", "placement": "bottom" },
+            "tooltip": { "mode": "multi" }
+          },
+          "targets": [
+            {
+              "expr": "rate(pg_stat_wal_wal_bytes[5m])",
+              "legendFormat": "WAL Generation Rate",
+              "refId": "A"
+            },
+            {
+              "expr": "rate(pg_stat_wal_wal_write[5m])",
+              "legendFormat": "WAL Write Rate",
+              "refId": "B"
+            }
+          ],
+          "title": "WAL Activity",
+          "type": "timeseries",
+          "fieldConfig": {
+            "defaults": {
+              "unit": "Bps"
+            }
+          }
+        },
+        {
+          "gridPos": { "h": 6, "w": 24, "x": 0, "y": 20 },
+          "id": 8,
+          "options": {
+            "showHeader": true
+          },
+          "targets": [
+            {
+              "expr": "pg_replication_is_streaming",
+              "format": "table",
+              "instant": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Standby Status",
+          "type": "table",
+          "transformations": [
+            {
+              "id": "organize",
+              "options": {
+                "excludeByName": {
+                  "Time": true,
+                  "__name__": true,
+                  "job": true
+                },
+                "renameByName": {
+                  "application_name": "Standby Name",
+                  "client_addr": "Client IP",
+                  "state": "State",
+                  "Value": "Streaming"
+                }
+              }
+            }
+          ]
+        }
+      ],
+      "refresh": "30s",
+      "schemaVersion": 38,
+      "style": "dark",
+      "tags": ["postgresql", "replication", "multi-region", "database"],
+      "templating": {
+        "list": [
+          {
+            "current": {
+              "selected": false,
+              "text": "All",
+              "value": "$__all"
+            },
+            "datasource": "prometheus",
+            "definition": "label_values(pg_replication_is_streaming, acgs_io_region)",
+            "hide": 0,
+            "includeAll": true,
+            "label": "Region",
+            "multi": true,
+            "name": "region",
+            "options": [],
+            "query": "label_values(pg_replication_is_streaming, acgs_io_region)",
+            "refresh": 1,
+            "type": "query"
+          }
+        ]
+      },
+      "time": {
+        "from": "now-1h",
+        "to": "now"
+      },
+      "timepicker": {},
+      "timezone": "browser",
+      "title": "PostgreSQL Cross-Region Replication",
+      "uid": "postgresql-replication",
+      "version": 1
+    }
+
+  # ServiceMonitor configuration for Prometheus Operator
+  servicemonitor.yaml: |
+    apiVersion: monitoring.coreos.com/v1
+    kind: ServiceMonitor
+    metadata:
+      name: postgresql-replication
+      namespace: monitoring
+      labels:
+        release: prometheus
+        app.kubernetes.io/name: postgresql
+        app.kubernetes.io/component: replication-monitoring
+    spec:
+      selector:
+        matchLabels:
+          app.kubernetes.io/name: postgresql
+      namespaceSelector:
+        matchNames:
+          - acgs-database
+          - database
+      endpoints:
+        - port: metrics
+          interval: 30s
+          scrapeTimeout: 10s
+          path: /metrics
+          relabelings:
+            - sourceLabels: [__meta_kubernetes_pod_label_acgs_io_region]
+              targetLabel: acgs_io_region
+            - sourceLabels: [__meta_kubernetes_pod_label_acgs_io_role]
+              targetLabel: acgs_io_role
+          metricRelabelings:
+            # Add region labels to replication metrics
+            - sourceLabels: [application_name]
+              regex: "acgs-standby-(.*)"
+              targetLabel: standby_region
+              replacement: "$1"
+
+  # PrometheusRule for deploying alerting rules via Prometheus Operator
+  prometheus-rule.yaml: |
+    apiVersion: monitoring.coreos.com/v1
+    kind: PrometheusRule
+    metadata:
+      name: postgresql-replication-alerts
+      namespace: monitoring
+      labels:
+        release: prometheus
+        app.kubernetes.io/name: postgresql
+        app.kubernetes.io/component: alerting
+    spec:
+      groups:
+        - name: postgresql_replication_alerts
+          interval: 30s
+          rules:
+            - alert: PostgreSQLReplicationLagWarning
+              expr: pg_replication_replay_lag_seconds > 30
+              for: 2m
+              labels:
+                severity: warning
+                service: postgresql
+                component: replication
+              annotations:
+                summary: "PostgreSQL replication lag warning"
+                description: "Replication lag for standby {{ $labels.application_name }} is {{ $value }}s"
+
+            - alert: PostgreSQLReplicationLagCritical
+              expr: pg_replication_replay_lag_seconds > 60
+              for: 1m
+              labels:
+                severity: critical
+                service: postgresql
+                component: replication
+              annotations:
+                summary: "PostgreSQL replication lag critical"
+                description: "Replication lag for standby {{ $labels.application_name }} is {{ $value }}s"
+
+            - alert: PostgreSQLStandbyNotStreaming
+              expr: pg_replication_is_streaming == 0
+              for: 1m
+              labels:
+                severity: critical
+                service: postgresql
+                component: replication
+              annotations:
+                summary: "PostgreSQL standby not streaming"
+                description: "Standby {{ $labels.application_name }} is not in streaming state"
+
+            - alert: PostgreSQLReplicationSlotRetainedWALCritical
+              expr: pg_replication_slots_retained_bytes > 5368709120
+              for: 2m
+              labels:
+                severity: critical
+                service: postgresql
+                component: replication
+              annotations:
+                summary: "Replication slot WAL retention critical"
+                description: "Slot {{ $labels.slot_name }} retaining {{ $value | humanize1024 }}B of WAL"
+
+        - name: postgresql_replication_recording
+          interval: 30s
+          rules:
+            - record: postgresql:replication_lag_seconds:avg
+              expr: avg(pg_replication_replay_lag_seconds) by (job)
+
+            - record: postgresql:streaming_standbys:count
+              expr: count(pg_replication_is_streaming == 1) by (job)
+
+            - record: postgresql:replication_slots_retained_bytes:sum
+              expr: sum(pg_replication_slots_retained_bytes) by (job)
+
+            - record: postgresql:replication_health_score
+              expr: |
+                clamp_max(
+                  100 * (
+                    (count(pg_replication_is_streaming == 1) / count(pg_replication_is_streaming)) *
+                    (1 - clamp_max(avg(pg_replication_replay_lag_seconds) / 60, 1))
+                  ),
+                  100
+                )
