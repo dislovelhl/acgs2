@@ -12,3 +12,4 @@ pdpyras>=5.0.0
 
 # Infrastructure Clients
 redis>=5.0.0
+aiokafka>=0.10.0

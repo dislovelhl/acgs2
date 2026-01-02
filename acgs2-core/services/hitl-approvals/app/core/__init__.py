@@ -3,7 +3,7 @@ HITL Approvals Core Module
 
 This module contains the core approval chain engine with routing logic,
 status management, integration with notification providers, OPA policy evaluation,
-Redis-backed escalation timer system, and SLA tracking.
+Redis-backed escalation timer system, SLA tracking, and Kafka event streaming.
 """
 
 from app.core.approval_engine import (
@@ -35,6 +35,20 @@ from app.core.escalation import (
     reset_escalation_engine,
     reset_escalation_manager,
     reset_policy_manager,
+)
+from app.core.kafka_client import (
+    HITLEvent,
+    HITLEventType,
+    HITLKafkaClient,
+    HITLTopic,
+    KafkaClientError,
+    KafkaConnectionError,
+    KafkaNotAvailableError,
+    KafkaPublishError,
+    close_kafka_client,
+    get_kafka_client,
+    initialize_kafka_client,
+    reset_kafka_client,
 )
 from app.core.opa_client import (
     OPAClient,
@@ -92,4 +106,17 @@ __all__ = [
     "initialize_opa_client",
     "close_opa_client",
     "reset_opa_client",
+    # Kafka Client
+    "HITLEvent",
+    "HITLEventType",
+    "HITLKafkaClient",
+    "HITLTopic",
+    "KafkaClientError",
+    "KafkaConnectionError",
+    "KafkaNotAvailableError",
+    "KafkaPublishError",
+    "get_kafka_client",
+    "initialize_kafka_client",
+    "close_kafka_client",
+    "reset_kafka_client",
 ]
