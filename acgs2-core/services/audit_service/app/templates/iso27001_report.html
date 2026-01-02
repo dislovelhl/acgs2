@@ -1,0 +1,1654 @@
+{% extends "base_report.html" %}
+
+{# ==========================================================================
+   ISO 27001 Compliance Report Template
+
+   ISO/IEC 27001:2022 Information Security Management System (ISMS)
+   Annex A Control Categories Assessment Report
+
+   Annex A Control Categories (A.5 - A.18):
+   - A.5: Information security policies
+   - A.6: Organization of information security
+   - A.7: Human resource security
+   - A.8: Asset management
+   - A.9: Access control
+   - A.10: Cryptography
+   - A.11: Physical and environmental security
+   - A.12: Operations security
+   - A.13: Communications security
+   - A.14: System acquisition, development and maintenance
+   - A.15: Supplier relationships
+   - A.16: Information security incident management
+   - A.17: Information security aspects of business continuity management
+   - A.18: Compliance
+   ========================================================================== #}
+
+{% block title %}ISO 27001 Compliance Report - {{ company_name | default('ACGS-2') }}{% endblock %}
+
+{% block report_type %}ISO 27001 ISMS Compliance Report{% endblock %}
+
+{% block framework_name %}ISO 27001{% endblock %}
+
+{% block extra_styles %}
+/* ISO 27001 specific styles - uses teal color scheme */
+body {
+    --brand-color: #00695c;
+    --brand-color-light: #00695c1a;
+    --brand-color-dark: #004d40;
+}
+
+.annex-overview {
+    margin-bottom: 30px;
+}
+
+.annex-overview-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.annex-overview-card {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    padding: 12px 8px;
+    border-radius: 8px;
+    text-align: center;
+    border: 1px solid #dee2e6;
+}
+
+.annex-overview-card-title {
+    font-size: 8pt;
+    font-weight: 700;
+    color: var(--brand-color);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    margin-bottom: 8px;
+    line-height: 1.2;
+}
+
+.annex-overview-card-score {
+    font-size: 16pt;
+    font-weight: 700;
+}
+
+.annex-overview-card-score.score-compliant {
+    color: #2e7d32;
+}
+
+.annex-overview-card-score.score-partial {
+    color: #ef6c00;
+}
+
+.annex-overview-card-score.score-non-compliant {
+    color: #c62828;
+}
+
+.annex-category {
+    margin-bottom: 30px;
+}
+
+.annex-header {
+    background: linear-gradient(135deg, var(--brand-color) 0%, var(--brand-color-dark) 100%);
+    color: #ffffff;
+    padding: 18px 22px;
+    border-radius: 10px 10px 0 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.annex-title {
+    font-size: 13pt;
+    font-weight: 700;
+    margin: 0;
+}
+
+.annex-subtitle {
+    font-size: 9pt;
+    opacity: 0.9;
+    margin-top: 4px;
+}
+
+.annex-status-badge {
+    background: rgba(255, 255, 255, 0.2);
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 9pt;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.annex-status-badge.compliant {
+    background: #4caf50;
+}
+
+.annex-status-badge.partial {
+    background: #ff9800;
+}
+
+.annex-status-badge.non-compliant {
+    background: #f44336;
+}
+
+.annex-body {
+    background: #ffffff;
+    border: 1px solid #dee2e6;
+    border-top: none;
+    border-radius: 0 0 10px 10px;
+    padding: 22px;
+}
+
+.annex-description {
+    font-size: 10pt;
+    color: #666666;
+    margin-bottom: 18px;
+    padding: 12px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border-left: 3px solid var(--brand-color);
+}
+
+.annex-metrics {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 18px;
+}
+
+.annex-metric {
+    background: #f8f9fa;
+    padding: 12px;
+    border-radius: 8px;
+    text-align: center;
+}
+
+.annex-metric-value {
+    font-size: 20pt;
+    font-weight: 700;
+    color: var(--brand-color);
+}
+
+.annex-metric-label {
+    font-size: 8pt;
+    color: #666666;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 4px;
+}
+
+.control-item {
+    margin-bottom: 12px;
+    padding: 12px;
+    background: #fafafa;
+    border-radius: 8px;
+    border-left: 3px solid #dee2e6;
+}
+
+.control-item.control-compliant {
+    border-left-color: #4caf50;
+}
+
+.control-item.control-non-compliant {
+    border-left-color: #f44336;
+}
+
+.control-item.control-partial {
+    border-left-color: #ff9800;
+}
+
+.control-id {
+    font-size: 9pt;
+    font-weight: 700;
+    color: var(--brand-color);
+    text-transform: uppercase;
+    margin-bottom: 4px;
+}
+
+.control-name {
+    font-size: 11pt;
+    font-weight: 600;
+    color: #333333;
+    margin-bottom: 6px;
+}
+
+.control-evidence {
+    font-size: 10pt;
+    color: #666666;
+    margin-bottom: 6px;
+}
+
+.control-result {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 4px;
+    font-size: 9pt;
+    font-weight: 600;
+}
+
+.control-result.compliant {
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+
+.control-result.non-compliant {
+    background: #ffebee;
+    color: #c62828;
+}
+
+.control-result.partial {
+    background: #fff3e0;
+    color: #ef6c00;
+}
+
+.isms-scope {
+    background: #e0f2f1;
+    border: 1px solid #80cbc4;
+    border-radius: 10px;
+    padding: 20px;
+    margin-top: 25px;
+}
+
+.isms-scope h3 {
+    font-size: 12pt;
+    font-weight: 700;
+    color: #00695c;
+    margin-bottom: 12px;
+}
+
+.isms-scope p {
+    font-size: 10pt;
+    color: #333333;
+    line-height: 1.8;
+}
+
+.certification-info {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+    margin-top: 15px;
+}
+
+.cert-item {
+    text-align: center;
+    padding: 10px;
+    background: #ffffff;
+    border-radius: 8px;
+}
+
+.cert-label {
+    font-size: 8pt;
+    color: #666666;
+    text-transform: uppercase;
+    margin-bottom: 5px;
+}
+
+.cert-value {
+    font-size: 11pt;
+    font-weight: 600;
+    color: #00695c;
+}
+
+.risk-treatment {
+    margin-top: 25px;
+}
+
+.risk-treatment-table {
+    width: 100%;
+}
+
+@media print {
+    .annex-category {
+        page-break-inside: avoid;
+    }
+
+    .annex-overview-grid {
+        grid-template-columns: repeat(7, 1fr);
+    }
+}
+{% endblock %}
+
+{% block framework_content %}
+{# ==========================================================================
+   ISO 27001 Annex A Overview Summary
+   ========================================================================== #}
+<section class="section annex-overview">
+    <h2 class="section-title">ISO 27001 Annex A Controls Overview</h2>
+
+    <div class="annex-overview-grid">
+        <div class="annex-overview-card">
+            <div class="annex-overview-card-title">A.5 Policies</div>
+            <div class="annex-overview-card-score {% if iso27001_data and iso27001_data.a5_policies and iso27001_data.a5_policies.compliance_rate >= 90 %}score-compliant{% elif iso27001_data and iso27001_data.a5_policies and iso27001_data.a5_policies.compliance_rate >= 70 %}score-partial{% else %}score-non-compliant{% endif %}">
+                {{ iso27001_data.a5_policies.compliance_rate | default('N/A') }}{% if iso27001_data and iso27001_data.a5_policies and iso27001_data.a5_policies.compliance_rate is defined %}%{% endif %}
+            </div>
+        </div>
+        <div class="annex-overview-card">
+            <div class="annex-overview-card-title">A.6 Organization</div>
+            <div class="annex-overview-card-score {% if iso27001_data and iso27001_data.a6_organization and iso27001_data.a6_organization.compliance_rate >= 90 %}score-compliant{% elif iso27001_data and iso27001_data.a6_organization and iso27001_data.a6_organization.compliance_rate >= 70 %}score-partial{% else %}score-non-compliant{% endif %}">
+                {{ iso27001_data.a6_organization.compliance_rate | default('N/A') }}{% if iso27001_data and iso27001_data.a6_organization and iso27001_data.a6_organization.compliance_rate is defined %}%{% endif %}
+            </div>
+        </div>
+        <div class="annex-overview-card">
+            <div class="annex-overview-card-title">A.7 HR Security</div>
+            <div class="annex-overview-card-score {% if iso27001_data and iso27001_data.a7_human_resource and iso27001_data.a7_human_resource.compliance_rate >= 90 %}score-compliant{% elif iso27001_data and iso27001_data.a7_human_resource and iso27001_data.a7_human_resource.compliance_rate >= 70 %}score-partial{% else %}score-non-compliant{% endif %}">
+                {{ iso27001_data.a7_human_resource.compliance_rate | default('N/A') }}{% if iso27001_data and iso27001_data.a7_human_resource and iso27001_data.a7_human_resource.compliance_rate is defined %}%{% endif %}
+            </div>
+        </div>
+        <div class="annex-overview-card">
+            <div class="annex-overview-card-title">A.8 Assets</div>
+            <div class="annex-overview-card-score {% if iso27001_data and iso27001_data.a8_asset_management and iso27001_data.a8_asset_management.compliance_rate >= 90 %}score-compliant{% elif iso27001_data and iso27001_data.a8_asset_management and iso27001_data.a8_asset_management.compliance_rate >= 70 %}score-partial{% else %}score-non-compliant{% endif %}">
+                {{ iso27001_data.a8_asset_management.compliance_rate | default('N/A') }}{% if iso27001_data and iso27001_data.a8_asset_management and iso27001_data.a8_asset_management.compliance_rate is defined %}%{% endif %}
+            </div>
+        </div>
+        <div class="annex-overview-card">
+            <div class="annex-overview-card-title">A.9 Access</div>
+            <div class="annex-overview-card-score {% if iso27001_data and iso27001_data.a9_access_control and iso27001_data.a9_access_control.compliance_rate >= 90 %}score-compliant{% elif iso27001_data and iso27001_data.a9_access_control and iso27001_data.a9_access_control.compliance_rate >= 70 %}score-partial{% else %}score-non-compliant{% endif %}">
+                {{ iso27001_data.a9_access_control.compliance_rate | default('N/A') }}{% if iso27001_data and iso27001_data.a9_access_control and iso27001_data.a9_access_control.compliance_rate is defined %}%{% endif %}
+            </div>
+        </div>
+        <div class="annex-overview-card">
+            <div class="annex-overview-card-title">A.10 Crypto</div>
+            <div class="annex-overview-card-score {% if iso27001_data and iso27001_data.a10_cryptography and iso27001_data.a10_cryptography.compliance_rate >= 90 %}score-compliant{% elif iso27001_data and iso27001_data.a10_cryptography and iso27001_data.a10_cryptography.compliance_rate >= 70 %}score-partial{% else %}score-non-compliant{% endif %}">
+                {{ iso27001_data.a10_cryptography.compliance_rate | default('N/A') }}{% if iso27001_data and iso27001_data.a10_cryptography and iso27001_data.a10_cryptography.compliance_rate is defined %}%{% endif %}
+            </div>
+        </div>
+        <div class="annex-overview-card">
+            <div class="annex-overview-card-title">A.11 Physical</div>
+            <div class="annex-overview-card-score {% if iso27001_data and iso27001_data.a11_physical and iso27001_data.a11_physical.compliance_rate >= 90 %}score-compliant{% elif iso27001_data and iso27001_data.a11_physical and iso27001_data.a11_physical.compliance_rate >= 70 %}score-partial{% else %}score-non-compliant{% endif %}">
+                {{ iso27001_data.a11_physical.compliance_rate | default('N/A') }}{% if iso27001_data and iso27001_data.a11_physical and iso27001_data.a11_physical.compliance_rate is defined %}%{% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="annex-overview-grid">
+        <div class="annex-overview-card">
+            <div class="annex-overview-card-title">A.12 Operations</div>
+            <div class="annex-overview-card-score {% if iso27001_data and iso27001_data.a12_operations and iso27001_data.a12_operations.compliance_rate >= 90 %}score-compliant{% elif iso27001_data and iso27001_data.a12_operations and iso27001_data.a12_operations.compliance_rate >= 70 %}score-partial{% else %}score-non-compliant{% endif %}">
+                {{ iso27001_data.a12_operations.compliance_rate | default('N/A') }}{% if iso27001_data and iso27001_data.a12_operations and iso27001_data.a12_operations.compliance_rate is defined %}%{% endif %}
+            </div>
+        </div>
+        <div class="annex-overview-card">
+            <div class="annex-overview-card-title">A.13 Comms</div>
+            <div class="annex-overview-card-score {% if iso27001_data and iso27001_data.a13_communications and iso27001_data.a13_communications.compliance_rate >= 90 %}score-compliant{% elif iso27001_data and iso27001_data.a13_communications and iso27001_data.a13_communications.compliance_rate >= 70 %}score-partial{% else %}score-non-compliant{% endif %}">
+                {{ iso27001_data.a13_communications.compliance_rate | default('N/A') }}{% if iso27001_data and iso27001_data.a13_communications and iso27001_data.a13_communications.compliance_rate is defined %}%{% endif %}
+            </div>
+        </div>
+        <div class="annex-overview-card">
+            <div class="annex-overview-card-title">A.14 Dev</div>
+            <div class="annex-overview-card-score {% if iso27001_data and iso27001_data.a14_acquisition and iso27001_data.a14_acquisition.compliance_rate >= 90 %}score-compliant{% elif iso27001_data and iso27001_data.a14_acquisition and iso27001_data.a14_acquisition.compliance_rate >= 70 %}score-partial{% else %}score-non-compliant{% endif %}">
+                {{ iso27001_data.a14_acquisition.compliance_rate | default('N/A') }}{% if iso27001_data and iso27001_data.a14_acquisition and iso27001_data.a14_acquisition.compliance_rate is defined %}%{% endif %}
+            </div>
+        </div>
+        <div class="annex-overview-card">
+            <div class="annex-overview-card-title">A.15 Supplier</div>
+            <div class="annex-overview-card-score {% if iso27001_data and iso27001_data.a15_supplier and iso27001_data.a15_supplier.compliance_rate >= 90 %}score-compliant{% elif iso27001_data and iso27001_data.a15_supplier and iso27001_data.a15_supplier.compliance_rate >= 70 %}score-partial{% else %}score-non-compliant{% endif %}">
+                {{ iso27001_data.a15_supplier.compliance_rate | default('N/A') }}{% if iso27001_data and iso27001_data.a15_supplier and iso27001_data.a15_supplier.compliance_rate is defined %}%{% endif %}
+            </div>
+        </div>
+        <div class="annex-overview-card">
+            <div class="annex-overview-card-title">A.16 Incident</div>
+            <div class="annex-overview-card-score {% if iso27001_data and iso27001_data.a16_incident and iso27001_data.a16_incident.compliance_rate >= 90 %}score-compliant{% elif iso27001_data and iso27001_data.a16_incident and iso27001_data.a16_incident.compliance_rate >= 70 %}score-partial{% else %}score-non-compliant{% endif %}">
+                {{ iso27001_data.a16_incident.compliance_rate | default('N/A') }}{% if iso27001_data and iso27001_data.a16_incident and iso27001_data.a16_incident.compliance_rate is defined %}%{% endif %}
+            </div>
+        </div>
+        <div class="annex-overview-card">
+            <div class="annex-overview-card-title">A.17 BCM</div>
+            <div class="annex-overview-card-score {% if iso27001_data and iso27001_data.a17_continuity and iso27001_data.a17_continuity.compliance_rate >= 90 %}score-compliant{% elif iso27001_data and iso27001_data.a17_continuity and iso27001_data.a17_continuity.compliance_rate >= 70 %}score-partial{% else %}score-non-compliant{% endif %}">
+                {{ iso27001_data.a17_continuity.compliance_rate | default('N/A') }}{% if iso27001_data and iso27001_data.a17_continuity and iso27001_data.a17_continuity.compliance_rate is defined %}%{% endif %}
+            </div>
+        </div>
+        <div class="annex-overview-card">
+            <div class="annex-overview-card-title">A.18 Compliance</div>
+            <div class="annex-overview-card-score {% if iso27001_data and iso27001_data.a18_compliance and iso27001_data.a18_compliance.compliance_rate >= 90 %}score-compliant{% elif iso27001_data and iso27001_data.a18_compliance and iso27001_data.a18_compliance.compliance_rate >= 70 %}score-partial{% else %}score-non-compliant{% endif %}">
+                {{ iso27001_data.a18_compliance.compliance_rate | default('N/A') }}{% if iso27001_data and iso27001_data.a18_compliance and iso27001_data.a18_compliance.compliance_rate is defined %}%{% endif %}
+            </div>
+        </div>
+    </div>
+</section>
+
+{# ==========================================================================
+   A.5 Information Security Policies
+   ========================================================================== #}
+<section class="section annex-category">
+    <div class="annex-header">
+        <div>
+            <h2 class="annex-title">A.5 Information Security Policies</h2>
+            <p class="annex-subtitle">Management direction for information security</p>
+        </div>
+        <span class="annex-status-badge {% if iso27001_data and iso27001_data.a5_policies and iso27001_data.a5_policies.status == 'COMPLIANT' %}compliant{% elif iso27001_data and iso27001_data.a5_policies and iso27001_data.a5_policies.status == 'PARTIAL' %}partial{% else %}non-compliant{% endif %}">
+            {{ iso27001_data.a5_policies.status | default('PENDING') if iso27001_data and iso27001_data.a5_policies else 'PENDING' }}
+        </span>
+    </div>
+    <div class="annex-body">
+        <div class="annex-description">
+            <strong>Objective:</strong> To provide management direction and support for information security
+            in accordance with business requirements and relevant laws and regulations.
+        </div>
+
+        <div class="annex-metrics">
+            <div class="annex-metric">
+                <div class="annex-metric-value">{{ iso27001_data.a5_policies.total_controls | default(0) if iso27001_data and iso27001_data.a5_policies else 0 }}</div>
+                <div class="annex-metric-label">Total Controls</div>
+            </div>
+            <div class="annex-metric">
+                <div class="annex-metric-value status-pass">{{ iso27001_data.a5_policies.controls_compliant | default(0) if iso27001_data and iso27001_data.a5_policies else 0 }}</div>
+                <div class="annex-metric-label">Compliant</div>
+            </div>
+            <div class="annex-metric">
+                <div class="annex-metric-value status-fail">{{ iso27001_data.a5_policies.controls_non_compliant | default(0) if iso27001_data and iso27001_data.a5_policies else 0 }}</div>
+                <div class="annex-metric-label">Non-Compliant</div>
+            </div>
+            <div class="annex-metric">
+                <div class="annex-metric-value">{{ iso27001_data.a5_policies.compliance_rate | default('N/A') }}{% if iso27001_data and iso27001_data.a5_policies and iso27001_data.a5_policies.compliance_rate is defined %}%{% endif %}</div>
+                <div class="annex-metric-label">Compliance Rate</div>
+            </div>
+        </div>
+
+        {% if iso27001_data and iso27001_data.a5_policies and iso27001_data.a5_policies.controls %}
+        <h3 class="subsection-title">Control Assessment</h3>
+        {% for control in iso27001_data.a5_policies.controls %}
+        <div class="control-item {% if control.status == 'COMPLIANT' %}control-compliant{% elif control.status == 'NON_COMPLIANT' %}control-non-compliant{% else %}control-partial{% endif %}">
+            <div class="control-id">{{ control.id | default('N/A') }}</div>
+            <div class="control-name">{{ control.name | default('Untitled Control') }}</div>
+            <div class="control-evidence">{{ control.evidence | default('No evidence recorded') }}</div>
+            <span class="control-result {% if control.status == 'COMPLIANT' %}compliant{% elif control.status == 'NON_COMPLIANT' %}non-compliant{% else %}partial{% endif %}">
+                {{ control.status | default('PENDING') }}
+            </span>
+        </div>
+        {% endfor %}
+        {% else %}
+        <p class="no-data">No policy controls data available for this reporting period.</p>
+        {% endif %}
+    </div>
+</section>
+
+{# ==========================================================================
+   A.6 Organization of Information Security
+   ========================================================================== #}
+<section class="section annex-category">
+    <div class="annex-header">
+        <div>
+            <h2 class="annex-title">A.6 Organization of Information Security</h2>
+            <p class="annex-subtitle">Internal organization and mobile devices / teleworking</p>
+        </div>
+        <span class="annex-status-badge {% if iso27001_data and iso27001_data.a6_organization and iso27001_data.a6_organization.status == 'COMPLIANT' %}compliant{% elif iso27001_data and iso27001_data.a6_organization and iso27001_data.a6_organization.status == 'PARTIAL' %}partial{% else %}non-compliant{% endif %}">
+            {{ iso27001_data.a6_organization.status | default('PENDING') if iso27001_data and iso27001_data.a6_organization else 'PENDING' }}
+        </span>
+    </div>
+    <div class="annex-body">
+        <div class="annex-description">
+            <strong>Objective:</strong> To establish a management framework to initiate and control the implementation
+            and operation of information security within the organization.
+        </div>
+
+        <div class="annex-metrics">
+            <div class="annex-metric">
+                <div class="annex-metric-value">{{ iso27001_data.a6_organization.total_controls | default(0) if iso27001_data and iso27001_data.a6_organization else 0 }}</div>
+                <div class="annex-metric-label">Total Controls</div>
+            </div>
+            <div class="annex-metric">
+                <div class="annex-metric-value status-pass">{{ iso27001_data.a6_organization.controls_compliant | default(0) if iso27001_data and iso27001_data.a6_organization else 0 }}</div>
+                <div class="annex-metric-label">Compliant</div>
+            </div>
+            <div class="annex-metric">
+                <div class="annex-metric-value status-fail">{{ iso27001_data.a6_organization.controls_non_compliant | default(0) if iso27001_data and iso27001_data.a6_organization else 0 }}</div>
+                <div class="annex-metric-label">Non-Compliant</div>
+            </div>
+            <div class="annex-metric">
+                <div class="annex-metric-value">{{ iso27001_data.a6_organization.compliance_rate | default('N/A') }}{% if iso27001_data and iso27001_data.a6_organization and iso27001_data.a6_organization.compliance_rate is defined %}%{% endif %}</div>
+                <div class="annex-metric-label">Compliance Rate</div>
+            </div>
+        </div>
+
+        {% if iso27001_data and iso27001_data.a6_organization and iso27001_data.a6_organization.controls %}
+        <h3 class="subsection-title">Control Assessment</h3>
+        {% for control in iso27001_data.a6_organization.controls %}
+        <div class="control-item {% if control.status == 'COMPLIANT' %}control-compliant{% elif control.status == 'NON_COMPLIANT' %}control-non-compliant{% else %}control-partial{% endif %}">
+            <div class="control-id">{{ control.id | default('N/A') }}</div>
+            <div class="control-name">{{ control.name | default('Untitled Control') }}</div>
+            <div class="control-evidence">{{ control.evidence | default('No evidence recorded') }}</div>
+            <span class="control-result {% if control.status == 'COMPLIANT' %}compliant{% elif control.status == 'NON_COMPLIANT' %}non-compliant{% else %}partial{% endif %}">
+                {{ control.status | default('PENDING') }}
+            </span>
+        </div>
+        {% endfor %}
+        {% else %}
+        <p class="no-data">No organization controls data available for this reporting period.</p>
+        {% endif %}
+    </div>
+</section>
+
+{# ==========================================================================
+   A.7 Human Resource Security
+   ========================================================================== #}
+<section class="section annex-category">
+    <div class="annex-header">
+        <div>
+            <h2 class="annex-title">A.7 Human Resource Security</h2>
+            <p class="annex-subtitle">Prior to, during, and termination of employment</p>
+        </div>
+        <span class="annex-status-badge {% if iso27001_data and iso27001_data.a7_human_resource and iso27001_data.a7_human_resource.status == 'COMPLIANT' %}compliant{% elif iso27001_data and iso27001_data.a7_human_resource and iso27001_data.a7_human_resource.status == 'PARTIAL' %}partial{% else %}non-compliant{% endif %}">
+            {{ iso27001_data.a7_human_resource.status | default('PENDING') if iso27001_data and iso27001_data.a7_human_resource else 'PENDING' }}
+        </span>
+    </div>
+    <div class="annex-body">
+        <div class="annex-description">
+            <strong>Objective:</strong> To ensure that employees and contractors understand their responsibilities
+            and are suitable for the roles for which they are considered.
+        </div>
+
+        <div class="annex-metrics">
+            <div class="annex-metric">
+                <div class="annex-metric-value">{{ iso27001_data.a7_human_resource.total_controls | default(0) if iso27001_data and iso27001_data.a7_human_resource else 0 }}</div>
+                <div class="annex-metric-label">Total Controls</div>
+            </div>
+            <div class="annex-metric">
+                <div class="annex-metric-value status-pass">{{ iso27001_data.a7_human_resource.controls_compliant | default(0) if iso27001_data and iso27001_data.a7_human_resource else 0 }}</div>
+                <div class="annex-metric-label">Compliant</div>
+            </div>
+            <div class="annex-metric">
+                <div class="annex-metric-value status-fail">{{ iso27001_data.a7_human_resource.controls_non_compliant | default(0) if iso27001_data and iso27001_data.a7_human_resource else 0 }}</div>
+                <div class="annex-metric-label">Non-Compliant</div>
+            </div>
+            <div class="annex-metric">
+                <div class="annex-metric-value">{{ iso27001_data.a7_human_resource.compliance_rate | default('N/A') }}{% if iso27001_data and iso27001_data.a7_human_resource and iso27001_data.a7_human_resource.compliance_rate is defined %}%{% endif %}</div>
+                <div class="annex-metric-label">Compliance Rate</div>
+            </div>
+        </div>
+
+        {% if iso27001_data and iso27001_data.a7_human_resource and iso27001_data.a7_human_resource.training_metrics %}
+        <h3 class="subsection-title">Security Awareness Training Metrics</h3>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Training Program</th>
+                    <th>Employees Trained</th>
+                    <th>Completion Rate</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for training in iso27001_data.a7_human_resource.training_metrics %}
+                <tr>
+                    <td>{{ training.program | default('N/A') }}</td>
+                    <td>{{ training.employees_trained | default(0) }}</td>
+                    <td>{{ "%.1f"|format(training.completion_rate) }}%</td>
+                    <td class="{% if training.status == 'COMPLIANT' %}status-pass{% else %}status-fail{% endif %}">
+                        {{ training.status | default('N/A') }}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+
+        {% if iso27001_data and iso27001_data.a7_human_resource and iso27001_data.a7_human_resource.controls %}
+        <h3 class="subsection-title">Control Assessment</h3>
+        {% for control in iso27001_data.a7_human_resource.controls %}
+        <div class="control-item {% if control.status == 'COMPLIANT' %}control-compliant{% elif control.status == 'NON_COMPLIANT' %}control-non-compliant{% else %}control-partial{% endif %}">
+            <div class="control-id">{{ control.id | default('N/A') }}</div>
+            <div class="control-name">{{ control.name | default('Untitled Control') }}</div>
+            <div class="control-evidence">{{ control.evidence | default('No evidence recorded') }}</div>
+            <span class="control-result {% if control.status == 'COMPLIANT' %}compliant{% elif control.status == 'NON_COMPLIANT' %}non-compliant{% else %}partial{% endif %}">
+                {{ control.status | default('PENDING') }}
+            </span>
+        </div>
+        {% endfor %}
+        {% else %}
+        <p class="no-data">No human resource security controls data available for this reporting period.</p>
+        {% endif %}
+    </div>
+</section>
+
+{# ==========================================================================
+   A.8 Asset Management
+   ========================================================================== #}
+<section class="section annex-category">
+    <div class="annex-header">
+        <div>
+            <h2 class="annex-title">A.8 Asset Management</h2>
+            <p class="annex-subtitle">Responsibility for assets, information classification, and media handling</p>
+        </div>
+        <span class="annex-status-badge {% if iso27001_data and iso27001_data.a8_asset_management and iso27001_data.a8_asset_management.status == 'COMPLIANT' %}compliant{% elif iso27001_data and iso27001_data.a8_asset_management and iso27001_data.a8_asset_management.status == 'PARTIAL' %}partial{% else %}non-compliant{% endif %}">
+            {{ iso27001_data.a8_asset_management.status | default('PENDING') if iso27001_data and iso27001_data.a8_asset_management else 'PENDING' }}
+        </span>
+    </div>
+    <div class="annex-body">
+        <div class="annex-description">
+            <strong>Objective:</strong> To identify organizational assets and define appropriate protection responsibilities.
+        </div>
+
+        <div class="annex-metrics">
+            <div class="annex-metric">
+                <div class="annex-metric-value">{{ iso27001_data.a8_asset_management.total_controls | default(0) if iso27001_data and iso27001_data.a8_asset_management else 0 }}</div>
+                <div class="annex-metric-label">Total Controls</div>
+            </div>
+            <div class="annex-metric">
+                <div class="annex-metric-value status-pass">{{ iso27001_data.a8_asset_management.controls_compliant | default(0) if iso27001_data and iso27001_data.a8_asset_management else 0 }}</div>
+                <div class="annex-metric-label">Compliant</div>
+            </div>
+            <div class="annex-metric">
+                <div class="annex-metric-value status-fail">{{ iso27001_data.a8_asset_management.controls_non_compliant | default(0) if iso27001_data and iso27001_data.a8_asset_management else 0 }}</div>
+                <div class="annex-metric-label">Non-Compliant</div>
+            </div>
+            <div class="annex-metric">
+                <div class="annex-metric-value">{{ iso27001_data.a8_asset_management.compliance_rate | default('N/A') }}{% if iso27001_data and iso27001_data.a8_asset_management and iso27001_data.a8_asset_management.compliance_rate is defined %}%{% endif %}</div>
+                <div class="annex-metric-label">Compliance Rate</div>
+            </div>
+        </div>
+
+        {% if iso27001_data and iso27001_data.a8_asset_management and iso27001_data.a8_asset_management.asset_inventory %}
+        <h3 class="subsection-title">Asset Inventory Summary</h3>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Asset Category</th>
+                    <th>Total Assets</th>
+                    <th>Classified</th>
+                    <th>Owner Assigned</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for asset in iso27001_data.a8_asset_management.asset_inventory %}
+                <tr>
+                    <td>{{ asset.category | default('N/A') }}</td>
+                    <td>{{ asset.total | default(0) }}</td>
+                    <td class="{% if asset.classified_percent >= 90 %}status-pass{% elif asset.classified_percent >= 70 %}status-review{% else %}status-fail{% endif %}">
+                        {{ "%.1f"|format(asset.classified_percent) }}%
+                    </td>
+                    <td class="{% if asset.owner_assigned_percent >= 90 %}status-pass{% elif asset.owner_assigned_percent >= 70 %}status-review{% else %}status-fail{% endif %}">
+                        {{ "%.1f"|format(asset.owner_assigned_percent) }}%
+                    </td>
+                    <td class="{% if asset.status == 'COMPLIANT' %}status-pass{% else %}status-fail{% endif %}">
+                        {{ asset.status | default('N/A') }}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+
+        {% if iso27001_data and iso27001_data.a8_asset_management and iso27001_data.a8_asset_management.controls %}
+        <h3 class="subsection-title">Control Assessment</h3>
+        {% for control in iso27001_data.a8_asset_management.controls %}
+        <div class="control-item {% if control.status == 'COMPLIANT' %}control-compliant{% elif control.status == 'NON_COMPLIANT' %}control-non-compliant{% else %}control-partial{% endif %}">
+            <div class="control-id">{{ control.id | default('N/A') }}</div>
+            <div class="control-name">{{ control.name | default('Untitled Control') }}</div>
+            <div class="control-evidence">{{ control.evidence | default('No evidence recorded') }}</div>
+            <span class="control-result {% if control.status == 'COMPLIANT' %}compliant{% elif control.status == 'NON_COMPLIANT' %}non-compliant{% else %}partial{% endif %}">
+                {{ control.status | default('PENDING') }}
+            </span>
+        </div>
+        {% endfor %}
+        {% else %}
+        <p class="no-data">No asset management controls data available for this reporting period.</p>
+        {% endif %}
+    </div>
+</section>
+
+{# ==========================================================================
+   A.9 Access Control
+   ========================================================================== #}
+<section class="section annex-category">
+    <div class="annex-header">
+        <div>
+            <h2 class="annex-title">A.9 Access Control</h2>
+            <p class="annex-subtitle">Business requirements, user access management, and system access control</p>
+        </div>
+        <span class="annex-status-badge {% if iso27001_data and iso27001_data.a9_access_control and iso27001_data.a9_access_control.status == 'COMPLIANT' %}compliant{% elif iso27001_data and iso27001_data.a9_access_control and iso27001_data.a9_access_control.status == 'PARTIAL' %}partial{% else %}non-compliant{% endif %}">
+            {{ iso27001_data.a9_access_control.status | default('PENDING') if iso27001_data and iso27001_data.a9_access_control else 'PENDING' }}
+        </span>
+    </div>
+    <div class="annex-body">
+        <div class="annex-description">
+            <strong>Objective:</strong> To limit access to information and information processing facilities.
+        </div>
+
+        <div class="annex-metrics">
+            <div class="annex-metric">
+                <div class="annex-metric-value">{{ iso27001_data.a9_access_control.total_controls | default(0) if iso27001_data and iso27001_data.a9_access_control else 0 }}</div>
+                <div class="annex-metric-label">Total Controls</div>
+            </div>
+            <div class="annex-metric">
+                <div class="annex-metric-value status-pass">{{ iso27001_data.a9_access_control.controls_compliant | default(0) if iso27001_data and iso27001_data.a9_access_control else 0 }}</div>
+                <div class="annex-metric-label">Compliant</div>
+            </div>
+            <div class="annex-metric">
+                <div class="annex-metric-value status-fail">{{ iso27001_data.a9_access_control.controls_non_compliant | default(0) if iso27001_data and iso27001_data.a9_access_control else 0 }}</div>
+                <div class="annex-metric-label">Non-Compliant</div>
+            </div>
+            <div class="annex-metric">
+                <div class="annex-metric-value">{{ iso27001_data.a9_access_control.compliance_rate | default('N/A') }}{% if iso27001_data and iso27001_data.a9_access_control and iso27001_data.a9_access_control.compliance_rate is defined %}%{% endif %}</div>
+                <div class="annex-metric-label">Compliance Rate</div>
+            </div>
+        </div>
+
+        {% if iso27001_data and iso27001_data.a9_access_control and iso27001_data.a9_access_control.access_reviews %}
+        <h3 class="subsection-title">Access Review Summary</h3>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Review Type</th>
+                    <th>Last Completed</th>
+                    <th>Accounts Reviewed</th>
+                    <th>Issues Found</th>
+                    <th>Issues Resolved</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for review in iso27001_data.a9_access_control.access_reviews %}
+                <tr>
+                    <td>{{ review.type | default('N/A') }}</td>
+                    <td>{{ review.last_completed | default('N/A') }}</td>
+                    <td>{{ review.accounts_reviewed | default(0) }}</td>
+                    <td>{{ review.issues_found | default(0) }}</td>
+                    <td class="{% if review.issues_resolved == review.issues_found %}status-pass{% else %}status-fail{% endif %}">
+                        {{ review.issues_resolved | default(0) }}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+
+        {% if iso27001_data and iso27001_data.a9_access_control and iso27001_data.a9_access_control.controls %}
+        <h3 class="subsection-title">Control Assessment</h3>
+        {% for control in iso27001_data.a9_access_control.controls %}
+        <div class="control-item {% if control.status == 'COMPLIANT' %}control-compliant{% elif control.status == 'NON_COMPLIANT' %}control-non-compliant{% else %}control-partial{% endif %}">
+            <div class="control-id">{{ control.id | default('N/A') }}</div>
+            <div class="control-name">{{ control.name | default('Untitled Control') }}</div>
+            <div class="control-evidence">{{ control.evidence | default('No evidence recorded') }}</div>
+            <span class="control-result {% if control.status == 'COMPLIANT' %}compliant{% elif control.status == 'NON_COMPLIANT' %}non-compliant{% else %}partial{% endif %}">
+                {{ control.status | default('PENDING') }}
+            </span>
+        </div>
+        {% endfor %}
+        {% else %}
+        <p class="no-data">No access control data available for this reporting period.</p>
+        {% endif %}
+    </div>
+</section>
+
+{# ==========================================================================
+   A.10 Cryptography
+   ========================================================================== #}
+<section class="section annex-category">
+    <div class="annex-header">
+        <div>
+            <h2 class="annex-title">A.10 Cryptography</h2>
+            <p class="annex-subtitle">Cryptographic controls and key management</p>
+        </div>
+        <span class="annex-status-badge {% if iso27001_data and iso27001_data.a10_cryptography and iso27001_data.a10_cryptography.status == 'COMPLIANT' %}compliant{% elif iso27001_data and iso27001_data.a10_cryptography and iso27001_data.a10_cryptography.status == 'PARTIAL' %}partial{% else %}non-compliant{% endif %}">
+            {{ iso27001_data.a10_cryptography.status | default('PENDING') if iso27001_data and iso27001_data.a10_cryptography else 'PENDING' }}
+        </span>
+    </div>
+    <div class="annex-body">
+        <div class="annex-description">
+            <strong>Objective:</strong> To ensure proper and effective use of cryptography to protect the confidentiality,
+            authenticity and/or integrity of information.
+        </div>
+
+        <div class="annex-metrics">
+            <div class="annex-metric">
+                <div class="annex-metric-value">{{ iso27001_data.a10_cryptography.total_controls | default(0) if iso27001_data and iso27001_data.a10_cryptography else 0 }}</div>
+                <div class="annex-metric-label">Total Controls</div>
+            </div>
+            <div class="annex-metric">
+                <div class="annex-metric-value status-pass">{{ iso27001_data.a10_cryptography.controls_compliant | default(0) if iso27001_data and iso27001_data.a10_cryptography else 0 }}</div>
+                <div class="annex-metric-label">Compliant</div>
+            </div>
+            <div class="annex-metric">
+                <div class="annex-metric-value status-fail">{{ iso27001_data.a10_cryptography.controls_non_compliant | default(0) if iso27001_data and iso27001_data.a10_cryptography else 0 }}</div>
+                <div class="annex-metric-label">Non-Compliant</div>
+            </div>
+            <div class="annex-metric">
+                <div class="annex-metric-value">{{ iso27001_data.a10_cryptography.compliance_rate | default('N/A') }}{% if iso27001_data and iso27001_data.a10_cryptography and iso27001_data.a10_cryptography.compliance_rate is defined %}%{% endif %}</div>
+                <div class="annex-metric-label">Compliance Rate</div>
+            </div>
+        </div>
+
+        {% if iso27001_data and iso27001_data.a10_cryptography and iso27001_data.a10_cryptography.encryption_status %}
+        <h3 class="subsection-title">Encryption Status</h3>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Data Category</th>
+                    <th>Encryption Algorithm</th>
+                    <th>Key Length</th>
+                    <th>At Rest</th>
+                    <th>In Transit</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for enc in iso27001_data.a10_cryptography.encryption_status %}
+                <tr>
+                    <td>{{ enc.category | default('N/A') }}</td>
+                    <td>{{ enc.algorithm | default('N/A') }}</td>
+                    <td>{{ enc.key_length | default('N/A') }}</td>
+                    <td class="{% if enc.at_rest %}status-pass{% else %}status-fail{% endif %}">
+                        {{ 'Encrypted' if enc.at_rest else 'Not Encrypted' }}
+                    </td>
+                    <td class="{% if enc.in_transit %}status-pass{% else %}status-fail{% endif %}">
+                        {{ 'Encrypted' if enc.in_transit else 'Not Encrypted' }}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+
+        {% if iso27001_data and iso27001_data.a10_cryptography and iso27001_data.a10_cryptography.controls %}
+        <h3 class="subsection-title">Control Assessment</h3>
+        {% for control in iso27001_data.a10_cryptography.controls %}
+        <div class="control-item {% if control.status == 'COMPLIANT' %}control-compliant{% elif control.status == 'NON_COMPLIANT' %}control-non-compliant{% else %}control-partial{% endif %}">
+            <div class="control-id">{{ control.id | default('N/A') }}</div>
+            <div class="control-name">{{ control.name | default('Untitled Control') }}</div>
+            <div class="control-evidence">{{ control.evidence | default('No evidence recorded') }}</div>
+            <span class="control-result {% if control.status == 'COMPLIANT' %}compliant{% elif control.status == 'NON_COMPLIANT' %}non-compliant{% else %}partial{% endif %}">
+                {{ control.status | default('PENDING') }}
+            </span>
+        </div>
+        {% endfor %}
+        {% else %}
+        <p class="no-data">No cryptography controls data available for this reporting period.</p>
+        {% endif %}
+    </div>
+</section>
+
+{# ==========================================================================
+   A.11 Physical and Environmental Security
+   ========================================================================== #}
+<section class="section annex-category">
+    <div class="annex-header">
+        <div>
+            <h2 class="annex-title">A.11 Physical and Environmental Security</h2>
+            <p class="annex-subtitle">Secure areas and equipment security</p>
+        </div>
+        <span class="annex-status-badge {% if iso27001_data and iso27001_data.a11_physical and iso27001_data.a11_physical.status == 'COMPLIANT' %}compliant{% elif iso27001_data and iso27001_data.a11_physical and iso27001_data.a11_physical.status == 'PARTIAL' %}partial{% else %}non-compliant{% endif %}">
+            {{ iso27001_data.a11_physical.status | default('PENDING') if iso27001_data and iso27001_data.a11_physical else 'PENDING' }}
+        </span>
+    </div>
+    <div class="annex-body">
+        <div class="annex-description">
+            <strong>Objective:</strong> To prevent unauthorized physical access, damage and interference to the
+            organization's information and information processing facilities.
+        </div>
+
+        <div class="annex-metrics">
+            <div class="annex-metric">
+                <div class="annex-metric-value">{{ iso27001_data.a11_physical.total_controls | default(0) if iso27001_data and iso27001_data.a11_physical else 0 }}</div>
+                <div class="annex-metric-label">Total Controls</div>
+            </div>
+            <div class="annex-metric">
+                <div class="annex-metric-value status-pass">{{ iso27001_data.a11_physical.controls_compliant | default(0) if iso27001_data and iso27001_data.a11_physical else 0 }}</div>
+                <div class="annex-metric-label">Compliant</div>
+            </div>
+            <div class="annex-metric">
+                <div class="annex-metric-value status-fail">{{ iso27001_data.a11_physical.controls_non_compliant | default(0) if iso27001_data and iso27001_data.a11_physical else 0 }}</div>
+                <div class="annex-metric-label">Non-Compliant</div>
+            </div>
+            <div class="annex-metric">
+                <div class="annex-metric-value">{{ iso27001_data.a11_physical.compliance_rate | default('N/A') }}{% if iso27001_data and iso27001_data.a11_physical and iso27001_data.a11_physical.compliance_rate is defined %}%{% endif %}</div>
+                <div class="annex-metric-label">Compliance Rate</div>
+            </div>
+        </div>
+
+        {% if iso27001_data and iso27001_data.a11_physical and iso27001_data.a11_physical.controls %}
+        <h3 class="subsection-title">Control Assessment</h3>
+        {% for control in iso27001_data.a11_physical.controls %}
+        <div class="control-item {% if control.status == 'COMPLIANT' %}control-compliant{% elif control.status == 'NON_COMPLIANT' %}control-non-compliant{% else %}control-partial{% endif %}">
+            <div class="control-id">{{ control.id | default('N/A') }}</div>
+            <div class="control-name">{{ control.name | default('Untitled Control') }}</div>
+            <div class="control-evidence">{{ control.evidence | default('No evidence recorded') }}</div>
+            <span class="control-result {% if control.status == 'COMPLIANT' %}compliant{% elif control.status == 'NON_COMPLIANT' %}non-compliant{% else %}partial{% endif %}">
+                {{ control.status | default('PENDING') }}
+            </span>
+        </div>
+        {% endfor %}
+        {% else %}
+        <p class="no-data">No physical security controls data available for this reporting period.</p>
+        {% endif %}
+    </div>
+</section>
+
+{# ==========================================================================
+   A.12 Operations Security
+   ========================================================================== #}
+<section class="section annex-category">
+    <div class="annex-header">
+        <div>
+            <h2 class="annex-title">A.12 Operations Security</h2>
+            <p class="annex-subtitle">Operational procedures, malware protection, backup, logging, and vulnerability management</p>
+        </div>
+        <span class="annex-status-badge {% if iso27001_data and iso27001_data.a12_operations and iso27001_data.a12_operations.status == 'COMPLIANT' %}compliant{% elif iso27001_data and iso27001_data.a12_operations and iso27001_data.a12_operations.status == 'PARTIAL' %}partial{% else %}non-compliant{% endif %}">
+            {{ iso27001_data.a12_operations.status | default('PENDING') if iso27001_data and iso27001_data.a12_operations else 'PENDING' }}
+        </span>
+    </div>
+    <div class="annex-body">
+        <div class="annex-description">
+            <strong>Objective:</strong> To ensure correct and secure operations of information processing facilities.
+        </div>
+
+        <div class="annex-metrics">
+            <div class="annex-metric">
+                <div class="annex-metric-value">{{ iso27001_data.a12_operations.total_controls | default(0) if iso27001_data and iso27001_data.a12_operations else 0 }}</div>
+                <div class="annex-metric-label">Total Controls</div>
+            </div>
+            <div class="annex-metric">
+                <div class="annex-metric-value status-pass">{{ iso27001_data.a12_operations.controls_compliant | default(0) if iso27001_data and iso27001_data.a12_operations else 0 }}</div>
+                <div class="annex-metric-label">Compliant</div>
+            </div>
+            <div class="annex-metric">
+                <div class="annex-metric-value status-fail">{{ iso27001_data.a12_operations.controls_non_compliant | default(0) if iso27001_data and iso27001_data.a12_operations else 0 }}</div>
+                <div class="annex-metric-label">Non-Compliant</div>
+            </div>
+            <div class="annex-metric">
+                <div class="annex-metric-value">{{ iso27001_data.a12_operations.compliance_rate | default('N/A') }}{% if iso27001_data and iso27001_data.a12_operations and iso27001_data.a12_operations.compliance_rate is defined %}%{% endif %}</div>
+                <div class="annex-metric-label">Compliance Rate</div>
+            </div>
+        </div>
+
+        {% if iso27001_data and iso27001_data.a12_operations and iso27001_data.a12_operations.vulnerability_stats %}
+        <h3 class="subsection-title">Vulnerability Management Statistics</h3>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Severity</th>
+                    <th>Open</th>
+                    <th>In Progress</th>
+                    <th>Resolved</th>
+                    <th>MTTR (Days)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for vuln in iso27001_data.a12_operations.vulnerability_stats %}
+                <tr>
+                    <td class="{% if vuln.severity == 'Critical' %}risk-high{% elif vuln.severity == 'High' %}risk-high{% elif vuln.severity == 'Medium' %}risk-medium{% else %}risk-low{% endif %}">
+                        {{ vuln.severity | default('N/A') }}
+                    </td>
+                    <td>{{ vuln.open | default(0) }}</td>
+                    <td>{{ vuln.in_progress | default(0) }}</td>
+                    <td>{{ vuln.resolved | default(0) }}</td>
+                    <td>{{ "%.1f"|format(vuln.mttr_days) if vuln.mttr_days else 'N/A' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+
+        {% if iso27001_data and iso27001_data.a12_operations and iso27001_data.a12_operations.controls %}
+        <h3 class="subsection-title">Control Assessment</h3>
+        {% for control in iso27001_data.a12_operations.controls %}
+        <div class="control-item {% if control.status == 'COMPLIANT' %}control-compliant{% elif control.status == 'NON_COMPLIANT' %}control-non-compliant{% else %}control-partial{% endif %}">
+            <div class="control-id">{{ control.id | default('N/A') }}</div>
+            <div class="control-name">{{ control.name | default('Untitled Control') }}</div>
+            <div class="control-evidence">{{ control.evidence | default('No evidence recorded') }}</div>
+            <span class="control-result {% if control.status == 'COMPLIANT' %}compliant{% elif control.status == 'NON_COMPLIANT' %}non-compliant{% else %}partial{% endif %}">
+                {{ control.status | default('PENDING') }}
+            </span>
+        </div>
+        {% endfor %}
+        {% else %}
+        <p class="no-data">No operations security controls data available for this reporting period.</p>
+        {% endif %}
+    </div>
+</section>
+
+{# ==========================================================================
+   A.13 Communications Security
+   ========================================================================== #}
+<section class="section annex-category">
+    <div class="annex-header">
+        <div>
+            <h2 class="annex-title">A.13 Communications Security</h2>
+            <p class="annex-subtitle">Network security management and information transfer</p>
+        </div>
+        <span class="annex-status-badge {% if iso27001_data and iso27001_data.a13_communications and iso27001_data.a13_communications.status == 'COMPLIANT' %}compliant{% elif iso27001_data and iso27001_data.a13_communications and iso27001_data.a13_communications.status == 'PARTIAL' %}partial{% else %}non-compliant{% endif %}">
+            {{ iso27001_data.a13_communications.status | default('PENDING') if iso27001_data and iso27001_data.a13_communications else 'PENDING' }}
+        </span>
+    </div>
+    <div class="annex-body">
+        <div class="annex-description">
+            <strong>Objective:</strong> To ensure the protection of information in networks and its supporting
+            information processing facilities.
+        </div>
+
+        <div class="annex-metrics">
+            <div class="annex-metric">
+                <div class="annex-metric-value">{{ iso27001_data.a13_communications.total_controls | default(0) if iso27001_data and iso27001_data.a13_communications else 0 }}</div>
+                <div class="annex-metric-label">Total Controls</div>
+            </div>
+            <div class="annex-metric">
+                <div class="annex-metric-value status-pass">{{ iso27001_data.a13_communications.controls_compliant | default(0) if iso27001_data and iso27001_data.a13_communications else 0 }}</div>
+                <div class="annex-metric-label">Compliant</div>
+            </div>
+            <div class="annex-metric">
+                <div class="annex-metric-value status-fail">{{ iso27001_data.a13_communications.controls_non_compliant | default(0) if iso27001_data and iso27001_data.a13_communications else 0 }}</div>
+                <div class="annex-metric-label">Non-Compliant</div>
+            </div>
+            <div class="annex-metric">
+                <div class="annex-metric-value">{{ iso27001_data.a13_communications.compliance_rate | default('N/A') }}{% if iso27001_data and iso27001_data.a13_communications and iso27001_data.a13_communications.compliance_rate is defined %}%{% endif %}</div>
+                <div class="annex-metric-label">Compliance Rate</div>
+            </div>
+        </div>
+
+        {% if iso27001_data and iso27001_data.a13_communications and iso27001_data.a13_communications.controls %}
+        <h3 class="subsection-title">Control Assessment</h3>
+        {% for control in iso27001_data.a13_communications.controls %}
+        <div class="control-item {% if control.status == 'COMPLIANT' %}control-compliant{% elif control.status == 'NON_COMPLIANT' %}control-non-compliant{% else %}control-partial{% endif %}">
+            <div class="control-id">{{ control.id | default('N/A') }}</div>
+            <div class="control-name">{{ control.name | default('Untitled Control') }}</div>
+            <div class="control-evidence">{{ control.evidence | default('No evidence recorded') }}</div>
+            <span class="control-result {% if control.status == 'COMPLIANT' %}compliant{% elif control.status == 'NON_COMPLIANT' %}non-compliant{% else %}partial{% endif %}">
+                {{ control.status | default('PENDING') }}
+            </span>
+        </div>
+        {% endfor %}
+        {% else %}
+        <p class="no-data">No communications security controls data available for this reporting period.</p>
+        {% endif %}
+    </div>
+</section>
+
+{# ==========================================================================
+   A.14 System Acquisition, Development and Maintenance
+   ========================================================================== #}
+<section class="section annex-category">
+    <div class="annex-header">
+        <div>
+            <h2 class="annex-title">A.14 System Acquisition, Development and Maintenance</h2>
+            <p class="annex-subtitle">Security requirements, secure development, and test data protection</p>
+        </div>
+        <span class="annex-status-badge {% if iso27001_data and iso27001_data.a14_acquisition and iso27001_data.a14_acquisition.status == 'COMPLIANT' %}compliant{% elif iso27001_data and iso27001_data.a14_acquisition and iso27001_data.a14_acquisition.status == 'PARTIAL' %}partial{% else %}non-compliant{% endif %}">
+            {{ iso27001_data.a14_acquisition.status | default('PENDING') if iso27001_data and iso27001_data.a14_acquisition else 'PENDING' }}
+        </span>
+    </div>
+    <div class="annex-body">
+        <div class="annex-description">
+            <strong>Objective:</strong> To ensure that information security is an integral part of information systems
+            across the entire lifecycle.
+        </div>
+
+        <div class="annex-metrics">
+            <div class="annex-metric">
+                <div class="annex-metric-value">{{ iso27001_data.a14_acquisition.total_controls | default(0) if iso27001_data and iso27001_data.a14_acquisition else 0 }}</div>
+                <div class="annex-metric-label">Total Controls</div>
+            </div>
+            <div class="annex-metric">
+                <div class="annex-metric-value status-pass">{{ iso27001_data.a14_acquisition.controls_compliant | default(0) if iso27001_data and iso27001_data.a14_acquisition else 0 }}</div>
+                <div class="annex-metric-label">Compliant</div>
+            </div>
+            <div class="annex-metric">
+                <div class="annex-metric-value status-fail">{{ iso27001_data.a14_acquisition.controls_non_compliant | default(0) if iso27001_data and iso27001_data.a14_acquisition else 0 }}</div>
+                <div class="annex-metric-label">Non-Compliant</div>
+            </div>
+            <div class="annex-metric">
+                <div class="annex-metric-value">{{ iso27001_data.a14_acquisition.compliance_rate | default('N/A') }}{% if iso27001_data and iso27001_data.a14_acquisition and iso27001_data.a14_acquisition.compliance_rate is defined %}%{% endif %}</div>
+                <div class="annex-metric-label">Compliance Rate</div>
+            </div>
+        </div>
+
+        {% if iso27001_data and iso27001_data.a14_acquisition and iso27001_data.a14_acquisition.sdlc_metrics %}
+        <h3 class="subsection-title">Secure Development Lifecycle Metrics</h3>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>SDLC Phase</th>
+                    <th>Security Reviews</th>
+                    <th>Issues Found</th>
+                    <th>Issues Resolved</th>
+                    <th>Compliance</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for metric in iso27001_data.a14_acquisition.sdlc_metrics %}
+                <tr>
+                    <td>{{ metric.phase | default('N/A') }}</td>
+                    <td>{{ metric.reviews_conducted | default(0) }}</td>
+                    <td>{{ metric.issues_found | default(0) }}</td>
+                    <td>{{ metric.issues_resolved | default(0) }}</td>
+                    <td class="{% if metric.compliant %}status-pass{% else %}status-fail{% endif %}">
+                        {{ 'Compliant' if metric.compliant else 'Non-Compliant' }}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+
+        {% if iso27001_data and iso27001_data.a14_acquisition and iso27001_data.a14_acquisition.controls %}
+        <h3 class="subsection-title">Control Assessment</h3>
+        {% for control in iso27001_data.a14_acquisition.controls %}
+        <div class="control-item {% if control.status == 'COMPLIANT' %}control-compliant{% elif control.status == 'NON_COMPLIANT' %}control-non-compliant{% else %}control-partial{% endif %}">
+            <div class="control-id">{{ control.id | default('N/A') }}</div>
+            <div class="control-name">{{ control.name | default('Untitled Control') }}</div>
+            <div class="control-evidence">{{ control.evidence | default('No evidence recorded') }}</div>
+            <span class="control-result {% if control.status == 'COMPLIANT' %}compliant{% elif control.status == 'NON_COMPLIANT' %}non-compliant{% else %}partial{% endif %}">
+                {{ control.status | default('PENDING') }}
+            </span>
+        </div>
+        {% endfor %}
+        {% else %}
+        <p class="no-data">No system development controls data available for this reporting period.</p>
+        {% endif %}
+    </div>
+</section>
+
+{# ==========================================================================
+   A.15 Supplier Relationships
+   ========================================================================== #}
+<section class="section annex-category">
+    <div class="annex-header">
+        <div>
+            <h2 class="annex-title">A.15 Supplier Relationships</h2>
+            <p class="annex-subtitle">Information security in supplier relationships and service delivery management</p>
+        </div>
+        <span class="annex-status-badge {% if iso27001_data and iso27001_data.a15_supplier and iso27001_data.a15_supplier.status == 'COMPLIANT' %}compliant{% elif iso27001_data and iso27001_data.a15_supplier and iso27001_data.a15_supplier.status == 'PARTIAL' %}partial{% else %}non-compliant{% endif %}">
+            {{ iso27001_data.a15_supplier.status | default('PENDING') if iso27001_data and iso27001_data.a15_supplier else 'PENDING' }}
+        </span>
+    </div>
+    <div class="annex-body">
+        <div class="annex-description">
+            <strong>Objective:</strong> To ensure protection of the organization's assets that is accessible by suppliers.
+        </div>
+
+        <div class="annex-metrics">
+            <div class="annex-metric">
+                <div class="annex-metric-value">{{ iso27001_data.a15_supplier.total_controls | default(0) if iso27001_data and iso27001_data.a15_supplier else 0 }}</div>
+                <div class="annex-metric-label">Total Controls</div>
+            </div>
+            <div class="annex-metric">
+                <div class="annex-metric-value status-pass">{{ iso27001_data.a15_supplier.controls_compliant | default(0) if iso27001_data and iso27001_data.a15_supplier else 0 }}</div>
+                <div class="annex-metric-label">Compliant</div>
+            </div>
+            <div class="annex-metric">
+                <div class="annex-metric-value status-fail">{{ iso27001_data.a15_supplier.controls_non_compliant | default(0) if iso27001_data and iso27001_data.a15_supplier else 0 }}</div>
+                <div class="annex-metric-label">Non-Compliant</div>
+            </div>
+            <div class="annex-metric">
+                <div class="annex-metric-value">{{ iso27001_data.a15_supplier.compliance_rate | default('N/A') }}{% if iso27001_data and iso27001_data.a15_supplier and iso27001_data.a15_supplier.compliance_rate is defined %}%{% endif %}</div>
+                <div class="annex-metric-label">Compliance Rate</div>
+            </div>
+        </div>
+
+        {% if iso27001_data and iso27001_data.a15_supplier and iso27001_data.a15_supplier.supplier_assessments %}
+        <h3 class="subsection-title">Supplier Security Assessments</h3>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Supplier Category</th>
+                    <th>Total Suppliers</th>
+                    <th>Assessed</th>
+                    <th>Compliant</th>
+                    <th>Risk Rating</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for supplier in iso27001_data.a15_supplier.supplier_assessments %}
+                <tr>
+                    <td>{{ supplier.category | default('N/A') }}</td>
+                    <td>{{ supplier.total | default(0) }}</td>
+                    <td>{{ supplier.assessed | default(0) }}</td>
+                    <td class="{% if supplier.compliant_percent >= 90 %}status-pass{% elif supplier.compliant_percent >= 70 %}status-review{% else %}status-fail{% endif %}">
+                        {{ "%.1f"|format(supplier.compliant_percent) }}%
+                    </td>
+                    <td class="{% if supplier.risk_rating == 'Low' %}risk-low{% elif supplier.risk_rating == 'Medium' %}risk-medium{% else %}risk-high{% endif %}">
+                        {{ supplier.risk_rating | default('N/A') }}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+
+        {% if iso27001_data and iso27001_data.a15_supplier and iso27001_data.a15_supplier.controls %}
+        <h3 class="subsection-title">Control Assessment</h3>
+        {% for control in iso27001_data.a15_supplier.controls %}
+        <div class="control-item {% if control.status == 'COMPLIANT' %}control-compliant{% elif control.status == 'NON_COMPLIANT' %}control-non-compliant{% else %}control-partial{% endif %}">
+            <div class="control-id">{{ control.id | default('N/A') }}</div>
+            <div class="control-name">{{ control.name | default('Untitled Control') }}</div>
+            <div class="control-evidence">{{ control.evidence | default('No evidence recorded') }}</div>
+            <span class="control-result {% if control.status == 'COMPLIANT' %}compliant{% elif control.status == 'NON_COMPLIANT' %}non-compliant{% else %}partial{% endif %}">
+                {{ control.status | default('PENDING') }}
+            </span>
+        </div>
+        {% endfor %}
+        {% else %}
+        <p class="no-data">No supplier relationship controls data available for this reporting period.</p>
+        {% endif %}
+    </div>
+</section>
+
+{# ==========================================================================
+   A.16 Information Security Incident Management
+   ========================================================================== #}
+<section class="section annex-category">
+    <div class="annex-header">
+        <div>
+            <h2 class="annex-title">A.16 Information Security Incident Management</h2>
+            <p class="annex-subtitle">Management of security incidents and improvements</p>
+        </div>
+        <span class="annex-status-badge {% if iso27001_data and iso27001_data.a16_incident and iso27001_data.a16_incident.status == 'COMPLIANT' %}compliant{% elif iso27001_data and iso27001_data.a16_incident and iso27001_data.a16_incident.status == 'PARTIAL' %}partial{% else %}non-compliant{% endif %}">
+            {{ iso27001_data.a16_incident.status | default('PENDING') if iso27001_data and iso27001_data.a16_incident else 'PENDING' }}
+        </span>
+    </div>
+    <div class="annex-body">
+        <div class="annex-description">
+            <strong>Objective:</strong> To ensure a consistent and effective approach to the management of information
+            security incidents, including communication on security events and weaknesses.
+        </div>
+
+        <div class="annex-metrics">
+            <div class="annex-metric">
+                <div class="annex-metric-value">{{ iso27001_data.a16_incident.total_controls | default(0) if iso27001_data and iso27001_data.a16_incident else 0 }}</div>
+                <div class="annex-metric-label">Total Controls</div>
+            </div>
+            <div class="annex-metric">
+                <div class="annex-metric-value status-pass">{{ iso27001_data.a16_incident.controls_compliant | default(0) if iso27001_data and iso27001_data.a16_incident else 0 }}</div>
+                <div class="annex-metric-label">Compliant</div>
+            </div>
+            <div class="annex-metric">
+                <div class="annex-metric-value status-fail">{{ iso27001_data.a16_incident.controls_non_compliant | default(0) if iso27001_data and iso27001_data.a16_incident else 0 }}</div>
+                <div class="annex-metric-label">Non-Compliant</div>
+            </div>
+            <div class="annex-metric">
+                <div class="annex-metric-value">{{ iso27001_data.a16_incident.compliance_rate | default('N/A') }}{% if iso27001_data and iso27001_data.a16_incident and iso27001_data.a16_incident.compliance_rate is defined %}%{% endif %}</div>
+                <div class="annex-metric-label">Compliance Rate</div>
+            </div>
+        </div>
+
+        {% if iso27001_data and iso27001_data.a16_incident and iso27001_data.a16_incident.incident_stats %}
+        <h3 class="subsection-title">Incident Response Statistics</h3>
+        <div class="annex-metrics">
+            <div class="annex-metric">
+                <div class="annex-metric-value">{{ iso27001_data.a16_incident.incident_stats.total_incidents | default(0) }}</div>
+                <div class="annex-metric-label">Total Incidents</div>
+            </div>
+            <div class="annex-metric">
+                <div class="annex-metric-value status-pass">{{ iso27001_data.a16_incident.incident_stats.resolved | default(0) }}</div>
+                <div class="annex-metric-label">Resolved</div>
+            </div>
+            <div class="annex-metric">
+                <div class="annex-metric-value">{{ iso27001_data.a16_incident.incident_stats.avg_response_time | default('N/A') }}</div>
+                <div class="annex-metric-label">Avg Response Time</div>
+            </div>
+            <div class="annex-metric">
+                <div class="annex-metric-value">{{ iso27001_data.a16_incident.incident_stats.avg_resolution_time | default('N/A') }}</div>
+                <div class="annex-metric-label">Avg Resolution Time</div>
+            </div>
+        </div>
+
+        {% if iso27001_data.a16_incident.incident_stats.by_severity %}
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Severity</th>
+                    <th>Count</th>
+                    <th>Resolved</th>
+                    <th>Open</th>
+                    <th>Avg Resolution (Hours)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for incident in iso27001_data.a16_incident.incident_stats.by_severity %}
+                <tr>
+                    <td class="{% if incident.severity == 'Critical' %}risk-high{% elif incident.severity == 'High' %}risk-high{% elif incident.severity == 'Medium' %}risk-medium{% else %}risk-low{% endif %}">
+                        {{ incident.severity | default('N/A') }}
+                    </td>
+                    <td>{{ incident.count | default(0) }}</td>
+                    <td>{{ incident.resolved | default(0) }}</td>
+                    <td>{{ incident.open | default(0) }}</td>
+                    <td>{{ "%.1f"|format(incident.avg_resolution_hours) if incident.avg_resolution_hours else 'N/A' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+        {% endif %}
+
+        {% if iso27001_data and iso27001_data.a16_incident and iso27001_data.a16_incident.controls %}
+        <h3 class="subsection-title">Control Assessment</h3>
+        {% for control in iso27001_data.a16_incident.controls %}
+        <div class="control-item {% if control.status == 'COMPLIANT' %}control-compliant{% elif control.status == 'NON_COMPLIANT' %}control-non-compliant{% else %}control-partial{% endif %}">
+            <div class="control-id">{{ control.id | default('N/A') }}</div>
+            <div class="control-name">{{ control.name | default('Untitled Control') }}</div>
+            <div class="control-evidence">{{ control.evidence | default('No evidence recorded') }}</div>
+            <span class="control-result {% if control.status == 'COMPLIANT' %}compliant{% elif control.status == 'NON_COMPLIANT' %}non-compliant{% else %}partial{% endif %}">
+                {{ control.status | default('PENDING') }}
+            </span>
+        </div>
+        {% endfor %}
+        {% else %}
+        <p class="no-data">No incident management controls data available for this reporting period.</p>
+        {% endif %}
+    </div>
+</section>
+
+{# ==========================================================================
+   A.17 Information Security Aspects of Business Continuity Management
+   ========================================================================== #}
+<section class="section annex-category">
+    <div class="annex-header">
+        <div>
+            <h2 class="annex-title">A.17 Business Continuity Management</h2>
+            <p class="annex-subtitle">Information security continuity and redundancies</p>
+        </div>
+        <span class="annex-status-badge {% if iso27001_data and iso27001_data.a17_continuity and iso27001_data.a17_continuity.status == 'COMPLIANT' %}compliant{% elif iso27001_data and iso27001_data.a17_continuity and iso27001_data.a17_continuity.status == 'PARTIAL' %}partial{% else %}non-compliant{% endif %}">
+            {{ iso27001_data.a17_continuity.status | default('PENDING') if iso27001_data and iso27001_data.a17_continuity else 'PENDING' }}
+        </span>
+    </div>
+    <div class="annex-body">
+        <div class="annex-description">
+            <strong>Objective:</strong> Information security continuity shall be embedded in the organization's
+            business continuity management systems.
+        </div>
+
+        <div class="annex-metrics">
+            <div class="annex-metric">
+                <div class="annex-metric-value">{{ iso27001_data.a17_continuity.total_controls | default(0) if iso27001_data and iso27001_data.a17_continuity else 0 }}</div>
+                <div class="annex-metric-label">Total Controls</div>
+            </div>
+            <div class="annex-metric">
+                <div class="annex-metric-value status-pass">{{ iso27001_data.a17_continuity.controls_compliant | default(0) if iso27001_data and iso27001_data.a17_continuity else 0 }}</div>
+                <div class="annex-metric-label">Compliant</div>
+            </div>
+            <div class="annex-metric">
+                <div class="annex-metric-value status-fail">{{ iso27001_data.a17_continuity.controls_non_compliant | default(0) if iso27001_data and iso27001_data.a17_continuity else 0 }}</div>
+                <div class="annex-metric-label">Non-Compliant</div>
+            </div>
+            <div class="annex-metric">
+                <div class="annex-metric-value">{{ iso27001_data.a17_continuity.compliance_rate | default('N/A') }}{% if iso27001_data and iso27001_data.a17_continuity and iso27001_data.a17_continuity.compliance_rate is defined %}%{% endif %}</div>
+                <div class="annex-metric-label">Compliance Rate</div>
+            </div>
+        </div>
+
+        {% if iso27001_data and iso27001_data.a17_continuity and iso27001_data.a17_continuity.bcm_metrics %}
+        <h3 class="subsection-title">Business Continuity Metrics</h3>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Metric</th>
+                    <th>Target</th>
+                    <th>Actual</th>
+                    <th>Last Tested</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for metric in iso27001_data.a17_continuity.bcm_metrics %}
+                <tr>
+                    <td>{{ metric.name | default('N/A') }}</td>
+                    <td>{{ metric.target | default('N/A') }}</td>
+                    <td>{{ metric.actual | default('N/A') }}</td>
+                    <td>{{ metric.last_tested | default('N/A') }}</td>
+                    <td class="{% if metric.status == 'MET' %}status-pass{% else %}status-fail{% endif %}">
+                        {{ metric.status | default('N/A') }}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+
+        {% if iso27001_data and iso27001_data.a17_continuity and iso27001_data.a17_continuity.controls %}
+        <h3 class="subsection-title">Control Assessment</h3>
+        {% for control in iso27001_data.a17_continuity.controls %}
+        <div class="control-item {% if control.status == 'COMPLIANT' %}control-compliant{% elif control.status == 'NON_COMPLIANT' %}control-non-compliant{% else %}control-partial{% endif %}">
+            <div class="control-id">{{ control.id | default('N/A') }}</div>
+            <div class="control-name">{{ control.name | default('Untitled Control') }}</div>
+            <div class="control-evidence">{{ control.evidence | default('No evidence recorded') }}</div>
+            <span class="control-result {% if control.status == 'COMPLIANT' %}compliant{% elif control.status == 'NON_COMPLIANT' %}non-compliant{% else %}partial{% endif %}">
+                {{ control.status | default('PENDING') }}
+            </span>
+        </div>
+        {% endfor %}
+        {% else %}
+        <p class="no-data">No business continuity controls data available for this reporting period.</p>
+        {% endif %}
+    </div>
+</section>
+
+{# ==========================================================================
+   A.18 Compliance
+   ========================================================================== #}
+<section class="section annex-category">
+    <div class="annex-header">
+        <div>
+            <h2 class="annex-title">A.18 Compliance</h2>
+            <p class="annex-subtitle">Legal and contractual requirements, and information security reviews</p>
+        </div>
+        <span class="annex-status-badge {% if iso27001_data and iso27001_data.a18_compliance and iso27001_data.a18_compliance.status == 'COMPLIANT' %}compliant{% elif iso27001_data and iso27001_data.a18_compliance and iso27001_data.a18_compliance.status == 'PARTIAL' %}partial{% else %}non-compliant{% endif %}">
+            {{ iso27001_data.a18_compliance.status | default('PENDING') if iso27001_data and iso27001_data.a18_compliance else 'PENDING' }}
+        </span>
+    </div>
+    <div class="annex-body">
+        <div class="annex-description">
+            <strong>Objective:</strong> To avoid breaches of legal, statutory, regulatory or contractual obligations
+            related to information security and of any security requirements.
+        </div>
+
+        <div class="annex-metrics">
+            <div class="annex-metric">
+                <div class="annex-metric-value">{{ iso27001_data.a18_compliance.total_controls | default(0) if iso27001_data and iso27001_data.a18_compliance else 0 }}</div>
+                <div class="annex-metric-label">Total Controls</div>
+            </div>
+            <div class="annex-metric">
+                <div class="annex-metric-value status-pass">{{ iso27001_data.a18_compliance.controls_compliant | default(0) if iso27001_data and iso27001_data.a18_compliance else 0 }}</div>
+                <div class="annex-metric-label">Compliant</div>
+            </div>
+            <div class="annex-metric">
+                <div class="annex-metric-value status-fail">{{ iso27001_data.a18_compliance.controls_non_compliant | default(0) if iso27001_data and iso27001_data.a18_compliance else 0 }}</div>
+                <div class="annex-metric-label">Non-Compliant</div>
+            </div>
+            <div class="annex-metric">
+                <div class="annex-metric-value">{{ iso27001_data.a18_compliance.compliance_rate | default('N/A') }}{% if iso27001_data and iso27001_data.a18_compliance and iso27001_data.a18_compliance.compliance_rate is defined %}%{% endif %}</div>
+                <div class="annex-metric-label">Compliance Rate</div>
+            </div>
+        </div>
+
+        {% if iso27001_data and iso27001_data.a18_compliance and iso27001_data.a18_compliance.regulatory_requirements %}
+        <h3 class="subsection-title">Regulatory Requirements Compliance</h3>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Regulation/Standard</th>
+                    <th>Applicability</th>
+                    <th>Last Audit</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for reg in iso27001_data.a18_compliance.regulatory_requirements %}
+                <tr>
+                    <td>{{ reg.name | default('N/A') }}</td>
+                    <td>{{ reg.applicability | default('N/A') }}</td>
+                    <td>{{ reg.last_audit | default('N/A') }}</td>
+                    <td class="{% if reg.status == 'COMPLIANT' %}status-pass{% elif reg.status == 'PARTIAL' %}status-review{% else %}status-fail{% endif %}">
+                        {{ reg.status | default('N/A') }}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+
+        {% if iso27001_data and iso27001_data.a18_compliance and iso27001_data.a18_compliance.controls %}
+        <h3 class="subsection-title">Control Assessment</h3>
+        {% for control in iso27001_data.a18_compliance.controls %}
+        <div class="control-item {% if control.status == 'COMPLIANT' %}control-compliant{% elif control.status == 'NON_COMPLIANT' %}control-non-compliant{% else %}control-partial{% endif %}">
+            <div class="control-id">{{ control.id | default('N/A') }}</div>
+            <div class="control-name">{{ control.name | default('Untitled Control') }}</div>
+            <div class="control-evidence">{{ control.evidence | default('No evidence recorded') }}</div>
+            <span class="control-result {% if control.status == 'COMPLIANT' %}compliant{% elif control.status == 'NON_COMPLIANT' %}non-compliant{% else %}partial{% endif %}">
+                {{ control.status | default('PENDING') }}
+            </span>
+        </div>
+        {% endfor %}
+        {% else %}
+        <p class="no-data">No compliance controls data available for this reporting period.</p>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}
+
+{% block additional_sections %}
+{# ==========================================================================
+   ISMS Scope Statement
+   ========================================================================== #}
+<section class="section isms-scope">
+    <h3>ISMS Scope Statement</h3>
+    <p>
+        {% if isms_scope %}
+        {{ isms_scope }}
+        {% else %}
+        This ISO 27001 compliance report covers the Information Security Management System (ISMS) of
+        {{ company_name | default('the organization') }}. The ISMS scope includes all information processing
+        facilities, personnel, processes, and systems that support the delivery of services as defined in the
+        organization's Statement of Applicability (SoA).
+        {% endif %}
+    </p>
+
+    <div class="certification-info">
+        <div class="cert-item">
+            <div class="cert-label">Certification Body</div>
+            <div class="cert-value">{{ certification_body | default('N/A') }}</div>
+        </div>
+        <div class="cert-item">
+            <div class="cert-label">Certificate Number</div>
+            <div class="cert-value">{{ certificate_number | default('N/A') }}</div>
+        </div>
+        <div class="cert-item">
+            <div class="cert-label">Certification Expiry</div>
+            <div class="cert-value">{{ certification_expiry | default('N/A') }}</div>
+        </div>
+    </div>
+</section>
+
+{# ==========================================================================
+   Risk Treatment Summary
+   ========================================================================== #}
+{% if iso27001_data and iso27001_data.risk_treatment %}
+<section class="section risk-treatment">
+    <h2 class="section-title">Risk Treatment Summary</h2>
+
+    <table class="data-table risk-treatment-table">
+        <thead>
+            <tr>
+                <th>Risk ID</th>
+                <th>Risk Description</th>
+                <th>Treatment Option</th>
+                <th>Residual Risk Level</th>
+                <th>Control Reference</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for risk in iso27001_data.risk_treatment %}
+            <tr>
+                <td>{{ risk.id | default('N/A') }}</td>
+                <td>{{ risk.description | default('N/A') }}</td>
+                <td>{{ risk.treatment_option | default('N/A') }}</td>
+                <td class="{% if risk.residual_level == 'Low' %}risk-low{% elif risk.residual_level == 'Medium' %}risk-medium{% else %}risk-high{% endif %}">
+                    {{ risk.residual_level | default('N/A') }}
+                </td>
+                <td>{{ risk.control_ref | default('N/A') }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+{% endif %}
+
+{# ==========================================================================
+   Non-Conformities and Corrective Actions
+   ========================================================================== #}
+{% if iso27001_data and iso27001_data.non_conformities %}
+<section class="section">
+    <h2 class="section-title">Non-Conformities and Corrective Actions</h2>
+
+    {% if iso27001_data.non_conformities.major %}
+    <h3 class="subsection-title risk-high">Major Non-Conformities</h3>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>NC ID</th>
+                <th>Description</th>
+                <th>Control Reference</th>
+                <th>Corrective Action</th>
+                <th>Due Date</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for nc in iso27001_data.non_conformities.major %}
+            <tr>
+                <td>{{ nc.id | default('N/A') }}</td>
+                <td>{{ nc.description | default('N/A') }}</td>
+                <td>{{ nc.control_ref | default('N/A') }}</td>
+                <td>{{ nc.corrective_action | default('N/A') }}</td>
+                <td>{{ nc.due_date | default('N/A') }}</td>
+                <td class="{% if nc.status == 'CLOSED' %}status-pass{% else %}status-fail{% endif %}">
+                    {{ nc.status | default('OPEN') }}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+
+    {% if iso27001_data.non_conformities.minor %}
+    <h3 class="subsection-title">Minor Non-Conformities</h3>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>NC ID</th>
+                <th>Description</th>
+                <th>Control Reference</th>
+                <th>Corrective Action</th>
+                <th>Due Date</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for nc in iso27001_data.non_conformities.minor %}
+            <tr>
+                <td>{{ nc.id | default('N/A') }}</td>
+                <td>{{ nc.description | default('N/A') }}</td>
+                <td>{{ nc.control_ref | default('N/A') }}</td>
+                <td>{{ nc.corrective_action | default('N/A') }}</td>
+                <td>{{ nc.due_date | default('N/A') }}</td>
+                <td class="{% if nc.status == 'CLOSED' %}status-pass{% else %}status-fail{% endif %}">
+                    {{ nc.status | default('OPEN') }}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+
+    {% if iso27001_data.non_conformities.observations %}
+    <h3 class="subsection-title">Opportunities for Improvement</h3>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Observation</th>
+                <th>Recommendation</th>
+                <th>Priority</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for obs in iso27001_data.non_conformities.observations %}
+            <tr>
+                <td>{{ obs.description | default('N/A') }}</td>
+                <td>{{ obs.recommendation | default('N/A') }}</td>
+                <td class="{% if obs.priority == 'High' %}risk-high{% elif obs.priority == 'Medium' %}risk-medium{% else %}risk-low{% endif %}">
+                    {{ obs.priority | default('N/A') }}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+</section>
+{% endif %}
+{% endblock %}
