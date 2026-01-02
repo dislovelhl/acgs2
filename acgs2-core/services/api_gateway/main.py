@@ -3,9 +3,9 @@ ACGS-2 API Gateway
 Simple development API gateway for routing requests to services
 """
 
-import asyncio
 import json
 import logging
+import secrets
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -14,8 +14,8 @@ from fastapi import BackgroundTasks, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
-
 from shared.config import settings
+from starlette.middleware.sessions import SessionMiddleware
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -35,6 +35,30 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Add SessionMiddleware for OAuth state management
+# Use JWT secret if available, otherwise generate a secure random key for development
+session_secret = (
+    settings.security.jwt_secret.get_secret_value()
+    if settings.security.jwt_secret
+    else secrets.token_urlsafe(32)
+)
+
+if not settings.security.jwt_secret:
+    logger.warning(
+        "JWT_SECRET not configured - using generated session secret. "
+        "Set JWT_SECRET in production for consistent sessions across restarts."
+    )
+
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=session_secret,
+    session_cookie="acgs2_session",
+    max_age=settings.sso.session_lifetime_seconds,
+    same_site="lax",
+    https_only=settings.env == "production",
+)
+logger.info("SessionMiddleware configured for OAuth state management")
 
 # Service URLs from centralized config
 AGENT_BUS_URL = settings.services.agent_bus_url
@@ -117,7 +141,7 @@ async def submit_feedback(
 
     except Exception as e:
         logger.error(f"Error processing feedback: {e}")
-        raise HTTPException(status_code=500, detail="Failed to process feedback")
+        raise HTTPException(status_code=500, detail="Failed to process feedback") from e
 
 
 @app.get("/feedback/stats")
@@ -158,7 +182,7 @@ async def get_feedback_stats():
 
     except Exception as e:
         logger.error(f"Error getting feedback stats: {e}")
-        raise HTTPException(status_code=500, detail="Failed to retrieve feedback statistics")
+        raise HTTPException(status_code=500, detail="Failed to retrieve feedback statistics") from e
 
 
 # Service discovery endpoint
@@ -179,7 +203,7 @@ async def list_services():
                     service_info["health"] = (
                         "healthy" if response.status_code == 200 else "unhealthy"
                     )
-            except:
+            except Exception:
                 service_info["health"] = "unreachable"
 
     return services
@@ -223,10 +247,10 @@ async def proxy_to_agent_bus(request: Request, path: str):
 
     except httpx.RequestError as e:
         logger.error(f"Request error: {e}")
-        raise HTTPException(status_code=502, detail="Service unavailable")
+        raise HTTPException(status_code=502, detail="Service unavailable") from e
     except Exception as e:
         logger.error(f"Unexpected error: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 async def save_feedback_to_file(feedback_record: dict):
