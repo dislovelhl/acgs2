@@ -11,6 +11,7 @@ from fastapi import BackgroundTasks, FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
+from .drift_monitoring import DriftSeverity, DriftStatus, get_drift_detector
 from .feedback_handler import (
     FeedbackEvent,
     FeedbackResponse,
@@ -69,6 +70,34 @@ class HealthResponse(BaseModel):
     service: str
     version: str
     agent_bus_status: str
+
+
+class FeatureDriftResponse(BaseModel):
+    """Drift result for a single feature"""
+
+    feature_name: str
+    drift_detected: bool
+    drift_score: float
+    stattest: str
+    threshold: float
+    psi_value: Optional[float] = None
+
+
+class DriftReportResponse(BaseModel):
+    """Response model for drift monitoring reports"""
+
+    timestamp: str
+    status: str
+    dataset_drift: bool
+    drift_severity: str
+    drift_share: float
+    total_features: int
+    drifted_features: int
+    feature_results: list[FeatureDriftResponse]
+    reference_samples: int
+    current_samples: int
+    error_message: Optional[str] = None
+    recommendations: list[str]
 
 
 # Startup event
@@ -228,6 +257,83 @@ async def submit_feedback(request: FeedbackEvent, background_tasks: BackgroundTa
         raise HTTPException(status_code=400, detail=str(e)) from None
     except Exception as e:
         logger.error(f"Error submitting feedback: {e}")
+        raise HTTPException(status_code=500, detail=str(e)) from None
+
+
+@app.get("/monitoring/drift/latest", response_model=DriftReportResponse)
+async def get_latest_drift_report():
+    """
+    Get the most recent drift monitoring report.
+
+    Returns the latest drift detection results including:
+    - Dataset-level drift status
+    - Per-feature drift scores (using PSI method)
+    - Drift severity classification
+    - Recommendations for action
+
+    If no drift detection has been run yet, returns a report with
+    status indicating no data is available.
+    """
+    if not agent_bus:
+        raise HTTPException(status_code=503, detail="Agent bus not initialized")
+
+    try:
+        # Get the drift detector instance
+        detector = get_drift_detector()
+        report = detector.get_last_report()
+
+        if report is None:
+            # No drift report available - return empty status report
+            from datetime import datetime, timezone
+
+            return DriftReportResponse(
+                timestamp=datetime.now(timezone.utc).isoformat(),
+                status=DriftStatus.NO_REFERENCE.value,
+                dataset_drift=False,
+                drift_severity=DriftSeverity.NONE.value,
+                drift_share=0.0,
+                total_features=0,
+                drifted_features=0,
+                feature_results=[],
+                reference_samples=0,
+                current_samples=0,
+                error_message="No drift detection has been run yet",
+                recommendations=[
+                    "Run drift detection with current production data",
+                    "Ensure reference baseline data is loaded",
+                ],
+            )
+
+        # Convert drift report to API response model
+        feature_results = [
+            FeatureDriftResponse(
+                feature_name=f.feature_name,
+                drift_detected=f.drift_detected,
+                drift_score=f.drift_score,
+                stattest=f.stattest,
+                threshold=f.threshold,
+                psi_value=f.psi_value,
+            )
+            for f in report.feature_results
+        ]
+
+        return DriftReportResponse(
+            timestamp=report.timestamp.isoformat(),
+            status=report.status.value,
+            dataset_drift=report.dataset_drift,
+            drift_severity=report.drift_severity.value,
+            drift_share=report.drift_share,
+            total_features=report.total_features,
+            drifted_features=report.drifted_features,
+            feature_results=feature_results,
+            reference_samples=report.reference_samples,
+            current_samples=report.current_samples,
+            error_message=report.error_message,
+            recommendations=report.recommendations,
+        )
+
+    except Exception as e:
+        logger.error(f"Error retrieving drift report: {e}")
         raise HTTPException(status_code=500, detail=str(e)) from None
 
 
