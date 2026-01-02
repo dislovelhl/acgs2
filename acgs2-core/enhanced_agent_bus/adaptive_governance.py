@@ -36,6 +36,36 @@ try:
 except ImportError:
     from exceptions import GovernanceError
 
+# Feedback handler imports
+try:
+    from .feedback_handler import (
+        FeedbackEvent,
+        FeedbackHandler,
+        FeedbackType,
+        OutcomeStatus,
+        get_feedback_handler,
+    )
+
+    FEEDBACK_HANDLER_AVAILABLE = True
+except ImportError:
+    try:
+        from feedback_handler import (
+            FeedbackEvent,
+            FeedbackHandler,
+            FeedbackType,
+            OutcomeStatus,
+            get_feedback_handler,
+        )
+
+        FEEDBACK_HANDLER_AVAILABLE = True
+    except ImportError:
+        FEEDBACK_HANDLER_AVAILABLE = False
+        FeedbackEvent = None
+        FeedbackHandler = None
+        FeedbackType = None
+        OutcomeStatus = None
+        get_feedback_handler = None
+
 logger = logging.getLogger(__name__)
 
 
@@ -104,6 +134,9 @@ class GovernanceDecision:
     recommended_threshold: float
     features_used: ImpactFeatures
     timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    decision_id: str = field(
+        default_factory=lambda: f"gov-{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S%f')}"
+    )
 
 
 class AdaptiveThresholds:
@@ -817,6 +850,17 @@ class AdaptiveGovernanceEngine:
         self.impact_scorer = ImpactScorer(constitutional_hash)
         self.threshold_manager = AdaptiveThresholds(constitutional_hash)
 
+        # Feedback handler for persistent storage
+        self._feedback_handler: Optional[FeedbackHandler] = None
+        if FEEDBACK_HANDLER_AVAILABLE:
+            try:
+                self._feedback_handler = get_feedback_handler()
+                self._feedback_handler.initialize_schema()
+                logger.info("Feedback handler initialized for governance engine")
+            except Exception as e:
+                logger.warning(f"Failed to initialize feedback handler: {e}")
+                self._feedback_handler = None
+
         # Performance tracking
         self.metrics = GovernanceMetrics()
         self.decision_history: List[GovernanceDecision] = []
@@ -942,7 +986,7 @@ class AdaptiveGovernanceEngine:
         outcome_success: bool,
         human_override: Optional[bool] = None,
     ) -> None:
-        """Provide feedback to improve the ML models."""
+        """Provide feedback to improve the ML models and store for training."""
         try:
             # Update threshold manager
             human_feedback = None
@@ -958,8 +1002,88 @@ class AdaptiveGovernanceEngine:
 
             self.impact_scorer.update_model(decision.features_used, actual_impact)
 
+            # Store feedback event for persistent storage and later training
+            self._store_feedback_event(decision, outcome_success, human_override, actual_impact)
+
         except Exception as e:
             logger.error(f"Error processing feedback: {e}")
+
+    def _store_feedback_event(
+        self,
+        decision: GovernanceDecision,
+        outcome_success: bool,
+        human_override: Optional[bool],
+        actual_impact: float,
+    ) -> None:
+        """Store feedback event using the feedback handler for persistent storage."""
+        if not FEEDBACK_HANDLER_AVAILABLE or self._feedback_handler is None:
+            logger.debug("Feedback handler not available, skipping persistent storage")
+            return
+
+        try:
+            # Determine feedback type based on outcome and human override
+            if human_override is not None:
+                feedback_type = FeedbackType.CORRECTION
+            elif outcome_success:
+                feedback_type = FeedbackType.POSITIVE
+            else:
+                feedback_type = FeedbackType.NEGATIVE
+
+            # Determine outcome status
+            if outcome_success:
+                outcome_status = OutcomeStatus.SUCCESS
+            else:
+                outcome_status = OutcomeStatus.FAILURE
+
+            # Extract features as dict for storage
+            features_dict = {
+                "message_length": decision.features_used.message_length,
+                "agent_count": decision.features_used.agent_count,
+                "tenant_complexity": decision.features_used.tenant_complexity,
+                "temporal_patterns": decision.features_used.temporal_patterns,
+                "semantic_similarity": decision.features_used.semantic_similarity,
+                "historical_precedence": decision.features_used.historical_precedence,
+                "resource_utilization": decision.features_used.resource_utilization,
+                "network_isolation": decision.features_used.network_isolation,
+                "risk_score": decision.features_used.risk_score,
+                "confidence_level": decision.features_used.confidence_level,
+            }
+
+            # Build correction data if human override was provided
+            correction_data = None
+            if human_override is not None:
+                correction_data = {
+                    "original_decision": decision.action_allowed,
+                    "human_override": human_override,
+                    "correction_applied": human_override != decision.action_allowed,
+                }
+
+            # Create feedback event
+            feedback_event = FeedbackEvent(
+                decision_id=decision.decision_id,
+                feedback_type=feedback_type,
+                outcome=outcome_status,
+                features=features_dict,
+                actual_impact=actual_impact,
+                correction_data=correction_data,
+                metadata={
+                    "impact_level": decision.impact_level.value,
+                    "confidence_score": decision.confidence_score,
+                    "recommended_threshold": decision.recommended_threshold,
+                    "reasoning": decision.reasoning,
+                    "timestamp": decision.timestamp.isoformat(),
+                    "constitutional_hash": self.constitutional_hash,
+                },
+            )
+
+            # Store the feedback event
+            response = self._feedback_handler.store_feedback(feedback_event)
+            logger.debug(
+                f"Stored feedback event {response.feedback_id} for decision {decision.decision_id}"
+            )
+
+        except Exception as e:
+            logger.warning(f"Failed to store feedback event: {e}")
 
     def _update_metrics(self, decision: GovernanceDecision, response_time: float) -> None:
         """Update performance metrics."""
