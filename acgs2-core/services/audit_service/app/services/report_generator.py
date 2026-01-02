@@ -4,6 +4,7 @@ Provides structured reports aligned with EU AI Act and NIST RMF.
 Supports PDF and CSV export formats.
 """
 
+import csv
 import io
 import logging
 from datetime import datetime, timezone
@@ -742,3 +743,125 @@ class ComplianceReportGenerator:
         )
 
         return html_content
+
+    @staticmethod
+    def generate_csv_export(
+        logs: List[Any],
+        tenant_id: str,
+        include_headers: bool = True,
+    ) -> str:
+        """
+        Generate a CSV export of compliance data for a specific tenant.
+
+        Args:
+            logs: List of DecisionLog objects or dictionaries.
+            tenant_id: Target tenant identifier.
+            include_headers: Whether to include CSV header row (default: True).
+
+        Returns:
+            CSV content as a string.
+        """
+        logger.info("Generating CSV export for tenant=%s", tenant_id)
+
+        # Filter logs for tenant if not already filtered
+        tenant_logs = []
+        for log in logs:
+            if isinstance(log, dict):
+                if log.get("tenant_id") == tenant_id:
+                    tenant_logs.append(log)
+            elif hasattr(log, "tenant_id"):
+                if log.tenant_id == tenant_id:
+                    tenant_logs.append(log)
+
+        # Define CSV columns
+        fieldnames = [
+            "timestamp",
+            "agent_id",
+            "decision",
+            "risk_score",
+            "compliance_tags",
+            "policy_version",
+            "trace_id",
+        ]
+
+        # Create CSV in memory
+        output = io.StringIO()
+        writer = csv.DictWriter(
+            output,
+            fieldnames=fieldnames,
+            extrasaction="ignore",
+            quoting=csv.QUOTE_MINIMAL,
+        )
+
+        if include_headers:
+            writer.writeheader()
+
+        for log_obj in tenant_logs:
+            # Normalize to dict
+            if hasattr(log_obj, "to_dict"):
+                log = log_obj.to_dict()
+            elif hasattr(log_obj, "__dict__"):
+                log = log_obj.__dict__
+            else:
+                log = log_obj
+
+            # Format compliance_tags as semicolon-separated string
+            compliance_tags = log.get("compliance_tags", [])
+            if isinstance(compliance_tags, list):
+                compliance_tags_str = ";".join(str(tag) for tag in compliance_tags)
+            else:
+                compliance_tags_str = str(compliance_tags)
+
+            # Format risk_score to 4 decimal places
+            risk_score = log.get("risk_score", 0.0)
+            try:
+                risk_score_formatted = f"{float(risk_score):.4f}"
+            except (TypeError, ValueError):
+                risk_score_formatted = "0.0000"
+
+            writer.writerow(
+                {
+                    "timestamp": log.get("timestamp", ""),
+                    "agent_id": log.get("agent_id", ""),
+                    "decision": log.get("decision", ""),
+                    "risk_score": risk_score_formatted,
+                    "compliance_tags": compliance_tags_str,
+                    "policy_version": log.get("policy_version", ""),
+                    "trace_id": log.get("trace_id", ""),
+                }
+            )
+
+        csv_content = output.getvalue()
+        output.close()
+
+        logger.info(
+            "CSV export generated successfully: %d rows, tenant=%s",
+            len(tenant_logs),
+            tenant_id,
+        )
+
+        return csv_content
+
+    @staticmethod
+    def generate_csv_bytes(
+        logs: List[Any],
+        tenant_id: str,
+        include_headers: bool = True,
+    ) -> bytes:
+        """
+        Generate a CSV export as bytes (for file download/attachment).
+
+        Args:
+            logs: List of DecisionLog objects or dictionaries.
+            tenant_id: Target tenant identifier.
+            include_headers: Whether to include CSV header row (default: True).
+
+        Returns:
+            CSV content as UTF-8 encoded bytes.
+        """
+        csv_string = ComplianceReportGenerator.generate_csv_export(
+            logs=logs,
+            tenant_id=tenant_id,
+            include_headers=include_headers,
+        )
+        return csv_string.encode("utf-8")
