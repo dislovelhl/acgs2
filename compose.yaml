@@ -1,0 +1,121 @@
+# ACGS-2 Developer Onboarding Docker Compose
+# Streamlined setup for developers to get started with policy evaluation in <30 minutes
+# Constitutional Hash: cdd01ef066bc6cf2
+# Version: 1.0.0
+#
+# Usage: docker compose up -d
+#
+# Services:
+#   - OPA: Policy evaluation engine (port 8181)
+#   - Jupyter: Interactive notebooks (port 8888)
+#   - Redis: Caching and state management (port 6379)
+#
+# Documentation: docs/quickstart/README.md
+
+services:
+  # Open Policy Agent for policy decisions
+  opa:
+    image: openpolicyagent/opa:latest
+    command: run --server --log-level info --addr 0.0.0.0:8181 /policies
+    ports:
+      - "${OPA_PORT:-8181}:8181"
+    volumes:
+      - ./acgs2-core/enhanced_agent_bus/policies:/policies:ro
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8181/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    networks:
+      - acgs-onboarding
+    restart: unless-stopped
+
+  # Jupyter Notebook server for interactive policy experimentation
+  jupyter:
+    image: jupyter/minimal-notebook:python-3.11
+    ports:
+      - "${JUPYTER_PORT:-8888}:8888"
+    environment:
+      - JUPYTER_ENABLE_LAB=yes
+      - MPLBACKEND=Agg
+      - OPA_URL=http://opa:8181
+      - GRANT_SUDO=yes
+    volumes:
+      - ./notebooks:/home/jovyan/notebooks
+      - ./examples:/home/jovyan/examples:ro
+    command: start-notebook.sh --NotebookApp.token='' --NotebookApp.password=''
+    depends_on:
+      opa:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:8888 || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    networks:
+      - acgs-onboarding
+    restart: unless-stopped
+
+  # Redis for caching and state management
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    networks:
+      - acgs-onboarding
+    restart: unless-stopped
+
+networks:
+  acgs-onboarding:
+    driver: bridge
+
+volumes:
+  redis-data:
+
+# =============================================================================
+# Quick Start Guide
+# =============================================================================
+#
+# 1. Start all services:
+#    docker compose up -d
+#
+# 2. Access services:
+#    - OPA Health:   http://localhost:8181/health
+#    - OPA Policies: http://localhost:8181/v1/policies
+#    - Jupyter Lab:  http://localhost:8888 (no token required)
+#
+# 3. Test policy evaluation:
+#    curl -X POST http://localhost:8181/v1/data/constitutional/allow \
+#      -H "Content-Type: application/json" \
+#      -d '{"input": {"action": "read", "resource": "public_data"}}'
+#
+# 4. Run example projects:
+#    cd examples/01-basic-policy-evaluation
+#    docker compose up -d
+#    python evaluate_policy.py
+#
+# 5. Stop services:
+#    docker compose down
+#
+# Environment Variables (for port conflicts):
+#   - OPA_PORT (default: 8181)
+#   - JUPYTER_PORT (default: 8888)
+#   - REDIS_PORT (default: 6379)
+#
+# Troubleshooting:
+#   - Port conflicts: Set custom ports via environment variables
+#   - Health check: docker compose ps
+#   - Logs: docker compose logs -f [service]
+#
+# See docs/quickstart/README.md for the full onboarding guide
+# =============================================================================
