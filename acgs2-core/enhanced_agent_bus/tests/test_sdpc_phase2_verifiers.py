@@ -211,3 +211,87 @@ async def test_pacar_verify_with_context_existing_session():
     assert conversation_data["messages"][2]["intent"] == "continuation_intent"
     assert conversation_data["messages"][2]["verification_result"]["is_valid"] is True
     assert conversation_data["messages"][2]["verification_result"]["confidence"] == 0.92
+
+
+@pytest.mark.asyncio
+async def test_pacar_context_window_pruning():
+    """Test PACAR verifier enforces 50-message context window limit"""
+    verifier = PACARVerifier()
+
+    # Create existing conversation with 52 messages (exceeds 50 limit)
+    existing_messages = []
+    for i in range(52):
+        existing_messages.append(
+            {
+                "role": "user",
+                "content": f"Message number {i}",
+                "timestamp": f"2024-01-01T10:{i:02d}:00+00:00",
+                "intent": f"intent_{i}",
+                "verification_result": {"is_valid": True, "confidence": 0.9},
+            }
+        )
+
+    existing_conversation = {
+        "session_id": "pruning-test-session",
+        "tenant_id": "test-tenant",
+        "messages": existing_messages,
+        "created_at": "2024-01-01T10:00:00+00:00",
+        "updated_at": "2024-01-01T10:51:00+00:00",
+    }
+
+    # Mock Redis client - return existing conversation with 52 messages
+    mock_redis = MagicMock()
+    mock_redis.get = AsyncMock(return_value=json.dumps(existing_conversation))
+    mock_redis.setex = AsyncMock(return_value=True)
+    verifier.redis_client = mock_redis
+
+    # Mock LLM Assistant
+    mock_assistant = MagicMock()
+    mock_assistant.analyze_message_impact = AsyncMock(
+        return_value={
+            "risk_level": "low",
+            "confidence": 0.88,
+            "reasoning": ["Context window pruning test"],
+            "mitigations": ["None"],
+        }
+    )
+    verifier.assistant = mock_assistant
+
+    # Call verify_with_context - this adds 1 message (53 total before pruning)
+    result = await verifier.verify_with_context(
+        content="New message after pruning threshold",
+        original_intent="pruning_test_intent",
+        session_id="pruning-test-session",
+        tenant_id="test-tenant",
+    )
+
+    # Verify result structure
+    assert result["is_valid"] is True
+    assert result["confidence"] == 0.88
+    assert result["session_id"] == "pruning-test-session"
+    assert result["consensus_reached"] is True
+
+    # Verify Redis operations
+    mock_redis.get.assert_called_once()
+    mock_redis.setex.assert_called_once()
+
+    # Verify the stored conversation was pruned to 50 messages
+    call_args = mock_redis.setex.call_args
+    stored_data = call_args[0][2]
+    conversation_data = json.loads(stored_data)
+
+    # After adding 1 message to 52, we have 53. Pruning should keep last 50.
+    assert (
+        len(conversation_data["messages"]) == 50
+    ), f"Expected 50 messages after pruning, got {len(conversation_data['messages'])}"
+
+    # Verify oldest messages were removed (messages 0, 1, 2 should be gone)
+    # The first remaining message should be "Message number 3"
+    assert (
+        conversation_data["messages"][0]["content"] == "Message number 3"
+    ), "Oldest messages should have been pruned"
+
+    # Verify the new message is the last one
+    assert conversation_data["messages"][-1]["content"] == "New message after pruning threshold"
+    assert conversation_data["messages"][-1]["intent"] == "pruning_test_intent"
+    assert conversation_data["messages"][-1]["verification_result"]["is_valid"] is True
