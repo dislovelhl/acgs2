@@ -1,0 +1,6 @@
+# ACGS-2 Example 01: Basic Policy Evaluation Dependencies
+# Updated: 2026-01-02
+# Constitutional Hash: cdd01ef066bc6cf2
+
+# HTTP client for OPA queries
+requests>=2.31.0
