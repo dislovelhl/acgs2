@@ -344,3 +344,132 @@ async def test_llm_skipped_for_high_confidence():
 
         # Verify rule-based result was used
         assert result == IntentType.FACTUAL
+
+
+@pytest.mark.asyncio
+async def test_llm_fallback_on_error():
+    """Test LLM fallback to rule-based when LLM returns an error.
+
+    Verifies that when LLM classification fails (raises exception, returns None,
+    or returns malformed response), the system gracefully falls back to rule-based
+    classification with proper routing metadata.
+    """
+    from unittest.mock import AsyncMock, patch
+
+    from enhanced_agent_bus.deliberation_layer.intent_classifier import (
+        ClassificationResult,
+        RoutingPath,
+    )
+
+    classifier = IntentClassifier(
+        llm_enabled=True,
+        llm_confidence_threshold=0.8,  # High threshold to ensure LLM path is triggered
+    )
+    classifier._llm_client_initialized = True
+
+    # Test Case 1: LLM raises an exception
+    with patch(
+        "enhanced_agent_bus.deliberation_layer.intent_classifier.litellm.acompletion",
+        new_callable=AsyncMock,
+        side_effect=Exception("API connection error"),
+    ):
+        result = await classifier.classify_async_with_metadata("Help me with something")
+
+        # Verify fallback to rule-based classification
+        assert isinstance(result, ClassificationResult)
+        assert result.routing_path == RoutingPath.LLM_FALLBACK
+        assert result.intent == IntentType.GENERAL  # Default for ambiguous input
+        assert result.rule_based_intent == IntentType.GENERAL
+        assert result.rule_based_confidence == classifier.DEFAULT_CONFIDENCE
+        # LLM fields should be None since LLM failed
+        assert result.llm_intent is None
+        assert result.llm_confidence is None
+        assert result.llm_reasoning is None
+
+    # Test Case 2: LLM returns empty response
+    with patch(
+        "enhanced_agent_bus.deliberation_layer.intent_classifier.litellm.acompletion",
+        new_callable=AsyncMock,
+        return_value={"choices": []},  # Empty choices
+    ):
+        result = await classifier.classify_async_with_metadata("Process this data")
+
+        assert result.routing_path == RoutingPath.LLM_FALLBACK
+        assert result.intent == IntentType.GENERAL
+        assert result.llm_intent is None
+
+    # Test Case 3: LLM returns malformed JSON
+    with patch(
+        "enhanced_agent_bus.deliberation_layer.intent_classifier.litellm.acompletion",
+        new_callable=AsyncMock,
+        return_value={"choices": [{"message": {"content": "not valid json {{"}}]},
+    ):
+        result = await classifier.classify_async_with_metadata("Do something ambiguous")
+
+        assert result.routing_path == RoutingPath.LLM_FALLBACK
+        assert result.intent == IntentType.GENERAL
+        assert result.llm_intent is None
+
+    # Test Case 4: LLM returns invalid intent type
+    with patch(
+        "enhanced_agent_bus.deliberation_layer.intent_classifier.litellm.acompletion",
+        new_callable=AsyncMock,
+        return_value={
+            "choices": [{"message": {"content": '{"intent": "INVALID_TYPE", "confidence": 0.9}'}}]
+        },
+    ):
+        result = await classifier.classify_async_with_metadata("Ambiguous request here")
+
+        assert result.routing_path == RoutingPath.LLM_FALLBACK
+        assert result.intent == IntentType.GENERAL
+        assert result.llm_intent is None
+
+    # Test Case 5: LLM returns None response
+    with patch(
+        "enhanced_agent_bus.deliberation_layer.intent_classifier.litellm.acompletion",
+        new_callable=AsyncMock,
+        return_value=None,
+    ):
+        result = await classifier.classify_async_with_metadata("Another ambiguous input")
+
+        assert result.routing_path == RoutingPath.LLM_FALLBACK
+        assert result.intent == IntentType.GENERAL
+
+
+@pytest.mark.asyncio
+async def test_llm_fallback_on_error_preserves_rule_based_result():
+    """Test that LLM fallback preserves the original rule-based classification.
+
+    Even when LLM fails, if the rule-based classifier found a specific intent
+    (not just GENERAL), that intent should be returned.
+    """
+    from unittest.mock import AsyncMock, patch
+
+    from enhanced_agent_bus.deliberation_layer.intent_classifier import (
+        ClassificationResult,
+        RoutingPath,
+    )
+
+    classifier = IntentClassifier(
+        llm_enabled=True,
+        llm_confidence_threshold=0.8,  # High threshold to trigger LLM for single keyword match
+    )
+    classifier._llm_client_initialized = True
+
+    # Use a query with one factual keyword - gives BASE_CONFIDENCE (0.7) < threshold (0.8)
+    # so LLM will be invoked, but rule-based will identify as FACTUAL
+    with patch(
+        "enhanced_agent_bus.deliberation_layer.intent_classifier.litellm.acompletion",
+        new_callable=AsyncMock,
+        side_effect=Exception("LLM service unavailable"),
+    ):
+        result = await classifier.classify_async_with_metadata("What is this thing?")
+
+        # Should fallback to rule-based FACTUAL result
+        assert isinstance(result, ClassificationResult)
+        assert result.routing_path == RoutingPath.LLM_FALLBACK
+        assert result.intent == IntentType.FACTUAL
+        assert result.rule_based_intent == IntentType.FACTUAL
+        assert result.rule_based_confidence == classifier.BASE_CONFIDENCE
+        # Latency should be recorded
+        assert result.latency_ms >= 0
