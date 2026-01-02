@@ -4,22 +4,40 @@ FastAPI application for the Enhanced Agent Bus service
 """
 
 import asyncio
-import logging
-from typing import Dict, Any, Optional
-from fastapi import FastAPI, HTTPException, BackgroundTasks
+import sys
+from typing import Any, Dict, Optional
+
+from fastapi import BackgroundTasks, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
-import os
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+# Add shared module to path for imports
+sys.path.insert(0, str(__file__).replace("/enhanced_agent_bus/api.py", ""))
+
+from shared.logging_config import (  # noqa: E402
+    configure_logging,
+    get_logger,
+    instrument_fastapi,
+    setup_opentelemetry,
+)
+from shared.middleware.correlation_id import add_correlation_id_middleware  # noqa: E402
+
+# Configure structlog BEFORE any logging calls
+configure_logging(service_name="enhanced_agent_bus")
+logger = get_logger(__name__)
 
 app = FastAPI(
     title="ACGS-2 Enhanced Agent Bus API",
     description="API for the ACGS-2 Enhanced Agent Bus with Constitutional Compliance",
     version="1.0.0",
 )
+
+# Initialize OpenTelemetry tracing
+setup_opentelemetry(service_name="enhanced_agent_bus")
+instrument_fastapi(app)
+
+# Add correlation ID middleware (MUST be after instrument_fastapi)
+add_correlation_id_middleware(app, service_name="enhanced_agent_bus")
 
 # Add CORS middleware
 app.add_middleware(
@@ -71,12 +89,16 @@ async def startup_event():
     """Initialize the agent bus on startup"""
     global agent_bus
     try:
-        logger.info("Initializing Enhanced Agent Bus (simplified for development)...")
+        logger.info("agent_bus_initializing", mode="development")
         # Simplified initialization for development
         agent_bus = {"status": "initialized", "services": ["redis", "kafka", "opa"]}
-        logger.info("Enhanced Agent Bus initialized successfully (dev mode)")
+        logger.info(
+            "agent_bus_initialized",
+            mode="development",
+            services=["redis", "kafka", "opa"],
+        )
     except Exception as e:
-        logger.error(f"Failed to initialize agent bus: {e}")
+        logger.error("agent_bus_initialization_failed", error=str(e), error_type=type(e).__name__)
         raise
 
 
@@ -85,7 +107,7 @@ async def startup_event():
 async def shutdown_event():
     """Clean up on shutdown"""
     global agent_bus
-    logger.info("Enhanced Agent Bus stopped (dev mode)")
+    logger.info("agent_bus_stopped", mode="development")
 
 
 # API Endpoints
@@ -118,9 +140,9 @@ async def send_message(request: MessageRequest, background_tasks: BackgroundTask
 
         # Simulate async processing
         async def process_message(msg_id: str, content: str):
-            logger.info(f"Processing message {msg_id}: {content[:50]}...")
+            logger.info("message_processing", message_id=msg_id, content_preview=content[:50])
             await asyncio.sleep(0.1)  # Simulate processing time
-            logger.info(f"Message {msg_id} processed successfully")
+            logger.info("message_processed", message_id=msg_id)
 
         background_tasks.add_task(process_message, message_id, request.content)
 
@@ -132,8 +154,8 @@ async def send_message(request: MessageRequest, background_tasks: BackgroundTask
         )
 
     except Exception as e:
-        logger.error(f"Error sending message: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error("message_send_failed", error=str(e), error_type=type(e).__name__)
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @app.get("/messages/{message_id}")
@@ -151,8 +173,13 @@ async def get_message_status(message_id: str):
             "details": {"note": "Development mode - simplified response"},
         }
     except Exception as e:
-        logger.error(f"Error getting message status: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(
+            "message_status_failed",
+            message_id=message_id,
+            error=str(e),
+            error_type=type(e).__name__,
+        )
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @app.get("/stats")
@@ -170,8 +197,8 @@ async def get_stats():
             "note": "Development mode - mock statistics",
         }
     except Exception as e:
-        logger.error(f"Error getting stats: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error("stats_retrieval_failed", error=str(e), error_type=type(e).__name__)
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @app.post("/policies/validate")
@@ -189,8 +216,8 @@ async def validate_policy(policy_data: Dict[str, Any]):
             "note": "Development mode - simplified validation",
         }
     except Exception as e:
-        logger.error(f"Error validating policy: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error("policy_validation_failed", error=str(e), error_type=type(e).__name__)
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 if __name__ == "__main__":
