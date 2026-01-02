@@ -159,4 +159,65 @@ spec:
           annotations:
             summary: "Dead letter queue growing"
             description: "{{ "{{" }} $value {{ "}}" }} messages added to DLQ in the last hour"
+
+    - name: acgs2.security
+      rules:
+        - alert: SIEMIntegrationFailure
+          expr: up{job="acgs2-siem-integration"} == 0
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "SIEM integration is down"
+            description: "SIEM integration service has been down for more than 5 minutes"
+            runbook_url: "https://acgs.io/runbooks/siem-integration-down"
+
+        - alert: CircuitBreakerOpen
+          expr: acgs_circuit_breaker_state{state="open"} > 0
+          for: 2m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Circuit breaker opened"
+            description: "Circuit breaker for {{ "{{" }} $labels.service {{ "}}" }} is open"
+            runbook_url: "https://acgs.io/runbooks/circuit-breaker-open"
+
+        - alert: SSLVerificationDisabled
+          expr: acgs_ssl_verification_disabled == 1
+          for: 1m
+          labels:
+            severity: critical
+          annotations:
+            summary: "SSL verification disabled in production"
+            description: "SSL verification is disabled for {{ "{{" }} $labels.service {{ "}}" }}"
+            runbook_url: "https://acgs.io/runbooks/ssl-verification-disabled"
+
+    - name: acgs2.capacity
+      rules:
+        - alert: ResourceQuotaNearLimit
+          expr: (kube_resourcequota{namespace="{{ .Release.Namespace }}", resource="cpu", type="used"} / kube_resourcequota{namespace="{{ .Release.Namespace }}", resource="cpu", type="hard"}) > 0.85
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Resource quota near limit"
+            description: "CPU resource quota is {{ "{{" }} $value | humanizePercentage {{ "}}" }} used"
+
+        - alert: NodeResourcePressure
+          expr: (1 - rate(node_cpu_seconds_total{mode="idle"}[5m])) > 0.9
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Node under resource pressure"
+            description: "Node {{ "{{" }} $labels.node {{ "}}" }} CPU utilization is {{ "{{" }} $value | humanizePercentage {{ "}}" }}"
+
+        - alert: DiskSpaceLow
+          expr: (node_filesystem_avail_bytes / node_filesystem_size_bytes) < 0.1
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Disk space running low"
+            description: "Disk space on {{ "{{" }} $labels.node {{ "}}" }} is {{ "{{" }} $value | humanizePercentage {{ "}}" }} free"
 {{- end }}

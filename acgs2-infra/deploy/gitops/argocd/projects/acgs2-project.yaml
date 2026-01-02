@@ -1,0 +1,55 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: acgs2
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: acgs2-project
+    acgs.io/constitutional-hash: cdd01ef066bc6cf2
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  description: ACGS-2 Constitutional AI Governance System
+  sourceRepos:
+    - https://github.com/acgs2/acgs2-infra
+    - https://github.com/acgs2/acgs2-observability
+    - https://github.com/acgs2/acgs2-core
+  destinations:
+    - namespace: acgs2-system
+      server: https://kubernetes.default.svc
+    - namespace: acgs2-monitoring
+      server: https://kubernetes.default.svc
+    - namespace: acgs2-security
+      server: https://kubernetes.default.svc
+    - namespace: argocd
+      server: https://kubernetes.default.svc
+  clusterResourceWhitelist:
+    - group: '*'
+      kind: '*'
+  namespaceResourceWhitelist:
+    - group: '*'
+      kind: '*'
+  orphanedResources:
+    warn: false
+  roles:
+    - name: admin
+      description: Admin access to ACGS-2 applications
+      policies:
+        - p, proj:acgs2:admin, applications, *, acgs2/*, allow
+      groups:
+        - acgs2-admins
+    - name: developer
+      description: Developer access to ACGS-2 applications
+      policies:
+        - p, proj:acgs2:developer, applications, get, acgs2/*, allow
+        - p, proj:acgs2:developer, applications, sync, acgs2/*, allow
+      groups:
+        - acgs2-developers
+  syncWindows:
+    - kind: allow
+      schedule: '0 1 * * *'  # Daily at 1 AM
+      duration: 2h
+      applications:
+        - acgs2-core
+      manualSync: true
+      timeZone: UTC

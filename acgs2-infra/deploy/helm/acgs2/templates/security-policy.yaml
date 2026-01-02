@@ -1,0 +1,111 @@
+{{/*
+ACGS-2 Security Policy Configuration
+Constitutional Hash: cdd01ef066bc6cf2
+
+Implements supply chain security and SLSA provenance requirements.
+*/}}
+{{- if .Values.global.security.supplyChain.enabled }}
+---
+apiVersion: policy.sigstore.dev/v1beta1
+kind: ClusterImagePolicy
+metadata:
+  name: {{ include "acgs2.fullname" . }}-image-policy
+spec:
+  images:
+  - glob: "{{ .Values.global.imageRegistry }}/**"
+  authorities:
+  - key:
+      data: |
+        -----BEGIN PUBLIC KEY-----
+        # Key for verifying signed container images
+        -----END PUBLIC KEY-----
+  mode: enforce
+---
+# Pod Security Standards enforcement
+apiVersion: policy/v1beta1
+kind: PodSecurityPolicy
+metadata:
+  name: {{ include "acgs2.fullname" . }}-psp
+  annotations:
+    seccomp.security.alpha.kubernetes.io/allowedProfileNames: 'runtime/default'
+    apparmor.security.beta.kubernetes.io/allowedProfileNames: 'runtime/default'
+    seccomp.security.alpha.kubernetes.io/defaultProfileName: 'runtime/default'
+    apparmor.security.beta.kubernetes.io/defaultProfileName: 'runtime/default'
+spec:
+  privileged: false
+  allowPrivilegeEscalation: false
+  requiredDropCapabilities:
+    - ALL
+  volumes:
+    - 'configMap'
+    - 'emptyDir'
+    - 'projected'
+    - 'secret'
+    - 'downwardAPI'
+  hostNetwork: false
+  hostIPC: false
+  hostPID: false
+  runAsUser:
+    rule: 'MustRunAsNonRoot'
+  runAsGroup:
+    rule: 'MustRunAs'
+    ranges:
+    - min: 1000
+      max: 1000
+  seLinux:
+    rule: 'RunAsAny'
+  supplementalGroups:
+    rule: 'MustRunAs'
+    ranges:
+    - min: 1000
+      max: 1000
+  fsGroup:
+    rule: 'MustRunAs'
+    ranges:
+    - min: 1000
+      max: 1000
+  readOnlyRootFilesystem: true
+---
+# Security Context Constraints (OpenShift compatible)
+{{- if .Values.global.security.openshiftSCC }}
+apiVersion: security.openshift.io/v1
+kind: SecurityContextConstraints
+metadata:
+  name: {{ include "acgs2.fullname" . }}-scc
+allowHostDirVolumePlugin: false
+allowHostIPC: false
+allowHostNetwork: false
+allowHostPID: false
+allowHostPorts: false
+allowPrivilegeEscalation: false
+allowPrivilegedContainer: false
+allowedCapabilities: []
+defaultAddCapabilities: []
+fsGroup:
+  type: MustRunAs
+  ranges:
+  - max: 1000
+    min: 1000
+groups: []
+readOnlyRootFilesystem: true
+requiredDropCapabilities:
+- ALL
+runAsUser:
+  type: MustRunAsNonRoot
+seLinuxContext:
+  type: MustRunAs
+supplementalGroups:
+  type: MustRunAs
+  ranges:
+  - max: 1000
+    min: 1000
+users: []
+volumes:
+- configMap
+- downwardAPI
+- emptyDir
+- persistentVolumeClaim
+- projected
+- secret
+{{- end }}
+{{- end }}

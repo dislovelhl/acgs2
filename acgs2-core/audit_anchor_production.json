@@ -1,0 +1,10 @@
+[
+  {
+    "index": 0,
+    "timestamp": "2026-01-02T00:27:23.978900+00:00",
+    "root_hash": "genesis_root",
+    "previous_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+    "constitutional_hash": "cdd01ef066bc6cf2",
+    "hash": "526936a727a6a0e4e53cf3fd4c2e07833313c6fad7ed5cb2b94b83b284cb3ec1"
+  }
+]

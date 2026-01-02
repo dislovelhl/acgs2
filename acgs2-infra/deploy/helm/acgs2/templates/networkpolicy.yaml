@@ -1,8 +1,8 @@
 {{/*
-ACGS-2 Network Policies
+ACGS-2 Network Policies - Enhanced Security
 Constitutional Hash: cdd01ef066bc6cf2
 
-Implements zero-trust network security with explicit allow rules.
+Implements zero-trust network security with explicit allow rules and security monitoring.
 */}}
 {{- if .Values.global.security.networkPolicy.enabled }}
 ---

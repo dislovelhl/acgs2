@@ -26,6 +26,12 @@ spec:
         prometheus.io/scrape: "true"
         prometheus.io/port: "8000"
         prometheus.io/path: "/metrics"
+        # Security annotations for enhanced container security
+        container.apparmor.security.beta.kubernetes.io/agent-bus: "runtime/default"
+        seccomp.security.alpha.kubernetes.io/pod: "runtime/default"
+        # Resource and scheduling constraints
+        resource-policy.kubernetes.io/cpu-limit: {{ .Values.agentBus.resources.limits.cpu | quote }}
+        resource-policy.kubernetes.io/memory-limit: {{ .Values.agentBus.resources.limits.memory | quote }}
       labels:
         {{- include "acgs2.selectorLabels" . | nindent 8 }}
         app.kubernetes.io/component: agent-bus
@@ -76,25 +82,51 @@ spec:
               value: {{ .Values.agentBus.deliberation.multiApprover | quote }}
             - name: ESCALATION_TIMEOUT
               value: {{ .Values.agentBus.deliberation.escalationTimeout | quote }}
+            # OpenTelemetry Tracing Configuration
+            - name: OTEL_SERVICE_NAME
+              value: "acgs2-agent-bus"
+            - name: OTEL_SERVICE_VERSION
+              value: {{ .Values.agentBus.image.tag | quote }}
+            - name: OTEL_TRACES_EXPORTER
+              value: "jaeger"
+            - name: OTEL_EXPORTER_JAEGER_ENDPOINT
+              value: "http://{{ include "acgs2.fullname" . }}-jaeger-collector:14268/api/traces"
+            - name: OTEL_PYTHON_TRACER_PROVIDER
+              value: "sdk_tracer_provider"
+            - name: OTEL_METRICS_EXPORTER
+              value: "prometheus"
+            - name: OTEL_METRICS_EXPORTER_PORT
+              value: "9091"
             {{- if .Values.extraEnv }}
             {{- toYaml .Values.extraEnv | nindent 12 }}
             {{- end }}
+          startupProbe:
+            httpGet:
+              path: /health/ready
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 5
+            failureThreshold: 12  # Allow up to 60 seconds for startup
+            successThreshold: 1
           livenessProbe:
             httpGet:
               path: /health/live
               port: http
-            initialDelaySeconds: 15
+            initialDelaySeconds: 30  # Increased to allow proper startup
             periodSeconds: 20
             timeoutSeconds: 5
             failureThreshold: 3
+            successThreshold: 1
           readinessProbe:
             httpGet:
               path: /health/ready
               port: http
-            initialDelaySeconds: 10
+            initialDelaySeconds: 15
             periodSeconds: 10
             timeoutSeconds: 5
             failureThreshold: 3
+            successThreshold: 1
           resources:
             {{- toYaml .Values.agentBus.resources | nindent 12 }}
           volumeMounts:

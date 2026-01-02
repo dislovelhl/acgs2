@@ -1,0 +1,443 @@
+{{/*
+ACGS-2 Consolidated Services Deployment
+Constitutional Hash: cdd01ef066bc6cf2
+
+Consolidated Architecture: Reduces 6+ services to 3 core services
+- Core Governance Service: Constitutional + Policy Registry + Audit
+- Agent Bus Service: Enhanced messaging + deliberation
+- API Gateway Service: Unified ingress + routing
+*/}}
+
+{{- if .Values.global.architecture.consolidated.enabled }}
+---
+# Consolidated Core Governance Service
+# Combines: Constitutional Service + Policy Registry + Audit Service
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "acgs2.fullname" . }}-core-governance
+  labels:
+    {{- include "acgs2.labels" . | nindent 4 }}
+    app.kubernetes.io/component: core-governance
+    acgs.io/service-type: consolidated
+spec:
+  replicas: {{ .Values.consolidatedServices.coreGovernance.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "acgs2.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: core-governance
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        acgs.io/constitutional-hash: {{ .Values.global.constitutionalHash | quote }}
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8000"
+        prometheus.io/path: "/metrics"
+      labels:
+        {{- include "acgs2.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: core-governance
+    spec:
+      {{- include "acgs2.imagePullSecrets" . | nindent 6 }}
+      serviceAccountName: {{ include "acgs2.serviceAccountName" . }}
+      securityContext:
+        {{- include "acgs2.podSecurityContext" . | nindent 8 }}
+      containers:
+        - name: core-governance
+          securityContext:
+            {{- include "acgs2.securityContext" . | nindent 12 }}
+          image: {{ include "acgs2.image" (dict "registry" .Values.global.imageRegistry "repository" .Values.consolidatedServices.coreGovernance.image.repository "tag" .Values.consolidatedServices.coreGovernance.image.tag) }}
+          imagePullPolicy: {{ .Values.consolidatedServices.coreGovernance.image.pullPolicy }}
+          ports:
+            - name: constitutional
+              containerPort: 8001
+              protocol: TCP
+            - name: policy
+              containerPort: 8003
+              protocol: TCP
+            - name: audit
+              containerPort: 8084
+              protocol: TCP
+            - name: metrics
+              containerPort: 9090
+              protocol: TCP
+          env:
+            {{- include "acgs2.constitutionalEnv" . | nindent 12 }}
+            {{- include "acgs2.databaseEnv" . | nindent 12 }}
+            {{- include "acgs2.redisEnv" . | nindent 12 }}
+            - name: SERVICE_MODE
+              value: "consolidated"
+            - name: CONSTITUTIONAL_SERVICE_ENABLED
+              value: "true"
+            - name: POLICY_REGISTRY_ENABLED
+              value: "true"
+            - name: AUDIT_SERVICE_ENABLED
+              value: "true"
+            {{- if .Values.extraEnv }}
+            {{- toYaml .Values.extraEnv | nindent 12 }}
+            {{- end }}
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: constitutional
+            initialDelaySeconds: 30
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: constitutional
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          resources:
+            {{- toYaml .Values.consolidatedServices.coreGovernance.resources | nindent 12 }}
+          volumeMounts:
+            - name: config
+              mountPath: /app/config
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: config
+          configMap:
+            name: {{ include "acgs2.fullname" . }}-config
+        - name: tmp
+          emptyDir: {}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "acgs2.fullname" . }}-core-governance
+  labels:
+    {{- include "acgs2.labels" . | nindent 4 }}
+    app.kubernetes.io/component: core-governance
+spec:
+  ports:
+    - name: constitutional
+      port: 8001
+      targetPort: constitutional
+      protocol: TCP
+    - name: policy
+      port: 8003
+      targetPort: policy
+      protocol: TCP
+    - name: audit
+      port: 8084
+      targetPort: audit
+      protocol: TCP
+  selector:
+    app.kubernetes.io/name: {{ include "acgs2.name" . }}
+    app.kubernetes.io/component: core-governance
+  type: ClusterIP
+---
+# Enhanced Agent Bus Service (already exists, keeping separate for performance)
+# This service handles high-throughput messaging and is performance-critical
+{{- if .Values.agentBus.enabled }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "acgs2.agentBus.fullname" . }}-enhanced
+  labels:
+    {{- include "acgs2.labels" . | nindent 4 }}
+    app.kubernetes.io/component: agent-bus-enhanced
+    acgs.io/service-type: performance-critical
+spec:
+  replicas: {{ .Values.agentBus.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "acgs2.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: agent-bus-enhanced
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        acgs.io/constitutional-hash: {{ .Values.global.constitutionalHash | quote }}
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8000"
+        prometheus.io/path: "/metrics"
+        # Enhanced performance annotations
+        resource-policy.kubernetes.io/cpu-limit: {{ .Values.agentBus.resources.limits.cpu | quote }}
+        resource-policy.kubernetes.io/memory-limit: {{ .Values.agentBus.resources.limits.memory | quote }}
+        # OpenTelemetry Tracing
+        instrumentation.opentelemetry.io/inject-python: "true"
+      labels:
+        {{- include "acgs2.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: agent-bus-enhanced
+    spec:
+      {{- include "acgs2.imagePullSecrets" . | nindent 6 }}
+      serviceAccountName: {{ include "acgs2.serviceAccountName" . }}
+      securityContext:
+        {{- include "acgs2.podSecurityContext" . | nindent 8 }}
+      containers:
+        - name: agent-bus
+          securityContext:
+            {{- include "acgs2.securityContext" . | nindent 12 }}
+          image: {{ include "acgs2.image" (dict "registry" .Values.global.imageRegistry "repository" .Values.agentBus.image.repository "tag" .Values.agentBus.image.tag) }}
+          imagePullPolicy: {{ .Values.agentBus.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 8000
+              protocol: TCP
+            - name: metrics
+              containerPort: 9090
+              protocol: TCP
+          env:
+            {{- include "acgs2.constitutionalEnv" . | nindent 12 }}
+            {{- include "acgs2.databaseEnv" . | nindent 12 }}
+            {{- include "acgs2.redisEnv" . | nindent 12 }}
+            {{- if .Values.agentBus.kafka.enabled }}
+            {{- include "acgs2.kafkaEnv" . | nindent 12 }}
+            - name: KAFKA_MESSAGES_TOPIC
+              value: {{ .Values.agentBus.kafka.topics.messages | quote }}
+            - name: KAFKA_EVENTS_TOPIC
+              value: {{ .Values.agentBus.kafka.topics.events | quote }}
+            - name: KAFKA_DLQ_TOPIC
+              value: {{ .Values.agentBus.kafka.topics.deadLetter | quote }}
+            {{- end }}
+            - name: SERVICE_NAME
+              value: "enhanced-agent-bus"
+            - name: SERVICE_PORT
+              value: "8000"
+            - name: LOG_LEVEL
+              value: "INFO"
+            - name: DELIBERATION_ENABLED
+              value: {{ .Values.agentBus.deliberation.enabled | quote }}
+            - name: IMPACT_SCORING_ENABLED
+              value: {{ .Values.agentBus.deliberation.impactScoring | quote }}
+            - name: HITL_ENABLED
+              value: {{ .Values.agentBus.deliberation.humanInTheLoop | quote }}
+            - name: MULTI_APPROVER_ENABLED
+              value: {{ .Values.agentBus.deliberation.multiApprover | quote }}
+            - name: ESCALATION_TIMEOUT
+              value: {{ .Values.agentBus.deliberation.escalationTimeout | quote }}
+            # OpenTelemetry Tracing Configuration
+            - name: OTEL_SERVICE_NAME
+              value: "acgs2-enhanced-agent-bus"
+            - name: OTEL_SERVICE_VERSION
+              value: {{ .Values.agentBus.image.tag | quote }}
+            - name: OTEL_TRACES_EXPORTER
+              value: "jaeger"
+            - name: OTEL_EXPORTER_JAEGER_ENDPOINT
+              value: "http://{{ include "acgs2.fullname" . }}-jaeger-collector:14268/api/traces"
+            - name: OTEL_PYTHON_TRACER_PROVIDER
+              value: "sdk_tracer_provider"
+            - name: OTEL_METRICS_EXPORTER
+              value: "prometheus"
+            - name: OTEL_METRICS_EXPORTER_PORT
+              value: "9091"
+            {{- if .Values.extraEnv }}
+            {{- toYaml .Values.extraEnv | nindent 12 }}
+            {{- end }}
+          startupProbe:
+            httpGet:
+              path: /health/ready
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 5
+            failureThreshold: 12
+            successThreshold: 1
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 3
+            successThreshold: 1
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+            successThreshold: 1
+          resources:
+            {{- toYaml .Values.agentBus.resources | nindent 12 }}
+          volumeMounts:
+            - name: config
+              mountPath: /app/config
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+            {{- if .Values.extraVolumeMounts }}
+            {{- toYaml .Values.extraVolumeMounts | nindent 12 }}
+            {{- end }}
+      volumes:
+        - name: config
+          configMap:
+            name: {{ include "acgs2.fullname" . }}-config
+        - name: tmp
+          emptyDir: {}
+        {{- if .Values.extraVolumes }}
+        {{- toYaml .Values.extraVolumes | nindent 8 }}
+        {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}
+---
+# Unified API Gateway Service
+# Combines: API Gateway + Ingress routing + authentication
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "acgs2.apiGateway.fullname" . }}-unified
+  labels:
+    {{- include "acgs2.labels" . | nindent 4 }}
+    app.kubernetes.io/component: api-gateway-unified
+    acgs.io/service-type: ingress
+spec:
+  replicas: {{ .Values.apiGateway.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "acgs2.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: api-gateway-unified
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        acgs.io/constitutional-hash: {{ .Values.global.constitutionalHash | quote }}
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/metrics"
+        nginx.ingress.kubernetes.io/ssl-redirect: "true"
+        cert-manager.io/cluster-issuer: "letsencrypt-prod"
+      labels:
+        {{- include "acgs2.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: api-gateway-unified
+    spec:
+      {{- include "acgs2.imagePullSecrets" . | nindent 6 }}
+      serviceAccountName: {{ include "acgs2.serviceAccountName" . }}
+      securityContext:
+        {{- include "acgs2.podSecurityContext" . | nindent 8 }}
+      containers:
+        - name: api-gateway
+          securityContext:
+            {{- include "acgs2.securityContext" . | nindent 12 }}
+          image: {{ include "acgs2.image" (dict "registry" .Values.global.imageRegistry "repository" .Values.apiGateway.image.repository "tag" .Values.apiGateway.image.tag) }}
+          imagePullPolicy: {{ .Values.apiGateway.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+            - name: https
+              containerPort: 8443
+              protocol: TCP
+            - name: metrics
+              containerPort: 9090
+              protocol: TCP
+          env:
+            {{- include "acgs2.constitutionalEnv" . | nindent 12 }}
+            - name: SERVICE_MODE
+              value: "api-gateway"
+            - name: CORE_GOVERNANCE_URL
+              value: "http://{{ include "acgs2.fullname" . }}-core-governance:8001"
+            - name: AGENT_BUS_URL
+              value: "http://{{ include "acgs2.agentBus.fullname" . }}-enhanced:8000"
+            - name: POLICY_REGISTRY_URL
+              value: "http://{{ include "acgs2.fullname" . }}-core-governance:8003"
+            - name: AUDIT_SERVICE_URL
+              value: "http://{{ include "acgs2.fullname" . }}-core-governance:8084"
+            - name: ENABLE_TLS
+              value: {{ .Values.global.security.tls.enabled | quote }}
+            {{- if .Values.extraEnv }}
+            {{- toYaml .Values.extraEnv | nindent 12 }}
+            {{- end }}
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+              scheme: HTTP
+            initialDelaySeconds: 30
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+              scheme: HTTP
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          resources:
+            {{- toYaml .Values.apiGateway.resources | nindent 12 }}
+          volumeMounts:
+            - name: config
+              mountPath: /app/config
+              readOnly: true
+            - name: tls-certs
+              mountPath: /app/certs
+              readOnly: true
+      volumes:
+        - name: config
+          configMap:
+            name: {{ include "acgs2.fullname" . }}-config
+        - name: tls-certs
+          secret:
+            secretName: {{ include "acgs2.fullname" . }}-tls
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "acgs2.apiGateway.fullname" . }}-unified
+  labels:
+    {{- include "acgs2.labels" . | nindent 4 }}
+    app.kubernetes.io/component: api-gateway-unified
+spec:
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+      protocol: TCP
+    - name: https
+      port: 443
+      targetPort: https
+      protocol: TCP
+  selector:
+    app.kubernetes.io/name: {{ include "acgs2.name" . }}
+    app.kubernetes.io/component: api-gateway-unified
+  type: LoadBalancer
+{{- end }}

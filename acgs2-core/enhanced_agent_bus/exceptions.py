@@ -372,6 +372,32 @@ class OPANotInitializedError(PolicyError):
 
 
 # =============================================================================
+# Governance Errors
+# =============================================================================
+
+
+class GovernanceError(AgentBusError):
+    """Raised when governance operations fail."""
+
+    def __init__(self, message: str, details: Optional[Dict[str, Any]] = None) -> None:
+        super().__init__(
+            message=message,
+            details=details or {},
+        )
+
+
+class ImpactAssessmentError(GovernanceError):
+    """Raised when impact assessment operations fail."""
+
+    def __init__(self, assessment_type: str, reason: str) -> None:
+        self.assessment_type = assessment_type
+        super().__init__(
+            message=f"Impact assessment failed for {assessment_type}: {reason}",
+            details={"assessment_type": assessment_type, "reason": reason},
+        )
+
+
+# =============================================================================
 # Deliberation Layer Errors
 # =============================================================================
 

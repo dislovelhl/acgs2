@@ -269,12 +269,15 @@ bus = EnhancedAgentBus(
 
 ## Documentation
 
+**Start Here:** [Documentation Portal](./DOCUMENTATION_PORTAL.md) - Unified navigation for all 32 documentation files
+
 | Document                                     | Description                    |
 | -------------------------------------------- | ------------------------------ |
+| [Documentation Portal](./DOCUMENTATION_PORTAL.md) | Unified navigation with search |
 | [API Reference](./docs/API.md)               | Complete API documentation     |
 | [Developer Guide](./docs/DEVELOPER_GUIDE.md) | Development setup and patterns |
 | [Architecture](./docs/ARCHITECTURE.md)       | System design and components   |
-| [MACI Guide](./MACI_GUIDE.md)                | Role separation enforcement    |
+| [MACI Guide](./docs/guides/MACI_GUIDE.md)    | Role separation enforcement    |
 
 ## Exception Hierarchy
 

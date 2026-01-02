@@ -9,6 +9,7 @@ This directory contains OpenAPI 3.0 specifications for all ACGS-2 container APIs
 
 | API | File | Port | Description |
 |-----|------|------|-------------|
+| Enhanced Agent Bus | [enhanced-agent-bus-api.yaml](./enhanced-agent-bus-api.yaml) | 8080 | Core agent communication with constitutional validation |
 | Policy Registry | [policy-registry-api.yaml](./policy-registry-api.yaml) | 8000 | Dynamic policy management with Ed25519 signatures |
 | Audit Service | [audit-service-api.yaml](./audit-service-api.yaml) | 8084 | Immutable audit trails with blockchain anchoring |
 

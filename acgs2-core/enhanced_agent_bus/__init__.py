@@ -110,6 +110,21 @@ from .runtime_security import (
     get_runtime_security_scanner,
     scan_content,
 )
+from .siem_integration import (
+    AlertLevel,
+    AlertManager,
+    AlertThreshold,
+    EventCorrelator,
+    SIEMConfig,
+    SIEMEventFormatter,
+    SIEMFormat,
+    SIEMIntegration,
+    close_siem,
+    get_siem_integration,
+    initialize_siem,
+    log_security_event,
+    security_audit,
+)
 from .validators import (
     ValidationResult,
 )
@@ -198,4 +213,18 @@ __all__ = [
     "SecuritySeverity",
     "get_runtime_security_scanner",
     "scan_content",
+    # SIEM Integration
+    "SIEMFormat",
+    "SIEMConfig",
+    "SIEMEventFormatter",
+    "SIEMIntegration",
+    "AlertLevel",
+    "AlertThreshold",
+    "AlertManager",
+    "EventCorrelator",
+    "initialize_siem",
+    "close_siem",
+    "get_siem_integration",
+    "log_security_event",
+    "security_audit",
 ]

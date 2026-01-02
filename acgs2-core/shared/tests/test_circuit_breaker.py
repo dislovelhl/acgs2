@@ -297,7 +297,7 @@ class TestWithCircuitBreakerDecorator:
 
     def test_sync_function_with_fallback(self):
         """Test decorator uses fallback when circuit opens."""
-        # Create a circuit breaker that's already open
+        # Create a circuit breaker that opens after 1 failure
         cb = get_circuit_breaker("test_fallback_service", CircuitBreakerConfig(fail_max=1))
 
         call_count = 0
@@ -308,9 +308,15 @@ class TestWithCircuitBreakerDecorator:
             call_count += 1
             raise RuntimeError("Service unavailable")
 
-        # First call fails and increments failure counter
-        with pytest.raises(RuntimeError):
-            failing_handler()
+        # First call fails, opens circuit, and uses fallback
+        result = failing_handler()
+        assert result == {"fallback": True}
+        assert call_count == 1  # Function was called once before circuit opened
+
+        # Subsequent calls should use fallback without calling function
+        result2 = failing_handler()
+        assert result2 == {"fallback": True}
+        assert call_count == 1  # Function should not be called again
 
     @pytest.mark.asyncio
     async def test_async_function_success(self):

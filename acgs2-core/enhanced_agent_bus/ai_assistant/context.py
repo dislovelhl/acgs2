@@ -10,7 +10,7 @@ import hashlib
 import json
 import logging
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from enum import Enum
 from typing import Any, Dict, List, Optional, Union
 
@@ -505,15 +505,15 @@ class ContextManager:
 
         resolutions = {
             "current_date": now.strftime("%Y-%m-%d"),
-            "next_day": (
-                now.replace(hour=0, minute=0, second=0) + __import__("datetime").timedelta(days=1)
-            ).strftime("%Y-%m-%d"),
-            "previous_day": (
-                now.replace(hour=0, minute=0, second=0) - __import__("datetime").timedelta(days=1)
-            ).strftime("%Y-%m-%d"),
+            "next_day": (now.replace(hour=0, minute=0, second=0) + timedelta(days=1)).strftime(
+                "%Y-%m-%d"
+            ),
+            "previous_day": (now.replace(hour=0, minute=0, second=0) - timedelta(days=1)).strftime(
+                "%Y-%m-%d"
+            ),
             "current_time": now.strftime("%H:%M"),
-            "next_week": (now + __import__("datetime").timedelta(weeks=1)).strftime("%Y-%m-%d"),
-            "previous_week": (now - __import__("datetime").timedelta(weeks=1)).strftime("%Y-%m-%d"),
+            "next_week": (now + timedelta(weeks=1)).strftime("%Y-%m-%d"),
+            "previous_week": (now - timedelta(weeks=1)).strftime("%Y-%m-%d"),
         }
 
         return resolutions.get(ref_type, ref_type)

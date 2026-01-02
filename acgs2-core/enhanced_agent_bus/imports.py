@@ -26,6 +26,7 @@ AUDIT_CLIENT_AVAILABLE: bool = False
 OPA_CLIENT_AVAILABLE: bool = False
 USE_RUST: bool = False
 METERING_AVAILABLE: bool = False
+MACI_AVAILABLE: bool = False
 
 # =============================================================================
 # Optional Module References (None if unavailable)
@@ -77,6 +78,11 @@ MeteringConfig: Optional[type] = None
 AsyncMeteringQueue: Optional[type] = None
 get_metering_hooks: Optional[Callable] = None
 get_metering_queue: Optional[Callable] = None
+
+# MACI enforcement
+MACIEnforcer: Optional[type] = None
+MACIRole: Optional[type] = None
+MACIRoleRegistry: Optional[type] = None
 
 
 # =============================================================================
@@ -353,6 +359,59 @@ def _init_metering() -> None:
         get_metering_queue = None
 
 
+def _init_maci() -> None:
+    """Initialize MACI enforcement with fallback stub classes."""
+    global MACI_AVAILABLE, MACIEnforcer, MACIRole, MACIRoleRegistry
+    try:
+        try:
+            from .maci_enforcement import MACIEnforcer as _me
+            from .maci_enforcement import MACIRole as _mr
+            from .maci_enforcement import MACIRoleRegistry as _mrr
+        except ImportError:
+            from maci_enforcement import MACIEnforcer as _me
+            from maci_enforcement import MACIRole as _mr
+            from maci_enforcement import MACIRoleRegistry as _mrr
+        MACIEnforcer = _me
+        MACIRole = _mr
+        MACIRoleRegistry = _mrr
+        MACI_AVAILABLE = True
+    except ImportError:
+        MACI_AVAILABLE = True  # Stubs available
+
+        class _StubMACIRole:
+            """Stub MACI role for when enforcement module unavailable."""
+
+            WORKER = "worker"
+            CRITIC = "critic"
+            SECURITY_AUDITOR = "security_auditor"
+            MONITOR = "monitor"
+
+        class _StubMACIEnforcer:
+            """Stub MACI enforcer for when enforcement module unavailable."""
+
+            def __init__(self, *args: Any, **kwargs: Any) -> None:
+                pass
+
+            async def validate_action(self, *args: Any, **kwargs: Any) -> bool:
+                return True
+
+        class _StubMACIRoleRegistry:
+            """Stub MACI role registry for when enforcement module unavailable."""
+
+            def __init__(self, *args: Any, **kwargs: Any) -> None:
+                pass
+
+            async def register_agent(self, *args: Any, **kwargs: Any) -> None:
+                pass
+
+            async def get_role(self, *args: Any, **kwargs: Any) -> str:
+                return "worker"
+
+        MACIRole = _StubMACIRole
+        MACIEnforcer = _StubMACIEnforcer
+        MACIRoleRegistry = _StubMACIRoleRegistry
+
+
 def _init_redis_config() -> str:
     """Initialize Redis config and return default URL."""
     try:
@@ -384,6 +443,7 @@ def initialize_all_imports() -> None:
     _init_opa_client()
     _init_rust_backend()
     _init_metering()
+    _init_maci()
 
 
 # Initialize on module load (maintains backward compatibility)
@@ -597,6 +657,7 @@ __all__ = [
     "OPA_CLIENT_AVAILABLE",
     "USE_RUST",
     "METERING_AVAILABLE",
+    "MACI_AVAILABLE",
     "DEFAULT_REDIS_URL",
     # Optional Module References
     "MESSAGE_QUEUE_DEPTH",
@@ -624,6 +685,9 @@ __all__ = [
     "AsyncMeteringQueue",
     "get_metering_hooks",
     "get_metering_queue",
+    "MACIEnforcer",
+    "MACIRole",
+    "MACIRoleRegistry",
     # Import Utilities
     "try_import",
     "import_with_fallback",

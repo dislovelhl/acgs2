@@ -9,6 +9,25 @@ metadata:
   labels:
     {{- include "acgs2.labels" . | nindent 4 }}
 data:
+  # SIEM Configuration for security monitoring
+  siem-config.yaml: |
+    format: "cef"
+    endpoint: "siem.acgs.local:514"
+    facility: "local4"
+    severity_mapping:
+      DEBUG: 7
+      INFO: 6
+      WARNING: 4
+      ERROR: 3
+      CRITICAL: 2
+    event_types:
+      - authentication
+      - authorization
+      - constitutional_violation
+      - message_filtering
+      - tenant_isolation
+    buffer_size: 1000
+    flush_interval: 30
   # Constitutional Configuration
   constitutional-hash: {{ .Values.global.constitutionalHash | quote }}
 

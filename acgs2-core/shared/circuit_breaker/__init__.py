@@ -174,7 +174,7 @@ class CircuitBreakerRegistry:
             name: {
                 "state": cb.current_state,
                 "fail_counter": cb.fail_counter,
-                "success_counter": cb.success_counter,
+                "name": cb.name,
             }
             for name, cb in self._breakers.items()
         }

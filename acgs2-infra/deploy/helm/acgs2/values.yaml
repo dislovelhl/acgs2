@@ -7,6 +7,7 @@ global:
   imageRegistry: ""
   imagePullSecrets: []
   storageClass: ""
+  domain: "acgs2.example.com"  # Update with your domain
 
   # Multi-tenancy
   multiTenancy:
@@ -22,6 +23,31 @@ global:
     tls:
       enabled: true
       certManager: true
+    supplyChain:
+      enabled: true
+      slsaProvenance: true
+      containerSigning: true
+    openshiftSCC: false  # Set to true for OpenShift deployments
+    siemIntegration:
+      enabled: true
+      format: "cef"  # cef, json, syslog
+      endpoint: "siem.acgs.local:514"
+
+  # Observability
+  observability:
+    jaeger:
+      enabled: true
+    prometheus:
+      enabled: true
+    grafana:
+      enabled: true
+
+  # Architecture Mode
+  architecture:
+    consolidated:
+      enabled: false  # Set to true to use consolidated 3-service architecture
+    traditional:
+      enabled: true   # Set to false when using consolidated mode
 
 # Constitutional AI Service
 constitutionalService:
@@ -467,13 +493,27 @@ podSecurityContext:
   runAsUser: 1000
   runAsGroup: 1000
   fsGroup: 1000
+  seccompProfile:
+    type: RuntimeDefault
+  # AppArmor profile for additional container isolation
+  # apparmorProfile: "runtime/default"
 
 securityContext:
   allowPrivilegeEscalation: false
   readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 1000
+  privileged: false
   capabilities:
     drop:
       - ALL
+    add: []
+  seccompProfile:
+    type: RuntimeDefault
+  # SELinux options for enhanced security
+  # seLinuxOptions:
+  #   level: "s0:c123,c456"
 
 # Node Affinity
 nodeSelector: {}
@@ -544,3 +584,28 @@ extraVolumeMounts:
   - name: mtls-ca
     mountPath: /tls-ca
     readOnly: true
+
+# Consolidated Services Configuration
+# When enabled, reduces 6+ services to 3 core services
+consolidatedServices:
+  coreGovernance:
+    enabled: true
+    replicaCount: 3
+
+    image:
+      repository: acgs/core-governance
+      tag: "2.0.0"
+      pullPolicy: IfNotPresent
+
+    resources:
+      requests:
+        cpu: 1000m
+        memory: 1Gi
+      limits:
+        cpu: 4000m
+        memory: 4Gi
+
+    # Service consolidation flags
+    constitutionalService: true
+    policyRegistry: true
+    auditService: true

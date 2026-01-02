@@ -157,6 +157,10 @@ class OPAClient:
                 if self.opa_url.startswith("https"):
                     ssl_context = ssl.create_default_context()
                     if not self.ssl_verify:
+                        logger.warning(
+                            "SSL verification disabled for OPA client. "
+                            "This is insecure and should only be used in development/testing."
+                        )
                         ssl_context.check_hostname = False
                         ssl_context.verify_mode = ssl.CERT_NONE
 

@@ -1,0 +1,174 @@
+{{/*
+Jaeger Distributed Tracing for ACGS-2
+Constitutional Hash: cdd01ef066bc6cf2
+*/}}
+{{- if .Values.global.observability.jaeger.enabled }}
+---
+apiVersion: jaegertracing.io/v1
+kind: Jaeger
+metadata:
+  name: {{ include "acgs2.fullname" . }}-jaeger
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "acgs2.labels" . | nindent 4 }}
+    app.kubernetes.io/component: jaeger
+spec:
+  strategy: allInOne
+  allInOne:
+    image: jaegertracing/all-in-one:latest
+    options:
+      log-level: info
+      query:
+        base-path: /jaeger
+      memory:
+        max-traces: 50000
+      es:
+        server-urls: http://elasticsearch:9200
+        index-prefix: acgs2-traces
+  storage:
+    type: memory
+    options:
+      memory:
+        max-traces: 100000
+  ingress:
+    enabled: true
+    annotations:
+      kubernetes.io/ingress.class: nginx
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    hosts:
+      - jaeger.{{ .Values.global.domain }}
+    tls:
+      - secretName: jaeger-tls
+        hosts:
+          - jaeger.{{ .Values.global.domain }}
+  ui:
+    options:
+      dependencies:
+        menuEnabled: false
+      tracking:
+        jaegerWebUi:
+          enabled: true
+      menuEnabled: false
+---
+# Service for Jaeger Query
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "acgs2.fullname" . }}-jaeger-query
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "acgs2.labels" . | nindent 4 }}
+    app.kubernetes.io/component: jaeger
+spec:
+  ports:
+    - name: query-http
+      port: 16686
+      protocol: TCP
+      targetPort: 16686
+    - name: query-grpc
+      port: 16685
+      protocol: TCP
+      targetPort: 16685
+  selector:
+    app.kubernetes.io/name: {{ include "acgs2.fullname" . }}-jaeger
+    app.kubernetes.io/component: all-in-one
+  type: ClusterIP
+---
+# ConfigMap for Jaeger Agent configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "acgs2.fullname" . }}-jaeger-agent-config
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "acgs2.labels" . | nindent 4 }}
+    app.kubernetes.io/component: jaeger
+data:
+  jaeger-agent-config.yaml: |
+    service:
+      name: acgs2-agent-bus
+    reporter:
+      type: grpc
+      endpoint: "{{ include "acgs2.fullname" . }}-jaeger-collector:14250"
+      logSpans: true
+    sampler:
+      type: probabilistic
+      param: 0.1  # Sample 10% of traces
+    tags:
+      constitutional-hash: "{{ .Values.global.constitutionalHash }}"
+      service: agent-bus
+---
+# Jaeger Agent DaemonSet for automatic instrumentation
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: {{ include "acgs2.fullname" . }}-jaeger-agent
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "acgs2.labels" . | nindent 4 }}
+    app.kubernetes.io/component: jaeger
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "acgs2.fullname" . }}-jaeger
+      app.kubernetes.io/component: agent
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "acgs2.fullname" . }}-jaeger
+        app.kubernetes.io/component: agent
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "14271"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+        - name: jaeger-agent
+          image: jaegertracing/jaeger-agent:latest
+          ports:
+            - containerPort: 5775
+              name: zk-compact-trft
+              protocol: UDP
+            - containerPort: 6831
+              name: jg-compact-trft
+              protocol: UDP
+            - containerPort: 6832
+              name: jg-binary-trft
+              protocol: UDP
+            - containerPort: 5778
+              name: http-config
+              protocol: TCP
+            - containerPort: 14271
+              name: metrics
+              protocol: TCP
+          args:
+            - --reporter.grpc.host-port={{ include "acgs2.fullname" . }}-jaeger-collector:14250
+            - --reporter.grpc.retry.max=3
+            - --config-file=/etc/jaeger/config.yaml
+          volumeMounts:
+            - name: config
+              mountPath: /etc/jaeger
+              readOnly: true
+          resources:
+            limits:
+              cpu: 100m
+              memory: 128Mi
+            requests:
+              cpu: 50m
+              memory: 64Mi
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 14271
+            initialDelaySeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 14271
+            initialDelaySeconds: 1
+      volumes:
+        - name: config
+          configMap:
+            name: {{ include "acgs2.fullname" . }}-jaeger-agent-config
+{{- end }}
