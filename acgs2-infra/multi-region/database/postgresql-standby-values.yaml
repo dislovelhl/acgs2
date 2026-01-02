@@ -1,0 +1,546 @@
+# PostgreSQL Standby Helm Values for Multi-Region Deployment
+# Bitnami PostgreSQL Chart: https://github.com/bitnami/charts/tree/main/bitnami/postgresql
+# Region: Standby (configurable via region-specific overlays)
+# Purpose: Cross-region physical streaming replication standby instance
+#
+# Deploy with region-specific values:
+#   helm install postgresql-standby bitnami/postgresql \
+#     -f postgresql-standby-values.yaml \
+#     -f overlays/eu-west-1/standby-values.yaml
+
+# Global configuration
+global:
+  postgresql:
+    auth:
+      # Use existing secrets for production deployments
+      existingSecret: "postgresql-standby-credentials"
+      secretKeys:
+        adminPasswordKey: "postgres-password"
+        userPasswordKey: "password"
+        replicationPasswordKey: "replication-password"
+  storageClass: ""  # Use cluster default or specify region-specific storage class
+
+# Architecture configuration
+# standalone: Single standby node (receives replication from primary)
+architecture: standalone
+
+# Authentication configuration
+auth:
+  # Database superuser password (via secret)
+  postgresPassword: ""
+  # Application user (same as primary for consistency)
+  username: acgs
+  password: ""
+  database: acgs
+  # Replication user for streaming from primary
+  replicationUsername: replication_user
+  replicationPassword: ""
+  # Use existing secret for all credentials
+  existingSecret: "postgresql-standby-credentials"
+
+# Primary instance configuration (in standby mode)
+primary:
+  # Naming
+  name: standby
+
+  # PostgreSQL configuration for standby mode
+  # These settings configure the standby to receive WAL streaming
+  configuration: |
+    # Standby settings
+    hot_standby = on
+    hot_standby_feedback = on
+    wal_receiver_status_interval = 10s
+    max_standby_streaming_delay = 30s
+    max_standby_archive_delay = 30s
+
+    # Connection settings
+    listen_addresses = '*'
+    max_connections = 200
+
+    # Standby can become primary (for failover scenarios)
+    wal_level = replica
+    max_wal_senders = 10
+    max_replication_slots = 5
+    wal_keep_size = 512MB
+
+    # Performance tuning
+    synchronous_commit = on
+    wal_compression = on
+
+    # Logging for replication monitoring
+    log_replication_commands = on
+    log_connections = on
+    log_disconnections = on
+
+    # Checkpoint settings (in case of promotion)
+    checkpoint_timeout = 5min
+    checkpoint_completion_target = 0.9
+    max_wal_size = 2GB
+    min_wal_size = 512MB
+
+    # Statement logging for audit
+    log_statement = 'ddl'
+    log_min_duration_statement = 1000
+
+    # Recovery target timeline (follow latest timeline for cascading)
+    recovery_target_timeline = 'latest'
+
+  # Host-based authentication configuration
+  # Standby accepts read connections from application pods
+  pgHbaConfiguration: |
+    # TYPE  DATABASE        USER                 ADDRESS                 METHOD
+    # Local connections
+    local   all             all                                          scram-sha-256
+    # IPv4 local connections
+    host    all             all                  127.0.0.1/32            scram-sha-256
+    # IPv4 connections from pods in the same namespace
+    host    all             all                  10.0.0.0/8              scram-sha-256
+    # IPv4 connections from pods in any namespace (for cross-namespace access)
+    host    all             all                  0.0.0.0/0               scram-sha-256
+    # Replication connections (for cascading replication if needed)
+    host    replication     replication_user     0.0.0.0/0               scram-sha-256
+    # Replication connections for IPv6
+    host    replication     replication_user     ::/0                    scram-sha-256
+
+  # Extra environment variables for standby mode
+  # These configure PostgreSQL to run as a streaming replica
+  extraEnvVars:
+    - name: POSTGRESQL_REPLICATION_MODE
+      value: "slave"
+    - name: POSTGRESQL_REPLICATION_USER
+      value: "replication_user"
+    - name: POSTGRESQL_REPLICATION_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: postgresql-standby-credentials
+          key: replication-password
+    # Primary host - override with region-specific value
+    # For cross-region: use Istio ServiceEntry or direct hostname
+    - name: POSTGRESQL_MASTER_HOST
+      value: "postgresql-primary.acgs-database.svc.cluster.local"
+    - name: POSTGRESQL_MASTER_PORT_NUMBER
+      value: "5432"
+    - name: POSTGRESQL_CLUSTER_APP_NAME
+      value: "acgs-standby-default"
+    - name: REGION_NAME
+      value: "standby-region"
+    # Trigger standby signal creation
+    - name: POSTGRESQL_POSTGRES_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: postgresql-standby-credentials
+          key: postgres-password
+
+  # Resource allocation (slightly less than primary for cost optimization)
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      cpu: 2000m
+      memory: 4Gi
+
+  # Persistence configuration
+  persistence:
+    enabled: true
+    size: 100Gi
+    storageClass: ""
+    accessModes:
+      - ReadWriteOnce
+    annotations:
+      helm.sh/resource-policy: keep
+
+  # Pod security context
+  podSecurityContext:
+    enabled: true
+    fsGroup: 1001
+    runAsUser: 1001
+    runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault
+
+  # Container security context
+  containerSecurityContext:
+    enabled: true
+    runAsUser: 1001
+    runAsNonRoot: true
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: false
+    capabilities:
+      drop:
+        - ALL
+
+  # Pod labels for Istio and multi-region identification
+  podLabels:
+    app.kubernetes.io/component: database
+    topology.istio.io/network: network2
+    acgs.io/region: standby-region
+    acgs.io/role: standby
+
+  # Pod annotations
+  podAnnotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "9187"
+    sidecar.istio.io/inject: "true"
+
+  # Service configuration
+  service:
+    type: ClusterIP
+    ports:
+      postgresql: 5432
+    annotations:
+      # For cross-region access via Istio
+      networking.istio.io/exportTo: "*"
+
+  # Liveness and readiness probes
+  # Extended timeouts for standby to allow for initial sync
+  livenessProbe:
+    enabled: true
+    initialDelaySeconds: 60
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 6
+    successThreshold: 1
+
+  readinessProbe:
+    enabled: true
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 6
+    successThreshold: 1
+
+  # Node affinity - override with region-specific values
+  affinity:
+    nodeAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          preference:
+            matchExpressions:
+              - key: topology.kubernetes.io/region
+                operator: In
+                values:
+                  - standby-region
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchLabels:
+                app.kubernetes.io/name: postgresql
+            topologyKey: kubernetes.io/hostname
+
+  # Priority class for database workloads
+  priorityClassName: "system-cluster-critical"
+
+  # Extended init container for standby setup
+  # Performs pg_basebackup from primary before starting
+  initContainers:
+    - name: init-standby
+      image: bitnami/postgresql:16
+      imagePullPolicy: IfNotPresent
+      command:
+        - /bin/bash
+        - -c
+        - |
+          set -e
+          echo "Checking if data directory is empty..."
+          if [ -z "$(ls -A /bitnami/postgresql/data 2>/dev/null)" ]; then
+            echo "Data directory is empty, performing base backup from primary..."
+            PGPASSWORD="${POSTGRESQL_REPLICATION_PASSWORD}" pg_basebackup \
+              -h "${POSTGRESQL_MASTER_HOST}" \
+              -p "${POSTGRESQL_MASTER_PORT_NUMBER}" \
+              -U "${POSTGRESQL_REPLICATION_USER}" \
+              -D /bitnami/postgresql/data \
+              -Fp -Xs -P -R \
+              --checkpoint=fast \
+              --wal-method=stream
+            echo "Base backup completed successfully"
+            # Create standby.signal for PostgreSQL 12+
+            touch /bitnami/postgresql/data/standby.signal
+            # Ensure proper permissions
+            chmod 700 /bitnami/postgresql/data
+            echo "Standby initialization complete"
+          else
+            echo "Data directory already exists, skipping base backup"
+            # Ensure standby.signal exists
+            if [ ! -f /bitnami/postgresql/data/standby.signal ]; then
+              echo "Creating standby.signal..."
+              touch /bitnami/postgresql/data/standby.signal
+            fi
+          fi
+      env:
+        - name: POSTGRESQL_REPLICATION_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: postgresql-standby-credentials
+              key: replication-password
+        - name: POSTGRESQL_REPLICATION_USER
+          value: "replication_user"
+        - name: POSTGRESQL_MASTER_HOST
+          value: "postgresql-primary.acgs-database.svc.cluster.local"
+        - name: POSTGRESQL_MASTER_PORT_NUMBER
+          value: "5432"
+      volumeMounts:
+        - name: data
+          mountPath: /bitnami/postgresql
+      securityContext:
+        runAsUser: 1001
+        runAsNonRoot: true
+        allowPrivilegeEscalation: false
+
+# Read replicas disabled - this is already a standby
+readReplicas:
+  replicaCount: 0
+
+# Prometheus metrics exporter
+metrics:
+  enabled: true
+
+  image:
+    registry: docker.io
+    repository: bitnami/postgres-exporter
+    tag: "0.15.0"
+    pullPolicy: IfNotPresent
+
+  # Service for metrics
+  service:
+    ports:
+      metrics: 9187
+    annotations:
+      prometheus.io/scrape: "true"
+      prometheus.io/port: "9187"
+
+  # ServiceMonitor for Prometheus Operator
+  serviceMonitor:
+    enabled: true
+    namespace: ""
+    interval: 30s
+    scrapeTimeout: 10s
+    labels:
+      release: prometheus
+    annotations: {}
+
+  # Custom metrics for standby monitoring
+  # These queries track replication lag and standby health
+  customMetrics:
+    # Standby replication status (from pg_stat_wal_receiver)
+    pg_standby_status:
+      query: |
+        SELECT
+          CASE WHEN status = 'streaming' THEN 1 ELSE 0 END AS is_streaming,
+          CASE WHEN status = 'streaming' THEN 0
+               WHEN status = 'catchup' THEN 1
+               WHEN status = 'backup' THEN 2
+               ELSE 3 END AS status_code,
+          COALESCE(EXTRACT(EPOCH FROM (now() - last_msg_receipt_time)), 0) AS last_msg_age_seconds,
+          COALESCE(pg_wal_lsn_diff(pg_last_wal_receive_lsn(), pg_last_wal_replay_lsn()), 0) AS replay_lag_bytes
+        FROM pg_stat_wal_receiver
+      master: true
+      metrics:
+        - is_streaming:
+            usage: "GAUGE"
+            description: "Whether the standby is actively streaming (1=yes, 0=no)"
+        - status_code:
+            usage: "GAUGE"
+            description: "WAL receiver status (0=streaming, 1=catchup, 2=backup, 3=other)"
+        - last_msg_age_seconds:
+            usage: "GAUGE"
+            description: "Seconds since last message from primary"
+        - replay_lag_bytes:
+            usage: "GAUGE"
+            description: "Bytes of WAL received but not yet replayed"
+
+    # Replication lag in time (using pg_last_xact_replay_timestamp)
+    pg_replication_lag:
+      query: |
+        SELECT
+          CASE
+            WHEN pg_last_wal_receive_lsn() = pg_last_wal_replay_lsn() THEN 0
+            ELSE COALESCE(EXTRACT(EPOCH FROM (now() - pg_last_xact_replay_timestamp())), 0)
+          END AS replication_lag_seconds,
+          CASE WHEN pg_is_in_recovery() THEN 1 ELSE 0 END AS is_in_recovery
+      master: true
+      metrics:
+        - replication_lag_seconds:
+            usage: "GAUGE"
+            description: "Replication lag in seconds (0 if fully caught up)"
+        - is_in_recovery:
+            usage: "GAUGE"
+            description: "Whether database is in recovery mode (1=yes, 0=no)"
+
+    # WAL receiver statistics
+    pg_wal_receiver:
+      query: |
+        SELECT
+          conninfo,
+          CASE WHEN status = 'streaming' THEN 1 ELSE 0 END AS connected,
+          COALESCE(written_lsn - flushed_lsn, 0) AS write_pending_bytes,
+          COALESCE(received_lsn - written_lsn, 0) AS receive_pending_bytes
+        FROM pg_stat_wal_receiver
+      master: true
+      metrics:
+        - conninfo:
+            usage: "LABEL"
+            description: "Connection info to the primary"
+        - connected:
+            usage: "GAUGE"
+            description: "Whether connected to primary (1=yes, 0=no)"
+        - write_pending_bytes:
+            usage: "GAUGE"
+            description: "Bytes received but not yet written to disk"
+        - receive_pending_bytes:
+            usage: "GAUGE"
+            description: "Bytes in flight from primary"
+
+    # Hot standby conflicts (queries cancelled due to recovery)
+    pg_stat_database_conflicts:
+      query: |
+        SELECT
+          datname,
+          confl_tablespace,
+          confl_lock,
+          confl_snapshot,
+          confl_bufferpin,
+          confl_deadlock
+        FROM pg_stat_database_conflicts
+        WHERE datname = current_database()
+      master: true
+      metrics:
+        - datname:
+            usage: "LABEL"
+            description: "Database name"
+        - confl_tablespace:
+            usage: "COUNTER"
+            description: "Queries cancelled due to tablespace drops"
+        - confl_lock:
+            usage: "COUNTER"
+            description: "Queries cancelled due to lock timeouts"
+        - confl_snapshot:
+            usage: "COUNTER"
+            description: "Queries cancelled due to snapshot conflicts"
+        - confl_bufferpin:
+            usage: "COUNTER"
+            description: "Queries cancelled due to buffer pin conflicts"
+        - confl_deadlock:
+            usage: "COUNTER"
+            description: "Queries cancelled due to deadlocks"
+
+  # Resource limits for exporter
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 256Mi
+
+# Volume permissions init container
+volumePermissions:
+  enabled: false
+
+# Network policy
+networkPolicy:
+  enabled: true
+  allowExternal: true
+  # Allow connections from application pods for read queries
+  # and from primary for replication (if promotion is needed)
+  ingressRules:
+    primaryAccessOnlyFrom:
+      enabled: true
+      namespaceSelector:
+        matchLabels:
+          acgs.io/access-postgresql: "true"
+      podSelector: {}
+  # Standby needs egress to primary for replication
+  egressRules:
+    customRules:
+      - to:
+          - podSelector:
+              matchLabels:
+                acgs.io/role: primary
+        ports:
+          - port: 5432
+            protocol: TCP
+
+# TLS configuration
+tls:
+  enabled: true
+  autoGenerated: false
+  # Use cert-manager issued certificates
+  certificatesSecret: "postgresql-standby-tls"
+  certFilename: "tls.crt"
+  certKeyFilename: "tls.key"
+  certCAFilename: "ca.crt"
+
+# Backup configuration
+backup:
+  enabled: false
+  # Standbys typically don't run backups
+  # Backups are taken from primary or a dedicated backup standby
+
+# Pod Disruption Budget
+pdb:
+  create: true
+  minAvailable: 1
+  maxUnavailable: ""
+
+# Audit logging
+audit:
+  logHostname: true
+  logConnections: true
+  logDisconnections: true
+  pgAuditLog: "read, write, ddl"
+  pgAuditLogCatalog: "on"
+  clientMinMessages: "error"
+  logLinePrefix: "%t [%p]: [%l-1] db=%d,user=%u,app=%a,client=%h "
+  logTimezone: "UTC"
+
+# ---
+# Region-specific overlay examples:
+#
+# For EU-West-1 standby (eu-west-1/standby-values.yaml):
+# primary:
+#   extraEnvVars:
+#     - name: POSTGRESQL_MASTER_HOST
+#       value: "postgresql-primary.us-east-1.global"
+#     - name: POSTGRESQL_CLUSTER_APP_NAME
+#       value: "acgs-standby-eu-west-1"
+#     - name: REGION_NAME
+#       value: "eu-west-1"
+#   podLabels:
+#     topology.istio.io/network: network2
+#     acgs.io/region: eu-west-1
+#   affinity:
+#     nodeAffinity:
+#       preferredDuringSchedulingIgnoredDuringExecution:
+#         - weight: 100
+#           preference:
+#             matchExpressions:
+#               - key: topology.kubernetes.io/region
+#                 operator: In
+#                 values:
+#                   - eu-west-1
+#
+# For AP-Southeast-1 standby (ap-southeast-1/standby-values.yaml):
+# primary:
+#   extraEnvVars:
+#     - name: POSTGRESQL_MASTER_HOST
+#       value: "postgresql-primary.us-east-1.global"
+#     - name: POSTGRESQL_CLUSTER_APP_NAME
+#       value: "acgs-standby-ap-southeast-1"
+#     - name: REGION_NAME
+#       value: "ap-southeast-1"
+#   podLabels:
+#     topology.istio.io/network: network3
+#     acgs.io/region: ap-southeast-1
+#   affinity:
+#     nodeAffinity:
+#       preferredDuringSchedulingIgnoredDuringExecution:
+#         - weight: 100
+#           preference:
+#             matchExpressions:
+#               - key: topology.kubernetes.io/region
+#                 operator: In
+#                 values:
+#                   - ap-southeast-1
