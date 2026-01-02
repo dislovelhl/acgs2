@@ -4,6 +4,7 @@
  * Main application component for advanced analytics and insights
  */
 
+import { AnomalyWidget } from "./components/widgets/AnomalyWidget";
 import { InsightWidget } from "./components/widgets/InsightWidget";
 
 function App(): JSX.Element {
@@ -27,11 +28,9 @@ function App(): JSX.Element {
             <InsightWidget />
           </div>
 
-          {/* Placeholder for additional widgets */}
-          <div className="h-96 rounded-lg border border-dashed border-gray-300 bg-white p-6">
-            <p className="text-center text-gray-500">
-              Additional widgets will be implemented here
-            </p>
+          {/* Anomaly Detection Widget */}
+          <div className="h-96">
+            <AnomalyWidget />
           </div>
         </div>
       </main>
