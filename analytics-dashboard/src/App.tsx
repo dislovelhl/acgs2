@@ -6,6 +6,7 @@
 
 import { AnomalyWidget } from "./components/widgets/AnomalyWidget";
 import { InsightWidget } from "./components/widgets/InsightWidget";
+import { PredictionWidget } from "./components/widgets/PredictionWidget";
 
 function App(): JSX.Element {
   return (
@@ -31,6 +32,11 @@ function App(): JSX.Element {
           {/* Anomaly Detection Widget */}
           <div className="h-96">
             <AnomalyWidget />
+          </div>
+
+          {/* Violation Forecast Widget */}
+          <div className="h-96 lg:col-span-2">
+            <PredictionWidget />
           </div>
         </div>
       </main>
