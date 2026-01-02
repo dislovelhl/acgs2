@@ -57,14 +57,37 @@ pythonpath = [
 ]
 
 [tool.coverage.run]
+# Migrated from acgs2-core/.coveragerc - Constitutional Hash: cdd01ef066bc6cf2
 branch = true
+parallel = true
 source = ["acgs2-core", "acgs2-observability", "acgs2-research", "acgs2-infra", "acgs2-neural-mcp"]
-omit = ["*/tests/*", "*/venv/*", ".venv/*", "*/node_modules/*", "*/__pycache__/*"]
+omit = [
+    "*/tests/*",
+    "*/__pycache__/*",
+    "*/venv/*",
+    "*/.venv/*",
+    "*/node_modules/*",
+    "*/migrations/*",
+    "*/conftest.py",
+]
 
 [tool.coverage.report]
 exclude_lines = [
     "pragma: no cover",
     "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
     "if __name__ == .__main__.:",
     "if TYPE_CHECKING:",
+    "@abstractmethod",
 ]
+show_missing = true
+precision = 2
+fail_under = 40
+
+[tool.coverage.html]
+directory = "coverage_html_report"
+title = "ACGS-2 Test Coverage Report"
+
+[tool.coverage.xml]
+output = "coverage.xml"
