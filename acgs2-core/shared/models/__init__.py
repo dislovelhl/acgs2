@@ -7,6 +7,7 @@ related functionality.
 
 Usage:
     from shared.models import User, SSOProviderType, SSOProvider, SSORoleMapping
+    from shared.models import SAMLOutstandingRequest
 
     # Create a user
     user = User(email="user@example.com", name="John Doe")
@@ -32,13 +33,21 @@ Usage:
         idp_group="Engineering",
         acgs_role="developer",
     )
+
+    # Track SAML outstanding request (replay attack prevention)
+    saml_request = SAMLOutstandingRequest(
+        request_id="id-abc123",
+        provider_id=provider.id,
+    )
 """
 
+from .saml_request import SAMLOutstandingRequest
 from .sso_provider import SSOProvider
 from .sso_role_mapping import SSORoleMapping
 from .user import SSOProviderType, User
 
 __all__ = [
+    "SAMLOutstandingRequest",
     "SSOProvider",
     "SSOProviderType",
     "SSORoleMapping",
