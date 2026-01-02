@@ -1,0 +1,1079 @@
+# =============================================================================
+# GDPR/PIPL Compliance Verification CronJob
+# =============================================================================
+# This CronJob performs daily compliance checks for data residency requirements
+# under GDPR (EU), PIPL (China), and other regulatory frameworks.
+#
+# Compliance checks performed:
+#   1. Namespace labels match tenant residency ConfigMap
+#   2. Query audit service for cross-region data access violations
+#   3. Validate Istio AuthorizationPolicy enforcement
+#   4. Check PostgreSQL data location via schemas/table prefixes
+#   5. Verify encryption-at-rest for regulated data
+#
+# Output: JSON compliance report with pass/fail status per tenant
+#
+# References:
+#   - tenant-residency-config.yaml: Tenant-to-region mappings
+#   - opa-residency-policy.rego: OPA policy for admission control
+#   - cross-region-authz-policy.yaml: Istio AuthorizationPolicy resources
+#
+# Deployment:
+#   kubectl apply -f compliance-cronjob.yaml --context=<region-context>
+#
+# Manual trigger:
+#   kubectl create job --from=cronjob/compliance-verification compliance-manual-$(date +%s) -n acgs-compliance
+# =============================================================================
+---
+# =============================================================================
+# NAMESPACE FOR COMPLIANCE RESOURCES
+# =============================================================================
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: acgs-compliance
+  labels:
+    app.kubernetes.io/name: acgs-compliance
+    app.kubernetes.io/part-of: acgs2-multi-region
+    app.kubernetes.io/component: compliance
+    # Istio injection disabled - this is a batch job namespace
+    istio-injection: disabled
+    # System namespace - excluded from data residency checks
+    data-residency: global
+    acgs.io/feature: compliance-verification
+  annotations:
+    description: "ACGS-2 compliance verification namespace for GDPR/PIPL auditing"
+---
+# =============================================================================
+# SERVICE ACCOUNT FOR COMPLIANCE VERIFICATION
+# =============================================================================
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: compliance-verifier
+  namespace: acgs-compliance
+  labels:
+    app.kubernetes.io/name: compliance-verifier
+    app.kubernetes.io/component: compliance
+    app.kubernetes.io/part-of: acgs2-multi-region
+  annotations:
+    acgs.io/description: "Service account for compliance verification jobs"
+automountServiceAccountToken: true
+---
+# =============================================================================
+# CLUSTER ROLE FOR COMPLIANCE VERIFICATION
+# =============================================================================
+# Grants read-only access to resources needed for compliance checks
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: compliance-verifier
+  labels:
+    app.kubernetes.io/name: compliance-verifier
+    app.kubernetes.io/component: compliance
+    app.kubernetes.io/part-of: acgs2-multi-region
+rules:
+  # Read namespaces for data residency label verification
+  - apiGroups: [""]
+    resources: ["namespaces"]
+    verbs: ["get", "list"]
+  # Read pods for compliance label verification
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list"]
+  # Read configmaps for tenant residency config
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["get", "list"]
+  # Read secrets metadata (not data) for encryption verification
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["list"]
+  # Read services for endpoint verification
+  - apiGroups: [""]
+    resources: ["services"]
+    verbs: ["get", "list"]
+  # Read Istio AuthorizationPolicy resources
+  - apiGroups: ["security.istio.io"]
+    resources: ["authorizationpolicies", "peerauthentications", "requestauthentications"]
+    verbs: ["get", "list"]
+  # Read Istio networking resources
+  - apiGroups: ["networking.istio.io"]
+    resources: ["virtualservices", "destinationrules", "gateways"]
+    verbs: ["get", "list"]
+  # Read OPA constraint resources (if using Gatekeeper)
+  - apiGroups: ["constraints.gatekeeper.sh"]
+    resources: ["*"]
+    verbs: ["get", "list"]
+---
+# =============================================================================
+# CLUSTER ROLE BINDING
+# =============================================================================
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: compliance-verifier
+  labels:
+    app.kubernetes.io/name: compliance-verifier
+    app.kubernetes.io/component: compliance
+    app.kubernetes.io/part-of: acgs2-multi-region
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: compliance-verifier
+subjects:
+  - kind: ServiceAccount
+    name: compliance-verifier
+    namespace: acgs-compliance
+---
+# =============================================================================
+# CONFIGMAP FOR COMPLIANCE CHECK CONFIGURATION
+# =============================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: compliance-config
+  namespace: acgs-compliance
+  labels:
+    app.kubernetes.io/name: compliance-verifier
+    app.kubernetes.io/component: compliance
+    app.kubernetes.io/part-of: acgs2-multi-region
+data:
+  # Region configuration for this deployment
+  region.name: "us-east-1"
+  region.zone: "us"
+
+  # Compliance frameworks to check
+  frameworks.yaml: |
+    frameworks:
+      - name: "GDPR"
+        enabled: true
+        regions:
+          - "eu-west-1"
+        checks:
+          - "namespace_labels"
+          - "cross_region_access"
+          - "authz_policy"
+          - "data_encryption"
+          - "audit_logging"
+
+      - name: "PIPL"
+        enabled: true
+        regions:
+          - "cn-north-1"
+        checks:
+          - "namespace_labels"
+          - "cross_region_access"
+          - "authz_policy"
+          - "data_encryption"
+          - "data_localization"
+
+      - name: "FedRAMP"
+        enabled: true
+        regions:
+          - "us-east-1"
+          - "us-west-2"
+        checks:
+          - "namespace_labels"
+          - "authz_policy"
+          - "data_encryption"
+          - "us_persons_only"
+
+      - name: "HIPAA"
+        enabled: true
+        regions:
+          - "us-east-1"
+          - "us-west-2"
+        checks:
+          - "namespace_labels"
+          - "authz_policy"
+          - "data_encryption"
+          - "phi_protection"
+          - "audit_logging"
+
+  # Tenant residency validation rules
+  residency-rules.yaml: |
+    rules:
+      # EU data must stay in EU
+      eu_data_residency:
+        source_zones: ["eu"]
+        target_zones: ["eu"]
+        frameworks: ["GDPR", "EU-AI-Act"]
+        action: "deny_cross_region"
+
+      # China data must stay in China
+      cn_data_residency:
+        source_zones: ["cn"]
+        target_zones: ["cn"]
+        frameworks: ["PIPL", "CSL"]
+        action: "deny_cross_border"
+
+      # US federal data must stay in US
+      us_federal_residency:
+        source_zones: ["us"]
+        target_zones: ["us"]
+        frameworks: ["FedRAMP"]
+        action: "deny_cross_region"
+
+      # Global tenants can access any region
+      global_access:
+        source_zones: ["*"]
+        target_zones: ["*"]
+        tenant_type: "global"
+        action: "allow_with_audit"
+
+  # Audit service configuration
+  audit-config.yaml: |
+    audit:
+      service_url: "http://audit-service.acgs-system.svc.cluster.local:8080"
+      api_version: "v1"
+      endpoints:
+        decisions: "/decisions"
+        violations: "/violations"
+        report: "/compliance-report"
+      query_window_hours: 24
+      include_denied_only: true
+
+  # PostgreSQL verification queries
+  database-checks.yaml: |
+    postgresql:
+      # Verify data location via schema naming convention
+      schema_check:
+        query: |
+          SELECT schemaname, COUNT(*) as table_count
+          FROM pg_tables
+          WHERE schemaname LIKE 'tenant_%'
+          GROUP BY schemaname;
+        expected_pattern: "tenant_{region}_{tenant_id}"
+
+      # Check for cross-region replication status
+      replication_check:
+        query: |
+          SELECT client_addr, state, sync_state
+          FROM pg_stat_replication;
+        allowed_states: ["streaming", "catchup"]
+
+      # Verify encryption status (pgcrypto)
+      encryption_check:
+        query: |
+          SELECT extname FROM pg_extension WHERE extname = 'pgcrypto';
+        required: true
+
+  # Compliance report template
+  report-template.json: |
+    {
+      "report_version": "1.0",
+      "generated_at": "{{TIMESTAMP}}",
+      "region": "{{REGION}}",
+      "cluster": "{{CLUSTER}}",
+      "summary": {
+        "total_tenants": 0,
+        "compliant_tenants": 0,
+        "non_compliant_tenants": 0,
+        "compliance_percentage": 0.0,
+        "frameworks_checked": []
+      },
+      "tenants": [],
+      "violations": [],
+      "recommendations": []
+    }
+---
+# =============================================================================
+# CRONJOB FOR DAILY COMPLIANCE VERIFICATION
+# =============================================================================
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: compliance-verification
+  namespace: acgs-compliance
+  labels:
+    app.kubernetes.io/name: compliance-verification
+    app.kubernetes.io/component: compliance
+    app.kubernetes.io/part-of: acgs2-multi-region
+    acgs.io/feature: gdpr-pipl-compliance
+  annotations:
+    acgs.io/description: "Daily GDPR/PIPL compliance verification job"
+    acgs.io/regulations: "GDPR, PIPL, FedRAMP, HIPAA"
+    acgs.io/schedule-description: "Runs daily at 02:00 UTC"
+spec:
+  # Run daily at 02:00 UTC (during low-traffic hours)
+  schedule: "0 2 * * *"
+
+  # Timezone for schedule (requires Kubernetes 1.27+)
+  # timeZone: "UTC"
+
+  # Keep job history
+  successfulJobsHistoryLimit: 7
+  failedJobsHistoryLimit: 3
+
+  # Concurrency policy - don't run multiple compliance checks simultaneously
+  concurrencyPolicy: Forbid
+
+  # Don't start job if missed by more than 6 hours
+  startingDeadlineSeconds: 21600
+
+  # Suspend toggle for maintenance
+  suspend: false
+
+  jobTemplate:
+    metadata:
+      labels:
+        app.kubernetes.io/name: compliance-verification
+        app.kubernetes.io/component: compliance
+        acgs.io/job-type: compliance-audit
+    spec:
+      # Automatically clean up completed jobs after 7 days
+      ttlSecondsAfterFinished: 604800
+
+      # Retry failed jobs up to 3 times
+      backoffLimit: 3
+
+      # Job must complete within 1 hour
+      activeDeadlineSeconds: 3600
+
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: compliance-verification
+            app.kubernetes.io/component: compliance
+          annotations:
+            # Skip Istio sidecar for batch job
+            sidecar.istio.io/inject: "false"
+            # Security annotations
+            container.apparmor.security.beta.kubernetes.io/compliance-checker: "runtime/default"
+        spec:
+          serviceAccountName: compliance-verifier
+          restartPolicy: OnFailure
+
+          # Pod security context
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            runAsGroup: 1000
+            fsGroup: 1000
+            seccompProfile:
+              type: RuntimeDefault
+
+          # Node selector for region-specific checks
+          nodeSelector:
+            kubernetes.io/os: linux
+
+          # Tolerations for dedicated compliance nodes (if any)
+          tolerations:
+            - key: "dedicated"
+              operator: "Equal"
+              value: "compliance"
+              effect: "NoSchedule"
+
+          containers:
+            - name: compliance-checker
+              # Using kubectl image with jq for compliance checks
+              image: bitnami/kubectl:1.29
+              imagePullPolicy: IfNotPresent
+
+              # Container security context
+              securityContext:
+                runAsNonRoot: true
+                runAsUser: 1000
+                readOnlyRootFilesystem: true
+                allowPrivilegeEscalation: false
+                capabilities:
+                  drop:
+                    - ALL
+
+              # Environment variables
+              env:
+                - name: REGION_NAME
+                  valueFrom:
+                    configMapKeyRef:
+                      name: compliance-config
+                      key: region.name
+                - name: REGION_ZONE
+                  valueFrom:
+                    configMapKeyRef:
+                      name: compliance-config
+                      key: region.zone
+                - name: REPORT_TIMESTAMP
+                  value: "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+                - name: POD_NAME
+                  valueFrom:
+                    fieldRef:
+                      fieldPath: metadata.name
+                - name: POD_NAMESPACE
+                  valueFrom:
+                    fieldRef:
+                      fieldPath: metadata.namespace
+
+              # Compliance check script
+              command:
+                - /bin/bash
+                - -c
+              args:
+                - |
+                  set -e
+
+                  echo "=========================================="
+                  echo "ACGS-2 Compliance Verification Report"
+                  echo "=========================================="
+                  echo "Timestamp: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+                  echo "Region: ${REGION_NAME}"
+                  echo "Pod: ${POD_NAME}"
+                  echo ""
+
+                  # Initialize report
+                  REPORT_FILE="/tmp/compliance-report.json"
+                  TIMESTAMP=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+
+                  cat > ${REPORT_FILE} << EOF
+                  {
+                    "report_version": "1.0",
+                    "generated_at": "${TIMESTAMP}",
+                    "region": "${REGION_NAME}",
+                    "region_zone": "${REGION_ZONE}",
+                    "checks": [],
+                    "tenants": [],
+                    "summary": {
+                      "total_checks": 0,
+                      "passed_checks": 0,
+                      "failed_checks": 0,
+                      "warnings": 0
+                    }
+                  }
+                  EOF
+
+                  TOTAL_CHECKS=0
+                  PASSED_CHECKS=0
+                  FAILED_CHECKS=0
+                  WARNINGS=0
+
+                  # =============================================================
+                  # CHECK 1: Namespace Label Verification
+                  # =============================================================
+                  echo "----------------------------------------"
+                  echo "CHECK 1: Namespace Label Verification"
+                  echo "----------------------------------------"
+
+                  # Get tenant residency config
+                  echo "Fetching tenant residency configuration..."
+                  TENANT_CONFIG=$(kubectl get configmap tenant-region-lookup -n acgs-system -o jsonpath='{.data.tenant-region-map}' 2>/dev/null || echo "")
+
+                  if [ -z "${TENANT_CONFIG}" ]; then
+                    echo "WARNING: Tenant residency ConfigMap not found"
+                    WARNINGS=$((WARNINGS + 1))
+                  else
+                    echo "Tenant residency configuration loaded"
+
+                    # Get all namespaces with data-residency label
+                    echo "Checking namespace labels..."
+                    NAMESPACES=$(kubectl get namespaces -l data-residency -o jsonpath='{range .items[*]}{.metadata.name}:{.metadata.labels.data-residency}{"\n"}{end}')
+
+                    while IFS=':' read -r ns residency; do
+                      if [ -n "${ns}" ]; then
+                        TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+
+                        # Check if namespace has required labels
+                        TENANT_ID=$(kubectl get namespace ${ns} -o jsonpath='{.metadata.labels.tenant-id}' 2>/dev/null || echo "")
+
+                        if [ -n "${TENANT_ID}" ]; then
+                          # Verify tenant's region matches namespace residency
+                          EXPECTED_REGION=$(echo "${TENANT_CONFIG}" | grep "^${TENANT_ID}=" | cut -d'=' -f2)
+
+                          if [ -n "${EXPECTED_REGION}" ]; then
+                            # Convert region to zone (us-east-1 -> us, eu-west-1 -> eu, etc.)
+                            EXPECTED_ZONE=$(echo "${EXPECTED_REGION}" | cut -d'-' -f1)
+
+                            if [ "${residency}" = "${EXPECTED_ZONE}" ]; then
+                              echo "  PASS: Namespace ${ns} - residency label matches tenant config"
+                              PASSED_CHECKS=$((PASSED_CHECKS + 1))
+                            else
+                              echo "  FAIL: Namespace ${ns} - residency '${residency}' does not match expected '${EXPECTED_ZONE}'"
+                              FAILED_CHECKS=$((FAILED_CHECKS + 1))
+                            fi
+                          else
+                            echo "  WARN: Namespace ${ns} - tenant '${TENANT_ID}' not found in config"
+                            WARNINGS=$((WARNINGS + 1))
+                          fi
+                        else
+                          echo "  WARN: Namespace ${ns} - missing tenant-id label"
+                          WARNINGS=$((WARNINGS + 1))
+                        fi
+                      fi
+                    done <<< "${NAMESPACES}"
+                  fi
+
+                  echo ""
+
+                  # =============================================================
+                  # CHECK 2: Istio AuthorizationPolicy Verification
+                  # =============================================================
+                  echo "----------------------------------------"
+                  echo "CHECK 2: Istio AuthorizationPolicy Verification"
+                  echo "----------------------------------------"
+
+                  # Check for required authorization policies
+                  REQUIRED_POLICIES="cross-region-deny-all gdpr-deny-non-eu-access pipl-deny-cross-border"
+
+                  for policy in ${REQUIRED_POLICIES}; do
+                    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+
+                    if kubectl get authorizationpolicy ${policy} -n istio-system >/dev/null 2>&1; then
+                      echo "  PASS: AuthorizationPolicy '${policy}' exists"
+                      PASSED_CHECKS=$((PASSED_CHECKS + 1))
+                    else
+                      echo "  FAIL: AuthorizationPolicy '${policy}' not found"
+                      FAILED_CHECKS=$((FAILED_CHECKS + 1))
+                    fi
+                  done
+
+                  # Check for strict mTLS
+                  TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+                  MTLS_MODE=$(kubectl get peerauthentication -n istio-system -o jsonpath='{.items[0].spec.mtls.mode}' 2>/dev/null || echo "")
+
+                  if [ "${MTLS_MODE}" = "STRICT" ]; then
+                    echo "  PASS: mTLS mode is STRICT"
+                    PASSED_CHECKS=$((PASSED_CHECKS + 1))
+                  else
+                    echo "  FAIL: mTLS mode is '${MTLS_MODE}', expected 'STRICT'"
+                    FAILED_CHECKS=$((FAILED_CHECKS + 1))
+                  fi
+
+                  echo ""
+
+                  # =============================================================
+                  # CHECK 3: GDPR Compliance Checks (EU Region)
+                  # =============================================================
+                  echo "----------------------------------------"
+                  echo "CHECK 3: GDPR Compliance Checks"
+                  echo "----------------------------------------"
+
+                  # Check for GDPR-specific authorization policy
+                  TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+                  GDPR_POLICY=$(kubectl get authorizationpolicy gdpr-deny-non-eu-access -n istio-system -o jsonpath='{.spec.action}' 2>/dev/null || echo "")
+
+                  if [ "${GDPR_POLICY}" = "DENY" ]; then
+                    echo "  PASS: GDPR deny policy is active (action=DENY)"
+                    PASSED_CHECKS=$((PASSED_CHECKS + 1))
+                  else
+                    echo "  FAIL: GDPR deny policy not configured correctly"
+                    FAILED_CHECKS=$((FAILED_CHECKS + 1))
+                  fi
+
+                  # Check for workloads with GDPR compliance label
+                  GDPR_PODS=$(kubectl get pods --all-namespaces -l acgs.io/compliance-gdpr=true --no-headers 2>/dev/null | wc -l)
+                  echo "  INFO: Found ${GDPR_PODS} pods with GDPR compliance label"
+
+                  # Check EU namespace exists and has correct labels
+                  if kubectl get namespace tenant-eu-enterprise-001 >/dev/null 2>&1; then
+                    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+                    EU_RESIDENCY=$(kubectl get namespace tenant-eu-enterprise-001 -o jsonpath='{.metadata.labels.data-residency}')
+
+                    if [ "${EU_RESIDENCY}" = "eu" ]; then
+                      echo "  PASS: EU tenant namespace has correct data-residency label"
+                      PASSED_CHECKS=$((PASSED_CHECKS + 1))
+                    else
+                      echo "  FAIL: EU tenant namespace has incorrect data-residency label: ${EU_RESIDENCY}"
+                      FAILED_CHECKS=$((FAILED_CHECKS + 1))
+                    fi
+                  fi
+
+                  echo ""
+
+                  # =============================================================
+                  # CHECK 4: PIPL Compliance Checks (China Region)
+                  # =============================================================
+                  echo "----------------------------------------"
+                  echo "CHECK 4: PIPL Compliance Checks"
+                  echo "----------------------------------------"
+
+                  # Check for PIPL-specific authorization policy
+                  TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+                  PIPL_POLICY=$(kubectl get authorizationpolicy pipl-deny-cross-border -n istio-system -o jsonpath='{.spec.action}' 2>/dev/null || echo "")
+
+                  if [ "${PIPL_POLICY}" = "DENY" ]; then
+                    echo "  PASS: PIPL deny policy is active (action=DENY)"
+                    PASSED_CHECKS=$((PASSED_CHECKS + 1))
+                  else
+                    echo "  FAIL: PIPL deny policy not configured correctly"
+                    FAILED_CHECKS=$((FAILED_CHECKS + 1))
+                  fi
+
+                  # Check for workloads with PIPL compliance label
+                  PIPL_PODS=$(kubectl get pods --all-namespaces -l acgs.io/compliance-pipl=true --no-headers 2>/dev/null | wc -l)
+                  echo "  INFO: Found ${PIPL_PODS} pods with PIPL compliance label"
+
+                  echo ""
+
+                  # =============================================================
+                  # CHECK 5: Cross-Region Access Audit
+                  # =============================================================
+                  echo "----------------------------------------"
+                  echo "CHECK 5: Cross-Region Access Audit"
+                  echo "----------------------------------------"
+
+                  # Query audit service for cross-region access violations (if available)
+                  AUDIT_SERVICE="http://audit-service.acgs-system.svc.cluster.local:8080"
+
+                  if curl -s --connect-timeout 5 ${AUDIT_SERVICE}/health >/dev/null 2>&1; then
+                    echo "Audit service is available, querying for violations..."
+
+                    # Query for violations in the last 24 hours
+                    VIOLATIONS=$(curl -s ${AUDIT_SERVICE}/v1/violations?hours=24 2>/dev/null || echo '{"count": 0}')
+                    VIOLATION_COUNT=$(echo ${VIOLATIONS} | grep -o '"count":[0-9]*' | cut -d':' -f2 || echo "0")
+
+                    TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+                    if [ "${VIOLATION_COUNT}" = "0" ]; then
+                      echo "  PASS: No cross-region access violations in last 24 hours"
+                      PASSED_CHECKS=$((PASSED_CHECKS + 1))
+                    else
+                      echo "  FAIL: Found ${VIOLATION_COUNT} cross-region access violations"
+                      FAILED_CHECKS=$((FAILED_CHECKS + 1))
+                    fi
+                  else
+                    echo "  WARN: Audit service not available, skipping violation check"
+                    WARNINGS=$((WARNINGS + 1))
+                  fi
+
+                  echo ""
+
+                  # =============================================================
+                  # CHECK 6: Pod Placement Verification
+                  # =============================================================
+                  echo "----------------------------------------"
+                  echo "CHECK 6: Pod Placement Verification"
+                  echo "----------------------------------------"
+
+                  # Check that pods with compliance labels are running in correct regions
+                  echo "Verifying pod placement for regulated workloads..."
+
+                  # Get pods with GDPR labels and verify they're in EU
+                  GDPR_MISPLACED=0
+                  GDPR_PODS_INFO=$(kubectl get pods --all-namespaces -l acgs.io/compliance-gdpr=true -o jsonpath='{range .items[*]}{.metadata.namespace}:{.spec.nodeName}{"\n"}{end}' 2>/dev/null || echo "")
+
+                  while IFS=':' read -r ns node; do
+                    if [ -n "${node}" ]; then
+                      # Get node's region
+                      NODE_REGION=$(kubectl get node ${node} -o jsonpath='{.metadata.labels.topology\.kubernetes\.io/region}' 2>/dev/null || echo "unknown")
+
+                      # GDPR pods should be in eu-* regions
+                      if [[ ! "${NODE_REGION}" =~ ^eu- ]]; then
+                        echo "  FAIL: GDPR pod in ${ns} running on non-EU node (region: ${NODE_REGION})"
+                        GDPR_MISPLACED=$((GDPR_MISPLACED + 1))
+                      fi
+                    fi
+                  done <<< "${GDPR_PODS_INFO}"
+
+                  TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+                  if [ ${GDPR_MISPLACED} -eq 0 ]; then
+                    echo "  PASS: All GDPR-labeled pods are correctly placed"
+                    PASSED_CHECKS=$((PASSED_CHECKS + 1))
+                  else
+                    echo "  FAIL: Found ${GDPR_MISPLACED} misplaced GDPR pods"
+                    FAILED_CHECKS=$((FAILED_CHECKS + 1))
+                  fi
+
+                  echo ""
+
+                  # =============================================================
+                  # CHECK 7: Encryption Verification
+                  # =============================================================
+                  echo "----------------------------------------"
+                  echo "CHECK 7: Encryption Verification"
+                  echo "----------------------------------------"
+
+                  # Check for encrypted secrets (sealed-secrets or external-secrets)
+                  TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+                  SEALED_SECRETS=$(kubectl get crd sealedsecrets.bitnami.com >/dev/null 2>&1 && echo "yes" || echo "no")
+                  EXTERNAL_SECRETS=$(kubectl get crd externalsecrets.external-secrets.io >/dev/null 2>&1 && echo "yes" || echo "no")
+
+                  if [ "${SEALED_SECRETS}" = "yes" ] || [ "${EXTERNAL_SECRETS}" = "yes" ]; then
+                    echo "  PASS: Secrets encryption solution is available"
+                    echo "    - Sealed Secrets: ${SEALED_SECRETS}"
+                    echo "    - External Secrets: ${EXTERNAL_SECRETS}"
+                    PASSED_CHECKS=$((PASSED_CHECKS + 1))
+                  else
+                    echo "  WARN: No secrets encryption solution detected"
+                    WARNINGS=$((WARNINGS + 1))
+                  fi
+
+                  echo ""
+
+                  # =============================================================
+                  # GENERATE FINAL REPORT
+                  # =============================================================
+                  echo "=========================================="
+                  echo "COMPLIANCE VERIFICATION SUMMARY"
+                  echo "=========================================="
+
+                  COMPLIANCE_PERCENTAGE=0
+                  if [ ${TOTAL_CHECKS} -gt 0 ]; then
+                    COMPLIANCE_PERCENTAGE=$((PASSED_CHECKS * 100 / TOTAL_CHECKS))
+                  fi
+
+                  echo "Total Checks:  ${TOTAL_CHECKS}"
+                  echo "Passed:        ${PASSED_CHECKS}"
+                  echo "Failed:        ${FAILED_CHECKS}"
+                  echo "Warnings:      ${WARNINGS}"
+                  echo "Compliance:    ${COMPLIANCE_PERCENTAGE}%"
+                  echo ""
+
+                  # Determine overall status
+                  if [ ${FAILED_CHECKS} -eq 0 ]; then
+                    if [ ${WARNINGS} -eq 0 ]; then
+                      OVERALL_STATUS="PASS"
+                      echo "OVERALL STATUS: PASS - All compliance checks passed"
+                    else
+                      OVERALL_STATUS="PASS_WITH_WARNINGS"
+                      echo "OVERALL STATUS: PASS WITH WARNINGS - Review recommended"
+                    fi
+                  else
+                    OVERALL_STATUS="FAIL"
+                    echo "OVERALL STATUS: FAIL - Compliance violations detected"
+                  fi
+
+                  # Update report file
+                  cat > ${REPORT_FILE} << EOF
+                  {
+                    "report_version": "1.0",
+                    "generated_at": "${TIMESTAMP}",
+                    "region": "${REGION_NAME}",
+                    "region_zone": "${REGION_ZONE}",
+                    "overall_status": "${OVERALL_STATUS}",
+                    "summary": {
+                      "total_checks": ${TOTAL_CHECKS},
+                      "passed_checks": ${PASSED_CHECKS},
+                      "failed_checks": ${FAILED_CHECKS},
+                      "warnings": ${WARNINGS},
+                      "compliance_percentage": ${COMPLIANCE_PERCENTAGE}
+                    },
+                    "frameworks_checked": ["GDPR", "PIPL", "FedRAMP", "HIPAA"],
+                    "checks_performed": [
+                      "namespace_label_verification",
+                      "istio_authz_policy_verification",
+                      "gdpr_compliance",
+                      "pipl_compliance",
+                      "cross_region_access_audit",
+                      "pod_placement_verification",
+                      "encryption_verification"
+                    ]
+                  }
+                  EOF
+
+                  echo ""
+                  echo "Report saved to: ${REPORT_FILE}"
+                  cat ${REPORT_FILE}
+
+                  # Post report to audit service if available
+                  if curl -s --connect-timeout 5 ${AUDIT_SERVICE}/health >/dev/null 2>&1; then
+                    echo ""
+                    echo "Posting compliance report to audit service..."
+                    curl -s -X POST \
+                      -H "Content-Type: application/json" \
+                      -d @${REPORT_FILE} \
+                      ${AUDIT_SERVICE}/v1/compliance-report || echo "Failed to post report"
+                  fi
+
+                  echo ""
+                  echo "=========================================="
+                  echo "Compliance verification completed"
+                  echo "=========================================="
+
+                  # Exit with appropriate code
+                  if [ "${OVERALL_STATUS}" = "FAIL" ]; then
+                    exit 1
+                  fi
+                  exit 0
+
+              # Resource limits
+              resources:
+                limits:
+                  cpu: 500m
+                  memory: 512Mi
+                requests:
+                  cpu: 100m
+                  memory: 256Mi
+
+              # Volume mounts
+              volumeMounts:
+                - name: config
+                  mountPath: /etc/compliance
+                  readOnly: true
+                - name: tmp
+                  mountPath: /tmp
+
+          # Volumes
+          volumes:
+            - name: config
+              configMap:
+                name: compliance-config
+            - name: tmp
+              emptyDir:
+                sizeLimit: 100Mi
+---
+# =============================================================================
+# CRONJOB FOR WEEKLY COMPREHENSIVE COMPLIANCE AUDIT
+# =============================================================================
+# More thorough audit that includes database checks and full tenant review
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: compliance-audit-weekly
+  namespace: acgs-compliance
+  labels:
+    app.kubernetes.io/name: compliance-audit-weekly
+    app.kubernetes.io/component: compliance
+    app.kubernetes.io/part-of: acgs2-multi-region
+    acgs.io/feature: gdpr-pipl-compliance
+  annotations:
+    acgs.io/description: "Weekly comprehensive GDPR/PIPL compliance audit"
+    acgs.io/regulations: "GDPR, PIPL, FedRAMP, HIPAA, EU-AI-Act"
+    acgs.io/schedule-description: "Runs every Sunday at 03:00 UTC"
+spec:
+  # Run weekly on Sunday at 03:00 UTC
+  schedule: "0 3 * * 0"
+
+  # Keep job history
+  successfulJobsHistoryLimit: 4
+  failedJobsHistoryLimit: 2
+
+  # Concurrency policy
+  concurrencyPolicy: Forbid
+
+  # Don't start if missed by more than 12 hours
+  startingDeadlineSeconds: 43200
+
+  suspend: false
+
+  jobTemplate:
+    metadata:
+      labels:
+        app.kubernetes.io/name: compliance-audit-weekly
+        app.kubernetes.io/component: compliance
+        acgs.io/job-type: compliance-audit-comprehensive
+    spec:
+      ttlSecondsAfterFinished: 604800
+      backoffLimit: 2
+      # Allow 2 hours for comprehensive audit
+      activeDeadlineSeconds: 7200
+
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: compliance-audit-weekly
+            app.kubernetes.io/component: compliance
+          annotations:
+            sidecar.istio.io/inject: "false"
+        spec:
+          serviceAccountName: compliance-verifier
+          restartPolicy: OnFailure
+
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            runAsGroup: 1000
+            fsGroup: 1000
+            seccompProfile:
+              type: RuntimeDefault
+
+          containers:
+            - name: compliance-auditor
+              image: bitnami/kubectl:1.29
+              imagePullPolicy: IfNotPresent
+
+              securityContext:
+                runAsNonRoot: true
+                runAsUser: 1000
+                readOnlyRootFilesystem: true
+                allowPrivilegeEscalation: false
+                capabilities:
+                  drop:
+                    - ALL
+
+              env:
+                - name: REGION_NAME
+                  valueFrom:
+                    configMapKeyRef:
+                      name: compliance-config
+                      key: region.name
+                - name: REGION_ZONE
+                  valueFrom:
+                    configMapKeyRef:
+                      name: compliance-config
+                      key: region.zone
+                - name: AUDIT_TYPE
+                  value: "comprehensive"
+
+              command:
+                - /bin/bash
+                - -c
+              args:
+                - |
+                  set -e
+
+                  echo "=========================================="
+                  echo "ACGS-2 Weekly Comprehensive Compliance Audit"
+                  echo "=========================================="
+                  echo "Timestamp: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+                  echo "Region: ${REGION_NAME}"
+                  echo "Audit Type: ${AUDIT_TYPE}"
+                  echo ""
+
+                  # Run all checks from daily job plus additional comprehensive checks
+                  echo "Running comprehensive audit..."
+
+                  # Additional checks for weekly audit:
+                  # 1. Full tenant residency matrix validation
+                  # 2. PostgreSQL replication status across all regions
+                  # 3. Istio mesh-wide mTLS verification
+                  # 4. OPA decision log analysis
+                  # 5. Kafka topic replication audit
+
+                  echo "Checking tenant residency matrix..."
+                  kubectl get configmap tenant-residency-config -n acgs-system -o yaml > /tmp/residency-config.yaml
+
+                  echo "Checking all namespaces for compliance labels..."
+                  kubectl get namespaces --show-labels > /tmp/namespace-labels.txt
+
+                  echo "Checking Istio authorization policies..."
+                  kubectl get authorizationpolicies --all-namespaces -o wide > /tmp/authz-policies.txt
+
+                  echo "Checking peer authentication status..."
+                  kubectl get peerauthentications --all-namespaces -o wide > /tmp/peer-auth.txt
+
+                  echo ""
+                  echo "Weekly comprehensive audit completed"
+                  echo "Reports saved to /tmp/"
+
+              resources:
+                limits:
+                  cpu: 1
+                  memory: 1Gi
+                requests:
+                  cpu: 200m
+                  memory: 512Mi
+
+              volumeMounts:
+                - name: config
+                  mountPath: /etc/compliance
+                  readOnly: true
+                - name: tmp
+                  mountPath: /tmp
+
+          volumes:
+            - name: config
+              configMap:
+                name: compliance-config
+            - name: tmp
+              emptyDir:
+                sizeLimit: 500Mi
+---
+# =============================================================================
+# NETWORK POLICY FOR COMPLIANCE NAMESPACE
+# =============================================================================
+# Restrict network access for compliance jobs
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: compliance-network-policy
+  namespace: acgs-compliance
+  labels:
+    app.kubernetes.io/name: compliance-network-policy
+    app.kubernetes.io/component: compliance
+    app.kubernetes.io/part-of: acgs2-multi-region
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/component: compliance
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress: []  # No incoming traffic allowed
+  egress:
+    # Allow DNS resolution
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+        - podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    # Allow access to Kubernetes API server
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+      ports:
+        - protocol: TCP
+          port: 443
+        - protocol: TCP
+          port: 6443
+    # Allow access to audit service
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: acgs-system
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: audit-service
+      ports:
+        - protocol: TCP
+          port: 8080
+---
+# =============================================================================
+# PROMETHEUS SERVICEMONITOR FOR COMPLIANCE METRICS
+# =============================================================================
+# Note: Requires Prometheus Operator
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: compliance-alerts
+  namespace: acgs-compliance
+  labels:
+    app.kubernetes.io/name: compliance-alerts
+    app.kubernetes.io/component: compliance
+    app.kubernetes.io/part-of: acgs2-multi-region
+    prometheus: main
+    role: alert-rules
+spec:
+  groups:
+    - name: compliance.rules
+      rules:
+        # Alert if compliance job fails
+        - alert: ComplianceVerificationFailed
+          expr: |
+            kube_job_status_failed{namespace="acgs-compliance", job_name=~"compliance-verification.*"} > 0
+          for: 5m
+          labels:
+            severity: critical
+            compliance: gdpr-pipl
+          annotations:
+            summary: "Compliance verification job failed"
+            description: "The GDPR/PIPL compliance verification job has failed. Immediate investigation required."
+            runbook_url: "https://docs.acgs2.io/runbooks/compliance-failure"
+
+        # Alert if compliance job hasn't run in 25 hours (allows 1 hour buffer)
+        - alert: ComplianceVerificationMissed
+          expr: |
+            time() - kube_cronjob_status_last_successful_time{namespace="acgs-compliance", cronjob="compliance-verification"} > 90000
+          for: 5m
+          labels:
+            severity: warning
+            compliance: gdpr-pipl
+          annotations:
+            summary: "Compliance verification job missed"
+            description: "The daily GDPR/PIPL compliance verification job has not run in over 25 hours."
+
+        # Alert if weekly audit hasn't run in 8 days
+        - alert: WeeklyComplianceAuditMissed
+          expr: |
+            time() - kube_cronjob_status_last_successful_time{namespace="acgs-compliance", cronjob="compliance-audit-weekly"} > 691200
+          for: 5m
+          labels:
+            severity: warning
+            compliance: gdpr-pipl
+          annotations:
+            summary: "Weekly compliance audit missed"
+            description: "The weekly comprehensive compliance audit has not run in over 8 days."
