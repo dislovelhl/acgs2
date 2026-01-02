@@ -66,6 +66,39 @@ except ImportError:
         OutcomeStatus = None
         get_feedback_handler = None
 
+# Drift monitoring imports
+try:
+    from .drift_monitoring import (
+        DRIFT_CHECK_INTERVAL_HOURS,
+        DriftDetector,
+        DriftReport,
+        DriftSeverity,
+        DriftStatus,
+        get_drift_detector,
+    )
+
+    DRIFT_MONITORING_AVAILABLE = True
+except ImportError:
+    try:
+        from drift_monitoring import (
+            DRIFT_CHECK_INTERVAL_HOURS,
+            DriftDetector,
+            DriftReport,
+            DriftSeverity,
+            DriftStatus,
+            get_drift_detector,
+        )
+
+        DRIFT_MONITORING_AVAILABLE = True
+    except ImportError:
+        DRIFT_MONITORING_AVAILABLE = False
+        DRIFT_CHECK_INTERVAL_HOURS = 6
+        DriftDetector = None
+        DriftReport = None
+        DriftSeverity = None
+        DriftStatus = None
+        get_drift_detector = None
+
 logger = logging.getLogger(__name__)
 
 
@@ -873,6 +906,23 @@ class AdaptiveGovernanceEngine:
         self.learning_thread: Optional[threading.Thread] = None
         self.running = False
 
+        # Drift detection configuration
+        self._drift_detector: Optional[DriftDetector] = None
+        self._last_drift_check: float = 0.0
+        self._drift_check_interval: int = DRIFT_CHECK_INTERVAL_HOURS * 3600  # Convert to seconds
+        self._latest_drift_report: Optional[DriftReport] = None
+        if DRIFT_MONITORING_AVAILABLE:
+            try:
+                self._drift_detector = get_drift_detector()
+                # Try to load reference data on initialization
+                if self._drift_detector.load_reference_data():
+                    logger.info("Drift detector initialized with reference data")
+                else:
+                    logger.warning("Drift detector initialized but reference data not loaded")
+            except Exception as e:
+                logger.warning(f"Failed to initialize drift detector: {e}")
+                self._drift_detector = None
+
     async def initialize(self) -> None:
         """Initialize the adaptive governance engine."""
         logger.info("Initializing Adaptive Governance Engine")
@@ -1123,12 +1173,131 @@ class AdaptiveGovernanceEngine:
                     logger.info("Triggering background model retraining")
                     # Retraining happens automatically in the model update methods
 
+                # Scheduled drift detection (every drift_check_interval)
+                self._run_scheduled_drift_detection()
+
                 # Log performance summary
                 self._log_performance_summary()
 
             except Exception as e:
                 logger.error(f"Background learning error: {e}")
                 time.sleep(60)  # Back off on errors
+
+    def _run_scheduled_drift_detection(self) -> None:
+        """Run drift detection if the scheduled interval has elapsed."""
+        if not DRIFT_MONITORING_AVAILABLE or self._drift_detector is None:
+            return
+
+        current_time = time.time()
+        time_since_last_check = current_time - self._last_drift_check
+
+        # Check if drift detection is due
+        if time_since_last_check < self._drift_check_interval:
+            return
+
+        logger.info(
+            f"drift_check_interval: Running scheduled drift detection "
+            f"(interval: {self._drift_check_interval / 3600:.1f} hours)"
+        )
+
+        try:
+            # Collect recent decision data for drift analysis
+            recent_data = self._collect_drift_data()
+
+            if recent_data is None or len(recent_data) == 0:
+                logger.info("drift_check_interval: Insufficient data for drift detection, skipping")
+                self._last_drift_check = current_time
+                return
+
+            # Run drift detection
+            drift_report = self._drift_detector.detect_drift(recent_data)
+            self._latest_drift_report = drift_report
+            self._last_drift_check = current_time
+
+            # Log drift detection results
+            if drift_report.status == DriftStatus.SUCCESS:
+                if drift_report.dataset_drift:
+                    logger.warning(
+                        f"drift_check_interval: Drift detected! "
+                        f"Severity: {drift_report.drift_severity.value}, "
+                        f"Drifted features: {drift_report.drifted_features}/{drift_report.total_features} "
+                        f"({drift_report.drift_share:.1%})"
+                    )
+
+                    # Log recommendations
+                    for recommendation in drift_report.recommendations:
+                        logger.info(f"drift_check_interval: Recommendation - {recommendation}")
+
+                    # Check if retraining should be triggered
+                    if self._drift_detector.should_trigger_retraining(drift_report):
+                        logger.warning(
+                            "drift_check_interval: Drift severity warrants model retraining"
+                        )
+                else:
+                    logger.info(
+                        f"drift_check_interval: No significant drift detected. "
+                        f"Drift share: {drift_report.drift_share:.1%}"
+                    )
+            else:
+                logger.warning(
+                    f"drift_check_interval: Drift detection completed with status: "
+                    f"{drift_report.status.value}. {drift_report.error_message or ''}"
+                )
+
+        except Exception as e:
+            logger.error(f"drift_check_interval: Error during drift detection: {e}")
+            # Still update last check time to prevent retry flood
+            self._last_drift_check = current_time
+
+    def _collect_drift_data(self):
+        """Collect recent decision data for drift analysis."""
+        try:
+            # Need pandas for DataFrame creation
+            try:
+                import pandas as pd
+            except ImportError:
+                logger.warning("pandas not available for drift data collection")
+                return None
+
+            # Collect features from recent decisions
+            if not self.decision_history:
+                return None
+
+            # Extract feature data from decision history
+            feature_records = []
+            for decision in self.decision_history:
+                features = decision.features_used
+                record = {
+                    "message_length": features.message_length,
+                    "agent_count": features.agent_count,
+                    "tenant_complexity": features.tenant_complexity,
+                    "temporal_mean": (
+                        np.mean(features.temporal_patterns) if features.temporal_patterns else 0.0
+                    ),
+                    "temporal_std": (
+                        np.std(features.temporal_patterns) if features.temporal_patterns else 0.0
+                    ),
+                    "semantic_similarity": features.semantic_similarity,
+                    "historical_precedence": features.historical_precedence,
+                    "resource_utilization": features.resource_utilization,
+                    "network_isolation": features.network_isolation,
+                    "risk_score": features.risk_score,
+                    "confidence_level": features.confidence_level,
+                }
+                feature_records.append(record)
+
+            if not feature_records:
+                return None
+
+            return pd.DataFrame(feature_records)
+
+        except Exception as e:
+            logger.error(f"Error collecting drift data: {e}")
+            return None
+
+    def get_latest_drift_report(self) -> Optional[DriftReport]:
+        """Get the most recent drift detection report."""
+        return self._latest_drift_report
 
     def _analyze_performance_trends(self) -> None:
         """Analyze performance trends for adaptive adjustments."""
@@ -1262,4 +1431,6 @@ __all__ = [
     "get_adaptive_governance",
     "evaluate_message_governance",
     "provide_governance_feedback",
+    # Availability flags
+    "DRIFT_MONITORING_AVAILABLE",
 ]
