@@ -7,7 +7,15 @@ Orchestrates multi-agent critique and validation.
 """
 
 import logging
-from typing import Any, Dict
+from typing import Any, Dict, Optional
+
+try:
+    import redis.asyncio as aioredis
+
+    REDIS_AVAILABLE = True
+except ImportError:
+    aioredis = None
+    REDIS_AVAILABLE = False
 
 from ..deliberation_layer.llm_assistant import get_llm_assistant
 
@@ -17,7 +25,9 @@ logger = logging.getLogger(__name__)
 class PACARVerifier:
     """Orchestrates Red Team and Validator agents for agentic verification."""
 
-    def __init__(self):
+    def __init__(self, redis_url: str = "redis://localhost:6379"):
+        self.redis_url = redis_url
+        self.redis_client: Optional[Any] = None
         self.assistant = get_llm_assistant()
         logger.info("PACARVerifier initialized for SDPC Phase 2")
 
