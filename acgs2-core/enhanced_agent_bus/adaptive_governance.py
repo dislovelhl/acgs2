@@ -414,6 +414,11 @@ class AdaptiveThresholds:
 class ImpactScorer:
     """ML-based impact assessment system."""
 
+    # MLflow configuration
+    MLFLOW_EXPERIMENT_NAME = "governance_impact_scorer"
+    MLFLOW_TRACKING_URI = os.getenv("MLFLOW_TRACKING_URI", "http://localhost:5000")
+    MLFLOW_MODEL_NAME = "governance_impact_scorer"
+
     def __init__(self, constitutional_hash: str):
         self.constitutional_hash = constitutional_hash
 
@@ -437,6 +442,44 @@ class ImpactScorer:
         # Training data
         self.training_samples: List[Tuple[ImpactFeatures, float]] = []
         self.model_trained = False
+
+        # MLflow tracking
+        self._mlflow_initialized = False
+        self._mlflow_experiment_id: Optional[str] = None
+        self.model_version: Optional[str] = None
+        self._initialize_mlflow()
+
+    def _initialize_mlflow(self) -> None:
+        """Initialize MLflow tracking for training runs."""
+        if not MLFLOW_AVAILABLE:
+            logger.warning("MLflow not available. ImpactScorer training runs will not be tracked.")
+            return
+
+        try:
+            mlflow.set_tracking_uri(self.MLFLOW_TRACKING_URI)
+
+            # Create or get experiment
+            experiment = mlflow.get_experiment_by_name(self.MLFLOW_EXPERIMENT_NAME)
+            if experiment is None:
+                self._mlflow_experiment_id = mlflow.create_experiment(
+                    self.MLFLOW_EXPERIMENT_NAME,
+                    tags={
+                        "constitutional_hash": self.constitutional_hash,
+                        "model_type": "impact_scorer",
+                    },
+                )
+            else:
+                self._mlflow_experiment_id = experiment.experiment_id
+
+            self._mlflow_initialized = True
+            logger.info(
+                f"MLflow initialized for ImpactScorer experiment '{self.MLFLOW_EXPERIMENT_NAME}' "
+                f"(id: {self._mlflow_experiment_id})"
+            )
+
+        except Exception as e:
+            logger.warning(f"Failed to initialize MLflow tracking for ImpactScorer: {e}")
+            self._mlflow_initialized = False
 
     async def assess_impact(self, message: Dict, context: Dict) -> ImpactFeatures:
         """Assess message impact using ML models and contextual analysis."""
@@ -618,7 +661,7 @@ class ImpactScorer:
             logger.error(f"Error updating impact scorer model: {e}")
 
     def _retrain_model(self) -> None:
-        """Retrain the impact assessment model."""
+        """Retrain the impact assessment model and log to MLflow."""
         try:
             if len(self.training_samples) < 50:
                 return
@@ -626,8 +669,9 @@ class ImpactScorer:
             # Prepare training data
             X = []
             y = []
+            recent_samples = self.training_samples[-500:]  # Last 500 samples
 
-            for features, actual_impact in self.training_samples[-500:]:  # Last 500 samples
+            for features, actual_impact in recent_samples:
                 feature_vector = [
                     features.message_length,
                     features.agent_count,
@@ -641,14 +685,125 @@ class ImpactScorer:
                 X.append(feature_vector)
                 y.append(actual_impact)
 
-            # Train model
-            self.impact_classifier.fit(X, y)
+            X_array = np.array(X)
+            y_array = np.array(y)
+
+            # Log training run to MLflow
+            if self._mlflow_initialized and MLFLOW_AVAILABLE:
+                self._log_training_run_to_mlflow(X_array, y_array, recent_samples)
+            else:
+                # Train without MLflow logging
+                self.impact_classifier.fit(X_array, y_array)
+
             self.model_trained = True
 
             logger.info(f"Retrained impact scorer with {len(X)} samples")
 
         except Exception as e:
             logger.error(f"Error retraining impact scorer: {e}")
+
+    def _log_training_run_to_mlflow(
+        self, X: np.ndarray, y: np.ndarray, recent_samples: List[Tuple[ImpactFeatures, float]]
+    ) -> None:
+        """Log training run with metrics and model to MLflow."""
+        try:
+            run_name = (
+                f"impact_scorer_retrain_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}"
+            )
+
+            with mlflow.start_run(
+                experiment_id=self._mlflow_experiment_id,
+                run_name=run_name,
+            ) as run:
+                # Log training parameters
+                mlflow.log_params(
+                    {
+                        "n_estimators": self.impact_classifier.n_estimators,
+                        "max_depth": self.impact_classifier.max_depth,
+                        "random_state": self.impact_classifier.random_state,
+                        "constitutional_hash": self.constitutional_hash,
+                        "n_samples": len(recent_samples),
+                        "n_features": X.shape[1],
+                    }
+                )
+
+                # Log feature weights
+                for feature_name, weight in self.feature_weights.items():
+                    mlflow.log_param(f"weight_{feature_name}", weight)
+
+                # Train model
+                self.impact_classifier.fit(X, y)
+
+                # Calculate training metrics
+                y_pred = self.impact_classifier.predict(X)
+                mse = float(np.mean((y - y_pred) ** 2))
+                mae = float(np.mean(np.abs(y - y_pred)))
+
+                # Avoid division by zero in R2 calculation
+                ss_tot = np.sum((y - np.mean(y)) ** 2)
+                if ss_tot > 0:
+                    r2_score = float(1 - (np.sum((y - y_pred) ** 2) / ss_tot))
+                else:
+                    r2_score = 0.0
+
+                # Calculate impact distribution metrics
+                high_impact_count = sum(1 for _, impact in recent_samples if impact >= 0.7)
+                medium_impact_count = sum(1 for _, impact in recent_samples if 0.3 <= impact < 0.7)
+                low_impact_count = sum(1 for _, impact in recent_samples if impact < 0.3)
+
+                # Log metrics
+                mlflow.log_metrics(
+                    {
+                        "n_samples": len(recent_samples),
+                        "n_features": X.shape[1],
+                        "mean_squared_error": mse,
+                        "mean_absolute_error": mae,
+                        "r2_score": r2_score,
+                        "target_mean": float(np.mean(y)),
+                        "target_std": float(np.std(y)),
+                        "high_impact_rate": high_impact_count / len(recent_samples),
+                        "medium_impact_rate": medium_impact_count / len(recent_samples),
+                        "low_impact_rate": low_impact_count / len(recent_samples),
+                    }
+                )
+
+                # Log feature importance
+                if hasattr(self.impact_classifier, "feature_importances_"):
+                    feature_names = [
+                        "message_length",
+                        "agent_count",
+                        "tenant_complexity",
+                        "temporal_mean",
+                        "semantic_similarity",
+                        "historical_precedence",
+                        "resource_utilization",
+                        "network_isolation",
+                    ]
+                    for idx, importance in enumerate(self.impact_classifier.feature_importances_):
+                        feature_name = (
+                            feature_names[idx] if idx < len(feature_names) else f"feature_{idx}"
+                        )
+                        mlflow.log_metric(f"importance_{feature_name}", float(importance))
+
+                # Log the trained model
+                mlflow.sklearn.log_model(
+                    self.impact_classifier,
+                    artifact_path="impact_classifier",
+                    registered_model_name=self.MLFLOW_MODEL_NAME,
+                )
+
+                # Store run info
+                self.model_version = run.info.run_id
+
+                logger.info(
+                    f"MLflow run logged for ImpactScorer: {run.info.run_id} "
+                    f"(MSE: {mse:.4f}, R2: {r2_score:.4f}, samples: {len(recent_samples)})"
+                )
+
+        except Exception as e:
+            logger.warning(f"Failed to log ImpactScorer training run to MLflow: {e}")
+            # Fallback to training without MLflow logging
+            self.impact_classifier.fit(X, y)
 
 
 class AdaptiveGovernanceEngine:
