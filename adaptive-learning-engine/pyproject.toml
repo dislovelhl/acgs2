@@ -129,6 +129,7 @@ target-version = "py311"
 lint.select = ["E", "F", "B", "I"]
 lint.ignore = [
     "E501",   # line too long, handled by black
+    "B008",   # function call in default argument - valid for FastAPI Depends()
 ]
 
 [tool.ruff.lint.per-file-ignores]

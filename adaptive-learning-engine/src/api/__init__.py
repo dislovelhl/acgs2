@@ -1,6 +1,7 @@
 # ACGS-2 Adaptive Learning Engine - API Module
 """FastAPI endpoints for prediction, training, drift monitoring, and rollback."""
 
+from src.api.endpoints import initialize_services, router
 from src.api.models import (
     BatchTrainingRequest,
     BatchTrainingResponse,
@@ -27,6 +28,10 @@ from src.api.models import (
 )
 
 __all__ = [
+    # Endpoints
+    "router",
+    "initialize_services",
+    # Request/Response Models
     "BatchTrainingRequest",
     "BatchTrainingResponse",
     "DriftCheckRequest",
