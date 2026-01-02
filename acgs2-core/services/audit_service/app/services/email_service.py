@@ -11,14 +11,16 @@ Provides SMTP-based email delivery for compliance reports with:
 
 import logging
 import os
+import random
 import smtplib
 import ssl
+import time
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from email.mime.application import MIMEApplication
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -93,6 +95,88 @@ class EmailConfigurationError(Exception):
     """Exception raised when email configuration is invalid."""
 
     pass
+
+
+class EmailRetryExhaustedError(Exception):
+    """Exception raised when all email retry attempts have been exhausted."""
+
+    def __init__(
+        self,
+        message: str,
+        recipient: Optional[str] = None,
+        attempts: int = 0,
+        last_error: Optional[Exception] = None,
+    ):
+        super().__init__(message)
+        self.recipient = recipient
+        self.attempts = attempts
+        self.last_error = last_error
+
+
+@dataclass
+class RetryConfig:
+    """
+    Configuration for email retry logic with exponential backoff.
+
+    Attributes:
+        max_retries: Maximum number of retry attempts (default: 3)
+        base_delay: Base delay in seconds for exponential backoff (default: 2.0)
+        max_delay: Maximum delay cap in seconds (default: 60.0)
+        jitter: Add random jitter to prevent thundering herd (default: True)
+        jitter_factor: Maximum jitter as fraction of delay (default: 0.1)
+        retryable_exceptions: Tuple of exception types that trigger retry
+    """
+
+    max_retries: int = 3
+    base_delay: float = 2.0
+    max_delay: float = 60.0
+    jitter: bool = True
+    jitter_factor: float = 0.1
+    retryable_exceptions: Tuple[type, ...] = field(
+        default_factory=lambda: (
+            smtplib.SMTPConnectError,
+            smtplib.SMTPServerDisconnected,
+            smtplib.SMTPResponseException,
+            TimeoutError,
+            ConnectionError,
+            OSError,
+        )
+    )
+
+    def calculate_delay(self, attempt: int) -> float:
+        """
+        Calculate delay for a given retry attempt using exponential backoff.
+
+        Args:
+            attempt: Current attempt number (0-indexed)
+
+        Returns:
+            Delay in seconds with optional jitter
+        """
+        # Exponential backoff: base_delay * 2^attempt
+        delay = self.base_delay * (2**attempt)
+
+        # Cap at max_delay
+        delay = min(delay, self.max_delay)
+
+        # Add jitter if enabled
+        if self.jitter:
+            jitter_amount = delay * self.jitter_factor * random.random()
+            delay += jitter_amount
+
+        return delay
+
+    def is_retryable(self, exception: Exception) -> bool:
+        """
+        Check if an exception should trigger a retry.
+
+        Args:
+            exception: The exception that was raised
+
+        Returns:
+            True if the exception is retryable
+        """
+        return isinstance(exception, self.retryable_exceptions)
 
 
 class EmailService:
@@ -492,6 +576,233 @@ Constitutional Hash: cdd01ef066bc6cf2
                 )
                 results.append(result)
             except EmailDeliveryError as e:
+                results.append(
+                    EmailResult(
+                        success=False,
+                        recipient=recipient,
+                        error_message=str(e),
+                    )
+                )
+
+        return results
+
+    def send_email_with_retry(
+        self,
+        recipient: str,
+        attachment_data: bytes,
+        report_name: str,
+        format: str = "pdf",
+        body_text: Optional[str] = None,
+        retry_config: Optional[RetryConfig] = None,
+    ) -> EmailResult:
+        """
+        Send an email with retry logic and exponential backoff.
+
+        This method wraps send_email with automatic retry handling for
+        transient failures. It's designed to be used directly or from
+        Celery tasks that need reliable email delivery.
+
+        Args:
+            recipient: Recipient email address
+            attachment_data: Report content as bytes
+            report_name: Name of the report
+            format: Attachment format (pdf or csv)
+            body_text: Optional custom body text
+            retry_config: Optional RetryConfig, uses defaults if not provided
+
+        Returns:
+            EmailResult object with delivery status
+
+        Raises:
+            EmailConfigurationError: If email settings are invalid
+            EmailRetryExhaustedError: If all retry attempts fail
+            EmailDeliveryError: For non-retryable errors
+
+        Example:
+            service = EmailService()
+            config = RetryConfig(max_retries=5, base_delay=1.0)
+            result = service.send_email_with_retry(
+                recipient="user@example.com",
+                attachment_data=pdf_bytes,
+                report_name="Monthly Report",
+                retry_config=config,
+            )
+        """
+        config = retry_config or RetryConfig()
+        last_exception: Optional[Exception] = None
+
+        for attempt in range(config.max_retries + 1):
+            try:
+                logger.info(
+                    "Email delivery attempt %d/%d: recipient=%s, report=%s",
+                    attempt + 1,
+                    config.max_retries + 1,
+                    recipient,
+                    report_name,
+                )
+
+                result = self.send_email(
+                    recipient=recipient,
+                    attachment_data=attachment_data,
+                    report_name=report_name,
+                    format=format,
+                    body_text=body_text,
+                )
+
+                if attempt > 0:
+                    logger.info(
+                        "Email delivered successfully after %d retries: recipient=%s",
+                        attempt,
+                        recipient,
+                    )
+
+                return result
+
+            except EmailDeliveryError as e:
+                last_exception = e
+
+                # Check if the underlying error is retryable
+                original_error = e.original_error
+                is_retryable = original_error is not None and config.is_retryable(original_error)
+
+                # Log the failure
+                logger.warning(
+                    "Email delivery failed (attempt %d/%d): recipient=%s, "
+                    "error=%s, retryable=%s",
+                    attempt + 1,
+                    config.max_retries + 1,
+                    recipient,
+                    str(e),
+                    is_retryable,
+                )
+
+                # If not retryable, raise immediately
+                if not is_retryable:
+                    logger.error(
+                        "Non-retryable email error, aborting: recipient=%s, error=%s",
+                        recipient,
+                        str(e),
+                    )
+                    raise
+
+                # If this was the last attempt, don't sleep
+                if attempt >= config.max_retries:
+                    break
+
+                # Calculate delay and sleep
+                delay = config.calculate_delay(attempt)
+                logger.info(
+                    "Retrying email in %.2f seconds: recipient=%s, attempt=%d",
+                    delay,
+                    recipient,
+                    attempt + 2,
+                )
+                time.sleep(delay)
+
+        # All retries exhausted
+        error_msg = (
+            f"Email delivery failed after {config.max_retries + 1} attempts: "
+            f"recipient={recipient}, last_error={last_exception}"
+        )
+        logger.error(error_msg)
+
+        raise EmailRetryExhaustedError(
+            message=error_msg,
+            recipient=recipient,
+            attempts=config.max_retries + 1,
+            last_error=last_exception,
+        )
+
+    @classmethod
+    def send_report_email_with_retry(
+        cls,
+        recipient: str,
+        pdf_bytes: bytes,
+        report_name: str,
+        format: str = "pdf",
+        retry_config: Optional[RetryConfig] = None,
+    ) -> EmailResult:
+        """
+        Static method to send a report email with retry logic.
+
+        This method is designed to be called from Celery tasks for
+        reliable report delivery with automatic retries.
+
+        Args:
+            recipient: Recipient email address
+            pdf_bytes: Report content as bytes
+            report_name: Name of the report
+            format: Report format (pdf or csv)
+            retry_config: Optional RetryConfig for custom retry behavior
+
+        Returns:
+            EmailResult object with delivery status
+
+        Raises:
+            EmailConfigurationError: If email settings are invalid
+            EmailRetryExhaustedError: If all retry attempts fail
+
+        Example:
+            result = EmailService.send_report_email_with_retry(
+                recipient="compliance@company.com",
+                pdf_bytes=report_data,
+                report_name="Monthly SOC 2 Report",
+                format="pdf"
+            )
+        """
+        service = cls()
+        return service.send_email_with_retry(
+            recipient=recipient,
+            attachment_data=pdf_bytes,
+            report_name=report_name,
+            format=format,
+            retry_config=retry_config,
+        )
+
+    @classmethod
+    def send_report_to_multiple_with_retry(
+        cls,
+        recipients: List[str],
+        pdf_bytes: bytes,
+        report_name: str,
+        format: str = "pdf",
+        retry_config: Optional[RetryConfig] = None,
+    ) -> List[EmailResult]:
+        """
+        Send a report to multiple recipients with retry logic.
+
+        Each recipient is tried independently with retries. A failure
+        for one recipient does not affect others.
+
+        Args:
+            recipients: List of recipient email addresses
+            pdf_bytes: Report content as bytes
+            report_name: Name of the report
+            format: Report format (pdf or csv)
+            retry_config: Optional RetryConfig for custom retry behavior
+
+        Returns:
+            List of EmailResult objects for each recipient
+        """
+        service = cls()
+        results = []
+
+        for recipient in recipients:
+            try:
+                result = service.send_email_with_retry(
+                    recipient=recipient,
+                    attachment_data=pdf_bytes,
+                    report_name=report_name,
+                    format=format,
+                    retry_config=retry_config,
+                )
+                results.append(result)
+            except (EmailDeliveryError, EmailRetryExhaustedError) as e:
+                logger.error(
+                    "Email delivery failed for recipient %s: %s",
+                    recipient,
+                    str(e),
+                )
                 results.append(
                     EmailResult(
                         success=False,
