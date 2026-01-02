@@ -17,3 +17,15 @@ python-jose[cryptography]>=3.3.0
 # Cryptography (shared dependency - CVE fixes in 46.x)
 # Required by pysaml2 and python-jose for key operations
 cryptography>=46.0.3
+
+# SQLAlchemy 2.0+ with async support
+# ORM for SSO user models, provider configs, and role mappings
+sqlalchemy[asyncio]>=2.0.0
+
+# Async SQLite driver for development/testing
+# Production should use asyncpg for PostgreSQL
+aiosqlite>=0.19.0
+
+# Async PostgreSQL driver for production
+# Recommended for enterprise SSO deployments
+asyncpg>=0.29.0
