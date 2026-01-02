@@ -83,6 +83,40 @@ class PACARVerifier:
             logger.error(f"Failed to store conversation {conversation_id}: {e}")
             return False
 
+    def _prune_conversation(
+        self, conversation_data: Dict[str, Any], max_messages: int = 50
+    ) -> Dict[str, Any]:
+        """
+        Prune conversation to enforce context window limit.
+
+        Removes oldest messages when conversation exceeds the maximum message count
+        to prevent unbounded growth and maintain performance SLA.
+
+        Args:
+            conversation_data: Conversation data containing messages list
+            max_messages: Maximum number of messages to retain (default 50)
+
+        Returns:
+            Pruned conversation data with messages capped at max_messages
+        """
+        messages = conversation_data.get("messages", [])
+        original_count = len(messages)
+
+        if original_count <= max_messages:
+            return conversation_data
+
+        # Remove oldest messages (from the beginning of the list)
+        pruned_messages = messages[-max_messages:]
+        pruned_count = original_count - len(pruned_messages)
+
+        logger.info(
+            f"Pruned conversation: removed {pruned_count} oldest messages "
+            f"({original_count} -> {len(pruned_messages)})"
+        )
+
+        # Return new dict with pruned messages to avoid mutating input
+        return {**conversation_data, "messages": pruned_messages}
+
     async def verify(self, content: str, original_intent: str) -> Dict[str, Any]:
         """
         Executes the PACAR (Proactive Agentic Critique and Review) workflow.
