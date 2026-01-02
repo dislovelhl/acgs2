@@ -128,6 +128,42 @@ services:
     networks:
       - acgs-dev
 
+  # HITL Approvals Service (Human-in-the-Loop workflow automation)
+  hitl-approvals:
+    build:
+      context: ./acgs2-core/services/hitl-approvals
+      dockerfile: Dockerfile.dev
+    ports:
+      - "${HITL_APPROVALS_PORT:-8003}:8003"
+    env_file:
+      - .env.dev
+    environment:
+      # Override container-internal URLs (use Docker network names)
+      - OPA_URL=${OPA_URL:-http://opa:8181}
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
+      - KAFKA_BOOTSTRAP=${KAFKA_BOOTSTRAP:-kafka:29092}
+      - ACGS_ENV=${ACGS_ENV:-development}
+      # Pass through centralized config
+      - CONSTITUTIONAL_HASH=${CONSTITUTIONAL_HASH:-cdd01ef066bc6cf2}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      # HITL-specific configuration
+      - HITL_APPROVALS_PORT=${HITL_APPROVALS_PORT:-8003}
+      - DEFAULT_ESCALATION_TIMEOUT_MINUTES=${DEFAULT_ESCALATION_TIMEOUT_MINUTES:-30}
+      - CRITICAL_ESCALATION_TIMEOUT_MINUTES=${CRITICAL_ESCALATION_TIMEOUT_MINUTES:-15}
+      # Notification integrations (webhook URLs - configure in .env.dev)
+      - SLACK_WEBHOOK_URL=${SLACK_WEBHOOK_URL:-}
+      - MS_TEAMS_WEBHOOK_URL=${MS_TEAMS_WEBHOOK_URL:-}
+      - PAGERDUTY_ROUTING_KEY=${PAGERDUTY_ROUTING_KEY:-}
+    volumes:
+      - ./acgs2-core/services/hitl-approvals:/app
+      - /app/__pycache__
+    depends_on:
+      - opa
+      - redis
+      - kafka
+    networks:
+      - acgs-dev
+
 networks:
   acgs-dev:
     driver: bridge
