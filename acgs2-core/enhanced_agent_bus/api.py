@@ -5,11 +5,17 @@ FastAPI application for the Enhanced Agent Bus service
 
 import asyncio
 import logging
-from typing import Dict, Any, Optional
-from fastapi import FastAPI, HTTPException, BackgroundTasks
+from typing import Any, Dict, Optional
+
+from fastapi import BackgroundTasks, FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
-import os
+
+from .feedback_handler import (
+    FeedbackEvent,
+    FeedbackResponse,
+    get_feedback_handler,
+)
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -133,7 +139,7 @@ async def send_message(request: MessageRequest, background_tasks: BackgroundTask
 
     except Exception as e:
         logger.error(f"Error sending message: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from None
 
 
 @app.get("/messages/{message_id}")
@@ -152,7 +158,7 @@ async def get_message_status(message_id: str):
         }
     except Exception as e:
         logger.error(f"Error getting message status: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from None
 
 
 @app.get("/stats")
@@ -171,7 +177,7 @@ async def get_stats():
         }
     except Exception as e:
         logger.error(f"Error getting stats: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from None
 
 
 @app.post("/policies/validate")
@@ -190,7 +196,39 @@ async def validate_policy(policy_data: Dict[str, Any]):
         }
     except Exception as e:
         logger.error(f"Error validating policy: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from None
+
+
+@app.post("/feedback", response_model=FeedbackResponse, status_code=status.HTTP_201_CREATED)
+async def submit_feedback(request: FeedbackEvent, background_tasks: BackgroundTasks):
+    """
+    Submit user feedback for a governance decision.
+
+    Accepts feedback (thumbs up/down, outcome confirmation) on governance decisions
+    made by the model. Feedback is stored for continuous learning and model improvement.
+    """
+    if not agent_bus:
+        raise HTTPException(status_code=503, detail="Agent bus not initialized")
+
+    try:
+        # Get the feedback handler and store the feedback
+        handler = get_feedback_handler()
+        response = handler.store_feedback(request)
+
+        logger.info(
+            f"Feedback submitted: decision_id={request.decision_id}, "
+            f"feedback_type={request.feedback_type.value}, "
+            f"feedback_id={response.feedback_id}"
+        )
+
+        return response
+
+    except ValueError as e:
+        logger.warning(f"Invalid feedback data: {e}")
+        raise HTTPException(status_code=400, detail=str(e)) from None
+    except Exception as e:
+        logger.error(f"Error submitting feedback: {e}")
+        raise HTTPException(status_code=500, detail=str(e)) from None
 
 
 if __name__ == "__main__":
