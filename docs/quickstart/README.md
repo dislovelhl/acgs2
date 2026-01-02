@@ -1297,32 +1297,52 @@ For detailed troubleshooting, see [Troubleshooting Guide](./troubleshooting.md).
 
 ## Feedback
 
-We want to hear from you! Your feedback helps us improve the onboarding experience.
+We want to hear from you! Your feedback directly shapes the future of ACGS-2.
+
+> **Target**: Help us maintain **< 30 minute** completion time and **> 4.0/5.0** satisfaction score
 
 ### Share Your Experience
 
-After completing this quickstart, please take a moment to share your feedback:
+After completing this quickstart, please take **2-3 minutes** to share your feedback:
 
-**[📝 Quickstart Feedback Survey](../feedback.md)**
+| Action | Description |
+|--------|-------------|
+| **[📝 Submit Feedback Survey](../feedback.md)** | Comprehensive feedback form (recommended) |
+| **[🐛 Report an Issue](https://github.com/ACGS-Project/ACGS-2/issues/new?labels=documentation,quickstart)** | Report bugs or unclear sections |
+| **[💡 Request Features](https://github.com/ACGS-Project/ACGS-2/issues/new?labels=enhancement)** | Suggest new examples or improvements |
 
-### Feedback Questions
+### Quick Feedback (30 seconds)
 
-- How long did it take to complete this guide?
-- What was the most confusing part?
-- What would you like to see improved?
-- What additional examples would be helpful?
+Rate your experience:
 
-### Report Issues
+```
+Overall Satisfaction: ___ / 5 (1=Poor, 5=Excellent)
+Time to Complete:     ___ minutes
+Hardest Section:      ________________
+Would Recommend:      Yes / No / Maybe
+```
 
-- **Documentation Issues**: Open an issue with the `documentation` label
-- **Technical Issues**: Open an issue with detailed error messages
-- **Feature Requests**: Open an issue with the `enhancement` label
+**Submit via**: [GitHub Issue](https://github.com/ACGS-Project/ACGS-2/issues/new?title=[Quickstart%20Feedback]&labels=feedback,quickstart) or email to docs@acgs2.org
+
+### What We Measure
+
+Your feedback helps us track:
+
+| Metric | Target | Help Us By |
+|--------|--------|------------|
+| Time-to-First-Success | < 30 min | Report actual completion time |
+| Developer Satisfaction | > 4.0/5.0 | Rate your experience honestly |
+| Completion Rate | > 80% | Tell us if you got stuck |
+| Issue Resolution | < 24 hours | Report technical problems |
 
 ### Contact
 
-- **Community Forum**: forum.acgs2.org
-- **Enterprise Support**: enterprise@acgs2.org
-- **Documentation Team**: docs@acgs2.org
+| Channel | Purpose | Response Time |
+|---------|---------|---------------|
+| **[Feedback Form](../feedback.md)** | Detailed feedback | Reviewed weekly |
+| **docs@acgs2.org** | Documentation questions | 48-72 hours |
+| **enterprise@acgs2.org** | Enterprise support | 24 hours |
+| **GitHub Issues** | Bug reports | 24-48 hours |
 
 ---
 
