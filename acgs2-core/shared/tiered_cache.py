@@ -231,8 +231,10 @@ class TieredCacheManager:
         self._stats = TieredCacheStats()
         self._stats_lock = threading.Lock()
 
-        # Degraded mode flag
+        # Degraded mode tracking
         self._l2_degraded = False
+        self._last_l2_failure: float = 0.0
+        self._l2_recovery_interval: float = 30.0  # Try to recover every 30 seconds
 
         # Register for Redis health changes
         self._redis_config.register_health_callback(self._on_redis_health_change)
@@ -304,14 +306,56 @@ class TieredCacheManager:
         """
         if new_state == RedisHealthState.UNHEALTHY:
             self._l2_degraded = True
+            self._last_l2_failure = time.time()
             logger.warning(
-                f"[{CONSTITUTIONAL_HASH}] Redis unhealthy, " f"switching to degraded mode (L1 + L3)"
+                f"[{CONSTITUTIONAL_HASH}] Redis unhealthy, switching to degraded mode (L1 + L3)"
             )
         elif new_state == RedisHealthState.HEALTHY and self._l2_degraded:
             self._l2_degraded = False
+            self._last_l2_failure = 0.0
             logger.info(
-                f"[{CONSTITUTIONAL_HASH}] Redis recovered, " f"resuming normal tiered operation"
+                f"[{CONSTITUTIONAL_HASH}] Redis recovered, resuming normal tiered operation"
             )
+
+    def _should_try_l2_recovery(self) -> bool:
+        """
+        Check if enough time has passed to attempt L2 recovery.
+
+        Returns:
+            True if recovery should be attempted
+        """
+        if not self._l2_degraded:
+            return False
+        if self._l2_client is None:
+            return False
+        return time.time() - self._last_l2_failure >= self._l2_recovery_interval
+
+    async def _try_l2_recovery(self) -> bool:
+        """
+        Attempt to recover L2 Redis connection.
+
+        Called periodically when in degraded mode to check if Redis is back.
+
+        Returns:
+            True if recovery succeeded
+        """
+        if not self._l2_degraded or self._l2_client is None:
+            return not self._l2_degraded
+
+        try:
+            await self._l2_client.ping()
+            self._l2_degraded = False
+            self._last_l2_failure = 0.0
+            logger.info(
+                f"[{CONSTITUTIONAL_HASH}] L2 Redis connection recovered, "
+                f"resuming normal tiered operation"
+            )
+            return True
+        except Exception as e:
+            # Still down, update failure time for next recovery attempt
+            self._last_l2_failure = time.time()
+            logger.debug(f"[{CONSTITUTIONAL_HASH}] L2 recovery attempt failed: {e}")
+            return False
 
     def get(
         self,
@@ -447,6 +491,9 @@ class TieredCacheManager:
         """
         Delete a key from all cache tiers.
 
+        Gracefully handles Redis unavailability - continues to delete
+        from L1 and L3 even if L2 fails.
+
         Args:
             key: Cache key to delete
 
@@ -459,14 +506,18 @@ class TieredCacheManager:
         if self._l1_cache.delete(key):
             deleted = True
 
-        # Delete from L2
+        # Delete from L2 (graceful degradation)
         if self._l2_client and not self._l2_degraded:
             try:
                 result = await self._l2_client.delete(key)
                 if result:
                     deleted = True
             except Exception as e:
-                logger.warning(f"L2 delete failed for key '{key}': {e}")
+                logger.warning(f"[{CONSTITUTIONAL_HASH}] L2 delete failed for key '{key}': {e}")
+                with self._stats_lock:
+                    self._stats.redis_failures += 1
+                self._l2_degraded = True
+                self._last_l2_failure = time.time()
 
         # Delete from L3
         with self._l3_lock:
@@ -484,6 +535,9 @@ class TieredCacheManager:
         """
         Check if a key exists in any cache tier.
 
+        Gracefully handles Redis unavailability - continues to check
+        L1 and L3 even if L2 fails.
+
         Args:
             key: Cache key
 
@@ -494,14 +548,18 @@ class TieredCacheManager:
         if self._l1_cache.exists(key):
             return True
 
-        # Check L2
+        # Check L2 (graceful degradation)
         if self._l2_client and not self._l2_degraded:
             try:
                 exists = await self._l2_client.exists(key)
                 if exists:
                     return True
             except Exception as e:
-                logger.warning(f"L2 exists check failed: {e}")
+                logger.warning(f"[{CONSTITUTIONAL_HASH}] L2 exists check failed: {e}")
+                with self._stats_lock:
+                    self._stats.redis_failures += 1
+                self._l2_degraded = True
+                self._last_l2_failure = time.time()
 
         # Check L3
         with self._l3_lock:
@@ -596,9 +654,16 @@ class TieredCacheManager:
         return self._deserialize(value) if value is not None else None
 
     async def _get_from_l2(self, key: str) -> Optional[Any]:
-        """Get from L2 (Redis cache)."""
-        if not self._l2_client or self._l2_degraded:
+        """Get from L2 (Redis cache) with graceful degradation."""
+        if not self._l2_client:
             return None
+
+        # If degraded, check if we should try recovery
+        if self._l2_degraded:
+            if self._should_try_l2_recovery():
+                await self._try_l2_recovery()
+            if self._l2_degraded:
+                return None
 
         try:
             cached_json = await self._l2_client.get(key)
@@ -612,10 +677,12 @@ class TieredCacheManager:
                 with self._stats_lock:
                     self._stats.l2_misses += 1
         except Exception as e:
-            logger.warning(f"L2 get failed for key '{key}': {e}")
+            logger.warning(f"[{CONSTITUTIONAL_HASH}] L2 get failed for key '{key}': {e}")
             with self._stats_lock:
                 self._stats.redis_failures += 1
+            # Enter degraded mode - operations continue via L1 + L3
             self._l2_degraded = True
+            self._last_l2_failure = time.time()
 
         return None
 
@@ -648,11 +715,20 @@ class TieredCacheManager:
         self._update_tier(key, CacheTier.L1)
 
     async def _set_in_l2(self, key: str, value: Any, ttl: Optional[int] = None) -> None:
-        """Set in L2 (Redis cache)."""
-        if not self._l2_client or self._l2_degraded:
-            # Fall back to L3 when Redis unavailable
+        """Set in L2 (Redis cache) with graceful degradation to L3."""
+        if not self._l2_client:
+            # No Redis client, fall back to L3
             self._set_in_l3(key, value, ttl)
             return
+
+        # If degraded, check if we should try recovery
+        if self._l2_degraded:
+            if self._should_try_l2_recovery():
+                await self._try_l2_recovery()
+            if self._l2_degraded:
+                # Still degraded, fall back to L3
+                self._set_in_l3(key, value, ttl)
+                return
 
         effective_ttl = ttl or self.config.l2_ttl
         cache_data = {"data": value, "timestamp": time.time()}
@@ -661,10 +737,12 @@ class TieredCacheManager:
             await self._l2_client.setex(key, effective_ttl, json.dumps(cache_data))
             self._update_tier(key, CacheTier.L2)
         except Exception as e:
-            logger.warning(f"L2 set failed for key '{key}': {e}")
+            logger.warning(f"[{CONSTITUTIONAL_HASH}] L2 set failed for key '{key}': {e}")
             with self._stats_lock:
                 self._stats.redis_failures += 1
-            # Fall back to L3
+            # Enter degraded mode and fall back to L3
+            self._l2_degraded = True
+            self._last_l2_failure = time.time()
             self._set_in_l3(key, value, ttl)
 
     def _set_in_l3(self, key: str, value: Any, ttl: Optional[int] = None) -> None:
@@ -891,6 +969,39 @@ class TieredCacheManager:
     def is_l2_available(self) -> bool:
         """Check if L2 (Redis) is available."""
         return self._l2_client is not None and not self._l2_degraded
+
+    @property
+    def is_degraded(self) -> bool:
+        """Check if cache is running in degraded mode (L2 unavailable)."""
+        return self._l2_degraded
+
+    async def check_l2_health(self) -> bool:
+        """
+        Explicitly check L2 (Redis) health and attempt recovery if degraded.
+
+        This method can be called periodically or on-demand to check if
+        Redis has recovered and restore normal operation.
+
+        Returns:
+            True if L2 is healthy and available
+        """
+        if self._l2_client is None:
+            return False
+
+        if self._l2_degraded:
+            return await self._try_l2_recovery()
+
+        # Not degraded, verify connection is still good
+        try:
+            await self._l2_client.ping()
+            return True
+        except Exception as e:
+            logger.warning(f"[{CONSTITUTIONAL_HASH}] L2 health check failed: {e}")
+            with self._stats_lock:
+                self._stats.redis_failures += 1
+            self._l2_degraded = True
+            self._last_l2_failure = time.time()
+            return False
 
     def __repr__(self) -> str:
         """String representation."""
