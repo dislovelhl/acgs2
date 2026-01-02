@@ -12,6 +12,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 from ..core.audit_ledger import AuditLedger
+from .api.governance import router as governance_router
 
 # Centralized settings
 try:
@@ -58,6 +59,13 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+)
+
+# Include API routers
+app.include_router(
+    governance_router,
+    prefix="/api/v1/governance",
+    tags=["governance"],
 )
 
 
@@ -107,7 +115,7 @@ async def record_validation(result: Dict[str, Any]):
         raise HTTPException(
             status_code=500,
             detail="Audit service error. Please contact support if the problem persists.",
-        )
+        ) from None
 
 
 @app.post("/verify")
