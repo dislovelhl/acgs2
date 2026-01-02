@@ -59,3 +59,10 @@ firebase-debug.log
 
 # Claude settings
 .claude_settings.json
+
+# Git worktrees
+.worktrees/
+
+# Context and index files
+context.json
+project_index.json
