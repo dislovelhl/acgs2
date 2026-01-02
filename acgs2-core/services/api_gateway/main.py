@@ -3,9 +3,7 @@ ACGS-2 API Gateway
 Simple development API gateway for routing requests to services
 """
 
-import asyncio
 import json
-import logging
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -14,18 +12,36 @@ from fastapi import BackgroundTasks, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
-
 from shared.config import settings
+from shared.logging_config import (
+    configure_logging,
+    get_logger,
+    instrument_fastapi,
+    setup_opentelemetry,
+)
+from shared.middleware.correlation_id import add_correlation_id_middleware
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+# Service name for logging and tracing
+SERVICE_NAME = "api_gateway"
+
+# Configure structured logging (MUST be called before any logging)
+configure_logging(service_name=SERVICE_NAME)
+
+# Get structured logger
+logger = get_logger(__name__)
 
 app = FastAPI(
     title="ACGS-2 API Gateway",
     description="Development API Gateway for ACGS-2 services",
     version="1.0.0",
 )
+
+# Initialize OpenTelemetry for distributed tracing
+setup_opentelemetry(service_name=SERVICE_NAME)
+instrument_fastapi(app)
+
+# Add correlation ID middleware (MUST be before other middleware for proper context)
+add_correlation_id_middleware(app, service_name=SERVICE_NAME)
 
 # Add CORS middleware
 app.add_middleware(
@@ -106,7 +122,7 @@ async def submit_feedback(
         # Save feedback asynchronously
         background_tasks.add_task(save_feedback_to_file, feedback_record)
 
-        logger.info(f"Feedback submitted: {feedback_id} - {feedback.category}")
+        logger.info("feedback_submitted", feedback_id=feedback_id, category=feedback.category)
 
         return FeedbackResponse(
             feedback_id=feedback_id,
@@ -116,8 +132,13 @@ async def submit_feedback(
         )
 
     except Exception as e:
-        logger.error(f"Error processing feedback: {e}")
-        raise HTTPException(status_code=500, detail="Failed to process feedback")
+        logger.error(
+            "feedback_processing_failed",
+            error_type=type(e).__name__,
+            error_message=str(e),
+            exc_info=True,
+        )
+        raise HTTPException(status_code=500, detail="Failed to process feedback") from e
 
 
 @app.get("/feedback/stats")
@@ -157,8 +178,13 @@ async def get_feedback_stats():
         }
 
     except Exception as e:
-        logger.error(f"Error getting feedback stats: {e}")
-        raise HTTPException(status_code=500, detail="Failed to retrieve feedback statistics")
+        logger.error(
+            "feedback_stats_retrieval_failed",
+            error_type=type(e).__name__,
+            error_message=str(e),
+            exc_info=True,
+        )
+        raise HTTPException(status_code=500, detail="Failed to retrieve feedback statistics") from e
 
 
 # Service discovery endpoint
@@ -179,7 +205,7 @@ async def list_services():
                     service_info["health"] = (
                         "healthy" if response.status_code == 200 else "unhealthy"
                     )
-            except:
+            except Exception:
                 service_info["health"] = "unreachable"
 
     return services
@@ -222,11 +248,22 @@ async def proxy_to_agent_bus(request: Request, path: str):
             )
 
     except httpx.RequestError as e:
-        logger.error(f"Request error: {e}")
-        raise HTTPException(status_code=502, detail="Service unavailable")
+        logger.error(
+            "proxy_request_failed",
+            target_url=target_url,
+            error_type=type(e).__name__,
+            error_message=str(e),
+        )
+        raise HTTPException(status_code=502, detail="Service unavailable") from e
     except Exception as e:
-        logger.error(f"Unexpected error: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        logger.error(
+            "proxy_unexpected_error",
+            target_url=target_url,
+            error_type=type(e).__name__,
+            error_message=str(e),
+            exc_info=True,
+        )
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 async def save_feedback_to_file(feedback_record: dict):
@@ -238,9 +275,15 @@ async def save_feedback_to_file(feedback_record: dict):
         with open(file_path, "w") as f:
             json.dump(feedback_record, f, indent=2)
 
-        logger.info(f"Feedback saved: {feedback_id}")
+        logger.info("feedback_saved", feedback_id=feedback_id)
     except Exception as e:
-        logger.error(f"Error saving feedback {feedback_record.get('feedback_id')}: {e}")
+        logger.error(
+            "feedback_save_failed",
+            feedback_id=feedback_record.get("feedback_id"),
+            error_type=type(e).__name__,
+            error_message=str(e),
+            exc_info=True,
+        )
 
 
 if __name__ == "__main__":
