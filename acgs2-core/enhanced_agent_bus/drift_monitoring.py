@@ -225,9 +225,29 @@ class DriftDetector:
 
             if isinstance(data, (str, Path)):
                 path = Path(data)
+
+                # Try to find the file, with fallback to alternative format
                 if not path.exists():
-                    logger.error(f"Reference data file not found: {path}")
-                    return False
+                    # Try alternative format (parquet -> csv or csv -> parquet)
+                    if path.suffix == ".parquet":
+                        alt_path = path.with_suffix(".csv")
+                        if alt_path.exists():
+                            logger.info(f"Parquet file not found, using CSV fallback: {alt_path}")
+                            path = alt_path
+                        else:
+                            logger.error(f"Reference data file not found: {path}")
+                            return False
+                    elif path.suffix == ".csv":
+                        alt_path = path.with_suffix(".parquet")
+                        if alt_path.exists():
+                            logger.info(f"CSV file not found, using parquet fallback: {alt_path}")
+                            path = alt_path
+                        else:
+                            logger.error(f"Reference data file not found: {path}")
+                            return False
+                    else:
+                        logger.error(f"Reference data file not found: {path}")
+                        return False
 
                 if path.suffix == ".parquet":
                     self._reference_data = pd_module.read_parquet(path)
