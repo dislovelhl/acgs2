@@ -1,0 +1,659 @@
+/**
+ * ACGS-2 Compliance Report Styles
+ *
+ * Professional styling for audit and compliance reports.
+ * Supports PDF generation via WeasyPrint.
+ *
+ * Variables:
+ * --brand-color: Primary brand color (set via template)
+ * --brand-color-light: Light variant for backgrounds
+ * --brand-color-dark: Dark variant for accents
+ */
+
+/* ==========================================================================
+   CSS Reset & Base Styles
+   ========================================================================== */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html {
+    font-size: 11pt;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+}
+
+body {
+    font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
+    font-size: 1rem;
+    line-height: 1.6;
+    color: #333333;
+    background-color: #ffffff;
+    padding: 0;
+    margin: 0;
+}
+
+/* ==========================================================================
+   Print & PDF Styles
+   ========================================================================== */
+
+@page {
+    size: A4;
+    margin: 2cm 1.5cm;
+}
+
+@media print {
+    body {
+        padding: 0;
+    }
+
+    .section {
+        page-break-inside: avoid;
+    }
+
+    .data-table {
+        page-break-inside: auto;
+    }
+
+    .data-table tr {
+        page-break-inside: avoid;
+        page-break-after: auto;
+    }
+}
+
+/* ==========================================================================
+   Header Styles
+   ========================================================================== */
+
+.report-header {
+    margin-bottom: 30px;
+}
+
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding-bottom: 20px;
+}
+
+.company-branding {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.logo-container {
+    flex-shrink: 0;
+}
+
+.company-logo {
+    max-height: 60px;
+    max-width: 150px;
+    object-fit: contain;
+}
+
+.company-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.company-name {
+    font-size: 24pt;
+    font-weight: 700;
+    color: var(--brand-color, #003366);
+    margin-bottom: 5px;
+    line-height: 1.2;
+}
+
+.report-type {
+    font-size: 14pt;
+    color: #666666;
+    font-weight: 400;
+}
+
+.report-meta {
+    text-align: right;
+    font-size: 10pt;
+}
+
+.meta-item {
+    margin-bottom: 5px;
+}
+
+.meta-label {
+    color: #666666;
+    font-weight: 600;
+}
+
+.meta-value {
+    color: #333333;
+    margin-left: 5px;
+}
+
+.header-divider {
+    height: 3px;
+    background: linear-gradient(90deg, var(--brand-color, #003366) 0%, var(--brand-color, #003366) 60%, transparent 100%);
+    border-radius: 2px;
+}
+
+/* ==========================================================================
+   Metadata Section
+   ========================================================================== */
+
+.metadata-section {
+    margin-bottom: 30px;
+}
+
+.metadata-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 15px;
+}
+
+.metadata-card {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    border-left: 3px solid var(--brand-color, #003366);
+}
+
+.metadata-label {
+    display: block;
+    font-size: 9pt;
+    color: #666666;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 5px;
+}
+
+.metadata-value {
+    display: block;
+    font-size: 12pt;
+    font-weight: 600;
+    color: #333333;
+}
+
+/* ==========================================================================
+   Section Styles
+   ========================================================================== */
+
+.section {
+    margin-bottom: 30px;
+}
+
+.section-title {
+    font-size: 14pt;
+    font-weight: 700;
+    color: var(--brand-color, #003366);
+    border-bottom: 2px solid var(--brand-color, #003366);
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+}
+
+.subsection-title {
+    font-size: 12pt;
+    font-weight: 600;
+    color: #444444;
+    margin: 20px 0 15px 0;
+}
+
+/* ==========================================================================
+   Executive Summary
+   ========================================================================== */
+
+.executive-summary .summary-content {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    padding: 25px;
+    border-radius: 10px;
+}
+
+.kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+}
+
+.kpi-card {
+    background: #ffffff;
+    padding: 20px;
+    border-radius: 8px;
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.kpi-value {
+    font-size: 28pt;
+    font-weight: 700;
+    color: var(--brand-color, #003366);
+    line-height: 1.2;
+    margin-bottom: 8px;
+}
+
+.kpi-label {
+    font-size: 9pt;
+    color: #666666;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* ==========================================================================
+   Data Tables
+   ========================================================================== */
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 15px 0;
+    font-size: 10pt;
+}
+
+.data-table th,
+.data-table td {
+    border: 1px solid #dee2e6;
+    padding: 12px 10px;
+    text-align: left;
+}
+
+.data-table th {
+    background: var(--brand-color, #003366);
+    color: #ffffff;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 9pt;
+    letter-spacing: 0.5px;
+}
+
+.data-table tbody tr:nth-child(even) {
+    background: #f8f9fa;
+}
+
+.data-table tbody tr:hover {
+    background: #e9ecef;
+}
+
+.violations-table {
+    max-width: 400px;
+}
+
+/* ==========================================================================
+   Status & Risk Indicators
+   ========================================================================== */
+
+.status-pass,
+.integrity-valid {
+    color: #28a745;
+    font-weight: 600;
+}
+
+.status-review,
+.status-fail,
+.integrity-invalid {
+    color: #dc3545;
+    font-weight: 600;
+}
+
+.status-pending,
+.integrity-unknown {
+    color: #6c757d;
+    font-weight: 600;
+}
+
+.risk-high {
+    color: #dc3545;
+    font-weight: 700;
+}
+
+.risk-medium {
+    color: #ffc107;
+    font-weight: 600;
+}
+
+.risk-low {
+    color: #28a745;
+    font-weight: 600;
+}
+
+.decision-allow {
+    color: #28a745;
+}
+
+.decision-deny {
+    color: #dc3545;
+}
+
+/* ==========================================================================
+   Attestation Section
+   ========================================================================== */
+
+.attestation-section {
+    background: #e8f5e9;
+    border: 1px solid #4caf50;
+    border-radius: 10px;
+    padding: 25px;
+    margin: 30px 0;
+}
+
+.attestation-title {
+    font-size: 14pt;
+    font-weight: 700;
+    color: #2e7d32;
+    margin-bottom: 15px;
+}
+
+.attestation-content {
+    background: #ffffff;
+    padding: 20px;
+    border-radius: 8px;
+}
+
+.attestation-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+}
+
+.attestation-item {
+    display: flex;
+    flex-direction: column;
+}
+
+.attestation-label {
+    font-size: 9pt;
+    color: #666666;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 5px;
+}
+
+.attestation-value {
+    font-size: 11pt;
+    color: #333333;
+    font-weight: 500;
+}
+
+.hash-value {
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-size: 10pt;
+    background: #f5f5f5;
+    padding: 5px 10px;
+    border-radius: 4px;
+    word-break: break-all;
+}
+
+/* ==========================================================================
+   Footer Styles
+   ========================================================================== */
+
+.report-footer {
+    margin-top: 40px;
+    padding-top: 20px;
+    border-top: 2px solid #dee2e6;
+}
+
+.footer-content {
+    text-align: center;
+}
+
+.footer-branding {
+    margin-bottom: 10px;
+}
+
+.generated-by {
+    font-size: 11pt;
+    color: var(--brand-color, #003366);
+    font-weight: 600;
+}
+
+.footer-meta {
+    font-size: 9pt;
+    color: #666666;
+    margin-bottom: 15px;
+}
+
+.footer-meta .separator {
+    margin: 0 10px;
+    color: #dee2e6;
+}
+
+.footer-legal {
+    font-size: 8pt;
+    color: #999999;
+    line-height: 1.8;
+}
+
+.footer-legal code {
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    background: #f5f5f5;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 7pt;
+}
+
+/* ==========================================================================
+   Utility Classes
+   ========================================================================== */
+
+.no-data {
+    color: #6c757d;
+    font-style: italic;
+    padding: 20px;
+    text-align: center;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+.text-center {
+    text-align: center;
+}
+
+.text-right {
+    text-align: right;
+}
+
+.mt-20 {
+    margin-top: 20px;
+}
+
+.mb-20 {
+    margin-bottom: 20px;
+}
+
+/* ==========================================================================
+   Framework-Specific Color Schemes
+   ========================================================================== */
+
+/* SOC 2 - Blue scheme */
+.framework-soc2 {
+    --brand-color: #1565c0;
+    --brand-color-light: #1565c01a;
+    --brand-color-dark: #0d47a1;
+}
+
+/* ISO 27001 - Teal scheme */
+.framework-iso27001 {
+    --brand-color: #00695c;
+    --brand-color-light: #00695c1a;
+    --brand-color-dark: #004d40;
+}
+
+/* GDPR - Purple scheme */
+.framework-gdpr {
+    --brand-color: #6a1b9a;
+    --brand-color-light: #6a1b9a1a;
+    --brand-color-dark: #4a148c;
+}
+
+/* ISO 42001 - Default blue */
+.framework-iso42001 {
+    --brand-color: #003366;
+    --brand-color-light: #0033661a;
+    --brand-color-dark: #002244;
+}
+
+/* ==========================================================================
+   Framework Badges
+   ========================================================================== */
+
+.framework-badge {
+    display: inline-block;
+    background: var(--brand-color, #003366);
+    color: #ffffff;
+    padding: 5px 12px;
+    border-radius: 4px;
+    font-size: 9pt;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-right: 8px;
+    margin-bottom: 5px;
+}
+
+.badge-soc2 {
+    background: #1565c0;
+}
+
+.badge-iso27001 {
+    background: #00695c;
+}
+
+.badge-gdpr {
+    background: #6a1b9a;
+}
+
+.badge-iso42001 {
+    background: #003366;
+}
+
+.badge-euaiact {
+    background: #c62828;
+}
+
+.badge-nist {
+    background: #2e7d32;
+}
+
+/* ==========================================================================
+   Control Sections (for framework templates)
+   ========================================================================== */
+
+.control-section {
+    margin-bottom: 25px;
+}
+
+.control-header {
+    background: var(--brand-color-light, #0033661a);
+    padding: 15px;
+    border-radius: 8px 8px 0 0;
+    border-left: 4px solid var(--brand-color, #003366);
+}
+
+.control-title {
+    font-size: 12pt;
+    font-weight: 600;
+    color: var(--brand-color, #003366);
+    margin: 0;
+}
+
+.control-description {
+    font-size: 10pt;
+    color: #666666;
+    margin-top: 5px;
+}
+
+.control-body {
+    background: #ffffff;
+    border: 1px solid #dee2e6;
+    border-top: none;
+    border-radius: 0 0 8px 8px;
+    padding: 15px;
+}
+
+.control-status {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 4px;
+    font-size: 9pt;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.control-status-compliant {
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+
+.control-status-non-compliant {
+    background: #ffebee;
+    color: #c62828;
+}
+
+.control-status-partial {
+    background: #fff3e0;
+    color: #ef6c00;
+}
+
+/* ==========================================================================
+   NIST RMF Grid (for ISO 42001 and general reports)
+   ========================================================================== */
+
+.nist-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 15px;
+    margin: 20px 0;
+}
+
+.nist-card {
+    background: #f0f4f8;
+    padding: 15px;
+    border-radius: 8px;
+    text-align: center;
+}
+
+.nist-function {
+    font-size: 10pt;
+    font-weight: 700;
+    color: var(--brand-color, #003366);
+    text-transform: uppercase;
+    margin-bottom: 5px;
+}
+
+.nist-count {
+    font-size: 24pt;
+    font-weight: 700;
+    color: #333333;
+}
+
+/* ==========================================================================
+   Responsive Adjustments (for screen viewing)
+   ========================================================================== */
+
+@media screen and (max-width: 768px) {
+    .header-content {
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .report-meta {
+        text-align: left;
+    }
+
+    .metadata-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .kpi-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .attestation-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .nist-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
