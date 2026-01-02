@@ -3,11 +3,14 @@ ACGS-2 SDPC - Intent Classifier
 Constitutional Hash: cdd01ef066bc6cf2
 
 Categorizes user intent for dynamic routing and prompt compilation.
+Implements hybrid classification with LLM fallback for ambiguous cases.
 """
 
 import logging
+import os
 from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple
+from urllib.parse import urlparse
 
 
 class IntentType(Enum):
@@ -18,6 +21,39 @@ class IntentType(Enum):
 
 
 logger = logging.getLogger(__name__)
+
+# LiteLLM availability flag
+LITELLM_AVAILABLE = False
+
+
+# Mock classes for test friendliness when LiteLLM is missing
+class MockLiteLLMCache:
+    """Mock cache class for when LiteLLM is not available."""
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        pass
+
+
+class MockLiteLLM:
+    """Mock LiteLLM module for when it's not available."""
+
+    cache: Optional[Any] = None
+
+    @staticmethod
+    async def acompletion(*args: Any, **kwargs: Any) -> Dict[str, Any]:
+        """Mock async completion that returns empty response."""
+        return {"choices": [{"message": {"content": "{}"}}]}
+
+
+# Attempt to import LiteLLM
+try:
+    import litellm
+    from litellm import Cache
+
+    LITELLM_AVAILABLE = True
+except ImportError:
+    litellm = MockLiteLLM()  # type: ignore[assignment]
+    Cache = MockLiteLLMCache  # type: ignore[assignment, misc]
 
 
 class IntentClassifier:
@@ -69,11 +105,183 @@ class IntentClassifier:
     # Confidence for default/general classification
     DEFAULT_CONFIDENCE: float = 0.5
 
-    def __init__(self, model_name: str = "distilbert-base-uncased"):
+    # Supported LLM providers
+    SUPPORTED_PROVIDERS: List[str] = ["openai", "anthropic"]
+    # Default max tokens for Anthropic (required parameter)
+    DEFAULT_ANTHROPIC_MAX_TOKENS: int = 100
+
+    def __init__(
+        self,
+        model_name: str = "distilbert-base-uncased",
+        llm_enabled: bool = True,
+        llm_model_version: str = "openai/gpt-4o-mini",
+        llm_cache_ttl: int = 3600,
+        llm_confidence_threshold: float = 0.7,
+        llm_max_tokens: int = 100,
+        redis_url: Optional[str] = None,
+    ):
+        """Initialize the IntentClassifier with optional LLM support.
+
+        Args:
+            model_name: Name of the classification model (for logging/metadata).
+            llm_enabled: Whether to enable LLM-based classification for ambiguous cases.
+            llm_model_version: LLM model with provider prefix (e.g., "openai/gpt-4o-mini").
+            llm_cache_ttl: Cache TTL in seconds for LLM responses.
+            llm_confidence_threshold: Confidence threshold below which LLM is invoked.
+            llm_max_tokens: Maximum tokens for LLM response (required for Anthropic).
+            redis_url: Redis URL for caching (e.g., "redis://localhost:6379/0").
+        """
         self.model_name = model_name
-        # In a real implementation, we would load a distilled LLM or BERT model here.
-        # For Phase 1, we use dynamic heuristic pattern matching with an LLM fallback hook.
-        logger.info(f"IntentClassifier initialized with model: {model_name}")
+        self.llm_enabled = llm_enabled
+        self.llm_model_version = llm_model_version
+        self.llm_cache_ttl = llm_cache_ttl
+        self.llm_confidence_threshold = llm_confidence_threshold
+        self.llm_max_tokens = llm_max_tokens
+        self.redis_url = redis_url or os.environ.get("REDIS_URL", "redis://localhost:6379/0")
+
+        # LLM client state
+        self._llm_client_initialized = False
+        self._cache_initialized = False
+
+        # Initialize LLM client if enabled
+        if self.llm_enabled:
+            self._init_llm_client()
+
+        logger.info(
+            f"IntentClassifier initialized with model: {model_name}, "
+            f"llm_enabled: {llm_enabled}, llm_model: {llm_model_version}"
+        )
+
+    def _parse_redis_url(self) -> Dict[str, Any]:
+        """Parse Redis URL to extract connection parameters for LiteLLM Cache.
+
+        Returns:
+            Dict with host, port, and optionally password for Redis connection.
+        """
+        try:
+            parsed = urlparse(self.redis_url)
+            result: Dict[str, Any] = {
+                "host": parsed.hostname or "localhost",
+                "port": parsed.port or 6379,
+            }
+            if parsed.password:
+                result["password"] = parsed.password
+            return result
+        except Exception as e:
+            logger.warning(f"Failed to parse Redis URL '{self.redis_url}': {e}")
+            return {"host": "localhost", "port": 6379}
+
+    def _get_provider(self) -> str:
+        """Extract provider from model version string.
+
+        Returns:
+            Provider name (e.g., "openai", "anthropic").
+        """
+        if "/" in self.llm_model_version:
+            return self.llm_model_version.split("/")[0].lower()
+        return "openai"  # Default provider
+
+    def _validate_provider(self) -> bool:
+        """Validate that the configured provider is supported.
+
+        Returns:
+            True if provider is supported, False otherwise.
+        """
+        provider = self._get_provider()
+        if provider not in self.SUPPORTED_PROVIDERS:
+            logger.warning(
+                f"Unsupported LLM provider '{provider}'. "
+                f"Supported providers: {self.SUPPORTED_PROVIDERS}"
+            )
+            return False
+        return True
+
+    def _init_llm_client(self) -> bool:
+        """Initialize the LLM client with Redis caching support.
+
+        Initializes LiteLLM cache globally and validates provider configuration.
+
+        Returns:
+            True if initialization was successful, False otherwise.
+        """
+        if not LITELLM_AVAILABLE:
+            logger.warning(
+                "LiteLLM not available. LLM classification will fall back to rule-based."
+            )
+            self._llm_client_initialized = False
+            return False
+
+        # Validate provider
+        if not self._validate_provider():
+            self._llm_client_initialized = False
+            return False
+
+        # Initialize Redis cache for LiteLLM
+        try:
+            redis_params = self._parse_redis_url()
+            litellm.cache = Cache(
+                type="redis",
+                host=redis_params["host"],
+                port=redis_params["port"],
+                password=redis_params.get("password"),
+                ttl=self.llm_cache_ttl,
+            )
+            self._cache_initialized = True
+            logger.info(
+                f"LiteLLM cache initialized with Redis at "
+                f"{redis_params['host']}:{redis_params['port']}"
+            )
+        except Exception as e:
+            logger.warning(
+                f"Failed to initialize LiteLLM Redis cache: {e}. " "Proceeding without caching."
+            )
+            self._cache_initialized = False
+
+        # Validate API key availability
+        provider = self._get_provider()
+        api_key_var = f"{provider.upper()}_API_KEY"
+        if not os.environ.get(api_key_var):
+            logger.warning(
+                f"API key not found for provider '{provider}'. "
+                f"Set {api_key_var} environment variable. "
+                "LLM classification will fall back to rule-based."
+            )
+            self._llm_client_initialized = False
+            return False
+
+        self._llm_client_initialized = True
+        logger.info(f"LLM client initialized successfully with model: {self.llm_model_version}")
+        return True
+
+    def _get_llm_params(self) -> Dict[str, Any]:
+        """Get LLM completion parameters based on provider.
+
+        Returns:
+            Dict of parameters for LiteLLM acompletion call.
+        """
+        params: Dict[str, Any] = {
+            "model": self.llm_model_version,
+            "temperature": 0.1,  # Low temperature for consistent classification
+            "caching": self._cache_initialized,  # Enable caching if available
+        }
+
+        # Anthropic requires max_tokens parameter
+        provider = self._get_provider()
+        if provider == "anthropic":
+            params["max_tokens"] = self.llm_max_tokens
+        elif provider == "openai":
+            # OpenAI uses max_tokens optionally but we set it for consistency
+            params["max_tokens"] = self.llm_max_tokens
+
+        return params
+
+    def is_llm_available(self) -> bool:
+        """Check if LLM classification is available.
+
+        Returns:
+            True if LLM client is initialized and ready, False otherwise.
+        """
+        return self.llm_enabled and self._llm_client_initialized
 
     def classify(self, content: str) -> IntentType:
         """Determines the intent type of the provided content."""
