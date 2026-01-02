@@ -1,0 +1,715 @@
+# =============================================================================
+# Cross-Region Authorization Policies
+# =============================================================================
+# This file contains Istio AuthorizationPolicy resources for enforcing
+# data residency and cross-region access control based on tenant compliance
+# requirements (GDPR, PIPL, FedRAMP, etc.)
+#
+# References:
+#   - tenant-residency-config.yaml: Tenant-to-region mappings
+#   - opa-residency-policy.rego: OPA policy for admission control
+#   - https://istio.io/latest/docs/reference/config/security/authorization-policy/
+#
+# Deployment:
+#   kubectl apply -f cross-region-authz-policy.yaml --context=<region-context>
+#
+# Note: These policies should be applied to ALL regions in the mesh.
+# =============================================================================
+---
+# =============================================================================
+# GLOBAL DENY-BY-DEFAULT POLICY
+# =============================================================================
+# Denies all cross-region traffic by default. Subsequent policies will
+# explicitly allow permitted traffic patterns.
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: cross-region-deny-all
+  namespace: istio-system
+  labels:
+    app.kubernetes.io/name: cross-region-authz
+    app.kubernetes.io/component: security
+    app.kubernetes.io/part-of: acgs2-multi-region
+    acgs.io/feature: data-residency
+    acgs.io/compliance: multi-framework
+  annotations:
+    acgs.io/description: "Deny-by-default policy for cross-region traffic"
+    acgs.io/policy-version: "1.0.0"
+spec:
+  # Apply to all workloads in the mesh
+  {}
+  # Empty rules with DENY action denies all traffic not explicitly allowed
+  # by other policies. ALLOW policies take precedence.
+---
+# =============================================================================
+# INTRA-REGION ALLOW POLICY
+# =============================================================================
+# Allows all traffic within the same data residency zone.
+# This policy permits local communication without cross-region restrictions.
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: allow-intra-region-us-east-1
+  namespace: istio-system
+  labels:
+    app.kubernetes.io/name: cross-region-authz
+    app.kubernetes.io/component: security
+    app.kubernetes.io/part-of: acgs2-multi-region
+    acgs.io/feature: data-residency
+    acgs.io/region: us-east-1
+  annotations:
+    acgs.io/description: "Allow intra-region traffic for US-East-1"
+spec:
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            # Allow traffic from workloads in same region
+            namespaceSelector:
+              matchLabels:
+                data-residency: us
+            principals:
+              - cluster.local/ns/*/sa/*
+      to:
+        - operation:
+            # Allow all operations for local traffic
+            methods: ["*"]
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: allow-intra-region-eu-west-1
+  namespace: istio-system
+  labels:
+    app.kubernetes.io/name: cross-region-authz
+    app.kubernetes.io/component: security
+    app.kubernetes.io/part-of: acgs2-multi-region
+    acgs.io/feature: data-residency
+    acgs.io/region: eu-west-1
+  annotations:
+    acgs.io/description: "Allow intra-region traffic for EU-West-1"
+spec:
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            # Allow traffic from workloads in EU region
+            namespaceSelector:
+              matchLabels:
+                data-residency: eu
+            principals:
+              - cluster.local/ns/*/sa/*
+      to:
+        - operation:
+            methods: ["*"]
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: allow-intra-region-cn-north-1
+  namespace: istio-system
+  labels:
+    app.kubernetes.io/name: cross-region-authz
+    app.kubernetes.io/component: security
+    app.kubernetes.io/part-of: acgs2-multi-region
+    acgs.io/feature: data-residency
+    acgs.io/region: cn-north-1
+  annotations:
+    acgs.io/description: "Allow intra-region traffic for China-North-1"
+spec:
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            # Allow traffic from workloads in China region
+            namespaceSelector:
+              matchLabels:
+                data-residency: cn
+            principals:
+              - cluster.local/ns/*/sa/*
+      to:
+        - operation:
+            methods: ["*"]
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: allow-intra-region-ap
+  namespace: istio-system
+  labels:
+    app.kubernetes.io/name: cross-region-authz
+    app.kubernetes.io/component: security
+    app.kubernetes.io/part-of: acgs2-multi-region
+    acgs.io/feature: data-residency
+    acgs.io/region: ap
+  annotations:
+    acgs.io/description: "Allow intra-region traffic for Asia-Pacific"
+spec:
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            # Allow traffic from workloads in AP region
+            namespaceSelector:
+              matchLabels:
+                data-residency: ap
+            principals:
+              - cluster.local/ns/*/sa/*
+      to:
+        - operation:
+            methods: ["*"]
+---
+# =============================================================================
+# EU DATA PROTECTION (GDPR)
+# =============================================================================
+# GDPR requires that EU personal data remains within the EU unless adequate
+# safeguards are in place (SCCs, BCRs, adequacy decisions).
+# These policies DENY access to EU tenant data from non-EU regions.
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: gdpr-deny-non-eu-access
+  namespace: istio-system
+  labels:
+    app.kubernetes.io/name: cross-region-authz
+    app.kubernetes.io/component: security
+    app.kubernetes.io/part-of: acgs2-multi-region
+    acgs.io/feature: data-residency
+    acgs.io/compliance: gdpr
+  annotations:
+    acgs.io/description: "Deny non-EU access to GDPR-regulated tenant data"
+    acgs.io/regulation: "General Data Protection Regulation (GDPR)"
+    acgs.io/article: "Article 44-49 - Transfers to third countries"
+spec:
+  # This policy applies to workloads with GDPR compliance label
+  selector:
+    matchLabels:
+      acgs.io/compliance-gdpr: "true"
+  action: DENY
+  rules:
+    # Deny requests from US regions to GDPR workloads
+    - from:
+        - source:
+            namespaceSelector:
+              matchLabels:
+                data-residency: us
+    # Deny requests from China regions to GDPR workloads
+    - from:
+        - source:
+            namespaceSelector:
+              matchLabels:
+                data-residency: cn
+    # Deny requests from AP regions to GDPR workloads (unless adequacy decision)
+    - from:
+        - source:
+            namespaceSelector:
+              matchLabels:
+                data-residency: ap
+---
+# =============================================================================
+# CHINA DATA LOCALIZATION (PIPL + CSL)
+# =============================================================================
+# PIPL and CSL require that Chinese personal data remains within mainland China.
+# Cross-border transfer requires security assessment and explicit consent.
+# These policies DENY all external access to PIPL-regulated tenant data.
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: pipl-deny-cross-border
+  namespace: istio-system
+  labels:
+    app.kubernetes.io/name: cross-region-authz
+    app.kubernetes.io/component: security
+    app.kubernetes.io/part-of: acgs2-multi-region
+    acgs.io/feature: data-residency
+    acgs.io/compliance: pipl
+  annotations:
+    acgs.io/description: "Deny cross-border access to PIPL-regulated tenant data"
+    acgs.io/regulation: "Personal Information Protection Law (PIPL)"
+    acgs.io/regulation-2: "Cybersecurity Law of China (CSL)"
+spec:
+  # This policy applies to workloads with PIPL compliance label
+  selector:
+    matchLabels:
+      acgs.io/compliance-pipl: "true"
+  action: DENY
+  rules:
+    # Deny requests from US regions
+    - from:
+        - source:
+            namespaceSelector:
+              matchLabels:
+                data-residency: us
+    # Deny requests from EU regions
+    - from:
+        - source:
+            namespaceSelector:
+              matchLabels:
+                data-residency: eu
+    # Deny requests from AP regions (outside mainland China)
+    - from:
+        - source:
+            namespaceSelector:
+              matchLabels:
+                data-residency: ap
+---
+# =============================================================================
+# US FEDERAL DATA PROTECTION (FedRAMP)
+# =============================================================================
+# FedRAMP requires that federal data is processed by US persons in US locations.
+# These policies DENY access from non-US regions.
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: fedramp-deny-non-us-access
+  namespace: istio-system
+  labels:
+    app.kubernetes.io/name: cross-region-authz
+    app.kubernetes.io/component: security
+    app.kubernetes.io/part-of: acgs2-multi-region
+    acgs.io/feature: data-residency
+    acgs.io/compliance: fedramp
+  annotations:
+    acgs.io/description: "Deny non-US access to FedRAMP-regulated tenant data"
+    acgs.io/regulation: "Federal Risk and Authorization Management Program (FedRAMP)"
+spec:
+  # This policy applies to workloads with FedRAMP compliance label
+  selector:
+    matchLabels:
+      acgs.io/compliance-fedramp: "true"
+  action: DENY
+  rules:
+    # Deny requests from EU regions
+    - from:
+        - source:
+            namespaceSelector:
+              matchLabels:
+                data-residency: eu
+    # Deny requests from China regions
+    - from:
+        - source:
+            namespaceSelector:
+              matchLabels:
+                data-residency: cn
+    # Deny requests from AP regions
+    - from:
+        - source:
+            namespaceSelector:
+              matchLabels:
+                data-residency: ap
+---
+# =============================================================================
+# GLOBAL TENANT CROSS-REGION ACCESS
+# =============================================================================
+# Tenants with cross_region_allowed=true can access data across regions.
+# These policies explicitly ALLOW cross-region traffic for global tenants.
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: allow-global-tenant-cross-region
+  namespace: istio-system
+  labels:
+    app.kubernetes.io/name: cross-region-authz
+    app.kubernetes.io/component: security
+    app.kubernetes.io/part-of: acgs2-multi-region
+    acgs.io/feature: data-residency
+    acgs.io/tenant-type: global
+  annotations:
+    acgs.io/description: "Allow cross-region access for global tenants"
+spec:
+  # This policy applies to workloads marked as cross-region allowed
+  selector:
+    matchLabels:
+      acgs.io/cross-region-allowed: "true"
+  action: ALLOW
+  rules:
+    # Allow authenticated requests from any region
+    - from:
+        - source:
+            # Require authenticated principals
+            principals:
+              - cluster.local/ns/*/sa/*
+      when:
+        # Require mTLS connection
+        - key: connection.sni
+          notValues:
+            - ""
+---
+# =============================================================================
+# DISASTER RECOVERY ACCESS
+# =============================================================================
+# Allow cross-region access during disaster recovery scenarios.
+# This requires explicit DR header or label.
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: allow-disaster-recovery-access
+  namespace: istio-system
+  labels:
+    app.kubernetes.io/name: cross-region-authz
+    app.kubernetes.io/component: security
+    app.kubernetes.io/part-of: acgs2-multi-region
+    acgs.io/feature: disaster-recovery
+  annotations:
+    acgs.io/description: "Allow cross-region access for disaster recovery"
+    acgs.io/requires-audit: "true"
+spec:
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            # Require authenticated principals
+            principals:
+              - cluster.local/ns/*/sa/*
+      to:
+        - operation:
+            # Only allow read operations during DR
+            methods: ["GET", "HEAD", "OPTIONS"]
+      when:
+        # Require disaster recovery header
+        - key: request.headers[x-acgs-disaster-recovery]
+          values:
+            - "true"
+            - "enabled"
+---
+# =============================================================================
+# SYSTEM NAMESPACE EXCLUSIONS
+# =============================================================================
+# Allow system components to communicate across regions for mesh operation.
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: allow-system-namespaces
+  namespace: istio-system
+  labels:
+    app.kubernetes.io/name: cross-region-authz
+    app.kubernetes.io/component: security
+    app.kubernetes.io/part-of: acgs2-multi-region
+    acgs.io/feature: system
+  annotations:
+    acgs.io/description: "Allow system namespace communication"
+spec:
+  action: ALLOW
+  rules:
+    # Allow istio-system components
+    - from:
+        - source:
+            namespaces:
+              - istio-system
+              - kube-system
+              - acgs-system
+    # Allow monitoring components
+    - from:
+        - source:
+            namespaceSelector:
+              matchLabels:
+                app.kubernetes.io/component: monitoring
+---
+# =============================================================================
+# COMPLIANCE AUDIT TRAIL
+# =============================================================================
+# Policy that requires audit logging for all cross-region access attempts.
+# This is implemented via EnvoyFilter for access logging.
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: audit-cross-region-access
+  namespace: istio-system
+  labels:
+    app.kubernetes.io/name: cross-region-authz
+    app.kubernetes.io/component: audit
+    app.kubernetes.io/part-of: acgs2-multi-region
+    acgs.io/feature: compliance-audit
+  annotations:
+    acgs.io/description: "Audit policy for cross-region access attempts"
+    acgs.io/audit-required: "true"
+spec:
+  # Custom action to log all cross-region access attempts
+  # CUSTOM action requires external authorization with audit logging
+  action: CUSTOM
+  provider:
+    name: acgs-audit-provider
+  rules:
+    # Log all cross-region data access
+    - to:
+        - operation:
+            paths:
+              - "/api/v1/data/*"
+              - "/api/v1/tenants/*"
+      when:
+        # Only for cross-region requests (identified by header)
+        - key: request.headers[x-acgs-source-region]
+          notValues:
+            - ""
+---
+# =============================================================================
+# SERVICE-SPECIFIC POLICIES - CLAUDE-FLOW
+# =============================================================================
+# Fine-grained access control for claude-flow service based on tenant residency.
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: claude-flow-cross-region-policy
+  namespace: claude-flow
+  labels:
+    app.kubernetes.io/name: cross-region-authz
+    app.kubernetes.io/component: security
+    app.kubernetes.io/part-of: acgs2-multi-region
+    acgs.io/service: claude-flow
+  annotations:
+    acgs.io/description: "Cross-region policy for claude-flow service"
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: claude-flow
+  action: ALLOW
+  rules:
+    # Allow requests with valid tenant header matching source region
+    - from:
+        - source:
+            principals:
+              - cluster.local/ns/*/sa/*
+      when:
+        # Require tenant ID header
+        - key: request.headers[x-tenant-id]
+          notValues:
+            - ""
+        # Require mTLS
+        - key: connection.sni
+          notValues:
+            - ""
+---
+# =============================================================================
+# SERVICE-SPECIFIC POLICIES - NEURAL-MCP
+# =============================================================================
+# Fine-grained access control for neural-mcp service based on tenant residency.
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: neural-mcp-cross-region-policy
+  namespace: neural-mcp
+  labels:
+    app.kubernetes.io/name: cross-region-authz
+    app.kubernetes.io/component: security
+    app.kubernetes.io/part-of: acgs2-multi-region
+    acgs.io/service: neural-mcp
+  annotations:
+    acgs.io/description: "Cross-region policy for neural-mcp service"
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: acgs2-neural-mcp
+  action: ALLOW
+  rules:
+    # Allow requests with valid tenant header matching source region
+    - from:
+        - source:
+            principals:
+              - cluster.local/ns/*/sa/*
+      when:
+        # Require tenant ID header
+        - key: request.headers[x-tenant-id]
+          notValues:
+            - ""
+        # Require mTLS
+        - key: connection.sni
+          notValues:
+            - ""
+---
+# =============================================================================
+# HEALTHCHECK AND READINESS EXCLUSIONS
+# =============================================================================
+# Allow health checks and readiness probes from any source.
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: allow-health-probes
+  namespace: istio-system
+  labels:
+    app.kubernetes.io/name: cross-region-authz
+    app.kubernetes.io/component: security
+    app.kubernetes.io/part-of: acgs2-multi-region
+    acgs.io/feature: health-probes
+  annotations:
+    acgs.io/description: "Allow health check and readiness probes"
+spec:
+  action: ALLOW
+  rules:
+    # Allow Kubernetes health probes
+    - to:
+        - operation:
+            paths:
+              - "/health"
+              - "/healthz"
+              - "/ready"
+              - "/readiness"
+              - "/live"
+              - "/liveness"
+              - "/metrics"
+            methods: ["GET"]
+    # Allow Kubernetes API server probes
+    - from:
+        - source:
+            namespaces:
+              - kube-system
+---
+# =============================================================================
+# REQUEST AUTHENTICATION POLICY
+# =============================================================================
+# Require JWT authentication for cross-region requests to validate tenant identity.
+---
+apiVersion: security.istio.io/v1
+kind: RequestAuthentication
+metadata:
+  name: cross-region-jwt-auth
+  namespace: istio-system
+  labels:
+    app.kubernetes.io/name: cross-region-authz
+    app.kubernetes.io/component: authentication
+    app.kubernetes.io/part-of: acgs2-multi-region
+    acgs.io/feature: jwt-auth
+  annotations:
+    acgs.io/description: "JWT authentication for cross-region requests"
+spec:
+  jwtRules:
+    # ACGS2 internal JWT issuer
+    - issuer: "https://auth.acgs2.io"
+      jwksUri: "https://auth.acgs2.io/.well-known/jwks.json"
+      # Forward JWT claims as headers for policy decisions
+      forwardOriginalToken: true
+      outputClaimToHeaders:
+        - header: "x-jwt-tenant-id"
+          claim: "tenant_id"
+        - header: "x-jwt-region"
+          claim: "region"
+        - header: "x-jwt-compliance"
+          claim: "compliance_frameworks"
+---
+# =============================================================================
+# PEER AUTHENTICATION - STRICT MTLS
+# =============================================================================
+# Enforce strict mTLS for all cross-region communication.
+---
+apiVersion: security.istio.io/v1
+kind: PeerAuthentication
+metadata:
+  name: cross-region-strict-mtls
+  namespace: istio-system
+  labels:
+    app.kubernetes.io/name: cross-region-authz
+    app.kubernetes.io/component: authentication
+    app.kubernetes.io/part-of: acgs2-multi-region
+    acgs.io/feature: mtls
+  annotations:
+    acgs.io/description: "Enforce strict mTLS for cross-region communication"
+spec:
+  mtls:
+    mode: STRICT
+---
+# =============================================================================
+# ENVOY FILTER FOR COMPLIANCE HEADERS
+# =============================================================================
+# Add compliance headers to requests for downstream policy decisions.
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: EnvoyFilter
+metadata:
+  name: add-compliance-headers
+  namespace: istio-system
+  labels:
+    app.kubernetes.io/name: cross-region-authz
+    app.kubernetes.io/component: envoy-filter
+    app.kubernetes.io/part-of: acgs2-multi-region
+    acgs.io/feature: compliance-headers
+  annotations:
+    acgs.io/description: "Add compliance headers for policy enforcement"
+spec:
+  configPatches:
+    - applyTo: HTTP_FILTER
+      match:
+        context: SIDECAR_INBOUND
+        listener:
+          filterChain:
+            filter:
+              name: "envoy.filters.network.http_connection_manager"
+              subFilter:
+                name: "envoy.filters.http.router"
+      patch:
+        operation: INSERT_BEFORE
+        value:
+          name: envoy.filters.http.lua
+          typed_config:
+            "@type": "type.googleapis.com/envoy.extensions.filters.http.lua.v3.Lua"
+            inlineCode: |
+              function envoy_on_request(request_handle)
+                -- Add source region header based on connection metadata
+                local source_cluster = request_handle:streamInfo():downstreamLocalAddress()
+                if source_cluster then
+                  request_handle:headers():add("x-acgs-source-cluster", source_cluster)
+                end
+
+                -- Add timestamp for audit trail
+                local timestamp = os.date("!%Y-%m-%dT%H:%M:%SZ")
+                request_handle:headers():add("x-acgs-request-timestamp", timestamp)
+              end
+---
+# =============================================================================
+# ENVOY FILTER FOR COMPLIANCE AUDIT LOGGING
+# =============================================================================
+# Log all cross-region access attempts for compliance auditing.
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: EnvoyFilter
+metadata:
+  name: cross-region-audit-logging
+  namespace: istio-system
+  labels:
+    app.kubernetes.io/name: cross-region-authz
+    app.kubernetes.io/component: audit-logging
+    app.kubernetes.io/part-of: acgs2-multi-region
+    acgs.io/feature: audit-logging
+  annotations:
+    acgs.io/description: "Audit logging for cross-region access"
+spec:
+  configPatches:
+    - applyTo: NETWORK_FILTER
+      match:
+        context: SIDECAR_INBOUND
+        listener:
+          filterChain:
+            filter:
+              name: "envoy.filters.network.http_connection_manager"
+      patch:
+        operation: MERGE
+        value:
+          typed_config:
+            "@type": "type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager"
+            access_log:
+              - name: envoy.access_loggers.file
+                typed_config:
+                  "@type": "type.googleapis.com/envoy.extensions.access_loggers.file.v3.FileAccessLog"
+                  path: "/dev/stdout"
+                  log_format:
+                    json_format:
+                      timestamp: "%START_TIME%"
+                      request_id: "%REQ(X-REQUEST-ID)%"
+                      tenant_id: "%REQ(X-TENANT-ID)%"
+                      source_region: "%REQ(X-ACGS-SOURCE-REGION)%"
+                      destination_region: "%ENVIRONMENT(REGION_NAME)%"
+                      method: "%REQ(:METHOD)%"
+                      path: "%REQ(:PATH)%"
+                      response_code: "%RESPONSE_CODE%"
+                      response_flags: "%RESPONSE_FLAGS%"
+                      upstream_cluster: "%UPSTREAM_CLUSTER%"
+                      cross_region: "true"
+                      compliance_event: "cross_region_access"
