@@ -1,0 +1,25 @@
+{
+  "active": true,
+  "spec": "015-advanced-audit-reporting-and-compliance-exports",
+  "state": "building",
+  "subtasks": {
+    "completed": 6,
+    "total": 21,
+    "in_progress": 1,
+    "failed": 0
+  },
+  "phase": {
+    "current": "Compliance Framework Templates",
+    "id": null,
+    "total": 4
+  },
+  "workers": {
+    "active": 0,
+    "max": 1
+  },
+  "session": {
+    "number": 16,
+    "started_at": "2026-01-02T09:46:39.729897"
+  },
+  "last_update": "2026-01-02T10:18:57.194918"
+}
