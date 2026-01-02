@@ -1,7 +1,7 @@
 # ACGS-2 Developer Onboarding Docker Compose
 # Streamlined setup for developers to get started with policy evaluation in <30 minutes
 # Constitutional Hash: cdd01ef066bc6cf2
-# Version: 1.0.0
+# Version: 1.1.0
 #
 # Usage: docker compose up -d
 #
@@ -9,6 +9,8 @@
 #   - OPA: Policy evaluation engine (port 8181)
 #   - Jupyter: Interactive notebooks (port 8888)
 #   - Redis: Caching and state management (port 6379)
+#   - Kafka: Event-driven messaging (port 29092)
+#   - Zookeeper: Kafka coordination (port 2181)
 #
 # Documentation: docs/quickstart/README.md
 
@@ -75,6 +77,54 @@ services:
       - acgs-onboarding
     restart: unless-stopped
 
+  # Zookeeper for Kafka coordination (required for Kafka)
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.4.0
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "${ZOOKEEPER_PORT:-2181}:2181"
+    healthcheck:
+      test: ["CMD-SHELL", "echo ruok | nc localhost 2181 | grep imok"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - acgs-onboarding
+    restart: unless-stopped
+
+  # Kafka for event-driven messaging
+  kafka:
+    image: confluentinc/cp-kafka:7.4.0
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    ports:
+      - "${KAFKA_PORT:-29092}:29092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,PLAINTEXT_HOST://0.0.0.0:29092
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-topics --bootstrap-server localhost:29092 --list || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    networks:
+      - acgs-onboarding
+    restart: unless-stopped
+
 networks:
   acgs-onboarding:
     driver: bridge
@@ -111,6 +161,8 @@ volumes:
 #   - OPA_PORT (default: 8181)
 #   - JUPYTER_PORT (default: 8888)
 #   - REDIS_PORT (default: 6379)
+#   - KAFKA_PORT (default: 29092)
+#   - ZOOKEEPER_PORT (default: 2181)
 #
 # Troubleshooting:
 #   - Port conflicts: Set custom ports via environment variables
