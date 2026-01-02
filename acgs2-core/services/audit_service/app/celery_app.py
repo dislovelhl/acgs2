@@ -3,13 +3,19 @@ Celery Application Configuration for Audit Service
 Constitutional Hash: cdd01ef066bc6cf2
 
 Configures Celery with Redis broker for scheduled report generation,
-email delivery, and other background tasks.
+email delivery, and other background tasks. Includes Celery Beat
+schedule configuration for automated periodic report generation.
 """
 
+import json
+import logging
 import os
-from typing import Any, Dict
+from typing import Any, Dict, List, Optional
 
 from celery import Celery
+from celery.schedules import crontab
+
+logger = logging.getLogger(__name__)
 
 # Default Redis URLs (matches spec requirements)
 DEFAULT_BROKER_URL = "redis://localhost:6379/0"
@@ -105,6 +111,157 @@ def health_check(self) -> Dict[str, Any]:
     }
 
 
+def get_default_beat_schedule() -> Dict[str, Dict[str, Any]]:
+    """
+    Build the default Celery Beat schedule for periodic report generation.
+
+    The schedule includes:
+    - Monthly SOC 2 report (1st of month at 9 AM UTC)
+    - Monthly ISO 27001 report (1st of month at 10 AM UTC)
+    - Monthly GDPR report (1st of month at 11 AM UTC)
+    - Weekly compliance summary (Mondays at 8 AM UTC)
+
+    Environment variables:
+        ENABLE_SCHEDULED_REPORTS: Enable/disable all scheduled reports (default: true)
+        SCHEDULED_REPORT_TENANT_ID: Default tenant ID for scheduled reports
+        SCHEDULED_REPORT_RECIPIENTS: Comma-separated list of email recipients
+        CUSTOM_BEAT_SCHEDULE: JSON-encoded custom schedule (overrides defaults)
+
+    Returns:
+        Dictionary of Celery Beat schedule entries
+    """
+    # Check if scheduled reports are enabled
+    enabled = os.getenv("ENABLE_SCHEDULED_REPORTS", "true").lower() == "true"
+    if not enabled:
+        logger.info("Scheduled reports disabled via ENABLE_SCHEDULED_REPORTS=false")
+        return {}
+
+    # Default configuration from environment
+    default_tenant_id = os.getenv("SCHEDULED_REPORT_TENANT_ID", "default")
+    recipients_str = os.getenv("SCHEDULED_REPORT_RECIPIENTS", "")
+    default_recipients: Optional[List[str]] = (
+        [email.strip() for email in recipients_str.split(",") if email.strip()]
+        if recipients_str
+        else None
+    )
+
+    # Branding defaults (optional)
+    default_company_name = os.getenv("DEFAULT_COMPANY_NAME")
+    default_logo_url = os.getenv("DEFAULT_LOGO_URL")
+    default_brand_color = os.getenv("DEFAULT_BRAND_COLOR")
+
+    # Check for custom schedule override
+    custom_schedule_json = os.getenv("CUSTOM_BEAT_SCHEDULE")
+    if custom_schedule_json:
+        try:
+            custom_schedule = json.loads(custom_schedule_json)
+            logger.info(
+                "Using custom beat schedule with %d entries",
+                len(custom_schedule),
+            )
+            return custom_schedule
+        except json.JSONDecodeError as e:
+            logger.error("Invalid CUSTOM_BEAT_SCHEDULE JSON: %s", e)
+            # Fall through to default schedule
+
+    # Default schedule configuration
+    schedule: Dict[str, Dict[str, Any]] = {
+        # Monthly SOC 2 Report - 1st of each month at 9:00 AM UTC
+        "monthly-soc2-report": {
+            "task": "audit_service.generate_scheduled_report",
+            "schedule": crontab(day_of_month="1", hour=9, minute=0),
+            "kwargs": {
+                "tenant_id": default_tenant_id,
+                "framework": "SOC2",
+                "format": "pdf",
+                "recipient_emails": default_recipients,
+                "company_name": default_company_name,
+                "logo_url": default_logo_url,
+                "brand_color": default_brand_color,
+            },
+            "options": {"queue": "reports"},
+        },
+        # Monthly ISO 27001 Report - 1st of each month at 10:00 AM UTC
+        "monthly-iso27001-report": {
+            "task": "audit_service.generate_scheduled_report",
+            "schedule": crontab(day_of_month="1", hour=10, minute=0),
+            "kwargs": {
+                "tenant_id": default_tenant_id,
+                "framework": "ISO27001",
+                "format": "pdf",
+                "recipient_emails": default_recipients,
+                "company_name": default_company_name,
+                "logo_url": default_logo_url,
+                "brand_color": default_brand_color,
+            },
+            "options": {"queue": "reports"},
+        },
+        # Monthly GDPR Report - 1st of each month at 11:00 AM UTC
+        "monthly-gdpr-report": {
+            "task": "audit_service.generate_scheduled_report",
+            "schedule": crontab(day_of_month="1", hour=11, minute=0),
+            "kwargs": {
+                "tenant_id": default_tenant_id,
+                "framework": "GDPR",
+                "format": "pdf",
+                "recipient_emails": default_recipients,
+                "company_name": default_company_name,
+                "logo_url": default_logo_url,
+                "brand_color": default_brand_color,
+            },
+            "options": {"queue": "reports"},
+        },
+        # Weekly compliance summary CSV - Mondays at 8:00 AM UTC
+        "weekly-compliance-csv": {
+            "task": "audit_service.generate_scheduled_report",
+            "schedule": crontab(day_of_week="1", hour=8, minute=0),
+            "kwargs": {
+                "tenant_id": default_tenant_id,
+                "framework": "ISO42001",
+                "format": "csv",
+                "recipient_emails": default_recipients,
+            },
+            "options": {"queue": "reports"},
+        },
+    }
+
+    logger.info(
+        "Beat schedule configured with %d scheduled tasks: %s",
+        len(schedule),
+        list(schedule.keys()),
+    )
+
+    return schedule
+
+
+def configure_beat_schedule(app: Celery) -> None:
+    """
+    Configure Celery Beat schedule on the application.
+
+    This function is separate from get_default_beat_schedule to allow
+    for dynamic schedule updates from database or admin interface.
+
+    Args:
+        app: Celery application instance to configure
+    """
+    schedule = get_default_beat_schedule()
+    app.conf.beat_schedule = schedule
+
+    # Log schedule summary
+    if schedule:
+        logger.info(
+            "Celery Beat schedule loaded successfully with %d entries",
+            len(schedule),
+        )
+    else:
+        logger.info("Celery Beat schedule is empty (scheduled reports disabled)")
+
+
+# Apply beat schedule to the celery app
+configure_beat_schedule(celery_app)
+
+
 # Expose app for celery CLI compatibility
 # Usage: celery -A acgs2-core.services.audit_service.app.celery_app worker
+# Usage: celery -A acgs2-core.services.audit_service.app.celery_app beat
 app = celery_app
