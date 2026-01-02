@@ -20,6 +20,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .routes.anomalies import router as anomalies_router
 from .routes.insights import router as insights_router
+from .routes.predictions import router as predictions_router
 
 # Centralized settings
 try:
@@ -94,6 +95,7 @@ app.add_middleware(
 # Include route handlers
 app.include_router(anomalies_router)
 app.include_router(insights_router)
+app.include_router(predictions_router)
 
 
 # Health check endpoints
