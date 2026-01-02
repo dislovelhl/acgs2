@@ -5,6 +5,7 @@ Constitutional Hash: cdd01ef066bc6cf2
 Production-grade rate limiting with Redis backend supporting:
 - Sliding window rate limiting algorithm
 - Per-IP, per-tenant, and per-endpoint limits
+- Tenant-specific configurable quotas with dynamic lookup
 - Distributed rate limiting across service instances
 - Graceful degradation when Redis unavailable
 - Constitutional compliance tracking
@@ -14,13 +15,27 @@ Security Features:
 - Mitigates DoS attacks
 - Protects expensive endpoints
 - Provides audit trail for rate limit events
+- Tenant isolation for multi-tenant deployments
 
 Usage:
     from shared.security.rate_limiter import RateLimitMiddleware, RateLimitConfig
 
+    # Basic usage with environment-based config
     app.add_middleware(
         RateLimitMiddleware,
         config=RateLimitConfig.from_env()
+    )
+
+    # With tenant-specific quotas
+    from shared.security.rate_limiter import TenantRateLimitProvider
+
+    provider = TenantRateLimitProvider()
+    provider.set_tenant_quota("premium-tenant", requests=5000, window_seconds=60)
+
+    app.add_middleware(
+        RateLimitMiddleware,
+        config=RateLimitConfig.from_env(),
+        tenant_quota_provider=provider
     )
 """
 
@@ -31,7 +46,7 @@ import time
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Protocol, runtime_checkable
 
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
@@ -55,6 +70,277 @@ except ImportError:
     except ImportError:
         aioredis = None
         REDIS_AVAILABLE = False
+
+
+# Tenant quota configuration - optional dependency
+try:
+    from shared.config.tenant_config import (
+        TenantQuotaConfig,
+        TenantQuotaRegistry,
+        get_tenant_quota_registry,
+    )
+
+    TENANT_CONFIG_AVAILABLE = True
+except ImportError:
+    TenantQuotaConfig = None
+    TenantQuotaRegistry = None
+    get_tenant_quota_registry = None
+    TENANT_CONFIG_AVAILABLE = False
+
+
+@dataclass
+class TenantQuota:
+    """Quota configuration for a specific tenant.
+
+    Attributes:
+        tenant_id: Unique tenant identifier
+        requests: Maximum requests allowed per window
+        window_seconds: Time window in seconds
+        burst_multiplier: Allow burst above limit temporarily (1.0 = no burst)
+        enabled: Whether rate limiting is enabled for this tenant
+    """
+
+    tenant_id: str
+    requests: int
+    window_seconds: int
+    burst_multiplier: float = 1.0
+    enabled: bool = True
+
+    @property
+    def effective_limit(self) -> int:
+        """Get effective limit including burst allowance."""
+        return int(self.requests * self.burst_multiplier)
+
+
+@runtime_checkable
+class TenantQuotaProviderProtocol(Protocol):
+    """Protocol for tenant quota providers.
+
+    Allows custom implementations for tenant quota lookup.
+    """
+
+    def get_quota(self, tenant_id: str) -> Optional["TenantQuota"]:
+        """Get quota for a specific tenant."""
+        ...
+
+    def set_quota(
+        self,
+        tenant_id: str,
+        requests: int,
+        window_seconds: int,
+        burst_multiplier: float = 1.0,
+    ) -> None:
+        """Set quota for a specific tenant."""
+        ...
+
+
+class TenantRateLimitProvider:
+    """Provider for tenant-specific rate limit quotas.
+
+    Manages per-tenant rate limit configurations with support for:
+    - Dynamic quota updates without restart
+    - Default quotas for unregistered tenants
+    - Integration with TenantQuotaRegistry (if available)
+    - In-memory quota overrides
+
+    Example:
+        provider = TenantRateLimitProvider(
+            default_requests=1000,
+            default_window_seconds=60
+        )
+
+        # Set custom quota for premium tenant
+        provider.set_tenant_quota("premium-tenant", requests=5000, window_seconds=60)
+
+        # Get quota for a tenant
+        quota = provider.get_tenant_quota("premium-tenant")
+    """
+
+    def __init__(
+        self,
+        default_requests: int = 1000,
+        default_window_seconds: int = 60,
+        default_burst_multiplier: float = 1.0,
+        use_registry: bool = True,
+    ):
+        """Initialize the tenant rate limit provider.
+
+        Args:
+            default_requests: Default requests per window for unregistered tenants
+            default_window_seconds: Default window duration in seconds
+            default_burst_multiplier: Default burst multiplier (1.0 = no burst)
+            use_registry: Whether to use TenantQuotaRegistry if available
+        """
+        self._default_requests = default_requests
+        self._default_window_seconds = default_window_seconds
+        self._default_burst_multiplier = default_burst_multiplier
+        self._use_registry = use_registry and TENANT_CONFIG_AVAILABLE
+        self._tenant_quotas: Dict[str, TenantQuota] = {}
+        self._constitutional_hash = CONSTITUTIONAL_HASH
+
+        # Initialize from registry if available
+        if self._use_registry:
+            self._registry = get_tenant_quota_registry()
+        else:
+            self._registry = None
+
+        logger.debug(
+            f"TenantRateLimitProvider initialized: "
+            f"default={default_requests}req/{default_window_seconds}s, "
+            f"registry_enabled={self._use_registry}"
+        )
+
+    def get_tenant_quota(self, tenant_id: str) -> TenantQuota:
+        """Get rate limit quota for a specific tenant.
+
+        Priority order:
+        1. In-memory overrides (set via set_tenant_quota)
+        2. TenantQuotaRegistry configuration (if available)
+        3. Default quota configuration
+
+        Args:
+            tenant_id: The tenant identifier
+
+        Returns:
+            TenantQuota configuration for the tenant
+        """
+        # Check in-memory overrides first
+        if tenant_id in self._tenant_quotas:
+            return self._tenant_quotas[tenant_id]
+
+        # Check registry if available
+        if self._use_registry and self._registry is not None:
+            try:
+                registry_quota = self._registry.get_quota_for_tenant(tenant_id)
+                if registry_quota is not None:
+                    return TenantQuota(
+                        tenant_id=tenant_id,
+                        requests=registry_quota.rate_limit_requests,
+                        window_seconds=registry_quota.rate_limit_window_seconds,
+                        burst_multiplier=self._default_burst_multiplier,
+                        enabled=True,
+                    )
+            except Exception as e:
+                logger.warning(f"Failed to get quota from registry for {tenant_id}: {e}")
+
+        # Return default quota
+        return TenantQuota(
+            tenant_id=tenant_id,
+            requests=self._default_requests,
+            window_seconds=self._default_window_seconds,
+            burst_multiplier=self._default_burst_multiplier,
+            enabled=True,
+        )
+
+    def set_tenant_quota(
+        self,
+        tenant_id: str,
+        requests: int,
+        window_seconds: int,
+        burst_multiplier: float = 1.0,
+        enabled: bool = True,
+    ) -> None:
+        """Set rate limit quota for a specific tenant.
+
+        This creates an in-memory override that takes priority over
+        registry configuration.
+
+        Args:
+            tenant_id: The tenant identifier
+            requests: Maximum requests per window
+            window_seconds: Time window in seconds
+            burst_multiplier: Burst allowance multiplier (1.0 = no burst)
+            enabled: Whether rate limiting is enabled for this tenant
+        """
+        self._tenant_quotas[tenant_id] = TenantQuota(
+            tenant_id=tenant_id,
+            requests=requests,
+            window_seconds=window_seconds,
+            burst_multiplier=burst_multiplier,
+            enabled=enabled,
+        )
+        logger.info(
+            f"Set tenant quota: {tenant_id} -> {requests}req/{window_seconds}s "
+            f"(burst={burst_multiplier}, enabled={enabled})"
+        )
+
+    def remove_tenant_quota(self, tenant_id: str) -> bool:
+        """Remove in-memory quota override for a tenant.
+
+        After removal, the tenant will use registry or default quotas.
+
+        Args:
+            tenant_id: The tenant identifier
+
+        Returns:
+            True if override was removed, False if not found
+        """
+        if tenant_id in self._tenant_quotas:
+            del self._tenant_quotas[tenant_id]
+            logger.info(f"Removed tenant quota override: {tenant_id}")
+            return True
+        return False
+
+    def get_all_tenant_quotas(self) -> Dict[str, TenantQuota]:
+        """Get all in-memory tenant quota overrides.
+
+        Returns:
+            Dictionary mapping tenant_id to TenantQuota
+        """
+        return self._tenant_quotas.copy()
+
+    def get_quota(self, tenant_id: str) -> Optional[TenantQuota]:
+        """Protocol-compliant quota lookup.
+
+        Args:
+            tenant_id: The tenant identifier
+
+        Returns:
+            TenantQuota for the tenant
+        """
+        return self.get_tenant_quota(tenant_id)
+
+    def set_quota(
+        self,
+        tenant_id: str,
+        requests: int,
+        window_seconds: int,
+        burst_multiplier: float = 1.0,
+    ) -> None:
+        """Protocol-compliant quota setter.
+
+        Args:
+            tenant_id: The tenant identifier
+            requests: Maximum requests per window
+            window_seconds: Time window in seconds
+            burst_multiplier: Burst allowance multiplier
+        """
+        self.set_tenant_quota(
+            tenant_id=tenant_id,
+            requests=requests,
+            window_seconds=window_seconds,
+            burst_multiplier=burst_multiplier,
+        )
+
+    @classmethod
+    def from_env(cls) -> "TenantRateLimitProvider":
+        """Create provider from environment variables.
+
+        Environment variables:
+            RATE_LIMIT_TENANT_REQUESTS: Default requests per window (default: 1000)
+            RATE_LIMIT_TENANT_WINDOW: Default window seconds (default: 60)
+            RATE_LIMIT_TENANT_BURST: Default burst multiplier (default: 1.0)
+            RATE_LIMIT_USE_REGISTRY: Whether to use TenantQuotaRegistry (default: true)
+
+        Returns:
+            Configured TenantRateLimitProvider
+        """
+        return cls(
+            default_requests=int(os.environ.get("RATE_LIMIT_TENANT_REQUESTS", "1000")),
+            default_window_seconds=int(os.environ.get("RATE_LIMIT_TENANT_WINDOW", "60")),
+            default_burst_multiplier=float(os.environ.get("RATE_LIMIT_TENANT_BURST", "1.0")),
+            use_registry=os.environ.get("RATE_LIMIT_USE_REGISTRY", "true").lower() == "true",
+        )
 
 
 class RateLimitScope(str, Enum):
@@ -326,6 +612,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
     Features:
     - Redis-backed sliding window rate limiting
     - Multi-scope limits (IP, tenant, endpoint)
+    - Tenant-specific configurable quotas via TenantRateLimitProvider
     - Rate limit headers in responses
     - Graceful degradation without Redis
     - Audit logging for rate limit events
@@ -335,9 +622,11 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         self,
         app,
         config: Optional[RateLimitConfig] = None,
+        tenant_quota_provider: Optional[TenantRateLimitProvider] = None,
     ):
         super().__init__(app)
         self.config = config or RateLimitConfig.from_env()
+        self.tenant_quota_provider = tenant_quota_provider
         self.redis: Optional[Any] = None
         self.limiter: Optional[SlidingWindowRateLimiter] = None
         self._initialized = False
@@ -346,6 +635,9 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
         if not self.config.enabled:
             logger.info("Rate limiting is disabled")
+
+        if self.tenant_quota_provider:
+            logger.info("Tenant-specific rate limiting enabled via provider")
 
     async def _ensure_initialized(self) -> None:
         """Lazily initialize Redis connection."""
@@ -485,6 +777,62 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                 f"[scope={rule.scope.value}, key={result.key}]"
             )
 
+    def _get_tenant_quota(self, tenant_id: str) -> Optional[TenantQuota]:
+        """Get tenant-specific quota from provider if available.
+
+        Args:
+            tenant_id: The tenant identifier
+
+        Returns:
+            TenantQuota if provider is configured and tenant has quota, None otherwise
+        """
+        if self.tenant_quota_provider is None:
+            return None
+
+        try:
+            return self.tenant_quota_provider.get_tenant_quota(tenant_id)
+        except Exception as e:
+            logger.warning(f"Failed to get tenant quota for {tenant_id}: {e}")
+            return None
+
+    async def _check_tenant_rate_limit(
+        self,
+        request: Request,
+        tenant_id: str,
+        tenant_quota: TenantQuota,
+    ) -> RateLimitResult:
+        """Check rate limit for a specific tenant using tenant-specific quota.
+
+        Args:
+            request: The incoming request
+            tenant_id: The tenant identifier
+            tenant_quota: The tenant's quota configuration
+
+        Returns:
+            RateLimitResult for the tenant
+        """
+        if not tenant_quota.enabled:
+            # Tenant rate limiting disabled - allow all
+            return RateLimitResult(
+                allowed=True,
+                limit=tenant_quota.requests,
+                remaining=tenant_quota.requests,
+                reset_at=int(time.time() + tenant_quota.window_seconds),
+                scope=RateLimitScope.TENANT,
+                key=f"tenant:{tenant_id}",
+            )
+
+        key = f"tenant:{tenant_id}"
+        result = await self.limiter.check(
+            key=key,
+            limit=tenant_quota.effective_limit,
+            window_seconds=tenant_quota.window_seconds,
+        )
+        result.scope = RateLimitScope.TENANT
+        result.key = key
+
+        return result
+
     async def dispatch(
         self,
         request: Request,
@@ -504,8 +852,56 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
         # Check all rules
         strictest_result: Optional[RateLimitResult] = None
+        tenant_id = self._get_tenant_id(request)
 
+        # First, check tenant-specific quota if provider is configured and tenant is identified
+        if self.tenant_quota_provider is not None and tenant_id:
+            tenant_quota = self._get_tenant_quota(tenant_id)
+            if tenant_quota:
+                result = await self._check_tenant_rate_limit(request, tenant_id, tenant_quota)
+
+                # Create a pseudo-rule for audit logging
+                tenant_rule = RateLimitRule(
+                    requests=tenant_quota.requests,
+                    window_seconds=tenant_quota.window_seconds,
+                    scope=RateLimitScope.TENANT,
+                    burst_multiplier=tenant_quota.burst_multiplier,
+                )
+
+                # Log audit for tenant-specific rate limit
+                self._log_audit(request, result, tenant_rule)
+
+                if not result.allowed:
+                    response = JSONResponse(
+                        status_code=429,
+                        content={
+                            "error": "Too Many Requests",
+                            "message": f"Rate limit exceeded for tenant '{tenant_id}'. "
+                            f"Try again in {result.retry_after} seconds.",
+                            "retry_after": result.retry_after,
+                            "scope": result.scope.value,
+                            "tenant_id": tenant_id,
+                            "constitutional_hash": self._constitutional_hash,
+                        },
+                    )
+                    if self.config.include_response_headers:
+                        for header, value in result.to_headers().items():
+                            response.headers[header] = value
+                        response.headers["X-Tenant-ID"] = tenant_id
+                    return response
+
+                strictest_result = result
+
+        # Then check configured rules (which may include additional constraints)
         for rule in self.config.rules:
+            # Skip tenant rule if we already checked via provider
+            if (
+                rule.scope == RateLimitScope.TENANT
+                and self.tenant_quota_provider is not None
+                and tenant_id
+            ):
+                continue
+
             # Check if rule applies to this endpoint
             if rule.endpoints:
                 path_matches = any(request.url.path.startswith(ep) for ep in rule.endpoints)
@@ -529,11 +925,12 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
             # If not allowed, reject immediately
             if not result.allowed:
+                retry_msg = f"Rate limit exceeded. " f"Try again in {result.retry_after} seconds."
                 response = JSONResponse(
                     status_code=429,
                     content={
                         "error": "Too Many Requests",
-                        "message": f"Rate limit exceeded. Try again in {result.retry_after} seconds.",
+                        "message": retry_msg,
                         "retry_after": result.retry_after,
                         "scope": result.scope.value,
                         "constitutional_hash": self._constitutional_hash,
@@ -591,6 +988,7 @@ def create_rate_limit_middleware(
 
 
 __all__ = [
+    # Middleware and configuration
     "RateLimitMiddleware",
     "RateLimitConfig",
     "RateLimitRule",
@@ -599,6 +997,12 @@ __all__ = [
     "RateLimitAlgorithm",
     "SlidingWindowRateLimiter",
     "create_rate_limit_middleware",
+    # Tenant-specific rate limiting
+    "TenantQuota",
+    "TenantRateLimitProvider",
+    "TenantQuotaProviderProtocol",
+    # Feature flags
     "CONSTITUTIONAL_HASH",
     "REDIS_AVAILABLE",
+    "TENANT_CONFIG_AVAILABLE",
 ]

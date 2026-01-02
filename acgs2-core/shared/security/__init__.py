@@ -21,12 +21,16 @@ from .cors_config import (
 )
 from .rate_limiter import (
     REDIS_AVAILABLE,
+    TENANT_CONFIG_AVAILABLE,
     RateLimitAlgorithm,
     RateLimitConfig,
     RateLimitMiddleware,
     RateLimitResult,
     RateLimitRule,
     RateLimitScope,
+    TenantQuota,
+    TenantQuotaProviderProtocol,
+    TenantRateLimitProvider,
     create_rate_limit_middleware,
 )
 from .tenant_context import (
@@ -62,6 +66,11 @@ __all__ = [
     "RateLimitAlgorithm",
     "create_rate_limit_middleware",
     "REDIS_AVAILABLE",
+    # Tenant-specific Rate Limiting
+    "TenantQuota",
+    "TenantRateLimitProvider",
+    "TenantQuotaProviderProtocol",
+    "TENANT_CONFIG_AVAILABLE",
     # Tenant Context
     "TenantContextMiddleware",
     "TenantContextConfig",
