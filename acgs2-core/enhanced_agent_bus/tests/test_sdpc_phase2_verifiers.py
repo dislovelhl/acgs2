@@ -295,3 +295,44 @@ async def test_pacar_context_window_pruning():
     assert conversation_data["messages"][-1]["content"] == "New message after pruning threshold"
     assert conversation_data["messages"][-1]["intent"] == "pruning_test_intent"
     assert conversation_data["messages"][-1]["verification_result"]["is_valid"] is True
+
+
+@pytest.mark.asyncio
+async def test_redis_unavailable_fallback():
+    """Test PACAR verifier gracefully degrades when Redis is unavailable"""
+    verifier = PACARVerifier()
+
+    # Simulate Redis unavailable by setting redis_client to None
+    verifier.redis_client = None
+
+    # Mock LLM Assistant
+    mock_assistant = MagicMock()
+    mock_assistant.analyze_message_impact = AsyncMock(
+        return_value={
+            "risk_level": "low",
+            "confidence": 0.87,
+            "reasoning": ["Content verified without Redis context"],
+            "mitigations": ["None"],
+        }
+    )
+    verifier.assistant = mock_assistant
+
+    # Call verify_with_context with session_id - should still work
+    result = await verifier.verify_with_context(
+        content="Test content when Redis is unavailable",
+        original_intent="fallback_test_intent",
+        session_id="fallback-test-session-789",
+        tenant_id="test-tenant",
+    )
+
+    # Verify result structure - verification should succeed despite Redis unavailability
+    assert result["is_valid"] is True
+    assert result["confidence"] == 0.87
+    assert result["session_id"] == "fallback-test-session-789"
+    assert result["message_count"] == 1  # New in-memory conversation
+    assert result["consensus_reached"] is True
+
+    # Verify LLM assistant was still called for verification
+    mock_assistant.analyze_message_impact.assert_called_once_with(
+        "Test content when Redis is unavailable"
+    )
