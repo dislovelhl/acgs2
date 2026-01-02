@@ -65,12 +65,15 @@ jobs:
         python testing/comprehensive_profiler.py --iterations 50 --baseline | grep -E "(P99|P95|Throughput)" | tail -3
 
     - name: Upload coverage reports
-      uses: codecov/codecov-action@v3
+      uses: codecov/codecov-action@v4
       with:
-        file: ./acgs2-core/coverage.xml
-        flags: acgs2-core
+        files: ./acgs2-core/coverage.xml
+        flags: acgs2-core,claude-flow,neural-mcp
         name: ACGS-2 Core Coverage
         fail_ci_if_error: false
+        verbose: true
+      env:
+        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
     - name: Generate test summary
       run: |
