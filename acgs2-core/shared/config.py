@@ -179,6 +179,20 @@ if HAS_PYDANTIC_SETTINGS:
         client_cert: Optional[str] = Field(None, validation_alias="VAULT_CLIENT_CERT")
         client_key: Optional[str] = Field(None, validation_alias="VAULT_CLIENT_KEY")
 
+    class SMTPSettings(BaseSettings):
+        """SMTP email delivery settings."""
+
+        host: str = Field("localhost", validation_alias="SMTP_HOST")
+        port: int = Field(587, validation_alias="SMTP_PORT")
+        username: Optional[str] = Field(None, validation_alias="SMTP_USERNAME")
+        password: Optional[SecretStr] = Field(None, validation_alias="SMTP_PASSWORD")
+        use_tls: bool = Field(True, validation_alias="SMTP_USE_TLS")
+        use_ssl: bool = Field(False, validation_alias="SMTP_USE_SSL")
+        from_email: str = Field("noreply@acgs2.local", validation_alias="SMTP_FROM_EMAIL")
+        from_name: str = Field("ACGS-2 Audit Service", validation_alias="SMTP_FROM_NAME")
+        timeout: float = Field(30.0, validation_alias="SMTP_TIMEOUT")
+        enabled: bool = Field(False, validation_alias="SMTP_ENABLED")
+
     class Settings(BaseSettings):
         """Global Application Settings."""
 
@@ -203,6 +217,7 @@ if HAS_PYDANTIC_SETTINGS:
         quality: QualitySettings = QualitySettings()
         maci: MACISettings = MACISettings()
         vault: VaultSettings = VaultSettings()
+        smtp: SMTPSettings = SMTPSettings()
         kafka: Dict[str, Any] = Field(
             default_factory=lambda: {
                 "bootstrap_servers": os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092"),
@@ -486,6 +501,35 @@ else:
         client_key: Optional[str] = field(default_factory=lambda: os.getenv("VAULT_CLIENT_KEY"))
 
     @dataclass
+    class SMTPSettings:
+        """SMTP email delivery settings."""
+
+        host: str = field(default_factory=lambda: os.getenv("SMTP_HOST", "localhost"))
+        port: int = field(default_factory=lambda: int(os.getenv("SMTP_PORT", "587")))
+        username: Optional[str] = field(default_factory=lambda: os.getenv("SMTP_USERNAME"))
+        password: Optional[SecretStr] = field(
+            default_factory=lambda: (
+                SecretStr(os.getenv("SMTP_PASSWORD", "")) if os.getenv("SMTP_PASSWORD") else None
+            )
+        )
+        use_tls: bool = field(
+            default_factory=lambda: os.getenv("SMTP_USE_TLS", "true").lower() == "true"
+        )
+        use_ssl: bool = field(
+            default_factory=lambda: os.getenv("SMTP_USE_SSL", "false").lower() == "true"
+        )
+        from_email: str = field(
+            default_factory=lambda: os.getenv("SMTP_FROM_EMAIL", "noreply@acgs2.local")
+        )
+        from_name: str = field(
+            default_factory=lambda: os.getenv("SMTP_FROM_NAME", "ACGS-2 Audit Service")
+        )
+        timeout: float = field(default_factory=lambda: float(os.getenv("SMTP_TIMEOUT", "30.0")))
+        enabled: bool = field(
+            default_factory=lambda: os.getenv("SMTP_ENABLED", "false").lower() == "true"
+        )
+
+    @dataclass
     class Settings:
         env: str = field(default_factory=lambda: os.getenv("APP_ENV", "development"))
         debug: bool = field(
@@ -506,6 +550,7 @@ else:
         quality: QualitySettings = field(default_factory=QualitySettings)
         maci: MACISettings = field(default_factory=MACISettings)
         vault: VaultSettings = field(default_factory=VaultSettings)
+        smtp: SMTPSettings = field(default_factory=SMTPSettings)
         kafka: Dict[str, Any] = field(
             default_factory=lambda: {
                 "bootstrap_servers": os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092"),
