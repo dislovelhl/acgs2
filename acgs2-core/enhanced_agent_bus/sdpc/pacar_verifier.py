@@ -6,6 +6,7 @@ Constitutional Hash: cdd01ef066bc6cf2
 Orchestrates multi-agent critique and validation.
 """
 
+import json
 import logging
 from typing import Any, Dict, Optional
 
@@ -28,8 +29,32 @@ class PACARVerifier:
     def __init__(self, redis_url: str = "redis://localhost:6379"):
         self.redis_url = redis_url
         self.redis_client: Optional[Any] = None
+        self.conversation_key = "acgs:pacar:conversations"
         self.assistant = get_llm_assistant()
         logger.info("PACARVerifier initialized for SDPC Phase 2")
+
+    async def _get_conversation(self, conversation_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Retrieve a conversation from Redis by ID.
+
+        Args:
+            conversation_id: Unique conversation identifier
+
+        Returns:
+            Conversation data as dict, or None if not found
+        """
+        if not self.redis_client:
+            logger.warning("Redis not connected, cannot retrieve conversation")
+            return None
+
+        try:
+            conversation_json = await self.redis_client.hget(self.conversation_key, conversation_id)
+            if conversation_json:
+                return json.loads(conversation_json)
+            return None
+        except (ConnectionError, OSError, json.JSONDecodeError) as e:
+            logger.error(f"Failed to get conversation {conversation_id}: {e}")
+            return None
 
     async def verify(self, content: str, original_intent: str) -> Dict[str, Any]:
         """
