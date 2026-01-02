@@ -12,6 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .api.health import configure_health_router
 from .api.health import router as health_router
+from .api.webhooks import router as webhooks_router
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -79,6 +80,7 @@ app.add_middleware(
 
 # Include routers
 app.include_router(health_router)
+app.include_router(webhooks_router)
 
 
 # Root endpoint
