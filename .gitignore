@@ -48,3 +48,14 @@ acgs2-core/enhanced_agent_bus/venv/
 
 # Auto Claude data directory
 .auto-claude/
+
+# Backup and temporary files
+*.backup
+*_clean.py
+*.py.backup
+
+# Firebase logs
+firebase-debug.log
+
+# Claude settings
+.claude_settings.json
