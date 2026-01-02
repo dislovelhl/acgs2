@@ -4,13 +4,38 @@ ACGS-2 Quality Scorer
 """
 
 import logging
-import os
 import re
 import subprocess
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+try:
+    from shared.config import settings
+except ImportError:
+    settings = None  # type: ignore
+
 logger = logging.getLogger(__name__)
+
+
+def _get_default_sonarqube_url() -> str:
+    """Get SonarQube URL from centralized config or default."""
+    if settings is not None:
+        return settings.quality.sonarqube_url
+    return "http://localhost:9000"
+
+
+def _get_default_sonarqube_token() -> Optional[str]:
+    """Get SonarQube token from centralized config."""
+    if settings is not None and settings.quality.sonarqube_token:
+        return settings.quality.sonarqube_token.get_secret_value()
+    return None
+
+
+def _get_default_local_analysis() -> bool:
+    """Get local analysis setting from centralized config."""
+    if settings is not None:
+        return settings.quality.enable_local_analysis
+    return True
 
 
 class QualityScorer:
@@ -20,9 +45,9 @@ class QualityScorer:
 
     def __init__(
         self,
-        sonarqube_url: str = "http://localhost:9000",
+        sonarqube_url: Optional[str] = None,
         sonarqube_token: Optional[str] = None,
-        enable_local_analysis: bool = True,
+        enable_local_analysis: Optional[bool] = None,
     ):
         """
         初始化质量评分器
@@ -32,9 +57,13 @@ class QualityScorer:
             sonarqube_token: SonarQube认证令牌
             enable_local_analysis: 是否启用本地分析
         """
-        self.sonarqube_url = sonarqube_url
-        self.sonarqube_token = sonarqube_token or os.getenv("SONARQUBE_TOKEN")
-        self.enable_local_analysis = enable_local_analysis
+        self.sonarqube_url = sonarqube_url or _get_default_sonarqube_url()
+        self.sonarqube_token = sonarqube_token or _get_default_sonarqube_token()
+        self.enable_local_analysis = (
+            enable_local_analysis
+            if enable_local_analysis is not None
+            else _get_default_local_analysis()
+        )
 
         # 质量指标权重
         self.weights = {

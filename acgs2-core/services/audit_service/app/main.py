@@ -103,7 +103,11 @@ async def record_validation(result: Dict[str, Any]):
         }
     except Exception as e:
         logger.error(f"Failed to record validation: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        # Improved error handling - don't leak internal details
+        raise HTTPException(
+            status_code=500,
+            detail="Audit service error. Please contact support if the problem persists.",
+        )
 
 
 @app.post("/verify")

@@ -45,3 +45,6 @@ acgs2-core/enhanced_agent_bus/venv/
 **/venv/bin/z3
 **/venv/**/*.so
 **/venv/**/*.pyd
+
+# Auto Claude data directory
+.auto-claude/
