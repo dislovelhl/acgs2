@@ -1,0 +1,25 @@
+# ACGS-2 Ruff Configuration
+# Constitutional Hash: cdd01ef066bc6cf2
+
+line-length = 100
+target-version = "py311"
+
+[lint]
+select = ["E", "F", "B", "I"]
+ignore = [
+    "E501",   # line too long, handled by black
+    "E402",   # module level import not at top - intentional for try/except fallback patterns
+    "F403",   # star imports - intentional for re-export modules
+]
+
+[lint.isort]
+known-first-party = ["shared", "services", "enhanced_agent_bus"]
+
+[lint.per-file-ignores]
+# Re-export modules intentionally import for external use
+"__init__.py" = ["F401"]
+# Test files may have unused variables for fixture creation
+"tests/*" = ["F841", "F401"]
+"*/tests/*" = ["F841", "F401"]
+"**/test_*.py" = ["F841", "F401"]
+"**/*_test.py" = ["F841", "F401"]
