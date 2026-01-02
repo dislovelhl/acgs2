@@ -9,3 +9,6 @@ pydantic-settings>=2.0.0
 slack-sdk>=3.0.0
 pymsteams>=0.2.0
 pdpyras>=5.0.0
+
+# Infrastructure Clients
+redis>=5.0.0
