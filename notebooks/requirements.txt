@@ -1,0 +1,33 @@
+# ACGS-2 Interactive Jupyter Notebooks - Python Dependencies
+# ============================================================
+#
+# These dependencies are required for running the interactive
+# Jupyter notebooks for policy experimentation and visualization.
+#
+# Install in your environment:
+#   pip install -r requirements.txt
+#
+# Or run via Docker Compose (recommended):
+#   docker compose up jupyter
+#   # Access at http://localhost:8888
+#
+# ============================================================
+
+# Jupyter Notebook (v7.x+ required for modern features)
+notebook>=7.0.0
+
+# Python kernel for Jupyter
+ipykernel>=6.0.0
+
+# Visualization libraries
+matplotlib>=3.0.0
+seaborn>=0.12.0
+
+# Data manipulation
+pandas>=2.0.0
+
+# HTTP client for OPA policy queries
+requests>=2.31.0
+
+# Optional: Interactive widgets for enhanced notebook experience
+ipywidgets>=8.0.0
