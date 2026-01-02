@@ -229,6 +229,16 @@ class MessageProcessor:
         if cached:
             return cached
 
+        # Extract session_id for multi-turn PACAR context tracking
+        # Priority: headers > content > payload (for flexibility)
+        session_id: Optional[str] = None
+        if hasattr(msg, "headers") and msg.headers:
+            session_id = msg.headers.get("X-Session-ID") or msg.headers.get("x-session-id")
+        if not session_id and hasattr(msg, "content") and isinstance(msg.content, dict):
+            session_id = msg.content.get("session_id")
+        if not session_id and hasattr(msg, "payload") and isinstance(msg.payload, dict):
+            session_id = msg.payload.get("session_id")
+
         # SDPC Logic (Phase 2/3)
         sdpc_metadata = {}
         content_str = str(msg.content)
