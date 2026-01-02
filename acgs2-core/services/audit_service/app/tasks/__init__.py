@@ -7,3 +7,15 @@ This package contains Celery tasks for:
 - Email delivery
 - Background processing
 """
+
+from .report_tasks import (
+    ReportGenerationResult,
+    generate_report_async,
+    generate_scheduled_report,
+)
+
+__all__ = [
+    "generate_scheduled_report",
+    "generate_report_async",
+    "ReportGenerationResult",
+]
