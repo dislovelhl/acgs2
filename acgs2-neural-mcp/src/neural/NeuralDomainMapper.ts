@@ -249,6 +249,28 @@ export interface TrainingConfig {
   validationSplit: number;
 }
 
+// ===== Neural Network Input/Output Types =====
+
+/**
+ * Neural network input type - can be an object with features or raw feature array
+ */
+export type NeuralInput = { features: number[]; id?: string; label?: number | string } | number[];
+
+/**
+ * Neural network target type
+ */
+export type NeuralTarget = number | number[];
+
+/**
+ * Cohesion factors for a domain
+ */
+export interface CohesionFactors {
+  structural: number;
+  functional: number;
+  behavioral: number;
+  semantic: number;
+}
+
 // ===== Main Class =====
 
 /**
@@ -375,14 +397,14 @@ export class NeuralDomainMapper extends EventEmitter {
       id: string;
       name: string;
       type: DomainNode["type"];
-      metadata: any;
+      metadata?: Partial<DomainNode["metadata"]>;
     }>,
     relationships: Array<{
       source: string;
       target: string;
       type: DomainEdge["type"];
       weight?: number;
-      metadata?: any;
+      metadata?: Partial<DomainEdge["metadata"]>;
     }>
   ): DomainGraph {
     // Clear existing graph
@@ -442,9 +464,27 @@ export class NeuralDomainMapper extends EventEmitter {
   }
 
   /**
+   * Domain input type for feature extraction
+   */
+  private static readonly DOMAIN_TYPES = [
+    "functional",
+    "technical",
+    "business",
+    "integration",
+    "data",
+    "ui",
+    "api",
+  ] as const;
+
+  /**
    * Extract numerical features from domain definition
    */
-  private extractDomainFeatures(domain: any): number[] {
+  private extractDomainFeatures(domain: {
+    id: string;
+    name: string;
+    type: DomainNode["type"];
+    metadata?: Partial<DomainNode["metadata"]>;
+  }): number[] {
     const features: number[] = [];
 
     // Type encoding (one-hot)
@@ -484,7 +524,13 @@ export class NeuralDomainMapper extends EventEmitter {
   /**
    * Extract numerical features from edge definition
    */
-  private extractEdgeFeatures(relationship: any): number[] {
+  private extractEdgeFeatures(relationship: {
+    source: string;
+    target: string;
+    type: DomainEdge["type"];
+    weight?: number;
+    metadata?: Partial<DomainEdge["metadata"]>;
+  }): number[] {
     const features: number[] = [];
 
     // Type encoding
@@ -1181,8 +1227,8 @@ export class NeuralDomainMapper extends EventEmitter {
    * Process a single batch
    */
   private async processBatch(
-    inputs: any[],
-    targets: any[]
+    inputs: Array<{ features: number[] } | number[]>,
+    targets: (number | number[])[]
   ): Promise<{ loss: number; accuracy: number }> {
     // Forward pass
     const predictions = inputs.map((input) => this.forwardPass(input));
@@ -1202,7 +1248,7 @@ export class NeuralDomainMapper extends EventEmitter {
   /**
    * Forward pass through the network
    */
-  private forwardPass(input: any): number[] {
+  private forwardPass(input: NeuralInput): number[] {
     let activation = this.preprocessInput(input);
 
     // Process through each layer
@@ -1221,9 +1267,9 @@ export class NeuralDomainMapper extends EventEmitter {
    * Backward pass for gradient calculation and weight updates
    */
   private async backwardPass(
-    inputs: any[],
+    inputs: NeuralInput[],
     predictions: number[][],
-    targets: any[]
+    targets: NeuralTarget[]
   ): Promise<void> {
     // Calculate output gradients
     const outputGradients = this.calculateOutputGradients(predictions, targets);
@@ -1255,7 +1301,7 @@ export class NeuralDomainMapper extends EventEmitter {
    * @param input Input data for prediction
    * @returns Prediction results
    */
-  public async predict(input: any): Promise<Prediction> {
+  public async predict(input: NeuralInput): Promise<Prediction> {
     if (this.isTraining) {
       throw new Error("Cannot make predictions during training");
     }
@@ -1381,13 +1427,22 @@ export class NeuralDomainMapper extends EventEmitter {
     }
   }
 
-  private preprocessInput(input: any): number[] {
+  private preprocessInput(input: NeuralInput): number[] {
     // Convert input to numerical features
-    if (typeof input === "object" && input.features) {
+    if (Array.isArray(input)) {
+      // If it's already a number array, use it directly (with padding if needed)
+      const features = [...input];
+      while (features.length < 64) {
+        features.push(0);
+      }
+      return features.slice(0, 64);
+    }
+
+    if (typeof input === "object" && "features" in input && input.features) {
       return input.features;
     }
 
-    // Default preprocessing
+    // Default preprocessing - return zeros
     return Array.from({ length: 64 }, () => 0);
   }
 
@@ -1443,7 +1498,7 @@ export class NeuralDomainMapper extends EventEmitter {
     }
   }
 
-  private calculateLoss(predictions: number[][], targets: any[]): number {
+  private calculateLoss(predictions: number[][], targets: NeuralTarget[]): number {
     let totalLoss = 0;
 
     for (let i = 0; i < predictions.length; i++) {
@@ -1460,7 +1515,7 @@ export class NeuralDomainMapper extends EventEmitter {
     return totalLoss / predictions.length;
   }
 
-  private calculateAccuracy(predictions: number[][], targets: any[]): number {
+  private calculateAccuracy(predictions: number[][], targets: NeuralTarget[]): number {
     let correct = 0;
 
     for (let i = 0; i < predictions.length; i++) {
@@ -1484,7 +1539,7 @@ export class NeuralDomainMapper extends EventEmitter {
 
   private calculateOutputGradients(
     predictions: number[][],
-    targets: any[]
+    targets: NeuralTarget[]
   ): number[][] {
     const gradients: number[][] = [];
 
@@ -1597,10 +1652,10 @@ export class NeuralDomainMapper extends EventEmitter {
   }
 
   private async generateAlternativePredictions(
-    input: any,
+    input: NeuralInput,
     count: number
-  ): Promise<Array<{ output: any; confidence: number }>> {
-    const alternatives: Array<{ output: any; confidence: number }> = [];
+  ): Promise<Array<{ output: number[]; confidence: number }>> {
+    const alternatives: Array<{ output: number[]; confidence: number }> = [];
 
     // Generate alternatives using noise injection
     for (let i = 0; i < count; i++) {
@@ -1614,8 +1669,12 @@ export class NeuralDomainMapper extends EventEmitter {
     return alternatives.sort((a, b) => b.confidence - a.confidence);
   }
 
-  private addNoiseToInput(input: any, noiseLevel: number): any {
-    if (typeof input === "object" && input.features) {
+  private addNoiseToInput(input: NeuralInput, noiseLevel: number): NeuralInput {
+    if (Array.isArray(input)) {
+      return input.map((f) => f + (Math.random() - 0.5) * noiseLevel);
+    }
+
+    if (typeof input === "object" && "features" in input && input.features) {
       const noisyFeatures = input.features.map(
         (f: number) => f + (Math.random() - 0.5) * noiseLevel
       );
@@ -1722,9 +1781,22 @@ export class NeuralDomainMapper extends EventEmitter {
   // Stub implementations for remaining methods
   private generateCohesionSuggestions(
     domainId: string,
-    factors: any
+    factors: CohesionFactors
   ): string[] {
-    return ["Improve structural cohesion", "Enhance functional alignment"];
+    const suggestions: string[] = [];
+    if (factors.structural < 0.5) {
+      suggestions.push("Improve structural cohesion");
+    }
+    if (factors.functional < 0.5) {
+      suggestions.push("Enhance functional alignment");
+    }
+    if (factors.behavioral < 0.5) {
+      suggestions.push("Improve behavioral consistency");
+    }
+    if (factors.semantic < 0.5) {
+      suggestions.push("Strengthen semantic relationships");
+    }
+    return suggestions.length > 0 ? suggestions : ["No immediate improvements needed"];
   }
 
   private identifyWeaknessReason(
@@ -1742,84 +1814,124 @@ export class NeuralDomainMapper extends EventEmitter {
 
   private async generateCohesionRecommendations(
     domainScores: Map<string, number>,
-    weakPoints: any[]
+    weakPoints: CohesionAnalysis["weakPoints"]
   ): Promise<CohesionAnalysis["recommendations"]> {
-    return [
-      {
-        type: "restructure",
-        target: ["domain1", "domain2"],
-        impact: 0.3,
-        confidence: 0.8,
-      },
-    ];
+    const recommendations: CohesionAnalysis["recommendations"] = [];
+
+    // Generate recommendations based on weak points
+    for (const weakPoint of weakPoints) {
+      if (weakPoint.score < 0.4) {
+        recommendations.push({
+          type: "restructure",
+          target: [weakPoint.domainId],
+          impact: 0.4 - weakPoint.score,
+          confidence: 0.8,
+        });
+      } else if (weakPoint.score < 0.6) {
+        recommendations.push({
+          type: "strengthen",
+          target: [weakPoint.domainId],
+          impact: 0.2,
+          confidence: 0.7,
+        });
+      }
+    }
+
+    return recommendations.length > 0
+      ? recommendations
+      : [{ type: "restructure", target: [], impact: 0, confidence: 0.5 }];
   }
 
   private async generateDependencyOptimizations(
-    dependencyGraph: any,
-    circularDependencies: any,
-    criticalPaths: any
+    dependencyGraph: Map<string, string[]>,
+    circularDependencies: string[][],
+    criticalPaths: DependencyAnalysis["criticalPaths"]
   ): Promise<DependencyAnalysis["optimizations"]> {
-    return [
-      {
+    const optimizations: DependencyAnalysis["optimizations"] = [];
+
+    // Generate optimizations for circular dependencies
+    for (const cycle of circularDependencies) {
+      optimizations.push({
         type: "break-cycle",
-        affected: ["domain1", "domain2"],
+        affected: cycle,
         benefit: 0.5,
         effort: 0.3,
-      },
-    ];
+      });
+    }
+
+    // Generate optimizations for critical paths
+    for (const path of criticalPaths) {
+      if (path.risk > 0.5) {
+        optimizations.push({
+          type: "reduce-coupling",
+          affected: path.path,
+          benefit: path.risk * 0.8,
+          effort: 0.4,
+        });
+      }
+    }
+
+    return optimizations.length > 0
+      ? optimizations
+      : [{ type: "break-cycle", affected: [], benefit: 0, effort: 0 }];
   }
 
   private async generateMergeProposals(
-    proposals: any[],
-    cohesionAnalysis: any,
-    dependencyAnalysis: any
+    proposals: BoundaryOptimization["proposals"],
+    cohesionAnalysis: CohesionAnalysis,
+    dependencyAnalysis: DependencyAnalysis
   ): Promise<void> {
     // Implementation would analyze highly coupled domains for merge opportunities
+    // This is a stub - real implementation would analyze cohesion and dependency patterns
   }
 
   private async generateSplitProposals(
-    proposals: any[],
-    cohesionAnalysis: any,
-    dependencyAnalysis: any
+    proposals: BoundaryOptimization["proposals"],
+    cohesionAnalysis: CohesionAnalysis,
+    dependencyAnalysis: DependencyAnalysis
   ): Promise<void> {
     // Implementation would identify large, low-cohesion domains for splitting
+    // This is a stub - real implementation would analyze domain complexity
   }
 
   private async generateRelocationProposals(
-    proposals: any[],
-    cohesionAnalysis: any,
-    dependencyAnalysis: any
+    proposals: BoundaryOptimization["proposals"],
+    cohesionAnalysis: CohesionAnalysis,
+    dependencyAnalysis: DependencyAnalysis
   ): Promise<void> {
     // Implementation would suggest moving functionality between domains
+    // This is a stub - real implementation would analyze misplaced functionality
   }
 
   private async generateAbstractionProposals(
-    proposals: any[],
-    cohesionAnalysis: any,
-    dependencyAnalysis: any
+    proposals: BoundaryOptimization["proposals"],
+    cohesionAnalysis: CohesionAnalysis,
+    dependencyAnalysis: DependencyAnalysis
   ): Promise<void> {
     // Implementation would identify common patterns for abstraction
+    // This is a stub - real implementation would detect repeated patterns
   }
 
-  private calculateOptimizationScore(proposals: any[]): number {
+  private calculateOptimizationScore(proposals: BoundaryOptimization["proposals"]): number {
     return proposals.reduce((score, p) => score + p.confidence * 0.1, 0);
   }
 
   private determinePriority(
-    cohesionAnalysis: any,
-    dependencyAnalysis: any,
+    cohesionAnalysis: CohesionAnalysis,
+    dependencyAnalysis: DependencyAnalysis,
     optimizationScore: number
   ): "low" | "medium" | "high" | "critical" {
     if (cohesionAnalysis.overallScore < 0.3) return "critical";
+    if (dependencyAnalysis.circularDependencies.length > 3) return "high";
     if (optimizationScore > 0.7) return "high";
     if (optimizationScore > 0.4) return "medium";
     return "low";
   }
 
   private generateHighLevelRecommendations(
-    cohesion: any,
-    dependencies: any,
-    optimization: any
+    cohesion: CohesionAnalysis,
+    dependencies: DependencyAnalysis,
+    optimization: BoundaryOptimization
   ): string[] {
     const recommendations = [];
 

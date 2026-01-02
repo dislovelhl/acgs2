@@ -3,6 +3,40 @@ import chalk from 'chalk';
 import ora from 'ora';
 import { performAnalysis } from '../services/analysisService';
 
+// Type definitions for analysis results
+interface AnalysisFinding {
+  message: string;
+  severity: 'critical' | 'high' | 'medium' | 'low' | 'info';
+  file?: string;
+  line?: number;
+  category?: string;
+  recommendation?: string;
+}
+
+interface AnalysisRecommendation {
+  description: string;
+  priority?: string;
+  estimatedEffort?: string;
+  benefits?: string;
+}
+
+interface AnalysisSummary {
+  filesAnalyzed: number;
+  totalFindings?: number;
+}
+
+interface AnalysisResult {
+  focus: string;
+  target: string;
+  depth: string;
+  summary: AnalysisSummary;
+  findings?: AnalysisFinding[];
+  recommendations?: AnalysisRecommendation[];
+  metrics?: Record<string, string | number>;
+}
+
+type SeverityLevel = 'critical' | 'high' | 'medium' | 'low' | 'info';
+
 export const analyzeCommand = new Command('analyze')
   .description('Code analysis and quality assessment')
   .argument('[target]', 'Target directory or file to analyze', '.')
@@ -78,7 +112,7 @@ export const analyzeCommand = new Command('analyze')
     }
   });
 
-function displayTextFormat(result: any): void {
+function displayTextFormat(result: AnalysisResult): void {
   console.log(chalk.blue(`\n📊 Analysis Results - ${result.focus.toUpperCase()} Focus`));
   console.log(chalk.gray(`Target: ${result.target}`));
   console.log(chalk.gray(`Files analyzed: ${result.summary.filesAnalyzed}`));
@@ -89,18 +123,22 @@ function displayTextFormat(result: any): void {
     console.log(chalk.yellow(`\n⚠️  Findings (${result.findings.length}):`));
 
     // Group by severity
-    const bySeverity = result.findings.reduce((acc: any, finding: any) => {
-      acc[finding.severity] = acc[finding.severity] || [];
-      acc[finding.severity].push(finding);
-      return acc;
-    }, {});
+    const bySeverity = result.findings.reduce<Record<SeverityLevel, AnalysisFinding[]>>(
+      (acc, finding) => {
+        acc[finding.severity] = acc[finding.severity] || [];
+        acc[finding.severity].push(finding);
+        return acc;
+      },
+      { critical: [], high: [], medium: [], low: [], info: [] }
+    );
 
-    ['critical', 'high', 'medium', 'low', 'info'].forEach(severity => {
+    const severityLevels: SeverityLevel[] = ['critical', 'high', 'medium', 'low', 'info'];
+    severityLevels.forEach(severity => {
       if (bySeverity[severity] && bySeverity[severity].length > 0) {
         const severityColorFn = getSeverityColor(severity);
         console.log(severityColorFn(`\n${severity.toUpperCase()} (${bySeverity[severity].length}):`));
 
-        bySeverity[severity].forEach((finding: any) => {
+        bySeverity[severity].forEach((finding) => {
           console.log(chalk.gray(`  • ${finding.message}`));
           if (finding.file) {
             console.log(chalk.gray(`    📁 ${finding.file}${finding.line ? `:${finding.line}` : ''}`));
@@ -115,7 +153,7 @@ function displayTextFormat(result: any): void {
 
   if (result.recommendations && result.recommendations.length > 0) {
     console.log(chalk.green(`\n🚀 Recommendations:`));
-    result.recommendations.forEach((rec: any, index: number) => {
+    result.recommendations.forEach((rec, index) => {
       console.log(chalk.gray(`  ${index + 1}. ${rec.description}`));
       if (rec.priority) {
         console.log(chalk.gray(`     Priority: ${rec.priority}`));
@@ -134,7 +172,7 @@ function displayTextFormat(result: any): void {
   }
 }
 
-function displayReportFormat(result: any): void {
+function displayReportFormat(result: AnalysisResult): void {
   console.log(chalk.blue(`\n📋 Analysis Report - ${result.focus.toUpperCase()} Focus`));
   console.log('='.repeat(60));
 
@@ -149,10 +187,13 @@ function displayReportFormat(result: any): void {
   if (result.findings && result.findings.length > 0) {
     console.log(chalk.bold('\nFINDINGS BY SEVERITY'));
 
-    const severityStats = result.findings.reduce((acc: any, finding: any) => {
-      acc[finding.severity] = (acc[finding.severity] || 0) + 1;
-      return acc;
-    }, {});
+    const severityStats = result.findings.reduce<Record<string, number>>(
+      (acc, finding) => {
+        acc[finding.severity] = (acc[finding.severity] || 0) + 1;
+        return acc;
+      },
+      {}
+    );
 
     Object.entries(severityStats).forEach(([severity, count]) => {
       const colorFn = getSeverityColor(severity);
@@ -160,7 +201,7 @@ function displayReportFormat(result: any): void {
     });
 
     console.log(chalk.bold('\nDETAILED FINDINGS'));
-    result.findings.forEach((finding: any, index: number) => {
+    result.findings.forEach((finding, index) => {
       const colorFn = getSeverityColor(finding.severity);
       console.log(colorFn(`\n${index + 1}. ${finding.message}`));
       console.log(`   Severity: ${finding.severity.toUpperCase()}`);
@@ -178,7 +219,7 @@ function displayReportFormat(result: any): void {
 
   if (result.recommendations && result.recommendations.length > 0) {
     console.log(chalk.bold('\nRECOMMENDATIONS'));
-    result.recommendations.forEach((rec: any, index: number) => {
+    result.recommendations.forEach((rec, index) => {
       console.log(`\n${index + 1}. ${rec.description}`);
       console.log(`   Priority: ${rec.priority || 'Medium'}`);
       console.log(`   Estimated Effort: ${rec.estimatedEffort || 'Unknown'}`);

@@ -9,12 +9,19 @@ import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 try:
     from .exceptions import MessageValidationError
 except ImportError:
     pass  # type: ignore
+
+# Type aliases for more specific typing
+MessageContent = Dict[str, Union[str, int, float, bool, List[Any], Dict[str, Any], None]]
+SecurityContext = Dict[str, Union[str, List[str], Dict[str, str], None]]
+PerformanceMetrics = Dict[str, Union[int, float, str, None]]
+MetadataDict = Dict[str, Union[str, int, float, bool, List[str], Dict[str, str], None]]
+EnumOrString = Union[Enum, str]
 
 # Import centralized constitutional hash from shared module
 try:
@@ -24,7 +31,7 @@ except ImportError:
     CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
 
 
-def get_enum_value(enum_or_str: Any) -> str:
+def get_enum_value(enum_or_str: EnumOrString) -> str:
     """
     Safely extract enum value, handling cross-module enum identity issues.
 
@@ -33,13 +40,13 @@ def get_enum_value(enum_or_str: Any) -> str:
     This function extracts the underlying string value regardless of class identity.
 
     Args:
-        enum_or_str: An enum instance, string, or other value
+        enum_or_str: An enum instance or string value
 
     Returns:
         The string value of the enum or the stringified input
     """
-    if hasattr(enum_or_str, "value"):
-        return enum_or_str.value
+    if isinstance(enum_or_str, Enum):
+        return str(enum_or_str.value)
     return str(enum_or_str)
 
 
@@ -149,8 +156,8 @@ class AgentMessage:
     conversation_id: str = field(default_factory=lambda: str(uuid.uuid4()))
 
     # Content and routing
-    content: Dict[str, Any] = field(default_factory=dict)
-    payload: Dict[str, Any] = field(default_factory=dict)
+    content: MessageContent = field(default_factory=dict)
+    payload: MessageContent = field(default_factory=dict)
     from_agent: str = ""
     to_agent: str = ""
     sender_id: str = ""
@@ -160,7 +167,7 @@ class AgentMessage:
 
     # Multi-tenant security
     tenant_id: str = ""
-    security_context: Dict[str, Any] = field(default_factory=dict)
+    security_context: SecurityContext = field(default_factory=dict)
 
     # Priority and lifecycle
     priority: Priority = Priority.MEDIUM
@@ -179,7 +186,7 @@ class AgentMessage:
     impact_score: Optional[float] = None
 
     # Performance tracking
-    performance_metrics: Dict[str, Any] = field(default_factory=dict)
+    performance_metrics: PerformanceMetrics = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         """Post-initialization validation."""
@@ -251,7 +258,7 @@ class DecisionLog:
     constitutional_hash: str = CONSTITUTIONAL_HASH
     timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     compliance_tags: List[str] = field(default_factory=list)
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: MetadataDict = field(default_factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert log to dictionary."""
@@ -271,13 +278,24 @@ class DecisionLog:
 
 
 __all__ = [
+    # Type aliases
+    "MessageContent",
+    "SecurityContext",
+    "PerformanceMetrics",
+    "MetadataDict",
+    "EnumOrString",
+    # Constants
     "CONSTITUTIONAL_HASH",
+    # Enums
     "MessageType",
     "Priority",
     "ValidationStatus",
     "MessagePriority",
     "MessageStatus",
+    # Data classes
     "RoutingContext",
     "AgentMessage",
     "DecisionLog",
+    # Utility functions
+    "get_enum_value",
 ]
