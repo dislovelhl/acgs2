@@ -18,7 +18,6 @@ from prometheus_client import (
     Histogram,
 )
 
-
 # ============================================================================
 # Metric Registration Helpers (handle duplicate registration gracefully)
 # ============================================================================
@@ -184,6 +183,12 @@ CACHE_OPERATION_DURATION = {
     "L2": CACHE_OPERATION_DURATION_L2,
     "L3": CACHE_OPERATION_DURATION_L3,
 }
+
+# Convenient aliases for tier-specific latency histograms
+# These provide a simpler naming convention for direct tier access
+L1_LATENCY = CACHE_OPERATION_DURATION_L1
+L2_LATENCY = CACHE_OPERATION_DURATION_L2
+L3_LATENCY = CACHE_OPERATION_DURATION_L3
 
 # ============================================================================
 # Cache Size and Capacity Gauges
@@ -387,6 +392,10 @@ __all__ = [
     "CACHE_OPERATION_DURATION_L2",
     "CACHE_OPERATION_DURATION_L3",
     "CACHE_OPERATION_DURATION",
+    # Tier-specific latency histogram aliases
+    "L1_LATENCY",
+    "L2_LATENCY",
+    "L3_LATENCY",
     # Size/Capacity Gauges
     "CACHE_SIZE",
     "CACHE_ENTRIES",
