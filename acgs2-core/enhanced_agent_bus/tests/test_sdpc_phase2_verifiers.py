@@ -121,3 +121,93 @@ async def test_pacar_verify_with_context_new_session():
     assert len(conversation_data["messages"]) == 1
     assert conversation_data["messages"][0]["role"] == "user"
     assert conversation_data["messages"][0]["content"] == "Test content for new session"
+
+
+@pytest.mark.asyncio
+async def test_pacar_verify_with_context_existing_session():
+    """Test PACAR verifier retrieves and appends to existing conversation state"""
+    verifier = PACARVerifier()
+
+    # Pre-existing conversation data from previous interaction
+    existing_conversation = {
+        "session_id": "existing-session-456",
+        "tenant_id": "test-tenant",
+        "messages": [
+            {
+                "role": "user",
+                "content": "First message in session",
+                "timestamp": "2024-01-01T10:00:00+00:00",
+                "intent": "initial_intent",
+                "verification_result": {"is_valid": True, "confidence": 0.95},
+            },
+            {
+                "role": "user",
+                "content": "Second message in session",
+                "timestamp": "2024-01-01T10:05:00+00:00",
+                "intent": "followup_intent",
+                "verification_result": {"is_valid": True, "confidence": 0.88},
+            },
+        ],
+        "created_at": "2024-01-01T10:00:00+00:00",
+        "updated_at": "2024-01-01T10:05:00+00:00",
+    }
+
+    # Mock Redis client - return existing conversation data
+    mock_redis = MagicMock()
+    mock_redis.get = AsyncMock(return_value=json.dumps(existing_conversation))
+    mock_redis.setex = AsyncMock(return_value=True)
+    verifier.redis_client = mock_redis
+
+    # Mock LLM Assistant
+    mock_assistant = MagicMock()
+    mock_assistant.analyze_message_impact = AsyncMock(
+        return_value={
+            "risk_level": "low",
+            "confidence": 0.92,
+            "reasoning": ["Context verified with history"],
+            "mitigations": ["None"],
+        }
+    )
+    verifier.assistant = mock_assistant
+
+    result = await verifier.verify_with_context(
+        content="Third message continuing conversation",
+        original_intent="continuation_intent",
+        session_id="existing-session-456",
+        tenant_id="test-tenant",
+    )
+
+    # Verify result structure
+    assert result["is_valid"] is True
+    assert result["confidence"] == 0.92
+    assert result["session_id"] == "existing-session-456"
+    assert result["message_count"] == 3  # 2 existing + 1 new
+    assert result["consensus_reached"] is True
+
+    # Verify Redis operations
+    mock_redis.get.assert_called_once()
+    mock_redis.setex.assert_called_once()
+
+    # Verify the stored conversation data includes all messages
+    call_args = mock_redis.setex.call_args
+    stored_key = call_args[0][0]
+    stored_ttl = call_args[0][1]
+    stored_data = call_args[0][2]
+
+    assert "existing-session-456" in stored_key
+    assert stored_ttl == 3600  # Default TTL
+    conversation_data = json.loads(stored_data)
+    assert conversation_data["session_id"] == "existing-session-456"
+    assert conversation_data["tenant_id"] == "test-tenant"
+    assert len(conversation_data["messages"]) == 3
+
+    # Verify existing messages are preserved
+    assert conversation_data["messages"][0]["content"] == "First message in session"
+    assert conversation_data["messages"][1]["content"] == "Second message in session"
+
+    # Verify new message was appended
+    assert conversation_data["messages"][2]["role"] == "user"
+    assert conversation_data["messages"][2]["content"] == "Third message continuing conversation"
+    assert conversation_data["messages"][2]["intent"] == "continuation_intent"
+    assert conversation_data["messages"][2]["verification_result"]["is_valid"] is True
+    assert conversation_data["messages"][2]["verification_result"]["confidence"] == 0.92
