@@ -1,0 +1,778 @@
+{% extends "base_report.html" %}
+
+{# ==========================================================================
+   SOC 2 Compliance Report Template
+
+   Service Organization Control (SOC) 2 Type II Report
+   Based on AICPA Trust Service Criteria (TSC)
+
+   Trust Service Criteria Categories:
+   - Security (Common Criteria - Required for all SOC 2 reports)
+   - Availability
+   - Processing Integrity
+   - Confidentiality
+   - Privacy
+   ========================================================================== #}
+
+{% block title %}SOC 2 Type II Compliance Report - {{ company_name | default('ACGS-2') }}{% endblock %}
+
+{% block report_type %}SOC 2 Type II Compliance Report{% endblock %}
+
+{% block framework_name %}SOC 2{% endblock %}
+
+{% block extra_styles %}
+/* SOC 2 specific styles - uses blue color scheme */
+body {
+    --brand-color: #1565c0;
+    --brand-color-light: #1565c01a;
+    --brand-color-dark: #0d47a1;
+}
+
+.tsc-category {
+    margin-bottom: 35px;
+}
+
+.tsc-header {
+    background: linear-gradient(135deg, var(--brand-color) 0%, var(--brand-color-dark) 100%);
+    color: #ffffff;
+    padding: 20px 25px;
+    border-radius: 10px 10px 0 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.tsc-title {
+    font-size: 14pt;
+    font-weight: 700;
+    margin: 0;
+}
+
+.tsc-subtitle {
+    font-size: 10pt;
+    opacity: 0.9;
+    margin-top: 5px;
+}
+
+.tsc-status-badge {
+    background: rgba(255, 255, 255, 0.2);
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 10pt;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.tsc-status-badge.compliant {
+    background: #4caf50;
+}
+
+.tsc-status-badge.partial {
+    background: #ff9800;
+}
+
+.tsc-status-badge.non-compliant {
+    background: #f44336;
+}
+
+.tsc-body {
+    background: #ffffff;
+    border: 1px solid #dee2e6;
+    border-top: none;
+    border-radius: 0 0 10px 10px;
+    padding: 25px;
+}
+
+.tsc-description {
+    font-size: 10pt;
+    color: #666666;
+    margin-bottom: 20px;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border-left: 3px solid var(--brand-color);
+}
+
+.tsc-metrics {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.tsc-metric {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    text-align: center;
+}
+
+.tsc-metric-value {
+    font-size: 24pt;
+    font-weight: 700;
+    color: var(--brand-color);
+}
+
+.tsc-metric-label {
+    font-size: 9pt;
+    color: #666666;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 5px;
+}
+
+.control-item {
+    margin-bottom: 15px;
+    padding: 15px;
+    background: #fafafa;
+    border-radius: 8px;
+    border-left: 3px solid #dee2e6;
+}
+
+.control-item.control-passed {
+    border-left-color: #4caf50;
+}
+
+.control-item.control-failed {
+    border-left-color: #f44336;
+}
+
+.control-item.control-partial {
+    border-left-color: #ff9800;
+}
+
+.control-id {
+    font-size: 9pt;
+    font-weight: 700;
+    color: var(--brand-color);
+    text-transform: uppercase;
+    margin-bottom: 5px;
+}
+
+.control-name {
+    font-size: 11pt;
+    font-weight: 600;
+    color: #333333;
+    margin-bottom: 8px;
+}
+
+.control-evidence {
+    font-size: 10pt;
+    color: #666666;
+    margin-bottom: 8px;
+}
+
+.control-result {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 4px;
+    font-size: 9pt;
+    font-weight: 600;
+}
+
+.control-result.passed {
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+
+.control-result.failed {
+    background: #ffebee;
+    color: #c62828;
+}
+
+.control-result.partial {
+    background: #fff3e0;
+    color: #ef6c00;
+}
+
+.soc2-overview {
+    margin-bottom: 30px;
+}
+
+.overview-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 15px;
+}
+
+.overview-card {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    padding: 20px;
+    border-radius: 10px;
+    text-align: center;
+    border: 1px solid #dee2e6;
+}
+
+.overview-card-title {
+    font-size: 9pt;
+    font-weight: 700;
+    color: var(--brand-color);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 10px;
+}
+
+.overview-card-score {
+    font-size: 20pt;
+    font-weight: 700;
+}
+
+.overview-card-score.score-pass {
+    color: #2e7d32;
+}
+
+.overview-card-score.score-partial {
+    color: #ef6c00;
+}
+
+.overview-card-score.score-fail {
+    color: #c62828;
+}
+
+.auditor-statement {
+    background: #e3f2fd;
+    border: 1px solid #90caf9;
+    border-radius: 10px;
+    padding: 25px;
+    margin-top: 30px;
+}
+
+.auditor-statement h3 {
+    font-size: 12pt;
+    font-weight: 700;
+    color: #1565c0;
+    margin-bottom: 15px;
+}
+
+.auditor-statement p {
+    font-size: 10pt;
+    color: #333333;
+    line-height: 1.8;
+}
+
+@media print {
+    .tsc-category {
+        page-break-inside: avoid;
+    }
+}
+{% endblock %}
+
+{% block framework_content %}
+{# ==========================================================================
+   SOC 2 Overview Summary
+   ========================================================================== #}
+<section class="section soc2-overview">
+    <h2 class="section-title">SOC 2 Trust Service Criteria Overview</h2>
+
+    <div class="overview-grid">
+        <div class="overview-card">
+            <div class="overview-card-title">Security</div>
+            <div class="overview-card-score {% if soc2_data and soc2_data.security and soc2_data.security.compliance_rate >= 90 %}score-pass{% elif soc2_data and soc2_data.security and soc2_data.security.compliance_rate >= 70 %}score-partial{% else %}score-fail{% endif %}">
+                {{ soc2_data.security.compliance_rate | default('N/A') }}{% if soc2_data and soc2_data.security and soc2_data.security.compliance_rate is defined %}%{% endif %}
+            </div>
+        </div>
+        <div class="overview-card">
+            <div class="overview-card-title">Availability</div>
+            <div class="overview-card-score {% if soc2_data and soc2_data.availability and soc2_data.availability.compliance_rate >= 90 %}score-pass{% elif soc2_data and soc2_data.availability and soc2_data.availability.compliance_rate >= 70 %}score-partial{% else %}score-fail{% endif %}">
+                {{ soc2_data.availability.compliance_rate | default('N/A') }}{% if soc2_data and soc2_data.availability and soc2_data.availability.compliance_rate is defined %}%{% endif %}
+            </div>
+        </div>
+        <div class="overview-card">
+            <div class="overview-card-title">Processing Integrity</div>
+            <div class="overview-card-score {% if soc2_data and soc2_data.processing_integrity and soc2_data.processing_integrity.compliance_rate >= 90 %}score-pass{% elif soc2_data and soc2_data.processing_integrity and soc2_data.processing_integrity.compliance_rate >= 70 %}score-partial{% else %}score-fail{% endif %}">
+                {{ soc2_data.processing_integrity.compliance_rate | default('N/A') }}{% if soc2_data and soc2_data.processing_integrity and soc2_data.processing_integrity.compliance_rate is defined %}%{% endif %}
+            </div>
+        </div>
+        <div class="overview-card">
+            <div class="overview-card-title">Confidentiality</div>
+            <div class="overview-card-score {% if soc2_data and soc2_data.confidentiality and soc2_data.confidentiality.compliance_rate >= 90 %}score-pass{% elif soc2_data and soc2_data.confidentiality and soc2_data.confidentiality.compliance_rate >= 70 %}score-partial{% else %}score-fail{% endif %}">
+                {{ soc2_data.confidentiality.compliance_rate | default('N/A') }}{% if soc2_data and soc2_data.confidentiality and soc2_data.confidentiality.compliance_rate is defined %}%{% endif %}
+            </div>
+        </div>
+        <div class="overview-card">
+            <div class="overview-card-title">Privacy</div>
+            <div class="overview-card-score {% if soc2_data and soc2_data.privacy and soc2_data.privacy.compliance_rate >= 90 %}score-pass{% elif soc2_data and soc2_data.privacy and soc2_data.privacy.compliance_rate >= 70 %}score-partial{% else %}score-fail{% endif %}">
+                {{ soc2_data.privacy.compliance_rate | default('N/A') }}{% if soc2_data and soc2_data.privacy and soc2_data.privacy.compliance_rate is defined %}%{% endif %}
+            </div>
+        </div>
+    </div>
+</section>
+
+{# ==========================================================================
+   Security (Common Criteria) - Required for all SOC 2 reports
+   ========================================================================== #}
+<section class="section tsc-category">
+    <div class="tsc-header">
+        <div>
+            <h2 class="tsc-title">Security (Common Criteria)</h2>
+            <p class="tsc-subtitle">CC1.0 - CC9.0 | Required for all SOC 2 engagements</p>
+        </div>
+        <span class="tsc-status-badge {% if soc2_data and soc2_data.security and soc2_data.security.status == 'COMPLIANT' %}compliant{% elif soc2_data and soc2_data.security and soc2_data.security.status == 'PARTIAL' %}partial{% else %}non-compliant{% endif %}">
+            {{ soc2_data.security.status | default('PENDING') if soc2_data and soc2_data.security else 'PENDING' }}
+        </span>
+    </div>
+    <div class="tsc-body">
+        <div class="tsc-description">
+            <strong>Trust Service Criteria:</strong> Information and systems are protected against unauthorized access,
+            unauthorized disclosure of information, and damage to systems that could compromise the availability,
+            integrity, confidentiality, and privacy of information or systems and affect the entity's ability to
+            achieve its objectives.
+        </div>
+
+        <div class="tsc-metrics">
+            <div class="tsc-metric">
+                <div class="tsc-metric-value">{{ soc2_data.security.total_controls | default(0) if soc2_data and soc2_data.security else 0 }}</div>
+                <div class="tsc-metric-label">Total Controls</div>
+            </div>
+            <div class="tsc-metric">
+                <div class="tsc-metric-value status-pass">{{ soc2_data.security.controls_passed | default(0) if soc2_data and soc2_data.security else 0 }}</div>
+                <div class="tsc-metric-label">Controls Passed</div>
+            </div>
+            <div class="tsc-metric">
+                <div class="tsc-metric-value status-fail">{{ soc2_data.security.controls_failed | default(0) if soc2_data and soc2_data.security else 0 }}</div>
+                <div class="tsc-metric-label">Controls Failed</div>
+            </div>
+        </div>
+
+        {% if soc2_data and soc2_data.security and soc2_data.security.controls %}
+        <h3 class="subsection-title">Control Assessment Details</h3>
+        {% for control in soc2_data.security.controls %}
+        <div class="control-item {% if control.status == 'PASSED' %}control-passed{% elif control.status == 'FAILED' %}control-failed{% else %}control-partial{% endif %}">
+            <div class="control-id">{{ control.id | default('N/A') }}</div>
+            <div class="control-name">{{ control.name | default('Untitled Control') }}</div>
+            <div class="control-evidence">{{ control.evidence | default('No evidence recorded') }}</div>
+            <span class="control-result {% if control.status == 'PASSED' %}passed{% elif control.status == 'FAILED' %}failed{% else %}partial{% endif %}">
+                {{ control.status | default('PENDING') }}
+            </span>
+        </div>
+        {% endfor %}
+        {% else %}
+        <p class="no-data">No security controls data available for this reporting period.</p>
+        {% endif %}
+    </div>
+</section>
+
+{# ==========================================================================
+   Availability
+   ========================================================================== #}
+<section class="section tsc-category">
+    <div class="tsc-header">
+        <div>
+            <h2 class="tsc-title">Availability</h2>
+            <p class="tsc-subtitle">A1.0 | System availability for operation and use</p>
+        </div>
+        <span class="tsc-status-badge {% if soc2_data and soc2_data.availability and soc2_data.availability.status == 'COMPLIANT' %}compliant{% elif soc2_data and soc2_data.availability and soc2_data.availability.status == 'PARTIAL' %}partial{% else %}non-compliant{% endif %}">
+            {{ soc2_data.availability.status | default('PENDING') if soc2_data and soc2_data.availability else 'PENDING' }}
+        </span>
+    </div>
+    <div class="tsc-body">
+        <div class="tsc-description">
+            <strong>Trust Service Criteria:</strong> Information and systems are available for operation and use
+            to meet the entity's objectives. The system is available for operation and use as committed or agreed.
+        </div>
+
+        <div class="tsc-metrics">
+            <div class="tsc-metric">
+                <div class="tsc-metric-value">{{ soc2_data.availability.total_controls | default(0) if soc2_data and soc2_data.availability else 0 }}</div>
+                <div class="tsc-metric-label">Total Controls</div>
+            </div>
+            <div class="tsc-metric">
+                <div class="tsc-metric-value status-pass">{{ soc2_data.availability.controls_passed | default(0) if soc2_data and soc2_data.availability else 0 }}</div>
+                <div class="tsc-metric-label">Controls Passed</div>
+            </div>
+            <div class="tsc-metric">
+                <div class="tsc-metric-value status-fail">{{ soc2_data.availability.controls_failed | default(0) if soc2_data and soc2_data.availability else 0 }}</div>
+                <div class="tsc-metric-label">Controls Failed</div>
+            </div>
+        </div>
+
+        {% if soc2_data and soc2_data.availability and soc2_data.availability.uptime_metrics %}
+        <h3 class="subsection-title">System Uptime Metrics</h3>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Service</th>
+                    <th>Uptime %</th>
+                    <th>Downtime (Hours)</th>
+                    <th>SLA Target</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for metric in soc2_data.availability.uptime_metrics %}
+                <tr>
+                    <td>{{ metric.service | default('N/A') }}</td>
+                    <td>{{ "%.2f"|format(metric.uptime_percent) }}%</td>
+                    <td>{{ "%.1f"|format(metric.downtime_hours) }}</td>
+                    <td>{{ metric.sla_target | default('N/A') }}</td>
+                    <td class="{% if metric.status == 'MET' %}status-pass{% else %}status-fail{% endif %}">
+                        {{ metric.status | default('N/A') }}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+
+        {% if soc2_data and soc2_data.availability and soc2_data.availability.controls %}
+        <h3 class="subsection-title">Control Assessment Details</h3>
+        {% for control in soc2_data.availability.controls %}
+        <div class="control-item {% if control.status == 'PASSED' %}control-passed{% elif control.status == 'FAILED' %}control-failed{% else %}control-partial{% endif %}">
+            <div class="control-id">{{ control.id | default('N/A') }}</div>
+            <div class="control-name">{{ control.name | default('Untitled Control') }}</div>
+            <div class="control-evidence">{{ control.evidence | default('No evidence recorded') }}</div>
+            <span class="control-result {% if control.status == 'PASSED' %}passed{% elif control.status == 'FAILED' %}failed{% else %}partial{% endif %}">
+                {{ control.status | default('PENDING') }}
+            </span>
+        </div>
+        {% endfor %}
+        {% else %}
+        <p class="no-data">No availability controls data available for this reporting period.</p>
+        {% endif %}
+    </div>
+</section>
+
+{# ==========================================================================
+   Processing Integrity
+   ========================================================================== #}
+<section class="section tsc-category">
+    <div class="tsc-header">
+        <div>
+            <h2 class="tsc-title">Processing Integrity</h2>
+            <p class="tsc-subtitle">PI1.0 | System processing is complete, valid, accurate, timely, and authorized</p>
+        </div>
+        <span class="tsc-status-badge {% if soc2_data and soc2_data.processing_integrity and soc2_data.processing_integrity.status == 'COMPLIANT' %}compliant{% elif soc2_data and soc2_data.processing_integrity and soc2_data.processing_integrity.status == 'PARTIAL' %}partial{% else %}non-compliant{% endif %}">
+            {{ soc2_data.processing_integrity.status | default('PENDING') if soc2_data and soc2_data.processing_integrity else 'PENDING' }}
+        </span>
+    </div>
+    <div class="tsc-body">
+        <div class="tsc-description">
+            <strong>Trust Service Criteria:</strong> System processing is complete, valid, accurate, timely, and authorized
+            to meet the entity's objectives. Processing integrity addresses whether data is processed completely, validly,
+            accurately, timely, and with proper authorization.
+        </div>
+
+        <div class="tsc-metrics">
+            <div class="tsc-metric">
+                <div class="tsc-metric-value">{{ soc2_data.processing_integrity.total_controls | default(0) if soc2_data and soc2_data.processing_integrity else 0 }}</div>
+                <div class="tsc-metric-label">Total Controls</div>
+            </div>
+            <div class="tsc-metric">
+                <div class="tsc-metric-value status-pass">{{ soc2_data.processing_integrity.controls_passed | default(0) if soc2_data and soc2_data.processing_integrity else 0 }}</div>
+                <div class="tsc-metric-label">Controls Passed</div>
+            </div>
+            <div class="tsc-metric">
+                <div class="tsc-metric-value status-fail">{{ soc2_data.processing_integrity.controls_failed | default(0) if soc2_data and soc2_data.processing_integrity else 0 }}</div>
+                <div class="tsc-metric-label">Controls Failed</div>
+            </div>
+        </div>
+
+        {% if soc2_data and soc2_data.processing_integrity and soc2_data.processing_integrity.data_quality_metrics %}
+        <h3 class="subsection-title">Data Quality Metrics</h3>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Metric</th>
+                    <th>Value</th>
+                    <th>Target</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for metric in soc2_data.processing_integrity.data_quality_metrics %}
+                <tr>
+                    <td>{{ metric.name | default('N/A') }}</td>
+                    <td>{{ metric.value | default('N/A') }}</td>
+                    <td>{{ metric.target | default('N/A') }}</td>
+                    <td class="{% if metric.status == 'MET' %}status-pass{% else %}status-fail{% endif %}">
+                        {{ metric.status | default('N/A') }}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+
+        {% if soc2_data and soc2_data.processing_integrity and soc2_data.processing_integrity.controls %}
+        <h3 class="subsection-title">Control Assessment Details</h3>
+        {% for control in soc2_data.processing_integrity.controls %}
+        <div class="control-item {% if control.status == 'PASSED' %}control-passed{% elif control.status == 'FAILED' %}control-failed{% else %}control-partial{% endif %}">
+            <div class="control-id">{{ control.id | default('N/A') }}</div>
+            <div class="control-name">{{ control.name | default('Untitled Control') }}</div>
+            <div class="control-evidence">{{ control.evidence | default('No evidence recorded') }}</div>
+            <span class="control-result {% if control.status == 'PASSED' %}passed{% elif control.status == 'FAILED' %}failed{% else %}partial{% endif %}">
+                {{ control.status | default('PENDING') }}
+            </span>
+        </div>
+        {% endfor %}
+        {% else %}
+        <p class="no-data">No processing integrity controls data available for this reporting period.</p>
+        {% endif %}
+    </div>
+</section>
+
+{# ==========================================================================
+   Confidentiality
+   ========================================================================== #}
+<section class="section tsc-category">
+    <div class="tsc-header">
+        <div>
+            <h2 class="tsc-title">Confidentiality</h2>
+            <p class="tsc-subtitle">C1.0 | Information designated as confidential is protected</p>
+        </div>
+        <span class="tsc-status-badge {% if soc2_data and soc2_data.confidentiality and soc2_data.confidentiality.status == 'COMPLIANT' %}compliant{% elif soc2_data and soc2_data.confidentiality and soc2_data.confidentiality.status == 'PARTIAL' %}partial{% else %}non-compliant{% endif %}">
+            {{ soc2_data.confidentiality.status | default('PENDING') if soc2_data and soc2_data.confidentiality else 'PENDING' }}
+        </span>
+    </div>
+    <div class="tsc-body">
+        <div class="tsc-description">
+            <strong>Trust Service Criteria:</strong> Information designated as confidential is protected as committed or agreed.
+            Confidentiality addresses the entity's ability to protect information designated as confidential from its
+            collection or creation through its final disposition and removal from the entity's control.
+        </div>
+
+        <div class="tsc-metrics">
+            <div class="tsc-metric">
+                <div class="tsc-metric-value">{{ soc2_data.confidentiality.total_controls | default(0) if soc2_data and soc2_data.confidentiality else 0 }}</div>
+                <div class="tsc-metric-label">Total Controls</div>
+            </div>
+            <div class="tsc-metric">
+                <div class="tsc-metric-value status-pass">{{ soc2_data.confidentiality.controls_passed | default(0) if soc2_data and soc2_data.confidentiality else 0 }}</div>
+                <div class="tsc-metric-label">Controls Passed</div>
+            </div>
+            <div class="tsc-metric">
+                <div class="tsc-metric-value status-fail">{{ soc2_data.confidentiality.controls_failed | default(0) if soc2_data and soc2_data.confidentiality else 0 }}</div>
+                <div class="tsc-metric-label">Controls Failed</div>
+            </div>
+        </div>
+
+        {% if soc2_data and soc2_data.confidentiality and soc2_data.confidentiality.data_classification %}
+        <h3 class="subsection-title">Data Classification Summary</h3>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Classification Level</th>
+                    <th>Data Sets</th>
+                    <th>Encryption Status</th>
+                    <th>Access Controlled</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for classification in soc2_data.confidentiality.data_classification %}
+                <tr>
+                    <td>{{ classification.level | default('N/A') }}</td>
+                    <td>{{ classification.data_sets | default(0) }}</td>
+                    <td class="{% if classification.encrypted %}status-pass{% else %}status-fail{% endif %}">
+                        {{ 'Yes' if classification.encrypted else 'No' }}
+                    </td>
+                    <td class="{% if classification.access_controlled %}status-pass{% else %}status-fail{% endif %}">
+                        {{ 'Yes' if classification.access_controlled else 'No' }}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+
+        {% if soc2_data and soc2_data.confidentiality and soc2_data.confidentiality.controls %}
+        <h3 class="subsection-title">Control Assessment Details</h3>
+        {% for control in soc2_data.confidentiality.controls %}
+        <div class="control-item {% if control.status == 'PASSED' %}control-passed{% elif control.status == 'FAILED' %}control-failed{% else %}control-partial{% endif %}">
+            <div class="control-id">{{ control.id | default('N/A') }}</div>
+            <div class="control-name">{{ control.name | default('Untitled Control') }}</div>
+            <div class="control-evidence">{{ control.evidence | default('No evidence recorded') }}</div>
+            <span class="control-result {% if control.status == 'PASSED' %}passed{% elif control.status == 'FAILED' %}failed{% else %}partial{% endif %}">
+                {{ control.status | default('PENDING') }}
+            </span>
+        </div>
+        {% endfor %}
+        {% else %}
+        <p class="no-data">No confidentiality controls data available for this reporting period.</p>
+        {% endif %}
+    </div>
+</section>
+
+{# ==========================================================================
+   Privacy
+   ========================================================================== #}
+<section class="section tsc-category">
+    <div class="tsc-header">
+        <div>
+            <h2 class="tsc-title">Privacy</h2>
+            <p class="tsc-subtitle">P1.0 - P8.0 | Personal information is collected, used, retained, disclosed, and disposed of properly</p>
+        </div>
+        <span class="tsc-status-badge {% if soc2_data and soc2_data.privacy and soc2_data.privacy.status == 'COMPLIANT' %}compliant{% elif soc2_data and soc2_data.privacy and soc2_data.privacy.status == 'PARTIAL' %}partial{% else %}non-compliant{% endif %}">
+            {{ soc2_data.privacy.status | default('PENDING') if soc2_data and soc2_data.privacy else 'PENDING' }}
+        </span>
+    </div>
+    <div class="tsc-body">
+        <div class="tsc-description">
+            <strong>Trust Service Criteria:</strong> Personal information is collected, used, retained, disclosed, and
+            disposed of in conformity with the commitments in the entity's privacy notice and with criteria set forth
+            in generally accepted privacy principles (GAPP).
+        </div>
+
+        <div class="tsc-metrics">
+            <div class="tsc-metric">
+                <div class="tsc-metric-value">{{ soc2_data.privacy.total_controls | default(0) if soc2_data and soc2_data.privacy else 0 }}</div>
+                <div class="tsc-metric-label">Total Controls</div>
+            </div>
+            <div class="tsc-metric">
+                <div class="tsc-metric-value status-pass">{{ soc2_data.privacy.controls_passed | default(0) if soc2_data and soc2_data.privacy else 0 }}</div>
+                <div class="tsc-metric-label">Controls Passed</div>
+            </div>
+            <div class="tsc-metric">
+                <div class="tsc-metric-value status-fail">{{ soc2_data.privacy.controls_failed | default(0) if soc2_data and soc2_data.privacy else 0 }}</div>
+                <div class="tsc-metric-label">Controls Failed</div>
+            </div>
+        </div>
+
+        {% if soc2_data and soc2_data.privacy and soc2_data.privacy.privacy_practices %}
+        <h3 class="subsection-title">Privacy Practices Assessment</h3>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Practice Area</th>
+                    <th>Description</th>
+                    <th>Compliance</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for practice in soc2_data.privacy.privacy_practices %}
+                <tr>
+                    <td>{{ practice.area | default('N/A') }}</td>
+                    <td>{{ practice.description | default('N/A') }}</td>
+                    <td class="{% if practice.compliant %}status-pass{% else %}status-fail{% endif %}">
+                        {{ 'Compliant' if practice.compliant else 'Non-Compliant' }}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+
+        {% if soc2_data and soc2_data.privacy and soc2_data.privacy.data_subject_requests %}
+        <h3 class="subsection-title">Data Subject Request Summary</h3>
+        <div class="tsc-metrics">
+            <div class="tsc-metric">
+                <div class="tsc-metric-value">{{ soc2_data.privacy.data_subject_requests.total | default(0) }}</div>
+                <div class="tsc-metric-label">Total Requests</div>
+            </div>
+            <div class="tsc-metric">
+                <div class="tsc-metric-value status-pass">{{ soc2_data.privacy.data_subject_requests.fulfilled | default(0) }}</div>
+                <div class="tsc-metric-label">Fulfilled</div>
+            </div>
+            <div class="tsc-metric">
+                <div class="tsc-metric-value">{{ soc2_data.privacy.data_subject_requests.avg_response_days | default('N/A') }}</div>
+                <div class="tsc-metric-label">Avg Response (Days)</div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if soc2_data and soc2_data.privacy and soc2_data.privacy.controls %}
+        <h3 class="subsection-title">Control Assessment Details</h3>
+        {% for control in soc2_data.privacy.controls %}
+        <div class="control-item {% if control.status == 'PASSED' %}control-passed{% elif control.status == 'FAILED' %}control-failed{% else %}control-partial{% endif %}">
+            <div class="control-id">{{ control.id | default('N/A') }}</div>
+            <div class="control-name">{{ control.name | default('Untitled Control') }}</div>
+            <div class="control-evidence">{{ control.evidence | default('No evidence recorded') }}</div>
+            <span class="control-result {% if control.status == 'PASSED' %}passed{% elif control.status == 'FAILED' %}failed{% else %}partial{% endif %}">
+                {{ control.status | default('PENDING') }}
+            </span>
+        </div>
+        {% endfor %}
+        {% else %}
+        <p class="no-data">No privacy controls data available for this reporting period.</p>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}
+
+{% block additional_sections %}
+{# ==========================================================================
+   Auditor Statement / Management Assertion
+   ========================================================================== #}
+<section class="section auditor-statement">
+    <h3>Management's Assertion</h3>
+    <p>
+        {% if management_assertion %}
+        {{ management_assertion }}
+        {% else %}
+        This SOC 2 Type II report covers the {{ company_name | default('organization') }}'s description of its
+        {{ system_name | default('system') }} and the suitability of the design and operating effectiveness of
+        controls relevant to the security, availability, processing integrity, confidentiality, and privacy
+        commitments set forth in the {{ company_name | default('organization') }}'s service commitments and
+        system requirements throughout the period {{ report_period_start | default('start date') }} to
+        {{ report_period_end | default('end date') }}.
+        {% endif %}
+    </p>
+    <p class="mt-20">
+        <strong>Examination Period:</strong> {{ report_period | default('As specified in report metadata') }}<br>
+        <strong>Report Type:</strong> SOC 2 Type II<br>
+        <strong>Trust Service Criteria Applied:</strong>
+        {% if applied_criteria %}
+        {{ applied_criteria | join(', ') }}
+        {% else %}
+        Security (Common Criteria), Availability, Processing Integrity, Confidentiality, Privacy
+        {% endif %}
+    </p>
+</section>
+
+{# ==========================================================================
+   Exceptions and Observations (if any)
+   ========================================================================== #}
+{% if soc2_data and soc2_data.exceptions %}
+<section class="section exceptions">
+    <h2 class="section-title">Exceptions and Observations</h2>
+
+    {% if soc2_data.exceptions.critical %}
+    <h3 class="subsection-title risk-high">Critical Exceptions</h3>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Exception ID</th>
+                <th>Description</th>
+                <th>Affected Criteria</th>
+                <th>Remediation Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for exception in soc2_data.exceptions.critical %}
+            <tr>
+                <td>{{ exception.id | default('N/A') }}</td>
+                <td>{{ exception.description | default('N/A') }}</td>
+                <td>{{ exception.criteria | join(', ') if exception.criteria else 'N/A' }}</td>
+                <td class="{% if exception.remediation_status == 'RESOLVED' %}status-pass{% else %}status-fail{% endif %}">
+                    {{ exception.remediation_status | default('OPEN') }}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+
+    {% if soc2_data.exceptions.observations %}
+    <h3 class="subsection-title">Management Observations</h3>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Observation</th>
+                <th>Recommendation</th>
+                <th>Management Response</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for observation in soc2_data.exceptions.observations %}
+            <tr>
+                <td>{{ observation.description | default('N/A') }}</td>
+                <td>{{ observation.recommendation | default('N/A') }}</td>
+                <td>{{ observation.management_response | default('Pending response') }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+</section>
+{% endif %}
+{% endblock %}
