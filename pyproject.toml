@@ -23,6 +23,7 @@ docs = [
 ]
 cli = [
     "typer>=0.9.0",
+    "rich>=13.0.0",  # Required for CLI output formatting
     "fastapi>=0.127.0",  # CVE-2024-24762 security fix
     "uvicorn[standard]>=0.40.0",
     "httpx>=0.25.0",
