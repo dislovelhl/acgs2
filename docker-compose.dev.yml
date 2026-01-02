@@ -95,6 +95,33 @@ services:
     networks:
       - acgs-dev
 
+  # MLflow Tracking Server for ML model versioning and experiment tracking
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:v2.18.0
+    command: >
+      mlflow server
+      --backend-store-uri postgresql://${POSTGRES_ML_USER:-mlflow}:${POSTGRES_ML_PASSWORD:-mlflow_password}@postgres-ml:5432/${POSTGRES_ML_DB:-mlflow_db}
+      --default-artifact-root /mlruns
+      --host 0.0.0.0
+      --port 5000
+    ports:
+      - "${MLFLOW_PORT:-5000}:5000"
+    environment:
+      - MLFLOW_TRACKING_URI=http://mlflow:5000
+    volumes:
+      - mlflow-artifacts:/mlruns
+    depends_on:
+      postgres-ml:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    networks:
+      - acgs-dev
+
   # Enhanced Agent Bus (Python service)
   agent-bus:
     build:
@@ -109,6 +136,7 @@ services:
       - OPA_URL=${OPA_URL:-http://opa:8181}
       - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
       - KAFKA_BOOTSTRAP=${KAFKA_BOOTSTRAP:-kafka:29092}
+      - MLFLOW_TRACKING_URI=${MLFLOW_TRACKING_URI:-http://mlflow:5000}
       - ACGS_ENV=${ACGS_ENV:-development}
       # Pass through centralized config
       - CONSTITUTIONAL_HASH=${CONSTITUTIONAL_HASH:-cdd01ef066bc6cf2}
@@ -121,6 +149,7 @@ services:
       - opa
       - redis
       - kafka
+      - mlflow
     networks:
       - acgs-dev
 
@@ -153,6 +182,8 @@ networks:
 
 volumes:
   postgres-ml-data:
+    driver: local
+  mlflow-artifacts:
     driver: local
 
 # =============================================================================
