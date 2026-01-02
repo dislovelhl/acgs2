@@ -11,18 +11,24 @@ Modules:
     - monitoring: System monitoring utilities
     - security: Security utilities and PII protection
     - logging_config: Structured logging with JSON output and correlation IDs
+    - middleware: FastAPI middleware components (correlation ID, request tracing)
 
 Usage:
     from shared.metrics import track_request_metrics, track_constitutional_validation
     from shared.circuit_breaker import with_circuit_breaker, get_circuit_breaker
     from shared.redis_config import get_redis_url
     from shared.logging_config import configure_logging, get_logger
+    from shared.middleware import add_correlation_id_middleware
 
 Example:
     # Structured logging with correlation IDs
     configure_logging(service_name="my_service")
     logger = get_logger(__name__)
     logger.info("operation_started", user_id=user.id)
+
+    # Add correlation ID middleware to FastAPI app
+    app = FastAPI()
+    add_correlation_id_middleware(app, service_name="my_service")
 
     @track_request_metrics('my_service', '/api/endpoint')
     @with_circuit_breaker('external_api')
@@ -75,6 +81,17 @@ try:
 except ImportError:
     pass
 
+try:
+    from .middleware import (
+        CORRELATION_ID_HEADER,
+        CorrelationIdMiddleware,
+        add_correlation_id_middleware,
+        correlation_id_middleware,
+        get_correlation_id,
+    )
+except ImportError:
+    pass
+
 __all__ = [
     "CONSTITUTIONAL_HASH",
     "DEFAULT_REDIS_URL",
@@ -99,4 +116,10 @@ __all__ = [
     "clear_correlation_context",
     "setup_opentelemetry",
     "instrument_fastapi",
+    # Middleware
+    "CORRELATION_ID_HEADER",
+    "CorrelationIdMiddleware",
+    "correlation_id_middleware",
+    "add_correlation_id_middleware",
+    "get_correlation_id",
 ]
