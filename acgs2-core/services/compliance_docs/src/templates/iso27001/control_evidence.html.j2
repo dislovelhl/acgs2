@@ -1,0 +1,971 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ISO 27001:2022 Control Evidence - {{ organization_name | default_value }}</title>
+    <style>
+        :root {
+            --primary-color: #1a365d;
+            --secondary-color: #2c5282;
+            --success-color: #276749;
+            --warning-color: #c05621;
+            --danger-color: #c53030;
+            --info-color: #2b6cb0;
+            --light-gray: #f7fafc;
+            --border-color: #e2e8f0;
+
+            /* Theme-specific colors */
+            --theme-organizational: #2b6cb0;
+            --theme-people: #276749;
+            --theme-physical: #6b46c1;
+            --theme-technological: #c05621;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #2d3748;
+            background-color: #fff;
+            font-size: 11pt;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 40px;
+        }
+
+        /* Header Styles */
+        .report-header {
+            text-align: center;
+            border-bottom: 3px solid var(--primary-color);
+            padding-bottom: 30px;
+            margin-bottom: 40px;
+        }
+
+        .report-header h1 {
+            color: var(--primary-color);
+            font-size: 28pt;
+            margin-bottom: 10px;
+        }
+
+        .report-header h2 {
+            color: var(--secondary-color);
+            font-size: 18pt;
+            font-weight: normal;
+            margin-bottom: 20px;
+        }
+
+        .report-meta {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .report-meta-item {
+            text-align: center;
+        }
+
+        .report-meta-label {
+            font-size: 9pt;
+            color: #718096;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .report-meta-value {
+            font-size: 11pt;
+            color: var(--primary-color);
+            font-weight: 600;
+        }
+
+        /* Section Styles */
+        .section {
+            margin-bottom: 40px;
+            page-break-inside: avoid;
+        }
+
+        .section-title {
+            color: var(--primary-color);
+            font-size: 16pt;
+            border-bottom: 2px solid var(--secondary-color);
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+
+        .subsection-title {
+            color: var(--secondary-color);
+            font-size: 13pt;
+            margin: 20px 0 15px 0;
+        }
+
+        /* Table Styles */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 10pt;
+        }
+
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 12px;
+            text-align: left;
+            vertical-align: top;
+        }
+
+        th {
+            background-color: var(--primary-color);
+            color: white;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 9pt;
+            letter-spacing: 0.5px;
+        }
+
+        tr:nth-child(even) {
+            background-color: var(--light-gray);
+        }
+
+        tr:hover {
+            background-color: #edf2f7;
+        }
+
+        /* Theme Badges */
+        .theme-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 9pt;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .theme-organizational { background-color: var(--theme-organizational); color: white; }
+        .theme-people { background-color: var(--theme-people); color: white; }
+        .theme-physical { background-color: var(--theme-physical); color: white; }
+        .theme-technological { background-color: var(--theme-technological); color: white; }
+
+        /* Status Badges */
+        .status-badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 9pt;
+            font-weight: 600;
+        }
+
+        .status-complete { background-color: #c6f6d5; color: #276749; }
+        .status-partial { background-color: #feebc8; color: #c05621; }
+        .status-pending { background-color: #bee3f8; color: #2a4365; }
+        .status-missing { background-color: #fed7d7; color: #c53030; }
+        .status-not-applicable { background-color: #e2e8f0; color: #4a5568; }
+
+        /* Evidence Type Tags */
+        .evidence-type-tag {
+            display: inline-block;
+            padding: 2px 8px;
+            margin: 2px;
+            border-radius: 3px;
+            font-size: 8pt;
+            font-weight: 500;
+        }
+
+        .evidence-document { background-color: #bee3f8; color: #2a4365; }
+        .evidence-screenshot { background-color: #c6f6d5; color: #276749; }
+        .evidence-log { background-color: #feebc8; color: #c05621; }
+        .evidence-interview { background-color: #e9d8fd; color: #553c9a; }
+        .evidence-observation { background-color: #fed7e2; color: #97266d; }
+        .evidence-test { background-color: #fefcbf; color: #975a16; }
+
+        /* Summary Box */
+        .summary-box {
+            background-color: var(--light-gray);
+            border: 1px solid var(--border-color);
+            border-left: 4px solid var(--primary-color);
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .summary-stats {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            min-width: 120px;
+        }
+
+        .stat-value {
+            font-size: 24pt;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+
+        .stat-label {
+            font-size: 9pt;
+            color: #718096;
+            text-transform: uppercase;
+        }
+
+        /* Evidence Card */
+        .evidence-card {
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 25px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .evidence-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .evidence-control-info {
+            flex: 1;
+        }
+
+        .evidence-control-id {
+            font-size: 14pt;
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+
+        .evidence-control-title {
+            font-size: 11pt;
+            color: #4a5568;
+            margin-top: 5px;
+        }
+
+        .evidence-body {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .evidence-field {
+            margin-bottom: 15px;
+        }
+
+        .evidence-field-label {
+            font-size: 9pt;
+            color: #718096;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+
+        .evidence-field-value {
+            color: #2d3748;
+            font-size: 10pt;
+        }
+
+        .evidence-list {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+
+        .evidence-list li {
+            margin-bottom: 8px;
+        }
+
+        .evidence-item {
+            background: var(--light-gray);
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 8px;
+        }
+
+        .evidence-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+
+        .evidence-item-title {
+            font-weight: 600;
+            color: var(--primary-color);
+            font-size: 10pt;
+        }
+
+        .evidence-item-description {
+            font-size: 9pt;
+            color: #4a5568;
+        }
+
+        .evidence-item-reference {
+            font-size: 8pt;
+            color: #718096;
+            font-style: italic;
+        }
+
+        /* Quality Score */
+        .quality-score {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .quality-bar {
+            width: 100px;
+            height: 8px;
+            background-color: #e2e8f0;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .quality-fill {
+            height: 100%;
+            border-radius: 4px;
+        }
+
+        .quality-high { background-color: var(--success-color); }
+        .quality-medium { background-color: var(--warning-color); }
+        .quality-low { background-color: var(--danger-color); }
+
+        /* Footer */
+        .report-footer {
+            margin-top: 60px;
+            padding-top: 20px;
+            border-top: 2px solid var(--border-color);
+            text-align: center;
+            font-size: 9pt;
+            color: #718096;
+        }
+
+        /* Print Styles */
+        @media print {
+            .container {
+                max-width: 100%;
+                padding: 20px;
+            }
+
+            .section {
+                page-break-inside: avoid;
+            }
+
+            .evidence-card {
+                page-break-inside: avoid;
+            }
+
+            tr {
+                page-break-inside: avoid;
+            }
+        }
+
+        /* Implementation Guidance Box */
+        .guidance-box {
+            background: #f0fff4;
+            border: 1px solid #9ae6b4;
+            border-left: 4px solid var(--success-color);
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+
+        .guidance-title {
+            font-weight: 600;
+            color: var(--success-color);
+            margin-bottom: 8px;
+            font-size: 10pt;
+        }
+
+        .guidance-content {
+            font-size: 9pt;
+            color: #2d3748;
+        }
+
+        /* Gap Alert Box */
+        .gap-alert {
+            background: #fff5f5;
+            border: 1px solid #feb2b2;
+            border-left: 4px solid var(--danger-color);
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+
+        .gap-alert-title {
+            font-weight: 600;
+            color: var(--danger-color);
+            margin-bottom: 8px;
+            font-size: 10pt;
+        }
+
+        .gap-alert-content {
+            font-size: 9pt;
+            color: #2d3748;
+        }
+
+        /* Audit Trail Table */
+        .audit-trail-table {
+            font-size: 9pt;
+        }
+
+        .audit-trail-table th {
+            font-size: 8pt;
+        }
+
+        .full-width {
+            grid-column: 1 / -1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Report Header -->
+        <header class="report-header">
+            <h1>ISO 27001:2022 Control Evidence</h1>
+            <h2>{{ organization_name | default_value('Organization Name') }}</h2>
+            <div class="report-meta">
+                <div class="report-meta-item">
+                    <div class="report-meta-label">Standard Version</div>
+                    <div class="report-meta-value">ISO/IEC 27001:2022</div>
+                </div>
+                <div class="report-meta-item">
+                    <div class="report-meta-label">Evidence Collection Period</div>
+                    <div class="report-meta-value">
+                        {{ evidence_period_start | format_date }} - {{ evidence_period_end | format_date }}
+                    </div>
+                </div>
+                <div class="report-meta-item">
+                    <div class="report-meta-label">Generated</div>
+                    <div class="report-meta-value">{{ generated_at | format_datetime }}</div>
+                </div>
+                <div class="report-meta-item">
+                    <div class="report-meta-label">Document Version</div>
+                    <div class="report-meta-value">{{ document_version | default_value('1.0') }}</div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Executive Summary -->
+        <section class="section">
+            <h2 class="section-title">Executive Summary</h2>
+            <div class="summary-box">
+                <p>
+                    This document provides the evidence collection status for ISO 27001:2022 Annex A controls
+                    applicable to the organization's Information Security Management System (ISMS). Evidence
+                    has been collected, reviewed, and documented to support certification audit requirements.
+                </p>
+                <div class="summary-stats">
+                    <div class="stat-item">
+                        <div class="stat-value">{{ controls_in_scope | default_value('93') }}</div>
+                        <div class="stat-label">Controls In Scope</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">{{ evidence_complete_count | default_value('0') }}</div>
+                        <div class="stat-label">Evidence Complete</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">{{ evidence_partial_count | default_value('0') }}</div>
+                        <div class="stat-label">Partial Evidence</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">{{ evidence_completion_percentage | default_value('0') }}%</div>
+                        <div class="stat-label">Completion Rate</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Evidence Types Legend -->
+        <section class="section">
+            <h2 class="section-title">Evidence Types Reference</h2>
+            <p style="margin-bottom: 15px;">
+                The following evidence types are used to document control implementation and effectiveness:
+            </p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Evidence Type</th>
+                        <th>Description</th>
+                        <th>Examples</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><span class="evidence-type-tag evidence-document">Document</span></td>
+                        <td>Policies, procedures, standards, and formal documentation</td>
+                        <td>Security policies, access control procedures, incident response plans</td>
+                    </tr>
+                    <tr>
+                        <td><span class="evidence-type-tag evidence-screenshot">Screenshot</span></td>
+                        <td>Visual evidence of system configurations and settings</td>
+                        <td>Firewall configs, user access settings, encryption status</td>
+                    </tr>
+                    <tr>
+                        <td><span class="evidence-type-tag evidence-log">Log/Report</span></td>
+                        <td>System-generated logs, audit trails, and automated reports</td>
+                        <td>Access logs, security scan reports, backup verification logs</td>
+                    </tr>
+                    <tr>
+                        <td><span class="evidence-type-tag evidence-interview">Interview</span></td>
+                        <td>Documented conversations with personnel</td>
+                        <td>Process walkthroughs, role verification, awareness confirmation</td>
+                    </tr>
+                    <tr>
+                        <td><span class="evidence-type-tag evidence-observation">Observation</span></td>
+                        <td>Direct observation of processes and physical controls</td>
+                        <td>Physical security checks, process execution observation</td>
+                    </tr>
+                    <tr>
+                        <td><span class="evidence-type-tag evidence-test">Test Result</span></td>
+                        <td>Results from security tests and assessments</td>
+                        <td>Penetration test results, vulnerability assessments, DR tests</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Evidence Summary by Theme -->
+        <section class="section">
+            <h2 class="section-title">Evidence Summary by Control Theme</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Control Theme</th>
+                        <th>Total Controls</th>
+                        <th>Complete</th>
+                        <th>Partial</th>
+                        <th>Missing</th>
+                        <th>N/A</th>
+                        <th>Completion</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if theme_evidence_summary %}
+                    {% for theme in theme_evidence_summary %}
+                    <tr>
+                        <td>
+                            {% if theme.theme_id == 'A.5' %}
+                            <span class="theme-badge theme-organizational">A.5 Organizational</span>
+                            {% elif theme.theme_id == 'A.6' %}
+                            <span class="theme-badge theme-people">A.6 People</span>
+                            {% elif theme.theme_id == 'A.7' %}
+                            <span class="theme-badge theme-physical">A.7 Physical</span>
+                            {% elif theme.theme_id == 'A.8' %}
+                            <span class="theme-badge theme-technological">A.8 Technological</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ theme.total_controls | default_value('0') }}</td>
+                        <td><span class="status-badge status-complete">{{ theme.complete_count | default_value('0') }}</span></td>
+                        <td><span class="status-badge status-partial">{{ theme.partial_count | default_value('0') }}</span></td>
+                        <td><span class="status-badge status-missing">{{ theme.missing_count | default_value('0') }}</span></td>
+                        <td><span class="status-badge status-not-applicable">{{ theme.na_count | default_value('0') }}</span></td>
+                        <td>{{ theme.completion_percentage | default_value('0') }}%</td>
+                    </tr>
+                    {% endfor %}
+                    {% else %}
+                    <tr>
+                        <td><span class="theme-badge theme-organizational">A.5 Organizational</span></td>
+                        <td>37</td>
+                        <td><span class="status-badge status-complete">-</span></td>
+                        <td><span class="status-badge status-partial">-</span></td>
+                        <td><span class="status-badge status-missing">-</span></td>
+                        <td><span class="status-badge status-not-applicable">-</span></td>
+                        <td>-</td>
+                    </tr>
+                    <tr>
+                        <td><span class="theme-badge theme-people">A.6 People</span></td>
+                        <td>8</td>
+                        <td><span class="status-badge status-complete">-</span></td>
+                        <td><span class="status-badge status-partial">-</span></td>
+                        <td><span class="status-badge status-missing">-</span></td>
+                        <td><span class="status-badge status-not-applicable">-</span></td>
+                        <td>-</td>
+                    </tr>
+                    <tr>
+                        <td><span class="theme-badge theme-physical">A.7 Physical</span></td>
+                        <td>14</td>
+                        <td><span class="status-badge status-complete">-</span></td>
+                        <td><span class="status-badge status-partial">-</span></td>
+                        <td><span class="status-badge status-missing">-</span></td>
+                        <td><span class="status-badge status-not-applicable">-</span></td>
+                        <td>-</td>
+                    </tr>
+                    <tr>
+                        <td><span class="theme-badge theme-technological">A.8 Technological</span></td>
+                        <td>34</td>
+                        <td><span class="status-badge status-complete">-</span></td>
+                        <td><span class="status-badge status-partial">-</span></td>
+                        <td><span class="status-badge status-missing">-</span></td>
+                        <td><span class="status-badge status-not-applicable">-</span></td>
+                        <td>-</td>
+                    </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Detailed Control Evidence -->
+        <section class="section">
+            <h2 class="section-title">Detailed Control Evidence</h2>
+            <p style="margin-bottom: 20px;">
+                The following section provides detailed evidence documentation for each applicable control.
+            </p>
+
+            {% if control_evidence_list %}
+            {% for evidence in control_evidence_list %}
+            <div class="evidence-card">
+                <div class="evidence-header">
+                    <div class="evidence-control-info">
+                        <div class="evidence-control-id">{{ evidence.control_id | control_id('ISO27001') }}</div>
+                        <div class="evidence-control-title">{{ evidence.control_title | default_value }}</div>
+                    </div>
+                    <div>
+                        {% if evidence.evidence_status == 'complete' %}
+                        <span class="status-badge status-complete">Evidence Complete</span>
+                        {% elif evidence.evidence_status == 'partial' %}
+                        <span class="status-badge status-partial">Partial Evidence</span>
+                        {% elif evidence.evidence_status == 'missing' %}
+                        <span class="status-badge status-missing">Evidence Missing</span>
+                        {% else %}
+                        <span class="status-badge status-not-applicable">Not Applicable</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="evidence-body">
+                    <div>
+                        <div class="evidence-field">
+                            <div class="evidence-field-label">Control Objective</div>
+                            <div class="evidence-field-value">{{ evidence.control_objective | default_value('No objective documented') }}</div>
+                        </div>
+
+                        <div class="evidence-field">
+                            <div class="evidence-field-label">Implementation Description</div>
+                            <div class="evidence-field-value">{{ evidence.implementation_description | default_value('No implementation description provided') }}</div>
+                        </div>
+
+                        <div class="evidence-field">
+                            <div class="evidence-field-label">Control Owner</div>
+                            <div class="evidence-field-value">{{ evidence.control_owner | default_value('Not assigned') }}</div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="evidence-field">
+                            <div class="evidence-field-label">Evidence Quality Score</div>
+                            <div class="quality-score">
+                                <div class="quality-bar">
+                                    <div class="quality-fill {% if evidence.quality_score >= 80 %}quality-high{% elif evidence.quality_score >= 50 %}quality-medium{% else %}quality-low{% endif %}"
+                                         style="width: {{ evidence.quality_score | default_value('0') }}%;">
+                                    </div>
+                                </div>
+                                <span>{{ evidence.quality_score | default_value('0') }}%</span>
+                            </div>
+                        </div>
+
+                        <div class="evidence-field">
+                            <div class="evidence-field-label">Last Evidence Review</div>
+                            <div class="evidence-field-value">{{ evidence.last_review_date | format_date }}</div>
+                        </div>
+
+                        <div class="evidence-field">
+                            <div class="evidence-field-label">Reviewed By</div>
+                            <div class="evidence-field-value">{{ evidence.reviewed_by | default_value('Not reviewed') }}</div>
+                        </div>
+                    </div>
+
+                    <!-- Evidence Items -->
+                    <div class="full-width">
+                        <div class="evidence-field">
+                            <div class="evidence-field-label">Collected Evidence</div>
+                            {% if evidence.evidence_items %}
+                            {% for item in evidence.evidence_items %}
+                            <div class="evidence-item">
+                                <div class="evidence-item-header">
+                                    <span class="evidence-item-title">{{ item.title | default_value }}</span>
+                                    {% if item.evidence_type == 'document' %}
+                                    <span class="evidence-type-tag evidence-document">Document</span>
+                                    {% elif item.evidence_type == 'screenshot' %}
+                                    <span class="evidence-type-tag evidence-screenshot">Screenshot</span>
+                                    {% elif item.evidence_type == 'log' %}
+                                    <span class="evidence-type-tag evidence-log">Log/Report</span>
+                                    {% elif item.evidence_type == 'interview' %}
+                                    <span class="evidence-type-tag evidence-interview">Interview</span>
+                                    {% elif item.evidence_type == 'observation' %}
+                                    <span class="evidence-type-tag evidence-observation">Observation</span>
+                                    {% elif item.evidence_type == 'test' %}
+                                    <span class="evidence-type-tag evidence-test">Test Result</span>
+                                    {% endif %}
+                                </div>
+                                <div class="evidence-item-description">{{ item.description | default_value }}</div>
+                                {% if item.reference %}
+                                <div class="evidence-item-reference">Reference: {{ item.reference }}</div>
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                            {% else %}
+                            <div class="evidence-item" style="text-align: center; font-style: italic; color: #718096;">
+                                No evidence items collected for this control.
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Implementation Guidance -->
+                    {% if evidence.implementation_guidance %}
+                    <div class="full-width">
+                        <div class="guidance-box">
+                            <div class="guidance-title">Implementation Guidance</div>
+                            <div class="guidance-content">{{ evidence.implementation_guidance }}</div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Gaps Identified -->
+                    {% if evidence.gaps %}
+                    <div class="full-width">
+                        <div class="gap-alert">
+                            <div class="gap-alert-title">Evidence Gaps Identified</div>
+                            <div class="gap-alert-content">
+                                <ul style="margin: 0; padding-left: 20px;">
+                                    {% for gap in evidence.gaps %}
+                                    <li>{{ gap }}</li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+            {% else %}
+            <!-- Default Evidence Template Guide -->
+            <div class="summary-box">
+                <p style="text-align: center; font-style: italic;">
+                    Control evidence details will be displayed here when control_evidence_list data is provided.
+                    <br><br>
+                    Below is the recommended evidence structure for each control theme:
+                </p>
+            </div>
+
+            <h3 class="subsection-title">Recommended Evidence by Control Theme</h3>
+
+            <!-- Organizational Controls Evidence Guide -->
+            <div class="evidence-card">
+                <div class="evidence-header">
+                    <div class="evidence-control-info">
+                        <span class="theme-badge theme-organizational">A.5</span>
+                        <span style="margin-left: 10px; font-weight: 600;">Organizational Controls Evidence</span>
+                    </div>
+                </div>
+                <div class="evidence-field">
+                    <div class="evidence-field-label">Typical Evidence Required</div>
+                    <ul class="evidence-list">
+                        <li><span class="evidence-type-tag evidence-document">Document</span> Information security policies and procedures</li>
+                        <li><span class="evidence-type-tag evidence-document">Document</span> Roles and responsibilities matrices</li>
+                        <li><span class="evidence-type-tag evidence-document">Document</span> Risk assessment and treatment plans</li>
+                        <li><span class="evidence-type-tag evidence-document">Document</span> Supplier agreements and contracts</li>
+                        <li><span class="evidence-type-tag evidence-log">Log/Report</span> Management review meeting minutes</li>
+                        <li><span class="evidence-type-tag evidence-log">Log/Report</span> Incident reports and lessons learned</li>
+                        <li><span class="evidence-type-tag evidence-interview">Interview</span> Senior management commitment statements</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- People Controls Evidence Guide -->
+            <div class="evidence-card">
+                <div class="evidence-header">
+                    <div class="evidence-control-info">
+                        <span class="theme-badge theme-people">A.6</span>
+                        <span style="margin-left: 10px; font-weight: 600;">People Controls Evidence</span>
+                    </div>
+                </div>
+                <div class="evidence-field">
+                    <div class="evidence-field-label">Typical Evidence Required</div>
+                    <ul class="evidence-list">
+                        <li><span class="evidence-type-tag evidence-document">Document</span> Employment contracts with security clauses</li>
+                        <li><span class="evidence-type-tag evidence-document">Document</span> Background check procedures</li>
+                        <li><span class="evidence-type-tag evidence-log">Log/Report</span> Training completion records</li>
+                        <li><span class="evidence-type-tag evidence-log">Log/Report</span> Security awareness quiz results</li>
+                        <li><span class="evidence-type-tag evidence-document">Document</span> Confidentiality agreements (NDAs)</li>
+                        <li><span class="evidence-type-tag evidence-document">Document</span> Termination checklists</li>
+                        <li><span class="evidence-type-tag evidence-interview">Interview</span> Employee security awareness interviews</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Physical Controls Evidence Guide -->
+            <div class="evidence-card">
+                <div class="evidence-header">
+                    <div class="evidence-control-info">
+                        <span class="theme-badge theme-physical">A.7</span>
+                        <span style="margin-left: 10px; font-weight: 600;">Physical Controls Evidence</span>
+                    </div>
+                </div>
+                <div class="evidence-field">
+                    <div class="evidence-field-label">Typical Evidence Required</div>
+                    <ul class="evidence-list">
+                        <li><span class="evidence-type-tag evidence-screenshot">Screenshot</span> Access control system configurations</li>
+                        <li><span class="evidence-type-tag evidence-log">Log/Report</span> Physical access logs</li>
+                        <li><span class="evidence-type-tag evidence-observation">Observation</span> Facility walkthrough documentation</li>
+                        <li><span class="evidence-type-tag evidence-screenshot">Screenshot</span> CCTV monitoring coverage maps</li>
+                        <li><span class="evidence-type-tag evidence-document">Document</span> Visitor management procedures</li>
+                        <li><span class="evidence-type-tag evidence-log">Log/Report</span> Equipment maintenance records</li>
+                        <li><span class="evidence-type-tag evidence-test">Test Result</span> Environmental monitoring test results</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Technological Controls Evidence Guide -->
+            <div class="evidence-card">
+                <div class="evidence-header">
+                    <div class="evidence-control-info">
+                        <span class="theme-badge theme-technological">A.8</span>
+                        <span style="margin-left: 10px; font-weight: 600;">Technological Controls Evidence</span>
+                    </div>
+                </div>
+                <div class="evidence-field">
+                    <div class="evidence-field-label">Typical Evidence Required</div>
+                    <ul class="evidence-list">
+                        <li><span class="evidence-type-tag evidence-screenshot">Screenshot</span> User access management configurations</li>
+                        <li><span class="evidence-type-tag evidence-screenshot">Screenshot</span> Firewall and network security settings</li>
+                        <li><span class="evidence-type-tag evidence-log">Log/Report</span> Security monitoring dashboards</li>
+                        <li><span class="evidence-type-tag evidence-test">Test Result</span> Vulnerability scan reports</li>
+                        <li><span class="evidence-type-tag evidence-test">Test Result</span> Penetration test results</li>
+                        <li><span class="evidence-type-tag evidence-log">Log/Report</span> Backup verification logs</li>
+                        <li><span class="evidence-type-tag evidence-screenshot">Screenshot</span> Encryption status evidence</li>
+                        <li><span class="evidence-type-tag evidence-document">Document</span> Secure development procedures</li>
+                    </ul>
+                </div>
+            </div>
+            {% endif %}
+        </section>
+
+        <!-- Evidence Collection Audit Trail -->
+        <section class="section">
+            <h2 class="section-title">Evidence Collection Audit Trail</h2>
+            <p style="margin-bottom: 15px;">
+                This section documents the evidence collection activities performed during the assessment period.
+            </p>
+
+            {% if audit_trail %}
+            <table class="audit-trail-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Activity</th>
+                        <th>Controls Covered</th>
+                        <th>Collector</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for entry in audit_trail %}
+                    <tr>
+                        <td>{{ entry.date | format_date }}</td>
+                        <td>{{ entry.activity | default_value }}</td>
+                        <td>{{ entry.controls_covered | join(', ') if entry.controls_covered else 'N/A' }}</td>
+                        <td>{{ entry.collector | default_value }}</td>
+                        <td>
+                            {% if entry.status == 'completed' %}
+                            <span class="status-badge status-complete">Completed</span>
+                            {% elif entry.status == 'in_progress' %}
+                            <span class="status-badge status-partial">In Progress</span>
+                            {% else %}
+                            <span class="status-badge status-pending">Pending</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="summary-box">
+                <p style="text-align: center; font-style: italic;">
+                    Evidence collection audit trail will be displayed here when audit_trail data is provided.
+                </p>
+            </div>
+            {% endif %}
+        </section>
+
+        <!-- Evidence Quality Guidelines -->
+        <section class="section">
+            <h2 class="section-title">Appendix: Evidence Quality Guidelines</h2>
+
+            <h3 class="subsection-title">Evidence Quality Scoring Criteria</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Score Range</th>
+                        <th>Quality Level</th>
+                        <th>Criteria</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>80-100%</td>
+                        <td><span class="status-badge status-complete">High Quality</span></td>
+                        <td>Multiple evidence types supporting control implementation; recent evidence (within 12 months); clear traceability to control objectives; reviewed and approved by control owner</td>
+                    </tr>
+                    <tr>
+                        <td>50-79%</td>
+                        <td><span class="status-badge status-partial">Adequate Quality</span></td>
+                        <td>At least one evidence type supporting implementation; evidence within acceptable age; minor gaps in traceability or documentation</td>
+                    </tr>
+                    <tr>
+                        <td>0-49%</td>
+                        <td><span class="status-badge status-missing">Low Quality</span></td>
+                        <td>Insufficient evidence; evidence outdated or not clearly linked to control; significant gaps requiring remediation</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3 class="subsection-title">Evidence Collection Best Practices</h3>
+            <ul style="margin: 15px 0; padding-left: 25px;">
+                <li>Collect evidence from multiple sources to corroborate control effectiveness</li>
+                <li>Date-stamp all evidence to demonstrate currency</li>
+                <li>Maintain chain of custody documentation for sensitive evidence</li>
+                <li>Store evidence in a secure, access-controlled repository</li>
+                <li>Regularly review and refresh evidence to ensure relevance</li>
+                <li>Cross-reference evidence to specific control requirements</li>
+                <li>Document any exceptions or compensating controls</li>
+            </ul>
+        </section>
+
+        <!-- Report Footer -->
+        <footer class="report-footer">
+            <p>
+                <strong>ISO 27001:2022 Control Evidence Report</strong>
+                <br>
+                {{ organization_name | default_value('Organization') }} | Generated: {{ generated_at | format_datetime }}
+                <br>
+                Document Version: {{ document_version | default_value('1.0') }} | Generator Version: {{ generator_version | default_value('1.0.0') }}
+            </p>
+            <p style="margin-top: 15px; font-size: 8pt;">
+                This document is confidential and intended for compliance assessment purposes only.
+                <br>
+                ACGS-2 Enterprise Guardrails Platform - Compliance Documentation Service
+            </p>
+        </footer>
+    </div>
+</body>
+</html>
