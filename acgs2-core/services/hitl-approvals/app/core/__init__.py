@@ -3,7 +3,7 @@ HITL Approvals Core Module
 
 This module contains the core approval chain engine with routing logic,
 status management, integration with notification providers, OPA policy evaluation,
-and Redis-backed escalation timer system.
+Redis-backed escalation timer system, and SLA tracking.
 """
 
 from app.core.approval_engine import (
@@ -16,18 +16,25 @@ from app.core.approval_engine import (
 from app.core.escalation import (
     EscalationCallback,
     EscalationEngine,
+    EscalationPolicyManager,
     EscalationReason,
     EscalationTimer,
     EscalationTimerError,
     EscalationTimerManager,
     RedisConnectionError,
+    SLABreach,
+    SLAConfig,
+    SLAMetrics,
+    SLAStatus,
     TimerNotFoundError,
     close_escalation_manager,
     get_escalation_engine,
     get_escalation_manager,
+    get_policy_manager,
     initialize_escalation_manager,
     reset_escalation_engine,
     reset_escalation_manager,
+    reset_policy_manager,
 )
 from app.core.opa_client import (
     OPAClient,
@@ -48,19 +55,31 @@ __all__ = [
     "ApprovalNotFoundError",
     "ApprovalStateError",
     "ChainNotFoundError",
-    # Escalation Timer System
-    "EscalationTimerManager",
-    "EscalationTimer",
+    # Escalation Exceptions
     "EscalationTimerError",
     "RedisConnectionError",
     "TimerNotFoundError",
+    # Escalation Enums
     "EscalationReason",
+    "SLAStatus",
+    # SLA Data Classes
+    "SLAConfig",
+    "SLAMetrics",
+    "SLABreach",
+    # Escalation Timer
+    "EscalationTimer",
     "EscalationCallback",
-    "EscalationEngine",
+    "EscalationTimerManager",
     "get_escalation_manager",
     "initialize_escalation_manager",
     "close_escalation_manager",
     "reset_escalation_manager",
+    # Escalation Policy Manager
+    "EscalationPolicyManager",
+    "get_policy_manager",
+    "reset_policy_manager",
+    # Escalation Engine with SLA Tracking
+    "EscalationEngine",
     "get_escalation_engine",
     "reset_escalation_engine",
     # OPA Client
