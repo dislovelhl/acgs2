@@ -9,6 +9,8 @@ Implements hybrid classification with LLM fallback for ambiguous cases.
 import json
 import logging
 import os
+import time
+from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple
 from urllib.parse import urlparse
@@ -19,6 +21,50 @@ class IntentType(Enum):
     CREATIVE = "creative"  # High fluency, relaxed factual constraints
     REASONING = "reasoning"  # Complex logic, triggers AMPO branching
     GENERAL = "general"  # Default/conversational intent
+
+
+class RoutingPath(Enum):
+    """Enumeration of classification routing paths for hybrid classification."""
+
+    RULE_BASED = "rule_based"  # Fast path using keyword heuristics
+    LLM = "llm"  # Slow path using LLM for ambiguous cases
+    LLM_FALLBACK = "llm_fallback"  # LLM failed, fell back to rule-based
+    EMPTY_INPUT = "empty_input"  # Empty/whitespace input, returned GENERAL
+
+
+@dataclass
+class ClassificationResult:
+    """Result of intent classification with routing metadata.
+
+    Provides detailed information about the classification decision,
+    including which routing path was used and timing information.
+    """
+
+    intent: IntentType
+    confidence: float
+    routing_path: RoutingPath
+    latency_ms: float
+    rule_based_intent: Optional[IntentType] = None
+    rule_based_confidence: Optional[float] = None
+    llm_intent: Optional[IntentType] = None
+    llm_confidence: Optional[float] = None
+    llm_reasoning: Optional[str] = None
+    cached: bool = False
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary for logging/serialization."""
+        return {
+            "intent": self.intent.value,
+            "confidence": self.confidence,
+            "routing_path": self.routing_path.value,
+            "latency_ms": round(self.latency_ms, 3),
+            "rule_based_intent": self.rule_based_intent.value if self.rule_based_intent else None,
+            "rule_based_confidence": self.rule_based_confidence,
+            "llm_intent": self.llm_intent.value if self.llm_intent else None,
+            "llm_confidence": self.llm_confidence,
+            "llm_reasoning": self.llm_reasoning,
+            "cached": self.cached,
+        }
 
 
 logger = logging.getLogger(__name__)
@@ -537,3 +583,136 @@ Respond with ONLY a JSON object in this exact format:
             f"LLM classification failed, falling back to rule-based: {rule_based_intent.value}"
         )
         return rule_based_intent
+
+    async def classify_async_with_metadata(
+        self, content: str, context: Optional[Dict[str, Any]] = None
+    ) -> ClassificationResult:
+        """Asynchronous classification with full routing metadata.
+
+        Provides detailed information about the classification decision,
+        including which routing path was used, timing, and confidence scores.
+        This method is useful for monitoring, debugging, and A/B testing.
+
+        Uses hybrid classification strategy:
+        1. First attempts rule-based classification with confidence scoring
+        2. If confidence is below threshold and LLM is available, invokes LLM
+        3. Falls back to rule-based result on LLM failure
+
+        Args:
+            content: The user input to classify.
+            context: Optional context dict (reserved for future use).
+
+        Returns:
+            ClassificationResult with intent, confidence, routing path, and timing.
+        """
+        start_time = time.perf_counter()
+
+        # Handle empty/whitespace input - return GENERAL without invoking LLM
+        if not content or not content.strip():
+            latency_ms = (time.perf_counter() - start_time) * 1000
+            logger.debug(
+                f"[ROUTING] Empty input -> GENERAL (path=empty_input, latency={latency_ms:.3f}ms)"
+            )
+            return ClassificationResult(
+                intent=IntentType.GENERAL,
+                confidence=1.0,
+                routing_path=RoutingPath.EMPTY_INPUT,
+                latency_ms=latency_ms,
+            )
+
+        # Step 1: Get rule-based classification with confidence
+        rule_start = time.perf_counter()
+        rule_based_intent, rule_confidence = self.classify_with_confidence(content)
+        rule_latency_ms = (time.perf_counter() - rule_start) * 1000
+
+        # Step 2: Check if LLM should be invoked (low confidence + LLM available)
+        if rule_confidence >= self.llm_confidence_threshold:
+            # High confidence - use rule-based result (fast path)
+            latency_ms = (time.perf_counter() - start_time) * 1000
+            logger.info(
+                f"[ROUTING] High confidence rule-based -> {rule_based_intent.value} "
+                f"(path=rule_based, confidence={rule_confidence:.2f}, latency={latency_ms:.3f}ms)"
+            )
+            return ClassificationResult(
+                intent=rule_based_intent,
+                confidence=rule_confidence,
+                routing_path=RoutingPath.RULE_BASED,
+                latency_ms=latency_ms,
+                rule_based_intent=rule_based_intent,
+                rule_based_confidence=rule_confidence,
+            )
+
+        # Step 3: Low confidence - try LLM classification if available
+        if not self.is_llm_available():
+            latency_ms = (time.perf_counter() - start_time) * 1000
+            logger.info(
+                f"[ROUTING] LLM unavailable, using rule-based -> {rule_based_intent.value} "
+                f"(path=rule_based, confidence={rule_confidence:.2f}, latency={latency_ms:.3f}ms)"
+            )
+            return ClassificationResult(
+                intent=rule_based_intent,
+                confidence=rule_confidence,
+                routing_path=RoutingPath.RULE_BASED,
+                latency_ms=latency_ms,
+                rule_based_intent=rule_based_intent,
+                rule_based_confidence=rule_confidence,
+            )
+
+        logger.debug(
+            f"[ROUTING] Low confidence ({rule_confidence:.2f}), invoking LLM "
+            f"(rule_based={rule_based_intent.value}, latency_so_far={rule_latency_ms:.3f}ms)"
+        )
+
+        # Step 4: Invoke LLM
+        llm_start = time.perf_counter()
+        llm_result = await self._invoke_llm_classification(content)
+        llm_latency_ms = (time.perf_counter() - llm_start) * 1000
+
+        if llm_result:
+            # Parse LLM result
+            llm_intent = self._parse_llm_intent(llm_result)
+            if llm_intent:
+                llm_confidence = llm_result.get("confidence", 0.8)
+                llm_reasoning = llm_result.get("reasoning", "N/A")
+                latency_ms = (time.perf_counter() - start_time) * 1000
+
+                # Determine if this was a cache hit (very fast LLM response)
+                # Typically cache hits are <10ms, uncached calls are >100ms
+                is_cached = llm_latency_ms < 50
+
+                logger.info(
+                    f"[ROUTING] LLM classification -> {llm_intent.value} "
+                    f"(path=llm, confidence={llm_confidence:.2f}, "
+                    f"latency={latency_ms:.3f}ms, llm_latency={llm_latency_ms:.3f}ms, "
+                    f"cached={is_cached}, reasoning='{llm_reasoning}')"
+                )
+
+                return ClassificationResult(
+                    intent=llm_intent,
+                    confidence=llm_confidence,
+                    routing_path=RoutingPath.LLM,
+                    latency_ms=latency_ms,
+                    rule_based_intent=rule_based_intent,
+                    rule_based_confidence=rule_confidence,
+                    llm_intent=llm_intent,
+                    llm_confidence=llm_confidence,
+                    llm_reasoning=llm_reasoning,
+                    cached=is_cached,
+                )
+
+        # Step 5: Fallback to rule-based on LLM failure
+        latency_ms = (time.perf_counter() - start_time) * 1000
+        logger.warning(
+            f"[ROUTING] LLM failed, fallback to rule-based -> {rule_based_intent.value} "
+            f"(path=llm_fallback, confidence={rule_confidence:.2f}, "
+            f"latency={latency_ms:.3f}ms, llm_latency={llm_latency_ms:.3f}ms)"
+        )
+
+        return ClassificationResult(
+            intent=rule_based_intent,
+            confidence=rule_confidence,
+            routing_path=RoutingPath.LLM_FALLBACK,
+            latency_ms=latency_ms,
+            rule_based_intent=rule_based_intent,
+            rule_based_confidence=rule_confidence,
+        )
