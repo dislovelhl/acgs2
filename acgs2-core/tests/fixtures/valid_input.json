@@ -1,0 +1,8 @@
+{
+  "user": {
+    "role": "admin"
+  },
+  "request": {
+    "method": "GET"
+  }
+}
