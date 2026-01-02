@@ -7,6 +7,7 @@ self-evolving constitutional thresholds for intelligent AI safety governance.
 """
 
 import logging
+import os
 import threading
 import time
 from dataclasses import dataclass, field
@@ -18,17 +19,22 @@ import numpy as np
 from sklearn.ensemble import IsolationForest, RandomForestRegressor
 from sklearn.preprocessing import StandardScaler
 
+# MLflow imports for model versioning
+try:
+    import mlflow
+    from mlflow.tracking import MlflowClient
+
+    MLFLOW_AVAILABLE = True
+except ImportError:
+    MLFLOW_AVAILABLE = False
+    mlflow = None
+    MlflowClient = None
+
 # Constitutional imports
 try:
-    from .exceptions import (
-        ConstitutionalValidationError,
-        GovernanceError,
-        ImpactAssessmentError,
-    )
+    from .exceptions import GovernanceError
 except ImportError:
-    from exceptions import (
-        GovernanceError,
-    )
+    from exceptions import GovernanceError
 
 logger = logging.getLogger(__name__)
 
@@ -103,6 +109,10 @@ class GovernanceDecision:
 class AdaptiveThresholds:
     """ML-based dynamic threshold adjustment system."""
 
+    # MLflow configuration
+    MLFLOW_EXPERIMENT_NAME = "governance_thresholds"
+    MLFLOW_TRACKING_URI = os.getenv("MLFLOW_TRACKING_URI", "http://localhost:5000")
+
     def __init__(self, constitutional_hash: str):
         self.constitutional_hash = constitutional_hash
         self.base_thresholds = {
@@ -128,6 +138,44 @@ class AdaptiveThresholds:
 
         self.last_retraining = time.time()
         self.model_trained = False
+
+        # MLflow tracking
+        self._mlflow_initialized = False
+        self._mlflow_experiment_id: Optional[str] = None
+        self.model_version: Optional[int] = None
+        self._initialize_mlflow()
+
+    def _initialize_mlflow(self) -> None:
+        """Initialize MLflow tracking for training runs."""
+        if not MLFLOW_AVAILABLE:
+            logger.warning("MLflow not available. Training runs will not be tracked.")
+            return
+
+        try:
+            mlflow.set_tracking_uri(self.MLFLOW_TRACKING_URI)
+
+            # Create or get experiment
+            experiment = mlflow.get_experiment_by_name(self.MLFLOW_EXPERIMENT_NAME)
+            if experiment is None:
+                self._mlflow_experiment_id = mlflow.create_experiment(
+                    self.MLFLOW_EXPERIMENT_NAME,
+                    tags={
+                        "constitutional_hash": self.constitutional_hash,
+                        "model_type": "adaptive_thresholds",
+                    },
+                )
+            else:
+                self._mlflow_experiment_id = experiment.experiment_id
+
+            self._mlflow_initialized = True
+            logger.info(
+                f"MLflow initialized for experiment '{self.MLFLOW_EXPERIMENT_NAME}' "
+                f"(id: {self._mlflow_experiment_id})"
+            )
+
+        except Exception as e:
+            logger.warning(f"Failed to initialize MLflow tracking: {e}")
+            self._mlflow_initialized = False
 
     def get_adaptive_threshold(self, impact_level: ImpactLevel, features: ImpactFeatures) -> float:
         """Get ML-adjusted threshold for given impact level and features."""
@@ -206,7 +254,7 @@ class AdaptiveThresholds:
             logger.error(f"Error updating adaptive model: {e}")
 
     def _retrain_model(self) -> None:
-        """Retrain the ML model with accumulated data."""
+        """Retrain the ML model with accumulated data and log to MLflow."""
         try:
             if len(self.training_data) < 100:  # Minimum samples for training
                 return
@@ -225,11 +273,13 @@ class AdaptiveThresholds:
             # Scale features
             X_scaled = self.feature_scaler.fit_transform(X)
 
-            # Train model
-            self.threshold_model.fit(X_scaled, y)
-
-            # Update anomaly detector
-            self.anomaly_detector.fit(X_scaled)
+            # Log training run to MLflow
+            if self._mlflow_initialized and MLFLOW_AVAILABLE:
+                self._log_training_run_to_mlflow(X_scaled, y, recent_data)
+            else:
+                # Train without MLflow logging
+                self.threshold_model.fit(X_scaled, y)
+                self.anomaly_detector.fit(X_scaled)
 
             self.model_trained = True
             self.last_retraining = time.time()
@@ -238,6 +288,111 @@ class AdaptiveThresholds:
 
         except Exception as e:
             logger.error(f"Error retraining adaptive model: {e}")
+
+    def _log_training_run_to_mlflow(
+        self, X_scaled: np.ndarray, y: np.ndarray, recent_data: List[Dict]
+    ) -> None:
+        """Log training run with metrics and model to MLflow."""
+        try:
+            run_name = f"threshold_retrain_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}"
+
+            with mlflow.start_run(
+                experiment_id=self._mlflow_experiment_id,
+                run_name=run_name,
+            ) as run:
+                # Log training parameters
+                mlflow.log_params(
+                    {
+                        "n_estimators": self.threshold_model.n_estimators,
+                        "random_state": self.threshold_model.random_state,
+                        "n_jobs": self.threshold_model.n_jobs,
+                        "learning_rate": self.learning_rate,
+                        "confidence_threshold": self.confidence_threshold,
+                        "retraining_interval": self.retraining_interval,
+                        "constitutional_hash": self.constitutional_hash,
+                    }
+                )
+
+                # Train model
+                self.threshold_model.fit(X_scaled, y)
+
+                # Update anomaly detector
+                self.anomaly_detector.fit(X_scaled)
+
+                # Calculate training metrics
+                y_pred = self.threshold_model.predict(X_scaled)
+                mse = float(np.mean((y - y_pred) ** 2))
+                mae = float(np.mean(np.abs(y - y_pred)))
+                r2_score = float(1 - (np.sum((y - y_pred) ** 2) / np.sum((y - np.mean(y)) ** 2)))
+
+                # Calculate data distribution metrics
+                positive_feedback = sum(1 for d in recent_data if d.get("outcome_success", False))
+                human_feedback_count = sum(
+                    1 for d in recent_data if d.get("human_feedback") is not None
+                )
+
+                # Log metrics
+                mlflow.log_metrics(
+                    {
+                        "n_samples": len(recent_data),
+                        "n_features": X_scaled.shape[1],
+                        "mean_squared_error": mse,
+                        "mean_absolute_error": mae,
+                        "r2_score": r2_score,
+                        "target_mean": float(np.mean(y)),
+                        "target_std": float(np.std(y)),
+                        "positive_feedback_rate": positive_feedback / len(recent_data),
+                        "human_feedback_rate": human_feedback_count / len(recent_data),
+                    }
+                )
+
+                # Log feature importance
+                if hasattr(self.threshold_model, "feature_importances_"):
+                    feature_names = [
+                        "message_length",
+                        "agent_count",
+                        "tenant_complexity",
+                        "temporal_mean",
+                        "temporal_std",
+                        "semantic_similarity",
+                        "historical_precedence",
+                        "resource_utilization",
+                        "network_isolation",
+                        "risk_score",
+                        "confidence_level",
+                    ]
+                    for idx, importance in enumerate(self.threshold_model.feature_importances_):
+                        feature_name = (
+                            feature_names[idx] if idx < len(feature_names) else f"feature_{idx}"
+                        )
+                        mlflow.log_metric(f"importance_{feature_name}", float(importance))
+
+                # Log the trained model
+                mlflow.sklearn.log_model(
+                    self.threshold_model,
+                    artifact_path="threshold_model",
+                    registered_model_name=None,  # Don't auto-register; use ml_versioning for that
+                )
+
+                # Log anomaly detector as artifact
+                mlflow.sklearn.log_model(
+                    self.anomaly_detector,
+                    artifact_path="anomaly_detector",
+                )
+
+                # Store run info
+                self.model_version = run.info.run_id
+
+                logger.info(
+                    f"MLflow run logged: {run.info.run_id} "
+                    f"(MSE: {mse:.4f}, R2: {r2_score:.4f}, samples: {len(recent_data)})"
+                )
+
+        except Exception as e:
+            logger.warning(f"Failed to log training run to MLflow: {e}")
+            # Fallback to training without MLflow logging
+            self.threshold_model.fit(X_scaled, y)
+            self.anomaly_detector.fit(X_scaled)
 
     def _extract_feature_vector(self, features: ImpactFeatures) -> List[float]:
         """Extract numerical feature vector for ML prediction."""
