@@ -13,6 +13,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from ..core.audit_ledger import AuditLedger
 from .api.governance import router as governance_router
+from .api.reports import router as reports_router
 
 # Centralized settings
 try:
@@ -66,6 +67,11 @@ app.include_router(
     governance_router,
     prefix="/api/v1/governance",
     tags=["governance"],
+)
+app.include_router(
+    reports_router,
+    prefix="/api/v1/reports",
+    tags=["reports"],
 )
 
 
