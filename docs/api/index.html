@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ACGS-2 API Documentation</title>
+    <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5.10.3/swagger-ui.css">
+    <style>
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 2.5rem;
+            font-weight: 300;
+        }
+        .header p {
+            margin: 0.5rem 0 0 0;
+            opacity: 0.9;
+            font-size: 1.1rem;
+        }
+        #swagger-ui {
+            max-width: none;
+        }
+        .footer {
+            background: #f8f9fa;
+            padding: 2rem;
+            text-align: center;
+            border-top: 1px solid #e9ecef;
+        }
+        .footer a {
+            color: #667eea;
+            text-decoration: none;
+        }
+        .footer a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🔒 ACGS-2 API</h1>
+        <p>Advanced Constitutional Governance System - API Documentation</p>
+        <p><strong>Version:</strong> 1.0.0 | <strong>Status:</strong> Development</p>
+    </div>
+
+    <div id="swagger-ui"></div>
+
+    <div class="footer">
+        <p>
+            <strong>ACGS-2</strong> - Advanced Constitutional Governance System<br>
+            <a href="https://github.com/ACGS-Project/ACGS-2">GitHub Repository</a> |
+            <a href="../CONTRIBUTING.md">Contributing Guide</a> |
+            <a href="../postman/README.md">API Testing</a>
+        </p>
+        <p style="margin-top: 1rem; font-size: 0.9rem; color: #6c757d;">
+            🚀 <strong>Quick Start:</strong> Use the development environment with <code>./scripts/start-dev.sh</code><br>
+            🧪 <strong>Test APIs:</strong> Import the Postman collection from <code>docs/postman/</code>
+        </p>
+    </div>
+
+    <script src="https://unpkg.com/swagger-ui-dist@5.10.3/swagger-ui-bundle.js"></script>
+    <script src="https://unpkg.com/swagger-ui-dist@5.10.3/swagger-ui-standalone-preset.js"></script>
+    <script>
+        window.onload = function() {
+            const ui = SwaggerUIBundle({
+                url: 'openapi.yaml',
+                dom_id: '#swagger-ui',
+                deepLinking: true,
+                presets: [
+                    SwaggerUIBundle.presets.apis,
+                    SwaggerUIStandalonePreset
+                ],
+                plugins: [
+                    SwaggerUIBundle.plugins.DownloadUrl
+                ],
+                layout: "StandaloneLayout",
+                validatorUrl: null,
+                tryItOutEnabled: true,
+                requestInterceptor: function(request) {
+                    // Add development headers if needed
+                    console.log('API Request:', request);
+                    return request;
+                },
+                responseInterceptor: function(response) {
+                    // Log responses for debugging
+                    console.log('API Response:', response);
+                    return response;
+                }
+            });
+        };
+    </script>
+</body>
+</html>

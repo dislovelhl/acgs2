@@ -1,0 +1,327 @@
+{
+  "info": {
+    "name": "ACGS-2 API Collection",
+    "description": "Complete API collection for ACGS-2 services including Agent Bus, API Gateway, and supporting services",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8080",
+      "type": "string"
+    },
+    {
+      "key": "agent_bus_url",
+      "value": "http://localhost:8000",
+      "type": "string"
+    },
+    {
+      "key": "opa_url",
+      "value": "http://localhost:8181",
+      "type": "string"
+    },
+    {
+      "key": "tenant_id",
+      "value": "acgs-dev",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health Checks",
+      "item": [
+        {
+          "name": "API Gateway Health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health",
+              "host": ["{{base_url}}"],
+              "path": ["health"]
+            },
+            "description": "Check API Gateway health status"
+          },
+          "response": []
+        },
+        {
+          "name": "Agent Bus Health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{agent_bus_url}}/health",
+              "host": ["{{agent_bus_url}}"],
+              "path": ["health"]
+            },
+            "description": "Check Enhanced Agent Bus health status"
+          },
+          "response": []
+        },
+        {
+          "name": "OPA Health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{opa_url}}/health",
+              "host": ["{{opa_url}}"],
+              "path": ["health"]
+            },
+            "description": "Check Open Policy Agent health status"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Agent Bus API",
+      "item": [
+        {
+          "name": "Send Message",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"Hello, ACGS-2! This is a test message.\",\n  \"message_type\": \"user_request\",\n  \"priority\": \"normal\",\n  \"sender\": \"test-user\",\n  \"recipient\": null,\n  \"tenant_id\": \"{{tenant_id}}\",\n  \"metadata\": {\n    \"source\": \"postman\",\n    \"test\": true\n  }\n}"
+            },
+            "url": {
+              "raw": "{{agent_bus_url}}/messages",
+              "host": ["{{agent_bus_url}}"],
+              "path": ["messages"]
+            },
+            "description": "Send a message to the Enhanced Agent Bus"
+          },
+          "response": []
+        },
+        {
+          "name": "Send High Priority Message",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"URGENT: System alert - immediate attention required\",\n  \"message_type\": \"system_alert\",\n  \"priority\": \"high\",\n  \"sender\": \"monitoring-system\",\n  \"recipient\": null,\n  \"tenant_id\": \"{{tenant_id}}\",\n  \"metadata\": {\n    \"alert_type\": \"security\",\n    \"severity\": \"high\",\n    \"source\": \"postman\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{agent_bus_url}}/messages",
+              "host": ["{{agent_bus_url}}"],
+              "path": ["messages"]
+            },
+            "description": "Send a high-priority system alert message"
+          },
+          "response": []
+        },
+        {
+          "name": "Send Policy Update Message",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"Policy update: New data retention policy implemented\",\n  \"message_type\": \"policy_update\",\n  \"priority\": \"normal\",\n  \"sender\": \"policy-admin\",\n  \"recipient\": null,\n  \"tenant_id\": \"{{tenant_id}}\",\n  \"metadata\": {\n    \"policy_type\": \"data_retention\",\n    \"effective_date\": \"2024-01-01\",\n    \"source\": \"postman\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{agent_bus_url}}/messages",
+              "host": ["{{agent_bus_url}}"],
+              "path": ["messages"]
+            },
+            "description": "Send a policy update message"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Message Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{agent_bus_url}}/messages/{{message_id}}",
+              "host": ["{{agent_bus_url}}"],
+              "path": ["messages", "{{message_id}}"]
+            },
+            "description": "Get the status of a specific message"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Agent Bus Statistics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{agent_bus_url}}/stats",
+              "host": ["{{agent_bus_url}}"],
+              "path": ["stats"]
+            },
+            "description": "Get Agent Bus performance statistics"
+          },
+          "response": []
+        },
+        {
+          "name": "Validate Policy",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"policy_name\": \"test_policy\",\n  \"rules\": [\n    {\n      \"condition\": \"user.role == 'admin'\",\n      \"action\": \"allow\"\n    }\n  ],\n  \"metadata\": {\n    \"description\": \"Test policy for validation\",\n    \"version\": \"1.0\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{agent_bus_url}}/policies/validate",
+              "host": ["{{agent_bus_url}}"],
+              "path": ["policies", "validate"]
+            },
+            "description": "Validate a policy against constitutional requirements"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "API Gateway",
+      "item": [
+        {
+          "name": "List Services",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/services",
+              "host": ["{{base_url}}"],
+              "path": ["services"]
+            },
+            "description": "List all available services and their health status"
+          },
+          "response": []
+        },
+        {
+          "name": "Proxy to Agent Bus - Send Message",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"Hello via API Gateway!\",\n  \"message_type\": \"user_request\",\n  \"priority\": \"normal\",\n  \"sender\": \"test-user\",\n  \"tenant_id\": \"{{tenant_id}}\",\n  \"metadata\": {\n    \"via_gateway\": true,\n    \"source\": \"postman\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/messages",
+              "host": ["{{base_url}}"],
+              "path": ["messages"]
+            },
+            "description": "Send message through API Gateway proxy"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Load Testing",
+      "item": [
+        {
+          "name": "Batch Message Send (Runner)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"Load test message {{$randomInt}}\",\n  \"message_type\": \"user_request\",\n  \"priority\": \"normal\",\n  \"sender\": \"load-tester-{{$randomInt}}\",\n  \"tenant_id\": \"{{tenant_id}}\",\n  \"metadata\": {\n    \"batch_id\": \"{{$randomInt}}\",\n    \"timestamp\": \"{{timestamp}}\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{agent_bus_url}}/messages",
+              "host": ["{{agent_bus_url}}"],
+              "path": ["messages"]
+            },
+            "description": "Send batch messages for load testing (use with Postman Runner)"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Error Scenarios",
+      "item": [
+        {
+          "name": "Invalid Message Format",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"invalid_field\": \"missing required fields\"\n}"
+            },
+            "url": {
+              "raw": "{{agent_bus_url}}/messages",
+              "host": ["{{agent_bus_url}}"],
+              "path": ["messages"]
+            },
+            "description": "Test error handling with invalid message format"
+          },
+          "response": []
+        },
+        {
+          "name": "Non-existent Endpoint",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{agent_bus_url}}/nonexistent",
+              "host": ["{{agent_bus_url}}"],
+              "path": ["nonexistent"]
+            },
+            "description": "Test 404 error handling"
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Set timestamp variable for requests",
+          "pm.globals.set(\"timestamp\", new Date().toISOString());"
+        ]
+      }
+    }
+  ]
+}
