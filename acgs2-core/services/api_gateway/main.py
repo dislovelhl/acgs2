@@ -14,8 +14,10 @@ from fastapi import BackgroundTasks, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
-from shared.config import settings
 from starlette.middleware.sessions import SessionMiddleware
+
+from routes import sso_router
+from shared.config import settings
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -207,6 +209,10 @@ async def list_services():
                 service_info["health"] = "unreachable"
 
     return services
+
+
+# Include SSO router for OIDC/SAML authentication
+app.include_router(sso_router, prefix="/sso")
 
 
 # Proxy to Agent Bus (catch-all route - must be last)
