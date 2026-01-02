@@ -18,6 +18,8 @@ from typing import Any, Dict
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from .routes.insights import router as insights_router
+
 # Centralized settings
 try:
     from shared.config import settings
@@ -87,6 +89,9 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type", "X-Request-ID"],
 )
+
+# Include route handlers
+app.include_router(insights_router)
 
 
 # Health check endpoints
