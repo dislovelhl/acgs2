@@ -10,6 +10,15 @@ from .config import (
     WebhookRetryPolicy,
     WebhookSecurityConfig,
 )
+from .delivery import (
+    DeadLetterQueue,
+    WebhookAuthenticationError,
+    WebhookConnectionError,
+    WebhookDeliveryEngine,
+    WebhookDeliveryError,
+    WebhookTimeoutError,
+    create_delivery_engine,
+)
 from .models import (
     WebhookAuthType,
     WebhookConfig,
@@ -21,6 +30,17 @@ from .models import (
     WebhookSignatureAlgorithm,
     WebhookState,
     WebhookSubscription,
+)
+from .retry import (
+    ExponentialBackoff,
+    NonRetryableError,
+    RetryableError,
+    RetryState,
+    WebhookRetryError,
+    extract_retry_after,
+    retry_with_backoff,
+    should_retry_status_code,
+    with_retry,
 )
 
 __all__ = [
@@ -40,4 +60,23 @@ __all__ = [
     "WebhookFrameworkConfig",
     "WebhookRetryPolicy",
     "WebhookSecurityConfig",
+    # Delivery Engine
+    "WebhookDeliveryEngine",
+    "DeadLetterQueue",
+    "create_delivery_engine",
+    # Delivery Exceptions
+    "WebhookDeliveryError",
+    "WebhookAuthenticationError",
+    "WebhookConnectionError",
+    "WebhookTimeoutError",
+    # Retry Logic
+    "ExponentialBackoff",
+    "RetryState",
+    "RetryableError",
+    "NonRetryableError",
+    "WebhookRetryError",
+    "should_retry_status_code",
+    "extract_retry_after",
+    "retry_with_backoff",
+    "with_retry",
 ]
