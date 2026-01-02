@@ -8,6 +8,7 @@
 import { BrowserRouter, Routes, Route, Link, useNavigate } from "react-router-dom";
 import { TemplateList } from "@components/TemplateList";
 import { TemplateDetail } from "@components/TemplateDetail";
+import { TemplateUpload } from "@components/TemplateUpload";
 import type { TemplateListItem } from "@types/template";
 
 function Header(): JSX.Element {
@@ -121,10 +122,8 @@ function UploadPage(): JSX.Element {
     <div className="min-h-screen bg-gray-100">
       <Header />
       <main>
-        <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-          <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm text-center">
-            <p className="text-gray-500">Upload template form coming soon...</p>
-          </div>
+        <div className="max-w-3xl mx-auto py-6 sm:px-6 lg:px-8">
+          <TemplateUpload />
         </div>
       </main>
     </div>
