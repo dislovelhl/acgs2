@@ -18,6 +18,7 @@ from ...schemas.template import (
     TemplateResponse,
     TemplateStatus,
     TemplateUpdate,
+    TemplateUpload,
 )
 
 router = APIRouter()
@@ -269,6 +270,73 @@ async def create_template(
         raise HTTPException(
             status_code=400,
             detail="Template creation failed. Please verify your request and try again.",
+        ) from None
+
+
+@router.post("/upload", response_model=TemplateResponse, status_code=201)
+async def upload_template(
+    upload_data: TemplateUpload,
+):
+    """
+    Upload a template file with validation.
+
+    Creates a new template from an uploaded file. The file extension is validated
+    to ensure it's a supported format (JSON, YAML, or Rego).
+    """
+    global _next_id
+
+    try:
+        # Determine format from file extension
+        file_lower = upload_data.file.lower()
+        if file_lower.endswith(".json"):
+            template_format = TemplateFormat.JSON
+        elif file_lower.endswith((".yaml", ".yml")):
+            template_format = TemplateFormat.YAML
+        elif file_lower.endswith(".rego"):
+            template_format = TemplateFormat.REGO
+        else:
+            raise HTTPException(
+                status_code=400,
+                detail="Unsupported file format. Supported formats: json, yaml, yml, rego",
+            )
+
+        now = datetime.now(timezone.utc)
+        template_id = _next_id
+
+        # Create template record
+        template_data = {
+            "id": template_id,
+            "name": upload_data.name,
+            "description": upload_data.description,
+            "category": upload_data.category.value,
+            "format": template_format.value,
+            "content": f'{{"source": "{upload_data.file}"}}',  # Placeholder content
+            "status": TemplateStatus.DRAFT.value,
+            "is_verified": False,
+            "is_public": True,
+            "organization_id": None,
+            "author_id": "current_user",  # Would come from auth in production
+            "author_name": "Current User",
+            "current_version": "1.0.0",
+            "downloads": 0,
+            "rating": None,
+            "rating_count": 0,
+            "is_deleted": False,
+            "created_at": now,
+            "updated_at": now,
+        }
+
+        _templates_store[template_id] = template_data
+        _next_id += 1
+
+        return _to_response(template_data)
+    except HTTPException:
+        raise
+    except Exception:
+        # Improved error handling - don't leak internal details
+        raise HTTPException(
+            status_code=400,
+            detail="Template upload failed. Please verify your request and try again.",
         ) from None
 
 

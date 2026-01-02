@@ -75,6 +75,26 @@ class TemplateCreate(TemplateBase):
         return v
 
 
+class TemplateUpload(BaseModel):
+    """Schema for uploading a template file"""
+
+    file: str = Field(..., min_length=1, max_length=255, description="Filename or file content")
+    name: str = Field(..., min_length=1, max_length=255, description="Template name")
+    description: str = Field(..., min_length=1, max_length=5000, description="Template description")
+    category: TemplateCategory = Field(..., description="Template category")
+
+    @field_validator("file")
+    @classmethod
+    def validate_file(cls, v: str) -> str:
+        """Validate file has valid extension"""
+        valid_extensions = (".json", ".yaml", ".yml", ".rego")
+        if not any(v.lower().endswith(ext) for ext in valid_extensions):
+            raise ValueError(
+                f"File must have one of these extensions: {', '.join(valid_extensions)}"
+            )
+        return v
+
+
 class TemplateUpdate(BaseModel):
     """Schema for updating an existing template"""
 
