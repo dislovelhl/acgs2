@@ -118,6 +118,9 @@ lint.ignore = [
     "E501",   # line too long, handled by black
 ]
 
+[tool.ruff.lint.isort]
+known-first-party = ["app"]
+
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401"]
 "tests/*" = ["F841", "F401"]
