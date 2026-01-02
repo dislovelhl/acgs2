@@ -424,6 +424,35 @@ export function logCommandFailure(logger: StructuredLogger, durationMs: number, 
 }
 
 // ============================================================================
+// CLI Output Utilities
+// ============================================================================
+
+/**
+ * Write formatted output to stdout for CLI display.
+ *
+ * This function is used for user-facing CLI output (formatted messages,
+ * results, help text) as opposed to structured logging events.
+ *
+ * @param message - The formatted message to display
+ *
+ * @example
+ * cliOutput(chalk.blue('Results:'));
+ * cliOutput(chalk.gray('  - Item 1'));
+ */
+export function cliOutput(message: string): void {
+  process.stdout.write(message + '\n');
+}
+
+/**
+ * Write raw output to stdout without newline (for special formatting).
+ *
+ * @param message - The message to display
+ */
+export function cliOutputRaw(message: string): void {
+  process.stdout.write(message);
+}
+
+// ============================================================================
 // Exports
 // ============================================================================
 
@@ -440,4 +469,6 @@ export default {
   logCommandStart,
   logCommandComplete,
   logCommandFailure,
+  cliOutput,
+  cliOutputRaw,
 };

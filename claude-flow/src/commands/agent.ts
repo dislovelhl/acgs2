@@ -2,6 +2,10 @@ import { Command } from 'commander';
 import chalk from 'chalk';
 import ora from 'ora';
 import { spawnAgent, listAgents } from '../services/agentService';
+import { getLogger, cliOutput } from '../utils/logging_config';
+
+// Initialize logger for this module
+const logger = getLogger('commands/agent');
 
 export const agentCommand = new Command('agent')
   .description('Manage agents in the swarm');
@@ -59,8 +63,9 @@ const spawnCommand = new Command('spawn')
       // Validate agent type
       if (!validateAgentType(options.type)) {
         spinner.fail(chalk.red(`❌ Invalid agent type: ${options.type}`));
-        console.log(chalk.yellow(`\n📋 Valid types: ${VALID_AGENT_TYPES.join(', ')}`));
-        console.log(chalk.gray(`\nExample: npx claude-flow agent spawn --type coder`));
+        logger.warn('invalid_agent_type', { type: options.type });
+        cliOutput(chalk.yellow(`\n📋 Valid types: ${VALID_AGENT_TYPES.join(', ')}`));
+        cliOutput(chalk.gray(`\nExample: npx claude-flow agent spawn --type coder`));
         process.exit(1);
       }
 
@@ -73,24 +78,28 @@ const spawnCommand = new Command('spawn')
       // Validate agent name
       if (agentName.length < 3) {
         spinner.fail(chalk.red(`❌ Agent name too short: ${agentName}`));
-        console.log(chalk.yellow(`\n💡 Agent names must be at least 3 characters long`));
+        logger.warn('agent_name_too_short', { name: agentName });
+        cliOutput(chalk.yellow(`\n💡 Agent names must be at least 3 characters long`));
         process.exit(1);
       }
 
       if (agentName.length > 50) {
         spinner.fail(chalk.red(`❌ Agent name too long: ${agentName}`));
-        console.log(chalk.yellow(`\n💡 Agent names must be less than 50 characters`));
+        logger.warn('agent_name_too_long', { name: agentName });
+        cliOutput(chalk.yellow(`\n💡 Agent names must be less than 50 characters`));
         process.exit(1);
       }
 
       // Check for invalid characters in name
       if (!/^[a-zA-Z0-9\-_]+$/.test(agentName)) {
         spinner.fail(chalk.red(`❌ Invalid characters in agent name: ${agentName}`));
-        console.log(chalk.yellow(`\n💡 Agent names can only contain letters, numbers, hyphens, and underscores`));
+        logger.warn('agent_name_invalid_chars', { name: agentName });
+        cliOutput(chalk.yellow(`\n💡 Agent names can only contain letters, numbers, hyphens, and underscores`));
         process.exit(1);
       }
 
       spinner.text = 'Connecting to ACGS-2 bus...';
+      logger.info('spawn_agent_started', { type: options.type, name: agentName, skills });
 
       // Spawn the agent
       const result = await spawnAgent({
@@ -101,31 +110,34 @@ const spawnCommand = new Command('spawn')
 
       if (result.success) {
         spinner.succeed(chalk.green(`✅ Agent spawned successfully!`));
+        logger.info('agent_spawned', { agentId: result.agentId, type: options.type, name: agentName });
 
-        console.log(chalk.blue(`\n🤖 Agent Details:`));
-        console.log(chalk.gray(`   ID: ${result.agentId}`));
-        console.log(chalk.gray(`   Type: ${options.type}`));
-        console.log(chalk.gray(`   Name: ${agentName}`));
+        cliOutput(chalk.blue(`\n🤖 Agent Details:`));
+        cliOutput(chalk.gray(`   ID: ${result.agentId}`));
+        cliOutput(chalk.gray(`   Type: ${options.type}`));
+        cliOutput(chalk.gray(`   Name: ${agentName}`));
         if (skills.length > 0) {
-          console.log(chalk.gray(`   Skills: ${skills.join(', ')}`));
+          cliOutput(chalk.gray(`   Skills: ${skills.join(', ')}`));
         }
 
-        console.log(chalk.green(`\n🚀 Agent is now active in the swarm!`));
+        cliOutput(chalk.green(`\n🚀 Agent is now active in the swarm!`));
       } else {
         spinner.fail(chalk.red(`❌ Failed to spawn agent`));
-        console.log(chalk.red(`\nError: ${result.error}`));
-        console.log(chalk.yellow(`\n💡 Make sure the ACGS-2 system is running and accessible`));
+        logger.error('spawn_agent_failed', { error: result.error });
+        cliOutput(chalk.red(`\nError: ${result.error}`));
+        cliOutput(chalk.yellow(`\n💡 Make sure the ACGS-2 system is running and accessible`));
         process.exit(1);
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       spinner.fail(chalk.red(`❌ Error spawning agent: ${errorMessage}`));
+      logger.error('spawn_agent_exception', { error: errorMessage });
 
       // Provide helpful error context
       if (errorMessage.includes('python3')) {
-        console.log(chalk.yellow(`\n💡 Make sure Python 3 is installed and available in PATH`));
+        cliOutput(chalk.yellow(`\n💡 Make sure Python 3 is installed and available in PATH`));
       } else if (errorMessage.includes('EnhancedAgentBus')) {
-        console.log(chalk.yellow(`\n💡 Make sure the ACGS-2 core is properly installed`));
+        cliOutput(chalk.yellow(`\n💡 Make sure the ACGS-2 core is properly installed`));
       }
 
       process.exit(1);
@@ -143,15 +155,19 @@ const listCommand = new Command('list')
       // Validate filter type if provided
       if (options.type && !validateAgentType(options.type)) {
         spinner.fail(chalk.red(`❌ Invalid agent type filter: ${options.type}`));
-        console.log(chalk.yellow(`\n📋 Valid types: ${VALID_AGENT_TYPES.join(', ')}`));
+        logger.warn('invalid_agent_type_filter', { type: options.type });
+        cliOutput(chalk.yellow(`\n📋 Valid types: ${VALID_AGENT_TYPES.join(', ')}`));
         process.exit(1);
       }
+
+      logger.info('list_agents_started', { typeFilter: options.type });
 
       const agents = await listAgents();
 
       if (!agents || agents.length === 0) {
         spinner.warn(chalk.yellow(`⚠️  No active agents found in the swarm`));
-        console.log(chalk.gray(`\n💡 Spawn agents first: npx claude-flow agent spawn --type coder`));
+        logger.info('no_agents_found');
+        cliOutput(chalk.gray(`\n💡 Spawn agents first: npx claude-flow agent spawn --type coder`));
         return;
       }
 
@@ -162,41 +178,42 @@ const listCommand = new Command('list')
       }
 
       spinner.succeed(chalk.green(`✅ Found ${filteredAgents.length} agent${filteredAgents.length !== 1 ? 's' : ''}`));
+      logger.info('agents_found', { count: filteredAgents.length, total: agents.length });
 
-      console.log(chalk.blue(`\n🤖 Active Agents:`));
+      cliOutput(chalk.blue(`\n🤖 Active Agents:`));
 
       filteredAgents.forEach((agent, index) => {
         const agentEmoji = getAgentEmoji(agent.type);
         const statusEmoji = agent.status === 'active' ? '🟢' : agent.status === 'busy' ? '🟡' : '🔴';
 
-        console.log(chalk.gray(`${index + 1}. ${agentEmoji} ${agent.name || agent.id} (${agent.type}) ${statusEmoji}`));
+        cliOutput(chalk.gray(`${index + 1}. ${agentEmoji} ${agent.name || agent.id} (${agent.type}) ${statusEmoji}`));
 
         if (options.verbose) {
-          console.log(chalk.gray(`   ID: ${agent.id}`));
-          console.log(chalk.gray(`   Status: ${agent.status}`));
+          cliOutput(chalk.gray(`   ID: ${agent.id}`));
+          cliOutput(chalk.gray(`   Status: ${agent.status}`));
           if (agent.capabilities && agent.capabilities.length > 0) {
-            console.log(chalk.gray(`   Skills: ${agent.capabilities.join(', ')}`));
+            cliOutput(chalk.gray(`   Skills: ${agent.capabilities.join(', ')}`));
           }
           if (agent.created_at) {
             const created = new Date(agent.created_at);
-            console.log(chalk.gray(`   Created: ${created.toLocaleString()}`));
+            cliOutput(chalk.gray(`   Created: ${created.toLocaleString()}`));
           }
           if (agent.last_active) {
             const lastActive = new Date(agent.last_active);
-            console.log(chalk.gray(`   Last Active: ${lastActive.toLocaleString()}`));
+            cliOutput(chalk.gray(`   Last Active: ${lastActive.toLocaleString()}`));
           }
-          console.log();
+          cliOutput('');
         }
       });
 
       if (options.type && filteredAgents.length === 0) {
-        console.log(chalk.yellow(`\n⚠️  No agents found with type: ${options.type}`));
+        cliOutput(chalk.yellow(`\n⚠️  No agents found with type: ${options.type}`));
       }
 
-      console.log(chalk.blue(`\n📊 Summary:`));
-      console.log(chalk.gray(`   Total Agents: ${agents.length}`));
+      cliOutput(chalk.blue(`\n📊 Summary:`));
+      cliOutput(chalk.gray(`   Total Agents: ${agents.length}`));
       if (options.type) {
-        console.log(chalk.gray(`   Filtered by type: ${options.type}`));
+        cliOutput(chalk.gray(`   Filtered by type: ${options.type}`));
       }
 
       // Show type breakdown
@@ -205,16 +222,17 @@ const listCommand = new Command('list')
         return acc;
       }, {});
 
-      console.log(chalk.gray(`   By Type: ${Object.entries(typeCounts).map(([type, count]) => `${type}: ${count}`).join(', ')}`));
+      cliOutput(chalk.gray(`   By Type: ${Object.entries(typeCounts).map(([type, count]) => `${type}: ${count}`).join(', ')}`));
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       spinner.fail(chalk.red(`❌ Failed to list agents: ${errorMessage}`));
+      logger.error('list_agents_failed', { error: errorMessage });
 
       if (errorMessage.includes('python3')) {
-        console.log(chalk.yellow(`\n💡 Make sure Python 3 is installed and available in PATH`));
+        cliOutput(chalk.yellow(`\n💡 Make sure Python 3 is installed and available in PATH`));
       } else if (errorMessage.includes('EnhancedAgentBus')) {
-        console.log(chalk.yellow(`\n💡 Make sure the ACGS-2 core is properly installed`));
+        cliOutput(chalk.yellow(`\n💡 Make sure the ACGS-2 core is properly installed`));
       }
     }
   });
