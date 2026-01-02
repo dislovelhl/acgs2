@@ -128,6 +128,31 @@ services:
     networks:
       - acgs-dev
 
+  # Compliance Documentation Service
+  compliance-docs:
+    build:
+      context: ./acgs2-core/services/compliance_docs
+      dockerfile: Dockerfile.dev
+    ports:
+      - "8100:8100"
+    env_file:
+      - .env.dev
+    environment:
+      # Service-specific configuration
+      - ACGS_ENV=${ACGS_ENV:-development}
+      # Pass through centralized config
+      - CONSTITUTIONAL_HASH=${CONSTITUTIONAL_HASH:-cdd01ef066bc6cf2}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      # Compliance-specific environment variables
+      - COMPLIANCE_TEMPLATES_PATH=${COMPLIANCE_TEMPLATES_PATH:-/app/src/templates}
+      - COMPLIANCE_OUTPUT_PATH=${COMPLIANCE_OUTPUT_PATH:-/tmp/compliance-reports}
+      - COMPLIANCE_CLEANUP_INTERVAL=${COMPLIANCE_CLEANUP_INTERVAL:-3600}
+    volumes:
+      - ./acgs2-core/services/compliance_docs:/app
+      - /app/__pycache__
+    networks:
+      - acgs-dev
+
 networks:
   acgs-dev:
     driver: bridge
