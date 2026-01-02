@@ -1,0 +1,583 @@
+# Multi-Region ServiceAccount and RBAC Configuration
+# Constitutional Hash: multi-region-rbac-v1
+#
+# This manifest provides centralized RBAC configuration for multi-region
+# service deployments. It defines ServiceAccounts, Roles, ClusterRoles,
+# and bindings required for claude-flow and neural-mcp services to operate
+# in a multi-region Istio service mesh environment.
+#
+# Usage:
+#   # Apply to each regional cluster
+#   kubectl apply -f service-rbac.yaml --context=region1
+#   kubectl apply -f service-rbac.yaml --context=region2
+#
+# Security Notes:
+#   - ServiceAccounts follow principle of least privilege
+#   - Cross-namespace access is limited to service discovery
+#   - Secrets access is limited to specific service secrets
+#   - Istio resources are read-only for observability
+---
+# =============================================================================
+# NAMESPACE-SCOPED RESOURCES
+# =============================================================================
+
+# Ensure namespace exists with proper labels
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: acgs-services
+  labels:
+    app.kubernetes.io/part-of: acgs2
+    acgs.io/rbac-enabled: "true"
+    # Istio injection for service mesh
+    istio-injection: enabled
+---
+# =============================================================================
+# SERVICE ACCOUNTS
+# =============================================================================
+
+# ServiceAccount for claude-flow orchestration service
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: claude-flow
+  namespace: acgs-services
+  labels:
+    app.kubernetes.io/name: claude-flow
+    app.kubernetes.io/component: cli-orchestrator
+    app.kubernetes.io/part-of: acgs2
+    acgs.io/multi-region: "true"
+  annotations:
+    # Description for audit purposes
+    acgs.io/description: "ServiceAccount for claude-flow orchestrator in multi-region deployment"
+    # IAM role annotation for cloud provider integration (AWS example)
+    # eks.amazonaws.com/role-arn: arn:aws:iam::ACCOUNT_ID:role/acgs-claude-flow-role
+automountServiceAccountToken: true
+---
+# ServiceAccount for neural-mcp MCP server
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: neural-mcp
+  namespace: acgs-services
+  labels:
+    app.kubernetes.io/name: neural-mcp
+    app.kubernetes.io/component: neural-mcp-server
+    app.kubernetes.io/part-of: acgs2
+    acgs.io/multi-region: "true"
+  annotations:
+    # Description for audit purposes
+    acgs.io/description: "ServiceAccount for neural-mcp server in multi-region deployment"
+    # IAM role annotation for cloud provider integration (AWS example)
+    # eks.amazonaws.com/role-arn: arn:aws:iam::ACCOUNT_ID:role/acgs-neural-mcp-role
+automountServiceAccountToken: true
+---
+# Shared ServiceAccount for cross-region operations (used by CronJobs, etc.)
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: acgs-multi-region-operator
+  namespace: acgs-services
+  labels:
+    app.kubernetes.io/name: multi-region-operator
+    app.kubernetes.io/component: operator
+    app.kubernetes.io/part-of: acgs2
+    acgs.io/multi-region: "true"
+  annotations:
+    acgs.io/description: "ServiceAccount for multi-region operations like compliance checks and failover"
+automountServiceAccountToken: true
+---
+# =============================================================================
+# NAMESPACE-SCOPED ROLES
+# =============================================================================
+
+# Role for reading ConfigMaps and Secrets in acgs-services namespace
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: acgs-service-config-reader
+  namespace: acgs-services
+  labels:
+    app.kubernetes.io/part-of: acgs2
+    acgs.io/role-type: config-reader
+rules:
+  # Read ConfigMaps for service configuration
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["get", "list", "watch"]
+  # Read specific secrets (NOT all secrets)
+  - apiGroups: [""]
+    resources: ["secrets"]
+    resourceNames:
+      - claude-flow-secrets
+      - neural-mcp-secrets
+      - acgs-tls-secrets
+      - tenant-encryption-keys
+    verbs: ["get"]
+  # Read service endpoints for discovery
+  - apiGroups: [""]
+    resources: ["services", "endpoints"]
+    verbs: ["get", "list", "watch"]
+---
+# Role for pod status checks (used for health monitoring)
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: acgs-pod-reader
+  namespace: acgs-services
+  labels:
+    app.kubernetes.io/part-of: acgs2
+    acgs.io/role-type: pod-reader
+rules:
+  # Read pods for health checks and status
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["pods/log"]
+    verbs: ["get"]
+  # Read events for debugging
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["get", "list", "watch"]
+---
+# Role for multi-region operator with extended permissions
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: acgs-multi-region-operator
+  namespace: acgs-services
+  labels:
+    app.kubernetes.io/part-of: acgs2
+    acgs.io/role-type: operator
+rules:
+  # Full access to ConfigMaps for region configuration
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["get", "list", "watch", "create", "update", "patch"]
+  # Read pods for health and status
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list", "watch"]
+  # Read services and endpoints
+  - apiGroups: [""]
+    resources: ["services", "endpoints"]
+    verbs: ["get", "list", "watch"]
+  # Create events for audit logging
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["create", "patch"]
+  # Read deployments for status
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["get", "list", "watch"]
+  # Access to PodDisruptionBudgets for maintenance
+  - apiGroups: ["policy"]
+    resources: ["poddisruptionbudgets"]
+    verbs: ["get", "list", "watch"]
+---
+# =============================================================================
+# CLUSTER-SCOPED ROLES
+# =============================================================================
+
+# ClusterRole for cross-namespace service discovery
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: acgs-cross-namespace-discovery
+  labels:
+    app.kubernetes.io/part-of: acgs2
+    acgs.io/role-type: cross-namespace
+rules:
+  # Read services across namespaces for cross-region routing
+  - apiGroups: [""]
+    resources: ["services", "endpoints"]
+    verbs: ["get", "list", "watch"]
+  # Read namespace labels for data residency verification
+  - apiGroups: [""]
+    resources: ["namespaces"]
+    verbs: ["get", "list"]
+  # Read nodes for topology awareness
+  - apiGroups: [""]
+    resources: ["nodes"]
+    verbs: ["get", "list"]
+---
+# ClusterRole for Istio resource observation (read-only)
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: acgs-istio-reader
+  labels:
+    app.kubernetes.io/part-of: acgs2
+    acgs.io/role-type: istio-reader
+rules:
+  # Read VirtualServices for routing information
+  - apiGroups: ["networking.istio.io"]
+    resources: ["virtualservices", "destinationrules", "gateways"]
+    verbs: ["get", "list", "watch"]
+  # Read ServiceEntries for external service discovery
+  - apiGroups: ["networking.istio.io"]
+    resources: ["serviceentries", "sidecars"]
+    verbs: ["get", "list", "watch"]
+  # Read AuthorizationPolicies for security context
+  - apiGroups: ["security.istio.io"]
+    resources: ["authorizationpolicies", "peerauthentications", "requestauthentications"]
+    verbs: ["get", "list", "watch"]
+  # Read Telemetry resources
+  - apiGroups: ["telemetry.istio.io"]
+    resources: ["telemetries"]
+    verbs: ["get", "list", "watch"]
+---
+# ClusterRole for multi-region compliance verification
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: acgs-compliance-auditor
+  labels:
+    app.kubernetes.io/part-of: acgs2
+    acgs.io/role-type: compliance-auditor
+rules:
+  # Read namespaces for data residency labels
+  - apiGroups: [""]
+    resources: ["namespaces"]
+    verbs: ["get", "list"]
+  # Read pods across namespaces for compliance verification
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list"]
+  # Read services for endpoint verification
+  - apiGroups: [""]
+    resources: ["services", "endpoints"]
+    verbs: ["get", "list"]
+  # Read ConfigMaps for tenant residency rules
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["get", "list"]
+    # Limited to governance namespace ConfigMaps
+  # Read Istio AuthorizationPolicies for compliance
+  - apiGroups: ["security.istio.io"]
+    resources: ["authorizationpolicies"]
+    verbs: ["get", "list"]
+---
+# =============================================================================
+# ROLE BINDINGS (NAMESPACE-SCOPED)
+# =============================================================================
+
+# Bind config reader role to claude-flow
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: claude-flow-config-reader
+  namespace: acgs-services
+  labels:
+    app.kubernetes.io/part-of: acgs2
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: acgs-service-config-reader
+subjects:
+  - kind: ServiceAccount
+    name: claude-flow
+    namespace: acgs-services
+---
+# Bind config reader role to neural-mcp
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: neural-mcp-config-reader
+  namespace: acgs-services
+  labels:
+    app.kubernetes.io/part-of: acgs2
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: acgs-service-config-reader
+subjects:
+  - kind: ServiceAccount
+    name: neural-mcp
+    namespace: acgs-services
+---
+# Bind pod reader role to claude-flow
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: claude-flow-pod-reader
+  namespace: acgs-services
+  labels:
+    app.kubernetes.io/part-of: acgs2
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: acgs-pod-reader
+subjects:
+  - kind: ServiceAccount
+    name: claude-flow
+    namespace: acgs-services
+---
+# Bind pod reader role to neural-mcp
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: neural-mcp-pod-reader
+  namespace: acgs-services
+  labels:
+    app.kubernetes.io/part-of: acgs2
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: acgs-pod-reader
+subjects:
+  - kind: ServiceAccount
+    name: neural-mcp
+    namespace: acgs-services
+---
+# Bind operator role to multi-region-operator
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: multi-region-operator-binding
+  namespace: acgs-services
+  labels:
+    app.kubernetes.io/part-of: acgs2
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: acgs-multi-region-operator
+subjects:
+  - kind: ServiceAccount
+    name: acgs-multi-region-operator
+    namespace: acgs-services
+---
+# =============================================================================
+# CLUSTER ROLE BINDINGS
+# =============================================================================
+
+# Bind cross-namespace discovery to claude-flow
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: claude-flow-cross-namespace-discovery
+  labels:
+    app.kubernetes.io/part-of: acgs2
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: acgs-cross-namespace-discovery
+subjects:
+  - kind: ServiceAccount
+    name: claude-flow
+    namespace: acgs-services
+---
+# Bind cross-namespace discovery to neural-mcp
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: neural-mcp-cross-namespace-discovery
+  labels:
+    app.kubernetes.io/part-of: acgs2
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: acgs-cross-namespace-discovery
+subjects:
+  - kind: ServiceAccount
+    name: neural-mcp
+    namespace: acgs-services
+---
+# Bind Istio reader to claude-flow (for routing awareness)
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: claude-flow-istio-reader
+  labels:
+    app.kubernetes.io/part-of: acgs2
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: acgs-istio-reader
+subjects:
+  - kind: ServiceAccount
+    name: claude-flow
+    namespace: acgs-services
+---
+# Bind Istio reader to neural-mcp
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: neural-mcp-istio-reader
+  labels:
+    app.kubernetes.io/part-of: acgs2
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: acgs-istio-reader
+subjects:
+  - kind: ServiceAccount
+    name: neural-mcp
+    namespace: acgs-services
+---
+# Bind compliance auditor to multi-region-operator
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: multi-region-operator-compliance-auditor
+  labels:
+    app.kubernetes.io/part-of: acgs2
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: acgs-compliance-auditor
+subjects:
+  - kind: ServiceAccount
+    name: acgs-multi-region-operator
+    namespace: acgs-services
+---
+# =============================================================================
+# AGGREGATE CLUSTER ROLES (for administrative grouping)
+# =============================================================================
+
+# Aggregate role for viewing all ACGS multi-region resources
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: acgs-multi-region-view
+  labels:
+    app.kubernetes.io/part-of: acgs2
+    # Enable aggregation into built-in view role
+    rbac.authorization.k8s.io/aggregate-to-view: "true"
+  annotations:
+    acgs.io/description: "Aggregate view role for ACGS multi-region resources"
+aggregationRule:
+  clusterRoleSelectors:
+    - matchLabels:
+        acgs.io/role-type: cross-namespace
+    - matchLabels:
+        acgs.io/role-type: istio-reader
+rules: []  # Rules are automatically filled by aggregation
+---
+# Aggregate role for administering ACGS multi-region resources
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: acgs-multi-region-admin
+  labels:
+    app.kubernetes.io/part-of: acgs2
+    # Enable aggregation into built-in admin role
+    rbac.authorization.k8s.io/aggregate-to-admin: "true"
+  annotations:
+    acgs.io/description: "Aggregate admin role for ACGS multi-region resources"
+rules:
+  # Full access to ACGS services namespace
+  - apiGroups: [""]
+    resources: ["*"]
+    verbs: ["*"]
+    # Note: This is scoped by RoleBinding to specific namespaces
+  # Manage Istio resources
+  - apiGroups: ["networking.istio.io", "security.istio.io"]
+    resources: ["*"]
+    verbs: ["*"]
+---
+# =============================================================================
+# NETWORK POLICIES (for RBAC-aligned network security)
+# =============================================================================
+
+# Network policy to restrict traffic within acgs-services namespace
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: acgs-services-default-deny
+  namespace: acgs-services
+  labels:
+    app.kubernetes.io/part-of: acgs2
+spec:
+  podSelector: {}  # Apply to all pods in namespace
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # Allow traffic from same namespace
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: acgs-services
+    # Allow traffic from Istio system namespace (sidecar proxies)
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: istio-system
+    # Allow Prometheus scraping
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              app.kubernetes.io/name: prometheus
+      ports:
+        - protocol: TCP
+          port: 9090
+        - protocol: TCP
+          port: 15020  # Istio sidecar metrics
+  egress:
+    # Allow DNS resolution
+    - to:
+        - namespaceSelector: {}
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    # Allow traffic to same namespace
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: acgs-services
+    # Allow traffic to Istio system (for sidecar communication)
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: istio-system
+    # Allow traffic to database namespace
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: database
+      ports:
+        - protocol: TCP
+          port: 5432  # PostgreSQL
+    # Allow traffic to Kafka
+    - to:
+        - namespaceSelector: {}
+      ports:
+        - protocol: TCP
+          port: 9092  # Kafka
+    # Allow traffic to Redis
+    - to:
+        - namespaceSelector: {}
+      ports:
+        - protocol: TCP
+          port: 6379  # Redis
+---
+# Network policy to allow cross-region traffic via Istio East-West Gateway
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: acgs-allow-eastwest-gateway
+  namespace: acgs-services
+  labels:
+    app.kubernetes.io/part-of: acgs2
+spec:
+  podSelector: {}  # Apply to all pods in namespace
+  policyTypes:
+    - Ingress
+  ingress:
+    # Allow traffic from East-West gateway for cross-region communication
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: istio-system
+          podSelector:
+            matchLabels:
+              istio: eastwestgateway
+      ports:
+        - protocol: TCP
+          port: 8080  # MCP port
+        - protocol: TCP
+          port: 9090  # Metrics
