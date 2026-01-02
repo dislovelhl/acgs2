@@ -1,0 +1,18 @@
+# Structured Logging and Distributed Tracing Dependencies for ACGS-2
+# These packages provide enterprise-grade structured logging with:
+# - JSON-formatted log output (structlog)
+# - OpenTelemetry distributed tracing and correlation ID support
+# - FastAPI auto-instrumentation for request tracing
+
+# Core structured logging library with async-safe contextvars support
+structlog>=24.0.0
+
+# OpenTelemetry core packages for distributed tracing
+opentelemetry-api>=1.20.0
+opentelemetry-sdk>=1.20.0
+
+# FastAPI auto-instrumentation for OpenTelemetry
+opentelemetry-instrumentation-fastapi>=0.41b0
+
+# High-performance JSON serialization (recommended for production)
+orjson>=3.9.0
