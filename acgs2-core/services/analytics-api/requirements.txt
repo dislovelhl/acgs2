@@ -1,0 +1,22 @@
+# ACGS-2 Analytics API Dependencies
+# Updated: 2026-01-02
+# Constitutional Hash: cdd01ef066bc6cf2
+
+# Web Framework (CVE-2024-24762 fixed)
+fastapi>=0.127.0
+uvicorn[standard]>=0.40.0
+
+# Data Validation
+pydantic>=2.12.0
+
+# Database/Cache
+redis>=7.1.0
+
+# Messaging
+aiokafka>=0.12.0
+
+# Form handling (security fix)
+python-multipart>=0.0.20
+
+# Settings management
+pydantic-settings>=2.0.0
