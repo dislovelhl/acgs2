@@ -35,7 +35,7 @@ jobs:
           cd acgs2-core/enhanced_agent_bus/rust && cargo audit
 
   test-python:
-    name: Python Tests (3.12)
+    name: Python Tests with Coverage (3.12)
     needs: security-audit
     runs-on: ubuntu-latest
     steps:
@@ -49,9 +49,23 @@ jobs:
         run: |
           pip install -e .[test]
           pip install -r acgs2-core/requirements_optimized.txt
-      - name: Run All Tests
+          pip install pytest-cov pytest-xdist coverage[toml]
+      - name: Run Tests with Coverage (Parallel)
         run: |
-          python3 test_all.py
+          cd acgs2-core
+          pytest -n auto --dist=loadscope \
+            --cov=acgs2_core \
+            --cov-branch \
+            --cov-report=term-missing \
+            --cov-report=xml:coverage.xml \
+            --cov-fail-under=85 \
+            tests/
+      - name: Upload Python Coverage Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-coverage
+          path: acgs2-core/coverage.xml
+          retention-days: 30
 
   test-rust:
     name: Rust Tests (1.80.0)
