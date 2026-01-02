@@ -1,0 +1,155 @@
+# ACGS-2 Development Docker Compose
+# Simplified single-machine setup for development and testing
+# Constitutional Hash: cdd01ef066bc6cf2
+# Version: 1.1.0
+#
+# Usage: docker compose -f docker-compose.dev.yml --env-file .env.dev up -d
+
+services:
+  # Open Policy Agent for policy decisions
+  opa:
+    image: openpolicyagent/opa:latest
+    command: run --server --log-level info --addr 0.0.0.0:8181
+    ports:
+      - "8181:8181"
+    volumes:
+      - ./acgs2-core/enhanced_agent_bus/policies:/policies:ro
+    # healthcheck:
+    #   test: ["CMD", "curl", "-f", "http://localhost:8181/health"]
+    #   interval: 10s
+    #   timeout: 5s
+    #   retries: 3
+    networks:
+      - acgs-dev
+
+  # Redis for caching and state management
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-dev_password}
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-dev_password}", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    networks:
+      - acgs-dev
+
+  # Kafka for messaging
+  kafka:
+    image: confluentinc/cp-kafka:7.4.0
+    hostname: kafka
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:19092
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:29092,PLAINTEXT_HOST://0.0.0.0:19092
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    ports:
+      - "19092:19092"
+    healthcheck:
+      test:
+        ["CMD-SHELL", "kafka-topics --bootstrap-server localhost:19092 --list"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+    networks:
+      - acgs-dev
+
+  # Zookeeper for Kafka (required for older Kafka versions)
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+    networks:
+      - acgs-dev
+
+  # Enhanced Agent Bus (Python service)
+  agent-bus:
+    build:
+      context: ./acgs2-core/enhanced_agent_bus
+      dockerfile: Dockerfile.dev
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env.dev
+    environment:
+      # Override container-internal URLs (use Docker network names)
+      - OPA_URL=${OPA_URL:-http://opa:8181}
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
+      - KAFKA_BOOTSTRAP=${KAFKA_BOOTSTRAP:-kafka:29092}
+      - ACGS_ENV=${ACGS_ENV:-development}
+      # Pass through centralized config
+      - CONSTITUTIONAL_HASH=${CONSTITUTIONAL_HASH:-cdd01ef066bc6cf2}
+      - MACI_STRICT_MODE=${MACI_STRICT_MODE:-true}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    volumes:
+      - ./acgs2-core/enhanced_agent_bus:/app
+      - /app/__pycache__
+    depends_on:
+      - opa
+      - redis
+      - kafka
+    networks:
+      - acgs-dev
+
+  # API Gateway
+  api-gateway:
+    build:
+      context: ./acgs2-core/services/api_gateway
+      dockerfile: Dockerfile.dev
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env.dev
+    environment:
+      # Override container-internal URLs
+      - AGENT_BUS_URL=${AGENT_BUS_URL:-http://agent-bus:8000}
+      - ACGS_ENV=${ACGS_ENV:-development}
+      # Pass through centralized config
+      - CONSTITUTIONAL_HASH=${CONSTITUTIONAL_HASH:-cdd01ef066bc6cf2}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - JWT_SECRET=${JWT_SECRET:-dev-jwt-secret-min-32-chars-required}
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000,http://localhost:8080,*}
+    depends_on:
+      - agent-bus
+    networks:
+      - acgs-dev
+
+networks:
+  acgs-dev:
+    driver: bridge
+
+# =============================================================================
+# Configuration Notes
+# =============================================================================
+# This compose file uses centralized configuration from .env.dev
+#
+# Quick Start:
+#   docker compose -f docker-compose.dev.yml --env-file .env.dev up -d
+#
+# Environment Files:
+#   - .env.dev      : Development (local Docker)
+#   - .env.staging  : Staging environment
+#   - .env.production : Production (secure defaults)
+#
+# Key Variables (from .env.dev):
+#   - REDIS_URL, KAFKA_BOOTSTRAP : Service connection strings
+#   - CONSTITUTIONAL_HASH        : Constitutional compliance (cdd01ef066bc6cf2)
+#   - MACI_STRICT_MODE           : Multi-Agent Constitutional Intelligence mode
+#   - JWT_SECRET                 : Authentication secret (change in production!)
+#
+# See shared/config.py for the full centralized configuration schema
+# =============================================================================

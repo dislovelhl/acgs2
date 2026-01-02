@@ -177,28 +177,57 @@ helm install acgs2 acgs2/acgs2 \
 kubectl get pods -n acgs2-system
 ```
 
-#### Option 2: Local Development
+#### Option 2: Docker Compose Development (Recommended for Local)
+
+```bash
+# Clone repository
+git clone https://github.com/ACGS-Project/ACGS-2.git
+cd ACGS-2
+
+# Copy environment configuration (centralized config system)
+cp .env.dev .env
+
+# Start development environment with all services
+docker compose -f docker-compose.dev.yml --env-file .env.dev up -d
+
+# Verify services are running
+docker compose -f docker-compose.dev.yml ps
+
+# View logs
+docker compose -f docker-compose.dev.yml logs -f agent-bus
+```
+
+**Environment Files:**
+- `.env.dev` - Development defaults (Docker networking)
+- `.env.staging` - Staging environment
+- `.env.production` - Production template (use secrets manager!)
+
+See [Development Guide](./docs/DEVELOPMENT.md) for complete configuration options.
+
+#### Option 3: Local Python Development
 
 ```bash
 # Clone and setup
 git clone https://github.com/ACGS-Project/ACGS-2.git
 cd ACGS-2/acgs2-core
 
-# Install dependencies
-pip install -r config/requirements_optimized.txt
+# Create virtual environment
+python -m venv .venv && source .venv/bin/activate
 
-# Build Rust extensions
-cd enhanced_agent_bus/rust && cargo build --release
+# Install dependencies
+pip install -e .[dev]
+
+# Configure environment (use localhost URLs)
+cp ../.env.dev .env
+sed -i 's/redis:6379/localhost:6379/g' .env
+sed -i 's/opa:8181/localhost:8181/g' .env
 
 # Run tests
-python -m pytest tests/ -v --cov=. --cov-report=html
-
-# Or run enhanced agent bus tests specifically
-cd acgs2-core/enhanced_agent_bus
-python3 -m pytest tests/ -v --tb=short
+cd enhanced_agent_bus
+PYTHONPATH=.. python -m pytest tests/ -v --tb=short
 ```
 
-#### Option 3: Docker Development
+#### Option 4: Security-Hardened Container
 
 ```bash
 # Build security-hardened container
@@ -209,6 +238,7 @@ docker run --security-opt=no-new-privileges \
   --cap-drop=ALL \
   --read-only \
   --user 1000:1000 \
+  --env-file .env.dev \
   acgs2/agent-bus:latest
 ```
 
@@ -219,7 +249,7 @@ docker run --security-opt=no-new-privileges \
 | **Kubernetes** | ✅ Production Ready | [K8s Guide](./acgs2-infra/deploy/README.md) | Consolidated architecture, GitOps, enterprise security |
 | **AWS EKS** | ✅ Certified | [AWS Deployment](./acgs2-infra/deploy/terraform/aws/) | KMS encryption, CloudWatch integration, EBS optimization |
 | **GCP GKE** | ✅ Certified | [GCP Deployment](./acgs2-infra/deploy/terraform/gcp/) | Workload Identity, Cloud Monitoring, persistent disks |
-| **Docker Compose** | ⚠️ Development Only | [Local Dev](./docs/development.md) | Quick testing, limited security features |
+| **Docker Compose** | ⚠️ Development Only | [Development Guide](./docs/DEVELOPMENT.md) | Quick testing, centralized config, limited security |
 
 ### Infrastructure as Code
 

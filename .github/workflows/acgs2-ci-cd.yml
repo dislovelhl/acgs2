@@ -74,6 +74,62 @@ jobs:
             exit 1
           fi
 
+      - name: Centralized config validation
+        run: |
+          echo "🔍 Validating centralized configuration system..."
+
+          # Validate environment files exist
+          for env_file in .env.dev .env.staging .env.production; do
+            if [ ! -f "$env_file" ]; then
+              echo "❌ Missing environment file: $env_file"
+              exit 1
+            fi
+            echo "✅ Found $env_file"
+          done
+
+          # Validate required variables in each env file
+          REQUIRED_VARS="CONSTITUTIONAL_HASH ACGS_ENV REDIS_URL"
+          for env_file in .env.dev .env.staging .env.production; do
+            echo "Checking $env_file..."
+            for var in $REQUIRED_VARS; do
+              if ! grep -q "^${var}=" "$env_file"; then
+                echo "❌ Missing required variable $var in $env_file"
+                exit 1
+              fi
+            done
+          done
+
+          # Validate constitutional hash in env files
+          for env_file in .env.dev .env.staging .env.production; do
+            HASH=$(grep "^CONSTITUTIONAL_HASH=" "$env_file" | cut -d= -f2)
+            if [ "$HASH" != "cdd01ef066bc6cf2" ]; then
+              echo "❌ Invalid constitutional hash in $env_file: $HASH"
+              exit 1
+            fi
+          done
+          echo "✅ All environment files valid"
+
+      - name: Config schema validation
+        working-directory: ./acgs2-core
+        run: |
+          pip install pydantic pydantic-settings python-dotenv
+          python -c "
+          import sys
+          sys.path.insert(0, '.')
+          try:
+              from shared.config import settings
+              print('✅ Config schema loaded successfully')
+              print(f'  Environment: {settings.env}')
+              print(f'  Constitutional Hash: {settings.ai.constitutional_hash}')
+          except Exception as e:
+              print(f'❌ Config validation failed: {e}')
+              sys.exit(1)
+          "
+
+      - name: Docker Compose validation
+        run: |
+          docker compose -f docker-compose.dev.yml config --quiet && echo "✅ docker-compose.dev.yml valid"
+
       - name: OPA policy validation
         run: |
           docker run --rm -v ${{ github.workspace }}/acgs2-core/policies/rego:/policies openpolicyagent/opa:latest check /policies

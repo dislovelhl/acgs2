@@ -1,8 +1,14 @@
 # Hardened Docker Compose for ACGS-2 (Phase 3.2 Security/Perf)
 # Non-root, mTLS refs, resources P99<5ms (cpu0.25-0.5 mem0.5-1G), secrets env_file, healthchecks,
 # networks isolation, tenant_id, OPA policies mount, secure Redis/Kafka inspired chaos exps (tls/network partition resilient)
-# Validate: docker-compose config
 # Constitutional Hash: cdd01ef066bc6cf2
+#
+# Usage:
+#   Development: docker compose --env-file ../../.env.dev up -d
+#   Staging:     docker compose --env-file ../../.env.staging up -d
+#   Production:  docker compose --env-file ../../.env.production up -d
+#
+# Validate: docker compose config
 
 version: '3.9'
 
