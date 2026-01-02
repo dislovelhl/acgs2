@@ -6,6 +6,7 @@ Categorizes user intent for dynamic routing and prompt compilation.
 Implements hybrid classification with LLM fallback for ambiguous cases.
 """
 
+import json
 import logging
 import os
 from enum import Enum
@@ -371,9 +372,168 @@ class IntentClassifier:
         # Default to general with lower confidence
         return IntentType.GENERAL, self._calculate_confidence(0, is_default=True)
 
+    # LLM prompt template for intent classification
+    LLM_CLASSIFICATION_PROMPT: str = """You are an intent classifier for a governance system. Classify the user's input into exactly one of these categories:
+
+- FACTUAL: Questions seeking specific facts, data, historical information, or verifiable answers.
+  Examples: "What is the capital of France?", "When did World War 2 end?", "How many users are in the system?"
+
+- CREATIVE: Requests for creative content, storytelling, imagination, or artistic output.
+  Examples: "Write a poem about spring", "Tell me a joke", "Create a story about a robot"
+
+- REASONING: Complex analytical tasks requiring step-by-step logic, calculations, or problem-solving.
+  Examples: "Calculate the derivative of x^2", "Explain why the sky is blue step by step", "Analyze this data"
+
+- GENERAL: Conversational inputs, greetings, or anything that doesn't fit the above categories.
+  Examples: "Hello", "How are you?", "Thanks for your help"
+
+User input: {content}
+
+Respond with ONLY a JSON object in this exact format:
+{{"intent": "FACTUAL|CREATIVE|REASONING|GENERAL", "confidence": 0.0-1.0, "reasoning": "brief explanation"}}"""
+
+    # Maximum content length to send to LLM (to control costs)
+    MAX_CONTENT_LENGTH: int = 2000
+
+    async def _invoke_llm_classification(self, content: str) -> Optional[Dict[str, Any]]:
+        """Invoke LLM for intent classification.
+
+        Args:
+            content: The user input to classify.
+
+        Returns:
+            Dict with intent, confidence, and reasoning, or None on failure.
+        """
+        if not self.is_llm_available():
+            return None
+
+        # Truncate content if too long
+        truncated_content = (
+            content[: self.MAX_CONTENT_LENGTH]
+            if len(content) > self.MAX_CONTENT_LENGTH
+            else content
+        )
+
+        try:
+            # Prepare the prompt
+            prompt = self.LLM_CLASSIFICATION_PROMPT.format(content=truncated_content)
+
+            # Get LLM parameters
+            params = self._get_llm_params()
+
+            # Call LiteLLM acompletion
+            response = await litellm.acompletion(
+                messages=[{"role": "user", "content": prompt}],
+                **params,
+            )
+
+            # Extract response content
+            if not response or not response.get("choices"):
+                logger.warning("Empty LLM response received")
+                return None
+
+            response_content = response["choices"][0]["message"]["content"]
+
+            # Parse JSON response
+            try:
+                result = json.loads(response_content.strip())
+                return result
+            except json.JSONDecodeError as e:
+                logger.warning(f"Failed to parse LLM response as JSON: {e}")
+                # Try to extract intent from plain text response
+                response_upper = response_content.upper()
+                for intent_type in IntentType:
+                    if intent_type.name in response_upper:
+                        return {
+                            "intent": intent_type.name,
+                            "confidence": 0.7,
+                            "reasoning": "Extracted from text",
+                        }
+                return None
+
+        except Exception as e:
+            logger.error(f"LLM classification failed: {e}")
+            return None
+
+    def _parse_llm_intent(self, llm_result: Dict[str, Any]) -> Optional[IntentType]:
+        """Parse LLM result to extract IntentType.
+
+        Args:
+            llm_result: Dict containing intent classification from LLM.
+
+        Returns:
+            IntentType if valid intent found, None otherwise.
+        """
+        intent_str = llm_result.get("intent", "").upper()
+
+        # Map string to IntentType enum
+        intent_map = {
+            "FACTUAL": IntentType.FACTUAL,
+            "CREATIVE": IntentType.CREATIVE,
+            "REASONING": IntentType.REASONING,
+            "GENERAL": IntentType.GENERAL,
+        }
+
+        return intent_map.get(intent_str)
+
     async def classify_async(
         self, content: str, context: Optional[Dict[str, Any]] = None
     ) -> IntentType:
-        """Asynchronous classification with optional context/LLM fallback."""
-        # TODO: Implement LLM-based classification for high-ambiguity cases
-        return self.classify(content)
+        """Asynchronous classification with optional context/LLM fallback.
+
+        Uses hybrid classification strategy:
+        1. First attempts rule-based classification with confidence scoring
+        2. If confidence is below threshold and LLM is available, invokes LLM
+        3. Falls back to rule-based result on LLM failure
+
+        Args:
+            content: The user input to classify.
+            context: Optional context dict (reserved for future use).
+
+        Returns:
+            IntentType classification result.
+        """
+        # Handle empty/whitespace input - return GENERAL without invoking LLM
+        if not content or not content.strip():
+            logger.debug("Empty input received, returning GENERAL intent")
+            return IntentType.GENERAL
+
+        # Step 1: Get rule-based classification with confidence
+        rule_based_intent, confidence = self.classify_with_confidence(content)
+
+        # Step 2: Check if LLM should be invoked (low confidence + LLM available)
+        if confidence >= self.llm_confidence_threshold:
+            # High confidence - use rule-based result (fast path)
+            logger.debug(
+                f"High confidence ({confidence:.2f}) rule-based classification: {rule_based_intent.value}"
+            )
+            return rule_based_intent
+
+        # Step 3: Low confidence - try LLM classification if available
+        if not self.is_llm_available():
+            logger.debug(
+                f"LLM not available, using rule-based result with low confidence ({confidence:.2f})"
+            )
+            return rule_based_intent
+
+        logger.debug(f"Low confidence ({confidence:.2f}), invoking LLM classification")
+
+        # Step 4: Invoke LLM
+        llm_result = await self._invoke_llm_classification(content)
+
+        if llm_result:
+            # Parse LLM result
+            llm_intent = self._parse_llm_intent(llm_result)
+            if llm_intent:
+                llm_confidence = llm_result.get("confidence", 0.8)
+                logger.info(
+                    f"LLM classification: {llm_intent.value} "
+                    f"(confidence: {llm_confidence:.2f}, reasoning: {llm_result.get('reasoning', 'N/A')})"
+                )
+                return llm_intent
+
+        # Step 5: Fallback to rule-based on LLM failure
+        logger.warning(
+            f"LLM classification failed, falling back to rule-based: {rule_based_intent.value}"
+        )
+        return rule_based_intent
