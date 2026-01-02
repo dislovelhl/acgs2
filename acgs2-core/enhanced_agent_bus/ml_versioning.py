@@ -6,21 +6,28 @@ Implements MLflow model versioning with champion/candidate alias management
 for governance models. Supports model registration, promotion, and rollback.
 """
 
+from __future__ import annotations
+
 import logging
 import os
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
+
+# Type checking imports for static analysis
+if TYPE_CHECKING:
+    from mlflow.tracking import MlflowClient
 
 try:
     import mlflow
     from mlflow.exceptions import MlflowException
-    from mlflow.tracking import MlflowClient
+    from mlflow.tracking import MlflowClient as MlflowClientClass
 
     MLFLOW_AVAILABLE = True
 except ImportError:
     MLFLOW_AVAILABLE = False
     MlflowException = Exception
+    MlflowClientClass = None  # Placeholder for type hints
 
 logger = logging.getLogger(__name__)
 
@@ -111,7 +118,7 @@ class MLflowVersionManager:
 
         if not self._initialized:
             mlflow.set_tracking_uri(self.tracking_uri)
-            self._client = MlflowClient(self.tracking_uri)
+            self._client = MlflowClientClass(self.tracking_uri)
             self._initialized = True
             logger.info(f"MLflow client initialized with tracking URI: {self.tracking_uri}")
 
