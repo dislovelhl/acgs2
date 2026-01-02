@@ -189,6 +189,8 @@ class IntentClassifier:
         # LLM client state
         self._llm_client_initialized = False
         self._cache_initialized = False
+        # Cache reference for verification (points to litellm.cache when initialized)
+        self.cache: Optional[Any] = None
 
         # Initialize LLM client if enabled
         if self.llm_enabled:
@@ -273,6 +275,8 @@ class IntentClassifier:
                 password=redis_params.get("password"),
                 ttl=self.llm_cache_ttl,
             )
+            # Expose cache as instance attribute for verification/testing
+            self.cache = litellm.cache
             self._cache_initialized = True
             logger.info(
                 f"LiteLLM cache initialized with Redis at "
