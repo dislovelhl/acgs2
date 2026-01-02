@@ -19,6 +19,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .routes.anomalies import router as anomalies_router
+from .routes.export import router as export_router
 from .routes.insights import router as insights_router
 from .routes.predictions import router as predictions_router
 from .routes.query import router as query_router
@@ -95,6 +96,7 @@ app.add_middleware(
 
 # Include route handlers
 app.include_router(anomalies_router)
+app.include_router(export_router)
 app.include_router(insights_router)
 app.include_router(predictions_router)
 app.include_router(query_router)
