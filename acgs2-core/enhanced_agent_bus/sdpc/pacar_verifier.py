@@ -56,6 +56,33 @@ class PACARVerifier:
             logger.error(f"Failed to get conversation {conversation_id}: {e}")
             return None
 
+    async def _store_conversation(
+        self, conversation_id: str, conversation_data: Dict[str, Any], ttl_seconds: int = 3600
+    ) -> bool:
+        """
+        Store a conversation in Redis with TTL.
+
+        Args:
+            conversation_id: Unique conversation identifier
+            conversation_data: Conversation data to persist
+            ttl_seconds: Time to live in seconds (default 1 hour)
+
+        Returns:
+            True if stored successfully, False otherwise
+        """
+        if not self.redis_client:
+            logger.warning("Redis not connected, cannot store conversation")
+            return False
+
+        try:
+            key = f"{self.conversation_key}:{conversation_id}"
+            await self.redis_client.setex(key, ttl_seconds, json.dumps(conversation_data))
+            logger.debug(f"Stored conversation {conversation_id} with TTL {ttl_seconds}s")
+            return True
+        except (ConnectionError, OSError, TypeError) as e:
+            logger.error(f"Failed to store conversation {conversation_id}: {e}")
+            return False
+
     async def verify(self, content: str, original_intent: str) -> Dict[str, Any]:
         """
         Executes the PACAR (Proactive Agentic Critique and Review) workflow.
