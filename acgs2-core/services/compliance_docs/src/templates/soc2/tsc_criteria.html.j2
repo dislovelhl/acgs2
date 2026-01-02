@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SOC 2 Trust Service Criteria - {{ organization_name | default_value }}</title>
+    <style>
+        :root {
+            --primary-color: #1a365d;
+            --secondary-color: #2c5282;
+            --success-color: #276749;
+            --warning-color: #c05621;
+            --danger-color: #c53030;
+            --info-color: #2b6cb0;
+            --light-gray: #f7fafc;
+            --border-color: #e2e8f0;
+
+            /* TSC-specific colors */
+            --tsc-security: #2b6cb0;
+            --tsc-availability: #276749;
+            --tsc-processing: #6b46c1;
+            --tsc-confidentiality: #c05621;
+            --tsc-privacy: #702459;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #2d3748;
+            background-color: #fff;
+            font-size: 11pt;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 40px;
+        }
+
+        /* Header */
+        .report-header {
+            text-align: center;
+            border-bottom: 3px solid var(--primary-color);
+            padding-bottom: 30px;
+            margin-bottom: 40px;
+        }
+
+        .report-header h1 {
+            color: var(--primary-color);
+            font-size: 26pt;
+            margin-bottom: 10px;
+        }
+
+        .report-header h2 {
+            color: var(--secondary-color);
+            font-size: 16pt;
+            font-weight: normal;
+        }
+
+        .report-meta {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .report-meta-item {
+            text-align: center;
+        }
+
+        .report-meta-label {
+            font-size: 9pt;
+            color: #718096;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .report-meta-value {
+            font-size: 11pt;
+            color: var(--primary-color);
+            font-weight: 600;
+        }
+
+        /* TSC Section */
+        .tsc-section {
+            margin-bottom: 50px;
+            page-break-inside: avoid;
+        }
+
+        .tsc-header {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            padding: 20px;
+            border-radius: 8px 8px 0 0;
+            color: white;
+        }
+
+        .tsc-header.security { background-color: var(--tsc-security); }
+        .tsc-header.availability { background-color: var(--tsc-availability); }
+        .tsc-header.processing-integrity { background-color: var(--tsc-processing); }
+        .tsc-header.confidentiality { background-color: var(--tsc-confidentiality); }
+        .tsc-header.privacy { background-color: var(--tsc-privacy); }
+
+        .tsc-icon {
+            font-size: 36pt;
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255,255,255,0.2);
+            border-radius: 50%;
+        }
+
+        .tsc-title-block h2 {
+            font-size: 18pt;
+            margin-bottom: 5px;
+        }
+
+        .tsc-title-block .tsc-code {
+            font-size: 12pt;
+            opacity: 0.9;
+        }
+
+        .tsc-status {
+            margin-left: auto;
+            text-align: right;
+        }
+
+        .tsc-status-badge {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 10pt;
+        }
+
+        .status-in-scope {
+            background-color: rgba(255,255,255,0.3);
+            color: white;
+        }
+
+        .status-not-in-scope {
+            background-color: rgba(0,0,0,0.3);
+            color: white;
+        }
+
+        .tsc-content {
+            background-color: var(--light-gray);
+            border: 1px solid var(--border-color);
+            border-top: none;
+            border-radius: 0 0 8px 8px;
+            padding: 25px;
+        }
+
+        .tsc-description {
+            margin-bottom: 25px;
+            padding: 15px;
+            background: white;
+            border-radius: 6px;
+            border-left: 4px solid var(--primary-color);
+        }
+
+        /* Controls Table */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 10pt;
+            background: white;
+        }
+
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 12px;
+            text-align: left;
+            vertical-align: top;
+        }
+
+        th {
+            background-color: var(--primary-color);
+            color: white;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 9pt;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f8fafc;
+        }
+
+        tr:hover {
+            background-color: #edf2f7;
+        }
+
+        /* Control Cards */
+        .control-card {
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            margin-bottom: 15px;
+            overflow: hidden;
+        }
+
+        .control-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background-color: var(--light-gray);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .control-id {
+            font-weight: 700;
+            color: var(--primary-color);
+            font-size: 12pt;
+        }
+
+        .control-title {
+            color: var(--secondary-color);
+            font-weight: 500;
+        }
+
+        .control-card-body {
+            padding: 15px;
+        }
+
+        .control-field {
+            margin-bottom: 12px;
+        }
+
+        .control-field-label {
+            font-size: 9pt;
+            color: #718096;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+
+        .control-field-value {
+            color: #2d3748;
+        }
+
+        /* Status Badges */
+        .status-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 9pt;
+            font-weight: 600;
+        }
+
+        .status-effective {
+            background-color: #c6f6d5;
+            color: #276749;
+        }
+
+        .status-ineffective {
+            background-color: #fed7d7;
+            color: #c53030;
+        }
+
+        .status-not-tested {
+            background-color: #fefcbf;
+            color: #975a16;
+        }
+
+        .status-partial {
+            background-color: #feebc8;
+            color: #c05621;
+        }
+
+        /* Testing Procedures */
+        .testing-procedures {
+            list-style-type: decimal;
+            padding-left: 20px;
+            margin: 10px 0;
+        }
+
+        .testing-procedures li {
+            margin-bottom: 8px;
+            color: #4a5568;
+        }
+
+        /* Evidence Summary */
+        .evidence-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .evidence-stat {
+            background: white;
+            padding: 15px;
+            border-radius: 6px;
+            text-align: center;
+            border: 1px solid var(--border-color);
+        }
+
+        .evidence-stat-value {
+            font-size: 24pt;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+
+        .evidence-stat-label {
+            font-size: 9pt;
+            color: #718096;
+            text-transform: uppercase;
+        }
+
+        /* Overall Effectiveness */
+        .effectiveness-box {
+            padding: 20px;
+            background: white;
+            border-radius: 6px;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .effectiveness-box.effective {
+            border: 2px solid var(--success-color);
+        }
+
+        .effectiveness-box.ineffective {
+            border: 2px solid var(--danger-color);
+        }
+
+        .effectiveness-box.not-tested {
+            border: 2px solid var(--warning-color);
+        }
+
+        .effectiveness-box.partial {
+            border: 2px solid var(--info-color);
+        }
+
+        .effectiveness-label {
+            font-size: 9pt;
+            color: #718096;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+
+        .effectiveness-value {
+            font-size: 16pt;
+            font-weight: 700;
+        }
+
+        .effectiveness-box.effective .effectiveness-value { color: var(--success-color); }
+        .effectiveness-box.ineffective .effectiveness-value { color: var(--danger-color); }
+        .effectiveness-box.not-tested .effectiveness-value { color: var(--warning-color); }
+        .effectiveness-box.partial .effectiveness-value { color: var(--info-color); }
+
+        /* Section Titles */
+        .section-title {
+            color: var(--primary-color);
+            font-size: 14pt;
+            margin: 25px 0 15px 0;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        /* Footer */
+        .report-footer {
+            margin-top: 60px;
+            padding-top: 20px;
+            border-top: 2px solid var(--border-color);
+            text-align: center;
+            font-size: 9pt;
+            color: #718096;
+        }
+
+        /* Print Styles */
+        @media print {
+            .container {
+                max-width: 100%;
+                padding: 20px;
+            }
+
+            .tsc-section {
+                page-break-before: always;
+            }
+
+            .tsc-section:first-of-type {
+                page-break-before: auto;
+            }
+        }
+
+        /* Table of Contents */
+        .toc {
+            background: var(--light-gray);
+            padding: 25px;
+            border-radius: 8px;
+            margin-bottom: 40px;
+        }
+
+        .toc h2 {
+            color: var(--primary-color);
+            margin-bottom: 15px;
+            font-size: 14pt;
+        }
+
+        .toc-list {
+            list-style: none;
+        }
+
+        .toc-list li {
+            margin-bottom: 10px;
+            padding-left: 20px;
+            position: relative;
+        }
+
+        .toc-list li::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 8px;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        .toc-list li.toc-security::before { background: var(--tsc-security); }
+        .toc-list li.toc-availability::before { background: var(--tsc-availability); }
+        .toc-list li.toc-processing::before { background: var(--tsc-processing); }
+        .toc-list li.toc-confidentiality::before { background: var(--tsc-confidentiality); }
+        .toc-list li.toc-privacy::before { background: var(--tsc-privacy); }
+
+        .toc-list a {
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+
+        .toc-list a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Report Header -->
+        <header class="report-header">
+            <h1>SOC 2 Trust Service Criteria</h1>
+            <h2>{{ organization_name | default_value('Organization Name') }}</h2>
+            <div class="report-meta">
+                <div class="report-meta-item">
+                    <div class="report-meta-label">Report Type</div>
+                    <div class="report-meta-value">{{ report_type | default_value('Type II') }}</div>
+                </div>
+                <div class="report-meta-item">
+                    <div class="report-meta-label">Audit Period</div>
+                    <div class="report-meta-value">
+                        {{ audit_period_start | format_date }} - {{ audit_period_end | format_date }}
+                    </div>
+                </div>
+                <div class="report-meta-item">
+                    <div class="report-meta-label">Generated</div>
+                    <div class="report-meta-value">{{ generated_at | format_datetime }}</div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Table of Contents -->
+        <nav class="toc">
+            <h2>Trust Service Criteria Covered</h2>
+            <ul class="toc-list">
+                <li class="toc-security">
+                    <a href="#security">Security (CC) - Common Criteria</a>
+                </li>
+                <li class="toc-availability">
+                    <a href="#availability">Availability (A)</a>
+                </li>
+                <li class="toc-processing">
+                    <a href="#processing-integrity">Processing Integrity (PI)</a>
+                </li>
+                <li class="toc-confidentiality">
+                    <a href="#confidentiality">Confidentiality (C)</a>
+                </li>
+                <li class="toc-privacy">
+                    <a href="#privacy">Privacy (P)</a>
+                </li>
+            </ul>
+        </nav>
+
+        {% macro render_tsc_section(criteria_key, criteria_name, criteria_code, criteria_description, css_class, criteria_data) %}
+        <!-- {{ criteria_name }} Section -->
+        <section id="{{ criteria_key }}" class="tsc-section">
+            <div class="tsc-header {{ css_class }}">
+                <div class="tsc-icon">
+                    {% if criteria_key == 'security' %}
+                    &#128274;
+                    {% elif criteria_key == 'availability' %}
+                    &#128994;
+                    {% elif criteria_key == 'processing-integrity' %}
+                    &#9989;
+                    {% elif criteria_key == 'confidentiality' %}
+                    &#128272;
+                    {% elif criteria_key == 'privacy' %}
+                    &#128100;
+                    {% endif %}
+                </div>
+                <div class="tsc-title-block">
+                    <h2>{{ criteria_name }}</h2>
+                    <span class="tsc-code">{{ criteria_code }}</span>
+                </div>
+                <div class="tsc-status">
+                    {% if criteria_data and criteria_data.in_scope is defined %}
+                        {% if criteria_data.in_scope %}
+                        <span class="tsc-status-badge status-in-scope">In Scope</span>
+                        {% else %}
+                        <span class="tsc-status-badge status-not-in-scope">Not In Scope</span>
+                        {% endif %}
+                    {% else %}
+                    <span class="tsc-status-badge status-in-scope">In Scope</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="tsc-content">
+                <div class="tsc-description">
+                    <p>{{ criteria_description }}</p>
+                </div>
+
+                <!-- Evidence Summary -->
+                <h3 class="section-title">Evidence Summary</h3>
+                <div class="evidence-summary">
+                    <div class="evidence-stat">
+                        <div class="evidence-stat-value">
+                            {{ criteria_data.controls | length if criteria_data and criteria_data.controls else '0' }}
+                        </div>
+                        <div class="evidence-stat-label">Controls</div>
+                    </div>
+                    <div class="evidence-stat">
+                        <div class="evidence-stat-value">
+                            {{ criteria_data.evidence | length if criteria_data and criteria_data.evidence else '0' }}
+                        </div>
+                        <div class="evidence-stat-label">Evidence Items</div>
+                    </div>
+                    <div class="evidence-stat">
+                        <div class="evidence-stat-value">
+                            {% if criteria_data and criteria_data.evidence %}
+                                {{ criteria_data.evidence | selectattr('design_effectiveness', 'equalto', 'effective') | list | length }}
+                            {% else %}
+                                0
+                            {% endif %}
+                        </div>
+                        <div class="evidence-stat-label">Design Effective</div>
+                    </div>
+                    <div class="evidence-stat">
+                        <div class="evidence-stat-value">
+                            {% if criteria_data and criteria_data.evidence %}
+                                {{ criteria_data.evidence | selectattr('operating_effectiveness', 'equalto', 'effective') | list | length }}
+                            {% else %}
+                                0
+                            {% endif %}
+                        </div>
+                        <div class="evidence-stat-label">Operating Effective</div>
+                    </div>
+                </div>
+
+                <!-- Controls List -->
+                <h3 class="section-title">Controls</h3>
+                {% if criteria_data and criteria_data.controls %}
+                    {% for control in criteria_data.controls %}
+                    <div class="control-card">
+                        <div class="control-card-header">
+                            <div>
+                                <span class="control-id">{{ control.control_id | control_id }}</span>
+                                <span class="control-title">{{ control.title | default_value }}</span>
+                            </div>
+                            <span class="status-badge status-effective">Active</span>
+                        </div>
+                        <div class="control-card-body">
+                            <div class="control-field">
+                                <div class="control-field-label">Description</div>
+                                <div class="control-field-value">{{ control.description | default_value }}</div>
+                            </div>
+
+                            <div class="control-field">
+                                <div class="control-field-label">Control Objective</div>
+                                <div class="control-field-value">{{ control.control_objective | default_value }}</div>
+                            </div>
+
+                            {% if control.implementation_guidance %}
+                            <div class="control-field">
+                                <div class="control-field-label">Implementation Guidance</div>
+                                <div class="control-field-value">{{ control.implementation_guidance }}</div>
+                            </div>
+                            {% endif %}
+
+                            {% if control.testing_procedures %}
+                            <div class="control-field">
+                                <div class="control-field-label">Testing Procedures</div>
+                                <ol class="testing-procedures">
+                                    {% for procedure in control.testing_procedures %}
+                                    <li>{{ procedure }}</li>
+                                    {% endfor %}
+                                </ol>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                <p style="text-align: center; color: #718096; font-style: italic; padding: 20px;">
+                    No controls defined for this criteria. Control data will be displayed when provided.
+                </p>
+                {% endif %}
+
+                <!-- Evidence Records -->
+                {% if criteria_data and criteria_data.evidence %}
+                <h3 class="section-title">Evidence Records</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Control ID</th>
+                            <th>Evidence Type</th>
+                            <th>Collection Date</th>
+                            <th>Design Eff.</th>
+                            <th>Operating Eff.</th>
+                            <th>Sample Size</th>
+                            <th>Exceptions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for evidence in criteria_data.evidence %}
+                        <tr>
+                            <td>{{ evidence.control_id | control_id }}</td>
+                            <td>{{ evidence.evidence_type | default_value }}</td>
+                            <td>{{ evidence.collected_at | format_date }}</td>
+                            <td>
+                                {% if evidence.design_effectiveness == 'effective' %}
+                                <span class="status-badge status-effective">Effective</span>
+                                {% elif evidence.design_effectiveness == 'ineffective' %}
+                                <span class="status-badge status-ineffective">Ineffective</span>
+                                {% elif evidence.design_effectiveness == 'partially_effective' %}
+                                <span class="status-badge status-partial">Partial</span>
+                                {% else %}
+                                <span class="status-badge status-not-tested">Not Tested</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if evidence.operating_effectiveness == 'effective' %}
+                                <span class="status-badge status-effective">Effective</span>
+                                {% elif evidence.operating_effectiveness == 'ineffective' %}
+                                <span class="status-badge status-ineffective">Ineffective</span>
+                                {% elif evidence.operating_effectiveness == 'partially_effective' %}
+                                <span class="status-badge status-partial">Partial</span>
+                                {% else %}
+                                <span class="status-badge status-not-tested">Not Tested</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ evidence.sample_size | default_value }}</td>
+                            <td>
+                                {% if evidence.exceptions_noted > 0 %}
+                                <span style="color: var(--danger-color); font-weight: 600;">
+                                    {{ evidence.exceptions_noted }}
+                                </span>
+                                {% else %}
+                                <span style="color: var(--success-color);">0</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% endif %}
+
+                <!-- Overall Effectiveness -->
+                <div class="effectiveness-box {% if criteria_data and criteria_data.overall_effectiveness %}{{ criteria_data.overall_effectiveness }}{% else %}not-tested{% endif %}">
+                    <div class="effectiveness-label">Overall Criteria Effectiveness</div>
+                    <div class="effectiveness-value">
+                        {% if criteria_data and criteria_data.overall_effectiveness %}
+                            {{ criteria_data.overall_effectiveness | replace('_', ' ') | title }}
+                        {% else %}
+                            Not Yet Assessed
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </section>
+        {% endmacro %}
+
+        <!-- Security (Common Criteria) -->
+        {% set security_data = None %}
+        {% for section in criteria_sections %}
+            {% if section.criteria == 'security' %}
+                {% set security_data = section %}
+            {% endif %}
+        {% endfor %}
+        {{ render_tsc_section(
+            'security',
+            'Security',
+            'Common Criteria (CC1-CC9)',
+            'The security category addresses the protection of information during its collection or creation, use, processing, transmission, and storage. Security is referred to as "common criteria" because it is relevant to all five Trust Service Categories. Controls within this category address logical and physical access, system operations, change management, and risk mitigation.',
+            'security',
+            security_data
+        ) }}
+
+        <!-- Availability -->
+        {% set availability_data = None %}
+        {% for section in criteria_sections %}
+            {% if section.criteria == 'availability' %}
+                {% set availability_data = section %}
+            {% endif %}
+        {% endfor %}
+        {{ render_tsc_section(
+            'availability',
+            'Availability',
+            'Availability Criteria (A1)',
+            'The availability category addresses whether information and systems are available for operation and use as committed or agreed. This includes monitoring system availability, maintaining infrastructure, implementing backup and recovery procedures, and ensuring business continuity. Controls focus on ensuring systems meet service level agreements and can recover from disruptions.',
+            'availability',
+            availability_data
+        ) }}
+
+        <!-- Processing Integrity -->
+        {% set processing_data = None %}
+        {% for section in criteria_sections %}
+            {% if section.criteria == 'processing_integrity' %}
+                {% set processing_data = section %}
+            {% endif %}
+        {% endfor %}
+        {{ render_tsc_section(
+            'processing-integrity',
+            'Processing Integrity',
+            'Processing Integrity Criteria (PI1)',
+            'Processing integrity addresses whether system processing is complete, valid, accurate, timely, and authorized to meet the entity\'s objectives. Controls in this category ensure data is processed correctly, transactions are authorized, errors are detected and corrected, and output is validated against expected results.',
+            'processing-integrity',
+            processing_data
+        ) }}
+
+        <!-- Confidentiality -->
+        {% set confidentiality_data = None %}
+        {% for section in criteria_sections %}
+            {% if section.criteria == 'confidentiality' %}
+                {% set confidentiality_data = section %}
+            {% endif %}
+        {% endfor %}
+        {{ render_tsc_section(
+            'confidentiality',
+            'Confidentiality',
+            'Confidentiality Criteria (C1)',
+            'Confidentiality addresses the entity\'s ability to protect information designated as confidential from its collection or creation through its final disposition. Controls ensure that confidential data is properly classified, access is restricted to authorized individuals, data is encrypted in transit and at rest, and proper disposal procedures are followed.',
+            'confidentiality',
+            confidentiality_data
+        ) }}
+
+        <!-- Privacy -->
+        {% set privacy_data = None %}
+        {% for section in criteria_sections %}
+            {% if section.criteria == 'privacy' %}
+                {% set privacy_data = section %}
+            {% endif %}
+        {% endfor %}
+        {{ render_tsc_section(
+            'privacy',
+            'Privacy',
+            'Privacy Criteria (P1-P8)',
+            'Privacy addresses the entity\'s collection, use, retention, disclosure, and disposal of personal information in conformity with the commitments in the entity\'s privacy notice and with criteria set forth in generally accepted privacy principles (GAPP). Controls address notice, choice and consent, collection, use and disclosure, access, quality, monitoring and enforcement, and security for privacy.',
+            'privacy',
+            privacy_data
+        ) }}
+
+        <!-- Summary Section -->
+        <section class="tsc-section" style="page-break-before: always;">
+            <h2 class="section-title" style="font-size: 18pt; border-bottom: 3px solid var(--primary-color);">
+                Trust Service Criteria Summary
+            </h2>
+
+            <table style="margin-top: 25px;">
+                <thead>
+                    <tr>
+                        <th>Criteria</th>
+                        <th>In Scope</th>
+                        <th>Controls</th>
+                        <th>Evidence Items</th>
+                        <th>Overall Effectiveness</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% set tsc_summary = [
+                        {'name': 'Security (CC)', 'key': 'security', 'data': security_data},
+                        {'name': 'Availability (A)', 'key': 'availability', 'data': availability_data},
+                        {'name': 'Processing Integrity (PI)', 'key': 'processing_integrity', 'data': processing_data},
+                        {'name': 'Confidentiality (C)', 'key': 'confidentiality', 'data': confidentiality_data},
+                        {'name': 'Privacy (P)', 'key': 'privacy', 'data': privacy_data}
+                    ] %}
+
+                    {% for item in tsc_summary %}
+                    <tr>
+                        <td><strong>{{ item.name }}</strong></td>
+                        <td>
+                            {% if item.data and item.data.in_scope is defined %}
+                                {% if item.data.in_scope %}
+                                <span class="status-badge status-effective">Yes</span>
+                                {% else %}
+                                <span class="status-badge status-not-tested">No</span>
+                                {% endif %}
+                            {% else %}
+                            <span class="status-badge status-effective">Yes</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ item.data.controls | length if item.data and item.data.controls else '0' }}</td>
+                        <td>{{ item.data.evidence | length if item.data and item.data.evidence else '0' }}</td>
+                        <td>
+                            {% if item.data and item.data.overall_effectiveness %}
+                                {% if item.data.overall_effectiveness == 'effective' %}
+                                <span class="status-badge status-effective">Effective</span>
+                                {% elif item.data.overall_effectiveness == 'ineffective' %}
+                                <span class="status-badge status-ineffective">Ineffective</span>
+                                {% elif item.data.overall_effectiveness == 'partially_effective' %}
+                                <span class="status-badge status-partial">Partial</span>
+                                {% else %}
+                                <span class="status-badge status-not-tested">Not Tested</span>
+                                {% endif %}
+                            {% else %}
+                            <span class="status-badge status-not-tested">Pending</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Report Footer -->
+        <footer class="report-footer">
+            <p>
+                <strong>SOC 2 Trust Service Criteria Report</strong>
+                <br>
+                {{ organization_name | default_value('Organization') }} | Generated: {{ generated_at | format_datetime }}
+                <br>
+                Document Version: {{ document_version | default_value('1.0') }} | Generator Version: {{ generator_version | default_value('1.0.0') }}
+            </p>
+            <p style="margin-top: 15px; font-size: 8pt;">
+                This document is confidential and intended for compliance assessment purposes only.
+                <br>
+                ACGS-2 Enterprise Guardrails Platform - Compliance Documentation Service
+            </p>
+        </footer>
+    </div>
+</body>
+</html>
