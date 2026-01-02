@@ -1,0 +1,513 @@
+# =============================================================================
+# IstioOperator Manifest for Region 2 (EU-West)
+# =============================================================================
+# This manifest configures Istio Multi-Primary Multi-Network architecture for
+# Region 2 with East-West Gateway for cross-cluster communication.
+#
+# Prerequisites:
+#   1. Shared root CA generated using shared-root-ca-setup.sh
+#   2. Pod CIDR ranges verified as non-overlapping between clusters
+#   3. kubectl context configured for region2 cluster
+#
+# Installation:
+#   istioctl install --context=region2 -f istio-operator-region2.yaml
+#
+# After installation:
+#   1. Create remote secret for cross-cluster API access
+#   2. Label namespaces with network topology
+#   3. Apply East-West Gateway exposure
+#
+# References:
+#   - https://istio.io/latest/docs/setup/install/multicluster/
+#   - https://istio.io/latest/docs/ops/deployment/deployment-models/
+# =============================================================================
+apiVersion: install.istio.io/v1alpha1
+kind: IstioOperator
+metadata:
+  name: region2-controlplane
+  namespace: istio-system
+  labels:
+    # ACGS2 identification labels
+    app.kubernetes.io/name: istio
+    app.kubernetes.io/instance: region2
+    app.kubernetes.io/component: control-plane
+    app.kubernetes.io/part-of: acgs2
+    app.kubernetes.io/managed-by: istioctl
+    # Multi-region topology labels
+    topology.acgs2.io/region: eu-west-1
+    topology.acgs2.io/network: network2
+spec:
+  # ---------------------------------------------------------------------------
+  # Mesh Configuration
+  # ---------------------------------------------------------------------------
+  # Global mesh settings for multi-cluster service mesh
+  meshConfig:
+    # Unique mesh identifier - MUST be identical across all clusters
+    meshID: global-mesh
+
+    # Network identifier for this cluster (unique per region)
+    network: network2
+
+    # Default proxy configuration
+    defaultConfig:
+      # Enable distributed tracing
+      tracing:
+        sampling: 100.0
+      # Proxy access logging for debugging
+      accessLogFile: /dev/stdout
+      accessLogFormat: |
+        [%START_TIME%] "%REQ(:METHOD)% %REQ(X-ENVOY-ORIGINAL-PATH?:PATH)% %PROTOCOL%"
+        %RESPONSE_CODE% %RESPONSE_FLAGS% %BYTES_RECEIVED% %BYTES_SENT%
+        %DURATION% %RESP(X-ENVOY-UPSTREAM-SERVICE-TIME)%
+        "%REQ(X-FORWARDED-FOR)%" "%REQ(USER-AGENT)%"
+        "%REQ(X-REQUEST-ID)%" "%REQ(:AUTHORITY)%" "%UPSTREAM_HOST%"
+        "%UPSTREAM_CLUSTER%" "%UPSTREAM_LOCAL_ADDRESS%"
+        "%DOWNSTREAM_LOCAL_ADDRESS%" "%DOWNSTREAM_REMOTE_ADDRESS%"
+        "%REQUESTED_SERVER_NAME%" "%ROUTE_NAME%"
+      # Hold application startup until proxy is ready
+      holdApplicationUntilProxyStarts: true
+      # Proxy concurrency (0 = auto-detect CPU cores)
+      concurrency: 0
+
+    # Strict mTLS enforcement across the mesh
+    # Required for secure cross-cluster communication
+    mtls:
+      auto: true
+
+    # Enable locality-aware load balancing
+    localityLbSetting:
+      enabled: true
+      # Failover configuration: prioritize local, then failover to other regions
+      failover:
+        - from: eu-west-1
+          to: us-east-1
+
+    # Enable Envoy proxy protocol for load balancer health checks
+    enablePrometheusMerge: true
+
+    # Enable automatic protocol detection
+    protocolDetectionTimeout: 5s
+
+    # DNS settings for multi-cluster service discovery
+    dnsRefreshRate: 300s
+
+  # ---------------------------------------------------------------------------
+  # Global Values
+  # ---------------------------------------------------------------------------
+  values:
+    global:
+      # Multi-cluster configuration
+      multiCluster:
+        # Unique cluster name - MUST be unique across all clusters
+        clusterName: cluster2
+        # Enable multi-cluster support
+        enabled: true
+
+      # Use istiod for certificate provisioning
+      # Certificates are signed by shared root CA
+      pilotCertProvider: istiod
+
+      # Proxy settings
+      proxy:
+        # Resource limits for Envoy sidecar proxies
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+        # Enable privileged init container for iptables
+        privileged: false
+        # Log level (debug, info, warning, error, critical)
+        logLevel: warning
+        # Component log level overrides
+        componentLogLevel: "misc:error"
+
+      # Configure mesh networks for cross-cluster routing
+      # This enables service discovery across networks
+      meshNetworks:
+        # Network 1 - Region 1 (US-East)
+        network1:
+          endpoints:
+            # Services registered in cluster1 belong to network1
+            - fromRegistry: cluster1
+          gateways:
+            # East-West Gateway in cluster1 for cross-network traffic
+            - registryServiceName: istio-eastwestgateway.istio-system.svc.cluster.local
+              port: 15443
+        # Network 2 - This cluster (EU-West)
+        network2:
+          endpoints:
+            # Services registered in cluster2 belong to network2
+            - fromRegistry: cluster2
+          gateways:
+            # East-West Gateway for cross-network traffic
+            - registryServiceName: istio-eastwestgateway.istio-system.svc.cluster.local
+              port: 15443
+
+      # Default hub for Istio images
+      hub: docker.io/istio
+      # Istio version tag
+      tag: 1.20.0
+
+      # Image pull policy
+      imagePullPolicy: IfNotPresent
+
+      # Logging configuration
+      logging:
+        level: "default:info"
+
+      # Tracing configuration (Jaeger)
+      tracer:
+        zipkin:
+          address: "zipkin.istio-system:9411"
+
+  # ---------------------------------------------------------------------------
+  # Control Plane Components
+  # ---------------------------------------------------------------------------
+  components:
+    # -------------------------------------------------------------------------
+    # Pilot (istiod) Configuration
+    # -------------------------------------------------------------------------
+    pilot:
+      enabled: true
+      k8s:
+        # Pilot resource configuration
+        resources:
+          requests:
+            cpu: 500m
+            memory: 512Mi
+          limits:
+            cpu: 2000m
+            memory: 2Gi
+
+        # Horizontal Pod Autoscaler
+        hpaSpec:
+          minReplicas: 2
+          maxReplicas: 5
+          metrics:
+            - type: Resource
+              resource:
+                name: cpu
+                targetAverageUtilization: 80
+
+        # Pod disruption budget for high availability
+        podDisruptionBudget:
+          minAvailable: 1
+          selector:
+            matchLabels:
+              istio: pilot
+
+        # Node affinity for control plane placement
+        affinity:
+          podAntiAffinity:
+            requiredDuringSchedulingIgnoredDuringExecution:
+              - labelSelector:
+                  matchLabels:
+                    istio: pilot
+                topologyKey: kubernetes.io/hostname
+
+        # Environment variables
+        env:
+          # Enable multi-cluster service discovery
+          - name: PILOT_ENABLE_CROSS_CLUSTER_WORKLOAD_ENTRY
+            value: "true"
+          # External istiod for remote clusters
+          - name: EXTERNAL_ISTIOD
+            value: "false"
+          # Cluster-local gateway
+          - name: PILOT_ENABLE_K8S_SELECT_WORKLOAD_ENTRIES
+            value: "true"
+
+    # -------------------------------------------------------------------------
+    # Ingress Gateway Configuration (Standard)
+    # -------------------------------------------------------------------------
+    ingressGateways:
+      # Standard Ingress Gateway for external traffic
+      - name: istio-ingressgateway
+        enabled: true
+        label:
+          istio: ingressgateway
+          app: istio-ingressgateway
+        k8s:
+          service:
+            type: LoadBalancer
+            ports:
+              - name: status-port
+                port: 15021
+                targetPort: 15021
+              - name: http2
+                port: 80
+                targetPort: 8080
+              - name: https
+                port: 443
+                targetPort: 8443
+            annotations:
+              # AWS NLB for production
+              service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+              service.beta.kubernetes.io/aws-load-balancer-cross-zone-load-balancing-enabled: "true"
+          resources:
+            requests:
+              cpu: 200m
+              memory: 256Mi
+            limits:
+              cpu: 1000m
+              memory: 1Gi
+          hpaSpec:
+            minReplicas: 2
+            maxReplicas: 10
+            metrics:
+              - type: Resource
+                resource:
+                  name: cpu
+                  targetAverageUtilization: 80
+          podDisruptionBudget:
+            minAvailable: 1
+
+      # ---------------------------------------------------------------------
+      # East-West Gateway for Cross-Cluster Communication
+      # ---------------------------------------------------------------------
+      # This gateway handles traffic between clusters in different networks
+      - name: istio-eastwestgateway
+        enabled: true
+        label:
+          istio: eastwestgateway
+          app: istio-eastwestgateway
+          # Network topology label - CRITICAL for multi-network routing
+          topology.istio.io/network: network2
+        k8s:
+          # Environment variables for East-West Gateway
+          env:
+            # Request network view for this gateway
+            - name: ISTIO_META_REQUESTED_NETWORK_VIEW
+              value: network2
+            # Configure router mode
+            - name: ISTIO_META_ROUTER_MODE
+              value: "sni-dnat"
+
+          service:
+            type: LoadBalancer
+            ports:
+              # Status port for health checks
+              - name: status-port
+                port: 15021
+                targetPort: 15021
+              # TLS port for cross-cluster mTLS traffic
+              - name: tls
+                port: 15443
+                targetPort: 15443
+              # Istiod TLS port for control plane traffic
+              - name: tls-istiod
+                port: 15012
+                targetPort: 15012
+              # Webhook TLS port
+              - name: tls-webhook
+                port: 15017
+                targetPort: 15017
+            annotations:
+              # AWS NLB for production cross-cluster traffic
+              service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+              service.beta.kubernetes.io/aws-load-balancer-cross-zone-load-balancing-enabled: "true"
+              # Preserve client IP for mTLS
+              service.beta.kubernetes.io/aws-load-balancer-target-group-attributes: "preserve_client_ip.enabled=true"
+
+          # Resource allocation
+          resources:
+            requests:
+              cpu: 200m
+              memory: 256Mi
+            limits:
+              cpu: 1000m
+              memory: 1Gi
+
+          # Autoscaling configuration
+          hpaSpec:
+            minReplicas: 2
+            maxReplicas: 5
+            metrics:
+              - type: Resource
+                resource:
+                  name: cpu
+                  targetAverageUtilization: 80
+
+          # Pod disruption budget
+          podDisruptionBudget:
+            minAvailable: 1
+
+          # Anti-affinity for HA
+          affinity:
+            podAntiAffinity:
+              requiredDuringSchedulingIgnoredDuringExecution:
+                - labelSelector:
+                    matchLabels:
+                      istio: eastwestgateway
+                  topologyKey: kubernetes.io/hostname
+
+    # -------------------------------------------------------------------------
+    # Egress Gateway Configuration
+    # -------------------------------------------------------------------------
+    egressGateways:
+      - name: istio-egressgateway
+        enabled: true
+        label:
+          istio: egressgateway
+          app: istio-egressgateway
+        k8s:
+          service:
+            type: ClusterIP
+            ports:
+              - name: http2
+                port: 80
+                targetPort: 8080
+              - name: https
+                port: 443
+                targetPort: 8443
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          hpaSpec:
+            minReplicas: 1
+            maxReplicas: 5
+            metrics:
+              - type: Resource
+                resource:
+                  name: cpu
+                  targetAverageUtilization: 80
+
+    # -------------------------------------------------------------------------
+    # CNI Configuration
+    # -------------------------------------------------------------------------
+    cni:
+      enabled: false  # Enable if using Istio CNI plugin
+---
+# =============================================================================
+# Gateway Resource for Exposing Services to External Traffic
+# =============================================================================
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: acgs2-gateway
+  namespace: istio-system
+  labels:
+    app.kubernetes.io/name: acgs2-gateway
+    app.kubernetes.io/part-of: acgs2
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+    - port:
+        number: 443
+        name: https
+        protocol: HTTPS
+      tls:
+        mode: SIMPLE
+        credentialName: acgs2-gateway-tls
+      hosts:
+        - "api.acgs2.io"
+        - "*.acgs2.io"
+    - port:
+        number: 80
+        name: http
+        protocol: HTTP
+      hosts:
+        - "*"
+      tls:
+        httpsRedirect: true
+---
+# =============================================================================
+# Gateway Resource for Cross-Cluster Service Exposure
+# =============================================================================
+# This gateway exposes services to other clusters via the East-West Gateway
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: cross-network-gateway
+  namespace: istio-system
+  labels:
+    app.kubernetes.io/name: cross-network-gateway
+    app.kubernetes.io/part-of: acgs2
+spec:
+  selector:
+    istio: eastwestgateway
+  servers:
+    - port:
+        number: 15443
+        name: tls
+        protocol: TLS
+      tls:
+        mode: AUTO_PASSTHROUGH
+      hosts:
+        # Expose all services in the mesh to other clusters
+        - "*.local"
+---
+# =============================================================================
+# PeerAuthentication - Enforce Strict mTLS Mesh-Wide
+# =============================================================================
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: default
+  namespace: istio-system
+  labels:
+    app.kubernetes.io/name: default-peer-auth
+    app.kubernetes.io/part-of: acgs2
+spec:
+  mtls:
+    mode: STRICT
+---
+# =============================================================================
+# Sidecar - Default Egress Configuration
+# =============================================================================
+# This sidecar configuration optimizes Envoy proxy memory by limiting
+# the hosts the proxy needs to know about
+apiVersion: networking.istio.io/v1beta1
+kind: Sidecar
+metadata:
+  name: default
+  namespace: istio-system
+  labels:
+    app.kubernetes.io/name: default-sidecar
+    app.kubernetes.io/part-of: acgs2
+spec:
+  egress:
+    - hosts:
+        # Allow access to all namespaces
+        - "./*"
+        # Allow access to Istio system namespace
+        - "istio-system/*"
+---
+# =============================================================================
+# EnvoyFilter - Request ID Propagation for Distributed Tracing
+# =============================================================================
+apiVersion: networking.istio.io/v1alpha3
+kind: EnvoyFilter
+metadata:
+  name: request-id-header
+  namespace: istio-system
+  labels:
+    app.kubernetes.io/name: request-id-header
+    app.kubernetes.io/part-of: acgs2
+spec:
+  workloadSelector:
+    labels:
+      istio: ingressgateway
+  configPatches:
+    - applyTo: NETWORK_FILTER
+      match:
+        context: GATEWAY
+        listener:
+          filterChain:
+            filter:
+              name: "envoy.filters.network.http_connection_manager"
+      patch:
+        operation: MERGE
+        value:
+          typed_config:
+            "@type": "type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager"
+            generate_request_id: true
+            preserve_external_request_id: true
