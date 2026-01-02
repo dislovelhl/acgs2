@@ -3,6 +3,7 @@ ACGS-2 Vault Crypto Service - Models and Types
 Constitutional Hash: cdd01ef066bc6cf2
 
 Data models and enums for Vault cryptographic operations.
+Now uses centralized shared.config for settings.
 """
 
 import os
@@ -12,12 +13,19 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Dict, Optional
 
+# Import centralized config
+try:
+    from shared.config import settings as global_settings
+except ImportError:
+    global_settings = None  # type: ignore
+
 # Constitutional compliance
 CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
 
 
 class VaultKeyType(str, Enum):
     """Supported Vault Transit key types."""
+
     ED25519 = "ed25519"
     ECDSA_P256 = "ecdsa-p256"
     RSA_2048 = "rsa-2048"
@@ -27,6 +35,7 @@ class VaultKeyType(str, Enum):
 
 class VaultOperation(str, Enum):
     """Types of Vault operations for audit logging."""
+
     INITIALIZE = "initialize"
     GENERATE_KEY = "generate_key"
     SIGN = "sign"
@@ -44,6 +53,7 @@ class VaultOperation(str, Enum):
 @dataclass
 class VaultAuditEntry:
     """Audit log entry for Vault operations."""
+
     entry_id: str = field(default_factory=lambda: str(uuid.uuid4()))
     operation: VaultOperation = VaultOperation.HEALTH_CHECK
     key_name: Optional[str] = None
@@ -70,6 +80,7 @@ class VaultAuditEntry:
 @dataclass
 class VaultConfig:
     """Vault connection configuration."""
+
     address: str = "http://127.0.0.1:8200"
     token: Optional[str] = None
     namespace: Optional[str] = None
@@ -84,7 +95,25 @@ class VaultConfig:
 
     @classmethod
     def from_env(cls) -> "VaultConfig":
-        """Create config from environment variables."""
+        """Create config from centralized settings or environment variables."""
+        # Use centralized config if available
+        if global_settings is not None:
+            vs = global_settings.vault
+            return cls(
+                address=vs.address,
+                token=vs.token.get_secret_value() if vs.token else None,
+                namespace=vs.namespace,
+                transit_mount=vs.transit_mount,
+                kv_mount=vs.kv_mount,
+                kv_version=vs.kv_version,
+                timeout=vs.timeout,
+                verify_tls=vs.verify_tls,
+                ca_cert=vs.ca_cert,
+                client_cert=vs.client_cert,
+                client_key=vs.client_key,
+            )
+
+        # Fallback to raw environment variables
         return cls(
             address=os.getenv("VAULT_ADDR", "http://127.0.0.1:8200"),
             token=os.getenv("VAULT_TOKEN"),

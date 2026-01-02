@@ -48,15 +48,27 @@ class StorageService:
     def _init_s3_client(self):
         """Initialize S3 client with optional MinIO endpoint support."""
         try:
-            # Support custom endpoint for MinIO compatibility
-            endpoint_url = os.getenv("S3_ENDPOINT_URL")
+            # Support custom endpoint for MinIO compatibility (from centralized config)
+            endpoint_url = settings.aws.s3_endpoint_url
+
+            # Get AWS credentials from centralized config
+            access_key = (
+                settings.aws.access_key_id.get_secret_value()
+                if settings.aws.access_key_id
+                else None
+            )
+            secret_key = (
+                settings.aws.secret_access_key.get_secret_value()
+                if settings.aws.secret_access_key
+                else None
+            )
 
             self._s3_client = boto3.client(
                 "s3",
                 endpoint_url=endpoint_url,
-                aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
-                aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
-                region_name=os.getenv("AWS_REGION", "us-east-1"),
+                aws_access_key_id=access_key,
+                aws_secret_access_key=secret_key,
+                region_name=settings.aws.region,
             )
 
             # Verify bucket exists or create it

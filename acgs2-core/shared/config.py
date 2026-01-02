@@ -104,6 +104,81 @@ if HAS_PYDANTIC_SETTINGS:
             None, validation_alias="GITHUB_WEBHOOK_SECRET"
         )
 
+    class ServiceSettings(BaseSettings):
+        """Service URL settings for inter-service communication."""
+
+        agent_bus_url: str = Field("http://localhost:8000", validation_alias="AGENT_BUS_URL")
+        policy_registry_url: str = Field(
+            "http://localhost:8000", validation_alias="POLICY_REGISTRY_URL"
+        )
+        api_gateway_url: str = Field("http://localhost:8080", validation_alias="API_GATEWAY_URL")
+
+    class TelemetrySettings(BaseSettings):
+        """OpenTelemetry and observability settings."""
+
+        otlp_endpoint: str = Field(
+            "http://localhost:4317", validation_alias="OTEL_EXPORTER_OTLP_ENDPOINT"
+        )
+        service_name: str = Field("acgs2", validation_alias="OTEL_SERVICE_NAME")
+        export_traces: bool = Field(True, validation_alias="OTEL_EXPORT_TRACES")
+        export_metrics: bool = Field(True, validation_alias="OTEL_EXPORT_METRICS")
+        trace_sample_rate: float = Field(1.0, validation_alias="OTEL_TRACE_SAMPLE_RATE")
+
+    class AWSSettings(BaseSettings):
+        """AWS/S3 storage settings (supports MinIO for local development)."""
+
+        access_key_id: Optional[SecretStr] = Field(None, validation_alias="AWS_ACCESS_KEY_ID")
+        secret_access_key: Optional[SecretStr] = Field(
+            None, validation_alias="AWS_SECRET_ACCESS_KEY"
+        )
+        region: str = Field("us-east-1", validation_alias="AWS_REGION")
+        s3_endpoint_url: Optional[str] = Field(None, validation_alias="S3_ENDPOINT_URL")
+
+    class SearchPlatformSettings(BaseSettings):
+        """Search Platform integration settings."""
+
+        url: str = Field("http://localhost:9080", validation_alias="SEARCH_PLATFORM_URL")
+        timeout_seconds: float = Field(30.0, validation_alias="SEARCH_PLATFORM_TIMEOUT")
+        max_connections: int = Field(100, validation_alias="SEARCH_PLATFORM_MAX_CONNECTIONS")
+        max_retries: int = Field(3, validation_alias="SEARCH_PLATFORM_MAX_RETRIES")
+        retry_delay_seconds: float = Field(1.0, validation_alias="SEARCH_PLATFORM_RETRY_DELAY")
+        circuit_breaker_threshold: int = Field(
+            5, validation_alias="SEARCH_PLATFORM_CIRCUIT_THRESHOLD"
+        )
+        circuit_breaker_timeout: float = Field(
+            30.0, validation_alias="SEARCH_PLATFORM_CIRCUIT_TIMEOUT"
+        )
+        enable_compliance: bool = Field(True, validation_alias="SEARCH_PLATFORM_ENABLE_COMPLIANCE")
+
+    class QualitySettings(BaseSettings):
+        """Code quality and SonarQube settings."""
+
+        sonarqube_url: str = Field("http://localhost:9000", validation_alias="SONARQUBE_URL")
+        sonarqube_token: Optional[SecretStr] = Field(None, validation_alias="SONARQUBE_TOKEN")
+        enable_local_analysis: bool = Field(True, validation_alias="QUALITY_ENABLE_LOCAL_ANALYSIS")
+
+    class MACISettings(BaseSettings):
+        """MACI (Multi-Agent Constitutional Intelligence) enforcement settings."""
+
+        strict_mode: bool = Field(True, validation_alias="MACI_STRICT_MODE")
+        default_role: Optional[str] = Field(None, validation_alias="MACI_DEFAULT_ROLE")
+        config_path: Optional[str] = Field(None, validation_alias="MACI_CONFIG_PATH")
+
+    class VaultSettings(BaseSettings):
+        """HashiCorp Vault integration settings."""
+
+        address: str = Field("http://127.0.0.1:8200", validation_alias="VAULT_ADDR")
+        token: Optional[SecretStr] = Field(None, validation_alias="VAULT_TOKEN")
+        namespace: Optional[str] = Field(None, validation_alias="VAULT_NAMESPACE")
+        transit_mount: str = Field("transit", validation_alias="VAULT_TRANSIT_MOUNT")
+        kv_mount: str = Field("secret", validation_alias="VAULT_KV_MOUNT")
+        kv_version: int = Field(2, validation_alias="VAULT_KV_VERSION")
+        timeout: float = Field(30.0, validation_alias="VAULT_TIMEOUT")
+        verify_tls: bool = Field(True, validation_alias="VAULT_VERIFY_TLS")
+        ca_cert: Optional[str] = Field(None, validation_alias="VAULT_CACERT")
+        client_cert: Optional[str] = Field(None, validation_alias="VAULT_CLIENT_CERT")
+        client_key: Optional[str] = Field(None, validation_alias="VAULT_CLIENT_KEY")
+
     class Settings(BaseSettings):
         """Global Application Settings."""
 
@@ -121,6 +196,13 @@ if HAS_PYDANTIC_SETTINGS:
         opa: OPASettings = OPASettings()
         audit: AuditSettings = AuditSettings()
         bundle: BundleSettings = BundleSettings()
+        services: ServiceSettings = ServiceSettings()
+        telemetry: TelemetrySettings = TelemetrySettings()
+        aws: AWSSettings = AWSSettings()
+        search_platform: SearchPlatformSettings = SearchPlatformSettings()
+        quality: QualitySettings = QualitySettings()
+        maci: MACISettings = MACISettings()
+        vault: VaultSettings = VaultSettings()
         kafka: Dict[str, Any] = Field(
             default_factory=lambda: {
                 "bootstrap_servers": os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092"),
@@ -274,6 +356,136 @@ else:
         )
 
     @dataclass
+    class ServiceSettings:
+        agent_bus_url: str = field(
+            default_factory=lambda: os.getenv("AGENT_BUS_URL", "http://localhost:8000")
+        )
+        policy_registry_url: str = field(
+            default_factory=lambda: os.getenv("POLICY_REGISTRY_URL", "http://localhost:8000")
+        )
+        api_gateway_url: str = field(
+            default_factory=lambda: os.getenv("API_GATEWAY_URL", "http://localhost:8080")
+        )
+
+    @dataclass
+    class TelemetrySettings:
+        otlp_endpoint: str = field(
+            default_factory=lambda: os.getenv(
+                "OTEL_EXPORTER_OTLP_ENDPOINT", "http://localhost:4317"
+            )
+        )
+        service_name: str = field(default_factory=lambda: os.getenv("OTEL_SERVICE_NAME", "acgs2"))
+        export_traces: bool = field(
+            default_factory=lambda: os.getenv("OTEL_EXPORT_TRACES", "true").lower() == "true"
+        )
+        export_metrics: bool = field(
+            default_factory=lambda: os.getenv("OTEL_EXPORT_METRICS", "true").lower() == "true"
+        )
+        trace_sample_rate: float = field(
+            default_factory=lambda: float(os.getenv("OTEL_TRACE_SAMPLE_RATE", "1.0"))
+        )
+
+    @dataclass
+    class AWSSettings:
+        access_key_id: Optional[SecretStr] = field(
+            default_factory=lambda: (
+                SecretStr(os.getenv("AWS_ACCESS_KEY_ID", ""))
+                if os.getenv("AWS_ACCESS_KEY_ID")
+                else None
+            )
+        )
+        secret_access_key: Optional[SecretStr] = field(
+            default_factory=lambda: (
+                SecretStr(os.getenv("AWS_SECRET_ACCESS_KEY", ""))
+                if os.getenv("AWS_SECRET_ACCESS_KEY")
+                else None
+            )
+        )
+        region: str = field(default_factory=lambda: os.getenv("AWS_REGION", "us-east-1"))
+        s3_endpoint_url: Optional[str] = field(default_factory=lambda: os.getenv("S3_ENDPOINT_URL"))
+
+    @dataclass
+    class SearchPlatformSettings:
+        url: str = field(
+            default_factory=lambda: os.getenv("SEARCH_PLATFORM_URL", "http://localhost:9080")
+        )
+        timeout_seconds: float = field(
+            default_factory=lambda: float(os.getenv("SEARCH_PLATFORM_TIMEOUT", "30.0"))
+        )
+        max_connections: int = field(
+            default_factory=lambda: int(os.getenv("SEARCH_PLATFORM_MAX_CONNECTIONS", "100"))
+        )
+        max_retries: int = field(
+            default_factory=lambda: int(os.getenv("SEARCH_PLATFORM_MAX_RETRIES", "3"))
+        )
+        retry_delay_seconds: float = field(
+            default_factory=lambda: float(os.getenv("SEARCH_PLATFORM_RETRY_DELAY", "1.0"))
+        )
+        circuit_breaker_threshold: int = field(
+            default_factory=lambda: int(os.getenv("SEARCH_PLATFORM_CIRCUIT_THRESHOLD", "5"))
+        )
+        circuit_breaker_timeout: float = field(
+            default_factory=lambda: float(os.getenv("SEARCH_PLATFORM_CIRCUIT_TIMEOUT", "30.0"))
+        )
+        enable_compliance: bool = field(
+            default_factory=lambda: os.getenv("SEARCH_PLATFORM_ENABLE_COMPLIANCE", "true").lower()
+            == "true"
+        )
+
+    @dataclass
+    class QualitySettings:
+        sonarqube_url: str = field(
+            default_factory=lambda: os.getenv("SONARQUBE_URL", "http://localhost:9000")
+        )
+        sonarqube_token: Optional[SecretStr] = field(
+            default_factory=lambda: (
+                SecretStr(os.getenv("SONARQUBE_TOKEN", ""))
+                if os.getenv("SONARQUBE_TOKEN")
+                else None
+            )
+        )
+        enable_local_analysis: bool = field(
+            default_factory=lambda: os.getenv("QUALITY_ENABLE_LOCAL_ANALYSIS", "true").lower()
+            == "true"
+        )
+
+    @dataclass
+    class MACISettings:
+        """MACI (Multi-Agent Constitutional Intelligence) enforcement settings."""
+
+        strict_mode: bool = field(
+            default_factory=lambda: os.getenv("MACI_STRICT_MODE", "true").lower() == "true"
+        )
+        default_role: Optional[str] = field(default_factory=lambda: os.getenv("MACI_DEFAULT_ROLE"))
+        config_path: Optional[str] = field(default_factory=lambda: os.getenv("MACI_CONFIG_PATH"))
+
+    @dataclass
+    class VaultSettings:
+        """HashiCorp Vault integration settings."""
+
+        address: str = field(
+            default_factory=lambda: os.getenv("VAULT_ADDR", "http://127.0.0.1:8200")
+        )
+        token: Optional[SecretStr] = field(
+            default_factory=lambda: (
+                SecretStr(os.getenv("VAULT_TOKEN", "")) if os.getenv("VAULT_TOKEN") else None
+            )
+        )
+        namespace: Optional[str] = field(default_factory=lambda: os.getenv("VAULT_NAMESPACE"))
+        transit_mount: str = field(
+            default_factory=lambda: os.getenv("VAULT_TRANSIT_MOUNT", "transit")
+        )
+        kv_mount: str = field(default_factory=lambda: os.getenv("VAULT_KV_MOUNT", "secret"))
+        kv_version: int = field(default_factory=lambda: int(os.getenv("VAULT_KV_VERSION", "2")))
+        timeout: float = field(default_factory=lambda: float(os.getenv("VAULT_TIMEOUT", "30.0")))
+        verify_tls: bool = field(
+            default_factory=lambda: os.getenv("VAULT_VERIFY_TLS", "true").lower() == "true"
+        )
+        ca_cert: Optional[str] = field(default_factory=lambda: os.getenv("VAULT_CACERT"))
+        client_cert: Optional[str] = field(default_factory=lambda: os.getenv("VAULT_CLIENT_CERT"))
+        client_key: Optional[str] = field(default_factory=lambda: os.getenv("VAULT_CLIENT_KEY"))
+
+    @dataclass
     class Settings:
         env: str = field(default_factory=lambda: os.getenv("APP_ENV", "development"))
         debug: bool = field(
@@ -287,6 +499,13 @@ else:
         opa: OPASettings = field(default_factory=OPASettings)
         audit: AuditSettings = field(default_factory=AuditSettings)
         bundle: BundleSettings = field(default_factory=BundleSettings)
+        services: ServiceSettings = field(default_factory=ServiceSettings)
+        telemetry: TelemetrySettings = field(default_factory=TelemetrySettings)
+        aws: AWSSettings = field(default_factory=AWSSettings)
+        search_platform: SearchPlatformSettings = field(default_factory=SearchPlatformSettings)
+        quality: QualitySettings = field(default_factory=QualitySettings)
+        maci: MACISettings = field(default_factory=MACISettings)
+        vault: VaultSettings = field(default_factory=VaultSettings)
         kafka: Dict[str, Any] = field(
             default_factory=lambda: {
                 "bootstrap_servers": os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092"),

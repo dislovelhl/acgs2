@@ -7,15 +7,16 @@ metrics collection, and constitutional compliance tracking.
 """
 
 import logging
-import os
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any, Dict, Optional, Tuple
 
 try:
+    from shared.config import settings
     from shared.constants import CONSTITUTIONAL_HASH
 except ImportError:
+    settings = None  # type: ignore
     CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
 
 logger = logging.getLogger(__name__)
@@ -45,29 +46,66 @@ except ImportError:
     )
 
 
+def _get_env_default() -> str:
+    """Get environment from centralized config or fallback."""
+    if settings is not None:
+        return settings.env
+    import os
+
+    return os.getenv("ENVIRONMENT", "development")
+
+
+def _get_otlp_endpoint() -> str:
+    """Get OTLP endpoint from centralized config or fallback."""
+    if settings is not None:
+        return settings.telemetry.otlp_endpoint
+    import os
+
+    return os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT", "http://localhost:4317")
+
+
+def _get_export_traces() -> bool:
+    """Get export_traces from centralized config or default."""
+    if settings is not None:
+        return settings.telemetry.export_traces
+    return True
+
+
+def _get_export_metrics() -> bool:
+    """Get export_metrics from centralized config or default."""
+    if settings is not None:
+        return settings.telemetry.export_metrics
+    return True
+
+
+def _get_trace_sample_rate() -> float:
+    """Get trace sample rate from centralized config or default."""
+    if settings is not None:
+        return settings.telemetry.trace_sample_rate
+    return 1.0
+
+
 @dataclass
 class TelemetryConfig:
     """Configuration for OpenTelemetry setup."""
 
     service_name: str = "acgs2-agent-bus"
     service_version: str = "2.0.0"
-    environment: str = field(default_factory=lambda: os.getenv("ENVIRONMENT", "development"))
+    environment: str = field(default_factory=_get_env_default)
 
     # Collector endpoints
-    otlp_endpoint: str = field(
-        default_factory=lambda: os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT", "http://localhost:4317")
-    )
+    otlp_endpoint: str = field(default_factory=_get_otlp_endpoint)
 
     # Export settings
-    export_traces: bool = True
-    export_metrics: bool = True
+    export_traces: bool = field(default_factory=_get_export_traces)
+    export_metrics: bool = field(default_factory=_get_export_metrics)
     batch_span_processor: bool = True  # False = SimpleSpanProcessor for debugging
 
     # Constitutional compliance
     constitutional_hash: str = CONSTITUTIONAL_HASH
 
     # Sampling
-    trace_sample_rate: float = 1.0  # 100% sampling by default
+    trace_sample_rate: float = field(default_factory=_get_trace_sample_rate)
 
 
 class NoOpSpan:

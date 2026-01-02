@@ -7,8 +7,43 @@ from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Security
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from pydantic import BaseModel, Field, field_validator
 
 from ..dependencies import get_crypto_service
+
+
+class TokenRequest(BaseModel):
+    """Request model for token issuance with validation."""
+
+    agent_id: str = Field(..., min_length=1, max_length=100, description="Unique agent identifier")
+    tenant_id: str = Field(..., min_length=1, max_length=100, description="Tenant identifier")
+    capabilities: List[str] = Field(
+        ..., min_items=1, max_items=50, description="List of agent capabilities"
+    )
+
+    @field_validator("agent_id", "tenant_id")
+    @classmethod
+    def validate_id_format(cls, v):
+        """Validate ID format - alphanumeric with hyphens and underscores only."""
+        import re
+
+        if not re.match(r"^[a-zA-Z0-9_-]+$", v):
+            raise ValueError(
+                "ID must contain only alphanumeric characters, hyphens, and underscores"
+            )
+        return v
+
+    @field_validator("capabilities")
+    @classmethod
+    def validate_capabilities(cls, v):
+        """Validate capability names."""
+        import re
+
+        for cap in v:
+            if not re.match(r"^[a-zA-Z0-9:_-]+$", cap):
+                raise ValueError(f"Invalid capability format: {cap}")
+        return v
+
 
 router = APIRouter()
 security = HTTPBearer()
@@ -78,9 +113,7 @@ def check_role(allowed_roles: List[str], action: str = "manage", resource: str =
 
 @router.post("/token", response_model=Dict[str, Any])
 async def issue_token(
-    agent_id: str,
-    tenant_id: str,
-    capabilities: List[str],
+    request: TokenRequest,
     private_key_b64: Optional[str] = None,
     crypto_service=Depends(get_crypto_service),
     # Requires admin/management identity for this endpoint
@@ -103,13 +136,17 @@ async def issue_token(
                 raise HTTPException(status_code=500, detail="System private key not configured")
 
         token = crypto_service.issue_agent_token(
-            agent_id=agent_id,
-            tenant_id=tenant_id,
-            capabilities=capabilities,
+            agent_id=request.agent_id,
+            tenant_id=request.tenant_id,
+            capabilities=request.capabilities,
             private_key_b64=signing_key,
         )
         return {"access_token": token, "token_type": "bearer"}
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        # Improved error handling - don't leak internal details
+        raise HTTPException(
+            status_code=400,
+            detail="Authentication failed. Please check your credentials and try again.",
+        )

@@ -3,12 +3,14 @@ Search Platform Client
 
 Async HTTP client for communicating with the Universal Search Platform API.
 Provides connection pooling, retry logic, and circuit breaker patterns.
+Now uses centralized shared.config for settings.
 
 Constitutional Hash: cdd01ef066bc6cf2
 """
 
 import asyncio
 import logging
+import os
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from enum import Enum
@@ -16,6 +18,12 @@ from typing import Any, AsyncIterator, Dict, List, Optional
 
 import aiohttp
 from aiohttp import ClientSession, ClientTimeout, TCPConnector
+
+# Import centralized config
+try:
+    from shared.config import settings as global_settings
+except ImportError:
+    global_settings = None  # type: ignore
 
 from .models import (
     HealthStatus,
@@ -107,9 +115,21 @@ class SearchPlatformConfig:
 
     @classmethod
     def from_env(cls) -> "SearchPlatformConfig":
-        """Create config from environment variables."""
-        import os
+        """Create config from centralized settings or environment variables."""
+        # Use centralized config if available
+        if global_settings is not None:
+            sp = global_settings.search_platform
+            return cls(
+                base_url=sp.url,
+                timeout_seconds=sp.timeout_seconds,
+                max_connections=sp.max_connections,
+                max_retries=sp.max_retries,
+                retry_delay_seconds=sp.retry_delay_seconds,
+                circuit_breaker_threshold=sp.circuit_breaker_threshold,
+                circuit_breaker_timeout=sp.circuit_breaker_timeout,
+            )
 
+        # Fallback to raw environment variables
         return cls(
             base_url=os.getenv("SEARCH_PLATFORM_URL", "http://localhost:9080"),
             timeout_seconds=float(os.getenv("SEARCH_PLATFORM_TIMEOUT", "30.0")),

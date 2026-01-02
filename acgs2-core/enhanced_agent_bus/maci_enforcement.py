@@ -7,6 +7,12 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
+# Import centralized config for MACI settings
+try:
+    from shared.config import settings as global_settings
+except ImportError:
+    global_settings = None  # type: ignore
+
 try:
     from .exceptions import (
         MACICrossRoleValidationError,
@@ -170,9 +176,17 @@ class MACIConfigLoader:
             return MACIConfig()
 
     def load_from_env(self) -> MACIConfig:
-        strict = os.getenv("MACI_STRICT_MODE", "true").lower() == "true"
-        def_role_str = os.getenv("MACI_DEFAULT_ROLE")
+        # Use centralized config for basic settings, fallback to env vars
+        if global_settings is not None:
+            strict = global_settings.maci.strict_mode
+            def_role_str = global_settings.maci.default_role
+        else:
+            strict = os.getenv("MACI_STRICT_MODE", "true").lower() == "true"
+            def_role_str = os.getenv("MACI_DEFAULT_ROLE")
+
         def_role = MACIRole(def_role_str.lower()) if def_role_str else None
+
+        # Dynamic agent parsing still requires environment variable iteration
         agents = []
         for k, v in os.environ.items():
             if k.startswith("MACI_AGENT_") and not k.endswith("_CAPABILITIES"):

@@ -3,7 +3,6 @@ Policy Registry Client for dynamic constitutional validation
 """
 
 import logging
-import os
 import time
 from collections import OrderedDict
 from typing import Any, Dict, Optional
@@ -289,7 +288,7 @@ def get_policy_client(fail_closed: Optional[bool] = None) -> PolicyRegistryClien
             else None
         )
         _policy_client = PolicyRegistryClient(
-            registry_url=os.getenv("POLICY_REGISTRY_URL"),  # Or another fallback
+            registry_url=settings.services.policy_registry_url,
             api_key=api_key,
             fail_closed=(
                 fail_closed if fail_closed is not None else True

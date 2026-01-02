@@ -2,6 +2,7 @@
 Search Platform Configuration
 
 Environment-based configuration for the Search Platform integration.
+Now uses centralized shared.config for settings.
 
 Constitutional Hash: cdd01ef066bc6cf2
 """
@@ -9,6 +10,12 @@ Constitutional Hash: cdd01ef066bc6cf2
 import os
 from dataclasses import dataclass, field
 from typing import List, Optional
+
+# Import centralized config
+try:
+    from shared.config import settings as global_settings
+except ImportError:
+    global_settings = None  # type: ignore
 
 # Forward reference for type annotations
 if False:  # TYPE_CHECKING block to avoid circular imports
@@ -20,7 +27,7 @@ class SearchPlatformSettings:
     """
     Configuration settings for Search Platform integration.
 
-    Can be loaded from environment variables or set programmatically.
+    Can be loaded from centralized config or environment variables.
     """
 
     # Connection settings
@@ -49,25 +56,33 @@ class SearchPlatformSettings:
     @classmethod
     def from_env(cls) -> "SearchPlatformSettings":
         """
-        Load settings from environment variables.
+        Load settings from centralized config or environment variables.
 
-        Environment variables:
-            SEARCH_PLATFORM_URL: Base URL for Search Platform
-            SEARCH_PLATFORM_TIMEOUT: Request timeout in seconds
-            SEARCH_PLATFORM_MAX_CONNECTIONS: Connection pool size
-            SEARCH_PLATFORM_MAX_RETRIES: Max retry attempts
-            SEARCH_PLATFORM_RETRY_DELAY: Delay between retries
-            SEARCH_PLATFORM_CIRCUIT_THRESHOLD: Circuit breaker threshold
-            SEARCH_PLATFORM_CIRCUIT_TIMEOUT: Circuit breaker recovery timeout
-            SEARCH_PLATFORM_CODE_PATHS: Comma-separated default code paths
-            SEARCH_PLATFORM_LOG_PATHS: Comma-separated default log paths
-            SEARCH_PLATFORM_ENABLE_COMPLIANCE: Enable compliance checking
+        Prefers centralized config (shared.config.settings.search_platform),
+        falls back to environment variables if not available.
         """
 
         def parse_paths(env_var: str) -> List[str]:
             value = os.getenv(env_var, "")
             return [p.strip() for p in value.split(",") if p.strip()]
 
+        # Use centralized config if available
+        if global_settings is not None:
+            sp = global_settings.search_platform
+            return cls(
+                base_url=sp.url,
+                timeout_seconds=sp.timeout_seconds,
+                max_connections=sp.max_connections,
+                max_retries=sp.max_retries,
+                retry_delay_seconds=sp.retry_delay_seconds,
+                circuit_breaker_threshold=sp.circuit_breaker_threshold,
+                circuit_breaker_timeout=sp.circuit_breaker_timeout,
+                default_code_paths=parse_paths("SEARCH_PLATFORM_CODE_PATHS"),
+                default_log_paths=parse_paths("SEARCH_PLATFORM_LOG_PATHS"),
+                enable_compliance_checks=sp.enable_compliance,
+            )
+
+        # Fallback to raw environment variables
         return cls(
             base_url=os.getenv("SEARCH_PLATFORM_URL", "http://localhost:9080"),
             timeout_seconds=float(os.getenv("SEARCH_PLATFORM_TIMEOUT", "30.0")),

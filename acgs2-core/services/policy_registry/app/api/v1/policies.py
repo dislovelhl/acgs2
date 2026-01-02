@@ -45,7 +45,11 @@ async def create_policy(
         )
         return policy.model_dump()
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        # Improved error handling - don't leak internal details
+        raise HTTPException(
+            status_code=400,
+            detail="Policy operation failed. Please verify your request and try again.",
+        )
 
 
 @router.get("/{policy_id}", response_model=Dict[str, Any])
@@ -94,7 +98,11 @@ async def create_policy_version(
         )
         return policy_version.model_dump()
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        # Improved error handling - don't leak internal details
+        raise HTTPException(
+            status_code=400,
+            detail="Policy operation failed. Please verify your request and try again.",
+        )
 
 
 @router.get("/{policy_id}/versions/{version}", response_model=Dict[str, Any])
@@ -122,7 +130,11 @@ async def activate_policy_version(
         await policy_service.activate_version(policy_id, version)
         return {"message": f"Policy {policy_id} version {version} activated"}
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        # Improved error handling - don't leak internal details
+        raise HTTPException(
+            status_code=400,
+            detail="Policy operation failed. Please verify your request and try again.",
+        )
 
 
 @router.post("/{policy_id}/verify", response_model=Dict[str, Any])

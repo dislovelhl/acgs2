@@ -63,7 +63,11 @@ async def upload_bundle(
         )
         return bundle
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        # Improved error handling - don't leak internal details
+        raise HTTPException(
+            status_code=400,
+            detail="Bundle operation failed. Please verify your request and try again.",
+        )
 
 
 @router.get("/{bundle_id}", response_model=Bundle)
