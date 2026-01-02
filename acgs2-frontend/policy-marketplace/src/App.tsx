@@ -7,6 +7,7 @@
 
 import { BrowserRouter, Routes, Route, Link, useNavigate } from "react-router-dom";
 import { TemplateList } from "@components/TemplateList";
+import { TemplateDetail } from "@components/TemplateDetail";
 import type { TemplateListItem } from "@types/template";
 
 function Header(): JSX.Element {
@@ -102,6 +103,19 @@ function TemplatesPage(): JSX.Element {
   );
 }
 
+function TemplateDetailPage(): JSX.Element {
+  return (
+    <div className="min-h-screen bg-gray-100">
+      <Header />
+      <main>
+        <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+          <TemplateDetail />
+        </div>
+      </main>
+    </div>
+  );
+}
+
 function UploadPage(): JSX.Element {
   return (
     <div className="min-h-screen bg-gray-100">
@@ -123,6 +137,8 @@ function App(): JSX.Element {
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/templates" element={<TemplatesPage />} />
+        <Route path="/templates/:id" element={<TemplateDetailPage />} />
+        <Route path="/template/:id" element={<TemplateDetailPage />} />
         <Route path="/upload" element={<UploadPage />} />
       </Routes>
     </BrowserRouter>
