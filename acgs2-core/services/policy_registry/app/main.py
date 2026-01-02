@@ -17,6 +17,7 @@ from shared.logging_config import (
     instrument_fastapi,
     setup_opentelemetry,
 )
+from shared.middleware.correlation_id import add_correlation_id_middleware
 
 from .services import CacheService, CryptoService, NotificationService, PolicyService
 
@@ -93,6 +94,9 @@ app = FastAPI(
 
 # Instrument FastAPI with OpenTelemetry for distributed tracing
 instrument_fastapi(app)
+
+# Add correlation ID middleware (MUST be before other middleware for proper context)
+add_correlation_id_middleware(app, service_name="policy_registry")
 
 # Add CORS middleware with secure configuration
 if SECURE_CORS_AVAILABLE:
