@@ -6,7 +6,7 @@ This module provides shared data models for SSO authentication and
 related functionality.
 
 Usage:
-    from shared.models import User, SSOProviderType, SSOProvider
+    from shared.models import User, SSOProviderType, SSOProvider, SSORoleMapping
 
     # Create a user
     user = User(email="user@example.com", name="John Doe")
@@ -25,13 +25,22 @@ Usage:
         oidc_client_id="your-client-id",
         oidc_metadata_url="https://accounts.google.com/.well-known/openid-configuration",
     )
+
+    # Create a role mapping (IdP group -> ACGS-2 role)
+    mapping = SSORoleMapping(
+        provider_id=provider.id,
+        idp_group="Engineering",
+        acgs_role="developer",
+    )
 """
 
 from .sso_provider import SSOProvider
+from .sso_role_mapping import SSORoleMapping
 from .user import SSOProviderType, User
 
 __all__ = [
     "SSOProvider",
     "SSOProviderType",
+    "SSORoleMapping",
     "User",
 ]
