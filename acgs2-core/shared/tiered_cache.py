@@ -21,14 +21,22 @@ Graceful Degradation:
 Usage:
     from shared.tiered_cache import TieredCacheManager, get_tiered_cache
 
-    # Direct usage
+    # Direct usage (synchronous L1+L3)
     mgr = TieredCacheManager()
-    await mgr.initialize()
+    mgr.get('key')  # Fast sync access to L1 and L3
+
+    # Full async usage (L1+L2+L3)
+    mgr = TieredCacheManager()
+    await mgr.initialize()  # Initialize Redis connection
     await mgr.set('key', 'value')
-    value = await mgr.get('key')
+    value = await mgr.get_async('key')  # Includes Redis L2 tier
 
     # Singleton pattern
     mgr = get_tiered_cache()
+
+Access Frequency Tracking:
+    Keys accessed frequently (>10 times/minute) are automatically promoted
+    to L1 tier for optimal performance. Use get_tier(key) to check current tier.
 """
 
 import asyncio
@@ -305,13 +313,56 @@ class TieredCacheManager:
                 f"[{CONSTITUTIONAL_HASH}] Redis recovered, " f"resuming normal tiered operation"
             )
 
-    async def get(
+    def get(
         self,
         key: str,
         default: Optional[T] = None,
     ) -> Optional[T]:
         """
-        Get a value from the tiered cache.
+        Get a value from the tiered cache (synchronous version).
+
+        Lookup order: L1 -> L3 (skips L2 Redis for sync access)
+        Side effects: May promote data to L1 if access frequency threshold met.
+
+        For full async access including L2 Redis, use get_async().
+
+        Args:
+            key: Cache key
+            default: Default value if key not found in any tier
+
+        Returns:
+            Cached value or default
+        """
+        # Track access for promotion decisions
+        self._record_access(key)
+
+        # Try L1 first (fastest)
+        value = self._get_from_l1(key)
+        if value is not None:
+            self._check_and_promote(key, value)
+            return value
+
+        # Try L3 (distributed/persistent) - skip L2 for sync
+        value = self._get_from_l3(key)
+        if value is not None:
+            # Check if should promote to L1
+            self._check_and_promote(key, value)
+            return value
+
+        # Check for promotion based on access frequency even for misses
+        # This allows tier tracking to reflect access patterns
+        self._check_and_promote_tier_only(key)
+
+        # Miss in all tiers
+        return default
+
+    async def get_async(
+        self,
+        key: str,
+        default: Optional[T] = None,
+    ) -> Optional[T]:
+        """
+        Get a value from the tiered cache (async version with L2 Redis).
 
         Lookup order: L1 -> L2 -> L3
         Side effects: May promote data to L1 if access frequency threshold met.
@@ -345,6 +396,9 @@ class TieredCacheManager:
             # Check if should promote
             self._check_and_promote(key, value)
             return value
+
+        # Check for promotion based on access frequency even for misses
+        self._check_and_promote_tier_only(key)
 
         # Miss in all tiers
         return default
@@ -473,6 +527,38 @@ class TieredCacheManager:
             if record:
                 return record.current_tier.value
         return CacheTier.NONE.value
+
+    def get_access_stats(self, key: str) -> Dict[str, Any]:
+        """
+        Get access statistics for a key.
+
+        Useful for debugging and monitoring tier promotion decisions.
+
+        Args:
+            key: Cache key
+
+        Returns:
+            Dictionary with access frequency and tier info
+        """
+        with self._access_lock:
+            record = self._access_records.get(key)
+            if record:
+                return {
+                    "key": key,
+                    "accesses_per_minute": record.accesses_per_minute,
+                    "hours_since_access": record.hours_since_access,
+                    "current_tier": record.current_tier.value,
+                    "promotion_threshold": self.config.promotion_threshold,
+                    "would_promote": record.accesses_per_minute >= self.config.promotion_threshold,
+                }
+        return {
+            "key": key,
+            "accesses_per_minute": 0,
+            "hours_since_access": None,
+            "current_tier": CacheTier.NONE.value,
+            "promotion_threshold": self.config.promotion_threshold,
+            "would_promote": False,
+        }
 
     async def clear(self) -> None:
         """Clear all caches."""
@@ -633,6 +719,31 @@ class TieredCacheManager:
                     self._stats.promotions += 1
                 logger.debug(
                     f"[{CONSTITUTIONAL_HASH}] Promoted key '{key}' to L1 "
+                    f"(accesses/min: {record.accesses_per_minute})"
+                )
+
+    def _check_and_promote_tier_only(self, key: str) -> None:
+        """
+        Check if key should be promoted to L1 tier based on access frequency.
+
+        Unlike _check_and_promote, this only updates tier tracking without
+        storing a value. Used for tracking hot keys that don't yet have data.
+        """
+        with self._access_lock:
+            record = self._access_records.get(key)
+            if not record:
+                return
+
+            # Mark as L1 tier if threshold met (for future sets and tier queries)
+            if (
+                record.accesses_per_minute >= self.config.promotion_threshold
+                and record.current_tier != CacheTier.L1
+            ):
+                record.current_tier = CacheTier.L1
+                with self._stats_lock:
+                    self._stats.promotions += 1
+                logger.debug(
+                    f"[{CONSTITUTIONAL_HASH}] Key '{key}' marked for L1 tier "
                     f"(accesses/min: {record.accesses_per_minute})"
                 )
 
