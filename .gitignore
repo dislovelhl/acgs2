@@ -10,6 +10,7 @@ build/
 .next/
 .env*
 !.env.example
+!.env.dev
 
 # Large ML model files
 *.onnx
