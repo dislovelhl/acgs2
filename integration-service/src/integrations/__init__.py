@@ -10,6 +10,7 @@ from .base import (
     AuthenticationError,
     BaseIntegration,
     DeliveryError,
+    EventSeverity,
     IntegrationConnectionError,
     IntegrationCredentials,
     IntegrationEvent,
@@ -19,11 +20,18 @@ from .base import (
     RateLimitError,
     ValidationError,
 )
+from .splunk_adapter import (
+    SplunkAdapter,
+    SplunkCredentials,
+    SplunkDeploymentType,
+)
 
 __all__ = [
+    # Base classes and models
     "AuthenticationError",
     "BaseIntegration",
     "DeliveryError",
+    "EventSeverity",
     "IntegrationConnectionError",
     "IntegrationCredentials",
     "IntegrationEvent",
@@ -32,4 +40,8 @@ __all__ = [
     "IntegrationType",
     "RateLimitError",
     "ValidationError",
+    # Splunk SIEM integration
+    "SplunkAdapter",
+    "SplunkCredentials",
+    "SplunkDeploymentType",
 ]
