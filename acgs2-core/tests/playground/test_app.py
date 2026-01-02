@@ -10,15 +10,33 @@ Comprehensive test coverage for playground FastAPI endpoints including:
 Follows patterns from test_opa_service.py and test_policy_cli.py
 """
 
+import importlib.util
 import os
 import sys
 from typing import Any, Dict
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
 # Add parent directories to path for imports
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../.."))
+# This allows importing cli.opa_service and other modules
+_base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
+if _base_dir not in sys.path:
+    sys.path.insert(0, _base_dir)
+
+
+def _load_playground_app():
+    """Load playground.app module dynamically from file path."""
+    app_path = os.path.join(_base_dir, "playground", "app.py")
+    spec = importlib.util.spec_from_file_location("playground_app", app_path)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules["playground_app"] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+# Load playground app module
+_playground_app_module = None
 
 
 # =============================================================================
@@ -155,25 +173,39 @@ def sample_input():
 
 
 @pytest.fixture
-def app_with_mock_opa(mock_opa_service):
-    """
-    Create FastAPI app with mocked OPA service.
-
-    This patches the global opa_service in the playground app module.
-    """
-    from fastapi.testclient import TestClient
-
-    with patch("playground.app.opa_service", mock_opa_service):
-        from playground.app import app
-
-        # Create a test client without running lifespan
-        # (lifespan would try to connect to real OPA)
-        client = TestClient(app, raise_server_exceptions=False)
-        yield client
+def playground_app_module():
+    """Load and return the playground app module."""
+    global _playground_app_module
+    if _playground_app_module is None:
+        _playground_app_module = _load_playground_app()
+    return _playground_app_module
 
 
 @pytest.fixture
-def test_client_no_opa():
+def app_with_mock_opa(mock_opa_service, playground_app_module):
+    """
+    Create FastAPI app with mocked OPA service.
+
+    Directly patches the app module's opa_service global variable.
+    """
+    from fastapi.testclient import TestClient
+
+    app_module = playground_app_module
+
+    # Store original and patch
+    original_opa_service = app_module.opa_service
+    app_module.opa_service = mock_opa_service
+
+    try:
+        client = TestClient(app_module.app, raise_server_exceptions=False)
+        yield client
+    finally:
+        # Restore original
+        app_module.opa_service = original_opa_service
+
+
+@pytest.fixture
+def test_client_no_opa(playground_app_module):
     """
     Create FastAPI test client without OPA service initialized.
 
@@ -181,11 +213,16 @@ def test_client_no_opa():
     """
     from fastapi.testclient import TestClient
 
-    with patch("playground.app.opa_service", None):
-        from playground.app import app
+    app_module = playground_app_module
 
-        client = TestClient(app, raise_server_exceptions=False)
+    original_opa_service = app_module.opa_service
+    app_module.opa_service = None
+
+    try:
+        client = TestClient(app_module.app, raise_server_exceptions=False)
         yield client
+    finally:
+        app_module.opa_service = original_opa_service
 
 
 # =============================================================================
@@ -271,34 +308,42 @@ class TestValidateEndpointWithOPAErrors:
         """Test validation when OPA connection fails."""
         from fastapi.testclient import TestClient
 
+        import playground.app as app_module
+
         mock_service = MagicMock()
         mock_service.async_validate_policy = AsyncMock(side_effect=Exception("Connection refused"))
 
-        with patch("playground.app.opa_service", mock_service):
-            from playground.app import app
+        original = app_module.opa_service
+        app_module.opa_service = mock_service
 
-            client = TestClient(app, raise_server_exceptions=False)
+        try:
+            client = TestClient(app_module.app, raise_server_exceptions=False)
             response = client.post(
                 "/api/validate",
                 json={"policy": "package test\n"},
             )
 
             assert response.status_code == 500
+        finally:
+            app_module.opa_service = original
 
     def test_validate_with_opa_connection_error_class(self):
         """Test validation with OPAConnectionError raises 503."""
         from cli.opa_service import OPAConnectionError
         from fastapi.testclient import TestClient
 
+        import playground.app as app_module
+
         mock_service = MagicMock()
         mock_service.async_validate_policy = AsyncMock(
             side_effect=OPAConnectionError("http://localhost:8181", "Connection refused")
         )
 
-        with patch("playground.app.opa_service", mock_service):
-            from playground.app import app
+        original = app_module.opa_service
+        app_module.opa_service = mock_service
 
-            client = TestClient(app, raise_server_exceptions=False)
+        try:
+            client = TestClient(app_module.app, raise_server_exceptions=False)
             response = client.post(
                 "/api/validate",
                 json={"policy": "package test\n"},
@@ -307,6 +352,8 @@ class TestValidateEndpointWithOPAErrors:
             assert response.status_code == 503
             data = response.json()
             assert "unavailable" in data["detail"].lower()
+        finally:
+            app_module.opa_service = original
 
 
 # =============================================================================
@@ -460,21 +507,26 @@ class TestEvaluateEndpointWithOPAErrors:
         from cli.opa_service import OPAConnectionError
         from fastapi.testclient import TestClient
 
+        import playground.app as app_module
+
         mock_service = MagicMock()
         mock_service.async_evaluate_policy = AsyncMock(
             side_effect=OPAConnectionError("http://localhost:8181", "Connection refused")
         )
 
-        with patch("playground.app.opa_service", mock_service):
-            from playground.app import app
+        original = app_module.opa_service
+        app_module.opa_service = mock_service
 
-            client = TestClient(app, raise_server_exceptions=False)
+        try:
+            client = TestClient(app_module.app, raise_server_exceptions=False)
             response = client.post(
                 "/api/evaluate",
                 json={"policy": "package test\n", "input": {}},
             )
 
             assert response.status_code == 503
+        finally:
+            app_module.opa_service = original
 
 
 # =============================================================================
