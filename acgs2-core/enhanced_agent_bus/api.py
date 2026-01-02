@@ -45,6 +45,9 @@ class MessageRequest(BaseModel):
     recipient: Optional[str] = Field(default=None, description="Recipient identifier")
     tenant_id: Optional[str] = Field(default=None, description="Tenant identifier")
     metadata: Optional[Dict[str, Any]] = Field(default=None, description="Additional metadata")
+    session_id: Optional[str] = Field(
+        default=None, description="Session identifier for multi-turn conversations"
+    )
 
 
 class MessageResponse(BaseModel):
@@ -128,11 +131,14 @@ async def send_message(
 
         background_tasks.add_task(process_message, message_id, request.content)
 
+        # Use session_id from request body if provided, otherwise fall back to header
+        effective_session_id = request.session_id or session_id
+
         return MessageResponse(
             message_id=message_id,
             status="accepted",
             timestamp=timestamp.isoformat(),
-            details={"message_type": request.message_type, "session_id": session_id},
+            details={"message_type": request.message_type, "session_id": effective_session_id},
         )
 
     except Exception as e:
