@@ -6,10 +6,12 @@ Constitutional Hash: cdd01ef066bc6cf2
 
 import asyncio
 import logging
+import time
 import uuid
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Dict, Any, Optional, Type
-from fastapi import FastAPI, HTTPException, BackgroundTasks, Request
+from typing import Dict, Any, Optional, Tuple, Type
+from fastapi import Depends, FastAPI, HTTPException, BackgroundTasks, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
@@ -222,6 +224,203 @@ def get_http_status_for_exception(exc: Exception) -> int:
 
     # Default to 500 for unknown exceptions
     return 500
+
+
+# =============================================================================
+# Token Bucket Rate Limiter
+# =============================================================================
+
+# Rate limit configuration from environment
+RATE_LIMIT_REQUESTS_PER_MINUTE = int(os.getenv("RATE_LIMIT_REQUESTS_PER_MINUTE", "100"))
+RATE_LIMIT_BURST_CAPACITY = int(os.getenv("RATE_LIMIT_BURST_CAPACITY", "10"))
+
+
+@dataclass
+class TokenBucket:
+    """Token bucket for rate limiting.
+
+    Implements the token bucket algorithm for smooth rate limiting.
+    Tokens are refilled over time at a constant rate up to a maximum capacity.
+    """
+
+    capacity: int  # Maximum tokens (burst capacity)
+    refill_rate: float  # Tokens per second
+    tokens: float = field(init=False)
+    last_refill: float = field(init=False)
+
+    def __post_init__(self) -> None:
+        """Initialize bucket with full capacity."""
+        self.tokens = float(self.capacity)
+        self.last_refill = time.time()
+
+    def refill(self) -> None:
+        """Refill tokens based on elapsed time."""
+        now = time.time()
+        elapsed = now - self.last_refill
+        tokens_to_add = elapsed * self.refill_rate
+
+        self.tokens = min(float(self.capacity), self.tokens + tokens_to_add)
+        self.last_refill = now
+
+    def consume(self, tokens: int = 1) -> bool:
+        """
+        Try to consume tokens from the bucket.
+
+        Args:
+            tokens: Number of tokens to consume
+
+        Returns:
+            True if tokens were consumed, False if insufficient tokens
+        """
+        self.refill()
+
+        if self.tokens >= tokens:
+            self.tokens -= tokens
+            return True
+
+        return False
+
+    def get_remaining_tokens(self) -> float:
+        """Get remaining tokens in bucket."""
+        self.refill()
+        return self.tokens
+
+    def get_reset_time_seconds(self) -> float:
+        """Get time in seconds until bucket is fully refilled."""
+        self.refill()
+        if self.tokens >= self.capacity:
+            return 0.0
+
+        tokens_needed = self.capacity - self.tokens
+        return tokens_needed / self.refill_rate if self.refill_rate > 0 else 60.0
+
+
+class RateLimiterStore:
+    """In-memory storage for rate limit buckets.
+
+    Manages token buckets per tenant/client identifier.
+    Thread-safe using asyncio.Lock for concurrent access.
+    """
+
+    def __init__(self) -> None:
+        self._buckets: Dict[str, TokenBucket] = {}
+        self._lock = asyncio.Lock()
+
+    async def get_or_create_bucket(
+        self,
+        key: str,
+        capacity: int,
+        refill_rate: float,
+    ) -> TokenBucket:
+        """Get existing bucket or create new one for the given key."""
+        async with self._lock:
+            if key not in self._buckets:
+                self._buckets[key] = TokenBucket(capacity, refill_rate)
+            return self._buckets[key]
+
+    async def is_allowed(
+        self,
+        key: str,
+        capacity: int,
+        refill_rate: float,
+        consume_tokens: int = 1,
+    ) -> Tuple[bool, float, float]:
+        """
+        Check if request is allowed under rate limit.
+
+        Args:
+            key: Identifier for the rate limit bucket (e.g., tenant_id)
+            capacity: Maximum tokens (burst capacity)
+            refill_rate: Tokens per second
+            consume_tokens: Number of tokens to consume
+
+        Returns:
+            Tuple of (allowed, remaining_tokens, reset_time_seconds)
+        """
+        bucket = await self.get_or_create_bucket(key, capacity, refill_rate)
+
+        allowed = bucket.consume(consume_tokens)
+        remaining = bucket.get_remaining_tokens()
+        reset_time = bucket.get_reset_time_seconds()
+
+        return allowed, remaining, reset_time
+
+
+# Global rate limiter store instance
+_rate_limiter_store = RateLimiterStore()
+
+
+async def check_rate_limit(request: Request) -> Tuple[bool, float, float, str]:
+    """
+    FastAPI dependency for token bucket rate limiting.
+
+    Checks rate limits per tenant_id (or client IP if no tenant_id).
+    Uses the token bucket algorithm for smooth rate limiting.
+
+    Configuration via environment variables:
+    - RATE_LIMIT_REQUESTS_PER_MINUTE: Max requests per minute (default: 100)
+    - RATE_LIMIT_BURST_CAPACITY: Burst capacity (default: 10)
+
+    Args:
+        request: FastAPI Request object
+
+    Returns:
+        Tuple of (allowed, remaining_tokens, reset_time_seconds, rate_limit_key)
+
+    Raises:
+        RateLimitExceeded: When rate limit is exceeded
+    """
+    # Extract tenant_id from request body or headers, fallback to client IP
+    rate_limit_key = "unknown"
+
+    # Try to get tenant_id from request state (if set by middleware)
+    if hasattr(request.state, "tenant_id") and request.state.tenant_id:
+        rate_limit_key = f"tenant:{request.state.tenant_id}"
+    # Try to get from X-Tenant-ID header
+    elif request.headers.get("X-Tenant-ID"):
+        rate_limit_key = f"tenant:{request.headers.get('X-Tenant-ID')}"
+    # Fallback to client IP
+    elif request.client:
+        rate_limit_key = f"ip:{request.client.host}"
+
+    # Calculate refill rate: tokens per second from requests per minute
+    refill_rate = RATE_LIMIT_REQUESTS_PER_MINUTE / 60.0
+
+    # Check rate limit
+    allowed, remaining, reset_time = await _rate_limiter_store.is_allowed(
+        key=rate_limit_key,
+        capacity=RATE_LIMIT_BURST_CAPACITY,
+        refill_rate=refill_rate,
+        consume_tokens=1,
+    )
+
+    if not allowed:
+        # Calculate retry_after in milliseconds
+        retry_after_ms = int(reset_time * 1000)
+
+        # Extract agent_id for the exception
+        agent_id = rate_limit_key.split(":", 1)[-1] if ":" in rate_limit_key else rate_limit_key
+
+        logger.warning(
+            f"Rate limit exceeded for {rate_limit_key}: "
+            f"limit={RATE_LIMIT_REQUESTS_PER_MINUTE}/min, "
+            f"remaining={remaining:.1f}, "
+            f"reset_in={reset_time:.1f}s"
+        )
+
+        raise RateLimitExceeded(
+            agent_id=agent_id,
+            limit=RATE_LIMIT_REQUESTS_PER_MINUTE,
+            window_seconds=60,
+            retry_after_ms=retry_after_ms,
+        )
+
+    logger.debug(
+        f"Rate limit check passed for {rate_limit_key}: "
+        f"remaining={remaining:.1f}, reset_in={reset_time:.1f}s"
+    )
+
+    return allowed, remaining, reset_time, rate_limit_key
 
 
 def get_http_status_for_validation_result(result: ValidationResult) -> int:
