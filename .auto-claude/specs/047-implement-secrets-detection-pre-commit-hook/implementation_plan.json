@@ -81,7 +81,9 @@
           "subtask_id": "2.2",
           "title": "Create gitleaks configuration file",
           "description": "Create .gitleaks.toml with ACGS-2 specific rules and allow-lists",
-          "status": "pending",
+          "status": "completed",
+          "completed_at": "2026-01-03T21:50:00.000Z",
+          "notes": "Successfully created .gitleaks.toml with comprehensive ACGS-2 configuration. Includes: 8 custom rules for AI provider keys (Anthropic, Claude Code, OpenRouter, HuggingFace, OpenAI), enhanced rules for AWS/JWT/Vault tokens, global allowlist for dev placeholders (dev-*, test-*, your-*, etc.), path exclusions for .env.example/tests/docs, and integration notes for secrets_manager.py. Configuration validated by pre-commit hook - passes successfully. Commit: 1042f9f39",
           "acceptance_criteria": [
             ".gitleaks.toml created with custom rules",
             "Configuration allows placeholder secrets (e.g., 'dev-jwt-secret-min-32-chars-required')",
@@ -93,7 +95,9 @@
           "subtask_id": "2.3",
           "title": "Update .gitleaksignore with known safe secrets",
           "description": "Add fingerprints for development/test secrets that are safe to commit",
-          "status": "pending",
+          "status": "completed",
+          "completed_at": "2026-01-03T22:00:00.000Z",
+          "notes": "Successfully updated .gitleaksignore with comprehensive fingerprints and documentation for safe development/test secrets. Added: (1) sp.crt certificate alongside existing sp.key entry, (2) Three .env.dev development secrets with detailed justifications (JWT_SECRET, REDIS_PASSWORD, POSTGRES_ML_PASSWORD), (3) Comprehensive documentation including what each secret is, why it's safe, and production mitigation. Each exception clearly documents that these are development-only placeholders with real secrets managed via Vault/secrets manager in production. Added best practices notes and guidelines for future additions. Commit: 01a011541. Pre-commit hooks verified - gitleaks passes successfully.",
           "acceptance_criteria": [
             ".gitleaksignore updated with documented exceptions",
             "Each exception has a comment explaining why it's safe",
