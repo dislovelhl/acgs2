@@ -684,10 +684,43 @@ class DriftDetector:
         Returns:
             DataFrame with numeric columns.
         """
+        # Check cache if enabled and data_source is provided
+        cache_checksum = None
+        if self._cache_enabled and data_source:
+            # Compute checksum of current data
+            current_checksum = self._compute_deque_checksum(deque(data))
+
+            # Try to return cached DataFrame
+            if data_source == "reference":
+                if (
+                    self._reference_checksum == current_checksum
+                    and self._reference_df_cache is not None
+                ):
+                    return self._reference_df_cache
+            elif data_source == "current":
+                if (
+                    self._current_checksum == current_checksum
+                    and self._current_df_cache is not None
+                ):
+                    return self._current_df_cache
+
+            # Cache miss - will need to convert and update cache
+            cache_checksum = current_checksum
+
+        # Convert to DataFrame
         df = pd.DataFrame(data)
 
         # Select only numeric columns
         numeric_df = df.select_dtypes(include=[np.number])
+
+        # Update cache if we computed a checksum (caching enabled with data_source)
+        if cache_checksum is not None:
+            if data_source == "reference":
+                self._reference_df_cache = numeric_df
+                self._reference_checksum = cache_checksum
+            elif data_source == "current":
+                self._current_df_cache = numeric_df
+                self._current_checksum = cache_checksum
 
         return numeric_df
 
