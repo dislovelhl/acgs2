@@ -1,0 +1,189 @@
+{
+  "name": "Multi-Tenant Isolation Policy Template",
+  "description": "Comprehensive multi-tenant isolation policy ensuring data separation, resource isolation, and tenant-specific access controls. Suitable for SaaS applications with strict tenant boundaries.",
+  "category": "multi_tenant",
+  "format": "json",
+  "version": "1.0.0",
+  "author": "ACGS-2 Team",
+  "tags": ["multi-tenant", "isolation", "saas", "data-separation", "tenant-security"],
+  "policy": {
+    "name": "multi-tenant-isolation",
+    "version": "1.0.0",
+    "description": "Multi-tenant isolation governance policy",
+    "isolation_levels": {
+      "data": {
+        "strategy": "row_level_security",
+        "encryption": "per_tenant_key",
+        "backup": "isolated"
+      },
+      "compute": {
+        "strategy": "shared_with_limits",
+        "resource_quotas": true,
+        "cpu_limits": true,
+        "memory_limits": true
+      },
+      "network": {
+        "strategy": "virtual_network_isolation",
+        "firewall_rules": "per_tenant"
+      }
+    },
+    "rules": [
+      {
+        "id": "tenant-001",
+        "name": "data-isolation",
+        "description": "Ensure all data queries include tenant context",
+        "severity": "critical",
+        "condition": {
+          "all": [
+            {"field": "query.tenant_id", "operator": "equals", "value": "{{request.tenant_id}}"},
+            {"field": "query.cross_tenant", "operator": "equals", "value": false}
+          ]
+        },
+        "action": "allow",
+        "fallback": "deny"
+      },
+      {
+        "id": "tenant-002",
+        "name": "cross-tenant-access-block",
+        "description": "Prevent any cross-tenant data access",
+        "severity": "critical",
+        "condition": {
+          "any": [
+            {"field": "resource.tenant_id", "operator": "not_equals", "value": "{{user.tenant_id}}"},
+            {"field": "query.joins_other_tenant", "operator": "equals", "value": true}
+          ]
+        },
+        "action": "deny",
+        "log_level": "error",
+        "alert": true
+      },
+      {
+        "id": "tenant-003",
+        "name": "tenant-resource-quotas",
+        "description": "Enforce resource quotas per tenant",
+        "severity": "high",
+        "condition": {
+          "all": [
+            {"field": "tenant.storage_used", "operator": "less_than", "value": "{{tenant.storage_quota}}"},
+            {"field": "tenant.api_calls_today", "operator": "less_than", "value": "{{tenant.api_quota}}"},
+            {"field": "tenant.users_count", "operator": "less_than", "value": "{{tenant.user_quota}}"}
+          ]
+        },
+        "action": "allow",
+        "fallback": "quota_exceeded"
+      },
+      {
+        "id": "tenant-004",
+        "name": "tenant-admin-scope",
+        "description": "Limit tenant admin actions to own tenant",
+        "severity": "critical",
+        "condition": {
+          "all": [
+            {"field": "user.role", "operator": "equals", "value": "tenant_admin"},
+            {"field": "action.scope", "operator": "equals", "value": "own_tenant"},
+            {"field": "target.tenant_id", "operator": "equals", "value": "{{user.tenant_id}}"}
+          ]
+        },
+        "action": "allow",
+        "fallback": "deny"
+      },
+      {
+        "id": "tenant-005",
+        "name": "encryption-key-isolation",
+        "description": "Ensure each tenant uses isolated encryption keys",
+        "severity": "critical",
+        "condition": {
+          "all": [
+            {"field": "encryption.key_tenant_id", "operator": "equals", "value": "{{request.tenant_id}}"},
+            {"field": "encryption.key_active", "operator": "equals", "value": true}
+          ]
+        },
+        "action": "allow",
+        "fallback": "deny"
+      },
+      {
+        "id": "tenant-006",
+        "name": "audit-log-isolation",
+        "description": "Tenant can only view their own audit logs",
+        "severity": "high",
+        "condition": {
+          "all": [
+            {"field": "resource.type", "operator": "equals", "value": "audit_log"},
+            {"field": "resource.tenant_id", "operator": "equals", "value": "{{user.tenant_id}}"}
+          ]
+        },
+        "action": "allow",
+        "fallback": "deny"
+      },
+      {
+        "id": "tenant-007",
+        "name": "network-isolation",
+        "description": "Enforce network-level tenant isolation",
+        "severity": "critical",
+        "condition": {
+          "all": [
+            {"field": "network.source_tenant", "operator": "equals", "value": "{{network.destination_tenant}}"},
+            {"field": "network.allowed_paths", "operator": "contains", "value": "{{request.path}}"}
+          ]
+        },
+        "action": "allow",
+        "fallback": "deny"
+      },
+      {
+        "id": "tenant-008",
+        "name": "shared-service-access",
+        "description": "Allow access to shared services with tenant context",
+        "severity": "medium",
+        "condition": {
+          "all": [
+            {"field": "service.type", "operator": "equals", "value": "shared"},
+            {"field": "request.tenant_header", "operator": "equals", "value": "{{user.tenant_id}}"},
+            {"field": "service.tenant_aware", "operator": "equals", "value": true}
+          ]
+        },
+        "action": "allow",
+        "inject_headers": {"X-Tenant-ID": "{{user.tenant_id}}"}
+      },
+      {
+        "id": "tenant-009",
+        "name": "super-admin-cross-tenant",
+        "description": "Allow super admins cross-tenant access with audit",
+        "severity": "critical",
+        "condition": {
+          "all": [
+            {"field": "user.role", "operator": "equals", "value": "super_admin"},
+            {"field": "access.justification", "operator": "defined"},
+            {"field": "access.time_limited", "operator": "equals", "value": true}
+          ]
+        },
+        "action": "allow",
+        "audit": "enhanced",
+        "notify": ["tenant_admin", "security_team"],
+        "max_duration": "4_hours"
+      }
+    ],
+    "tenant_provisioning": {
+      "on_create": [
+        "create_tenant_schema",
+        "generate_encryption_key",
+        "setup_network_isolation",
+        "create_default_admin",
+        "apply_default_quotas"
+      ],
+      "on_delete": [
+        "soft_delete_data",
+        "revoke_encryption_key",
+        "archive_audit_logs",
+        "notify_data_retention"
+      ]
+    },
+    "metadata": {
+      "isolation_model": "shared_infrastructure_isolated_data",
+      "compliance_frameworks": ["SOC2", "ISO27001"],
+      "supports_custom_domains": true,
+      "supports_data_residency": true,
+      "last_reviewed": "2024-01-15",
+      "review_frequency": "quarterly"
+    }
+  }
+}

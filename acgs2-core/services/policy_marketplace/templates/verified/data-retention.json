@@ -1,0 +1,200 @@
+{
+  "name": "Data Retention Policy Template",
+  "description": "Comprehensive data retention and lifecycle management policy. Covers retention periods by data classification, automated archival, secure deletion, and compliance with data protection regulations.",
+  "category": "data_retention",
+  "format": "json",
+  "version": "1.0.0",
+  "author": "ACGS-2 Team",
+  "tags": ["data-retention", "lifecycle", "archival", "deletion", "compliance"],
+  "policy": {
+    "name": "data-retention",
+    "version": "1.0.0",
+    "description": "Data retention and lifecycle governance policy",
+    "retention_periods": {
+      "by_classification": {
+        "public": {"retention": "1_year", "archive_after": "6_months"},
+        "internal": {"retention": "3_years", "archive_after": "1_year"},
+        "confidential": {"retention": "7_years", "archive_after": "2_years"},
+        "restricted": {"retention": "10_years", "archive_after": "3_years"}
+      },
+      "by_data_type": {
+        "user_account": {"retention": "account_lifetime_plus_2_years", "gdpr_erasure": true},
+        "transaction_records": {"retention": "7_years", "legal_hold_capable": true},
+        "audit_logs": {"retention": "7_years", "immutable": true},
+        "session_data": {"retention": "30_days", "gdpr_erasure": true},
+        "analytics_data": {"retention": "3_years", "anonymization_after": "1_year"},
+        "backup_data": {"retention": "1_year", "encrypted": true},
+        "temporary_files": {"retention": "7_days", "auto_delete": true},
+        "email_communications": {"retention": "5_years", "legal_hold_capable": true}
+      }
+    },
+    "rules": [
+      {
+        "id": "ret-001",
+        "name": "retention-period-enforcement",
+        "description": "Enforce minimum retention periods based on classification",
+        "severity": "critical",
+        "condition": {
+          "all": [
+            {"field": "data.age", "operator": "less_than", "value": "{{retention_period}}"},
+            {"field": "request.type", "operator": "equals", "value": "delete"}
+          ]
+        },
+        "action": "deny",
+        "message": "Data cannot be deleted before retention period expires"
+      },
+      {
+        "id": "ret-002",
+        "name": "auto-archive",
+        "description": "Automatically archive data after specified period",
+        "severity": "medium",
+        "condition": {
+          "all": [
+            {"field": "data.age", "operator": "greater_than", "value": "{{archive_after}}"},
+            {"field": "data.archived", "operator": "equals", "value": false},
+            {"field": "data.legal_hold", "operator": "equals", "value": false}
+          ]
+        },
+        "action": "archive",
+        "destination": "cold_storage",
+        "compress": true,
+        "encrypt": true
+      },
+      {
+        "id": "ret-003",
+        "name": "auto-delete-expired",
+        "description": "Automatically delete data after retention period",
+        "severity": "high",
+        "condition": {
+          "all": [
+            {"field": "data.age", "operator": "greater_than", "value": "{{retention_period}}"},
+            {"field": "data.legal_hold", "operator": "equals", "value": false},
+            {"field": "data.deletion_blocked", "operator": "equals", "value": false}
+          ]
+        },
+        "action": "secure_delete",
+        "method": "cryptographic_erasure",
+        "audit": true
+      },
+      {
+        "id": "ret-004",
+        "name": "legal-hold-protection",
+        "description": "Prevent deletion of data under legal hold",
+        "severity": "critical",
+        "condition": {
+          "all": [
+            {"field": "data.legal_hold", "operator": "equals", "value": true},
+            {"field": "request.type", "operator": "in", "value": ["delete", "modify", "archive"]}
+          ]
+        },
+        "action": "deny",
+        "message": "Data is under legal hold and cannot be modified or deleted"
+      },
+      {
+        "id": "ret-005",
+        "name": "gdpr-erasure-request",
+        "description": "Handle GDPR right to erasure requests",
+        "severity": "critical",
+        "condition": {
+          "all": [
+            {"field": "request.type", "operator": "equals", "value": "gdpr_erasure"},
+            {"field": "data.gdpr_erasure_eligible", "operator": "equals", "value": true},
+            {"field": "data.legal_hold", "operator": "equals", "value": false}
+          ]
+        },
+        "action": "secure_delete",
+        "timeline": "30_days",
+        "notify": ["data_subject", "privacy_officer"],
+        "audit": true
+      },
+      {
+        "id": "ret-006",
+        "name": "anonymization-policy",
+        "description": "Anonymize data after specified period while retaining for analytics",
+        "severity": "medium",
+        "condition": {
+          "all": [
+            {"field": "data.age", "operator": "greater_than", "value": "{{anonymization_after}}"},
+            {"field": "data.anonymized", "operator": "equals", "value": false},
+            {"field": "data.type", "operator": "equals", "value": "analytics_data"}
+          ]
+        },
+        "action": "anonymize",
+        "fields_to_remove": ["user_id", "email", "ip_address", "name"],
+        "fields_to_hash": ["session_id", "device_id"]
+      },
+      {
+        "id": "ret-007",
+        "name": "backup-retention",
+        "description": "Manage backup data lifecycle",
+        "severity": "high",
+        "condition": {
+          "all": [
+            {"field": "data.type", "operator": "equals", "value": "backup"},
+            {"field": "data.age", "operator": "greater_than", "value": "{{backup_retention}}"}
+          ]
+        },
+        "action": "secure_delete",
+        "verify_source_exists": true,
+        "audit": true
+      },
+      {
+        "id": "ret-008",
+        "name": "secure-deletion-verification",
+        "description": "Verify data is securely deleted",
+        "severity": "critical",
+        "condition": {
+          "all": [
+            {"field": "action.type", "operator": "equals", "value": "delete"},
+            {"field": "data.classification", "operator": "in", "value": ["confidential", "restricted"]}
+          ]
+        },
+        "action": "secure_delete",
+        "method": "cryptographic_erasure",
+        "overwrite_passes": 3,
+        "verification_required": true,
+        "generate_certificate": true
+      },
+      {
+        "id": "ret-009",
+        "name": "retention-extension-request",
+        "description": "Process retention extension requests",
+        "severity": "medium",
+        "condition": {
+          "all": [
+            {"field": "request.type", "operator": "equals", "value": "retention_extension"},
+            {"field": "request.justification", "operator": "defined"},
+            {"field": "request.approved_by", "operator": "in", "value": "{{authorized_approvers}}"}
+          ]
+        },
+        "action": "extend_retention",
+        "max_extension": "5_years",
+        "audit": true
+      }
+    ],
+    "lifecycle_stages": {
+      "active": {
+        "description": "Data in active use",
+        "storage_tier": "hot",
+        "access": "full"
+      },
+      "archived": {
+        "description": "Data archived but accessible",
+        "storage_tier": "cold",
+        "access": "read_only",
+        "retrieval_time": "4_hours"
+      },
+      "deleted": {
+        "description": "Data marked for deletion",
+        "storage_tier": "none",
+        "grace_period": "30_days"
+      }
+    },
+    "metadata": {
+      "compliance_frameworks": ["GDPR", "CCPA", "HIPAA", "SOX", "PCI-DSS"],
+      "deletion_methods": ["cryptographic_erasure", "secure_overwrite", "physical_destruction"],
+      "last_reviewed": "2024-01-15",
+      "review_frequency": "annual"
+    }
+  }
+}

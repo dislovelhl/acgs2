@@ -1,0 +1,115 @@
+{
+  "name": "GDPR Compliance Policy Template",
+  "description": "Comprehensive GDPR compliance policy for handling personal data of EU residents. Includes data subject rights, lawful processing bases, data retention rules, and breach notification requirements.",
+  "category": "compliance",
+  "format": "json",
+  "version": "1.0.0",
+  "author": "ACGS-2 Team",
+  "tags": ["gdpr", "privacy", "eu", "data-protection", "compliance"],
+  "policy": {
+    "name": "gdpr-compliance",
+    "version": "1.0.0",
+    "description": "GDPR compliance governance policy",
+    "rules": [
+      {
+        "id": "gdpr-001",
+        "name": "data-subject-consent",
+        "description": "Ensure valid consent is obtained for personal data processing",
+        "severity": "critical",
+        "condition": {
+          "all": [
+            {"field": "data.personal_data", "operator": "exists"},
+            {"field": "consent.obtained", "operator": "equals", "value": true},
+            {"field": "consent.freely_given", "operator": "equals", "value": true},
+            {"field": "consent.specific", "operator": "equals", "value": true},
+            {"field": "consent.informed", "operator": "equals", "value": true}
+          ]
+        },
+        "action": "allow",
+        "fallback": "deny"
+      },
+      {
+        "id": "gdpr-002",
+        "name": "data-minimization",
+        "description": "Ensure only necessary data is collected",
+        "severity": "high",
+        "condition": {
+          "all": [
+            {"field": "data.purpose", "operator": "defined"},
+            {"field": "data.fields_collected", "operator": "subset_of", "value": "{{data.required_fields}}"}
+          ]
+        },
+        "action": "allow",
+        "fallback": "deny"
+      },
+      {
+        "id": "gdpr-003",
+        "name": "right-to-erasure",
+        "description": "Support data subject right to erasure (right to be forgotten)",
+        "severity": "critical",
+        "condition": {
+          "any": [
+            {"field": "request.type", "operator": "equals", "value": "erasure"},
+            {"field": "retention.period_expired", "operator": "equals", "value": true}
+          ]
+        },
+        "action": "delete_personal_data",
+        "fallback": "log_and_review"
+      },
+      {
+        "id": "gdpr-004",
+        "name": "data-portability",
+        "description": "Support data subject right to data portability",
+        "severity": "high",
+        "condition": {
+          "all": [
+            {"field": "request.type", "operator": "equals", "value": "portability"},
+            {"field": "data.format", "operator": "in", "value": ["json", "csv", "xml"]}
+          ]
+        },
+        "action": "export_data",
+        "fallback": "deny"
+      },
+      {
+        "id": "gdpr-005",
+        "name": "breach-notification",
+        "description": "Notify supervisory authority within 72 hours of breach discovery",
+        "severity": "critical",
+        "condition": {
+          "all": [
+            {"field": "incident.type", "operator": "equals", "value": "data_breach"},
+            {"field": "incident.personal_data_affected", "operator": "equals", "value": true}
+          ]
+        },
+        "action": "notify_authority",
+        "timeline": "72h",
+        "fallback": "escalate"
+      },
+      {
+        "id": "gdpr-006",
+        "name": "cross-border-transfer",
+        "description": "Ensure adequate protection for cross-border data transfers",
+        "severity": "critical",
+        "condition": {
+          "all": [
+            {"field": "transfer.cross_border", "operator": "equals", "value": true},
+            {
+              "any": [
+                {"field": "transfer.destination", "operator": "in", "value": "{{eu_adequate_countries}}"},
+                {"field": "transfer.mechanism", "operator": "in", "value": ["scc", "bcr", "adequacy_decision"]}
+              ]
+            }
+          ]
+        },
+        "action": "allow",
+        "fallback": "deny"
+      }
+    ],
+    "metadata": {
+      "applicable_regions": ["EU", "EEA"],
+      "regulation_reference": "Regulation (EU) 2016/679",
+      "last_reviewed": "2024-01-15",
+      "review_frequency": "annual"
+    }
+  }
+}

@@ -1,0 +1,158 @@
+{
+  "name": "Attribute-Based Access Control (ABAC) Policy Template",
+  "description": "Flexible ABAC implementation supporting dynamic access decisions based on user attributes, resource attributes, environment conditions, and action context. Ideal for complex, fine-grained authorization scenarios.",
+  "category": "access_control",
+  "format": "json",
+  "version": "1.0.0",
+  "author": "ACGS-2 Team",
+  "tags": ["abac", "access-control", "authorization", "attributes", "dynamic-policy"],
+  "policy": {
+    "name": "abac-access-control",
+    "version": "1.0.0",
+    "description": "Attribute-Based Access Control governance policy",
+    "attribute_definitions": {
+      "subject": {
+        "id": {"type": "string", "required": true},
+        "department": {"type": "string", "required": true},
+        "clearance_level": {"type": "integer", "required": true, "min": 0, "max": 5},
+        "roles": {"type": "array", "items": "string"},
+        "location": {"type": "string"},
+        "employment_type": {"type": "enum", "values": ["full_time", "part_time", "contractor", "vendor"]}
+      },
+      "resource": {
+        "id": {"type": "string", "required": true},
+        "type": {"type": "string", "required": true},
+        "classification": {"type": "enum", "values": ["public", "internal", "confidential", "restricted"]},
+        "owner_department": {"type": "string"},
+        "sensitivity_level": {"type": "integer", "min": 0, "max": 5}
+      },
+      "action": {
+        "type": {"type": "enum", "values": ["read", "write", "delete", "execute", "admin"]},
+        "purpose": {"type": "string"}
+      },
+      "environment": {
+        "time": {"type": "datetime"},
+        "ip_address": {"type": "string"},
+        "network_zone": {"type": "enum", "values": ["internal", "vpn", "external"]},
+        "device_compliant": {"type": "boolean"}
+      }
+    },
+    "rules": [
+      {
+        "id": "abac-001",
+        "name": "clearance-level-check",
+        "description": "User clearance must meet or exceed resource sensitivity",
+        "severity": "critical",
+        "condition": {
+          "all": [
+            {"field": "subject.clearance_level", "operator": "greater_than_or_equal", "value": "{{resource.sensitivity_level}}"}
+          ]
+        },
+        "action": "continue_evaluation",
+        "fallback": "deny"
+      },
+      {
+        "id": "abac-002",
+        "name": "department-access",
+        "description": "Allow same-department access to internal resources",
+        "severity": "high",
+        "condition": {
+          "all": [
+            {"field": "subject.department", "operator": "equals", "value": "{{resource.owner_department}}"},
+            {"field": "resource.classification", "operator": "in", "value": ["public", "internal"]}
+          ]
+        },
+        "action": "allow"
+      },
+      {
+        "id": "abac-003",
+        "name": "confidential-access",
+        "description": "Restrict confidential resource access to authorized personnel",
+        "severity": "critical",
+        "condition": {
+          "all": [
+            {"field": "resource.classification", "operator": "equals", "value": "confidential"},
+            {"field": "subject.clearance_level", "operator": "greater_than_or_equal", "value": 3},
+            {"field": "subject.employment_type", "operator": "in", "value": ["full_time", "part_time"]}
+          ]
+        },
+        "action": "allow",
+        "fallback": "deny"
+      },
+      {
+        "id": "abac-004",
+        "name": "restricted-access",
+        "description": "Highly restricted access with multiple conditions",
+        "severity": "critical",
+        "condition": {
+          "all": [
+            {"field": "resource.classification", "operator": "equals", "value": "restricted"},
+            {"field": "subject.clearance_level", "operator": "equals", "value": 5},
+            {"field": "environment.network_zone", "operator": "equals", "value": "internal"},
+            {"field": "environment.device_compliant", "operator": "equals", "value": true},
+            {"field": "action.purpose", "operator": "defined"}
+          ]
+        },
+        "action": "allow",
+        "audit": "enhanced",
+        "fallback": "deny"
+      },
+      {
+        "id": "abac-005",
+        "name": "network-zone-restriction",
+        "description": "Restrict write access to internal network only",
+        "severity": "high",
+        "condition": {
+          "all": [
+            {"field": "action.type", "operator": "in", "value": ["write", "delete", "admin"]},
+            {"field": "environment.network_zone", "operator": "in", "value": ["internal", "vpn"]}
+          ]
+        },
+        "action": "allow",
+        "fallback": "deny"
+      },
+      {
+        "id": "abac-006",
+        "name": "contractor-restrictions",
+        "description": "Limit contractor access to public and assigned resources",
+        "severity": "high",
+        "condition": {
+          "all": [
+            {"field": "subject.employment_type", "operator": "in", "value": ["contractor", "vendor"]},
+            {
+              "any": [
+                {"field": "resource.classification", "operator": "equals", "value": "public"},
+                {"field": "resource.assigned_to", "operator": "contains", "value": "{{subject.id}}"}
+              ]
+            }
+          ]
+        },
+        "action": "allow",
+        "fallback": "deny"
+      },
+      {
+        "id": "abac-007",
+        "name": "time-based-restriction",
+        "description": "Restrict sensitive operations to business hours",
+        "severity": "medium",
+        "condition": {
+          "all": [
+            {"field": "resource.classification", "operator": "in", "value": ["confidential", "restricted"]},
+            {"field": "action.type", "operator": "in", "value": ["write", "delete"]},
+            {"field": "environment.time.hour", "operator": "between", "value": [8, 18]},
+            {"field": "environment.time.day_of_week", "operator": "between", "value": [1, 5]}
+          ]
+        },
+        "action": "allow",
+        "fallback": "require_approval"
+      }
+    ],
+    "metadata": {
+      "model": "ABAC",
+      "xacml_compatible": true,
+      "supports_dynamic_attributes": true,
+      "last_reviewed": "2024-01-15",
+      "review_frequency": "quarterly"
+    }
+  }
+}

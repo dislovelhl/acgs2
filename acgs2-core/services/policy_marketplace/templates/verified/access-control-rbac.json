@@ -1,0 +1,137 @@
+{
+  "name": "Role-Based Access Control (RBAC) Policy Template",
+  "description": "Comprehensive RBAC implementation with role hierarchies, permission inheritance, and separation of duties. Suitable for enterprise applications requiring structured access management.",
+  "category": "access_control",
+  "format": "json",
+  "version": "1.0.0",
+  "author": "ACGS-2 Team",
+  "tags": ["rbac", "access-control", "authorization", "roles", "permissions"],
+  "policy": {
+    "name": "rbac-access-control",
+    "version": "1.0.0",
+    "description": "Role-Based Access Control governance policy",
+    "roles": {
+      "super_admin": {
+        "description": "Full system access with all permissions",
+        "inherits": [],
+        "permissions": ["*"]
+      },
+      "admin": {
+        "description": "Administrative access for user and resource management",
+        "inherits": ["manager"],
+        "permissions": ["users:create", "users:delete", "users:update", "roles:assign", "system:configure"]
+      },
+      "manager": {
+        "description": "Team management and reporting access",
+        "inherits": ["user"],
+        "permissions": ["users:read", "reports:generate", "team:manage", "resources:approve"]
+      },
+      "user": {
+        "description": "Standard user access",
+        "inherits": ["viewer"],
+        "permissions": ["resources:create", "resources:update", "resources:delete_own"]
+      },
+      "viewer": {
+        "description": "Read-only access",
+        "inherits": [],
+        "permissions": ["resources:read", "profile:read", "profile:update_own"]
+      },
+      "guest": {
+        "description": "Limited guest access",
+        "inherits": [],
+        "permissions": ["public:read"]
+      }
+    },
+    "rules": [
+      {
+        "id": "rbac-001",
+        "name": "role-permission-check",
+        "description": "Verify user has required permission through role assignment",
+        "severity": "critical",
+        "condition": {
+          "all": [
+            {"field": "user.authenticated", "operator": "equals", "value": true},
+            {"field": "user.roles", "operator": "has_permission", "value": "{{action.required_permission}}"}
+          ]
+        },
+        "action": "allow",
+        "fallback": "deny"
+      },
+      {
+        "id": "rbac-002",
+        "name": "separation-of-duties",
+        "description": "Enforce separation of duties for sensitive operations",
+        "severity": "high",
+        "condition": {
+          "all": [
+            {"field": "action.requires_separation", "operator": "equals", "value": true},
+            {"field": "user.id", "operator": "not_equals", "value": "{{resource.created_by}}"}
+          ]
+        },
+        "action": "allow",
+        "fallback": "deny"
+      },
+      {
+        "id": "rbac-003",
+        "name": "role-hierarchy-inheritance",
+        "description": "Evaluate permissions through role hierarchy",
+        "severity": "medium",
+        "condition": {
+          "any": [
+            {"field": "user.direct_permissions", "operator": "contains", "value": "{{action.required_permission}}"},
+            {"field": "user.inherited_permissions", "operator": "contains", "value": "{{action.required_permission}}"}
+          ]
+        },
+        "action": "allow",
+        "fallback": "deny"
+      },
+      {
+        "id": "rbac-004",
+        "name": "resource-owner-access",
+        "description": "Allow resource owners full access to their own resources",
+        "severity": "medium",
+        "condition": {
+          "all": [
+            {"field": "resource.owner_id", "operator": "equals", "value": "{{user.id}}"},
+            {"field": "action.type", "operator": "not_in", "value": ["admin_override", "system_delete"]}
+          ]
+        },
+        "action": "allow"
+      },
+      {
+        "id": "rbac-005",
+        "name": "time-based-access",
+        "description": "Restrict access based on time windows",
+        "severity": "medium",
+        "condition": {
+          "all": [
+            {"field": "action.time_restricted", "operator": "equals", "value": true},
+            {"field": "current.time", "operator": "between", "value": ["{{access_window.start}}", "{{access_window.end}}"]}
+          ]
+        },
+        "action": "allow",
+        "fallback": "deny_time_restricted"
+      },
+      {
+        "id": "rbac-006",
+        "name": "mutually-exclusive-roles",
+        "description": "Prevent assignment of conflicting roles",
+        "severity": "high",
+        "condition": {
+          "none": [
+            {"field": "user.roles", "operator": "intersects", "value": "{{role.conflicts_with}}"}
+          ]
+        },
+        "action": "allow",
+        "fallback": "deny"
+      }
+    ],
+    "metadata": {
+      "model": "RBAC1",
+      "supports_hierarchy": true,
+      "supports_constraints": true,
+      "last_reviewed": "2024-01-15",
+      "review_frequency": "quarterly"
+    }
+  }
+}

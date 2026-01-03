@@ -1,0 +1,201 @@
+{
+  "name": "API Gateway Security Policy Template",
+  "description": "Comprehensive API gateway security policy covering authentication, input validation, threat protection, and traffic management. Suitable for protecting microservices architectures.",
+  "category": "api_security",
+  "format": "json",
+  "version": "1.0.0",
+  "author": "ACGS-2 Team",
+  "tags": ["api-gateway", "security", "authentication", "validation", "threat-protection"],
+  "policy": {
+    "name": "api-gateway-security",
+    "version": "1.0.0",
+    "description": "API gateway security governance policy",
+    "authentication": {
+      "supported_methods": ["jwt", "oauth2", "api_key", "mtls"],
+      "default_method": "jwt",
+      "token_validation": {
+        "verify_signature": true,
+        "verify_expiration": true,
+        "verify_issuer": true,
+        "verify_audience": true,
+        "clock_skew_seconds": 60
+      }
+    },
+    "rules": [
+      {
+        "id": "gw-001",
+        "name": "authentication-required",
+        "description": "Require authentication for all non-public endpoints",
+        "severity": "critical",
+        "condition": {
+          "all": [
+            {"field": "endpoint.public", "operator": "equals", "value": false},
+            {
+              "any": [
+                {"field": "auth.jwt.valid", "operator": "equals", "value": true},
+                {"field": "auth.api_key.valid", "operator": "equals", "value": true},
+                {"field": "auth.oauth2.valid", "operator": "equals", "value": true}
+              ]
+            }
+          ]
+        },
+        "action": "allow",
+        "fallback": "deny_401"
+      },
+      {
+        "id": "gw-002",
+        "name": "jwt-validation",
+        "description": "Validate JWT tokens thoroughly",
+        "severity": "critical",
+        "condition": {
+          "all": [
+            {"field": "auth.type", "operator": "equals", "value": "jwt"},
+            {"field": "jwt.signature_valid", "operator": "equals", "value": true},
+            {"field": "jwt.not_expired", "operator": "equals", "value": true},
+            {"field": "jwt.issuer", "operator": "in", "value": "{{trusted_issuers}}"},
+            {"field": "jwt.audience", "operator": "contains", "value": "{{service_audience}}"}
+          ]
+        },
+        "action": "allow",
+        "fallback": "deny_401"
+      },
+      {
+        "id": "gw-003",
+        "name": "input-validation",
+        "description": "Validate all input parameters",
+        "severity": "high",
+        "condition": {
+          "all": [
+            {"field": "request.body_size", "operator": "less_than", "value": 10485760},
+            {"field": "request.content_type", "operator": "in", "value": ["application/json", "application/xml", "multipart/form-data"]},
+            {"field": "request.schema_valid", "operator": "equals", "value": true}
+          ]
+        },
+        "action": "allow",
+        "fallback": "deny_400"
+      },
+      {
+        "id": "gw-004",
+        "name": "sql-injection-protection",
+        "description": "Block SQL injection attempts",
+        "severity": "critical",
+        "condition": {
+          "any": [
+            {"field": "request.params", "operator": "matches", "value": "(?i)(union|select|insert|update|delete|drop|truncate|exec)\\s"},
+            {"field": "request.body", "operator": "matches", "value": "(?i)(--|;|'|\"\\s*or\\s*\"|\\'\\s*or\\s*\\')"}
+          ]
+        },
+        "action": "deny_403",
+        "log_level": "error",
+        "alert": true
+      },
+      {
+        "id": "gw-005",
+        "name": "xss-protection",
+        "description": "Block cross-site scripting attempts",
+        "severity": "critical",
+        "condition": {
+          "any": [
+            {"field": "request.params", "operator": "matches", "value": "<script[^>]*>"},
+            {"field": "request.body", "operator": "matches", "value": "(?i)(javascript:|on\\w+\\s*=)"}
+          ]
+        },
+        "action": "deny_403",
+        "log_level": "error",
+        "alert": true
+      },
+      {
+        "id": "gw-006",
+        "name": "path-traversal-protection",
+        "description": "Block path traversal attempts",
+        "severity": "critical",
+        "condition": {
+          "any": [
+            {"field": "request.path", "operator": "contains", "value": ".."},
+            {"field": "request.params", "operator": "matches", "value": "\\.\\./|\\.\\.\\\\"}
+          ]
+        },
+        "action": "deny_403",
+        "log_level": "error"
+      },
+      {
+        "id": "gw-007",
+        "name": "cors-policy",
+        "description": "Enforce CORS policy",
+        "severity": "high",
+        "condition": {
+          "all": [
+            {"field": "request.origin", "operator": "in", "value": "{{allowed_origins}}"}
+          ]
+        },
+        "action": "allow",
+        "headers": {
+          "Access-Control-Allow-Origin": "{{request.origin}}",
+          "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+          "Access-Control-Allow-Headers": "Authorization, Content-Type, X-Request-ID",
+          "Access-Control-Max-Age": "86400"
+        },
+        "fallback": "deny_cors"
+      },
+      {
+        "id": "gw-008",
+        "name": "security-headers",
+        "description": "Add security headers to all responses",
+        "severity": "medium",
+        "condition": {
+          "all": [
+            {"field": "response.status", "operator": "less_than", "value": 500}
+          ]
+        },
+        "action": "add_headers",
+        "headers": {
+          "X-Content-Type-Options": "nosniff",
+          "X-Frame-Options": "DENY",
+          "X-XSS-Protection": "1; mode=block",
+          "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
+          "Content-Security-Policy": "default-src 'self'",
+          "Referrer-Policy": "strict-origin-when-cross-origin"
+        }
+      },
+      {
+        "id": "gw-009",
+        "name": "request-size-limit",
+        "description": "Limit request body size",
+        "severity": "high",
+        "condition": {
+          "all": [
+            {"field": "request.body_size", "operator": "greater_than", "value": 10485760}
+          ]
+        },
+        "action": "deny_413",
+        "message": "Request body exceeds maximum allowed size of 10MB"
+      },
+      {
+        "id": "gw-010",
+        "name": "header-injection-protection",
+        "description": "Block header injection attempts",
+        "severity": "high",
+        "condition": {
+          "any": [
+            {"field": "request.headers", "operator": "contains_chars", "value": ["\r", "\n", "\0"]}
+          ]
+        },
+        "action": "deny_400",
+        "log_level": "warn"
+      }
+    ],
+    "response_handling": {
+      "hide_server_info": true,
+      "remove_headers": ["Server", "X-Powered-By", "X-AspNet-Version"],
+      "error_masking": {
+        "enabled": true,
+        "show_details_to": ["admin", "developer"]
+      }
+    },
+    "metadata": {
+      "owasp_compliance": ["A01:2021", "A02:2021", "A03:2021", "A04:2021", "A05:2021"],
+      "last_reviewed": "2024-01-15",
+      "review_frequency": "monthly"
+    }
+  }
+}

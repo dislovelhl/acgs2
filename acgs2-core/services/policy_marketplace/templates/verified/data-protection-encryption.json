@@ -1,0 +1,151 @@
+{
+  "name": "Data Encryption Policy Template",
+  "description": "Comprehensive data encryption policy covering encryption at rest, in transit, and key management. Includes standards for algorithm selection, key rotation, and secure key storage.",
+  "category": "data_protection",
+  "format": "json",
+  "version": "1.0.0",
+  "author": "ACGS-2 Team",
+  "tags": ["encryption", "data-protection", "security", "cryptography", "key-management"],
+  "policy": {
+    "name": "data-encryption",
+    "version": "1.0.0",
+    "description": "Data encryption governance policy",
+    "encryption_standards": {
+      "symmetric": {
+        "algorithms": ["AES-256-GCM", "AES-256-CBC", "ChaCha20-Poly1305"],
+        "minimum_key_length": 256,
+        "preferred": "AES-256-GCM"
+      },
+      "asymmetric": {
+        "algorithms": ["RSA-4096", "RSA-2048", "ECDSA-P384", "Ed25519"],
+        "minimum_key_length_rsa": 2048,
+        "preferred": "RSA-4096"
+      },
+      "hashing": {
+        "algorithms": ["SHA-256", "SHA-384", "SHA-512", "SHA3-256"],
+        "deprecated": ["MD5", "SHA-1"],
+        "preferred": "SHA-256"
+      }
+    },
+    "rules": [
+      {
+        "id": "enc-001",
+        "name": "encryption-at-rest",
+        "description": "All sensitive data must be encrypted at rest",
+        "severity": "critical",
+        "condition": {
+          "all": [
+            {"field": "data.classification", "operator": "in", "value": ["confidential", "restricted", "pii", "phi"]},
+            {"field": "storage.type", "operator": "in", "value": ["database", "file_system", "object_storage"]},
+            {"field": "storage.encrypted", "operator": "equals", "value": true},
+            {"field": "storage.algorithm", "operator": "in", "value": ["AES-256-GCM", "AES-256-CBC", "ChaCha20-Poly1305"]}
+          ]
+        },
+        "action": "allow",
+        "fallback": "deny"
+      },
+      {
+        "id": "enc-002",
+        "name": "encryption-in-transit",
+        "description": "All data in transit must use TLS 1.2 or higher",
+        "severity": "critical",
+        "condition": {
+          "all": [
+            {"field": "transmission.protocol", "operator": "in", "value": ["TLS1.2", "TLS1.3"]},
+            {"field": "transmission.cipher_suite", "operator": "not_in", "value": ["{{deprecated_ciphers}}"]},
+            {"field": "transmission.certificate_valid", "operator": "equals", "value": true}
+          ]
+        },
+        "action": "allow",
+        "fallback": "deny"
+      },
+      {
+        "id": "enc-003",
+        "name": "key-rotation",
+        "description": "Encryption keys must be rotated according to policy",
+        "severity": "high",
+        "condition": {
+          "all": [
+            {"field": "key.age_days", "operator": "less_than", "value": 365},
+            {"field": "key.rotation_scheduled", "operator": "equals", "value": true}
+          ]
+        },
+        "action": "allow",
+        "fallback": "require_rotation"
+      },
+      {
+        "id": "enc-004",
+        "name": "key-storage",
+        "description": "Encryption keys must be stored in approved key management systems",
+        "severity": "critical",
+        "condition": {
+          "all": [
+            {"field": "key.storage_type", "operator": "in", "value": ["hsm", "kms", "vault"]},
+            {"field": "key.access_logged", "operator": "equals", "value": true}
+          ]
+        },
+        "action": "allow",
+        "fallback": "deny"
+      },
+      {
+        "id": "enc-005",
+        "name": "deprecated-algorithm-block",
+        "description": "Block use of deprecated encryption algorithms",
+        "severity": "critical",
+        "condition": {
+          "any": [
+            {"field": "encryption.algorithm", "operator": "in", "value": ["DES", "3DES", "RC4", "MD5", "SHA-1"]},
+            {"field": "encryption.key_length", "operator": "less_than", "value": 128}
+          ]
+        },
+        "action": "deny",
+        "message": "Deprecated encryption algorithm or insufficient key length"
+      },
+      {
+        "id": "enc-006",
+        "name": "database-field-encryption",
+        "description": "Sensitive database fields must use column-level encryption",
+        "severity": "high",
+        "condition": {
+          "all": [
+            {"field": "database.field_type", "operator": "in", "value": ["ssn", "credit_card", "password", "api_key"]},
+            {"field": "database.field_encrypted", "operator": "equals", "value": true}
+          ]
+        },
+        "action": "allow",
+        "fallback": "deny"
+      },
+      {
+        "id": "enc-007",
+        "name": "backup-encryption",
+        "description": "All backups must be encrypted with separate keys",
+        "severity": "high",
+        "condition": {
+          "all": [
+            {"field": "backup.encrypted", "operator": "equals", "value": true},
+            {"field": "backup.key_id", "operator": "not_equals", "value": "{{primary_key_id}}"}
+          ]
+        },
+        "action": "allow",
+        "fallback": "deny"
+      }
+    ],
+    "key_management": {
+      "rotation_policy": {
+        "symmetric_keys": "365_days",
+        "asymmetric_keys": "730_days",
+        "session_keys": "24_hours"
+      },
+      "access_policy": {
+        "require_mfa": true,
+        "max_key_copies": 3,
+        "audit_all_access": true
+      }
+    },
+    "metadata": {
+      "compliance_frameworks": ["PCI-DSS", "SOC2", "HIPAA", "GDPR"],
+      "last_reviewed": "2024-01-15",
+      "review_frequency": "semi-annual"
+    }
+  }
+}
