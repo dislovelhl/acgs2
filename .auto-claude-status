@@ -1,25 +1,25 @@
 {
   "active": true,
-  "spec": "002-get-familiar-with-linear",
+  "spec": "053-split-large-adaptive-governance-py-into-domain-mod",
   "state": "building",
   "subtasks": {
-    "completed": 0,
-    "total": 1,
+    "completed": 16,
+    "total": 43,
     "in_progress": 1,
     "failed": 0
   },
   "phase": {
-    "current": "Complete Learning Resources",
-    "id": 1,
-    "total": 1
+    "current": "Create impact_scorer.py Module",
+    "id": null,
+    "total": 4
   },
   "workers": {
     "active": 0,
     "max": 1
   },
   "session": {
-    "number": 1,
-    "started_at": "2026-01-03T16:13:04.781362"
+    "number": 10,
+    "started_at": "2026-01-03T17:24:35.363313"
   },
-  "last_update": "2026-01-03T16:13:04.783585"
+  "last_update": "2026-01-03T17:45:42.093644"
 }
