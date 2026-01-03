@@ -383,6 +383,24 @@ class DriftDetector:
                     message=f"Insufficient current data: {cur_size} < {self.min_samples_for_drift}",
                 )
 
+            # Compute combined checksum for caching
+            combined_checksum = None
+            if self._cache_enabled:
+                ref_checksum = self._compute_deque_checksum(self._reference_data)
+                cur_checksum = self._compute_deque_checksum(self._current_data)
+                combined_checksum = hashlib.md5(
+                    f"{ref_checksum}|{cur_checksum}".encode("utf-8"),
+                    usedforsecurity=False
+                ).hexdigest()
+
+                # Check cache: if reference + current data hasn't changed, return cached result
+                if (
+                    combined_checksum == self._report_cache_checksum
+                    and self._last_report_cache is not None
+                ):
+                    logger.debug("Returning cached drift result")
+                    return self._last_report_cache
+
             try:
                 # Convert to DataFrames (with caching)
                 reference_df = self._to_dataframe(list(self._reference_data), data_source="reference")
@@ -457,6 +475,11 @@ class DriftDetector:
                 else:
                     self._consecutive_drift_count = 0
                     self._current_status = DriftStatus.NO_DRIFT
+
+                # Cache the result if caching is enabled
+                if self._cache_enabled and combined_checksum is not None:
+                    self._last_report_cache = result
+                    self._report_cache_checksum = combined_checksum
 
                 return result
 
