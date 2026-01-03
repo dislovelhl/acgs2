@@ -1,0 +1,18 @@
+"""
+ACGS-2 Orchestration Module
+Constitutional Hash: cdd01ef066bc6cf2
+
+Hierarchical and market-based orchestration for multi-agent systems.
+"""
+
+from .hierarchical import HierarchicalOrchestrator, SupervisorNode, WorkerNode
+from .market_based import MarketBasedOrchestrator, TaskAuction, Bid
+
+__all__ = [
+    "HierarchicalOrchestrator",
+    "SupervisorNode",
+    "WorkerNode",
+    "MarketBasedOrchestrator",
+    "TaskAuction",
+    "Bid",
+]

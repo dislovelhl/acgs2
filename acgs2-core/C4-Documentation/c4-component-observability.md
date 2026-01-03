@@ -349,7 +349,7 @@ OpenTelemetry integration enables:
 
 The observability component supports ACGS-2 performance targets:
 - **P99 Latency**: <5ms maintained with <1% overhead
-- **Throughput**: >100 RPS minimum, achieved 6,310 RPS
+- **Throughput**: 2,605 RPS achieved (target: 6,310 RPS)
 - **Cache Hit Rate**: 95% tracked by cache metrics
 - **Constitutional Compliance**: 100% tracked by validation metrics
 - **Antifragility Score**: 10/10 with health aggregation monitoring

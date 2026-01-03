@@ -15,6 +15,8 @@ import {
   ListToolsRequestSchema,
   CallToolRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
+import config from "./config/index.js";
+import logger from "./utils/logger.js";
 import { NeuralDomainMapper } from "./neural/NeuralDomainMapper.js";
 
 // Initialize the Neural Domain Mapper
@@ -202,54 +204,169 @@ const ENHANCED_AGENT_BUS_DOMAINS = [
 
 const ENHANCED_AGENT_BUS_RELATIONSHIPS = [
   // Core dependencies
-  { source: "agent_bus_core", target: "models", type: "dependency" as const, weight: 1.0 },
-  { source: "agent_bus_core", target: "registry", type: "dependency" as const, weight: 0.9 },
-  { source: "agent_bus_core", target: "validators", type: "dependency" as const, weight: 0.9 },
+  {
+    source: "agent_bus_core",
+    target: "models",
+    type: "dependency" as const,
+    weight: 1.0,
+  },
+  {
+    source: "agent_bus_core",
+    target: "registry",
+    type: "dependency" as const,
+    weight: 0.9,
+  },
+  {
+    source: "agent_bus_core",
+    target: "validators",
+    type: "dependency" as const,
+    weight: 0.9,
+  },
 
   // Deliberation layer
-  { source: "deliberation_layer", target: "agent_bus_core", type: "dependency" as const, weight: 1.0 },
-  { source: "deliberation_layer", target: "llm_assistant", type: "communication" as const, weight: 0.8 },
-  { source: "deliberation_layer", target: "impact_scorer", type: "data-flow" as const, weight: 0.85 },
+  {
+    source: "deliberation_layer",
+    target: "agent_bus_core",
+    type: "dependency" as const,
+    weight: 1.0,
+  },
+  {
+    source: "deliberation_layer",
+    target: "llm_assistant",
+    type: "communication" as const,
+    weight: 0.8,
+  },
+  {
+    source: "deliberation_layer",
+    target: "impact_scorer",
+    type: "data-flow" as const,
+    weight: 0.85,
+  },
 
   // Policy and OPA
-  { source: "policy_client", target: "opa_client", type: "dependency" as const, weight: 1.0 },
-  { source: "policy_client", target: "models", type: "dependency" as const, weight: 0.7 },
-  { source: "opa_client", target: "models", type: "dependency" as const, weight: 0.6 },
+  {
+    source: "policy_client",
+    target: "opa_client",
+    type: "dependency" as const,
+    weight: 1.0,
+  },
+  {
+    source: "policy_client",
+    target: "models",
+    type: "dependency" as const,
+    weight: 0.7,
+  },
+  {
+    source: "opa_client",
+    target: "models",
+    type: "dependency" as const,
+    weight: 0.6,
+  },
 
   // Audit
-  { source: "audit_client", target: "models", type: "dependency" as const, weight: 0.8 },
-  { source: "audit_client", target: "telemetry", type: "data-flow" as const, weight: 0.9 },
+  {
+    source: "audit_client",
+    target: "models",
+    type: "dependency" as const,
+    weight: 0.8,
+  },
+  {
+    source: "audit_client",
+    target: "telemetry",
+    type: "data-flow" as const,
+    weight: 0.9,
+  },
 
   // Health and Recovery
-  { source: "health_aggregator", target: "circuit_breaker", type: "dependency" as const, weight: 1.0 },
-  { source: "recovery_orchestrator", target: "health_aggregator", type: "dependency" as const, weight: 1.0 },
-  { source: "recovery_orchestrator", target: "circuit_breaker", type: "dependency" as const, weight: 0.9 },
+  {
+    source: "health_aggregator",
+    target: "circuit_breaker",
+    type: "dependency" as const,
+    weight: 1.0,
+  },
+  {
+    source: "recovery_orchestrator",
+    target: "health_aggregator",
+    type: "dependency" as const,
+    weight: 1.0,
+  },
+  {
+    source: "recovery_orchestrator",
+    target: "circuit_breaker",
+    type: "dependency" as const,
+    weight: 0.9,
+  },
 
   // Metering
-  { source: "metering_integration", target: "telemetry", type: "data-flow" as const, weight: 0.95 },
+  {
+    source: "metering_integration",
+    target: "telemetry",
+    type: "data-flow" as const,
+    weight: 0.95,
+  },
 
   // Chaos testing
-  { source: "chaos_testing", target: "agent_bus_core", type: "dependency" as const, weight: 0.7 },
+  {
+    source: "chaos_testing",
+    target: "agent_bus_core",
+    type: "dependency" as const,
+    weight: 0.7,
+  },
 
   // Registry and Validators
-  { source: "registry", target: "models", type: "dependency" as const, weight: 0.8 },
-  { source: "validators", target: "models", type: "dependency" as const, weight: 0.9 },
+  {
+    source: "registry",
+    target: "models",
+    type: "dependency" as const,
+    weight: 0.8,
+  },
+  {
+    source: "validators",
+    target: "models",
+    type: "dependency" as const,
+    weight: 0.9,
+  },
 
   // LLM and Impact
-  { source: "llm_assistant", target: "models", type: "dependency" as const, weight: 0.7 },
-  { source: "impact_scorer", target: "models", type: "dependency" as const, weight: 0.6 },
+  {
+    source: "llm_assistant",
+    target: "models",
+    type: "dependency" as const,
+    weight: 0.7,
+  },
+  {
+    source: "impact_scorer",
+    target: "models",
+    type: "dependency" as const,
+    weight: 0.6,
+  },
 
   // Cross-domain communications
-  { source: "agent_bus_core", target: "policy_client", type: "communication" as const, weight: 0.85 },
-  { source: "agent_bus_core", target: "audit_client", type: "data-flow" as const, weight: 0.8 },
-  { source: "agent_bus_core", target: "deliberation_layer", type: "communication" as const, weight: 0.9 },
+  {
+    source: "agent_bus_core",
+    target: "policy_client",
+    type: "communication" as const,
+    weight: 0.85,
+  },
+  {
+    source: "agent_bus_core",
+    target: "audit_client",
+    type: "data-flow" as const,
+    weight: 0.8,
+  },
+  {
+    source: "agent_bus_core",
+    target: "deliberation_layer",
+    type: "communication" as const,
+    weight: 0.9,
+  },
 ];
 
 // Create the MCP server
 const server = new Server(
   {
-    name: "acgs2-neural-mcp",
-    version: "2.0.0",
+    name: config.MCP_NAME,
+    version: config.MCP_VERSION,
   },
   {
     capabilities: {
@@ -278,7 +395,8 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             },
             domains: {
               type: "array",
-              description: "Custom domain definitions (optional if using preset)",
+              description:
+                "Custom domain definitions (optional if using preset)",
               items: {
                 type: "object",
                 properties: {
@@ -286,7 +404,15 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
                   name: { type: "string" },
                   type: {
                     type: "string",
-                    enum: ["functional", "technical", "business", "integration", "data", "ui", "api"],
+                    enum: [
+                      "functional",
+                      "technical",
+                      "business",
+                      "integration",
+                      "data",
+                      "ui",
+                      "api",
+                    ],
                   },
                   metadata: { type: "object" },
                 },
@@ -295,7 +421,8 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             },
             relationships: {
               type: "array",
-              description: "Custom relationship definitions (optional if using preset)",
+              description:
+                "Custom relationship definitions (optional if using preset)",
               items: {
                 type: "object",
                 properties: {
@@ -303,7 +430,14 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
                   target: { type: "string" },
                   type: {
                     type: "string",
-                    enum: ["dependency", "communication", "data-flow", "inheritance", "composition", "aggregation"],
+                    enum: [
+                      "dependency",
+                      "communication",
+                      "data-flow",
+                      "inheritance",
+                      "composition",
+                      "aggregation",
+                    ],
                   },
                   weight: { type: "number" },
                 },
@@ -322,11 +456,11 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           properties: {
             epochs: {
               type: "number",
-              description: "Number of training epochs (default: 100)",
+              description: `Number of training epochs (default: ${config.NEURAL_EPOCHS})`,
             },
             learningRate: {
               type: "number",
-              description: "Learning rate (default: 0.001)",
+              description: `Learning rate (default: ${config.NEURAL_LEARNING_RATE})`,
             },
           },
         },
@@ -396,13 +530,26 @@ interface LoadDomainsArgs {
   domains?: Array<{
     id: string;
     name: string;
-    type: "functional" | "technical" | "business" | "integration" | "data" | "ui" | "api";
+    type:
+      | "functional"
+      | "technical"
+      | "business"
+      | "integration"
+      | "data"
+      | "ui"
+      | "api";
     metadata?: DomainMetadata;
   }>;
   relationships?: Array<{
     source: string;
     target: string;
-    type: "dependency" | "communication" | "data-flow" | "inheritance" | "composition" | "aggregation";
+    type:
+      | "dependency"
+      | "communication"
+      | "data-flow"
+      | "inheritance"
+      | "composition"
+      | "aggregation";
     weight?: number;
     metadata?: RelationshipMetadata;
   }>;
@@ -431,9 +578,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         relationships = ENHANCED_AGENT_BUS_RELATIONSHIPS;
       } else if (typedArgs.domains && typedArgs.relationships) {
         domains = typedArgs.domains as typeof ENHANCED_AGENT_BUS_DOMAINS;
-        relationships = typedArgs.relationships as typeof ENHANCED_AGENT_BUS_RELATIONSHIPS;
+        relationships =
+          typedArgs.relationships as typeof ENHANCED_AGENT_BUS_RELATIONSHIPS;
       } else {
-        throw new Error("Either specify preset='enhanced_agent_bus' or provide custom domains and relationships");
+        throw new Error(
+          "Either specify preset='enhanced_agent_bus' or provide custom domains and relationships"
+        );
       }
 
       const graph = mapper.convertToGraph(domains, relationships);
@@ -449,7 +599,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                   nodes: graph.metadata.totalNodes,
                   edges: graph.metadata.totalEdges,
                 },
-                domains: domains.map((d) => ({ id: d.id, name: d.name, type: d.type })),
+                domains: domains.map((d) => ({
+                  id: d.id,
+                  name: d.name,
+                  type: d.type,
+                })),
                 preset: typedArgs.preset || "custom",
               },
               null,
@@ -472,7 +626,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
               text: JSON.stringify(
                 {
                   status: "Error: No domains loaded",
-                  message: "Please load domains first using neural_load_domains with preset='enhanced_agent_bus'",
+                  message:
+                    "Please load domains first using neural_load_domains with preset='enhanced_agent_bus'",
                 },
                 null,
                 2
@@ -514,7 +669,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       try {
         const result = await mapper.train(trainingData, validationData);
-        const lastEpoch = result.trainingHistory[result.trainingHistory.length - 1];
+        const lastEpoch =
+          result.trainingHistory[result.trainingHistory.length - 1];
 
         return {
           content: [
@@ -523,8 +679,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
               text: JSON.stringify(
                 {
                   status: "Training completed",
-                  epochs: typedArgs.epochs || 100,
-                  learningRate: typedArgs.learningRate || 0.001,
+                  epochs: typedArgs.epochs || config.NEURAL_EPOCHS,
+                  learningRate:
+                    typedArgs.learningRate || config.NEURAL_LEARNING_RATE,
                   result: {
                     finalAccuracy: result.finalAccuracy,
                     finalLoss: lastEpoch?.loss ?? 0,
@@ -541,8 +698,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         };
       } catch (trainError: unknown) {
         // Fallback to simulation if actual training fails
-        const errorMessage = trainError instanceof Error ? trainError.message : String(trainError);
-        console.error("Training error:", errorMessage);
+        const errorMessage =
+          trainError instanceof Error ? trainError.message : String(trainError);
+        logger.error({ error: errorMessage }, "Training error");
         return {
           content: [
             {
@@ -550,8 +708,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
               text: JSON.stringify(
                 {
                   status: "Training completed (simulation mode)",
-                  epochs: typedArgs.epochs || 100,
-                  learningRate: typedArgs.learningRate || 0.001,
+                  epochs: typedArgs.epochs || config.NEURAL_EPOCHS,
+                  learningRate:
+                    typedArgs.learningRate || config.NEURAL_LEARNING_RATE,
                   result: {
                     finalAccuracy: 0.85 + Math.random() * 0.1,
                     finalLoss: 0.1 + Math.random() * 0.05,
@@ -635,10 +794,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  console.error("Neural MCP Server v2.0.0 running on stdio");
+  logger.info(`${config.MCP_NAME} v${config.MCP_VERSION} running on stdio`);
 }
 
 main().catch((error) => {
-  console.error("Fatal error in main():", error);
+  logger.error({ error }, "Fatal error in Neural MCP Server");
   process.exit(1);
 });

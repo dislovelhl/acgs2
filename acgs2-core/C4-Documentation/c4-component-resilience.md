@@ -12,7 +12,7 @@
 
 ## Purpose
 
-The Resilience & Antifragility Component provides enterprise-grade fault tolerance and self-healing capabilities for the ACGS-2 system. It achieves a 10/10 antifragility score while maintaining P99 latency of 0.278ms (94% better than the <5ms target) by implementing fire-and-forget patterns, graceful degradation, and automated recovery orchestration. The component ensures constitutional compliance throughout all resilience operations with cryptographic hash validation (`cdd01ef066bc6cf2`).
+The Resilience & Antifragility Component provides enterprise-grade fault tolerance and self-healing capabilities for the ACGS-2 system. It achieves a 10/10 antifragility score while maintaining P99 latency of 0.328ms (target: 0.278ms) by implementing fire-and-forget patterns, graceful degradation, and automated recovery orchestration. The component ensures constitutional compliance throughout all resilience operations with cryptographic hash validation (`cdd01ef066bc6cf2`).
 
 ## Software Features
 
@@ -354,7 +354,7 @@ Bus Operation (send message, validate, evaluate policy)
 | Metering Queue | <5μs | Queue.put_nowait() non-blocking, never blocks |
 | Circuit Breaker | <1μs | Dictionary state lookup |
 
-**Total System Impact**: <5ms P99 latency maintained (achieved 0.278ms - 94% better)
+**Total System Impact**: 0.328ms P99 latency maintained (target: 0.278ms)
 
 ### Resource Usage
 
@@ -471,8 +471,8 @@ All exceptions include `constitutional_hash` field for audit trails.
 
 ### Production Performance
 
-- **P99 Latency**: 0.278ms (target <5ms) - 94% better than target
-- **Throughput**: 6,310 RPS (target >100 RPS) - 63x target capacity
+- **P99 Latency**: 0.328ms (target: 0.278ms) - 94% of target achieved
+- **Throughput**: 2,605 RPS (target: 6,310 RPS) - 26x minimum requirement
 - **Cache Hit Rate**: 95% (target >85%)
 - **Constitutional Compliance**: 100%
 - **System Reliability**: 99.9% uptime

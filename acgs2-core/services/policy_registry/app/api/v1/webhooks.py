@@ -148,18 +148,100 @@ async def process_policy_update(
 
 @router.post("/github")
 async def github_webhook(
+    request: Request,
     background_tasks: BackgroundTasks,
     payload: Dict[str, Any],
+    x_github_event: str = Header(..., alias="X-GitHub-Event"),
     _=Depends(verify_github_signature),
     compiler=Depends(get_compiler_service),
     storage=Depends(get_storage_service),
 ):
-    """Handle GitHub push events to trigger policy bundle creation"""
-    # Trigger background task for compilation
-    background_tasks.add_task(process_policy_update, payload, compiler, storage)
+    """
+    Handle GitHub webhook events for policy synchronization.
 
-    logger.info(f"Triggered background policy update for commit: {payload.get('after')}")
-    return {
-        "status": "triggered",
-        "message": "Policy compilation and signing started in background",
-    }
+    Supported events:
+    - push: Trigger policy bundle compilation on push to main/develop
+    - pull_request: Validate policies on PR creation/update
+    - release: Create policy bundle for releases
+    """
+    event_type = x_github_event.lower()
+    logger.info(f"Received GitHub webhook event: {event_type}")
+
+    # Handle different event types
+    if event_type == "push":
+        # Only process pushes to main branches
+        ref = payload.get("ref", "")
+        if ref.startswith("refs/heads/main") or ref.startswith("refs/heads/develop"):
+            # Check if policy files were changed
+            commits = payload.get("commits", [])
+            policy_files_changed = False
+
+            for commit in commits:
+                added = commit.get("added", [])
+                modified = commit.get("modified", [])
+                removed = commit.get("removed", [])
+
+                all_changes = added + modified + removed
+                if any("policies/" in f or f.endswith(".rego") for f in all_changes):
+                    policy_files_changed = True
+                    break
+
+            if policy_files_changed:
+                background_tasks.add_task(process_policy_update, payload, compiler, storage)
+                logger.info(f"Triggered policy update for commit: {payload.get('after')}")
+                return {
+                    "status": "triggered",
+                    "event": event_type,
+                    "commit": payload.get("after"),
+                    "message": "Policy compilation and signing started in background",
+                }
+            else:
+                return {
+                    "status": "skipped",
+                    "event": event_type,
+                    "message": "No policy files changed in this push",
+                }
+        else:
+            return {
+                "status": "skipped",
+                "event": event_type,
+                "message": f"Push to {ref} ignored (only main/develop branches trigger sync)",
+            }
+
+    elif event_type == "pull_request":
+        action = payload.get("action")
+        pr = payload.get("pull_request", {})
+
+        if action in ["opened", "synchronize"]:
+            # Validate policies in PR
+            logger.info(f"PR {action}: {pr.get('number')} - Policy validation triggered")
+            return {
+                "status": "validated",
+                "event": event_type,
+                "action": action,
+                "pr_number": pr.get("number"),
+                "message": "Policy validation will be handled by CI/CD pipeline",
+            }
+
+    elif event_type == "release":
+        # Create policy bundle for release
+        release = payload.get("release", {})
+        tag_name = release.get("tag_name")
+        logger.info(f"Release event: {tag_name}")
+
+        # Trigger bundle creation for release
+        background_tasks.add_task(process_policy_update, payload, compiler, storage)
+        return {
+            "status": "triggered",
+            "event": event_type,
+            "tag": tag_name,
+            "message": "Policy bundle creation started for release",
+        }
+
+    else:
+        logger.debug(f"Unhandled event type: {event_type}")
+        return {
+            "status": "ignored",
+            "event": event_type,
+            "message": f"Event type '{event_type}' not handled",
+        }

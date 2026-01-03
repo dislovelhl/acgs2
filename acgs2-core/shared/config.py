@@ -547,3 +547,8 @@ else:
 def get_settings() -> Settings:
     """Get cached application settings singleton."""
     return Settings()
+
+
+# Singleton instance for backwards compatibility
+# Use get_settings() for dependency injection patterns
+settings = get_settings()
