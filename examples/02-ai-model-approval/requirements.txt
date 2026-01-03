@@ -1,0 +1,13 @@
+# ACGS-2 Example 02: AI Model Approval Workflow Dependencies
+# Updated: 2026-01-02
+# Constitutional Hash: cdd01ef066bc6cf2
+
+# HTTP client for OPA queries
+requests>=2.31.0
+
+# FastAPI for approval workflow API (optional - for app.py)
+fastapi[standard]>=0.104.0
+uvicorn[standard]>=0.24.0
+
+# Data validation
+pydantic>=2.5.0

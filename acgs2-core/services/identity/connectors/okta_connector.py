@@ -333,14 +333,14 @@ class OktaOIDCConnector:
                     "verify_nbf": True,
                 },
             )
-        except jwt.ExpiredSignatureError:
-            raise OktaAuthError("ID token has expired")
-        except jwt.InvalidAudienceError:
-            raise OktaAuthError("Invalid token audience")
-        except jwt.InvalidIssuerError:
-            raise OktaAuthError("Invalid token issuer")
+        except jwt.ExpiredSignatureError as e:
+            raise OktaAuthError("ID token has expired") from e
+        except jwt.InvalidAudienceError as e:
+            raise OktaAuthError("Invalid token audience") from e
+        except jwt.InvalidIssuerError as e:
+            raise OktaAuthError("Invalid token issuer") from e
         except Exception as e:
-            raise OktaAuthError(f"Token validation failed: {e}")
+            raise OktaAuthError(f"Token validation failed: {e}") from e
 
         # Validate nonce
         if claims.get("nonce") != expected_nonce:

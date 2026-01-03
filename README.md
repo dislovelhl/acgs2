@@ -157,7 +157,9 @@ Available in [`acgs2-core/C4-Documentation/`](./acgs2-core/C4-Documentation/) (6
 - **Python 3.11+** for development
 - **Terraform 1.5+** for infrastructure (optional)
 
-### Quick Start Options
+### Quickstart
+
+Get up and running with ACGS-2 in minutes. Choose the quickstart option that best fits your environment:
 
 #### Option 1: Kubernetes Production Deployment (Recommended)
 

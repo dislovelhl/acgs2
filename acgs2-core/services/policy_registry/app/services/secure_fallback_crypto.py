@@ -177,12 +177,12 @@ class EncryptedPayload:
         try:
             version = int(version_str[1:])
         except ValueError:
-            raise CiphertextFormatError(f"Invalid version number: '{version_str}'")
+            raise CiphertextFormatError(f"Invalid version number: '{version_str}'") from e
 
         try:
             combined = base64.b64decode(encoded)
         except Exception as e:
-            raise CiphertextFormatError(f"Base64 decode failed: {e}")
+            raise CiphertextFormatError(f"Base64 decode failed: {e}") from e
 
         # Extract components (salt: 32 bytes, nonce: 12 bytes, rest is ciphertext+tag)
         if len(combined) < 32 + 12 + 16:  # Minimum size
@@ -311,7 +311,7 @@ class SecureFallbackCrypto:
             derived_key = kdf.derive(key_material)
             return derived_key
         except Exception as e:
-            raise KeyDerivationError(f"Key derivation failed: {e}")
+            raise KeyDerivationError(f"Key derivation failed: {e}") from e
 
     def encrypt(
         self,
@@ -397,7 +397,7 @@ class SecureFallbackCrypto:
                     success=False,
                     error=error_msg,
                 )
-            raise EncryptionError(error_msg)
+            raise EncryptionError(error_msg) from e
 
     def decrypt(
         self,
@@ -479,7 +479,7 @@ class SecureFallbackCrypto:
                 raise DecryptionError(
                     "Decryption failed: authentication error (data may be tampered)"
                 )
-            raise DecryptionError(error_msg)
+            raise DecryptionError(error_msg) from e
 
     def _log_audit(
         self,

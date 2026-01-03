@@ -1,19 +1,13 @@
-import logging
-from typing import Any
-
-logger = logging.getLogger(__name__)
-
-
 """
 ACGS Code Analysis Engine - Cache Service
 Redis integration with constitutional compliance and performance optimization.
 """
 
-# Constitutional Hash: cdd01ef066bc6cf2
 import hashlib
 import json
 import time
 from datetime import datetime, timezone
+from typing import Any
 
 import redis.asyncio as redis
 from app.utils.constitutional import (
@@ -25,6 +19,7 @@ from app.utils.logging import get_logger, performance_logger
 logger = get_logger("services.cache")
 
 
+# Constitutional Hash: cdd01ef066bc6cf2
 class CacheService:
     """Cache service for ACGS Code Analysis Engine with constitutional compliance.
 

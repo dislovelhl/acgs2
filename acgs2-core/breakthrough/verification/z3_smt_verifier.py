@@ -373,7 +373,9 @@ class Z3PolicyVerifier:
 
             # Evaluate in context (controlled Z3 expression building)
             try:
-                return eval(expr_str, {"variables": variables, "And": And, "Or": Or, "Not": Not})  # nosec B307
+                return eval(
+                    expr_str, {"variables": variables, "And": And, "Or": Or, "Not": Not}
+                )  # nosec B307
             except (NameError, SyntaxError, TypeError):
                 # Fallback to simple boolean
                 return BoolVal(True)

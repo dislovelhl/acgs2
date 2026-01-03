@@ -211,7 +211,7 @@ class OTelCollectorService:
             logger.info("OTel configuration validated successfully")
 
         except Exception as e:
-            raise ValueError(f"Invalid OTel configuration: {e}")
+            raise ValueError(f"Invalid OTel configuration: {e}") from e
 
     def _get_collector_env(self) -> Dict[str, str]:
         """Get environment variables for OTel collector."""

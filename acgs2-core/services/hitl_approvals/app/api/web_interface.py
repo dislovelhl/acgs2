@@ -53,7 +53,7 @@ async def approval_page(request: Request, request_id: str):
         raise
     except Exception as e:
         logger.error(f"Error displaying approval page: {e}")
-        raise HTTPException(status_code=500, detail="Failed to load approval page")
+        raise HTTPException(status_code=500, detail="Failed to load approval page") from e
 
 
 @router.post("/approve/{request_id}")
@@ -84,7 +84,7 @@ async def submit_approval(
 
     except Exception as e:
         logger.error(f"Error submitting approval: {e}")
-        raise HTTPException(status_code=500, detail="Failed to submit approval")
+        raise HTTPException(status_code=500, detail="Failed to submit approval") from e
 
 
 @router.get("/approve/{request_id}/success", response_class=HTMLResponse)
@@ -133,4 +133,4 @@ async def approvals_dashboard(request: Request, tenant_id: Optional[str] = None)
 
     except Exception as e:
         logger.error(f"Error loading dashboard: {e}")
-        raise HTTPException(status_code=500, detail="Failed to load dashboard")
+        raise HTTPException(status_code=500, detail="Failed to load dashboard") from e

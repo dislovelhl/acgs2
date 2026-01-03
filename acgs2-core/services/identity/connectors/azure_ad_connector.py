@@ -621,14 +621,14 @@ class AzureADOIDCConnector:
                     "verify_nbf": True,
                 },
             )
-        except jwt.ExpiredSignatureError:
-            raise AzureADAuthError("ID token has expired")
-        except jwt.InvalidAudienceError:
-            raise AzureADAuthError("Invalid token audience")
-        except jwt.InvalidIssuerError:
-            raise AzureADAuthError("Invalid token issuer")
+        except jwt.ExpiredSignatureError as e:
+            raise AzureADAuthError("ID token has expired") from e
+        except jwt.InvalidAudienceError as e:
+            raise AzureADAuthError("Invalid token audience") from e
+        except jwt.InvalidIssuerError as e:
+            raise AzureADAuthError("Invalid token issuer") from e
         except Exception as e:
-            raise AzureADAuthError(f"Token validation failed: {e}")
+            raise AzureADAuthError(f"Token validation failed: {e}") from e
 
         # Validate nonce
         if claims.get("nonce") != expected_nonce:

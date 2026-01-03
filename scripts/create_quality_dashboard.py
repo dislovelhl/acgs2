@@ -188,9 +188,7 @@ class QualityDashboardGenerator:
                         "color": (
                             "green"
                             if quality_score > 80
-                            else "orange"
-                            if quality_score > 60
-                            else "red"
+                            else "orange" if quality_score > 60 else "red"
                         )
                     },
                     "steps": [

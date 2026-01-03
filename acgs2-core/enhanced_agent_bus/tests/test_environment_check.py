@@ -105,9 +105,9 @@ async def test_basic_message_flow():
 
     assert result.is_valid, f"Expected valid result, got errors: {result.errors}"
     # Compare by value to avoid enum identity issues from module aliasing
-    assert message.status.value == MessageStatus.DELIVERED.value, (
-        f"Expected DELIVERED, got {message.status}"
-    )
+    assert (
+        message.status.value == MessageStatus.DELIVERED.value
+    ), f"Expected DELIVERED, got {message.status}"
 
     logger.info("✓ Message processed successfully")
     logger.info(f"✓ Final status: {message.status}")

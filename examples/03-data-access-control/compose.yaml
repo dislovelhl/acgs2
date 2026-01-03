@@ -1,0 +1,55 @@
+# ACGS-2 Example 03: Data Access Control
+# RBAC and ABAC policies for data governance
+# Constitutional Hash: cdd01ef066bc6cf2
+#
+# Usage: docker compose up -d
+#
+# This example demonstrates role-based and attribute-based
+# access control policies. For the full ACGS-2 stack, use the root compose.yaml.
+
+services:
+  # Open Policy Agent for policy decisions
+  opa:
+    image: openpolicyagent/opa:latest
+    command: run --server --log-level info --addr 0.0.0.0:8181 /policies
+    ports:
+      - "${OPA_PORT:-8181}:8181"
+    volumes:
+      - ./policies:/policies:ro
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8181/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    networks:
+      - example-network
+    restart: unless-stopped
+
+networks:
+  example-network:
+    driver: bridge
+
+# =============================================================================
+# Quick Reference
+# =============================================================================
+#
+# Start OPA:
+#   docker compose up -d
+#
+# Check health:
+#   curl http://localhost:8181/health
+#
+# Query RBAC policy:
+#   curl -X POST http://localhost:8181/v1/data/data/access/allow \
+#     -H "Content-Type: application/json" \
+#     -d '{"input": {"user": {"role": "analyst"}, "resource": {"sensitivity": "internal"}}}'
+#
+# View logs:
+#   docker compose logs -f opa
+#
+# Stop OPA:
+#   docker compose down
+#
+# Port conflict? Use: OPA_PORT=8183 docker compose up -d
+# =============================================================================

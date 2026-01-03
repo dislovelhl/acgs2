@@ -117,10 +117,10 @@ def verify_token(token: str) -> UserClaims:
 
     except JWTError as e:
         logger.warning("JWT verification failed", error=str(e))
-        raise HTTPException(status_code=401, detail="Invalid authentication token")
+        raise HTTPException(status_code=401, detail="Invalid authentication token") from e
     except Exception as e:
         logger.error("Token verification error", error=str(e))
-        raise HTTPException(status_code=401, detail="Authentication failed")
+        raise HTTPException(status_code=401, detail="Authentication failed") from e
 
 
 async def get_current_user(

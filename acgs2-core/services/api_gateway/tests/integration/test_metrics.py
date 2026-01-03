@@ -31,9 +31,9 @@ class TestMetricsIntegration:
 
         # At minimum should have some Prometheus format content
         has_prometheus_format = any(indicator in content for indicator in prometheus_indicators)
-        assert has_prometheus_format, (
-            f"Response doesn't contain expected Prometheus format: {content[:200]}"
-        )
+        assert (
+            has_prometheus_format
+        ), f"Response doesn't contain expected Prometheus format: {content[:200]}"
 
     def test_metrics_include_service_info(self, client):
         """Test that metrics include service information."""

@@ -20,9 +20,8 @@ from fastapi import BackgroundTasks, FastAPI, Header, HTTPException, Request, st
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, ORJSONResponse
 from pydantic import BaseModel, Field, field_validator
-from starlette.middleware.gzip import GZipMiddleware
-
 from shared.metrics_middleware import instrument_app
+from starlette.middleware.gzip import GZipMiddleware
 
 # Configure structured logging
 logging.basicConfig(

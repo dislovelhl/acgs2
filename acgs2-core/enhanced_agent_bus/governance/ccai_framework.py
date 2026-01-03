@@ -396,15 +396,15 @@ class PolisDeliberationEngine:
         return {
             "total_clusters": total_clusters,
             "high_consensus_clusters": high_consensus_clusters,
-            "consensus_ratio": high_consensus_clusters / total_clusters
-            if total_clusters > 0
-            else 0,
-            "average_cross_group_consensus": statistics.mean([c.consensus_score for c in clusters])
-            if clusters
-            else 0,
-            "polarization_risk": "low"
-            if high_consensus_clusters > total_clusters * 0.5
-            else "high",
+            "consensus_ratio": (
+                high_consensus_clusters / total_clusters if total_clusters > 0 else 0
+            ),
+            "average_cross_group_consensus": (
+                statistics.mean([c.consensus_score for c in clusters]) if clusters else 0
+            ),
+            "polarization_risk": (
+                "low" if high_consensus_clusters > total_clusters * 0.5 else "high"
+            ),
         }
 
 

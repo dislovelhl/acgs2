@@ -59,7 +59,7 @@ async def create_approval_request(
         )
         return approval_request
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 
 @router.get("/{request_id}", response_model=ApprovalRequestSchema)
@@ -96,7 +96,7 @@ async def submit_decision(
         )
         return updated_request
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 
 @router.get("/", response_model=List[ApprovalRequestSchema])

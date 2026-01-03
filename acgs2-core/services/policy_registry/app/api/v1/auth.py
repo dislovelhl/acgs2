@@ -74,7 +74,7 @@ async def get_current_user(
         payload = crypto_service.verify_agent_token(token, public_key_b64)
         return payload
     except Exception as e:
-        raise HTTPException(status_code=401, detail=f"Invalid authentication: {e}")
+        raise HTTPException(status_code=401, detail=f"Invalid authentication: {e}") from e
 
 
 def check_role(allowed_roles: List[str], action: str = "manage", resource: str = "policy"):
