@@ -1,5 +1,6 @@
 import pytest
-from services.audit_service.core.audit_ledger import AuditLedger, ValidationResult
+from services.audit_service.core.audit_ledger import AuditLedger, ValidationResult, AuditLedgerConfig
+from unittest.mock import patch, MagicMock
 
 
 @pytest.fixture
@@ -7,14 +8,19 @@ async def ledger(tmp_path):
     """AuditLedger fixture with unique storage path to avoid state pollution"""
     storage_path = tmp_path / "test_ledger.json"
 
-    # Create AuditLedger with test-specific persistence file
-    # Blockchain anchoring is handled internally via _anchor_manager or _legacy_anchor
-    l = AuditLedger(batch_size=3)
-    l.persistence_file = str(storage_path)
+    # Disable Redis for unit tests to ensure isolation
+    config = AuditLedgerConfig(
+        batch_size=3,
+        redis_url=None,
+        enable_blockchain_anchoring=False,
+        persistence_file=str(storage_path)
+    )
 
-    await l.start()
-    yield l
-    await l.stop()
+    with patch("redis.from_url", side_effect=Exception("Redis disabled for tests")):
+        l = AuditLedger(config=config)
+        await l.start()
+        yield l
+        await l.stop()
 
 
 @pytest.mark.asyncio

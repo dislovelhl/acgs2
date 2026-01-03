@@ -431,34 +431,34 @@ async def main():
         json.dump(report, f, indent=2, default=str)
 
     # Print summary
-    print("\n" + "=" * 80)
-    print("ACGS-2 PERFORMANCE BENCHMARK RESULTS")
-    print("=" * 80)
-    print(f"Constitutional Hash: {report['constitutional_hash']}")
-    print(f"Timestamp: {report['timestamp']}")
-    print(f"Overall Result: {'PASSED' if report['summary']['overall_passed'] else 'FAILED'}")
-    print(f"Tests Passed: {report['summary']['passed_tests']}/{report['summary']['total_tests']}")
-    print()
+    logger.info("\n" + "=" * 80)
+    logger.info("ACGS-2 PERFORMANCE BENCHMARK RESULTS")
+    logger.info("=" * 80)
+    logger.info(f"Constitutional Hash: {report['constitutional_hash']}")
+    logger.info(f"Timestamp: {report['timestamp']}")
+    logger.error(f"Overall Result: {'PASSED' if report['summary']['overall_passed'] else 'FAILED'}")
+    logger.info(f"Tests Passed: {report['summary']['passed_tests']}/{report['summary']['total_tests']}")
+    logger.info("")
 
-    print("DETAILED RESULTS:")
+    logger.debug("DETAILED RESULTS:")
     for result in report["results"]:
         status = "✅ PASS" if result["passed"] else "❌ FAIL"
-        print(
+        logger.info(
             f"  {result['metric']}: {result['actual']:.3f} (target: {result['target']:.3f}) {status}"
         )
 
-    print()
-    print("RECOMMENDATIONS:")
+    logger.info("")
+    logger.info("RECOMMENDATIONS:")
     for rec in report["recommendations"]:
-        print(f"  • {rec}")
+        logger.info(f"  • {rec}")
 
     if report["errors"]:
-        print()
-        print("ERRORS ENCOUNTERED:")
+        logger.info("")
+        logger.error("ERRORS ENCOUNTERED:")
         for error in report["errors"][:5]:  # Show first 5 errors
-            print(f"  • {error}")
+            logger.error(f"  • {error}")
 
-    print("\nDetailed report saved to: performance_benchmark_report.json")
+    logger.debug("\nDetailed report saved to: performance_benchmark_report.json")
 
 
 if __name__ == "__main__":

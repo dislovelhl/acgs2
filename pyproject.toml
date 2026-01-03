@@ -42,6 +42,7 @@ target-version = ['py311']
 # For running all tests across components, use: ./scripts/run_all_tests.sh
 # This avoids pytest configuration conflicts between root and component-specific configs.
 addopts = "-q --maxfail=3"
+asyncio_mode = "auto"
 markers = [
     "constitutional: marks tests as related to constitutional compliance",
 ]

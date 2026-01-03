@@ -5,8 +5,17 @@ ACGS-2 Constraint Generation System Demo
 """
 
 import asyncio
+import logging
 import os
 import sys
+from typing import Dict, Any
+
+# Configure structured logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 # 添加路径
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))))
@@ -19,7 +28,7 @@ from unit_test_generator import UnitTestGenerator
 
 async def demo_python_generation():
     """演示Python代码生成"""
-    print("=== Python代码生成演示 ===")
+    logger.info("Starting Python code generation demo", extra={"demo_type": "python_generation"})
 
     generator = ConstraintGenerator(
         use_guidance=False,
@@ -35,25 +44,36 @@ async def demo_python_generation():
         quality_check=True,
     )
 
-    print(f"任务: {request.task_description}")
+    logger.info("Processing generation request", extra={
+        "language": request.language,
+        "task_description": request.task_description,
+        "generate_tests": request.generate_tests,
+        "quality_check": request.quality_check
+    })
+
     result = await generator.generate_code(request)
 
-    print(f"生成时间: {result.generation_time:.2f}秒")
-    print(f"语法正确: {result.syntax_valid}")
-    print(f"质量分数: {result.quality_score}")
-    print("\n生成的代码:")
-    print(result.code)
+    logger.info("Code generation completed", extra={
+        "generation_time": result.generation_time,
+        "syntax_valid": result.syntax_valid,
+        "quality_score": result.quality_score,
+        "code_length": len(result.code) if result.code else 0,
+        "tests_generated": bool(result.tests)
+    })
+
+    if result.code:
+        logger.info("Generated code preview", extra={"code_preview": result.code[:200] + "..." if len(result.code) > 200 else result.code})
 
     if result.tests:
-        print("\n生成的测试:")
-        print(result.tests[:500] + "..." if len(result.tests) > 500 else result.tests)
+        test_preview = result.tests[:500] + "..." if len(result.tests) > 500 else result.tests
+        logger.info("Generated tests preview", extra={"test_preview": test_preview, "test_length": len(result.tests)})
 
     print("\n" + "=" * 50 + "\n")
 
 
 async def demo_javascript_generation():
     """演示JavaScript代码生成"""
-    print("=== JavaScript代码生成演示 ===")
+    logger.info("Starting JavaScript code generation demo", extra={"demo_type": "javascript_generation"})
 
     generator = ConstraintGenerator(
         use_guidance=False,
@@ -69,18 +89,29 @@ async def demo_javascript_generation():
         quality_check=True,
     )
 
-    print(f"任务: {request.task_description}")
+    logger.info("Processing JavaScript generation request", extra={
+        "language": request.language,
+        "task_description": request.task_description,
+        "generate_tests": request.generate_tests,
+        "quality_check": request.quality_check
+    })
+
     result = await generator.generate_code(request)
 
-    print(f"生成时间: {result.generation_time:.2f}秒")
-    print(f"语法正确: {result.syntax_valid}")
-    print(f"质量分数: {result.quality_score}")
-    print("\n生成的代码:")
-    print(result.code)
+    logger.info("JavaScript code generation completed", extra={
+        "generation_time": result.generation_time,
+        "syntax_valid": result.syntax_valid,
+        "quality_score": result.quality_score,
+        "code_length": len(result.code) if result.code else 0,
+        "tests_generated": bool(result.tests)
+    })
+
+    if result.code:
+        logger.info("Generated JavaScript code preview", extra={"code_preview": result.code[:200] + "..." if len(result.code) > 200 else result.code})
 
     if result.tests:
-        print("\n生成的测试:")
-        print(result.tests[:500] + "..." if len(result.tests) > 500 else result.tests)
+        test_preview = result.tests[:500] + "..." if len(result.tests) > 500 else result.tests
+        logger.info("Generated JavaScript tests preview", extra={"test_preview": test_preview, "test_length": len(result.tests)})
 
     print("\n" + "=" * 50 + "\n")
 
@@ -215,11 +246,23 @@ async def demo_system_stats():
 
 async def main():
     """主演示函数"""
-    print("ACGS-2 约束生成系统演示")
-    print("从'事后修复'转向'约束生成'")
-    print("=" * 50 + "\n")
+    logger.info("Starting ACGS-2 Constraint Generation System Demo", extra={
+        "system": "constraint_generation",
+        "approach": "从'事后修复'转向'约束生成'"
+    })
 
     try:
+        logger.info("Running demo sequence", extra={
+            "demos": [
+                "language_constraints",
+                "python_generation",
+                "javascript_generation",
+                "unit_test_generation",
+                "quality_scoring",
+                "system_stats"
+            ]
+        })
+
         await demo_language_constraints()
         await demo_python_generation()
         await demo_javascript_generation()
@@ -227,15 +270,17 @@ async def main():
         await demo_quality_scoring()
         await demo_system_stats()
 
-        print("演示完成!")
-        print("\n系统特点:")
-        print("✓ Guidance/Outlines库集成")
-        print("✓ CFG和JSON Schema约束定义")
-        print("✓ 多语言支持 (Python, JavaScript, Java, C++, Go)")
-        print("✓ 动态约束更新")
-        print("✓ 单元测试自动生成")
-        print("✓ SonarQube质量评分集成")
-        print("✓ 反馈循环至模型微调")
+        logger.info("Demo sequence completed successfully", extra={
+            "features": [
+                "Guidance/Outlines库集成",
+                "CFG和JSON Schema约束定义",
+                "多语言支持 (Python, JavaScript, Java, C++, Go)",
+                "动态约束更新",
+                "单元测试自动生成",
+                "SonarQube质量评分集成",
+                "反馈循环至模型微调"
+            ]
+        })
         print("\n里程碑目标:")
         print("• 代码修复需求减80%")
         print("• 语法正确率>99.5%")
