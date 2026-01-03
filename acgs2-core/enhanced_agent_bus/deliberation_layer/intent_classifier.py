@@ -16,6 +16,9 @@ from urllib.parse import urlparse
 import litellm
 from ..config import BusConfiguration
 
+import litellm
+from ..config import BusConfiguration
+
 
 class IntentType(Enum):
     FACTUAL = "factual"  # High precision, requires GraphCheck & ASC

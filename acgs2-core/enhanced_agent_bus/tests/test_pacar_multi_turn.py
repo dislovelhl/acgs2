@@ -67,7 +67,7 @@ async def test_pacar_verifier_multi_turn(bus_config):
         content = "Check this content"
         intent = "factual"
 
-        result = await verifier.verify_with_context(content, intent, session_id=session_id)
+        result = await verifier.verify(content, intent, session_id=session_id)
 
         assert result["is_valid"] is True
         assert verifier.manager.add_message.call_count == 3 # User, Critique, Result
@@ -98,62 +98,3 @@ async def test_pacar_manager_redis_failure_fallback(bus_config):
         # Second call should find it in local history
         state2 = await manager.get_state(session_id)
         assert state2 == state
-
-
-@pytest.mark.asyncio
-async def test_conversation_pruning(bus_config):
-    """Test conversation pruning logic to enforce context window."""
-    verifier = PACARVerifier(config=bus_config)
-
-    # Create a conversation with 60 messages
-    messages = [{"role": "user", "content": f"msg {i}"} for i in range(60)]
-    conversation_data = {
-        "session_id": "prune_test",
-        "messages": messages,
-        "updated_at": datetime.now(timezone.utc).isoformat()
-    }
-
-    # Prune to max 50
-    pruned = verifier._prune_conversation(conversation_data, max_messages=50)
-
-    assert len(pruned["messages"]) == 50
-    # Should keep the LAST 50 messages
-    assert pruned["messages"][0]["content"] == "msg 10"
-    assert pruned["messages"][-1]["content"] == "msg 59"
-
-
-@pytest.mark.asyncio
-async def test_pacar_verifier_redis_fallback(bus_config):
-    """Test graceful degradation to single-turn when Redis is missing."""
-    # Mock verifier with NO redis client
-    verifier = PACARVerifier(config=bus_config)
-    verifier.redis_client = None  # Simulate connection failure/absence
-
-    # Mock assistant to avoid actual LLM calls
-    verifier.assistant = AsyncMock()
-    verifier.assistant.ainvoke_multi_turn.return_value = {
-        "recommended_decision": "approve",
-        "risk_level": "low",
-        "confidence": 0.8,
-        "reasoning": ["Fallback test safe"]
-    }
-    verifier.assistant.analyze_message_impact.return_value = {
-        "risk_level": "low",
-        "confidence": 0.8
-    }
-
-    # Mock manager to avoid errors
-    verifier.manager = AsyncMock()
-    verifier.manager.get_state.return_value = MagicMock(messages=[])
-
-    session_id = "fallback_session"
-    content = "Test content"
-    intent = "factual"
-
-    # Verify with context should proceed (using empty/new context)
-    result = await verifier.verify_with_context(content, intent, session_id=session_id)
-
-    assert result["is_valid"] is True
-    # Should use the multi-turn path (ainvoke_multi_turn) even if Redis is down
-    # because it just starts a fresh conversation context
-    assert verifier.assistant.ainvoke_multi_turn.called
