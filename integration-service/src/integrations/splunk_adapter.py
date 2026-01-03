@@ -6,11 +6,24 @@ for real-time governance event ingestion.
 
 Features:
 - HEC token authentication
-- Event batching for performance
+- High-performance batch event processing (newline-delimited JSON)
+- Single event and batch API support
 - Automatic event formatting for Splunk
 - Index validation
-- Rate limit handling
+- Rate limit handling with Retry-After support
 - SSL certificate verification options
+- Configurable batch size (default 100, max 1000 events per batch)
+
+Batch Processing:
+This adapter implements native batch processing using Splunk HEC's newline-delimited
+JSON format. Batches are sent as a single HTTP request, reducing API overhead and
+improving throughput for high-volume event ingestion. Use send_events_batch() for
+optimal performance when sending multiple events.
+
+Performance:
+- Batch processing can reduce API calls by up to 100x (for batch_size=100)
+- All-or-nothing batch semantics: entire batch succeeds or fails together
+- Automatic retry with exponential backoff for transient failures
 """
 
 import json
@@ -148,10 +161,11 @@ class SplunkAdapter(BaseIntegration):
     Splunk SIEM integration adapter using HTTP Event Collector (HEC).
 
     This adapter sends governance events to Splunk via the HEC endpoint,
-    supporting both single event submission and batch processing for
-    improved performance.
+    supporting both single event submission and high-performance batch processing.
+    Implements native Splunk HEC batch format (newline-delimited JSON) for
+    optimal throughput.
 
-    Usage:
+    Single Event Usage:
         credentials = SplunkCredentials(
             integration_name="Production Splunk",
             hec_url="https://splunk.example.com:8088",
@@ -162,12 +176,36 @@ class SplunkAdapter(BaseIntegration):
         await adapter.authenticate()
         result = await adapter.send_event(event)
 
+    Batch Processing Usage:
+        # Send multiple events in a single API call
+        events = [event1, event2, event3]
+        results = await adapter.send_events_batch(events)
+
+        # Check batch metrics
+        metrics = adapter.metrics
+        print(f"Batches sent: {metrics['batches_sent']}")
+        print(f"Events via batch: {metrics['batch_events_total']}")
+
     Features:
-        - Automatic event batching
-        - Rate limit handling with backoff
+        - Native HEC batch processing (newline-delimited JSON format)
+        - All-or-nothing batch semantics for data consistency
+        - Rate limit handling with Retry-After header support
         - Index existence validation
         - SSL certificate verification
-        - Detailed error reporting
+        - Comprehensive error reporting with Splunk-specific error codes
+        - Configurable batch size (default 100, max 1000)
+        - Automatic retry with exponential backoff
+
+    Batch Performance:
+        - Reduces API calls by batch_size factor (e.g., 100x for batch_size=100)
+        - Lower latency for high-volume event ingestion
+        - Maintains event order within batches
+        - Single authentication check per batch (vs per-event)
+
+    Note:
+        This adapter overrides _do_send_events_batch() to provide native Splunk
+        HEC batch support. The base class handles authentication, retry logic,
+        and metrics tracking.
     """
 
     # Splunk-specific constants
@@ -649,17 +687,48 @@ class SplunkAdapter(BaseIntegration):
         Send multiple events to Splunk in a batch using HEC.
 
         Implements Splunk-specific batch delivery using newline-delimited JSON
-        format for the HEC endpoint. Provides all-or-nothing batch semantics.
+        format for the HEC endpoint. This is the recommended way to send multiple
+        events for optimal performance.
+
+        Batch Format:
+            Events are formatted as newline-delimited JSON objects, which is the
+            native batch format supported by Splunk HEC:
+            {"event": {...}, "time": 123, ...}
+            {"event": {...}, "time": 124, ...}
+            {"event": {...}, "time": 125, ...}
+
+        Batch Semantics:
+            All-or-nothing: If Splunk accepts the batch (HTTP 200 + code 0),
+            all events are considered successful. If the batch fails, all events
+            are marked as failed. There is no partial success in Splunk HEC batch
+            processing.
+
+        Performance:
+            - Sends all events in a single HTTP POST request
+            - Reduces authentication overhead (one token check vs N checks)
+            - Significantly lower latency for multiple events
+            - No rate limit advantage, but better throughput
 
         Args:
-            events: List of governance events to send
+            events: List of governance events to send (recommended: 10-100 events)
 
         Returns:
-            List of IntegrationResults for each event
+            List of IntegrationResults, one per event. All will have same success
+            status due to all-or-nothing semantics.
 
         Raises:
-            RateLimitError: If rate limited by Splunk
-            DeliveryError: If batch delivery fails
+            RateLimitError: If rate limited by Splunk (HTTP 429)
+            DeliveryError: If batch delivery fails (invalid data, permissions, etc.)
+            AuthenticationError: If HEC token is invalid (HTTP 401)
+
+        Note:
+            This method is called by BaseIntegration.send_events_batch() which
+            handles authentication checks, retry logic, and metrics tracking.
+            Do not call this method directly.
+
+        See Also:
+            - BaseIntegration.send_events_batch() - Public batch API
+            - BaseIntegration._do_send_events_batch() - Default implementation
         """
         if not events:
             return []

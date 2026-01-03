@@ -7,10 +7,29 @@ API for real-time governance event ingestion.
 Features:
 - Azure AD Service Principal authentication with automatic token refresh
 - Data Collection Rule (DCR) based log ingestion
-- Event batching for performance (1MB max, 500 records limit)
+- High-performance batch event processing (respects Azure limits)
+- Single event and batch API support
 - Automatic event formatting for Log Analytics custom tables
-- Rate limit handling
+- Rate limit handling with Retry-After support
 - Azure cloud environment support (public, government, china)
+- Configurable batch size (default 100, max 500 events per batch)
+
+Batch Processing:
+This adapter implements native batch processing using Azure Monitor Ingestion API.
+Batches are sent as a single HTTP request containing a JSON array of events,
+respecting Azure's limits (1MB max payload, 500 records max). Use send_events_batch()
+for optimal performance when sending multiple events.
+
+Azure Limits:
+- Maximum batch size: 500 records
+- Maximum payload size: 1MB (1,000,000 bytes)
+- All-or-nothing batch semantics: entire batch succeeds or fails together
+- Automatic retry with exponential backoff for transient failures
+
+Performance:
+- Batch processing can reduce API calls by up to 100x (for batch_size=100)
+- Lower authentication overhead (one token refresh check per batch)
+- Improved throughput for high-volume event ingestion
 """
 
 import json
@@ -223,10 +242,11 @@ class SentinelAdapter(BaseIntegration):
     Microsoft Sentinel SIEM integration adapter using Azure Monitor Ingestion API.
 
     This adapter sends governance events to Microsoft Sentinel via the Logs Ingestion
-    API, supporting both single event submission and batch processing for improved
-    performance.
+    API, supporting both single event submission and high-performance batch processing.
+    Implements native Azure Monitor batch format (JSON array) for optimal throughput
+    while respecting Azure service limits.
 
-    Usage:
+    Single Event Usage:
         credentials = SentinelCredentials(
             integration_name="Production Sentinel",
             tenant_id="your-tenant-id",
@@ -239,13 +259,43 @@ class SentinelAdapter(BaseIntegration):
         await adapter.authenticate()
         result = await adapter.send_event(event)
 
+    Batch Processing Usage:
+        # Send multiple events in a single API call
+        events = [event1, event2, event3]
+        results = await adapter.send_events_batch(events)
+
+        # Check batch metrics
+        metrics = adapter.metrics
+        print(f"Batches sent: {metrics['batches_sent']}")
+        print(f"Events via batch: {metrics['batch_events_total']}")
+
     Features:
         - Azure AD OAuth2 authentication with automatic token refresh
-        - Automatic event batching (respects 1MB and 500 record limits)
-        - Rate limit handling with backoff
+        - Native Azure Monitor batch processing (JSON array format)
+        - All-or-nothing batch semantics for data consistency
+        - Azure service limits enforcement (1MB max, 500 records max)
+        - Rate limit handling with Retry-After header support
         - DCR/DCE validation
-        - Detailed error reporting
-        - Multi-cloud support (public, government, china)
+        - Comprehensive error reporting with Azure-specific error codes
+        - Multi-cloud support (public, government, china, germany)
+        - Configurable batch size (default 100, max 500)
+        - Automatic retry with exponential backoff
+
+    Batch Performance:
+        - Reduces API calls by batch_size factor (e.g., 100x for batch_size=100)
+        - Lower authentication overhead (one token refresh check per batch)
+        - Improved throughput for high-volume event ingestion
+        - Maintains event order within batches
+
+    Azure Limits:
+        - Maximum 500 records per batch
+        - Maximum 1MB (1,000,000 bytes) payload size per batch
+        - Batches exceeding limits will log warnings
+
+    Note:
+        This adapter overrides _do_send_events_batch() to provide native Azure
+        Monitor batch support. The base class handles authentication, retry logic,
+        and metrics tracking.
     """
 
     # Azure Monitor Ingestion API path
@@ -797,19 +847,58 @@ class SentinelAdapter(BaseIntegration):
         """
         Send multiple events to Sentinel in a batch using Azure Monitor Ingestion API.
 
-        Implements Sentinel-specific batch delivery with all-or-nothing semantics,
-        respecting Azure's limits (1MB max payload, 500 records max).
+        Implements Sentinel-specific batch delivery using Azure Monitor's native JSON
+        array format. This is the recommended way to send multiple events for optimal
+        performance and compliance with Azure service limits.
+
+        Batch Format:
+            Events are sent as a JSON array to the Azure Monitor Ingestion API:
+            [
+              {"TimeGenerated": "...", "EventId": "...", ...},
+              {"TimeGenerated": "...", "EventId": "...", ...},
+              {"TimeGenerated": "...", "EventId": "...", ...}
+            ]
+
+        Batch Semantics:
+            All-or-nothing: If Azure Monitor accepts the batch (HTTP 200/204),
+            all events are considered successfully ingested. If the batch fails,
+            all events are marked as failed. There is no partial success in Azure
+            Monitor batch processing.
+
+        Azure Service Limits:
+            - Maximum 500 records per batch (enforced by Azure)
+            - Maximum 1MB (1,000,000 bytes) payload size (enforced by Azure)
+            - Exceeding limits results in HTTP 413 error
+            - Batch size is configurable via credentials.batch_size (default 100)
+
+        Performance:
+            - Sends all events in a single HTTP POST request
+            - Reduces OAuth token refresh checks (one per batch vs N per event)
+            - Significantly lower latency for multiple events
+            - Better throughput for high-volume ingestion
 
         Args:
-            events: List of governance events to send
+            events: List of governance events to send (recommended: 10-100 events,
+                   max: 500 events per Azure limits)
 
         Returns:
-            List of IntegrationResults for each event
+            List of IntegrationResults, one per event. All will have same success
+            status due to all-or-nothing semantics.
 
         Raises:
-            RateLimitError: If rate limited by Azure Monitor
-            DeliveryError: If batch delivery fails
-            AuthenticationError: If authentication fails
+            RateLimitError: If rate limited by Azure Monitor (HTTP 429)
+            DeliveryError: If batch delivery fails (invalid data, permissions, size limits, etc.)
+            AuthenticationError: If access token is invalid or expired (HTTP 401)
+
+        Note:
+            This method is called by BaseIntegration.send_events_batch() which
+            handles authentication checks, retry logic, and metrics tracking.
+            Do not call this method directly.
+
+        See Also:
+            - BaseIntegration.send_events_batch() - Public batch API
+            - BaseIntegration._do_send_events_batch() - Default implementation
+            - Azure Monitor Ingestion API limits: https://learn.microsoft.com/en-us/azure/azure-monitor/logs/logs-ingestion-api-overview
         """
         if not events:
             return []
