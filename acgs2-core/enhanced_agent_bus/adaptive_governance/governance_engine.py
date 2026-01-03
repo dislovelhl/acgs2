@@ -945,4 +945,10 @@ class AdaptiveGovernanceEngine:
             logger.error(f"Error saving model state: {e}")
 
 
-__all__ = ["AdaptiveGovernanceEngine"]
+__all__ = [
+    "AdaptiveGovernanceEngine",
+    # Availability flags
+    "DRIFT_MONITORING_AVAILABLE",
+    "ONLINE_LEARNING_AVAILABLE",
+    "AB_TESTING_AVAILABLE",
+]
