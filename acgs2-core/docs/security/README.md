@@ -6,6 +6,7 @@ This directory contains security documentation, threat models, hardening guides,
 
 ### Security Frameworks
 - `SECURITY_HARDENING.md` - Security hardening procedures and best practices
+- `SECURITY_HEADERS.md` - HTTP security headers middleware implementation and usage guide
 - `STRIDE_THREAT_MODEL.md` - STRIDE threat modeling analysis and mitigations
 
 ## Organization
@@ -20,12 +21,15 @@ Located in `../compliance/` subdirectory:
 ### For Security Engineers
 - Use security hardening guide for system configuration
 - Reference threat model for risk assessment
+- Review security headers implementation for web application security
 - Consult compliance documentation for regulatory requirements
 
 ### For Developers
+- **Quick Start**: See `SECURITY_HEADERS.md` for adding security headers to new services
 - Follow security hardening procedures in development
 - Understand threat model for secure coding practices
 - Review compliance requirements for feature implementation
+- Use security headers middleware for all FastAPI services
 
 ### For Compliance Officers
 - Use compliance mapping for regulatory reporting
@@ -51,6 +55,15 @@ Comprehensive security hardening covers:
 - Data protection and encryption
 - Monitoring and incident response
 - Compliance and audit procedures
+
+### Security Headers
+Enterprise-grade HTTP security headers middleware:
+- **Content-Security-Policy**: XSS attack prevention
+- **X-Content-Type-Options**: MIME sniffing protection
+- **X-Frame-Options**: Clickjacking protection
+- **Strict-Transport-Security**: HTTPS enforcement
+- **X-XSS-Protection**: Browser XSS filtering
+- **Referrer-Policy**: Referrer information control
 
 ## Compliance Requirements
 
