@@ -509,6 +509,15 @@ def severity_to_servicenow_urgency(event: IntegrationEvent, params: Dict[str, An
     return DEFAULT_SERVICENOW_URGENCY_MAP.get(event.severity, ServiceNowImpactUrgency.MEDIUM).value
 
 
+@FieldTransformers.register("severity_to_pagerduty_urgency")
+def severity_to_pagerduty_urgency(event: IntegrationEvent, params: Dict[str, Any]) -> str:
+    """Convert event severity to PagerDuty urgency value."""
+    custom_map = params.get("mapping", {})
+    if custom_map and event.severity.value in custom_map:
+        return custom_map[event.severity.value]
+    return DEFAULT_PAGERDUTY_URGENCY_MAP.get(event.severity, PagerDutyUrgency.LOW).value
+
+
 @FieldTransformers.register("format_timestamp")
 def format_timestamp(event: IntegrationEvent, params: Dict[str, Any]) -> str:
     """Format event timestamp to a specific format."""
