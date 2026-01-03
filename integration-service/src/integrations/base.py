@@ -552,7 +552,78 @@ class BaseIntegration(abc.ABC):
             - Others may support partial success
             - Default fallback sends events individually, allowing mixed results
         """
-        pass
+        if not self._authenticated:
+            error_msg = "Integration is not authenticated"
+            logger.error(f"Integration '{self.name}': {error_msg}")
+            raise AuthenticationError(error_msg, self.name)
+
+        if not events:
+            return []
+
+        logger.debug(f"Sending batch of {len(events)} events to integration '{self.name}'")
+
+        try:
+            results = await self._send_events_batch_with_retry(events)
+
+            # Count successful and failed events
+            successful_count = sum(1 for r in results if r.success)
+            failed_count = len(results) - successful_count
+
+            # Track metrics
+            if failed_count == 0:
+                # All events succeeded
+                self._batches_sent += 1
+                self._events_sent += successful_count
+                self._batch_events_total += successful_count
+                self._last_success = datetime.now(timezone.utc)
+                logger.info(
+                    f"Batch of {len(events)} events sent successfully to '{self.name}'"
+                )
+            elif successful_count == 0:
+                # All events failed
+                self._batches_failed += 1
+                self._events_failed += failed_count
+                self._last_failure = datetime.now(timezone.utc)
+                self._last_error = results[0].error_message if results else "Batch delivery failed"
+                logger.warning(
+                    f"Batch of {len(events)} events failed to send to '{self.name}': "
+                    f"{self._last_error}"
+                )
+            else:
+                # Partial success
+                self._batches_sent += 1
+                self._events_sent += successful_count
+                self._events_failed += failed_count
+                self._batch_events_total += successful_count
+                self._last_success = datetime.now(timezone.utc)
+                logger.warning(
+                    f"Batch of {len(events)} events partially succeeded for '{self.name}': "
+                    f"{successful_count} succeeded, {failed_count} failed"
+                )
+
+            return results
+
+        except RetryError as e:
+            self._batches_failed += 1
+            self._events_failed += len(events)
+            self._last_failure = datetime.now(timezone.utc)
+            error_msg = f"Batch delivery failed after {self.max_retries} retries: {str(e)}"
+            self._last_error = error_msg
+            logger.error(f"Integration '{self.name}': {error_msg}")
+            raise DeliveryError(error_msg, self.name) from e
+
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=1, max=16),
+        retry=retry_if_exception_type((httpx.TimeoutException, httpx.NetworkError, DeliveryError)),
+        before_sleep=before_sleep_log(logger, logging.WARNING),
+        reraise=True,
+    )
+    async def _send_events_batch_with_retry(
+        self, events: List[IntegrationEvent]
+    ) -> List[IntegrationResult]:
+        """Send events batch with retry logic"""
+        return await self._do_send_events_batch(events)
 
     async def _do_send_events_batch(
         self,
@@ -620,7 +691,30 @@ class BaseIntegration(abc.ABC):
                     ]
             ```
         """
-        pass
+        # Default implementation: send events one-by-one
+        # Subclasses can override this for more efficient batch operations
+        logger.debug(
+            f"Using default batch implementation for '{self.name}' - sending events one-by-one"
+        )
+
+        results = []
+        for event in events:
+            try:
+                result = await self._do_send_event(event)
+                results.append(result)
+            except Exception as e:
+                # Create a failure result for this event
+                results.append(
+                    IntegrationResult(
+                        success=False,
+                        integration_name=self.name,
+                        operation="send_event",
+                        error_code="SEND_FAILED",
+                        error_message=str(e),
+                    )
+                )
+
+        return results
 
     async def test_connection(self) -> IntegrationResult:
         """
