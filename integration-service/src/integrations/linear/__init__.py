@@ -29,6 +29,15 @@ from .github_sync import (
     get_github_sync_manager,
     reset_github_sync_manager,
 )
+from .gitlab_sync import (
+    GitLabAuthenticationError,
+    GitLabNotFoundError,
+    GitLabRateLimitError,
+    GitLabSyncError,
+    GitLabSyncManager,
+    get_gitlab_sync_manager,
+    reset_gitlab_sync_manager,
+)
 from .state import (
     LinearStateConnectionError,
     LinearStateError,
@@ -76,6 +85,14 @@ __all__ = [
     "GitHubNotFoundError",
     "get_github_sync_manager",
     "reset_github_sync_manager",
+    # GitLab Sync
+    "GitLabSyncManager",
+    "GitLabSyncError",
+    "GitLabAuthenticationError",
+    "GitLabRateLimitError",
+    "GitLabNotFoundError",
+    "get_gitlab_sync_manager",
+    "reset_gitlab_sync_manager",
     # Webhook Auth
     "LinearWebhookAuthError",
     "get_linear_webhook_handler",
