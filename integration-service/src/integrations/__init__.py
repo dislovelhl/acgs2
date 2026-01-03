@@ -20,6 +20,11 @@ from .base import (
     RateLimitError,
     ValidationError,
 )
+from .sentinel_adapter import (
+    AzureCloud,
+    SentinelAdapter,
+    SentinelCredentials,
+)
 from .splunk_adapter import (
     SplunkAdapter,
     SplunkCredentials,
@@ -44,4 +49,8 @@ __all__ = [
     "SplunkAdapter",
     "SplunkCredentials",
     "SplunkDeploymentType",
+    # Microsoft Sentinel SIEM integration
+    "AzureCloud",
+    "SentinelAdapter",
+    "SentinelCredentials",
 ]
