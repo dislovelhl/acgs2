@@ -1,0 +1,226 @@
+# ACGS2 Policy Check GitLab CI Template
+#
+# This template provides policy validation for GitLab CI/CD pipelines.
+# Include this template in your .gitlab-ci.yml to validate resources
+# against ACGS2 governance policies.
+#
+# Prerequisites:
+# 1. Set the following CI/CD variables in your project settings:
+#    - ACGS2_API_URL: URL of your ACGS2 Integration Service
+#    - ACGS2_API_TOKEN: API authentication token (mark as masked/protected)
+#
+# Usage:
+# Include this template in your .gitlab-ci.yml:
+#
+#   include:
+#     - remote: 'https://raw.githubusercontent.com/your-org/acgs2/main/integration-service/templates/gitlab-ci-policy-check.yml'
+#
+# Or copy this file to your repository and include locally:
+#
+#   include:
+#     - local: '.gitlab/templates/acgs2-policy-check.yml'
+#
+# Then extend the job:
+#
+#   policy-check:
+#     extends: .acgs2-policy-check
+#     variables:
+#       ACGS2_SEVERITY_THRESHOLD: "high"
+#       ACGS2_RESOURCE_PATH: "."
+#
+# Variables (can be overridden per job):
+#   ACGS2_API_URL: Integration Service URL (required)
+#   ACGS2_API_TOKEN: API token for authentication
+#   ACGS2_POLICY_ID: Specific policy to check (optional, checks all if not set)
+#   ACGS2_RESOURCE_TYPE: Type of resources (code, kubernetes, terraform, docker, config)
+#   ACGS2_RESOURCE_PATH: Path to resources to validate (default: ".")
+#   ACGS2_SEVERITY_THRESHOLD: Minimum severity to fail (critical, high, medium, low, info)
+#   ACGS2_FAIL_ON_VIOLATION: Whether to fail pipeline on violations (true/false)
+#   ACGS2_REPORT_FORMAT: Output format (markdown, json, summary)
+#   ACGS2_TIMEOUT: API request timeout in seconds (default: 30)
+#   ACGS2_INCLUDE_PATTERNS: Glob patterns to include (comma-separated)
+#   ACGS2_EXCLUDE_PATTERNS: Glob patterns to exclude (comma-separated)
+
+# Reusable ACGS2 Policy Check Job Template
+.acgs2-policy-check:
+  image: alpine:3.19
+  stage: test
+  variables:
+    # Default configuration values
+    ACGS2_API_URL: "${ACGS2_API_URL:-http://localhost:8100}"
+    ACGS2_SEVERITY_THRESHOLD: "high"
+    ACGS2_FAIL_ON_VIOLATION: "true"
+    ACGS2_RESOURCE_TYPE: "code"
+    ACGS2_RESOURCE_PATH: "."
+    ACGS2_REPORT_FORMAT: "markdown"
+    ACGS2_TIMEOUT: "30"
+    ACGS2_INCLUDE_PATTERNS: "**/*"
+    ACGS2_EXCLUDE_PATTERNS: "node_modules/**,vendor/**,.git/**,**/*_test.go,**/*.test.ts,**/*.test.js"
+  before_script:
+    - apk add --no-cache bash curl jq
+    - chmod +x scripts/gitlab_policy_check.sh 2>/dev/null || true
+  script:
+    - |
+      # Download the policy check script if not present locally
+      if [ ! -f "scripts/gitlab_policy_check.sh" ]; then
+        mkdir -p scripts
+        curl -sSL "https://raw.githubusercontent.com/your-org/acgs2/main/integration-service/scripts/gitlab_policy_check.sh" -o scripts/gitlab_policy_check.sh
+        chmod +x scripts/gitlab_policy_check.sh
+      fi
+
+      # Run policy check
+      ./scripts/gitlab_policy_check.sh
+  artifacts:
+    when: always
+    paths:
+      - acgs2-policy-report.md
+      - acgs2-policy-report.json
+    reports:
+      dotenv: acgs2-policy.env
+    expire_in: 30 days
+  allow_failure: false
+
+# Main Policy Check Job (ready to use)
+acgs2-policy-check:
+  extends: .acgs2-policy-check
+  rules:
+    # Run on merge requests
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    # Run on default branch commits
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    # Run on manual trigger
+    - if: $CI_PIPELINE_SOURCE == "web"
+      when: manual
+
+# Kubernetes-specific Policy Check
+acgs2-k8s-policy-check:
+  extends: .acgs2-policy-check
+  variables:
+    ACGS2_RESOURCE_TYPE: "kubernetes"
+    ACGS2_RESOURCE_PATH: "kubernetes/"
+    ACGS2_POLICY_ID: "k8s-security-baseline"
+    ACGS2_SEVERITY_THRESHOLD: "high"
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      changes:
+        - kubernetes/**/*
+        - k8s/**/*
+        - manifests/**/*
+        - "**/*.yaml"
+        - "**/*.yml"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      changes:
+        - kubernetes/**/*
+        - k8s/**/*
+        - manifests/**/*
+
+# Terraform-specific Policy Check
+acgs2-terraform-policy-check:
+  extends: .acgs2-policy-check
+  variables:
+    ACGS2_RESOURCE_TYPE: "terraform"
+    ACGS2_RESOURCE_PATH: "terraform/"
+    ACGS2_POLICY_ID: "cloud-security-baseline"
+    ACGS2_SEVERITY_THRESHOLD: "high"
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      changes:
+        - terraform/**/*
+        - infrastructure/**/*
+        - "**/*.tf"
+        - "**/*.tfvars"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      changes:
+        - terraform/**/*
+        - infrastructure/**/*
+
+# Docker-specific Policy Check
+acgs2-docker-policy-check:
+  extends: .acgs2-policy-check
+  variables:
+    ACGS2_RESOURCE_TYPE: "docker"
+    ACGS2_RESOURCE_PATH: "."
+    ACGS2_POLICY_ID: "container-security-baseline"
+    ACGS2_INCLUDE_PATTERNS: "**/Dockerfile*,**/docker-compose*.yml"
+    ACGS2_SEVERITY_THRESHOLD: "high"
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      changes:
+        - "**/Dockerfile*"
+        - "**/docker-compose*.yml"
+        - "**/docker-compose*.yaml"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      changes:
+        - "**/Dockerfile*"
+        - "**/docker-compose*.yml"
+
+# Full Security Scan (comprehensive check)
+acgs2-security-scan:
+  extends: .acgs2-policy-check
+  stage: test
+  variables:
+    ACGS2_SEVERITY_THRESHOLD: "medium"
+    ACGS2_FAIL_ON_VIOLATION: "true"
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+    - if: $CI_PIPELINE_SOURCE == "web"
+      when: manual
+  allow_failure: false
+
+# Blocking MR Gate (for protected branches)
+acgs2-mr-gate:
+  extends: .acgs2-policy-check
+  stage: test
+  variables:
+    ACGS2_SEVERITY_THRESHOLD: "high"
+    ACGS2_FAIL_ON_VIOLATION: "true"
+    ACGS2_REPORT_FORMAT: "markdown"
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      when: always
+  allow_failure: false
+  interruptible: true
+
+# Non-blocking Advisory Check
+acgs2-advisory-check:
+  extends: .acgs2-policy-check
+  stage: test
+  variables:
+    ACGS2_SEVERITY_THRESHOLD: "info"
+    ACGS2_FAIL_ON_VIOLATION: "false"
+    ACGS2_REPORT_FORMAT: "markdown"
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      when: always
+  allow_failure: true
+
+# Integration with GitLab Code Quality
+.acgs2-code-quality:
+  extends: .acgs2-policy-check
+  variables:
+    ACGS2_REPORT_FORMAT: "codeclimate"
+  artifacts:
+    reports:
+      codequality: gl-code-quality-report.json
+    paths:
+      - gl-code-quality-report.json
+    expire_in: 30 days
+
+# Example workflow stages
+# Uncomment and customize as needed:
+#
+# stages:
+#   - test
+#   - security
+#   - deploy
+#
+# # Run policy check before deployment
+# pre-deploy-policy-check:
+#   extends: .acgs2-policy-check
+#   stage: security
+#   variables:
+#     ACGS2_SEVERITY_THRESHOLD: "critical"
+#     ACGS2_FAIL_ON_VIOLATION: "true"
+#   rules:
+#     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+#   needs: ["test"]
