@@ -126,6 +126,100 @@ class SlackConfig(BaseSettings):
         return self.slack_bot_token is not None and self.slack_signing_secret is not None
 
 
+class GitHubConfig(BaseSettings):
+    """
+    Configuration for GitHub integration.
+
+    Loads GitHub credentials and settings from environment variables.
+    """
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        case_sensitive=True,
+        extra="ignore",
+    )
+
+    # Authentication
+    github_token: Optional[SecretStr] = Field(
+        default=None,
+        description="GitHub Personal Access Token for API access",
+        json_schema_extra={"env": "GITHUB_TOKEN"},
+    )
+
+    # Request settings
+    github_timeout_seconds: float = Field(
+        default=30.0,
+        ge=1.0,
+        le=300.0,
+        description="Request timeout for GitHub API calls in seconds",
+        json_schema_extra={"env": "GITHUB_TIMEOUT_SECONDS"},
+    )
+
+    github_max_retries: int = Field(
+        default=3,
+        ge=0,
+        le=10,
+        description="Maximum retry attempts for failed GitHub API calls",
+        json_schema_extra={"env": "GITHUB_MAX_RETRIES"},
+    )
+
+    @property
+    def is_configured(self) -> bool:
+        """Check if GitHub integration is properly configured."""
+        return self.github_token is not None
+
+
+class GitLabConfig(BaseSettings):
+    """
+    Configuration for GitLab integration.
+
+    Loads GitLab credentials and settings from environment variables.
+    """
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        case_sensitive=True,
+        extra="ignore",
+    )
+
+    # Authentication
+    gitlab_token: Optional[SecretStr] = Field(
+        default=None,
+        description="GitLab Personal Access Token for API access",
+        json_schema_extra={"env": "GITLAB_TOKEN"},
+    )
+
+    gitlab_url: str = Field(
+        default="https://gitlab.com",
+        description="GitLab instance URL",
+        json_schema_extra={"env": "GITLAB_URL"},
+    )
+
+    # Request settings
+    gitlab_timeout_seconds: float = Field(
+        default=30.0,
+        ge=1.0,
+        le=300.0,
+        description="Request timeout for GitLab API calls in seconds",
+        json_schema_extra={"env": "GITLAB_TIMEOUT_SECONDS"},
+    )
+
+    gitlab_max_retries: int = Field(
+        default=3,
+        ge=0,
+        le=10,
+        description="Maximum retry attempts for failed GitLab API calls",
+        json_schema_extra={"env": "GITLAB_MAX_RETRIES"},
+    )
+
+    @property
+    def is_configured(self) -> bool:
+        """Check if GitLab integration is properly configured."""
+        return self.gitlab_token is not None
+
+
 class IntegrationServiceConfig(BaseSettings):
     """
     Main configuration for the Integration Service.
@@ -209,6 +303,8 @@ class IntegrationServiceConfig(BaseSettings):
 # Singleton instances for easy access
 _linear_config: Optional[LinearConfig] = None
 _slack_config: Optional[SlackConfig] = None
+_github_config: Optional[GitHubConfig] = None
+_gitlab_config: Optional[GitLabConfig] = None
 _service_config: Optional[IntegrationServiceConfig] = None
 
 
@@ -241,6 +337,32 @@ def get_slack_config() -> SlackConfig:
     return _slack_config
 
 
+def get_github_config() -> GitHubConfig:
+    """
+    Get the GitHub configuration singleton.
+
+    Returns:
+        GitHubConfig: Configured GitHub integration settings
+    """
+    global _github_config
+    if _github_config is None:
+        _github_config = GitHubConfig()
+    return _github_config
+
+
+def get_gitlab_config() -> GitLabConfig:
+    """
+    Get the GitLab configuration singleton.
+
+    Returns:
+        GitLabConfig: Configured GitLab integration settings
+    """
+    global _gitlab_config
+    if _gitlab_config is None:
+        _gitlab_config = GitLabConfig()
+    return _gitlab_config
+
+
 def get_service_config() -> IntegrationServiceConfig:
     """
     Get the Integration Service configuration singleton.
@@ -257,7 +379,9 @@ def get_service_config() -> IntegrationServiceConfig:
 # Convenience function to reset singletons (useful for testing)
 def reset_config():
     """Reset all configuration singletons. Useful for testing."""
-    global _linear_config, _slack_config, _service_config
+    global _linear_config, _slack_config, _github_config, _gitlab_config, _service_config
     _linear_config = None
     _slack_config = None
+    _github_config = None
+    _gitlab_config = None
     _service_config = None

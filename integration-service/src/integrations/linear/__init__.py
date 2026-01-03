@@ -20,6 +20,15 @@ from .deduplication import (
     get_dedup_manager,
     reset_dedup_manager,
 )
+from .github_sync import (
+    GitHubAuthenticationError,
+    GitHubNotFoundError,
+    GitHubRateLimitError,
+    GitHubSyncError,
+    GitHubSyncManager,
+    get_github_sync_manager,
+    reset_github_sync_manager,
+)
 from .state import (
     LinearStateConnectionError,
     LinearStateError,
@@ -59,6 +68,14 @@ __all__ = [
     "ConflictTimestampError",
     "get_conflict_manager",
     "reset_conflict_manager",
+    # GitHub Sync
+    "GitHubSyncManager",
+    "GitHubSyncError",
+    "GitHubAuthenticationError",
+    "GitHubRateLimitError",
+    "GitHubNotFoundError",
+    "get_github_sync_manager",
+    "reset_github_sync_manager",
     # Webhook Auth
     "LinearWebhookAuthError",
     "get_linear_webhook_handler",
