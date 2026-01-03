@@ -28,6 +28,12 @@ from typing import Dict, List, Optional
 
 import numpy as np
 
+# Constitutional imports
+try:
+    from ..exceptions import GovernanceError  # noqa: F401
+except ImportError:
+    from exceptions import GovernanceError  # noqa: F401
+
 # Feedback handler imports
 try:
     from ..feedback_handler import (
