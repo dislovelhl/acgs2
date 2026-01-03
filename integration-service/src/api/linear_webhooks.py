@@ -10,6 +10,7 @@ References:
 - https://developers.linear.app/docs/graphql/webhooks
 """
 
+import asyncio
 import logging
 from datetime import datetime, timezone
 from typing import Any, Dict
@@ -24,7 +25,9 @@ from ..integrations.linear.models import (
     LinearWebhookPayload,
     LinearWebhookType,
     StatusChangeEvent,
+    WebhookAction,
 )
+from ..integrations.linear.slack_notifier import get_slack_notifier
 from ..integrations.linear.webhook_auth import (
     is_linear_webhook_configured,
     verify_linear_webhook_signature,
@@ -126,6 +129,104 @@ def queue_webhook_event(event_data: Dict[str, Any]) -> str:
     return event_id
 
 
+async def send_slack_notification_for_issue_created(issue_event: IssueEvent) -> None:
+    """
+    Send Slack notification for issue created event (non-blocking).
+
+    Args:
+        issue_event: Parsed issue event
+    """
+    try:
+        notifier = get_slack_notifier()
+        async with notifier:
+            await notifier.post_issue_created(
+                issue_id=issue_event.issue.identifier or issue_event.issue.id,
+                title=issue_event.issue.title,
+                description=issue_event.issue.description,
+                assignee=issue_event.issue.assignee.name if issue_event.issue.assignee else None,
+                status=issue_event.issue.state.name if issue_event.issue.state else None,
+                priority=str(issue_event.issue.priority) if issue_event.issue.priority else None,
+                url=issue_event.issue.url,
+            )
+    except Exception as e:
+        # Log error but don't fail webhook processing
+        logger.error(
+            f"Failed to send Slack notification for issue created: {e}",
+            exc_info=True,
+        )
+
+
+async def send_slack_notification_for_status_change(status_change: StatusChangeEvent) -> None:
+    """
+    Send Slack notification for status change event (non-blocking).
+
+    Args:
+        status_change: Parsed status change event
+    """
+    try:
+        notifier = get_slack_notifier()
+        async with notifier:
+            old_status = (
+                status_change.previous_state.name
+                if status_change.previous_state
+                else "None"
+            )
+            assignee = (
+                status_change.issue.assignee.name
+                if status_change.issue.assignee
+                else None
+            )
+            await notifier.post_status_changed(
+                issue_id=status_change.issue.identifier or status_change.issue.id,
+                title=status_change.issue.title,
+                old_status=old_status,
+                new_status=status_change.new_state.name,
+                assignee=assignee,
+                url=status_change.issue.url,
+            )
+    except Exception as e:
+        # Log error but don't fail webhook processing
+        logger.error(
+            f"Failed to send Slack notification for status change: {e}",
+            exc_info=True,
+        )
+
+
+async def send_slack_notification_for_comment(comment_event: CommentEvent) -> None:
+    """
+    Send Slack notification for comment added event (non-blocking).
+
+    Args:
+        comment_event: Parsed comment event
+    """
+    try:
+        notifier = get_slack_notifier()
+        async with notifier:
+            author_name = (
+                comment_event.comment.user.name
+                if comment_event.comment.user
+                else "Unknown"
+            )
+            issue = comment_event.comment.issue
+            issue_id = (
+                issue.identifier or issue.id if issue else "unknown"
+            )
+            title = issue.title if issue else "Unknown Issue"
+            await notifier.post_comment_added(
+                issue_id=issue_id,
+                title=title,
+                comment_author=author_name,
+                comment_body=comment_event.comment.body or "",
+                url=comment_event.comment.url,
+            )
+    except Exception as e:
+        # Log error but don't fail webhook processing
+        logger.error(
+            f"Failed to send Slack notification for comment: {e}",
+            exc_info=True,
+        )
+
+
 # ============================================================================
 # Webhook Endpoints
 # ============================================================================
@@ -197,7 +298,7 @@ async def receive_linear_webhook(
         # Queue event for background processing
         event_id = queue_webhook_event(webhook_payload.model_dump())
 
-        # Log specific event types for debugging
+        # Log specific event types for debugging and trigger Slack notifications
         if webhook_payload.type == LinearWebhookType.ISSUE:
             try:
                 issue_event = IssueEvent.from_webhook_payload(webhook_payload)
@@ -205,6 +306,16 @@ async def receive_linear_webhook(
                     f"Issue event: {issue_event.action} - "
                     f"{issue_event.issue.identifier}: {issue_event.issue.title}"
                 )
+
+                # Send Slack notification for issue creation
+                if issue_event.action == WebhookAction.CREATE:
+                    asyncio.create_task(
+                        send_slack_notification_for_issue_created(issue_event)
+                    )
+                    logger.debug(
+                        f"Scheduled Slack notification for issue created: "
+                        f"{issue_event.issue.identifier}"
+                    )
 
                 # Check for status change
                 status_change = StatusChangeEvent.from_issue_event(issue_event)
@@ -218,6 +329,14 @@ async def receive_linear_webhook(
                         f"Status change detected: "
                         f"{prev_state} -> {status_change.new_state.name}"
                     )
+                    # Send Slack notification for status change
+                    asyncio.create_task(
+                        send_slack_notification_for_status_change(status_change)
+                    )
+                    logger.debug(
+                        f"Scheduled Slack notification for status change: "
+                        f"{status_change.issue.identifier}"
+                    )
             except Exception as e:
                 logger.warning(f"Failed to parse issue event details: {e}")
 
@@ -230,6 +349,13 @@ async def receive_linear_webhook(
                     else "unknown"
                 )
                 logger.info(f"Comment event: {comment_event.action} - by {user_name}")
+
+                # Send Slack notification for comment created
+                if comment_event.action == WebhookAction.CREATE:
+                    asyncio.create_task(
+                        send_slack_notification_for_comment(comment_event)
+                    )
+                    logger.debug(f"Scheduled Slack notification for comment by {user_name}")
             except Exception as e:
                 logger.warning(f"Failed to parse comment event details: {e}")
 

@@ -48,6 +48,7 @@ from .deduplication import (
     LinearDeduplicationManager,
     get_dedup_manager,
 )
+from .slack_notifier import get_slack_notifier
 
 logger = logging.getLogger(__name__)
 
@@ -434,6 +435,47 @@ class GitLabSyncManager:
                 f"Successfully synced Linear {linear_issue['identifier']} → "
                 f"GitLab !{gitlab_issue.iid}"
             )
+
+            # Send Slack notification for successful sync (non-blocking)
+            try:
+                if create_if_missing and not gitlab_issue_iid:
+                    # Only notify for new issue creation, not updates
+                    notifier = get_slack_notifier()
+                    async with notifier:
+                        assignee_name = (
+                            linear_issue.get("assignee", {}).get("name")
+                            if linear_issue.get("assignee")
+                            else None
+                        )
+                        state_name = (
+                            linear_issue.get("state", {}).get("name")
+                            if linear_issue.get("state")
+                            else None
+                        )
+                        priority_str = (
+                            str(linear_issue.get("priority"))
+                            if linear_issue.get("priority")
+                            else None
+                        )
+                        await notifier.post_issue_created(
+                            issue_id=linear_issue.get("identifier", linear_issue["id"]),
+                            title=linear_issue.get("title", "Unknown Title"),
+                            description=linear_issue.get("description"),
+                            assignee=assignee_name,
+                            status=state_name,
+                            priority=priority_str,
+                            url=linear_issue.get("url"),
+                        )
+                        logger.debug(
+                            f"Sent Slack notification for Linear→GitLab sync: "
+                            f"{linear_issue['identifier']}"
+                        )
+            except Exception as slack_error:
+                # Don't fail sync if Slack notification fails
+                logger.warning(
+                    f"Failed to send Slack notification for Linear→GitLab sync: {slack_error}",
+                    exc_info=True,
+                )
 
             return gitlab_issue
 
