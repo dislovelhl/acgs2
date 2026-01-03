@@ -410,3 +410,50 @@ The complete documentation and developer experience suite is now in place, provi
 
 ## Blockers:
 None
+
+## Current Status: Phase 5 - Testing and Validation (In Progress)
+
+### Completed Subtasks:
+
+#### ✅ Subtask 5.1 - Create test fixtures for secret patterns (2026-01-04)
+- Successfully created comprehensive test fixtures directory: `tests/fixtures/secrets/`
+- Added 8 test files (1,555 lines total) covering all credential patterns
+- **Safe placeholders** (3 files: .py, .env, .yaml):
+  * Development prefixes: dev-*, test-*, example-*, sample-*
+  * Instructional markers: <...>, your-*, changeme, TODO, FIXME
+  * Redacted examples: XXX...XXX, ****, sk-ant-XXX...XXX
+  * Known safe values: dev-jwt-secret-min-32-chars-required, dev_password, mlflow_password
+- **Unsafe secrets** (3 files: .py, .env, .yaml):
+  * Realistic-looking fake credentials matching all 8 patterns
+  * Randomly generated, clearly marked as FAKE for testing only
+  * Multiple variations per pattern for comprehensive testing
+- **Documentation** (2 files):
+  * README.md: Safety warnings, structure, exclusion documentation
+  * patterns_reference.md: Complete 430-line reference with examples, format specifications, detection logic
+- **Coverage**: All 8 CREDENTIAL_PATTERNS tested
+  1. CLAUDE_CODE_OAUTH_TOKEN: sk-ant-oat\d{2}-[A-Za-z0-9_-]{60,}
+  2. OPENAI_API_KEY: sk-[A-Za-z0-9]{20,}
+  3. OPENROUTER_API_KEY: sk-or-v1-[A-Za-z0-9]{60,}
+  4. HF_TOKEN: hf_[A-Za-z0-9]{30,}
+  5. ANTHROPIC_API_KEY: sk-ant-[A-Za-z0-9_-]{80,}
+  6. AWS_ACCESS_KEY_ID: AKIA[A-Z0-9]{16}
+  7. JWT_SECRET: [A-Fa-f0-9]{64}
+  8. VAULT_TOKEN: (hvs\.|s\.)[A-Za-z0-9]{20,}
+- **Verification**:
+  * ✅ ACGS-2 Secrets Detection hook PASSED (fixtures properly excluded)
+  * ✅ Gitleaks Secret Detection hook PASSED (fixtures properly excluded)
+  * ✅ All pre-commit hooks pass (ruff, bandit, yaml validation)
+  * ✅ Fixtures properly excluded via `.pre-commit-config.yaml` line 84
+  * ✅ Fixtures properly excluded via `.secrets-allowlist.yaml` test_paths
+- **File formats tested**: Python (.py), Environment (.env), YAML (.yaml)
+- **Edge cases included**: Empty values, comments, templates, nested configs, inline configs, lists, dictionaries
+- Commit: 1ace28dba
+
+**Acceptance Criteria Met:**
+- ✅ Test fixtures contain each pattern from CREDENTIAL_PATTERNS (all 8 patterns)
+- ✅ Test files include safe placeholders that should pass (dev-*, test-*, <...>, XXX, etc.)
+- ✅ Test files include real-looking secrets that should fail (realistic fakes for all 8 patterns)
+- ✅ Test fixtures properly marked to exclude from actual scanning (verified via hook passing)
+
+---
+

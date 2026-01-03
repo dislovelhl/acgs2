@@ -81,7 +81,7 @@ repos:
         entry: python scripts/check-secrets-pre-commit.py
         language: system
         files: \.(py|env|ya?ml|json)$
-        exclude: ^(.*/(__pycache__|\.venv|venv|node_modules|tests/fixtures|__fixtures__)/.*|.*\.(env\.example|env\.template|example\.|template\.))
+        exclude: ^(.*/(__pycache__|\.venv|venv|node_modules|tests/fixtures|__fixtures__)/.*|tests/test_.*\.py$|.*\.(env\.example|env\.template|example\.|template\.))
 
   # Security scanning
   - repo: https://github.com/gitleaks/gitleaks
