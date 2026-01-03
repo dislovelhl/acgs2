@@ -131,7 +131,9 @@
           "subtask_id": "3.2",
           "title": "Add allow-list for development secrets",
           "description": "Create configuration for known-safe development secrets and placeholders",
-          "status": "pending",
+          "status": "completed",
+          "completed_at": "2026-01-03T23:30:00.000Z",
+          "notes": "Successfully created comprehensive .secrets-allowlist.yaml configuration file with three-tier allow-list system (pattern/path/value-based). Includes documented safe values from .env.dev and .env.example, placeholder patterns (dev-*, test-*, your-*, etc.), file exclusions, binary/media extensions, feature flags, and performance settings. Updated scripts/check-secrets-pre-commit.py to load configuration with PyYAML, falling back to defaults if unavailable. Created .secrets-allowlist.README.md with complete documentation, usage examples, best practices, and troubleshooting guide. All pre-commit hooks pass (ruff, bandit, gitleaks). Commit: 7a3781d97",
           "acceptance_criteria": [
             "Allow-list configuration file created",
             "Placeholder patterns documented (e.g., 'dev-*', 'test-*')",

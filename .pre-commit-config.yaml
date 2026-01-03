@@ -74,6 +74,15 @@ repos:
         files: ^acgs2-core/.*test.*\.py$
         stages: [manual]  # Only run when optimizing tests
 
+      # ACGS-2 Custom Secrets Detection
+      - id: acgs2-secrets-detection
+        name: ACGS-2 Secrets Detection
+        description: Detect ACGS-2-specific secrets using patterns from secrets_manager.py
+        entry: python scripts/check-secrets-pre-commit.py
+        language: system
+        files: \.(py|env|ya?ml|json)$
+        exclude: ^(.*/(__pycache__|\.venv|venv|node_modules|tests/fixtures|__fixtures__)/.*|.*\.(env\.example|env\.template|example\.|template\.))
+
   # Security scanning
   - repo: https://github.com/gitleaks/gitleaks
     rev: v8.21.2

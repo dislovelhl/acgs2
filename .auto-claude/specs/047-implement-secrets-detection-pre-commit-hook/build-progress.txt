@@ -186,9 +186,60 @@ All subtasks in Phase 2 completed successfully. Gitleaks is now integrated as a 
 
 ---
 
+#### ✅ Subtask 3.2 - Add allow-list for development secrets (2026-01-03)
+- Created comprehensive `.secrets-allowlist.yaml` configuration file (440+ lines)
+- Implemented three-tier allow-list system:
+  * Tier 1 (Pattern-Based): Placeholder prefixes (dev-*, test-*, your-*, etc.) and markers (<, xxx, ***, example, template, etc.)
+  * Tier 2 (Path-Based): Excluded directories (node_modules/, .venv/, tests/fixtures/), file patterns (.env.example, .env.template, *.md)
+  * Tier 3 (Value-Based): Known safe values from .env.dev and .env.example with full documentation
+- Documented all safe values with context, why_safe, and production_mitigation notes:
+  * dev-jwt-secret-min-32-chars-required (JWT_SECRET)
+  * dev_password (REDIS_PASSWORD)
+  * mlflow_password (POSTGRES_ML_PASSWORD)
+  * Generic placeholders (password, changeme, secret, test-secret, etc.)
+- Added file-specific rules for different scan levels (VERY_STRICT for .py, RELAXED for .md, etc.)
+- Included skip_extensions list for binary/media files
+- Added feature_flags and performance configuration sections
+- Comprehensive inline documentation with examples and best practices
+- Updated `scripts/check-secrets-pre-commit.py` to load configuration:
+  * Added PyYAML import with error handling
+  * Implemented load_allowlist_config() function with fallback to defaults
+  * Enhanced verbose output to show config source and load status
+  * Added configuration reference in error messages
+- Created `.secrets-allowlist.README.md` (320+ lines):
+  * Complete documentation of configuration structure
+  * Usage examples and validation commands
+  * When/how to update the file
+  * Best practices (DO/DON'T)
+  * Integration with secrets_manager.py explanation
+  * Troubleshooting guide
+- All pre-commit hooks pass: ruff, ruff-format, bandit, gitleaks, ACGS-2 Quality Gate
+- Commit: 7a3781d97
+
+**Configuration Structure:**
+```
+.secrets-allowlist.yaml (440 lines)
+├── placeholder_patterns (prefixes, markers, redaction_patterns)
+├── excluded_paths (directories, test_paths, file_patterns)
+├── known_safe_values (development, generic, empty_values, test_fixtures)
+├── file_specific_rules (scan levels per file type)
+├── skip_extensions (binary/media files)
+├── feature_flags (check_entropy, check_base64, etc.)
+├── entropy_config (threshold settings)
+├── base64_config (detection settings)
+├── performance (limits and tuning)
+└── metadata (version, review schedule)
+```
+
+**Acceptance Criteria Met:**
+- ✅ Allow-list configuration file created (.secrets-allowlist.yaml)
+- ✅ Placeholder patterns documented (dev-*, test-*, your-*, etc.)
+- ✅ Allow-list includes .env.example and .env.dev safe values (all documented with justification)
+
+---
+
 ## Next Steps:
-1. Implement subtask 3.2: Add allow-list for development secrets
-2. Implement subtask 3.3: Integrate custom hook into pre-commit
+1. Implement subtask 3.3: Integrate custom hook into pre-commit
 
 ## Blockers:
 None
