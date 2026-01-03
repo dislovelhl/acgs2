@@ -249,7 +249,7 @@ class NetworkChaosInjector(BaseChaosInjector):
 
         # Use tc (traffic control) to add latency
         # cmd = f"tc qdisc add dev eth0 root netem delay {latency_ms}ms"
-        # Execute command on target (would use Kubernetes API in real implementation)
+        # Execute command on target (would use Kubernetes API)
 
         self.logger.info(f"Injected {latency_ms}ms latency on {target.resource_id}")
         return True
@@ -268,8 +268,8 @@ class NetworkChaosInjector(BaseChaosInjector):
         """Inject bandwidth limitation"""
         bandwidth_mbps = failure.parameters.get("bandwidth_mbps", 1.0)
 
-        # cmd = f"tc qdisc add dev eth0 root tbf rate {bandwidth_mbps}mbit "
-        #       f"burst 32kbit latency 400ms"
+        # cmd = (f"tc qdisc add dev eth0 root tbf rate {bandwidth_mbps}mbit "
+        #        f"burst 32kbit latency 400ms")
         # Execute command on target
 
         self.logger.info(f"Limited bandwidth to {bandwidth_mbps}Mbps on {target.resource_id}")
@@ -291,10 +291,11 @@ class NetworkChaosInjector(BaseChaosInjector):
         """Rollback network failure"""
         # Remove tc rules or iptables rules
         if failure.parameters.get("type") in ["latency", "packet_loss", "bandwidth_limit"]:
-            pass  # cmd = "tc qdisc del dev eth0 root"
+            # cmd = "tc qdisc del dev eth0 root"
+            pass
         elif failure.parameters.get("type") == "network_partition":
-            pass  # target_ip = failure.parameters.get("target_ip")
-            # cmd = f"iptables -D INPUT -s {target_ip} -j DROP"
+            _target_ip = failure.parameters.get("target_ip")  # noqa: F841
+            # cmd = f"iptables -D INPUT -s {_target_ip} -j DROP"
 
         # Execute rollback command
         self.logger.info(f"Rolled back network failure on {target.resource_id}")
@@ -330,7 +331,8 @@ class ComputeChaosInjector(BaseChaosInjector):
         cpu_percentage = failure.parameters.get("cpu_percentage", 80)
 
         # Use stress-ng or similar tool
-        # cmd = f"stress-ng --cpu 0 --cpu-load {cpu_percentage} --timeout {failure.duration_seconds}s"
+        # cmd = (f"stress-ng --cpu 0 --cpu-load {cpu_percentage} "
+        #        f"--timeout {failure.duration_seconds}s")
         # Execute in background on target
 
         self.logger.info(f"Injected {cpu_percentage}% CPU stress on {target.resource_id}")
@@ -349,7 +351,6 @@ class ComputeChaosInjector(BaseChaosInjector):
         """Inject disk I/O stress"""
         io_workers = failure.parameters.get("io_workers", 4)
 
-        cmd = f"stress-ng --io {io_workers} --timeout {failure.duration_seconds}s"
         # Execute on target
 
         self.logger.info(f"Injected disk I/O stress ({io_workers} workers) on {target.resource_id}")
@@ -373,9 +374,10 @@ class ComputeChaosInjector(BaseChaosInjector):
 
         if failure_type == "process_kill":
             # Restart killed process
-            process_name = failure.parameters.get("process_name")
-            cmd = f"systemctl restart {process_name}"
+            # process_name = failure.parameters.get("process_name")
+            # cmd = f"systemctl restart {process_name}"
             # Execute on target
+            pass
 
         self.logger.info(f"Rolled back compute failure on {target.resource_id}")
         return True
@@ -501,7 +503,8 @@ class EnterpriseChaosOrchestrator:
         # Blast radius check
         if len(experiment.blast_radius) > experiment.safety_net.blast_radius_limit:
             raise ValueError(
-                f"Blast radius {len(experiment.blast_radius)} exceeds limit {experiment.safety_net.blast_radius_limit}"
+                f"Blast radius {len(experiment.blast_radius)} exceeds "
+                f"limit {experiment.safety_net.blast_radius_limit}"
             )
 
         # Resource availability check

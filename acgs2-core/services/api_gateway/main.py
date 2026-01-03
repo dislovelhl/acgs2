@@ -178,7 +178,7 @@ async def submit_feedback(
 
 @app.get("/feedback/stats")
 @track_request_metrics("api-gateway", "/feedback/stats")
-async def get_feedback_stats(user: UserClaims = Depends(get_current_user_optional)):
+async def get_feedback_stats(user: UserClaims = Depends(get_current_user_optional)):  # noqa: B008
     """Get feedback statistics (admin endpoint)"""
     try:
         # Log access for audit purposes

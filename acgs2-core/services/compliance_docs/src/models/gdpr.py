@@ -5,7 +5,7 @@ GDPR Article 30 compliance models and data structures
 from datetime import date
 from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class GDPRDataCategory(str):
@@ -87,7 +87,8 @@ class GDPRArticle30Record(BaseModel):
     )
     version: str = Field(default="1.0", description="Record version")
 
-    @validator("record_date")
+    @field_validator("record_date")
+    @classmethod
     def record_date_not_future(cls, v):
         if v > date.today():
             raise ValueError("record_date cannot be in the future")

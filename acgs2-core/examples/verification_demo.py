@@ -45,7 +45,8 @@ async def run_demo():
         logger.info("  LLM Metrics:")
         for stage, metrics in result["metrics"].items():
             logger.info(
-                f"    - {stage}: {metrics['latency_ms']:.2f}ms, {metrics['token_usage'].get('total_tokens', 0)} tokens"
+                f"    - {stage}: {metrics['latency_ms']:.2f}ms, "
+                f"{metrics['token_usage'].get('total_tokens', 0)} tokens"
             )
 
     # 3. Case 2: Potential Violation

@@ -73,7 +73,7 @@ class TestFeedbackIntegration:
         assert len(stored_ids) == 3
         assert set(feedbacks) == stored_ids
 
-    def test_feedback_stats_calculation(self, client, mock_feedback_dir):
+    def test_feedback_stats_calculation(self, client, sample_feedback, mock_feedback_dir):
         """Test feedback statistics calculation."""
         # Submit various feedbacks
         test_feedbacks = [
