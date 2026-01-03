@@ -1,6 +1,7 @@
 """
 ACGS-2 Enhanced Agent Bus API
 FastAPI application for the Enhanced Agent Bus service
+Constitutional Hash: cdd01ef066bc6cf2
 """
 
 import asyncio
@@ -21,14 +22,42 @@ app = FastAPI(
     version="1.0.0",
 )
 
-# Add CORS middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# SECURITY: Use secure CORS configuration from shared module
+# Removed allow_origins=["*"] to prevent CORS vulnerability (OWASP A05:2021)
+try:
+    from shared.security.cors_config import get_cors_config
+    cors_config = get_cors_config()
+    logger.info("CORS: Using secure configuration from shared module")
+except ImportError:
+    # Fallback: Use environment-based configuration
+    allowed_origins = os.environ.get("CORS_ALLOWED_ORIGINS", "").split(",")
+    allowed_origins = [o.strip() for o in allowed_origins if o.strip()]
+
+    # Default to localhost origins if not configured (development only)
+    if not allowed_origins:
+        env = os.environ.get("ENVIRONMENT", "development").lower()
+        if env in ("production", "prod"):
+            # Production: require explicit configuration
+            logger.warning("CORS: No CORS_ALLOWED_ORIGINS set in production - using empty list")
+            allowed_origins = []
+        else:
+            # Development: allow localhost
+            allowed_origins = [
+                "http://localhost:3000",
+                "http://localhost:8080",
+                "http://127.0.0.1:3000",
+                "http://127.0.0.1:8080",
+            ]
+            logger.info(f"CORS: Using development origins: {allowed_origins}")
+
+    cors_config = {
+        "allow_origins": allowed_origins,
+        "allow_credentials": True,
+        "allow_methods": ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+        "allow_headers": ["Authorization", "Content-Type", "X-Request-ID", "X-Constitutional-Hash"],
+    }
+
+app.add_middleware(CORSMiddleware, **cors_config)
 
 # Global agent bus instance - simplified for development
 agent_bus = None

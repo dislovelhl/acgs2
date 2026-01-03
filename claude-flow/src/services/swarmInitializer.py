@@ -3,12 +3,16 @@
 Swarm Initializer for ACGS-2 Claude Flow CLI
 
 This script initializes a swarm with specified topology and configuration.
+
+COMPATIBILITY: Python 3.11+ compatible
+- Uses time.time() instead of deprecated asyncio.get_event_loop().time()
 """
 
 import asyncio
 import json
 import os
 import sys
+import time
 import uuid
 
 # Add the ACGS-2 core to the path
@@ -49,7 +53,7 @@ async def initialize_swarm(
             "auto_spawn": auto_spawn,
             "memory_enabled": memory,
             "github_enabled": github,
-            "created_at": asyncio.get_event_loop().time(),
+            "created_at": time.time(),  # COMPATIBILITY: Python 3.11+ (replaced deprecated get_event_loop().time())
             "active_agents": 0,
             "tenant_id": "default",
             "constitutional_hash": CONSTITUTIONAL_HASH,
@@ -101,7 +105,7 @@ async def initialize_swarm(
                     json.dumps(
                         {
                             "swarm_id": swarm_id,
-                            "initialized_at": asyncio.get_event_loop().time(),
+                            "initialized_at": time.time(),  # COMPATIBILITY: Python 3.11+
                             "memory_type": "persistent",
                             "backend": "redis",
                         }
@@ -182,7 +186,7 @@ async def _persist_swarm_config(swarm_id: str, config: dict):
         # Save swarm configuration
         config_file = os.path.join(storage_dir, f"swarm_{swarm_id}.json")
         with open(config_file, "w") as f:
-            json.dump({**config, "persisted_at": asyncio.get_event_loop().time()}, f, indent=2)
+            json.dump({**config, "persisted_at": time.time()}, f, indent=2)  # COMPATIBILITY: Python 3.11+
 
     except Exception as e:
         # Log error but don't fail initialization
