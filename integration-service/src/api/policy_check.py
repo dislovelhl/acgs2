@@ -808,9 +808,22 @@ async def get_policy(
     summary="Policy validation health check",
     description="Check if policy validation is available",
 )
-async def policy_health() -> Dict[str, Any]:
+async def policy_health(
+    current_user: UserClaims = Depends(get_current_user),
+) -> Dict[str, Any]:
     """Check policy validation health status."""
+    # Log the health check request with user/tenant context for audit trail
+    logger.info(
+        f"Policy health check request: "
+        f"user={current_user.sub}, tenant={current_user.tenant_id}"
+    )
+
     opa_available = await check_opa_health()
+
+    logger.info(
+        f"Policy health check complete: status=healthy, opa_available={opa_available}, "
+        f"user={current_user.sub}, tenant={current_user.tenant_id}"
+    )
 
     return {
         "status": "healthy",
