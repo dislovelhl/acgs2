@@ -349,7 +349,8 @@ class ConstitutionalMambaHybrid(nn.Module):
         # Validate context length
         if seq_len > self.config.max_context_length:
             logger.warning(
-                f"Sequence length {seq_len:,} exceeds max context {self.config.max_context_length:,}"
+                f"Sequence length {seq_len:,} exceeds max context "
+                f"{self.config.max_context_length:,}"
             )
             # Truncate if necessary (though Mamba should handle long contexts)
             x = x[:, : self.config.max_context_length]

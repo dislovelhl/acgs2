@@ -172,8 +172,10 @@ class TemplateResponseGenerator(ResponseGenerator):
                 id="help",
                 intent="help",
                 templates=[
-                    "I can help you with orders, account questions, and general inquiries. What do you need?",
-                    "Here are some things I can assist with: checking order status, answering questions, and providing information.",
+                    "I can help you with orders, account questions, and general inquiries. "
+                    "What do you need?",
+                    "Here are some things I can assist with: checking order status, "
+                    "answering questions, and providing information.",
                 ],
             ),
             ResponseTemplate(
