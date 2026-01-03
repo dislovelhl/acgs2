@@ -18,6 +18,8 @@ from shared.logging_config import (
 from shared.middleware.correlation_id import add_correlation_id_middleware
 
 from ..core.audit_ledger import AuditLedger
+from .api.governance import router as governance_router
+from .api.reports import router as reports_router
 
 # Centralized settings
 try:
@@ -75,14 +77,17 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Add correlation ID middleware
-app.middleware("http")(create_correlation_middleware())
-
-# Initialize metrics
-set_service_info("audit-service", "1.0.0")
-
-# Add metrics endpoint
-app.add_api_route("/metrics", create_metrics_endpoint())
+# Include API routers
+app.include_router(
+    governance_router,
+    prefix="/api/v1/governance",
+    tags=["governance"],
+)
+app.include_router(
+    reports_router,
+    prefix="/api/v1/reports",
+    tags=["reports"],
+)
 
 
 @app.get("/health/live")

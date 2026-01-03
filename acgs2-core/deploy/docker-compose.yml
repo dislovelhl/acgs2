@@ -161,3 +161,150 @@ services:
       - acgs-internal
     labels:
       tenant_id: "${TENANT_ID:-acgs-main}"  # Isolation
+
+  # Audit Service - Compliance reporting and audit ledger
+  audit-service:
+    build:
+      context: ../services/audit_service
+      dockerfile: Dockerfile
+    ports:
+      - "8084:8084"
+    env_file:
+      - .env
+    environment:
+      - TENANT_ID=${TENANT_ID:-acgs-main}
+      - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD}@redis:6380/0?ssl=true
+      - CELERY_RESULT_BACKEND=redis://:${REDIS_PASSWORD}@redis:6380/0?ssl=true
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6380/0?ssl=true
+      - REPORT_STORAGE_PATH=/var/reports
+      - APP_ENV=${APP_ENV:-production}
+    volumes:
+      - audit-reports:/var/reports
+      - ./cert-manager:/certs:ro
+    user: "1000:1000"
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 1G
+        reservations:
+          cpus: '0.25'
+          memory: 512M
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8084/api/v1/governance/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - acgs-internal
+    labels:
+      tenant_id: "${TENANT_ID:-acgs-main}"
+      metrics: "prometheus"
+
+  # Celery Worker - Async task processing for report generation and email delivery
+  celery-worker:
+    build:
+      context: ../services/audit_service
+      dockerfile: Dockerfile
+    command: celery -A app.celery_app worker --loglevel=info --queues=reports,email,celery
+    env_file:
+      - .env
+    environment:
+      - TENANT_ID=${TENANT_ID:-acgs-main}
+      - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD}@redis:6380/0?ssl=true
+      - CELERY_RESULT_BACKEND=redis://:${REDIS_PASSWORD}@redis:6380/0?ssl=true
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6380/0?ssl=true
+      - REPORT_STORAGE_PATH=/var/reports
+      - APP_ENV=${APP_ENV:-production}
+      - SMTP_HOST=${SMTP_HOST:-smtp.gmail.com}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_USERNAME=${SMTP_USERNAME:-}
+      - SMTP_PASSWORD=${SMTP_PASSWORD:-}
+      - SMTP_FROM_EMAIL=${SMTP_FROM_EMAIL:-noreply@acgs.local}
+      - SMTP_USE_TLS=${SMTP_USE_TLS:-true}
+    volumes:
+      - audit-reports:/var/reports
+      - ./cert-manager:/certs:ro
+    user: "1000:1000"
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 1G
+        reservations:
+          cpus: '0.25'
+          memory: 512M
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A app.celery_app inspect ping -d celery@$$HOSTNAME --timeout=10 || exit 1"]
+      interval: 30s
+      timeout: 15s
+      retries: 3
+      start_period: 60s
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - acgs-internal
+    labels:
+      tenant_id: "${TENANT_ID:-acgs-main}"
+      service_type: "celery-worker"
+
+  # Celery Beat - Scheduled task scheduler for periodic report generation
+  celery-beat:
+    build:
+      context: ../services/audit_service
+      dockerfile: Dockerfile
+    command: celery -A app.celery_app beat --loglevel=info --pidfile=/tmp/celerybeat.pid
+    env_file:
+      - .env
+    environment:
+      - TENANT_ID=${TENANT_ID:-acgs-main}
+      - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD}@redis:6380/0?ssl=true
+      - CELERY_RESULT_BACKEND=redis://:${REDIS_PASSWORD}@redis:6380/0?ssl=true
+      - CELERY_BEAT_SCHEDULE_FILE=/tmp/celerybeat-schedule
+      - ENABLE_SCHEDULED_REPORTS=${ENABLE_SCHEDULED_REPORTS:-true}
+      - SCHEDULED_REPORT_TENANT_ID=${SCHEDULED_REPORT_TENANT_ID:-default}
+      - SCHEDULED_REPORT_RECIPIENTS=${SCHEDULED_REPORT_RECIPIENTS:-}
+      - DEFAULT_COMPANY_NAME=${DEFAULT_COMPANY_NAME:-}
+      - DEFAULT_LOGO_URL=${DEFAULT_LOGO_URL:-}
+      - DEFAULT_BRAND_COLOR=${DEFAULT_BRAND_COLOR:-}
+      - APP_ENV=${APP_ENV:-production}
+    volumes:
+      - celery-beat-data:/tmp
+      - ./cert-manager:/certs:ro
+    user: "1000:1000"
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 256M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+      replicas: 1  # Only one beat scheduler should run
+    depends_on:
+      redis:
+        condition: service_healthy
+      celery-worker:
+        condition: service_started
+    networks:
+      - acgs-internal
+    labels:
+      tenant_id: "${TENANT_ID:-acgs-main}"
+      service_type: "celery-beat"
+
+volumes:
+  audit-reports:
+    driver: local
+  celery-beat-data:
+    driver: local

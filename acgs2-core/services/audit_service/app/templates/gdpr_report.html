@@ -1,0 +1,1119 @@
+{% extends "base_report.html" %}
+
+{# ==========================================================================
+   GDPR Compliance Report Template
+
+   General Data Protection Regulation (EU) 2016/679 Compliance Report
+   Based on GDPR Articles and Principles
+
+   Core GDPR Principles (Article 5):
+   - Lawfulness, fairness and transparency
+   - Purpose limitation
+   - Data minimization
+   - Accuracy
+   - Storage limitation
+   - Integrity and confidentiality
+   - Accountability
+
+   Key Articles Covered:
+   - Article 30: Records of Processing Activities (ROPA)
+   - Articles 15-22: Data Subject Rights
+   - Articles 33-34: Data Breach Notification
+   - Article 35: Data Protection Impact Assessment (DPIA)
+   - Article 32: Security of Processing
+   ========================================================================== #}
+
+{% block title %}GDPR Compliance Report - {{ company_name | default('ACGS-2') }}{% endblock %}
+
+{% block report_type %}GDPR Compliance Report{% endblock %}
+
+{% block framework_name %}GDPR{% endblock %}
+
+{% block extra_styles %}
+/* GDPR specific styles - uses purple color scheme */
+body {
+    --brand-color: #7b1fa2;
+    --brand-color-light: #7b1fa21a;
+    --brand-color-dark: #4a148c;
+}
+
+.gdpr-principle {
+    margin-bottom: 35px;
+}
+
+.gdpr-header {
+    background: linear-gradient(135deg, var(--brand-color) 0%, var(--brand-color-dark) 100%);
+    color: #ffffff;
+    padding: 20px 25px;
+    border-radius: 10px 10px 0 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.gdpr-title {
+    font-size: 14pt;
+    font-weight: 700;
+    margin: 0;
+}
+
+.gdpr-subtitle {
+    font-size: 10pt;
+    opacity: 0.9;
+    margin-top: 5px;
+}
+
+.gdpr-status-badge {
+    background: rgba(255, 255, 255, 0.2);
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 10pt;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.gdpr-status-badge.compliant {
+    background: #4caf50;
+}
+
+.gdpr-status-badge.partial {
+    background: #ff9800;
+}
+
+.gdpr-status-badge.non-compliant {
+    background: #f44336;
+}
+
+.gdpr-body {
+    background: #ffffff;
+    border: 1px solid #dee2e6;
+    border-top: none;
+    border-radius: 0 0 10px 10px;
+    padding: 25px;
+}
+
+.gdpr-description {
+    font-size: 10pt;
+    color: #666666;
+    margin-bottom: 20px;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border-left: 3px solid var(--brand-color);
+}
+
+.gdpr-metrics {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.gdpr-metric {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    text-align: center;
+}
+
+.gdpr-metric-value {
+    font-size: 24pt;
+    font-weight: 700;
+    color: var(--brand-color);
+}
+
+.gdpr-metric-label {
+    font-size: 9pt;
+    color: #666666;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 5px;
+}
+
+.principle-item {
+    margin-bottom: 15px;
+    padding: 15px;
+    background: #fafafa;
+    border-radius: 8px;
+    border-left: 3px solid #dee2e6;
+}
+
+.principle-item.principle-compliant {
+    border-left-color: #4caf50;
+}
+
+.principle-item.principle-partial {
+    border-left-color: #ff9800;
+}
+
+.principle-item.principle-non-compliant {
+    border-left-color: #f44336;
+}
+
+.principle-name {
+    font-size: 11pt;
+    font-weight: 600;
+    color: #333333;
+    margin-bottom: 8px;
+}
+
+.principle-evidence {
+    font-size: 10pt;
+    color: #666666;
+    margin-bottom: 8px;
+}
+
+.principle-result {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 4px;
+    font-size: 9pt;
+    font-weight: 600;
+}
+
+.principle-result.compliant {
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+
+.principle-result.partial {
+    background: #fff3e0;
+    color: #ef6c00;
+}
+
+.principle-result.non-compliant {
+    background: #ffebee;
+    color: #c62828;
+}
+
+.gdpr-overview {
+    margin-bottom: 30px;
+}
+
+.overview-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 15px;
+}
+
+.overview-card {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    padding: 20px;
+    border-radius: 10px;
+    text-align: center;
+    border: 1px solid #dee2e6;
+}
+
+.overview-card-title {
+    font-size: 9pt;
+    font-weight: 700;
+    color: var(--brand-color);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 10px;
+}
+
+.overview-card-score {
+    font-size: 20pt;
+    font-weight: 700;
+}
+
+.overview-card-score.score-pass {
+    color: #2e7d32;
+}
+
+.overview-card-score.score-partial {
+    color: #ef6c00;
+}
+
+.overview-card-score.score-fail {
+    color: #c62828;
+}
+
+.ropa-entry {
+    background: #ffffff;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 15px;
+}
+
+.ropa-entry-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.ropa-entry-title {
+    font-size: 12pt;
+    font-weight: 600;
+    color: #333333;
+}
+
+.ropa-entry-id {
+    font-size: 9pt;
+    color: var(--brand-color);
+    font-weight: 600;
+}
+
+.ropa-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+}
+
+.ropa-field {
+    margin-bottom: 10px;
+}
+
+.ropa-field-label {
+    font-size: 9pt;
+    font-weight: 600;
+    color: #666666;
+    text-transform: uppercase;
+    margin-bottom: 3px;
+}
+
+.ropa-field-value {
+    font-size: 10pt;
+    color: #333333;
+}
+
+.dsr-summary {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.dsr-card {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    text-align: center;
+}
+
+.dsr-card-value {
+    font-size: 20pt;
+    font-weight: 700;
+    color: var(--brand-color);
+}
+
+.dsr-card-label {
+    font-size: 9pt;
+    color: #666666;
+    text-transform: uppercase;
+    margin-top: 5px;
+}
+
+.breach-card {
+    background: #fff8f8;
+    border: 1px solid #ffcdd2;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 15px;
+}
+
+.breach-card.severity-high {
+    border-left: 4px solid #f44336;
+}
+
+.breach-card.severity-medium {
+    border-left: 4px solid #ff9800;
+}
+
+.breach-card.severity-low {
+    border-left: 4px solid #4caf50;
+}
+
+.breach-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.breach-id {
+    font-size: 10pt;
+    font-weight: 700;
+    color: #c62828;
+}
+
+.breach-severity {
+    padding: 3px 10px;
+    border-radius: 4px;
+    font-size: 9pt;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.breach-severity.high {
+    background: #ffebee;
+    color: #c62828;
+}
+
+.breach-severity.medium {
+    background: #fff3e0;
+    color: #ef6c00;
+}
+
+.breach-severity.low {
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+
+.dpo-info {
+    background: #f3e5f5;
+    border: 1px solid #ce93d8;
+    border-radius: 10px;
+    padding: 25px;
+    margin-top: 20px;
+}
+
+.dpo-info h3 {
+    font-size: 12pt;
+    font-weight: 700;
+    color: #7b1fa2;
+    margin-bottom: 15px;
+}
+
+.legal-basis-badge {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 9pt;
+    font-weight: 600;
+    margin: 2px;
+    background: #e1bee7;
+    color: #4a148c;
+}
+
+@media print {
+    .gdpr-principle {
+        page-break-inside: avoid;
+    }
+
+    .ropa-entry {
+        page-break-inside: avoid;
+    }
+}
+{% endblock %}
+
+{% block framework_content %}
+{# ==========================================================================
+   GDPR Compliance Overview Summary
+   ========================================================================== #}
+<section class="section gdpr-overview">
+    <h2 class="section-title">GDPR Compliance Overview</h2>
+
+    <div class="overview-grid">
+        <div class="overview-card">
+            <div class="overview-card-title">Principles Compliance</div>
+            <div class="overview-card-score {% if gdpr_data and gdpr_data.principles_compliance_rate and gdpr_data.principles_compliance_rate >= 90 %}score-pass{% elif gdpr_data and gdpr_data.principles_compliance_rate and gdpr_data.principles_compliance_rate >= 70 %}score-partial{% else %}score-fail{% endif %}">
+                {{ gdpr_data.principles_compliance_rate | default('N/A') }}{% if gdpr_data and gdpr_data.principles_compliance_rate is defined %}%{% endif %}
+            </div>
+        </div>
+        <div class="overview-card">
+            <div class="overview-card-title">Data Subject Rights</div>
+            <div class="overview-card-score {% if gdpr_data and gdpr_data.dsr_compliance_rate and gdpr_data.dsr_compliance_rate >= 90 %}score-pass{% elif gdpr_data and gdpr_data.dsr_compliance_rate and gdpr_data.dsr_compliance_rate >= 70 %}score-partial{% else %}score-fail{% endif %}">
+                {{ gdpr_data.dsr_compliance_rate | default('N/A') }}{% if gdpr_data and gdpr_data.dsr_compliance_rate is defined %}%{% endif %}
+            </div>
+        </div>
+        <div class="overview-card">
+            <div class="overview-card-title">ROPA Completeness</div>
+            <div class="overview-card-score {% if gdpr_data and gdpr_data.ropa_completeness and gdpr_data.ropa_completeness >= 90 %}score-pass{% elif gdpr_data and gdpr_data.ropa_completeness and gdpr_data.ropa_completeness >= 70 %}score-partial{% else %}score-fail{% endif %}">
+                {{ gdpr_data.ropa_completeness | default('N/A') }}{% if gdpr_data and gdpr_data.ropa_completeness is defined %}%{% endif %}
+            </div>
+        </div>
+        <div class="overview-card">
+            <div class="overview-card-title">Security Measures</div>
+            <div class="overview-card-score {% if gdpr_data and gdpr_data.security_compliance_rate and gdpr_data.security_compliance_rate >= 90 %}score-pass{% elif gdpr_data and gdpr_data.security_compliance_rate and gdpr_data.security_compliance_rate >= 70 %}score-partial{% else %}score-fail{% endif %}">
+                {{ gdpr_data.security_compliance_rate | default('N/A') }}{% if gdpr_data and gdpr_data.security_compliance_rate is defined %}%{% endif %}
+            </div>
+        </div>
+    </div>
+</section>
+
+{# ==========================================================================
+   Article 5 - GDPR Principles Assessment
+   ========================================================================== #}
+<section class="section gdpr-principle">
+    <div class="gdpr-header">
+        <div>
+            <h2 class="gdpr-title">GDPR Principles Assessment</h2>
+            <p class="gdpr-subtitle">Article 5 | Core Data Processing Principles</p>
+        </div>
+        <span class="gdpr-status-badge {% if gdpr_data and gdpr_data.principles and gdpr_data.principles.status == 'COMPLIANT' %}compliant{% elif gdpr_data and gdpr_data.principles and gdpr_data.principles.status == 'PARTIAL' %}partial{% else %}non-compliant{% endif %}">
+            {{ gdpr_data.principles.status | default('PENDING') if gdpr_data and gdpr_data.principles else 'PENDING' }}
+        </span>
+    </div>
+    <div class="gdpr-body">
+        <div class="gdpr-description">
+            <strong>Article 5 - Principles relating to processing of personal data:</strong>
+            Personal data shall be processed lawfully, fairly and in a transparent manner. It must be collected for
+            specified, explicit and legitimate purposes and limited to what is necessary. The data must be accurate,
+            kept only as long as necessary, and processed securely.
+        </div>
+
+        <div class="gdpr-metrics">
+            <div class="gdpr-metric">
+                <div class="gdpr-metric-value">{{ gdpr_data.principles.total_principles | default(7) if gdpr_data and gdpr_data.principles else 7 }}</div>
+                <div class="gdpr-metric-label">Total Principles</div>
+            </div>
+            <div class="gdpr-metric">
+                <div class="gdpr-metric-value status-pass">{{ gdpr_data.principles.principles_compliant | default(0) if gdpr_data and gdpr_data.principles else 0 }}</div>
+                <div class="gdpr-metric-label">Compliant</div>
+            </div>
+            <div class="gdpr-metric">
+                <div class="gdpr-metric-value status-fail">{{ gdpr_data.principles.principles_non_compliant | default(0) if gdpr_data and gdpr_data.principles else 0 }}</div>
+                <div class="gdpr-metric-label">Non-Compliant</div>
+            </div>
+        </div>
+
+        {% if gdpr_data and gdpr_data.principles and gdpr_data.principles.details %}
+        <h3 class="subsection-title">Principle Compliance Details</h3>
+
+        {# Lawfulness, Fairness and Transparency #}
+        {% if gdpr_data.principles.details.lawfulness %}
+        <div class="principle-item {% if gdpr_data.principles.details.lawfulness.status == 'COMPLIANT' %}principle-compliant{% elif gdpr_data.principles.details.lawfulness.status == 'PARTIAL' %}principle-partial{% else %}principle-non-compliant{% endif %}">
+            <div class="principle-name">Lawfulness, Fairness and Transparency (Article 5(1)(a))</div>
+            <div class="principle-evidence">
+                <strong>Description:</strong> Processing must be lawful (with a valid legal basis), fair, and transparent to data subjects.
+            </div>
+            <div class="principle-evidence">{{ gdpr_data.principles.details.lawfulness.evidence | default('No evidence recorded') }}</div>
+            <span class="principle-result {% if gdpr_data.principles.details.lawfulness.status == 'COMPLIANT' %}compliant{% elif gdpr_data.principles.details.lawfulness.status == 'PARTIAL' %}partial{% else %}non-compliant{% endif %}">
+                {{ gdpr_data.principles.details.lawfulness.status | default('PENDING') }}
+            </span>
+        </div>
+        {% endif %}
+
+        {# Purpose Limitation #}
+        {% if gdpr_data.principles.details.purpose_limitation %}
+        <div class="principle-item {% if gdpr_data.principles.details.purpose_limitation.status == 'COMPLIANT' %}principle-compliant{% elif gdpr_data.principles.details.purpose_limitation.status == 'PARTIAL' %}principle-partial{% else %}principle-non-compliant{% endif %}">
+            <div class="principle-name">Purpose Limitation (Article 5(1)(b))</div>
+            <div class="principle-evidence">
+                <strong>Description:</strong> Data must be collected for specified, explicit and legitimate purposes and not further processed in a manner incompatible with those purposes.
+            </div>
+            <div class="principle-evidence">{{ gdpr_data.principles.details.purpose_limitation.evidence | default('No evidence recorded') }}</div>
+            <span class="principle-result {% if gdpr_data.principles.details.purpose_limitation.status == 'COMPLIANT' %}compliant{% elif gdpr_data.principles.details.purpose_limitation.status == 'PARTIAL' %}partial{% else %}non-compliant{% endif %}">
+                {{ gdpr_data.principles.details.purpose_limitation.status | default('PENDING') }}
+            </span>
+        </div>
+        {% endif %}
+
+        {# Data Minimization #}
+        {% if gdpr_data.principles.details.data_minimization %}
+        <div class="principle-item {% if gdpr_data.principles.details.data_minimization.status == 'COMPLIANT' %}principle-compliant{% elif gdpr_data.principles.details.data_minimization.status == 'PARTIAL' %}principle-partial{% else %}principle-non-compliant{% endif %}">
+            <div class="principle-name">Data Minimization (Article 5(1)(c))</div>
+            <div class="principle-evidence">
+                <strong>Description:</strong> Data must be adequate, relevant and limited to what is necessary in relation to the purposes for which they are processed.
+            </div>
+            <div class="principle-evidence">{{ gdpr_data.principles.details.data_minimization.evidence | default('No evidence recorded') }}</div>
+            <span class="principle-result {% if gdpr_data.principles.details.data_minimization.status == 'COMPLIANT' %}compliant{% elif gdpr_data.principles.details.data_minimization.status == 'PARTIAL' %}partial{% else %}non-compliant{% endif %}">
+                {{ gdpr_data.principles.details.data_minimization.status | default('PENDING') }}
+            </span>
+        </div>
+        {% endif %}
+
+        {# Accuracy #}
+        {% if gdpr_data.principles.details.accuracy %}
+        <div class="principle-item {% if gdpr_data.principles.details.accuracy.status == 'COMPLIANT' %}principle-compliant{% elif gdpr_data.principles.details.accuracy.status == 'PARTIAL' %}principle-partial{% else %}principle-non-compliant{% endif %}">
+            <div class="principle-name">Accuracy (Article 5(1)(d))</div>
+            <div class="principle-evidence">
+                <strong>Description:</strong> Data must be accurate and, where necessary, kept up to date. Inaccurate data must be erased or rectified without delay.
+            </div>
+            <div class="principle-evidence">{{ gdpr_data.principles.details.accuracy.evidence | default('No evidence recorded') }}</div>
+            <span class="principle-result {% if gdpr_data.principles.details.accuracy.status == 'COMPLIANT' %}compliant{% elif gdpr_data.principles.details.accuracy.status == 'PARTIAL' %}partial{% else %}non-compliant{% endif %}">
+                {{ gdpr_data.principles.details.accuracy.status | default('PENDING') }}
+            </span>
+        </div>
+        {% endif %}
+
+        {# Storage Limitation #}
+        {% if gdpr_data.principles.details.storage_limitation %}
+        <div class="principle-item {% if gdpr_data.principles.details.storage_limitation.status == 'COMPLIANT' %}principle-compliant{% elif gdpr_data.principles.details.storage_limitation.status == 'PARTIAL' %}principle-partial{% else %}principle-non-compliant{% endif %}">
+            <div class="principle-name">Storage Limitation (Article 5(1)(e))</div>
+            <div class="principle-evidence">
+                <strong>Description:</strong> Data must be kept in a form which permits identification of data subjects for no longer than is necessary for the purposes for which the data are processed.
+            </div>
+            <div class="principle-evidence">{{ gdpr_data.principles.details.storage_limitation.evidence | default('No evidence recorded') }}</div>
+            <span class="principle-result {% if gdpr_data.principles.details.storage_limitation.status == 'COMPLIANT' %}compliant{% elif gdpr_data.principles.details.storage_limitation.status == 'PARTIAL' %}partial{% else %}non-compliant{% endif %}">
+                {{ gdpr_data.principles.details.storage_limitation.status | default('PENDING') }}
+            </span>
+        </div>
+        {% endif %}
+
+        {# Integrity and Confidentiality #}
+        {% if gdpr_data.principles.details.integrity_confidentiality %}
+        <div class="principle-item {% if gdpr_data.principles.details.integrity_confidentiality.status == 'COMPLIANT' %}principle-compliant{% elif gdpr_data.principles.details.integrity_confidentiality.status == 'PARTIAL' %}principle-partial{% else %}principle-non-compliant{% endif %}">
+            <div class="principle-name">Integrity and Confidentiality (Article 5(1)(f))</div>
+            <div class="principle-evidence">
+                <strong>Description:</strong> Data must be processed in a manner that ensures appropriate security, including protection against unauthorized or unlawful processing, accidental loss, destruction or damage.
+            </div>
+            <div class="principle-evidence">{{ gdpr_data.principles.details.integrity_confidentiality.evidence | default('No evidence recorded') }}</div>
+            <span class="principle-result {% if gdpr_data.principles.details.integrity_confidentiality.status == 'COMPLIANT' %}compliant{% elif gdpr_data.principles.details.integrity_confidentiality.status == 'PARTIAL' %}partial{% else %}non-compliant{% endif %}">
+                {{ gdpr_data.principles.details.integrity_confidentiality.status | default('PENDING') }}
+            </span>
+        </div>
+        {% endif %}
+
+        {# Accountability #}
+        {% if gdpr_data.principles.details.accountability %}
+        <div class="principle-item {% if gdpr_data.principles.details.accountability.status == 'COMPLIANT' %}principle-compliant{% elif gdpr_data.principles.details.accountability.status == 'PARTIAL' %}principle-partial{% else %}principle-non-compliant{% endif %}">
+            <div class="principle-name">Accountability (Article 5(2))</div>
+            <div class="principle-evidence">
+                <strong>Description:</strong> The controller shall be responsible for, and be able to demonstrate compliance with, all data protection principles.
+            </div>
+            <div class="principle-evidence">{{ gdpr_data.principles.details.accountability.evidence | default('No evidence recorded') }}</div>
+            <span class="principle-result {% if gdpr_data.principles.details.accountability.status == 'COMPLIANT' %}compliant{% elif gdpr_data.principles.details.accountability.status == 'PARTIAL' %}partial{% else %}non-compliant{% endif %}">
+                {{ gdpr_data.principles.details.accountability.status | default('PENDING') }}
+            </span>
+        </div>
+        {% endif %}
+
+        {% else %}
+        <p class="no-data">No GDPR principles assessment data available for this reporting period.</p>
+        {% endif %}
+    </div>
+</section>
+
+{# ==========================================================================
+   Article 30 - Records of Processing Activities (ROPA)
+   ========================================================================== #}
+<section class="section gdpr-principle">
+    <div class="gdpr-header">
+        <div>
+            <h2 class="gdpr-title">Records of Processing Activities (ROPA)</h2>
+            <p class="gdpr-subtitle">Article 30 | Mandatory processing records for controllers and processors</p>
+        </div>
+        <span class="gdpr-status-badge {% if gdpr_data and gdpr_data.ropa and gdpr_data.ropa.status == 'COMPLIANT' %}compliant{% elif gdpr_data and gdpr_data.ropa and gdpr_data.ropa.status == 'PARTIAL' %}partial{% else %}non-compliant{% endif %}">
+            {{ gdpr_data.ropa.status | default('PENDING') if gdpr_data and gdpr_data.ropa else 'PENDING' }}
+        </span>
+    </div>
+    <div class="gdpr-body">
+        <div class="gdpr-description">
+            <strong>Article 30 - Records of processing activities:</strong>
+            Each controller and, where applicable, the controller's representative, shall maintain a record of processing
+            activities under its responsibility. These records must be in writing, including electronic form, and made
+            available to the supervisory authority on request.
+        </div>
+
+        <div class="gdpr-metrics">
+            <div class="gdpr-metric">
+                <div class="gdpr-metric-value">{{ gdpr_data.ropa.total_activities | default(0) if gdpr_data and gdpr_data.ropa else 0 }}</div>
+                <div class="gdpr-metric-label">Processing Activities</div>
+            </div>
+            <div class="gdpr-metric">
+                <div class="gdpr-metric-value status-pass">{{ gdpr_data.ropa.documented | default(0) if gdpr_data and gdpr_data.ropa else 0 }}</div>
+                <div class="gdpr-metric-label">Documented</div>
+            </div>
+            <div class="gdpr-metric">
+                <div class="gdpr-metric-value status-fail">{{ gdpr_data.ropa.incomplete | default(0) if gdpr_data and gdpr_data.ropa else 0 }}</div>
+                <div class="gdpr-metric-label">Incomplete</div>
+            </div>
+        </div>
+
+        {% if gdpr_data and gdpr_data.ropa and gdpr_data.ropa.activities %}
+        <h3 class="subsection-title">Processing Activities Register</h3>
+        {% for activity in gdpr_data.ropa.activities %}
+        <div class="ropa-entry">
+            <div class="ropa-entry-header">
+                <div class="ropa-entry-title">{{ activity.name | default('Unnamed Activity') }}</div>
+                <div class="ropa-entry-id">{{ activity.id | default('N/A') }}</div>
+            </div>
+            <div class="ropa-grid">
+                <div class="ropa-field">
+                    <div class="ropa-field-label">Purpose of Processing</div>
+                    <div class="ropa-field-value">{{ activity.purpose | default('Not specified') }}</div>
+                </div>
+                <div class="ropa-field">
+                    <div class="ropa-field-label">Legal Basis</div>
+                    <div class="ropa-field-value">
+                        {% if activity.legal_basis %}
+                        {% for basis in activity.legal_basis %}
+                        <span class="legal-basis-badge">{{ basis }}</span>
+                        {% endfor %}
+                        {% else %}
+                        Not specified
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="ropa-field">
+                    <div class="ropa-field-label">Categories of Data Subjects</div>
+                    <div class="ropa-field-value">{{ activity.data_subjects | join(', ') if activity.data_subjects else 'Not specified' }}</div>
+                </div>
+                <div class="ropa-field">
+                    <div class="ropa-field-label">Categories of Personal Data</div>
+                    <div class="ropa-field-value">{{ activity.data_categories | join(', ') if activity.data_categories else 'Not specified' }}</div>
+                </div>
+                <div class="ropa-field">
+                    <div class="ropa-field-label">Recipients</div>
+                    <div class="ropa-field-value">{{ activity.recipients | join(', ') if activity.recipients else 'Not specified' }}</div>
+                </div>
+                <div class="ropa-field">
+                    <div class="ropa-field-label">Retention Period</div>
+                    <div class="ropa-field-value">{{ activity.retention_period | default('Not specified') }}</div>
+                </div>
+                <div class="ropa-field">
+                    <div class="ropa-field-label">International Transfers</div>
+                    <div class="ropa-field-value">{{ activity.international_transfers | default('None') }}</div>
+                </div>
+                <div class="ropa-field">
+                    <div class="ropa-field-label">Security Measures</div>
+                    <div class="ropa-field-value">{{ activity.security_measures | default('Not specified') }}</div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+        {% else %}
+        <p class="no-data">No ROPA entries available for this reporting period.</p>
+        {% endif %}
+    </div>
+</section>
+
+{# ==========================================================================
+   Articles 15-22 - Data Subject Rights
+   ========================================================================== #}
+<section class="section gdpr-principle">
+    <div class="gdpr-header">
+        <div>
+            <h2 class="gdpr-title">Data Subject Rights Compliance</h2>
+            <p class="gdpr-subtitle">Articles 15-22 | Rights of the data subject</p>
+        </div>
+        <span class="gdpr-status-badge {% if gdpr_data and gdpr_data.data_subject_rights and gdpr_data.data_subject_rights.status == 'COMPLIANT' %}compliant{% elif gdpr_data and gdpr_data.data_subject_rights and gdpr_data.data_subject_rights.status == 'PARTIAL' %}partial{% else %}non-compliant{% endif %}">
+            {{ gdpr_data.data_subject_rights.status | default('PENDING') if gdpr_data and gdpr_data.data_subject_rights else 'PENDING' }}
+        </span>
+    </div>
+    <div class="gdpr-body">
+        <div class="gdpr-description">
+            <strong>Data Subject Rights Summary:</strong>
+            Data subjects have the right to access, rectification, erasure ('right to be forgotten'), restriction of processing,
+            data portability, objection, and rights related to automated decision-making including profiling. Requests must be
+            responded to within one month (extendable by two months for complex requests).
+        </div>
+
+        {% if gdpr_data and gdpr_data.data_subject_rights and gdpr_data.data_subject_rights.summary %}
+        <div class="dsr-summary">
+            <div class="dsr-card">
+                <div class="dsr-card-value">{{ gdpr_data.data_subject_rights.summary.total_requests | default(0) }}</div>
+                <div class="dsr-card-label">Total Requests</div>
+            </div>
+            <div class="dsr-card">
+                <div class="dsr-card-value status-pass">{{ gdpr_data.data_subject_rights.summary.completed | default(0) }}</div>
+                <div class="dsr-card-label">Completed</div>
+            </div>
+            <div class="dsr-card">
+                <div class="dsr-card-value status-review">{{ gdpr_data.data_subject_rights.summary.pending | default(0) }}</div>
+                <div class="dsr-card-label">Pending</div>
+            </div>
+            <div class="dsr-card">
+                <div class="dsr-card-value">{{ gdpr_data.data_subject_rights.summary.avg_response_days | default('N/A') }}</div>
+                <div class="dsr-card-label">Avg Response (Days)</div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if gdpr_data and gdpr_data.data_subject_rights and gdpr_data.data_subject_rights.by_type %}
+        <h3 class="subsection-title">Requests by Type</h3>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Right Type</th>
+                    <th>Article</th>
+                    <th>Requests</th>
+                    <th>Completed</th>
+                    <th>Avg Response (Days)</th>
+                    <th>Compliance</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for right in gdpr_data.data_subject_rights.by_type %}
+                <tr>
+                    <td>{{ right.type | default('N/A') }}</td>
+                    <td>{{ right.article | default('N/A') }}</td>
+                    <td>{{ right.total | default(0) }}</td>
+                    <td>{{ right.completed | default(0) }}</td>
+                    <td>{{ right.avg_response_days | default('N/A') }}</td>
+                    <td class="{% if right.compliance_rate >= 90 %}status-pass{% elif right.compliance_rate >= 70 %}status-review{% else %}status-fail{% endif %}">
+                        {{ right.compliance_rate | default('N/A') }}{% if right.compliance_rate is defined %}%{% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="no-data">No data subject rights request data available for this reporting period.</p>
+        {% endif %}
+    </div>
+</section>
+
+{# ==========================================================================
+   Articles 33-34 - Data Breach Notification
+   ========================================================================== #}
+<section class="section gdpr-principle">
+    <div class="gdpr-header">
+        <div>
+            <h2 class="gdpr-title">Data Breach Notifications</h2>
+            <p class="gdpr-subtitle">Articles 33-34 | Personal data breach notification requirements</p>
+        </div>
+        <span class="gdpr-status-badge {% if gdpr_data and gdpr_data.breaches and gdpr_data.breaches.status == 'COMPLIANT' %}compliant{% elif gdpr_data and gdpr_data.breaches and gdpr_data.breaches.status == 'PARTIAL' %}partial{% else %}non-compliant{% endif %}">
+            {{ gdpr_data.breaches.status | default('PENDING') if gdpr_data and gdpr_data.breaches else 'PENDING' }}
+        </span>
+    </div>
+    <div class="gdpr-body">
+        <div class="gdpr-description">
+            <strong>Breach Notification Requirements:</strong>
+            Personal data breaches must be notified to the supervisory authority within 72 hours of becoming aware
+            (Article 33). Where the breach is likely to result in a high risk to individuals' rights and freedoms,
+            those individuals must also be notified without undue delay (Article 34).
+        </div>
+
+        <div class="gdpr-metrics">
+            <div class="gdpr-metric">
+                <div class="gdpr-metric-value">{{ gdpr_data.breaches.total_breaches | default(0) if gdpr_data and gdpr_data.breaches else 0 }}</div>
+                <div class="gdpr-metric-label">Total Breaches</div>
+            </div>
+            <div class="gdpr-metric">
+                <div class="gdpr-metric-value status-pass">{{ gdpr_data.breaches.notified_on_time | default(0) if gdpr_data and gdpr_data.breaches else 0 }}</div>
+                <div class="gdpr-metric-label">Notified On Time</div>
+            </div>
+            <div class="gdpr-metric">
+                <div class="gdpr-metric-value status-fail">{{ gdpr_data.breaches.late_notifications | default(0) if gdpr_data and gdpr_data.breaches else 0 }}</div>
+                <div class="gdpr-metric-label">Late Notifications</div>
+            </div>
+        </div>
+
+        {% if gdpr_data and gdpr_data.breaches and gdpr_data.breaches.incidents %}
+        <h3 class="subsection-title">Breach Incidents</h3>
+        {% for breach in gdpr_data.breaches.incidents %}
+        <div class="breach-card severity-{{ breach.severity | default('medium') | lower }}">
+            <div class="breach-header">
+                <span class="breach-id">{{ breach.id | default('N/A') }}</span>
+                <span class="breach-severity {{ breach.severity | default('medium') | lower }}">
+                    {{ breach.severity | default('Medium') }}
+                </span>
+            </div>
+            <div class="ropa-grid">
+                <div class="ropa-field">
+                    <div class="ropa-field-label">Date Discovered</div>
+                    <div class="ropa-field-value">{{ breach.date_discovered | default('N/A') }}</div>
+                </div>
+                <div class="ropa-field">
+                    <div class="ropa-field-label">Date Notified to SA</div>
+                    <div class="ropa-field-value">{{ breach.date_notified_sa | default('N/A') }}</div>
+                </div>
+                <div class="ropa-field">
+                    <div class="ropa-field-label">Nature of Breach</div>
+                    <div class="ropa-field-value">{{ breach.nature | default('Not specified') }}</div>
+                </div>
+                <div class="ropa-field">
+                    <div class="ropa-field-label">Data Subjects Affected</div>
+                    <div class="ropa-field-value">{{ breach.subjects_affected | default('N/A') }}</div>
+                </div>
+                <div class="ropa-field">
+                    <div class="ropa-field-label">Data Categories Affected</div>
+                    <div class="ropa-field-value">{{ breach.data_categories | join(', ') if breach.data_categories else 'Not specified' }}</div>
+                </div>
+                <div class="ropa-field">
+                    <div class="ropa-field-label">Notified to Data Subjects</div>
+                    <div class="ropa-field-value">{{ 'Yes' if breach.notified_subjects else 'No' }}</div>
+                </div>
+                <div class="ropa-field">
+                    <div class="ropa-field-label">Remediation Status</div>
+                    <div class="ropa-field-value {% if breach.remediation_status == 'COMPLETE' %}status-pass{% elif breach.remediation_status == 'IN_PROGRESS' %}status-review{% else %}status-fail{% endif %}">
+                        {{ breach.remediation_status | default('PENDING') }}
+                    </div>
+                </div>
+                <div class="ropa-field">
+                    <div class="ropa-field-label">Notification Compliance</div>
+                    <div class="ropa-field-value {% if breach.notification_compliant %}status-pass{% else %}status-fail{% endif %}">
+                        {{ 'Within 72 hours' if breach.notification_compliant else 'Late notification' }}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+        {% else %}
+        <p class="no-data">No breach incidents recorded during this reporting period.</p>
+        {% endif %}
+    </div>
+</section>
+
+{# ==========================================================================
+   Article 35 - Data Protection Impact Assessments (DPIA)
+   ========================================================================== #}
+<section class="section gdpr-principle">
+    <div class="gdpr-header">
+        <div>
+            <h2 class="gdpr-title">Data Protection Impact Assessments</h2>
+            <p class="gdpr-subtitle">Article 35 | DPIA requirements for high-risk processing</p>
+        </div>
+        <span class="gdpr-status-badge {% if gdpr_data and gdpr_data.dpia and gdpr_data.dpia.status == 'COMPLIANT' %}compliant{% elif gdpr_data and gdpr_data.dpia and gdpr_data.dpia.status == 'PARTIAL' %}partial{% else %}non-compliant{% endif %}">
+            {{ gdpr_data.dpia.status | default('PENDING') if gdpr_data and gdpr_data.dpia else 'PENDING' }}
+        </span>
+    </div>
+    <div class="gdpr-body">
+        <div class="gdpr-description">
+            <strong>DPIA Requirements:</strong>
+            A Data Protection Impact Assessment is required where processing is likely to result in a high risk to
+            individuals' rights and freedoms. This includes systematic and extensive profiling, large scale processing
+            of special categories of data, or systematic monitoring of publicly accessible areas on a large scale.
+        </div>
+
+        <div class="gdpr-metrics">
+            <div class="gdpr-metric">
+                <div class="gdpr-metric-value">{{ gdpr_data.dpia.total_assessments | default(0) if gdpr_data and gdpr_data.dpia else 0 }}</div>
+                <div class="gdpr-metric-label">Total DPIAs</div>
+            </div>
+            <div class="gdpr-metric">
+                <div class="gdpr-metric-value status-pass">{{ gdpr_data.dpia.completed | default(0) if gdpr_data and gdpr_data.dpia else 0 }}</div>
+                <div class="gdpr-metric-label">Completed</div>
+            </div>
+            <div class="gdpr-metric">
+                <div class="gdpr-metric-value status-review">{{ gdpr_data.dpia.pending | default(0) if gdpr_data and gdpr_data.dpia else 0 }}</div>
+                <div class="gdpr-metric-label">Pending</div>
+            </div>
+        </div>
+
+        {% if gdpr_data and gdpr_data.dpia and gdpr_data.dpia.assessments %}
+        <h3 class="subsection-title">DPIA Register</h3>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>DPIA ID</th>
+                    <th>Processing Activity</th>
+                    <th>Risk Level</th>
+                    <th>Status</th>
+                    <th>DPO Consulted</th>
+                    <th>Last Review</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for dpia in gdpr_data.dpia.assessments %}
+                <tr>
+                    <td>{{ dpia.id | default('N/A') }}</td>
+                    <td>{{ dpia.activity | default('N/A') }}</td>
+                    <td class="{% if dpia.risk_level == 'HIGH' %}risk-high{% elif dpia.risk_level == 'MEDIUM' %}risk-medium{% else %}risk-low{% endif %}">
+                        {{ dpia.risk_level | default('N/A') }}
+                    </td>
+                    <td class="{% if dpia.status == 'APPROVED' %}status-pass{% elif dpia.status == 'IN_REVIEW' %}status-review{% else %}status-fail{% endif %}">
+                        {{ dpia.status | default('PENDING') }}
+                    </td>
+                    <td>{{ 'Yes' if dpia.dpo_consulted else 'No' }}</td>
+                    <td>{{ dpia.last_review | default('N/A') }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="no-data">No DPIA records available for this reporting period.</p>
+        {% endif %}
+    </div>
+</section>
+
+{# ==========================================================================
+   Article 32 - Security of Processing
+   ========================================================================== #}
+<section class="section gdpr-principle">
+    <div class="gdpr-header">
+        <div>
+            <h2 class="gdpr-title">Security of Processing</h2>
+            <p class="gdpr-subtitle">Article 32 | Technical and organizational security measures</p>
+        </div>
+        <span class="gdpr-status-badge {% if gdpr_data and gdpr_data.security and gdpr_data.security.status == 'COMPLIANT' %}compliant{% elif gdpr_data and gdpr_data.security and gdpr_data.security.status == 'PARTIAL' %}partial{% else %}non-compliant{% endif %}">
+            {{ gdpr_data.security.status | default('PENDING') if gdpr_data and gdpr_data.security else 'PENDING' }}
+        </span>
+    </div>
+    <div class="gdpr-body">
+        <div class="gdpr-description">
+            <strong>Article 32 - Security of Processing:</strong>
+            Taking into account the state of the art, the costs of implementation and the nature, scope, context and
+            purposes of processing as well as the risk of varying likelihood and severity for the rights and freedoms
+            of natural persons, the controller and the processor shall implement appropriate technical and organisational
+            measures to ensure a level of security appropriate to the risk.
+        </div>
+
+        {% if gdpr_data and gdpr_data.security and gdpr_data.security.measures %}
+        <h3 class="subsection-title">Security Measures Implementation</h3>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Security Measure</th>
+                    <th>Category</th>
+                    <th>Implementation</th>
+                    <th>Effectiveness</th>
+                    <th>Last Tested</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for measure in gdpr_data.security.measures %}
+                <tr>
+                    <td>{{ measure.name | default('N/A') }}</td>
+                    <td>{{ measure.category | default('N/A') }}</td>
+                    <td class="{% if measure.implemented %}status-pass{% else %}status-fail{% endif %}">
+                        {{ 'Implemented' if measure.implemented else 'Not Implemented' }}
+                    </td>
+                    <td class="{% if measure.effectiveness == 'HIGH' %}status-pass{% elif measure.effectiveness == 'MEDIUM' %}status-review{% else %}status-fail{% endif %}">
+                        {{ measure.effectiveness | default('N/A') }}
+                    </td>
+                    <td>{{ measure.last_tested | default('N/A') }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="no-data">No security measures data available for this reporting period.</p>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}
+
+{% block additional_sections %}
+{# ==========================================================================
+   Data Protection Officer Information
+   ========================================================================== #}
+{% if gdpr_data and gdpr_data.dpo %}
+<section class="section dpo-info">
+    <h3>Data Protection Officer (Article 37-39)</h3>
+    <div class="ropa-grid">
+        <div class="ropa-field">
+            <div class="ropa-field-label">DPO Name</div>
+            <div class="ropa-field-value">{{ gdpr_data.dpo.name | default('Not appointed') }}</div>
+        </div>
+        <div class="ropa-field">
+            <div class="ropa-field-label">Contact Email</div>
+            <div class="ropa-field-value">{{ gdpr_data.dpo.email | default('N/A') }}</div>
+        </div>
+        <div class="ropa-field">
+            <div class="ropa-field-label">Appointment Date</div>
+            <div class="ropa-field-value">{{ gdpr_data.dpo.appointment_date | default('N/A') }}</div>
+        </div>
+        <div class="ropa-field">
+            <div class="ropa-field-label">DPO Required</div>
+            <div class="ropa-field-value">{{ 'Yes' if gdpr_data.dpo.required else 'No' }}</div>
+        </div>
+    </div>
+    {% if gdpr_data.dpo.notes %}
+    <p class="mt-20"><strong>Notes:</strong> {{ gdpr_data.dpo.notes }}</p>
+    {% endif %}
+</section>
+{% endif %}
+
+{# ==========================================================================
+   International Data Transfers (Chapter V)
+   ========================================================================== #}
+{% if gdpr_data and gdpr_data.international_transfers %}
+<section class="section gdpr-principle">
+    <div class="gdpr-header">
+        <div>
+            <h2 class="gdpr-title">International Data Transfers</h2>
+            <p class="gdpr-subtitle">Chapter V (Articles 44-49) | Transfers to third countries</p>
+        </div>
+        <span class="gdpr-status-badge {% if gdpr_data.international_transfers.status == 'COMPLIANT' %}compliant{% elif gdpr_data.international_transfers.status == 'PARTIAL' %}partial{% else %}non-compliant{% endif %}">
+            {{ gdpr_data.international_transfers.status | default('PENDING') }}
+        </span>
+    </div>
+    <div class="gdpr-body">
+        <div class="gdpr-description">
+            <strong>Transfer Requirements:</strong>
+            Transfers of personal data to third countries or international organizations may only take place where
+            the Commission has decided that the third country ensures an adequate level of protection, or where
+            appropriate safeguards exist (such as Standard Contractual Clauses, Binding Corporate Rules, or other
+            derogations under Article 49).
+        </div>
+
+        {% if gdpr_data.international_transfers.transfers %}
+        <h3 class="subsection-title">Transfer Register</h3>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Recipient Country</th>
+                    <th>Transfer Mechanism</th>
+                    <th>Data Categories</th>
+                    <th>Adequacy Status</th>
+                    <th>TIA Completed</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for transfer in gdpr_data.international_transfers.transfers %}
+                <tr>
+                    <td>{{ transfer.country | default('N/A') }}</td>
+                    <td>{{ transfer.mechanism | default('N/A') }}</td>
+                    <td>{{ transfer.data_categories | join(', ') if transfer.data_categories else 'N/A' }}</td>
+                    <td class="{% if transfer.adequacy_decision %}status-pass{% else %}status-review{% endif %}">
+                        {{ 'Adequacy Decision' if transfer.adequacy_decision else 'Safeguards Required' }}
+                    </td>
+                    <td class="{% if transfer.tia_completed %}status-pass{% else %}status-fail{% endif %}">
+                        {{ 'Yes' if transfer.tia_completed else 'No' }}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="no-data">No international transfers recorded.</p>
+        {% endif %}
+    </div>
+</section>
+{% endif %}
+
+{# ==========================================================================
+   Supervisory Authority Communications
+   ========================================================================== #}
+{% if gdpr_data and gdpr_data.supervisory_authority %}
+<section class="section">
+    <h2 class="section-title">Supervisory Authority Communications</h2>
+
+    <div class="gdpr-metrics">
+        <div class="gdpr-metric">
+            <div class="gdpr-metric-value">{{ gdpr_data.supervisory_authority.total_communications | default(0) }}</div>
+            <div class="gdpr-metric-label">Total Communications</div>
+        </div>
+        <div class="gdpr-metric">
+            <div class="gdpr-metric-value">{{ gdpr_data.supervisory_authority.complaints | default(0) }}</div>
+            <div class="gdpr-metric-label">Complaints Received</div>
+        </div>
+        <div class="gdpr-metric">
+            <div class="gdpr-metric-value">{{ gdpr_data.supervisory_authority.investigations | default(0) }}</div>
+            <div class="gdpr-metric-label">Investigations</div>
+        </div>
+    </div>
+
+    {% if gdpr_data.supervisory_authority.notes %}
+    <p class="mt-20"><strong>Notes:</strong> {{ gdpr_data.supervisory_authority.notes }}</p>
+    {% endif %}
+</section>
+{% endif %}
+
+{# ==========================================================================
+   Compliance Declaration
+   ========================================================================== #}
+<section class="section dpo-info">
+    <h3>GDPR Compliance Declaration</h3>
+    <p>
+        {% if compliance_declaration %}
+        {{ compliance_declaration }}
+        {% else %}
+        This GDPR compliance report covers {{ company_name | default('the organization') }}'s processing activities
+        and demonstrates ongoing compliance efforts with the General Data Protection Regulation (EU) 2016/679.
+        The report period covers {{ report_period | default('the specified reporting period') }} and includes
+        assessment of core GDPR principles, data subject rights fulfillment, records of processing activities,
+        data breach management, and security measures implementation.
+        {% endif %}
+    </p>
+    <p class="mt-20">
+        <strong>Lead Supervisory Authority:</strong> {{ lead_supervisory_authority | default('As registered') }}<br>
+        <strong>Report Period:</strong> {{ report_period | default('As specified in report metadata') }}<br>
+        <strong>Assessment Scope:</strong>
+        {% if assessment_scope %}
+        {{ assessment_scope | join(', ') }}
+        {% else %}
+        All processing activities under controller responsibility
+        {% endif %}
+    </p>
+</section>
+{% endblock %}

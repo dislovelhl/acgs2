@@ -196,68 +196,19 @@ if HAS_PYDANTIC_SETTINGS:
         client_cert: Optional[str] = Field(None, validation_alias="VAULT_CLIENT_CERT")
         client_key: Optional[str] = Field(None, validation_alias="VAULT_CLIENT_KEY")
 
-    class SSOSettings(BaseSettings):
-        """Enterprise SSO (SAML/OIDC) integration settings."""
+    class SMTPSettings(BaseSettings):
+        """SMTP email delivery settings."""
 
-        # General SSO settings
-        enabled: bool = Field(False, validation_alias="SSO_ENABLED")
-        default_provider: str = Field("oidc", validation_alias="SSO_DEFAULT_PROVIDER")  # oidc, saml
-        session_lifetime_seconds: int = Field(3600, validation_alias="SSO_SESSION_LIFETIME")
-        allowed_domains: List[str] = Field(
-            default_factory=list, validation_alias="SSO_ALLOWED_DOMAINS"
-        )
-
-        # SAML settings
-        saml_enabled: bool = Field(False, validation_alias="SSO_SAML_ENABLED")
-        saml_entity_id: str = Field("urn:acgs2:sp", validation_alias="SSO_SAML_ENTITY_ID")
-        saml_idp_metadata_url: Optional[str] = Field(
-            None, validation_alias="SSO_SAML_IDP_METADATA_URL"
-        )
-        saml_idp_sso_url: Optional[str] = Field(None, validation_alias="SSO_SAML_IDP_SSO_URL")
-        saml_idp_slo_url: Optional[str] = Field(None, validation_alias="SSO_SAML_IDP_SLO_URL")
-        saml_idp_certificate: Optional[str] = Field(
-            None, validation_alias="SSO_SAML_IDP_CERTIFICATE"
-        )
-        saml_sp_certificate: Optional[str] = Field(None, validation_alias="SSO_SAML_SP_CERTIFICATE")
-        saml_sp_private_key: Optional[SecretStr] = Field(
-            None, validation_alias="SSO_SAML_SP_PRIVATE_KEY"
-        )
-        saml_sign_requests: bool = Field(True, validation_alias="SSO_SAML_SIGN_REQUESTS")
-        saml_want_assertions_signed: bool = Field(
-            True, validation_alias="SSO_SAML_WANT_ASSERTIONS_SIGNED"
-        )
-        saml_want_assertions_encrypted: bool = Field(
-            False, validation_alias="SSO_SAML_WANT_ASSERTIONS_ENCRYPTED"
-        )
-
-        # OIDC settings
-        oidc_enabled: bool = Field(False, validation_alias="SSO_OIDC_ENABLED")
-        oidc_client_id: Optional[str] = Field(None, validation_alias="SSO_OIDC_CLIENT_ID")
-        oidc_client_secret: Optional[SecretStr] = Field(
-            None, validation_alias="SSO_OIDC_CLIENT_SECRET"
-        )
-        oidc_issuer_url: Optional[str] = Field(None, validation_alias="SSO_OIDC_ISSUER_URL")
-        oidc_authorization_endpoint: Optional[str] = Field(
-            None, validation_alias="SSO_OIDC_AUTHORIZATION_ENDPOINT"
-        )
-        oidc_token_endpoint: Optional[str] = Field(None, validation_alias="SSO_OIDC_TOKEN_ENDPOINT")
-        oidc_userinfo_endpoint: Optional[str] = Field(
-            None, validation_alias="SSO_OIDC_USERINFO_ENDPOINT"
-        )
-        oidc_jwks_uri: Optional[str] = Field(None, validation_alias="SSO_OIDC_JWKS_URI")
-        oidc_scopes: List[str] = Field(
-            default_factory=lambda: ["openid", "profile", "email"],
-            validation_alias="SSO_OIDC_SCOPES",
-        )
-        oidc_redirect_uri: str = Field(
-            "/auth/callback/oidc", validation_alias="SSO_OIDC_REDIRECT_URI"
-        )
-        oidc_use_pkce: bool = Field(True, validation_alias="SSO_OIDC_USE_PKCE")
-
-        # Multi-tenant SSO settings
-        tenant_isolation: bool = Field(True, validation_alias="SSO_TENANT_ISOLATION")
-        auto_provision_users: bool = Field(False, validation_alias="SSO_AUTO_PROVISION_USERS")
-        default_role_on_provision: str = Field("viewer", validation_alias="SSO_DEFAULT_ROLE")
+        host: str = Field("localhost", validation_alias="SMTP_HOST")
+        port: int = Field(587, validation_alias="SMTP_PORT")
+        username: Optional[str] = Field(None, validation_alias="SMTP_USERNAME")
+        password: Optional[SecretStr] = Field(None, validation_alias="SMTP_PASSWORD")
+        use_tls: bool = Field(True, validation_alias="SMTP_USE_TLS")
+        use_ssl: bool = Field(False, validation_alias="SMTP_USE_SSL")
+        from_email: str = Field("noreply@acgs2.local", validation_alias="SMTP_FROM_EMAIL")
+        from_name: str = Field("ACGS-2 Audit Service", validation_alias="SMTP_FROM_NAME")
+        timeout: float = Field(30.0, validation_alias="SMTP_TIMEOUT")
+        enabled: bool = Field(False, validation_alias="SMTP_ENABLED")
 
     class Settings(BaseSettings):
         """Global Application Settings."""
@@ -283,7 +234,7 @@ if HAS_PYDANTIC_SETTINGS:
         quality: QualitySettings = QualitySettings()
         maci: MACISettings = MACISettings()
         vault: VaultSettings = VaultSettings()
-        sso: SSOSettings = SSOSettings()
+        smtp: SMTPSettings = SMTPSettings()
         kafka: Dict[str, Any] = Field(
             default_factory=lambda: {
                 "bootstrap_servers": os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092"),
@@ -575,116 +526,32 @@ else:
         client_key: Optional[str] = field(default_factory=lambda: os.getenv("VAULT_CLIENT_KEY"))
 
     @dataclass
-    class SSOSettings:
-        """Enterprise SSO (SAML/OIDC) integration settings."""
+    class SMTPSettings:
+        """SMTP email delivery settings."""
 
-        # General SSO settings
+        host: str = field(default_factory=lambda: os.getenv("SMTP_HOST", "localhost"))
+        port: int = field(default_factory=lambda: int(os.getenv("SMTP_PORT", "587")))
+        username: Optional[str] = field(default_factory=lambda: os.getenv("SMTP_USERNAME"))
+        password: Optional[SecretStr] = field(
+            default_factory=lambda: (
+                SecretStr(os.getenv("SMTP_PASSWORD", "")) if os.getenv("SMTP_PASSWORD") else None
+            )
+        )
+        use_tls: bool = field(
+            default_factory=lambda: os.getenv("SMTP_USE_TLS", "true").lower() == "true"
+        )
+        use_ssl: bool = field(
+            default_factory=lambda: os.getenv("SMTP_USE_SSL", "false").lower() == "true"
+        )
+        from_email: str = field(
+            default_factory=lambda: os.getenv("SMTP_FROM_EMAIL", "noreply@acgs2.local")
+        )
+        from_name: str = field(
+            default_factory=lambda: os.getenv("SMTP_FROM_NAME", "ACGS-2 Audit Service")
+        )
+        timeout: float = field(default_factory=lambda: float(os.getenv("SMTP_TIMEOUT", "30.0")))
         enabled: bool = field(
-            default_factory=lambda: os.getenv("SSO_ENABLED", "false").lower() == "true"
-        )
-        default_provider: str = field(
-            default_factory=lambda: os.getenv("SSO_DEFAULT_PROVIDER", "oidc")
-        )
-        session_lifetime_seconds: int = field(
-            default_factory=lambda: int(os.getenv("SSO_SESSION_LIFETIME", "3600"))
-        )
-        allowed_domains: List[str] = field(
-            default_factory=lambda: (
-                os.getenv("SSO_ALLOWED_DOMAINS", "").split(",")
-                if os.getenv("SSO_ALLOWED_DOMAINS")
-                else []
-            )
-        )
-
-        # SAML settings
-        saml_enabled: bool = field(
-            default_factory=lambda: os.getenv("SSO_SAML_ENABLED", "false").lower() == "true"
-        )
-        saml_entity_id: str = field(
-            default_factory=lambda: os.getenv("SSO_SAML_ENTITY_ID", "urn:acgs2:sp")
-        )
-        saml_idp_metadata_url: Optional[str] = field(
-            default_factory=lambda: os.getenv("SSO_SAML_IDP_METADATA_URL")
-        )
-        saml_idp_sso_url: Optional[str] = field(
-            default_factory=lambda: os.getenv("SSO_SAML_IDP_SSO_URL")
-        )
-        saml_idp_slo_url: Optional[str] = field(
-            default_factory=lambda: os.getenv("SSO_SAML_IDP_SLO_URL")
-        )
-        saml_idp_certificate: Optional[str] = field(
-            default_factory=lambda: os.getenv("SSO_SAML_IDP_CERTIFICATE")
-        )
-        saml_sp_certificate: Optional[str] = field(
-            default_factory=lambda: os.getenv("SSO_SAML_SP_CERTIFICATE")
-        )
-        saml_sp_private_key: Optional[SecretStr] = field(
-            default_factory=lambda: (
-                SecretStr(os.getenv("SSO_SAML_SP_PRIVATE_KEY", ""))
-                if os.getenv("SSO_SAML_SP_PRIVATE_KEY")
-                else None
-            )
-        )
-        saml_sign_requests: bool = field(
-            default_factory=lambda: os.getenv("SSO_SAML_SIGN_REQUESTS", "true").lower() == "true"
-        )
-        saml_want_assertions_signed: bool = field(
-            default_factory=lambda: os.getenv("SSO_SAML_WANT_ASSERTIONS_SIGNED", "true").lower()
-            == "true"
-        )
-        saml_want_assertions_encrypted: bool = field(
-            default_factory=lambda: os.getenv("SSO_SAML_WANT_ASSERTIONS_ENCRYPTED", "false").lower()
-            == "true"
-        )
-
-        # OIDC settings
-        oidc_enabled: bool = field(
-            default_factory=lambda: os.getenv("SSO_OIDC_ENABLED", "false").lower() == "true"
-        )
-        oidc_client_id: Optional[str] = field(
-            default_factory=lambda: os.getenv("SSO_OIDC_CLIENT_ID")
-        )
-        oidc_client_secret: Optional[SecretStr] = field(
-            default_factory=lambda: (
-                SecretStr(os.getenv("SSO_OIDC_CLIENT_SECRET", ""))
-                if os.getenv("SSO_OIDC_CLIENT_SECRET")
-                else None
-            )
-        )
-        oidc_issuer_url: Optional[str] = field(
-            default_factory=lambda: os.getenv("SSO_OIDC_ISSUER_URL")
-        )
-        oidc_authorization_endpoint: Optional[str] = field(
-            default_factory=lambda: os.getenv("SSO_OIDC_AUTHORIZATION_ENDPOINT")
-        )
-        oidc_token_endpoint: Optional[str] = field(
-            default_factory=lambda: os.getenv("SSO_OIDC_TOKEN_ENDPOINT")
-        )
-        oidc_userinfo_endpoint: Optional[str] = field(
-            default_factory=lambda: os.getenv("SSO_OIDC_USERINFO_ENDPOINT")
-        )
-        oidc_jwks_uri: Optional[str] = field(default_factory=lambda: os.getenv("SSO_OIDC_JWKS_URI"))
-        oidc_scopes: List[str] = field(
-            default_factory=lambda: (
-                os.getenv("SSO_OIDC_SCOPES", "openid,profile,email").split(",")
-            )
-        )
-        oidc_redirect_uri: str = field(
-            default_factory=lambda: os.getenv("SSO_OIDC_REDIRECT_URI", "/auth/callback/oidc")
-        )
-        oidc_use_pkce: bool = field(
-            default_factory=lambda: os.getenv("SSO_OIDC_USE_PKCE", "true").lower() == "true"
-        )
-
-        # Multi-tenant SSO settings
-        tenant_isolation: bool = field(
-            default_factory=lambda: os.getenv("SSO_TENANT_ISOLATION", "true").lower() == "true"
-        )
-        auto_provision_users: bool = field(
-            default_factory=lambda: os.getenv("SSO_AUTO_PROVISION_USERS", "false").lower() == "true"
-        )
-        default_role_on_provision: str = field(
-            default_factory=lambda: os.getenv("SSO_DEFAULT_ROLE", "viewer")
+            default_factory=lambda: os.getenv("SMTP_ENABLED", "false").lower() == "true"
         )
 
     @dataclass
@@ -708,7 +575,7 @@ else:
         quality: QualitySettings = field(default_factory=QualitySettings)
         maci: MACISettings = field(default_factory=MACISettings)
         vault: VaultSettings = field(default_factory=VaultSettings)
-        sso: SSOSettings = field(default_factory=SSOSettings)
+        smtp: SMTPSettings = field(default_factory=SMTPSettings)
         kafka: Dict[str, Any] = field(
             default_factory=lambda: {
                 "bootstrap_servers": os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092"),

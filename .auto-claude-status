@@ -1,25 +1,25 @@
 {
   "active": true,
-  "spec": "014-enterprise-sso-integration-saml-oidc",
-  "state": "building",
+  "spec": "015-advanced-audit-reporting-and-compliance-exports",
+  "state": "complete",
   "subtasks": {
-    "completed": 23,
-    "total": 29,
-    "in_progress": 1,
+    "completed": 21,
+    "total": 21,
+    "in_progress": 0,
     "failed": 0
   },
   "phase": {
-    "current": "JIT Provisioning & Role Mapping",
-    "id": null,
-    "total": 6
+    "current": "",
+    "id": 0,
+    "total": 0
   },
   "workers": {
     "active": 0,
     "max": 1
   },
   "session": {
-    "number": 405,
-    "started_at": "2026-01-03T08:54:02.208235"
+    "number": 0,
+    "started_at": "2026-01-03T08:58:31.927449"
   },
-  "last_update": "2026-01-03T11:20:14.651234"
+  "last_update": "2026-01-03T08:58:31.932430"
 }

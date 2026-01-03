@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{{ report_title | default('Compliance Report') }}{% endblock %}</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        :root {
+            --brand-color: {{ brand_color | default('#003366') }};
+            --brand-color-light: {{ brand_color | default('#003366') }}1a;
+            --brand-color-dark: {{ brand_color | default('#002244') }};
+        }
+        {% block extra_styles %}{% endblock %}
+    </style>
+</head>
+<body>
+    <!-- Header with Company Branding -->
+    <header class="report-header">
+        <div class="header-content">
+            <div class="company-branding">
+                {% if logo_url %}
+                <div class="logo-container">
+                    <img src="{{ logo_url }}" alt="{{ company_name | default('Company') }} Logo" class="company-logo">
+                </div>
+                {% endif %}
+                <div class="company-info">
+                    <h1 class="company-name">{{ company_name | default('ACGS-2 Governance') }}</h1>
+                    <div class="report-type">
+                        {% block report_type %}Compliance Report{% endblock %}
+                    </div>
+                </div>
+            </div>
+            <div class="report-meta">
+                <div class="meta-item">
+                    <span class="meta-label">Report Date:</span>
+                    <span class="meta-value">{{ report_date | default(generated_at) | default('N/A') }}</span>
+                </div>
+                <div class="meta-item">
+                    <span class="meta-label">Report ID:</span>
+                    <span class="meta-value">{{ report_id | default('N/A') }}</span>
+                </div>
+            </div>
+        </div>
+        <div class="header-divider"></div>
+    </header>
+
+    <!-- Report Metadata Section -->
+    <section class="metadata-section">
+        <div class="metadata-grid">
+            <div class="metadata-card">
+                <span class="metadata-label">Tenant ID</span>
+                <span class="metadata-value">{{ tenant_id | default('N/A') }}</span>
+            </div>
+            <div class="metadata-card">
+                <span class="metadata-label">Framework</span>
+                <span class="metadata-value">{% block framework_name %}{{ framework | default('General') }}{% endblock %}</span>
+            </div>
+            <div class="metadata-card">
+                <span class="metadata-label">Period</span>
+                <span class="metadata-value">{{ report_period | default('Current') }}</span>
+            </div>
+            <div class="metadata-card">
+                <span class="metadata-label">Status</span>
+                <span class="metadata-value status-{{ governance_status | default('pending') | lower }}">
+                    {{ governance_status | default('Pending') }}
+                </span>
+            </div>
+        </div>
+    </section>
+
+    <!-- Main Content Area -->
+    <main class="report-content">
+        {% block executive_summary %}
+        <section class="section executive-summary">
+            <h2 class="section-title">Executive Summary</h2>
+            <div class="summary-content">
+                {% if report and report.executive_summary %}
+                <div class="kpi-grid">
+                    <div class="kpi-card">
+                        <div class="kpi-value">{{ report.executive_summary.total_decisions_analyzed | default(0) }}</div>
+                        <div class="kpi-label">Total Decisions</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-value">{{ report.executive_summary.compliance_rate | default('N/A') }}</div>
+                        <div class="kpi-label">Compliance Rate</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-value status-{{ 'pass' if report.executive_summary.governance_status == 'PASS' else 'review' }}">
+                            {{ report.executive_summary.governance_status | default('N/A') }}
+                        </div>
+                        <div class="kpi-label">Governance Status</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-value {% if report.executive_summary.high_risk_incidents > 0 %}risk-high{% endif %}">
+                            {{ report.executive_summary.high_risk_incidents | default(0) }}
+                        </div>
+                        <div class="kpi-label">High Risk Incidents</div>
+                    </div>
+                </div>
+                {% else %}
+                <p class="no-data">No executive summary data available.</p>
+                {% endif %}
+            </div>
+        </section>
+        {% endblock %}
+
+        {% block framework_content %}
+        <!-- Framework-specific content will be inserted here by child templates -->
+        {% endblock %}
+
+        {% block risk_analysis %}
+        <section class="section risk-analysis">
+            <h2 class="section-title">Risk Analysis</h2>
+            {% if report and report.risk_analysis %}
+
+            {% if report.risk_analysis.high_risk_decisions %}
+            <h3 class="subsection-title">High Risk Decisions</h3>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Timestamp</th>
+                        <th>Agent ID</th>
+                        <th>Decision</th>
+                        <th>Risk Score</th>
+                        <th>Compliance Tags</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for decision in report.risk_analysis.high_risk_decisions %}
+                    <tr>
+                        <td>{{ decision.timestamp | default('N/A') }}</td>
+                        <td>{{ decision.agent_id | default('N/A') }}</td>
+                        <td class="decision-{{ decision.decision | lower }}">{{ decision.decision | default('N/A') }}</td>
+                        <td class="risk-high">{{ "%.2f"|format(decision.risk_score) }}</td>
+                        <td>{{ decision.compliance_tags | join(', ') if decision.compliance_tags else 'N/A' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="no-data">No high risk decisions recorded during this period.</p>
+            {% endif %}
+
+            {% if report.risk_analysis.common_violations %}
+            <h3 class="subsection-title">Common Violations</h3>
+            <table class="data-table violations-table">
+                <thead>
+                    <tr>
+                        <th>Violation Tag</th>
+                        <th>Count</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for violation in report.risk_analysis.common_violations %}
+                    <tr>
+                        <td>{{ violation.tag }}</td>
+                        <td>{{ violation.count }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% endif %}
+
+            {% else %}
+            <p class="no-data">No risk analysis data available.</p>
+            {% endif %}
+        </section>
+        {% endblock %}
+
+        {% block additional_sections %}
+        <!-- Additional framework-specific sections can be added here -->
+        {% endblock %}
+    </main>
+
+    <!-- Attestation Section -->
+    <section class="attestation-section">
+        <h2 class="attestation-title">Digital Attestation</h2>
+        <div class="attestation-content">
+            <div class="attestation-grid">
+                <div class="attestation-item">
+                    <span class="attestation-label">Constitutional Hash:</span>
+                    <code class="attestation-value hash-value">{{ constitutional_hash | default(report.attestation.constitutional_hash if report and report.attestation else 'N/A') }}</code>
+                </div>
+                <div class="attestation-item">
+                    <span class="attestation-label">Integrity Check:</span>
+                    <span class="attestation-value integrity-{{ (report.attestation.integrity_check if report and report.attestation else 'UNKNOWN') | lower }}">
+                        {{ report.attestation.integrity_check if report and report.attestation else 'N/A' }}
+                    </span>
+                </div>
+                <div class="attestation-item">
+                    <span class="attestation-label">Digital Signature:</span>
+                    <span class="attestation-value">
+                        {{ report.attestation.digital_signature_status if report and report.attestation else 'N/A' }}
+                    </span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="report-footer">
+        <div class="footer-content">
+            <div class="footer-branding">
+                <p class="generated-by">Generated by ACGS-2 Constitutional AI Governance System</p>
+            </div>
+            <div class="footer-meta">
+                <span>Report ID: {{ report_id | default(report.report_metadata.report_id if report and report.report_metadata else 'N/A') }}</span>
+                <span class="separator">|</span>
+                <span>Generated: {{ report_date | default(generated_at) | default(report.report_metadata.generated_at if report and report.report_metadata else 'N/A') }}</span>
+            </div>
+            <div class="footer-legal">
+                <p>This report is generated automatically and is subject to the terms of the ACGS-2 governance framework.</p>
+                <p>Constitutional Hash: <code>{{ constitutional_hash | default(report.attestation.constitutional_hash if report and report.attestation else 'N/A') }}</code></p>
+            </div>
+        </div>
+    </footer>
+
+    {% block scripts %}
+    <!-- Optional JavaScript can be added here -->
+    {% endblock %}
+</body>
+</html>
