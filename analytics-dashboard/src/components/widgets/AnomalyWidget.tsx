@@ -16,6 +16,7 @@ import {
   Shield,
   XOctagon,
 } from "lucide-react";
+import { LoadingState, API_BASE_URL } from "../../lib";
 
 /** Anomaly data structure from the API */
 interface AnomalyItem {
@@ -36,13 +37,6 @@ interface AnomaliesResponse {
   anomalies: AnomalyItem[];
   model_trained: boolean;
 }
-
-/** Widget loading state */
-type LoadingState = "idle" | "loading" | "success" | "error";
-
-/** API URL from environment */
-const API_BASE_URL =
-  import.meta.env.VITE_ANALYTICS_API_URL || "http://localhost:8080";
 
 /**
  * Gets the appropriate icon for a severity level
