@@ -1,0 +1,1052 @@
+# Kafka MirrorMaker 2 Deployment for Cross-Region Event Streaming
+# Constitutional Hash: multi-region-mirrormaker2-v1
+#
+# MirrorMaker 2 replicates Kafka topics between regional clusters for:
+# - Event streaming redundancy across regions
+# - Disaster recovery for agent messages and events
+# - Cross-region data synchronization
+#
+# Topics Replicated:
+# - acgs.agent.messages: Agent-to-agent communication messages
+# - acgs.agent.events: System events and state changes
+# - acgs.agent.dlq: Dead letter queue for failed message processing
+#
+# Architecture:
+# - Active-Active: Each region runs MirrorMaker 2 to replicate FROM other regions
+# - Bidirectional: Both us-east-1 and eu-west-1 replicate to each other
+# - Topic naming: Remote topics prefixed with source cluster name (e.g., us-east-1.acgs.agent.messages)
+#
+# Usage:
+#   # Deploy to us-east-1 (replicates FROM eu-west-1)
+#   kubectl apply -f mirrormaker2-deployment.yaml --context=region1
+#
+#   # Deploy to eu-west-1 (replicates FROM us-east-1)
+#   # Update source/target cluster configs appropriately
+#   kubectl apply -f mirrormaker2-deployment.yaml --context=region2
+#
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: kafka-system
+  labels:
+    # Istio sidecar injection for mTLS
+    istio-injection: enabled
+    # Network topology for multi-cluster mesh
+    topology.istio.io/network: network1
+    # Data residency and compliance
+    acgs.io/data-residency: us
+    acgs.io/compliance-framework: soc2
+    app.kubernetes.io/part-of: acgs2
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mirrormaker2-config
+  namespace: kafka-system
+  labels:
+    app.kubernetes.io/name: mirrormaker2
+    app.kubernetes.io/component: event-replication
+    app.kubernetes.io/part-of: acgs2
+data:
+  # MirrorMaker 2 Connect configuration
+  connect-distributed.properties: |
+    # Kafka Connect cluster configuration
+    bootstrap.servers=${TARGET_KAFKA_BOOTSTRAP}
+    group.id=mirrormaker2-connect-cluster
+
+    # Key and value converters
+    key.converter=org.apache.kafka.connect.converters.ByteArrayConverter
+    value.converter=org.apache.kafka.connect.converters.ByteArrayConverter
+    key.converter.schemas.enable=false
+    value.converter.schemas.enable=false
+
+    # Internal topic configuration for Connect framework
+    config.storage.topic=mirrormaker2-config
+    config.storage.replication.factor=3
+    offset.storage.topic=mirrormaker2-offsets
+    offset.storage.replication.factor=3
+    status.storage.topic=mirrormaker2-status
+    status.storage.replication.factor=3
+
+    # Offset flush settings for durability
+    offset.flush.interval.ms=10000
+    offset.flush.timeout.ms=5000
+
+    # Producer settings for reliability
+    producer.acks=all
+    producer.retries=2147483647
+    producer.max.in.flight.requests.per.connection=1
+    producer.enable.idempotence=true
+
+    # Consumer settings
+    consumer.auto.offset.reset=earliest
+    consumer.session.timeout.ms=30000
+    consumer.heartbeat.interval.ms=10000
+
+    # TLS configuration (when enabled)
+    security.protocol=${KAFKA_SECURITY_PROTOCOL}
+    ssl.truststore.location=/tls/truststore.jks
+    ssl.truststore.password=${TRUSTSTORE_PASSWORD}
+    ssl.keystore.location=/tls/keystore.jks
+    ssl.keystore.password=${KEYSTORE_PASSWORD}
+    ssl.key.password=${KEY_PASSWORD}
+
+    # REST interface configuration
+    rest.host.name=0.0.0.0
+    rest.port=8083
+    rest.advertised.host.name=${POD_IP}
+    rest.advertised.port=8083
+
+    # Plugin path for MirrorMaker 2 connectors
+    plugin.path=/opt/kafka/libs
+
+  # MirrorMaker 2 source connector configuration
+  mirrormaker2-source.properties: |
+    # MirrorMaker 2 connector configuration
+    name=mirrormaker2-source-connector
+    connector.class=org.apache.kafka.connect.mirror.MirrorSourceConnector
+    tasks.max=4
+
+    # Source cluster (remote region to replicate FROM)
+    source.cluster.alias=${SOURCE_CLUSTER_ALIAS}
+    source.cluster.bootstrap.servers=${SOURCE_KAFKA_BOOTSTRAP}
+    source.cluster.security.protocol=${KAFKA_SECURITY_PROTOCOL}
+    source.cluster.ssl.truststore.location=/tls/truststore.jks
+    source.cluster.ssl.truststore.password=${TRUSTSTORE_PASSWORD}
+    source.cluster.ssl.keystore.location=/tls/keystore.jks
+    source.cluster.ssl.keystore.password=${KEYSTORE_PASSWORD}
+    source.cluster.ssl.key.password=${KEY_PASSWORD}
+
+    # Target cluster (local region)
+    target.cluster.alias=${TARGET_CLUSTER_ALIAS}
+    target.cluster.bootstrap.servers=${TARGET_KAFKA_BOOTSTRAP}
+    target.cluster.security.protocol=${KAFKA_SECURITY_PROTOCOL}
+    target.cluster.ssl.truststore.location=/tls/truststore.jks
+    target.cluster.ssl.truststore.password=${TRUSTSTORE_PASSWORD}
+    target.cluster.ssl.keystore.location=/tls/keystore.jks
+    target.cluster.ssl.keystore.password=${KEYSTORE_PASSWORD}
+    target.cluster.ssl.key.password=${KEY_PASSWORD}
+
+    # Topics to replicate (ACGS-2 agent bus topics)
+    topics=acgs.agent.messages,acgs.agent.events,acgs.agent.dlq
+
+    # Topic naming policy
+    # Remote topics will be: <source-cluster-alias>.<topic-name>
+    # e.g., us-east-1.acgs.agent.messages
+    replication.policy.class=org.apache.kafka.connect.mirror.DefaultReplicationPolicy
+    replication.policy.separator=.
+
+    # Replication factor for replicated topics
+    replication.factor=3
+
+    # Offset sync configuration
+    sync.topic.configs.enabled=true
+    sync.topic.acls.enabled=false
+
+    # Refresh interval for topic discovery
+    refresh.topics.interval.seconds=60
+    refresh.groups.interval.seconds=60
+
+  # MirrorMaker 2 checkpoint connector configuration
+  mirrormaker2-checkpoint.properties: |
+    # Checkpoint connector for offset translation
+    name=mirrormaker2-checkpoint-connector
+    connector.class=org.apache.kafka.connect.mirror.MirrorCheckpointConnector
+    tasks.max=1
+
+    # Cluster aliases
+    source.cluster.alias=${SOURCE_CLUSTER_ALIAS}
+    target.cluster.alias=${TARGET_CLUSTER_ALIAS}
+
+    # Source cluster configuration
+    source.cluster.bootstrap.servers=${SOURCE_KAFKA_BOOTSTRAP}
+    source.cluster.security.protocol=${KAFKA_SECURITY_PROTOCOL}
+    source.cluster.ssl.truststore.location=/tls/truststore.jks
+    source.cluster.ssl.truststore.password=${TRUSTSTORE_PASSWORD}
+    source.cluster.ssl.keystore.location=/tls/keystore.jks
+    source.cluster.ssl.keystore.password=${KEYSTORE_PASSWORD}
+    source.cluster.ssl.key.password=${KEY_PASSWORD}
+
+    # Target cluster configuration
+    target.cluster.bootstrap.servers=${TARGET_KAFKA_BOOTSTRAP}
+    target.cluster.security.protocol=${KAFKA_SECURITY_PROTOCOL}
+    target.cluster.ssl.truststore.location=/tls/truststore.jks
+    target.cluster.ssl.truststore.password=${TRUSTSTORE_PASSWORD}
+    target.cluster.ssl.keystore.location=/tls/keystore.jks
+    target.cluster.ssl.keystore.password=${KEYSTORE_PASSWORD}
+    target.cluster.ssl.key.password=${KEY_PASSWORD}
+
+    # Consumer groups to sync offsets for
+    groups=acgs-agent-bus,acgs-event-processor,acgs-dlq-handler
+
+    # Checkpoint sync settings
+    emit.checkpoints.enabled=true
+    emit.checkpoints.interval.seconds=60
+    sync.group.offsets.enabled=true
+    sync.group.offsets.interval.seconds=60
+
+  # MirrorMaker 2 heartbeat connector configuration
+  mirrormaker2-heartbeat.properties: |
+    # Heartbeat connector for monitoring replication health
+    name=mirrormaker2-heartbeat-connector
+    connector.class=org.apache.kafka.connect.mirror.MirrorHeartbeatConnector
+    tasks.max=1
+
+    # Cluster aliases
+    source.cluster.alias=${SOURCE_CLUSTER_ALIAS}
+    target.cluster.alias=${TARGET_CLUSTER_ALIAS}
+
+    # Target cluster configuration (heartbeats written to target)
+    target.cluster.bootstrap.servers=${TARGET_KAFKA_BOOTSTRAP}
+    target.cluster.security.protocol=${KAFKA_SECURITY_PROTOCOL}
+    target.cluster.ssl.truststore.location=/tls/truststore.jks
+    target.cluster.ssl.truststore.password=${TRUSTSTORE_PASSWORD}
+    target.cluster.ssl.keystore.location=/tls/keystore.jks
+    target.cluster.ssl.keystore.password=${KEYSTORE_PASSWORD}
+    target.cluster.ssl.key.password=${KEY_PASSWORD}
+
+    # Heartbeat settings
+    emit.heartbeats.enabled=true
+    emit.heartbeats.interval.seconds=5
+    heartbeats.topic.replication.factor=3
+
+  # Region-specific configuration (override via Kustomize or Helm)
+  region.name: "us-east-1"
+  region.network: "network1"
+  region.cluster: "cluster1"
+
+  # Cluster aliases for MirrorMaker 2
+  source.cluster.alias: "eu-west-1"
+  target.cluster.alias: "us-east-1"
+
+  # Bootstrap servers (region-specific)
+  source.kafka.bootstrap: "kafka.eu-west-1.svc.cluster.local:9093"
+  target.kafka.bootstrap: "kafka.kafka-system.svc.cluster.local:9093"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mirrormaker2-tls
+  namespace: kafka-system
+  labels:
+    app.kubernetes.io/name: mirrormaker2
+    app.kubernetes.io/component: event-replication
+type: Opaque
+stringData:
+  # TLS credentials - replace with sealed-secrets or external-secrets in production
+  # These are placeholders that should be populated by GitOps or secrets management
+  truststore-password: "placeholder-replace-with-sealed-secret"
+  keystore-password: "placeholder-replace-with-sealed-secret"
+  key-password: "placeholder-replace-with-sealed-secret"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mirrormaker2-kafka-credentials
+  namespace: kafka-system
+  labels:
+    app.kubernetes.io/name: mirrormaker2
+    app.kubernetes.io/component: event-replication
+type: Opaque
+stringData:
+  # Kafka authentication credentials (if using SASL)
+  sasl-username: "placeholder-replace-with-sealed-secret"
+  sasl-password: "placeholder-replace-with-sealed-secret"
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: mirrormaker2
+  namespace: kafka-system
+  labels:
+    app.kubernetes.io/name: mirrormaker2
+    app.kubernetes.io/component: event-replication
+    app.kubernetes.io/part-of: acgs2
+  annotations:
+    # Constitutional governance tracking
+    acgs.io/constitutional-hash: "multi-region-mirrormaker2-v1"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mirrormaker2
+  namespace: kafka-system
+  labels:
+    app.kubernetes.io/name: mirrormaker2
+    app.kubernetes.io/instance: mirrormaker2-us-east-1
+    app.kubernetes.io/version: "3.6.0"
+    app.kubernetes.io/component: event-replication
+    app.kubernetes.io/part-of: acgs2
+    app.kubernetes.io/managed-by: kubectl
+    # Multi-region labels
+    acgs.io/region: us-east-1
+    acgs.io/network: network1
+    acgs.io/cluster: cluster1
+  annotations:
+    # Constitutional governance tracking
+    acgs.io/constitutional-hash: "multi-region-mirrormaker2-v1"
+    acgs.io/deployment-type: "multi-region"
+    acgs.io/replication-type: "cross-region-kafka"
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: mirrormaker2
+      app.kubernetes.io/instance: mirrormaker2-us-east-1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: mirrormaker2
+        app.kubernetes.io/instance: mirrormaker2-us-east-1
+        app.kubernetes.io/version: "3.6.0"
+        app.kubernetes.io/component: event-replication
+        app.kubernetes.io/part-of: acgs2
+        # Multi-region labels for Istio routing
+        acgs.io/region: us-east-1
+        acgs.io/network: network1
+        # Sidecar injection
+        sidecar.istio.io/inject: "true"
+      annotations:
+        # Prometheus metrics scraping
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9404"
+        prometheus.io/path: "/metrics"
+        # Config checksum for rolling updates on config changes
+        checksum/config: "placeholder-will-be-computed"
+    spec:
+      serviceAccountName: mirrormaker2
+
+      # Security context following project patterns
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+
+      # Pod anti-affinity for high availability
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    app.kubernetes.io/name: mirrormaker2
+                topologyKey: kubernetes.io/hostname
+            - weight: 50
+              podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    app.kubernetes.io/name: mirrormaker2
+                topologyKey: topology.kubernetes.io/zone
+        # Node affinity for region-specific scheduling
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: topology.kubernetes.io/region
+                    operator: In
+                    values:
+                      - us-east-1
+
+      # Topology spread for zone distribution
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: mirrormaker2
+
+      # Init container to verify Kafka connectivity
+      initContainers:
+        - name: wait-for-kafka
+          image: bitnami/kafka:3.6.0
+          imagePullPolicy: IfNotPresent
+          command:
+            - /bin/bash
+            - -c
+            - |
+              echo "Waiting for target Kafka cluster..."
+              until kafka-broker-api-versions.sh --bootstrap-server ${TARGET_KAFKA_BOOTSTRAP} --command-config /config/client.properties 2>/dev/null; do
+                echo "Target Kafka not ready, waiting..."
+                sleep 5
+              done
+              echo "Target Kafka is ready"
+
+              echo "Waiting for source Kafka cluster..."
+              until kafka-broker-api-versions.sh --bootstrap-server ${SOURCE_KAFKA_BOOTSTRAP} --command-config /config/client.properties 2>/dev/null; do
+                echo "Source Kafka not ready, waiting..."
+                sleep 5
+              done
+              echo "Source Kafka is ready"
+          env:
+            - name: TARGET_KAFKA_BOOTSTRAP
+              valueFrom:
+                configMapKeyRef:
+                  name: mirrormaker2-config
+                  key: target.kafka.bootstrap
+            - name: SOURCE_KAFKA_BOOTSTRAP
+              valueFrom:
+                configMapKeyRef:
+                  name: mirrormaker2-config
+                  key: source.kafka.bootstrap
+          volumeMounts:
+            - name: tls-certs
+              mountPath: /tls
+              readOnly: true
+            - name: kafka-client-config
+              mountPath: /config
+              readOnly: true
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 1000
+            capabilities:
+              drop:
+                - ALL
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 100m
+              memory: 128Mi
+
+      containers:
+        - name: mirrormaker2
+          image: bitnami/kafka:3.6.0
+          imagePullPolicy: IfNotPresent
+
+          # Run Kafka Connect with MirrorMaker 2 connectors
+          command:
+            - /bin/bash
+            - -c
+            - |
+              # Generate JKS keystores from PEM if needed
+              if [ -f /tls/ca.crt ]; then
+                keytool -importcert -file /tls/ca.crt -keystore /tmp/truststore.jks -storepass ${TRUSTSTORE_PASSWORD} -noprompt -alias ca 2>/dev/null || true
+              fi
+
+              # Export environment variables for config substitution
+              export POD_IP=$(hostname -i)
+
+              # Substitute environment variables in config
+              envsubst < /config/connect-distributed.properties > /tmp/connect-distributed.properties
+
+              # Start Kafka Connect
+              exec /opt/bitnami/kafka/bin/connect-distributed.sh /tmp/connect-distributed.properties
+
+          ports:
+            - name: rest
+              containerPort: 8083
+              protocol: TCP
+            - name: metrics
+              containerPort: 9404
+              protocol: TCP
+
+          env:
+            # Region and cluster configuration
+            - name: REGION_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: mirrormaker2-config
+                  key: region.name
+            - name: SOURCE_CLUSTER_ALIAS
+              valueFrom:
+                configMapKeyRef:
+                  name: mirrormaker2-config
+                  key: source.cluster.alias
+            - name: TARGET_CLUSTER_ALIAS
+              valueFrom:
+                configMapKeyRef:
+                  name: mirrormaker2-config
+                  key: target.cluster.alias
+            - name: SOURCE_KAFKA_BOOTSTRAP
+              valueFrom:
+                configMapKeyRef:
+                  name: mirrormaker2-config
+                  key: source.kafka.bootstrap
+            - name: TARGET_KAFKA_BOOTSTRAP
+              valueFrom:
+                configMapKeyRef:
+                  name: mirrormaker2-config
+                  key: target.kafka.bootstrap
+
+            # TLS configuration
+            - name: KAFKA_SECURITY_PROTOCOL
+              value: "SSL"
+            - name: TRUSTSTORE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mirrormaker2-tls
+                  key: truststore-password
+            - name: KEYSTORE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mirrormaker2-tls
+                  key: keystore-password
+            - name: KEY_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mirrormaker2-tls
+                  key: key-password
+
+            # JVM settings for Kafka Connect
+            - name: KAFKA_HEAP_OPTS
+              value: "-Xms512m -Xmx1g"
+            - name: KAFKA_OPTS
+              value: "-Djava.security.egd=file:/dev/./urandom"
+
+            # Pod IP for Connect REST advertised listener
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+
+          resources:
+            requests:
+              cpu: 500m
+              memory: 1Gi
+            limits:
+              cpu: 2000m
+              memory: 2Gi
+
+          # Liveness probe - REST API health check
+          livenessProbe:
+            httpGet:
+              path: /
+              port: rest
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 3
+
+          # Readiness probe - connector status check
+          readinessProbe:
+            httpGet:
+              path: /connectors
+              port: rest
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+
+          # Startup probe for slow starts
+          startupProbe:
+            httpGet:
+              path: /
+              port: rest
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 30
+
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false  # Kafka needs write access for temp files
+            runAsNonRoot: true
+            runAsUser: 1000
+            capabilities:
+              drop:
+                - ALL
+
+          volumeMounts:
+            - name: config
+              mountPath: /config
+              readOnly: true
+            - name: tls-certs
+              mountPath: /tls
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+            - name: kafka-logs
+              mountPath: /opt/bitnami/kafka/logs
+
+        # JMX Exporter sidecar for Prometheus metrics
+        - name: jmx-exporter
+          image: bitnami/jmx-exporter:0.19.0
+          imagePullPolicy: IfNotPresent
+
+          ports:
+            - name: metrics
+              containerPort: 9404
+              protocol: TCP
+
+          env:
+            - name: JMX_PORT
+              value: "9999"
+
+          args:
+            - "9404"
+            - /etc/jmx-exporter/config.yaml
+
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 1000
+            capabilities:
+              drop:
+                - ALL
+
+          volumeMounts:
+            - name: jmx-config
+              mountPath: /etc/jmx-exporter
+              readOnly: true
+
+      volumes:
+        - name: config
+          configMap:
+            name: mirrormaker2-config
+        - name: tls-certs
+          secret:
+            secretName: kafka-tls
+            optional: true
+        - name: kafka-client-config
+          configMap:
+            name: kafka-client-config
+            optional: true
+        - name: tmp
+          emptyDir: {}
+        - name: kafka-logs
+          emptyDir: {}
+        - name: jmx-config
+          configMap:
+            name: mirrormaker2-jmx-config
+            optional: true
+
+      # Graceful termination for in-flight replication
+      terminationGracePeriodSeconds: 60
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mirrormaker2
+  namespace: kafka-system
+  labels:
+    app.kubernetes.io/name: mirrormaker2
+    app.kubernetes.io/component: event-replication
+    app.kubernetes.io/part-of: acgs2
+spec:
+  type: ClusterIP
+  ports:
+    - name: rest
+      port: 8083
+      targetPort: rest
+      protocol: TCP
+    - name: metrics
+      port: 9404
+      targetPort: metrics
+      protocol: TCP
+  selector:
+    app.kubernetes.io/name: mirrormaker2
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mirrormaker2-headless
+  namespace: kafka-system
+  labels:
+    app.kubernetes.io/name: mirrormaker2
+    app.kubernetes.io/component: event-replication
+    app.kubernetes.io/part-of: acgs2
+spec:
+  type: ClusterIP
+  clusterIP: None
+  ports:
+    - name: rest
+      port: 8083
+      targetPort: rest
+      protocol: TCP
+  selector:
+    app.kubernetes.io/name: mirrormaker2
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: mirrormaker2-pdb
+  namespace: kafka-system
+  labels:
+    app.kubernetes.io/name: mirrormaker2
+    app.kubernetes.io/component: event-replication
+    app.kubernetes.io/part-of: acgs2
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: mirrormaker2
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: mirrormaker2-hpa
+  namespace: kafka-system
+  labels:
+    app.kubernetes.io/name: mirrormaker2
+    app.kubernetes.io/component: event-replication
+    app.kubernetes.io/part-of: acgs2
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: mirrormaker2
+  minReplicas: 2
+  maxReplicas: 6
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 80
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+        - type: Pods
+          value: 1
+          periodSeconds: 60
+    scaleUp:
+      stabilizationWindowSeconds: 60
+      policies:
+        - type: Pods
+          value: 2
+          periodSeconds: 60
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: mirrormaker2-network-policy
+  namespace: kafka-system
+  labels:
+    app.kubernetes.io/name: mirrormaker2
+    app.kubernetes.io/component: event-replication
+    app.kubernetes.io/part-of: acgs2
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: mirrormaker2
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # Allow REST API access from within the namespace
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              app.kubernetes.io/part-of: acgs2
+      ports:
+        - protocol: TCP
+          port: 8083
+    # Allow Prometheus metrics scraping
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: monitoring
+      ports:
+        - protocol: TCP
+          port: 9404
+  egress:
+    # Allow access to local Kafka cluster
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              app.kubernetes.io/part-of: acgs2
+      ports:
+        - protocol: TCP
+          port: 9092
+        - protocol: TCP
+          port: 9093
+    # Allow cross-cluster Kafka access via Istio East-West Gateway
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              name: istio-system
+      ports:
+        - protocol: TCP
+          port: 15443
+    # Allow DNS resolution
+    - to:
+        - namespaceSelector: {}
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+---
+# JMX Exporter ConfigMap for Prometheus metrics
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mirrormaker2-jmx-config
+  namespace: kafka-system
+  labels:
+    app.kubernetes.io/name: mirrormaker2
+    app.kubernetes.io/component: event-replication
+    app.kubernetes.io/part-of: acgs2
+data:
+  config.yaml: |
+    ---
+    startDelaySeconds: 0
+    hostPort: 127.0.0.1:9999
+    ssl: false
+    lowercaseOutputName: true
+    lowercaseOutputLabelNames: true
+
+    rules:
+      # Kafka Connect metrics
+      - pattern: kafka.connect<type=connect-worker-metrics>
+        name: kafka_connect_worker_$1
+        type: GAUGE
+
+      - pattern: kafka.connect<type=connect-worker-rebalance-metrics>
+        name: kafka_connect_worker_rebalance_$1
+        type: GAUGE
+
+      # MirrorMaker 2 Source Connector metrics
+      - pattern: kafka.connect.mirror<type=MirrorSourceConnector, target=(.+), topic=(.+), partition=(.+)><>(.+)
+        name: kafka_connect_mirror_source_$4
+        type: GAUGE
+        labels:
+          target: "$1"
+          topic: "$2"
+          partition: "$3"
+
+      # Replication lag metrics
+      - pattern: kafka.connect.mirror<type=MirrorSourceConnector, source=(.+), target=(.+)><>replication-latency-ms
+        name: kafka_connect_mirror_replication_latency_ms
+        type: GAUGE
+        labels:
+          source: "$1"
+          target: "$2"
+
+      # Record count metrics
+      - pattern: kafka.connect.mirror<type=MirrorSourceConnector, source=(.+), target=(.+)><>record-count
+        name: kafka_connect_mirror_record_count
+        type: COUNTER
+        labels:
+          source: "$1"
+          target: "$2"
+
+      # Byte rate metrics
+      - pattern: kafka.connect.mirror<type=MirrorSourceConnector, source=(.+), target=(.+)><>byte-rate
+        name: kafka_connect_mirror_byte_rate
+        type: GAUGE
+        labels:
+          source: "$1"
+          target: "$2"
+
+      # Checkpoint metrics
+      - pattern: kafka.connect.mirror<type=MirrorCheckpointConnector, source=(.+), target=(.+)><>(.+)
+        name: kafka_connect_mirror_checkpoint_$3
+        type: GAUGE
+        labels:
+          source: "$1"
+          target: "$2"
+
+      # Heartbeat metrics
+      - pattern: kafka.connect.mirror<type=MirrorHeartbeatConnector, source=(.+), target=(.+)><>(.+)
+        name: kafka_connect_mirror_heartbeat_$3
+        type: GAUGE
+        labels:
+          source: "$1"
+          target: "$2"
+
+      # Connector task metrics
+      - pattern: kafka.connect<type=connector-task-metrics, connector=(.+), task=(.+)><>(.+)
+        name: kafka_connect_connector_task_$3
+        type: GAUGE
+        labels:
+          connector: "$1"
+          task: "$2"
+
+      # Source task metrics
+      - pattern: kafka.connect<type=source-task-metrics, connector=(.+), task=(.+)><>(.+)
+        name: kafka_connect_source_task_$3
+        type: GAUGE
+        labels:
+          connector: "$1"
+          task: "$2"
+---
+# Prometheus ServiceMonitor for MirrorMaker 2 metrics
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: mirrormaker2
+  namespace: kafka-system
+  labels:
+    app.kubernetes.io/name: mirrormaker2
+    app.kubernetes.io/component: event-replication
+    app.kubernetes.io/part-of: acgs2
+    release: prometheus
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: mirrormaker2
+  endpoints:
+    - port: metrics
+      interval: 30s
+      scrapeTimeout: 10s
+      path: /metrics
+  namespaceSelector:
+    matchNames:
+      - kafka-system
+---
+# PrometheusRule for MirrorMaker 2 alerting
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: mirrormaker2-alerts
+  namespace: kafka-system
+  labels:
+    app.kubernetes.io/name: mirrormaker2
+    app.kubernetes.io/component: event-replication
+    app.kubernetes.io/part-of: acgs2
+    release: prometheus
+spec:
+  groups:
+    - name: mirrormaker2.rules
+      rules:
+        # Alert if replication lag exceeds 30 seconds
+        - alert: MirrorMaker2ReplicationLagHigh
+          expr: kafka_connect_mirror_replication_latency_ms > 30000
+          for: 5m
+          labels:
+            severity: warning
+            service: mirrormaker2
+            component: event-replication
+          annotations:
+            summary: "MirrorMaker 2 replication lag is high"
+            description: "Replication lag from {{ $labels.source }} to {{ $labels.target }} is {{ $value }}ms (threshold: 30000ms)"
+
+        # Alert if replication lag exceeds 60 seconds (critical)
+        - alert: MirrorMaker2ReplicationLagCritical
+          expr: kafka_connect_mirror_replication_latency_ms > 60000
+          for: 2m
+          labels:
+            severity: critical
+            service: mirrormaker2
+            component: event-replication
+          annotations:
+            summary: "MirrorMaker 2 replication lag is critical"
+            description: "Replication lag from {{ $labels.source }} to {{ $labels.target }} is {{ $value }}ms (threshold: 60000ms)"
+
+        # Alert if connector is not running
+        - alert: MirrorMaker2ConnectorDown
+          expr: kafka_connect_connector_task_status{connector=~"mirrormaker2-.*"} != 1
+          for: 5m
+          labels:
+            severity: critical
+            service: mirrormaker2
+            component: event-replication
+          annotations:
+            summary: "MirrorMaker 2 connector is down"
+            description: "Connector {{ $labels.connector }} task {{ $labels.task }} is not running"
+
+        # Alert if no records replicated in 10 minutes
+        - alert: MirrorMaker2NoReplication
+          expr: rate(kafka_connect_mirror_record_count[10m]) == 0
+          for: 10m
+          labels:
+            severity: warning
+            service: mirrormaker2
+            component: event-replication
+          annotations:
+            summary: "MirrorMaker 2 is not replicating records"
+            description: "No records replicated from {{ $labels.source }} to {{ $labels.target }} in the last 10 minutes"
+
+        # Alert if heartbeat is missing (cross-region connectivity issue)
+        - alert: MirrorMaker2HeartbeatMissing
+          expr: absent(kafka_connect_mirror_heartbeat_heartbeat_count) == 1
+          for: 5m
+          labels:
+            severity: critical
+            service: mirrormaker2
+            component: event-replication
+          annotations:
+            summary: "MirrorMaker 2 heartbeat is missing"
+            description: "No heartbeats detected, possible cross-region connectivity issue"
+
+        # Alert if pod count is below minimum
+        - alert: MirrorMaker2PodCountLow
+          expr: sum(kube_deployment_status_replicas_available{deployment="mirrormaker2", namespace="kafka-system"}) < 2
+          for: 5m
+          labels:
+            severity: warning
+            service: mirrormaker2
+            component: event-replication
+          annotations:
+            summary: "MirrorMaker 2 pod count is below minimum"
+            description: "Only {{ $value }} pods available for MirrorMaker 2 (minimum: 2)"
+---
+# Istio DestinationRule for MirrorMaker 2 cross-region communication
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: mirrormaker2-destination
+  namespace: kafka-system
+  labels:
+    app.kubernetes.io/name: mirrormaker2
+    app.kubernetes.io/component: event-replication
+    app.kubernetes.io/part-of: acgs2
+spec:
+  host: mirrormaker2.kafka-system.svc.cluster.local
+  trafficPolicy:
+    connectionPool:
+      tcp:
+        maxConnections: 100
+        connectTimeout: 10s
+        tcpKeepalive:
+          time: 7200s
+          interval: 75s
+          probes: 9
+      http:
+        h2UpgradePolicy: DO_NOT_UPGRADE
+        maxRequestsPerConnection: 100
+    loadBalancer:
+      simple: ROUND_ROBIN
+    tls:
+      mode: ISTIO_MUTUAL
+---
+# Kafka client configuration for init container
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kafka-client-config
+  namespace: kafka-system
+  labels:
+    app.kubernetes.io/name: mirrormaker2
+    app.kubernetes.io/component: event-replication
+    app.kubernetes.io/part-of: acgs2
+data:
+  client.properties: |
+    security.protocol=SSL
+    ssl.truststore.location=/tls/truststore.jks
+    ssl.truststore.password=${TRUSTSTORE_PASSWORD}
+    ssl.keystore.location=/tls/keystore.jks
+    ssl.keystore.password=${KEYSTORE_PASSWORD}
+    ssl.key.password=${KEY_PASSWORD}
