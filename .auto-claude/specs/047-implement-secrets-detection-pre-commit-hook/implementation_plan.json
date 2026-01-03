@@ -145,7 +145,9 @@
           "subtask_id": "3.3",
           "title": "Integrate custom hook into pre-commit",
           "description": "Add custom hook to .pre-commit-config.yaml as local hook",
-          "status": "pending",
+          "status": "completed",
+          "completed_at": "2026-01-03T23:45:00.000Z",
+          "notes": "Successfully integrated ACGS-2 custom secrets detection hook into .pre-commit-config.yaml. Hook configuration: ID=acgs2-secrets-detection, entry point=scripts/check-secrets-pre-commit.py, file types=.py/.env/.yaml/.yml/.json (regex: \\.(py|env|ya?ml|json)$), excludes test fixtures/examples/templates via comprehensive regex pattern. Hook tested and passed during commit. Complements gitleaks with ACGS-2-specific CREDENTIAL_PATTERNS from secrets_manager.py. Integration verified - hook runs automatically on commits and shows 'ACGS-2 Secrets Detection...Passed' in pre-commit output. Commit: 085f033d6",
           "acceptance_criteria": [
             "Custom hook added to pre-commit config",
             "Hook runs on relevant file types (.py, .env, .yaml, .json)",

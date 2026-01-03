@@ -238,8 +238,45 @@ All subtasks in Phase 2 completed successfully. Gitleaks is now integrated as a 
 
 ---
 
+#### ✅ Subtask 3.3 - Integrate custom hook into pre-commit (2026-01-03)
+- Successfully added ACGS-2 custom secrets detection hook to .pre-commit-config.yaml
+- Hook configuration details:
+  * Hook ID: acgs2-secrets-detection
+  * Entry point: scripts/check-secrets-pre-commit.py
+  * File types: .py, .env, .yaml, .yml, .json (regex: \.(py|env|ya?ml|json)$)
+  * Excludes: test fixtures, example files, templates, common directories
+  * Integration: Uses CREDENTIAL_PATTERNS from secrets_manager.py
+  * Configuration: Integrates with .secrets-allowlist.yaml
+- Hook tested and verified working - shows "ACGS-2 Secrets Detection...Passed" in pre-commit output
+- Provides comprehensive secrets protection complementing gitleaks
+- All pre-commit hooks continue to pass
+- Commit: 085f033d6
+
+**Acceptance Criteria Met:**
+- ✅ Custom hook added to pre-commit config (added to local repo section)
+- ✅ Hook runs on relevant file types (.py, .env, .yaml, .json)
+- ✅ Hook excludes test fixtures and example files appropriately (comprehensive regex exclusion)
+
+---
+
+---
+
+## Current Status: Phase 3 - Custom ACGS-2 Secrets Hook (COMPLETED ✅)
+
+All subtasks in Phase 3 completed successfully. The custom ACGS-2 secrets detection hook is now fully integrated into the pre-commit workflow, providing project-specific secret pattern detection using CREDENTIAL_PATTERNS from secrets_manager.py, complementing the industry-standard gitleaks protection.
+
+**Phase 3 Summary:**
+- ✅ 3.1: Custom secrets detection script created (scripts/check-secrets-pre-commit.py)
+- ✅ 3.2: Allow-list configuration created (.secrets-allowlist.yaml + documentation)
+- ✅ 3.3: Hook integrated into pre-commit workflow (.pre-commit-config.yaml)
+
+---
+
 ## Next Steps:
-1. Implement subtask 3.3: Integrate custom hook into pre-commit
+1. Proceed to Phase 4: Documentation and Developer Experience
+   - Subtask 4.1: Create secrets detection documentation
+   - Subtask 4.2: Create developer quick-fix guide
+   - Subtask 4.3: Update contributing guidelines
 
 ## Blockers:
 None
