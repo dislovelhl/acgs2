@@ -19,14 +19,14 @@ import httpx
 import pytest
 from pydantic import SecretStr
 
+from src.exceptions.auth import AuthenticationError
+from src.exceptions.delivery import DeliveryError
+from src.exceptions.integration import RateLimitError
 from src.integrations.base import (
-    AuthenticationError,
-    DeliveryError,
     EventSeverity,
     IntegrationEvent,
     IntegrationStatus,
     IntegrationType,
-    RateLimitError,
 )
 from src.integrations.jira_adapter import (
     JiraAdapter,
