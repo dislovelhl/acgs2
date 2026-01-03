@@ -32,7 +32,9 @@
           "subtask_id": "1.2",
           "title": "Review secrets_manager.py patterns",
           "description": "Extract CREDENTIAL_PATTERNS and SECRET_CATEGORIES to inform hook configuration",
-          "status": "pending",
+          "status": "completed",
+          "completed_at": "2026-01-03T21:35:00.000Z",
+          "notes": "Completed comprehensive analysis. Extracted 8 CREDENTIAL_PATTERNS with regex details, identified 7 additional secrets without patterns, documented 5 placeholder categories (dev-*, your-*, <...>, empty, redacted), created detection logic, and mapped to gitleaks rules. Created secrets-patterns-analysis.md with complete findings including valid/invalid format examples and file-specific handling rules.",
           "acceptance_criteria": [
             "List of all credential patterns from secrets_manager.py",
             "Understanding of what constitutes a valid vs invalid secret format",

@@ -31,11 +31,30 @@ None
 
 ---
 
-### Pending Subtasks:
+#### ✅ Subtask 1.2 - Review secrets_manager.py patterns (2026-01-03)
+- Extracted all 8 CREDENTIAL_PATTERNS with detailed regex analysis
+- Identified 7 additional secrets in SECRET_CATEGORIES without defined patterns
+- Analyzed valid vs invalid secret format criteria with examples
+- Documented 5 categories of placeholder patterns observed in codebase
+- Created comprehensive detection logic for placeholder vs real secrets
+- Mapped patterns to gitleaks rule requirements
+- Created detailed analysis document: `secrets-patterns-analysis.md`
 
-#### Subtask 1.2 - Review secrets_manager.py patterns
-- Extract CREDENTIAL_PATTERNS for hook configuration
-- Identify placeholder vs real secret formats
+**Key Findings:**
+- 8 of 15 secrets have strict validation patterns for precise detection
+- AI provider keys (Anthropic, OpenRouter, Claude Code) need custom gitleaks rules
+- Placeholder patterns consistently use `dev-*`, `your-*`, `<...>` format
+- .env.dev uses safe development placeholders like `dev-jwt-secret-min-32-chars-required`
+- 7 secrets without patterns require gitleaks generic rule coverage
+
+**Acceptance Criteria Met:**
+- ✅ List of all credential patterns from secrets_manager.py (8 patterns documented)
+- ✅ Understanding of what constitutes valid vs invalid secret format
+- ✅ Identification of placeholder vs real secrets (5 placeholder categories)
+
+---
+
+### Pending Subtasks:
 
 #### Subtask 1.3 - Design hook strategy
 - Design multi-layered approach
