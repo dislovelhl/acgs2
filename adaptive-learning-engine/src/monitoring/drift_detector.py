@@ -826,7 +826,7 @@ class DriftDetector:
         with self._lock:
             if not self._reference_data:
                 return pd.DataFrame()
-            return self._to_dataframe(list(self._reference_data))
+            return self._to_dataframe(list(self._reference_data), data_source="reference")
 
     def get_current_data(self) -> pd.DataFrame:
         """Get current data as DataFrame.
@@ -837,7 +837,7 @@ class DriftDetector:
         with self._lock:
             if not self._current_data:
                 return pd.DataFrame()
-            return self._to_dataframe(list(self._current_data))
+            return self._to_dataframe(list(self._current_data), data_source="current")
 
     def generate_html_report(self, output_path: str) -> bool:
         """Generate an HTML drift report.
