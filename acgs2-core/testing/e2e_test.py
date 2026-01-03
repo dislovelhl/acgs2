@@ -1,11 +1,10 @@
-import logging
-
 #!/usr/bin/env python3
 """
 ACGS-2 End-to-End Test Suite
 Tests the complete system integration from message input to governance decision output.
 """
 
+import logging
 import os
 import time
 import uuid
@@ -75,7 +74,7 @@ class E2ETestClient:
         for name, cfg in self.config["services"].items():
             try:
                 # Try to connect to the base URL
-                response = await self.client.get(cfg["url"], timeout=1.0)
+                await self.client.get(cfg["url"], timeout=1.0)
                 # We don't necessarily expect 200 OK on the base URL, just that it's reachable
             except (httpx.ConnectError, httpx.ConnectTimeout):
                 unavailable.append(name)
@@ -197,7 +196,7 @@ class E2ETestClient:
         deliberation_response = await self.send_to_service(
             "deliberation_layer", "/process", message
         )
-        assert deliberation_response.get("success") == True, "Deliberation should succeed"
+        assert deliberation_response.get("success"), "Deliberation should succeed"
         assert "lane" in deliberation_response, "Should have routing decision"
 
         # Step 4: Generate constraints if needed
@@ -226,7 +225,7 @@ class E2ETestClient:
                 "data": message,
             },
         )
-        assert audit_response.get("recorded") == True, "Should record audit event"
+        assert audit_response.get("recorded"), "Should record audit event"
 
         # Step 7: Get governance decision
         governance_response = await self.send_to_service(
@@ -280,7 +279,7 @@ class TestE2EIntegration:
 
             result = await client.test_end_to_end_workflow()
 
-            assert result["success"] == True, "End-to-end workflow should succeed"
+            assert result["success"], "End-to-end workflow should succeed"
             assert result["total_latency_ms"] < 5000, (
                 f"Latency {result['total_latency_ms']}ms exceeds 5s threshold"
             )
@@ -333,7 +332,7 @@ class TestE2EIntegration:
                 "/record",
                 {"event_type": "test_event", "message_id": message["message_id"], "data": message},
             )
-            assert record_response.get("recorded") == True
+            assert record_response.get("recorded")
 
             # Query events
             query_response = await client.get_from_service(
@@ -353,8 +352,8 @@ class TestE2EIntegration:
 
             try:
                 message = client.create_test_message("governance_request")
-                # pytest.fail raises a specific exception (Failed) that inherits from BaseException
-                with pytest.raises(BaseException):
+                # Should fail when service is down
+                with pytest.raises((httpx.ConnectError, httpx.ConnectTimeout)):
                     await client.send_to_service("rust_message_bus", "/messages", message)
             finally:
                 client.config["services"]["rust_message_bus"]["url"] = original_url
@@ -393,7 +392,7 @@ class TestE2EIntegration:
                         "confidence": 0.8,
                     },
                 )
-                assert vote_response.get("success") == True, f"Vote from {agent} should succeed"
+                assert vote_response.get("success"), f"Vote from {agent} should succeed"
 
             # Submit human decision
             human_response = await client.send_to_service(
@@ -406,7 +405,7 @@ class TestE2EIntegration:
                     "reasoning": "Human override based on context",
                 },
             )
-            assert human_response.get("success") == True, "Human decision should succeed"
+            assert human_response.get("success"), "Human decision should succeed"
 
     @pytest.mark.asyncio
     async def test_adaptive_governance_decision_making(self):
@@ -418,7 +417,7 @@ class TestE2EIntegration:
             # Test multiple decisions to see adaptation
             decisions = []
             for i in range(3):
-                message = client.create_test_message(
+                client.create_test_message(
                     "governance_request", content=f"Governance request {i + 1} for data access"
                 )
 

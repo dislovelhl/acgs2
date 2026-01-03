@@ -14,7 +14,6 @@ from ..validation_strategies import RustValidationStrategy
 
 
 class TestSecurityRemediation:
-
     @pytest.mark.asyncio
     async def test_vuln_001_rust_validation_fail_closed_on_error(self):
         """

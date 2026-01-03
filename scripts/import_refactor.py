@@ -166,9 +166,7 @@ def generate_refactoring_plan(candidates: List[Dict[str, any]]) -> str:
         plan.append("## Refactoring Strategy")
         plan.append("")
         plan.append("### Phase 1: Consolidate Import Usage")
-        plan.append(
-            "Ensure all files use the centralized imports module (.imports) for optional dependencies."
-        )
+        plan.append("Ensure all files use centralized imports module (.imports) for optionals.")
         plan.append("")
         plan.append("### Phase 2: Simplify Import Patterns")
         plan.append("Replace complex try/except import blocks with simpler patterns:")
@@ -215,9 +213,8 @@ def main():
     candidates = identify_refactoring_candidates(root_path)
 
     print("📊 ANALYSIS RESULTS")
-    print(
-        f"Files analyzed in enhanced_agent_bus: {len(list(Path(root_path).glob('enhanced_agent_bus/*.py')))}"
-    )
+    agent_bus_files = list(Path(root_path).glob("enhanced_agent_bus/*.py"))
+    print(f"Files analyzed in enhanced_agent_bus: {len(agent_bus_files)}")
     print(f"Files needing refactoring: {len(candidates)}")
     print()
 
@@ -228,9 +225,9 @@ def main():
             patterns = candidate["patterns"]
 
             print(f"  {i + 1}. {Path(file_path).name}")
-            print(
-                f"     Complexity: {patterns['complexity_score']}, Try/Except: {patterns['has_try_except_imports']}"
-            )
+            complexity = patterns["complexity_score"]
+            has_try = patterns["has_try_except_imports"]
+            print(f"     Complexity: {complexity}, Try/Except: {has_try}")
         print()
 
         # Generate refactoring plan

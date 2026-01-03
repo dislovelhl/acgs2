@@ -1,5 +1,3 @@
-import logging
-
 #!/usr/bin/env python3
 """
 ACGS-2 Comprehensive Load Testing Suite
@@ -20,6 +18,7 @@ Performance Targets:
 
 import asyncio
 import json
+import logging
 import os
 import statistics
 import sys

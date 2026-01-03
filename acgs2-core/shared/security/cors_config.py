@@ -35,6 +35,7 @@ logger = logging.getLogger(__name__)
 
 class CORSEnvironment(str, Enum):
     """Deployment environment for CORS configuration."""
+
     DEVELOPMENT = "development"
     STAGING = "staging"
     PRODUCTION = "production"
@@ -55,23 +56,30 @@ class CORSConfig:
         max_age: Preflight cache duration in seconds
         environment: Deployment environment
     """
+
     allow_origins: List[str]
     allow_credentials: bool = True
-    allow_methods: List[str] = field(default_factory=lambda: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"])
-    allow_headers: List[str] = field(default_factory=lambda: [
-        "Authorization",
-        "Content-Type",
-        "X-Request-ID",
-        "X-Constitutional-Hash",
-        "X-Tenant-ID",
-    ])
-    expose_headers: List[str] = field(default_factory=lambda: [
-        "X-Request-ID",
-        "X-Constitutional-Hash",
-        "X-RateLimit-Limit",
-        "X-RateLimit-Remaining",
-        "X-RateLimit-Reset",
-    ])
+    allow_methods: List[str] = field(
+        default_factory=lambda: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"]
+    )
+    allow_headers: List[str] = field(
+        default_factory=lambda: [
+            "Authorization",
+            "Content-Type",
+            "X-Request-ID",
+            "X-Constitutional-Hash",
+            "X-Tenant-ID",
+        ]
+    )
+    expose_headers: List[str] = field(
+        default_factory=lambda: [
+            "X-Request-ID",
+            "X-Constitutional-Hash",
+            "X-RateLimit-Limit",
+            "X-RateLimit-Remaining",
+            "X-RateLimit-Reset",
+        ]
+    )
     max_age: int = 600  # 10 minutes
     environment: CORSEnvironment = CORSEnvironment.DEVELOPMENT
 
@@ -135,9 +143,9 @@ class CORSConfig:
 # Default origin configurations by environment
 DEFAULT_ORIGINS = {
     CORSEnvironment.DEVELOPMENT: [
-        "http://localhost:3000",      # React dev server
-        "http://localhost:8080",      # API Gateway
-        "http://localhost:5173",      # Vite dev server
+        "http://localhost:3000",  # React dev server
+        "http://localhost:8080",  # API Gateway
+        "http://localhost:5173",  # Vite dev server
         "http://127.0.0.1:3000",
         "http://127.0.0.1:8080",
         "http://127.0.0.1:5173",
@@ -145,7 +153,7 @@ DEFAULT_ORIGINS = {
     CORSEnvironment.TEST: [
         "http://localhost:3000",
         "http://localhost:8080",
-        "http://testserver",          # pytest httpx testclient
+        "http://testserver",  # pytest httpx testclient
     ],
     CORSEnvironment.STAGING: [
         "https://staging.acgs2.example.com",
@@ -172,10 +180,10 @@ def detect_environment() -> CORSEnvironment:
     4. Defaults to DEVELOPMENT
     """
     env_value = (
-        os.environ.get("CORS_ENVIRONMENT") or
-        os.environ.get("ENVIRONMENT") or
-        os.environ.get("ENV") or
-        "development"
+        os.environ.get("CORS_ENVIRONMENT")
+        or os.environ.get("ENVIRONMENT")
+        or os.environ.get("ENV")
+        or "development"
     ).lower()
 
     mapping = {

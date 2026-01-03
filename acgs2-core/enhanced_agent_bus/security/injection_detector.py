@@ -289,7 +289,7 @@ class PromptInjectionDetector:
         elif isinstance(content, dict):
             # Extract text fields from dict
             text_parts = []
-            for key, value in content.items():
+            for _, value in content.items():
                 if isinstance(value, str):
                     text_parts.append(value)
                 elif isinstance(value, (dict, list)):

@@ -57,12 +57,12 @@ class FullTestSuiteRunner:
 
             # Install dependencies
             pip_cmd = [str(self.venv_dir / "bin" / "pip"), "install", "--upgrade", "pip"]
-            subprocess.run(pip_cmd, check=True, cwd=self.core_dir)
+            subprocess.run(pip_cmd, check=True, cwd=self.core_dir)  # nosec B603
 
             # Install test dependencies
             test_deps = ["pytest", "pytest-asyncio", "pytest-cov", "pybreaker", "pydantic"]
             pip_cmd.extend(test_deps)
-            subprocess.run(pip_cmd, check=True, cwd=self.core_dir)
+            subprocess.run(pip_cmd, check=True, cwd=self.core_dir)  # nosec B603
 
             print("✅ Virtual environment ready")
             return True
@@ -88,7 +88,7 @@ class FullTestSuiteRunner:
             f"{self.core_dir}:{self.core_dir}/enhanced_agent_bus:{self.core_dir}/services"
         )
 
-        return subprocess.run(
+        return subprocess.run(  # nosec B603
             venv_cmd, cwd=cwd or self.core_dir, env=env, capture_output=True, text=True
         )
 
@@ -414,10 +414,12 @@ class FullTestSuiteRunner:
         print("-" * 40)
         for result in report["component_results"]:
             status_icon = "✅" if result["status"] == "PASSED" else "❌"
-            coverage = f" ({result['coverage_percent']:.1f}%)" if result["coverage_percent"] else ""
-            print(
-                f"{status_icon} {result['component']}: {result['passed']}/{result['tests_run']} passed{coverage}"
-            )
+            cov = result["coverage_percent"]
+            coverage = f" ({cov:.1f}%)" if cov else ""
+            component = result["component"]
+            passed = result["passed"]
+            tests_run = result["tests_run"]
+            print(f"{status_icon} {component}: {passed}/{tests_run} passed{coverage}")
 
         # Save detailed report
         report_file = self.project_root / "FULL_TEST_SUITE_REPORT.json"

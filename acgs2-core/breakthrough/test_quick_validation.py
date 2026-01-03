@@ -20,15 +20,18 @@ try:
         VERIFICATION_THRESHOLD,
         Layer,
     )
+
     print("✅ Core constants imported successfully")
 except ImportError as e:
     print(f"❌ Failed to import core constants: {e}")
     sys.exit(1)
 
+
 def test_constitutional_hash():
     """Test constitutional hash is valid."""
     assert CONSTITUTIONAL_HASH == "cdd01ef066bc6cf2"
     print(f"✅ Constitutional hash verified: {CONSTITUTIONAL_HASH}")
+
 
 def test_layer_identifiers():
     """Test layer identifiers."""
@@ -37,6 +40,7 @@ def test_layer_identifiers():
     assert Layer.TEMPORAL == "temporal_symbolic"
     assert Layer.GOVERNANCE == "governance_policy"
     print("✅ Layer identifiers verified")
+
 
 def test_thresholds():
     """Test threshold values."""
@@ -47,22 +51,23 @@ def test_thresholds():
     assert JAILBREAK_PREVENTION_TARGET == 0.95
     print("✅ Threshold values verified")
 
+
 def run_tests():
     """Run all validation tests."""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("ACGS-2 Breakthrough Architecture - Quick Validation")
     print(f"Constitutional Hash: {CONSTITUTIONAL_HASH}")
-    print("="*60 + "\n")
-    
+    print("=" * 60 + "\n")
+
     tests = [
         test_constitutional_hash,
         test_layer_identifiers,
         test_thresholds,
     ]
-    
+
     passed = 0
     failed = 0
-    
+
     for test in tests:
         try:
             test()
@@ -73,12 +78,13 @@ def run_tests():
         except Exception as e:
             print(f"❌ {test.__name__} error: {e}")
             failed += 1
-    
-    print("\n" + "-"*60)
+
+    print("\n" + "-" * 60)
     print(f"Results: {passed} passed, {failed} failed")
-    print("-"*60)
-    
+    print("-" * 60)
+
     return failed == 0
+
 
 if __name__ == "__main__":
     success = run_tests()

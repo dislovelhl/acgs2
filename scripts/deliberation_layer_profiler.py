@@ -5,13 +5,10 @@ Identifies bottlenecks in the deliberation layer to close the 41% throughput gap
 """
 
 import asyncio
-import cProfile
-import io
-import pstats
 import time
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 import numpy as np
 
@@ -19,6 +16,7 @@ import numpy as np
 @dataclass
 class ProfilingResult:
     """Results from profiling run."""
+
     total_requests: int
     total_time: float
     requests_per_second: float
@@ -41,7 +39,9 @@ class DeliberationLayerProfiler:
         print(f"🔍 Profiling Deliberation Queue with {num_requests} requests...")
 
         # Import deliberation components
-        from acgs2_core.enhanced_agent_bus.deliberation_layer.deliberation_queue import DeliberationQueue
+        from acgs2_core.enhanced_agent_bus.deliberation_layer.deliberation_queue import (
+            DeliberationQueue,
+        )
         from acgs2_core.enhanced_agent_bus.models import AgentMessage, MessageType, Priority
 
         queue = DeliberationQueue()
@@ -57,7 +57,7 @@ class DeliberationLayerProfiler:
                 sender_id=f"agent_{i}",
                 content={"action": f"test_action_{i}", "data": "x" * 100},
                 priority=Priority.NORMAL if i % 10 != 0 else Priority.HIGH,
-                message_id=f"msg_{i}"
+                message_id=f"msg_{i}",
             )
             messages.append(msg)
 
@@ -91,7 +91,7 @@ class DeliberationLayerProfiler:
             recommendations.append("Profile JSON serialization/deserialization overhead")
 
         # Check for lock contention
-        if hasattr(queue, '_lock'):
+        if hasattr(queue, "_lock"):
             bottlenecks.append("Potential lock contention in enqueue operations")
             recommendations.append("Consider lock-free data structures or sharding")
 
@@ -104,7 +104,7 @@ class DeliberationLayerProfiler:
             p95_latency_ms=np.percentile(latencies, 95) if latencies else 0,
             p99_latency_ms=np.percentile(latencies, 99) if latencies else 0,
             bottlenecks=bottlenecks,
-            recommendations=recommendations
+            recommendations=recommendations,
         )
 
         await queue.cleanup()
@@ -134,10 +134,11 @@ class DeliberationLayerProfiler:
                 content={
                     "action": f"test_action_{i}",
                     "data": "x" * content_size,
-                    "keywords": ["test"] * (1 if complexity == "low" else 5 if complexity == "medium" else 15)
+                    "keywords": ["test"]
+                    * (1 if complexity == "low" else 5 if complexity == "medium" else 15),
                 },
                 priority=Priority.NORMAL if i % 10 != 0 else Priority.HIGH,
-                message_id=f"msg_{i}"
+                message_id=f"msg_{i}",
             )
             messages.append(msg)
 
@@ -168,7 +169,7 @@ class DeliberationLayerProfiler:
             recommendations.append("Implement scoring result caching")
 
         # Check model loading
-        if hasattr(scorer, '_bert_enabled') and not scorer._bert_enabled:
+        if hasattr(scorer, "_bert_enabled") and not scorer._bert_enabled:
             bottlenecks.append("BERT model not loaded efficiently")
             recommendations.append("Pre-load models at startup and use ONNX optimization")
 
@@ -181,7 +182,7 @@ class DeliberationLayerProfiler:
             p95_latency_ms=np.percentile(latencies, 95),
             p99_latency_ms=np.percentile(latencies, 99),
             bottlenecks=bottlenecks,
-            recommendations=recommendations
+            recommendations=recommendations,
         )
 
         return result
@@ -190,7 +191,9 @@ class DeliberationLayerProfiler:
         """Profile the full deliberation pipeline."""
         print(f"🔬 Profiling Full Deliberation Pipeline with {num_requests} requests...")
 
-        from acgs2_core.enhanced_agent_bus.deliberation_layer.deliberation_queue import DeliberationQueue
+        from acgs2_core.enhanced_agent_bus.deliberation_layer.deliberation_queue import (
+            DeliberationQueue,
+        )
         from acgs2_core.enhanced_agent_bus.deliberation_layer.impact_scorer import ImpactScorer
         from acgs2_core.enhanced_agent_bus.models import AgentMessage, MessageType, Priority
 
@@ -208,7 +211,7 @@ class DeliberationLayerProfiler:
                 sender_id=f"agent_{i}",
                 content={"action": f"test_action_{i}", "data": "x" * 200},
                 priority=Priority.NORMAL if i % 10 != 0 else Priority.HIGH,
-                message_id=f"msg_{i}"
+                message_id=f"msg_{i}",
             )
             messages.append(msg)
 
@@ -260,7 +263,7 @@ class DeliberationLayerProfiler:
             p95_latency_ms=np.percentile(latencies, 95),
             p99_latency_ms=np.percentile(latencies, 99),
             bottlenecks=bottlenecks,
-            recommendations=recommendations
+            recommendations=recommendations,
         )
 
         await queue.cleanup()
@@ -303,10 +306,10 @@ class DeliberationLayerProfiler:
         target_rps = 2605
         current_percentage = (avg_rps / target_rps) * 100
 
-        print("
-🎯 OVERALL ASSESSMENT"        print(f"   Current Average RPS: {avg_rps:.1f}")
+        print("\n🎯 OVERALL ASSESSMENT")
+        print(f"   Current Average RPS: {avg_rps:.1f}")
         print(f"   Target RPS: {target_rps}")
-        print(".1f"
+        print(f"   Current Percentage: {current_percentage:.1f}%")
         if current_percentage < 50:
             print("   🔴 STATUS: Critical - Major optimization required")
         elif current_percentage < 75:

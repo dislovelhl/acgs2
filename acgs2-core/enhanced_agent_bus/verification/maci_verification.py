@@ -30,6 +30,7 @@ logger = logging.getLogger(__name__)
 
 class AgentRole(Enum):
     """MACI agent roles for constitutional governance."""
+
     EXECUTIVE = "executive"
     LEGISLATIVE = "legislative"
     JUDICIAL = "judicial"
@@ -37,6 +38,7 @@ class AgentRole(Enum):
 
 class GovernanceDecisionType(Enum):
     """Types of governance decisions that can be validated."""
+
     POLICY_ENFORCEMENT = "policy_enforcement"
     RESOURCE_ALLOCATION = "resource_allocation"
     ACCESS_CONTROL = "access_control"
@@ -48,6 +50,7 @@ class GovernanceDecisionType(Enum):
 @dataclass
 class GovernanceDecision:
     """A governance decision requiring constitutional validation."""
+
     decision_id: str
     decision_type: GovernanceDecisionType
     description: str
@@ -72,6 +75,7 @@ class GovernanceDecision:
 @dataclass
 class ConstitutionalRules:
     """Extracted constitutional rules and principles."""
+
     rules: List[Dict[str, Any]]
     principles: List[str]
     constraints: List[str]
@@ -94,6 +98,7 @@ class ConstitutionalRules:
 @dataclass
 class ValidationResult:
     """Result of constitutional validation."""
+
     decision_id: str
     is_valid: bool
     confidence_score: float
@@ -128,6 +133,7 @@ class AgentInterface(Protocol):
 @dataclass
 class AgentCapabilities:
     """Capabilities and limitations of a MACI agent."""
+
     role: AgentRole
     strengths: List[str]
     limitations: List[str]
@@ -154,24 +160,21 @@ class ExecutiveAgent:
                 "Risk assessment",
                 "Impact evaluation",
                 "Practical implementation",
-                "Decision optimization"
+                "Decision optimization",
             ],
             limitations=[
                 "Cannot validate own decisions",
                 "No constitutional interpretation",
-                "Limited rule extraction"
+                "Limited rule extraction",
             ],
             confidence_threshold=0.8,
             max_processing_time=30.0,
-            supported_decision_types=list(GovernanceDecisionType)
+            supported_decision_types=list(GovernanceDecisionType),
         )
         self.constitutional_hash = CONSTITUTIONAL_HASH
 
     async def propose_decision(
-        self,
-        context: Dict[str, Any],
-        decision_type: GovernanceDecisionType,
-        description: str
+        self, context: Dict[str, Any], decision_type: GovernanceDecisionType, description: str
     ) -> GovernanceDecision:
         """
         Propose a governance decision based on context and requirements.
@@ -196,7 +199,7 @@ class ExecutiveAgent:
                 "impact_evaluation": impact_evaluation,
                 "implementation_plan": implementation_plan,
                 "proposed_at": datetime.now(timezone.utc).isoformat(),
-            }
+            },
         )
 
         logger.info(f"Executive proposed decision: {decision.decision_id}")
@@ -221,10 +224,12 @@ class ExecutiveAgent:
         return {
             "risk_factors": risk_factors,
             "overall_risk": sum(risk_factors.values()) / len(risk_factors),
-            "mitigation_required": any(r > 0.5 for r in risk_factors.values())
+            "mitigation_required": any(r > 0.5 for r in risk_factors.values()),
         }
 
-    async def _evaluate_impact(self, context: Dict[str, Any], decision_type: GovernanceDecisionType) -> Dict[str, Any]:
+    async def _evaluate_impact(
+        self, context: Dict[str, Any], decision_type: GovernanceDecisionType
+    ) -> Dict[str, Any]:
         """Evaluate the impact of the proposed decision."""
         # Impact evaluation based on decision type
         impact_areas = {
@@ -248,25 +253,28 @@ class ExecutiveAgent:
         return {
             "impact_areas": impacts,
             "net_benefit": 0.7,  # Placeholder
-            "requires_oversight": decision_type in [
+            "requires_oversight": decision_type
+            in [
                 GovernanceDecisionType.CONSTITUTIONAL_AMENDMENT,
-                GovernanceDecisionType.SYSTEM_MAINTENANCE
-            ]
+                GovernanceDecisionType.SYSTEM_MAINTENANCE,
+            ],
         }
 
-    async def _create_implementation_plan(self, context: Dict[str, Any], decision_type: GovernanceDecisionType) -> Dict[str, Any]:
+    async def _create_implementation_plan(
+        self, context: Dict[str, Any], decision_type: GovernanceDecisionType
+    ) -> Dict[str, Any]:
         """Create a practical implementation plan."""
         return {
             "steps": [
                 "Validate prerequisites",
                 "Execute decision",
                 "Monitor outcomes",
-                "Adjust as needed"
+                "Adjust as needed",
             ],
             "timeline": "Immediate execution",
             "rollback_plan": "Revert to previous state",
             "monitoring_required": True,
-            "stakeholders_notified": ["system_admin", "audit_team"]
+            "stakeholders_notified": ["system_admin", "audit_team"],
         }
 
 
@@ -289,16 +297,16 @@ class LegislativeAgent:
                 "Constitutional interpretation",
                 "Rule extraction",
                 "Principle identification",
-                "Constraint analysis"
+                "Constraint analysis",
             ],
             limitations=[
                 "Cannot propose decisions",
                 "No validation authority",
-                "Limited practical implementation knowledge"
+                "Limited practical implementation knowledge",
             ],
             confidence_threshold=0.9,
             max_processing_time=60.0,
-            supported_decision_types=list(GovernanceDecisionType)
+            supported_decision_types=list(GovernanceDecisionType),
         )
         self.constitutional_hash = CONSTITUTIONAL_HASH
 
@@ -326,13 +334,12 @@ class LegislativeAgent:
         precedence = await self._determine_precedence(rules)
 
         constitutional_rules = ConstitutionalRules(
-            rules=rules,
-            principles=principles,
-            constraints=constraints,
-            precedence_order=precedence
+            rules=rules, principles=principles, constraints=constraints, precedence_order=precedence
         )
 
-        logger.info(f"Legislative extracted {len(rules)} rules for decision: {decision.decision_id}")
+        logger.info(
+            f"Legislative extracted {len(rules)} rules for decision: {decision.decision_id}"
+        )
         return constitutional_rules
 
     async def _extract_relevant_rules(self, decision: GovernanceDecision) -> List[Dict[str, Any]]:
@@ -341,45 +348,51 @@ class LegislativeAgent:
 
         # Rule extraction based on decision type
         if decision.decision_type == GovernanceDecisionType.POLICY_ENFORCEMENT:
-            rules.extend([
-                {
-                    "rule_id": "policy_integrity",
-                    "description": "Policies must maintain constitutional compliance",
-                    "severity": "critical",
-                    "scope": "all_policies"
-                },
-                {
-                    "rule_id": "impact_assessment_required",
-                    "description": "All policy changes require impact assessment",
-                    "severity": "high",
-                    "scope": "policy_changes"
-                }
-            ])
+            rules.extend(
+                [
+                    {
+                        "rule_id": "policy_integrity",
+                        "description": "Policies must maintain constitutional compliance",
+                        "severity": "critical",
+                        "scope": "all_policies",
+                    },
+                    {
+                        "rule_id": "impact_assessment_required",
+                        "description": "All policy changes require impact assessment",
+                        "severity": "high",
+                        "scope": "policy_changes",
+                    },
+                ]
+            )
 
         elif decision.decision_type == GovernanceDecisionType.ACCESS_CONTROL:
-            rules.extend([
-                {
-                    "rule_id": "principle_of_least_privilege",
-                    "description": "Access must be granted on need-to-know basis",
-                    "severity": "critical",
-                    "scope": "access_grants"
-                },
-                {
-                    "rule_id": "audit_trail_required",
-                    "description": "All access changes must be auditable",
-                    "severity": "high",
-                    "scope": "access_operations"
-                }
-            ])
+            rules.extend(
+                [
+                    {
+                        "rule_id": "principle_of_least_privilege",
+                        "description": "Access must be granted on need-to-know basis",
+                        "severity": "critical",
+                        "scope": "access_grants",
+                    },
+                    {
+                        "rule_id": "audit_trail_required",
+                        "description": "All access changes must be auditable",
+                        "severity": "high",
+                        "scope": "access_operations",
+                    },
+                ]
+            )
 
         # Add context-specific rules
         if decision.context.get("involves_personal_data"):
-            rules.append({
-                "rule_id": "data_protection",
-                "description": "Personal data handling must comply with privacy principles",
-                "severity": "critical",
-                "scope": "data_operations"
-            })
+            rules.append(
+                {
+                    "rule_id": "data_protection",
+                    "description": "Personal data handling must comply with privacy principles",
+                    "severity": "critical",
+                    "scope": "data_operations",
+                }
+            )
 
         return rules
 
@@ -392,11 +405,13 @@ class LegislativeAgent:
 
         # Add decision-specific principles
         if decision.decision_type == GovernanceDecisionType.CONSTITUTIONAL_AMENDMENT:
-            principles.extend([
-                "Constitutional amendments require broad consensus",
-                "Changes must preserve system stability",
-                "Amendments must enhance beneficial outcomes"
-            ])
+            principles.extend(
+                [
+                    "Constitutional amendments require broad consensus",
+                    "Changes must preserve system stability",
+                    "Amendments must enhance beneficial outcomes",
+                ]
+            )
 
         return principles
 
@@ -405,15 +420,17 @@ class LegislativeAgent:
         constraints = [
             "Decision must not violate constitutional principles",
             "Implementation must be technically feasible",
-            "Decision must be auditable and transparent"
+            "Decision must be auditable and transparent",
         ]
 
         # Add type-specific constraints
         if decision.decision_type == GovernanceDecisionType.RESOURCE_ALLOCATION:
-            constraints.extend([
-                "Resource allocation must optimize for beneficial outcomes",
-                "Allocation must not create single points of failure"
-            ])
+            constraints.extend(
+                [
+                    "Resource allocation must optimize for beneficial outcomes",
+                    "Allocation must not create single points of failure",
+                ]
+            )
 
         return constraints
 
@@ -424,10 +441,7 @@ class LegislativeAgent:
 
         sorted_rules = sorted(
             rules,
-            key=lambda r: (
-                severity_order.get(r.get("severity", "low"), 3),
-                r.get("rule_id", "")
-            )
+            key=lambda r: (severity_order.get(r.get("severity", "low"), 3), r.get("rule_id", "")),
         )
 
         return [rule["rule_id"] for rule in sorted_rules]
@@ -452,23 +466,21 @@ class JudicialAgent:
                 "Impartial validation",
                 "Rule interpretation",
                 "Violation detection",
-                "Confidence assessment"
+                "Confidence assessment",
             ],
             limitations=[
                 "Cannot propose decisions",
                 "No rule extraction authority",
-                "Limited implementation knowledge"
+                "Limited implementation knowledge",
             ],
             confidence_threshold=0.85,
             max_processing_time=45.0,
-            supported_decision_types=list(GovernanceDecisionType)
+            supported_decision_types=list(GovernanceDecisionType),
         )
         self.constitutional_hash = CONSTITUTIONAL_HASH
 
     async def validate_decision(
-        self,
-        decision: GovernanceDecision,
-        rules: ConstitutionalRules
+        self, decision: GovernanceDecision, rules: ConstitutionalRules
     ) -> ValidationResult:
         """
         Validate a decision against constitutional rules and principles.
@@ -488,9 +500,11 @@ class JudicialAgent:
                 continue
 
             # Validate decision against this rule
-            rule_violations, rule_justifications, rule_confidence = await self._validate_against_rule(
-                decision, rule
-            )
+            (
+                rule_violations,
+                rule_justifications,
+                rule_confidence,
+            ) = await self._validate_against_rule(decision, rule)
 
             violations.extend(rule_violations)
             justifications.extend(rule_justifications)
@@ -508,7 +522,9 @@ class JudicialAgent:
         violations.extend(constraint_violations)
 
         # Determine overall validity
-        is_valid = len(violations) == 0 and confidence_score >= self.capabilities.confidence_threshold
+        is_valid = (
+            len(violations) == 0 and confidence_score >= self.capabilities.confidence_threshold
+        )
 
         validation_result = ValidationResult(
             decision_id=decision.decision_id,
@@ -516,16 +532,16 @@ class JudicialAgent:
             confidence_score=confidence_score,
             violations=violations,
             justifications=justifications,
-            validated_by=AgentRole.JUDICIAL
+            validated_by=AgentRole.JUDICIAL,
         )
 
-        logger.info(f"Judicial validation complete for {decision.decision_id}: valid={is_valid}, confidence={confidence_score:.2f}")
+        logger.info(
+            f"Judicial validation complete for {decision.decision_id}: valid={is_valid}, confidence={confidence_score:.2f}"
+        )
         return validation_result
 
     async def _validate_against_rule(
-        self,
-        decision: GovernanceDecision,
-        rule: Dict[str, Any]
+        self, decision: GovernanceDecision, rule: Dict[str, Any]
     ) -> tuple[List[Dict[str, Any]], List[str], float]:
         """Validate decision against a specific rule."""
         violations = []
@@ -537,38 +553,46 @@ class JudicialAgent:
         # Rule-specific validation logic
         if rule_id == "policy_integrity":
             if not decision.context.get("policy_compliant", True):
-                violations.append({
-                    "rule_id": rule_id,
-                    "severity": rule["severity"],
-                    "description": "Decision violates policy integrity requirements"
-                })
+                violations.append(
+                    {
+                        "rule_id": rule_id,
+                        "severity": rule["severity"],
+                        "description": "Decision violates policy integrity requirements",
+                    }
+                )
                 confidence = 0.3
 
         elif rule_id == "impact_assessment_required":
             if not decision.proposed_action.get("impact_evaluation"):
-                violations.append({
-                    "rule_id": rule_id,
-                    "severity": rule["severity"],
-                    "description": "Impact assessment is required but missing"
-                })
+                violations.append(
+                    {
+                        "rule_id": rule_id,
+                        "severity": rule["severity"],
+                        "description": "Impact assessment is required but missing",
+                    }
+                )
                 confidence = 0.7
 
         elif rule_id == "principle_of_least_privilege":
             if decision.context.get("excessive_permissions", False):
-                violations.append({
-                    "rule_id": rule_id,
-                    "severity": rule["severity"],
-                    "description": "Access grant violates principle of least privilege"
-                })
+                violations.append(
+                    {
+                        "rule_id": rule_id,
+                        "severity": rule["severity"],
+                        "description": "Access grant violates principle of least privilege",
+                    }
+                )
                 confidence = 0.4
 
         elif rule_id == "audit_trail_required":
             if not decision.context.get("auditable", True):
-                violations.append({
-                    "rule_id": rule_id,
-                    "severity": rule["severity"],
-                    "description": "Decision must be auditable"
-                })
+                violations.append(
+                    {
+                        "rule_id": rule_id,
+                        "severity": rule["severity"],
+                        "description": "Decision must be auditable",
+                    }
+                )
                 confidence = 0.6
 
         if not violations:
@@ -577,9 +601,7 @@ class JudicialAgent:
         return violations, justifications, confidence
 
     async def _validate_against_principles(
-        self,
-        decision: GovernanceDecision,
-        principles: List[str]
+        self, decision: GovernanceDecision, principles: List[str]
     ) -> tuple[List[Dict[str, Any]], List[str]]:
         """Validate decision against constitutional principles."""
         violations = []
@@ -588,20 +610,20 @@ class JudicialAgent:
         for principle in principles:
             # Simplified principle validation
             if "harm" in principle.lower() and decision.context.get("potential_harm", False):
-                violations.append({
-                    "principle": principle,
-                    "severity": "high",
-                    "description": f"Decision may violate principle: {principle}"
-                })
+                violations.append(
+                    {
+                        "principle": principle,
+                        "severity": "high",
+                        "description": f"Decision may violate principle: {principle}",
+                    }
+                )
             else:
                 justifications.append(f"Decision aligns with principle: {principle}")
 
         return violations, justifications
 
     async def _check_constraints(
-        self,
-        decision: GovernanceDecision,
-        constraints: List[str]
+        self, decision: GovernanceDecision, constraints: List[str]
     ) -> List[Dict[str, Any]]:
         """Check decision against constitutional constraints."""
         violations = []
@@ -610,19 +632,23 @@ class JudicialAgent:
             # Simplified constraint checking
             if "constitutional principles" in constraint:
                 if decision.context.get("violates_principles", False):
-                    violations.append({
-                        "constraint": constraint,
-                        "severity": "critical",
-                        "description": f"Decision violates constraint: {constraint}"
-                    })
+                    violations.append(
+                        {
+                            "constraint": constraint,
+                            "severity": "critical",
+                            "description": f"Decision violates constraint: {constraint}",
+                        }
+                    )
 
             elif "technically feasible" in constraint:
                 if not decision.context.get("technically_feasible", True):
-                    violations.append({
-                        "constraint": constraint,
-                        "severity": "high",
-                        "description": f"Decision violates constraint: {constraint}"
-                    })
+                    violations.append(
+                        {
+                            "constraint": constraint,
+                            "severity": "high",
+                            "description": f"Decision violates constraint: {constraint}",
+                        }
+                    )
 
         return violations
 
@@ -669,9 +695,7 @@ class ConstitutionalVerificationPipeline:
             # Phase 1: Executive proposes decision
             logger.debug("Phase 1: Executive decision proposal")
             decision = await self.executive.propose_decision(
-                context=context,
-                decision_type=decision_type,
-                description=description
+                context=context, decision_type=decision_type, description=description
             )
 
             # Phase 2: Legislative extracts rules
@@ -682,8 +706,10 @@ class ConstitutionalVerificationPipeline:
             logger.debug("Phase 3: Judicial validation")
             validation_result = await self.judicial.validate_decision(decision, rules)
 
-            logger.info(f"MACI verification complete: valid={validation_result.is_valid}, "
-                       f"confidence={validation_result.confidence_score:.2f}")
+            logger.info(
+                f"MACI verification complete: valid={validation_result.is_valid}, "
+                f"confidence={validation_result.confidence_score:.2f}"
+            )
 
             return validation_result
 
@@ -694,13 +720,15 @@ class ConstitutionalVerificationPipeline:
                 decision_id=f"error_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}",
                 is_valid=False,
                 confidence_score=0.0,
-                violations=[{
-                    "error": "verification_pipeline_failure",
-                    "description": str(e),
-                    "severity": "critical"
-                }],
+                violations=[
+                    {
+                        "error": "verification_pipeline_failure",
+                        "description": str(e),
+                        "severity": "critical",
+                    }
+                ],
                 justifications=[],
-                validated_by=AgentRole.JUDICIAL
+                validated_by=AgentRole.JUDICIAL,
             )
 
     async def get_pipeline_status(self) -> Dict[str, Any]:
@@ -712,22 +740,22 @@ class ConstitutionalVerificationPipeline:
                 "executive": {
                     "role": self.executive.capabilities.role.value,
                     "confidence_threshold": self.executive.capabilities.confidence_threshold,
-                    "status": "active"
+                    "status": "active",
                 },
                 "legislative": {
                     "role": self.legislative.capabilities.role.value,
                     "confidence_threshold": self.legislative.capabilities.confidence_threshold,
-                    "status": "active"
+                    "status": "active",
                 },
                 "judicial": {
                     "role": self.judicial.capabilities.role.value,
                     "confidence_threshold": self.judicial.capabilities.confidence_threshold,
-                    "status": "active"
-                }
+                    "status": "active",
+                },
             },
             "constitutional_hash": self.constitutional_hash,
             "supported_decision_types": [dt.value for dt in GovernanceDecisionType],
-            "godel_bypass_implemented": True
+            "godel_bypass_implemented": True,
         }
 
 
@@ -774,7 +802,7 @@ async def verify_decision_maci(
             "violations": [{"error": str(e), "severity": "critical"}],
             "justifications": [],
             "validated_by": "error",
-            "error": str(e)
+            "error": str(e),
         }
 
 
@@ -795,16 +823,18 @@ if __name__ == "__main__":
             "involves_sensitive_data": True,
             "policy_compliant": True,
             "technically_feasible": True,
-            "auditable": True
+            "auditable": True,
         }
 
         result = await pipeline.verify_governance_decision(
             context=test_context,
             decision_type=GovernanceDecisionType.ACCESS_CONTROL,
-            description="Grant admin access to user for system maintenance"
+            description="Grant admin access to user for system maintenance",
         )
 
-        print(f"✅ Verification result: valid={result.is_valid}, confidence={result.confidence_score:.2f}")
+        print(
+            f"✅ Verification result: valid={result.is_valid}, confidence={result.confidence_score:.2f}"
+        )
         print(f"✅ Violations found: {len(result.violations)}")
         print(f"✅ Justifications: {len(result.justifications)}")
 

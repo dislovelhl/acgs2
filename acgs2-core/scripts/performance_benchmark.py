@@ -123,7 +123,7 @@ class PerformanceBenchmark:
         logger.info("Phase 1: System warm-up")
         async with aiohttp.ClientSession() as session:
             tasks = []
-            for i in range(50):  # 50 warm-up requests
+            for _ in range(50):  # 50 warm-up requests
                 task = asyncio.create_task(
                     self._send_request(session, self.config.test_messages[0])
                 )
@@ -141,7 +141,7 @@ class PerformanceBenchmark:
 
         latencies = []
         async with aiohttp.ClientSession() as session:
-            for i in tqdm(range(100), desc="Latency test"):
+            for _ in tqdm(range(100), desc="Latency test"):
                 start_time = time.time()
                 try:
                     await self._send_request(session, self.config.test_messages[0])
@@ -187,13 +187,13 @@ class PerformanceBenchmark:
             logger.info(f"Testing throughput at {target_rps} RPS")
 
             start_time = time.time()
-            interval = 1.0 / target_rps
+            _interval = 1.0 / target_rps  # noqa: F841 - kept for documentation
             successful = 0
             attempted = 0
 
             async with aiohttp.ClientSession() as session:
                 tasks = []
-                for i in range(target_rps):
+                for _ in range(target_rps):
                     task = asyncio.create_task(
                         self._send_request(session, self.config.test_messages[1])
                     )
@@ -240,14 +240,13 @@ class PerformanceBenchmark:
         duration = 30  # 30 seconds sustained load
         target_rps = min(TARGET_THROUGHPUT_RPS, 2000)  # Don't overload the system
 
-        start_time = time.time()
         successful = 0
         attempted = 0
 
         async with aiohttp.ClientSession() as session:
             tasks = []
-            for second in range(duration):
-                for i in range(target_rps):
+            for _ in range(duration):
+                for _ in range(target_rps):
                     task = asyncio.create_task(
                         self._send_request(session, self.config.test_messages[0])
                     )
@@ -289,7 +288,7 @@ class PerformanceBenchmark:
         try:
             # Query stats endpoint for basic metrics
             response = requests.get(f"{self.config.base_url}/stats", timeout=5)
-            stats = response.json()
+            response.json()  # Validate response is valid JSON
 
             # Use basic stats (in production, this would integrate with Prometheus)
             memory_mb = 2.5  # Placeholder - would come from actual metrics
@@ -388,29 +387,35 @@ class PerformanceBenchmark:
         for result in self.results:
             if not result.passed:
                 if result.metric == "p99_latency_ms":
+                    actual = result.actual
+                    target = TARGET_P99_LATENCY_MS
                     recommendations.append(
-                        f"P99 latency ({result.actual:.3f}ms) exceeds target ({TARGET_P99_LATENCY_MS:.3f}ms). "
+                        f"P99 latency ({actual:.3f}ms) exceeds target ({target:.3f}ms). "
                         "Consider optimizing message processing pipeline or caching."
                     )
                 elif result.metric == "throughput_rps":
+                    actual = result.actual
+                    target = TARGET_THROUGHPUT_RPS
                     recommendations.append(
-                        f"Throughput ({result.actual:.0f} RPS) below target ({TARGET_THROUGHPUT_RPS:.0f} RPS). "
+                        f"Throughput ({actual:.0f} RPS) below target ({target:.0f} RPS). "
                         "Consider horizontal scaling or async processing improvements."
                     )
                 elif result.metric == "memory_usage_mb":
+                    actual = result.actual
+                    target = TARGET_MEMORY_MB
                     recommendations.append(
-                        f"Memory usage ({result.actual:.1f}MB) exceeds target ({TARGET_MEMORY_MB:.1f}MB). "
+                        f"Memory usage ({actual:.1f}MB) exceeds target ({target:.1f}MB). "
                         "Consider memory profiling and optimization."
                     )
                 elif result.metric == "cpu_utilization_percent":
+                    actual = result.actual
+                    target = TARGET_CPU_PERCENT
                     recommendations.append(
-                        f"CPU utilization ({result.actual:.1f}%) exceeds target ({TARGET_CPU_PERCENT:.1f}%). "
+                        f"CPU utilization ({actual:.1f}%) exceeds target ({target:.1f}%). "
                         "Consider CPU profiling and optimization."
                     )
         if not recommendations:
-            recommendations.append(
-                "All performance targets met! Consider optimizing further for even better performance."
-            )
+            recommendations.append("All performance targets met! Consider further optimization.")
 
         return recommendations
 
@@ -445,9 +450,10 @@ async def main():
     logger.debug("DETAILED RESULTS:")
     for result in report["results"]:
         status = "✅ PASS" if result["passed"] else "❌ FAIL"
-        logger.info(
-            f"  {result['metric']}: {result['actual']:.3f} (target: {result['target']:.3f}) {status}"
-        )
+        metric = result["metric"]
+        actual = result["actual"]
+        target = result["target"]
+        logger.info(f"  {metric}: {actual:.3f} (target: {target:.3f}) {status}")
 
     logger.info("")
     logger.info("RECOMMENDATIONS:")

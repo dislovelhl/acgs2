@@ -42,7 +42,7 @@ try:
     logger.info(f"[{CONSTITUTIONAL_HASH}] OpenTelemetry SDK available")
 except ImportError:
     logger.warning(
-        f"[{CONSTITUTIONAL_HASH}] OpenTelemetry not available, " "using no-op implementations"
+        f"[{CONSTITUTIONAL_HASH}] OpenTelemetry not available, using no-op implementations"
     )
 
 
@@ -201,8 +201,7 @@ def configure_telemetry(config: Optional[TelemetryConfig] = None) -> Tuple[Any, 
 
     if not OTEL_AVAILABLE:
         logger.warning(
-            f"[{CONSTITUTIONAL_HASH}] OpenTelemetry not available, "
-            "returning no-op implementations"
+            f"[{CONSTITUTIONAL_HASH}] OpenTelemetry not available, returning no-op implementations"
         )
         return NoOpTracer(), NoOpMeter()
 
@@ -278,9 +277,7 @@ def configure_telemetry(config: Optional[TelemetryConfig] = None) -> Tuple[Any, 
             logger.warning(f"[{CONSTITUTIONAL_HASH}] B3 propagator not available")
 
         _configured = True
-        logger.info(
-            f"[{CONSTITUTIONAL_HASH}] OpenTelemetry configured for " f"{config.service_name}"
-        )
+        logger.info(f"[{CONSTITUTIONAL_HASH}] OpenTelemetry configured for {config.service_name}")
 
     # Get or create tracer and meter
     tracer = trace.get_tracer(config.service_name, config.service_version)

@@ -1,8 +1,8 @@
+import logging
 import time
 
 import numpy as np
 from enhanced_agent_bus.deliberation_layer.impact_scorer import ImpactScorer
-import logging
 
 
 def benchmark_scorer(iterations=100):
@@ -17,7 +17,7 @@ def benchmark_scorer(iterations=100):
     }
 
     # 1. Baseline Scorer (Standard BERT if possible)
-    logging.info("\n--- Baseline (bert-base-uncased)
+    logging.info("\n--- Baseline (bert-base-uncased) ---")
     start_time = time.time()
     try:
         baseline = ImpactScorer(model_name="bert-base-uncased")
@@ -30,13 +30,13 @@ def benchmark_scorer(iterations=100):
             baseline.calculate_impact_score(test_message)
             latencies.append(time.time() - s)
 
-        logging.info(f"Avg Inference Latency: {np.mean(latencies)
-        logging.info(f"Throughput: {1/np.mean(latencies)
+        logging.info(f"Avg Inference Latency: {np.mean(latencies)}")
+        logging.info(f"Throughput: {1 / np.mean(latencies)}")
     except Exception as e:
         logging.error(f"Baseline failed: {e}")
 
     # 2. Optimized Scorer (DistilBERT)
-    logging.info("\n--- Optimized (distilbert-base-uncased)
+    logging.info("\n--- Optimized (distilbert-base-uncased) ---")
     start_time = time.time()
     try:
         optimized = ImpactScorer(model_name="distilbert-base-uncased")
@@ -49,8 +49,8 @@ def benchmark_scorer(iterations=100):
             optimized.calculate_impact_score(test_message)
             latencies.append(time.time() - s)
 
-        logging.info(f"Avg Inference Latency: {np.mean(latencies)
-        logging.info(f"Throughput: {1/np.mean(latencies)
+        logging.info(f"Avg Inference Latency: {np.mean(latencies)}")
+        logging.info(f"Throughput: {1 / np.mean(latencies)}")
     except Exception as e:
         logging.error(f"Optimized failed: {e}")
 

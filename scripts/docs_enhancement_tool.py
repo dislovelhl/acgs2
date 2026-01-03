@@ -169,10 +169,11 @@ class DocstringAnalyzer:
                 content = spec_file.read_text()
 
                 # Add generation metadata
-                enhanced_content = content.replace(
-                    "info:",
-                    f'info:\n  x-generated-at: "$(date)"\n  x-constitutional-hash: "{CONSTITUTIONAL_HASH}"\n',
+                metadata = (
+                    f'info:\n  x-generated-at: "$(date)"\n'
+                    f'  x-constitutional-hash: "{CONSTITUTIONAL_HASH}"\n'
                 )
+                enhanced_content = content.replace("info:", metadata)
 
                 enhanced_file = enhanced_dir / spec_file.name
                 enhanced_file.write_text(enhanced_content)
@@ -225,7 +226,7 @@ class CoverageAnalyzer:
                         break
                     elif coverage_file == ".coverage":
                         # Try to convert .coverage to json using coverage tool
-                        result = subprocess.run(
+                        result = subprocess.run(  # nosec B603,B607
                             ["coverage", "json", "-o", "/tmp/coverage_temp.json"],
                             capture_output=True,
                             text=True,
@@ -490,9 +491,8 @@ def main():
 
     print("📊 ENHANCEMENT SUMMARY")
     print(f"API modules documented: {results.get('api_docs', {}).get('modules_analyzed', 0)}")
-    print(
-        f"Coverage reports generated: {results.get('coverage_docs', {}).get('reports_generated', 0)}"
-    )
+    coverage_docs = results.get("coverage_docs", {})
+    print(f"Coverage reports generated: {coverage_docs.get('reports_generated', 0)}")
     print()
     print("🎯 DOCS-001 DOCUMENTATION ENHANCEMENT COMPLETE")
 

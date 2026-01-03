@@ -843,7 +843,8 @@ class TestProcessingStrategyIntegration:
         """Test MACI strategy wrapping Python strategy."""
         python_strategy = PythonProcessingStrategy()
         maci_strategy = MACIProcessingStrategy(
-            inner_strategy=python_strategy, strict_mode=False  # Non-strict for testing
+            inner_strategy=python_strategy,
+            strict_mode=False,  # Non-strict for testing
         )
 
         result = await maci_strategy.process(valid_message, {})

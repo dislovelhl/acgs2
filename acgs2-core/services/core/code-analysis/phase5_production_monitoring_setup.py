@@ -1,22 +1,9 @@
 #!/usr/bin/env python3
-
-# Secure subprocess management
-# Assuming this module exists or is a placeholder; keeping import
-try:
-    from acgs2.services.shared.security.secure_subprocess import execute_command
-except ImportError:
-    # Fallback to standard subprocess if internal module missing (common in this repo state)
-    import subprocess
-
-    async def execute_command(cmd, **kwargs):
-        # detailed mock implementation not strictly needed for syntax fix,
-        # but to make it runnable without erroring on import
-        return subprocess.run(cmd, **kwargs)
-
-
 """
-ACGS Code Analysis Engine - Phase 5 Production Monitoring Setup
-Comprehensive production monitoring implementation with Prometheus, Grafana, and operational runbooks.
+ACGS Code Analysis Engine - Phase 5 Production Monitoring Setup.
+
+Comprehensive production monitoring implementation with Prometheus,
+Grafana, and operational runbooks.
 
 Constitutional Hash: cdd01ef066bc6cf2
 Service URL: http://localhost:8107
@@ -25,12 +12,25 @@ Monitoring Ports: Prometheus 9190, Grafana 3100
 
 import json
 import logging
+import subprocess  # nosec B404 - subprocess needed for command execution
 import sys
 import time
 from datetime import datetime
 from typing import Any, Dict
 
 import requests
+
+# Secure subprocess management
+# Assuming this module exists or is a placeholder; keeping import
+try:
+    from acgs2.services.shared.security.secure_subprocess import execute_command
+except ImportError:
+    # Fallback to standard subprocess if internal module missing
+
+    async def execute_command(cmd, **kwargs):
+        """Execute command with fallback to subprocess."""
+        return subprocess.run(cmd, **kwargs)  # nosec
+
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -82,8 +82,8 @@ class ProductionMonitoringSetup:
                     if prometheus_response.status_code == 200:
                         prometheus_accessible = True
                         prometheus_response.json()
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.debug(f"Prometheus check failed: {e}")
 
                 return {
                     "status": "success",
@@ -283,7 +283,7 @@ class ProductionMonitoringSetup:
         try:
             # Check Docker logs for the service
             try:
-                log_result = await execute_command(
+                await execute_command(
                     ["docker", "logs", "--tail", "50", "acgs-code-analysis-engine"],
                     check=False,
                     capture_output=True,
@@ -291,8 +291,8 @@ class ProductionMonitoringSetup:
                     timeout=10,
                 )
                 # Logic to process logs would go here
-            except Exception:
-                pass
+            except (subprocess.SubprocessError, asyncio.TimeoutError) as e:
+                logger.debug(f"Log retrieval failed: {e}")
 
             # Create log aggregation configuration
             log_config = {
@@ -425,7 +425,8 @@ Generated: {datetime.now().isoformat()}
                     else:
                         validation_results["errors"] += 1
 
-                except Exception:
+                except (requests.RequestException, ValueError, KeyError) as e:
+                    logger.debug(f"Health check failed: {e}")
                     validation_results["errors"] += 1
 
                 time.sleep(0.5)

@@ -34,7 +34,7 @@ logger = logging.getLogger(__name__)
 
 # Z3 imports (same as in z3_smt_verifier.py)
 try:
-    from z3 import *
+    from z3 import Bool, Function, Int, Solver
 
     Z3_AVAILABLE = True
 except ImportError:
@@ -646,7 +646,6 @@ class LLMZ3FusionVerifier:
 
             # Test current hypotheses
             best_result = None
-            best_hypothesis = None
 
             for hypothesis in current_hypotheses:
                 z3_calls += 1
@@ -654,7 +653,6 @@ class LLMZ3FusionVerifier:
 
                 if z3_result["verified"] and (best_result is None or z3_result["result"] == "sat"):
                     best_result = z3_result
-                    best_hypothesis = hypothesis
 
             # Check if we have a successful verification
             if best_result and best_result["verified"]:

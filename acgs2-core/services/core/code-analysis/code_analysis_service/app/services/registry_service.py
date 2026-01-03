@@ -106,7 +106,7 @@ class ServiceRegistryClient:
                 "constitutional_hash": CONSTITUTIONAL_HASH,
                 "metadata": {
                     "description": (
-                        "ACGS Code Analysis Engine for semantic code search and" " analysis"
+                        "ACGS Code Analysis Engine for semantic code search and analysis"
                     ),
                     "supported_languages": [
                         "python",

@@ -430,8 +430,7 @@ class SecureFallbackCrypto:
             # Version check for future compatibility
             if payload.version > self._key_version:
                 raise DecryptionError(
-                    f"Ciphertext version {payload.version} not supported "
-                    f"(max: {self._key_version})"
+                    f"Ciphertext version {payload.version} not supported (max: {self._key_version})"
                 )
 
             # Derive key with same salt

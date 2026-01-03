@@ -181,10 +181,7 @@ class IntegrationExamples:
 
                 # Monitor service over time
                 for _i in range(5):
-                    start_time = time.time()
                     await client.health_check()
-                    # (time.time() - start_time) * 1000  # Unused result
-
                     await asyncio.sleep(1)
 
                 self.results["basic_health_monitoring"] = {

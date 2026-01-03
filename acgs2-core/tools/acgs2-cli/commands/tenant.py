@@ -4,13 +4,9 @@ Constitutional Hash: cdd01ef066bc6cf2
 """
 
 import asyncio
-import json
 import sys
-from pathlib import Path
-from typing import Any, Dict, Optional
 
 import click
-
 from acgs2_sdk import create_client
 
 
@@ -37,10 +33,10 @@ def tenant(ctx):
 @click.option("--created-by", required=True, help="User ID creating the tenant")
 @click.option("--owned-by", help="Organization/user that owns the tenant")
 @click.pass_context
-def create_tenant(ctx, name: str, display_name: str, contact_email: str, contact_name: Optional[str],
-                 contact_phone: Optional[str], organization: Optional[str], org_size: Optional[str],
-                 industry: Optional[str], tier: str, data_residency: Optional[str],
-                 compliance: Optional[str], created_by: str, owned_by: Optional[str]):
+def create_tenant(ctx, name: str, display_name: str, contact_email: str, contact_name: str | None,
+                 contact_phone: str | None, organization: str | None, org_size: str | None,
+                 industry: str | None, tier: str, data_residency: str | None,
+                 compliance: str | None, created_by: str, owned_by: str | None):
     """Create a new tenant"""
 
     async def create():
@@ -97,7 +93,7 @@ def create_tenant(ctx, name: str, display_name: str, contact_email: str, contact
 @click.option("--tier", help="Filter by tier")
 @click.option("--limit", type=int, default=20, help="Number of results to show")
 @click.pass_context
-def list_tenants(ctx, status: Optional[str], tier: Optional[str], limit: int):
+def list_tenants(ctx, status: str | None, tier: str | None, limit: int):
     """List tenants"""
 
     async def list():
@@ -167,8 +163,8 @@ def show_tenant(ctx, tenant_id: str):
                     click.echo(f"Activated: {tenant['activatedAt']}")
 
                 # Show quotas
-                click.echo("
-📊 Resource Quotas:"                click.echo(f"  Users: {tenant['currentUsers']}/{tenant['maxUsers']}")
+                click.echo("\n📊 Resource Quotas:")
+                click.echo(f"  Users: {tenant['currentUsers']}/{tenant['maxUsers']}")
                 click.echo(f"  Policies: {tenant['currentPolicies']}/{tenant['maxPolicies']}")
                 click.echo(f"  Models: {tenant['currentModels']}/{tenant['maxModels']}")
                 click.echo(f"  Approvals/Month: {tenant['approvalsThisMonth']}/{tenant['maxApprovalsPerMonth']}")
@@ -284,21 +280,21 @@ def tenant_usage(ctx, tenant_id: str):
 
                 click.secho(f"📊 Tenant Usage: {tenant_id}", fg="blue", bold=True)
 
-                click.echo("
-📈 Resource Usage:"                click.echo(f"  Total Users: {usage['totalUsers']}")
+                click.echo("\n📈 Resource Usage:")
+                click.echo(f"  Total Users: {usage['totalUsers']}")
                 click.echo(f"  Total Policies: {usage['totalPolicies']}")
                 click.echo(f"  Total Models: {usage['totalModels']}")
                 click.echo(f"  Total Approvals: {usage['totalApprovals']}")
 
-                click.echo("
-📊 Utilization Percentages:"                click.echo(f"  Users: {usage['userUtilization']:.1f}%")
+                click.echo("\n📊 Utilization Percentages:")
+                click.echo(f"  Users: {usage['userUtilization']:.1f}%")
                 click.echo(f"  Policies: {usage['policyUtilization']:.1f}%")
                 click.echo(f"  Models: {usage['modelUtilization']:.1f}%")
                 click.echo(f"  Approvals: {usage['approvalUtilization']:.1f}%")
                 click.echo(f"  Storage: {usage['storageUtilization']:.1f}%")
 
-                click.echo("
-⏱️  Performance:"                click.echo(f"  Avg Response Time: {usage['avgResponseTime']:.2f}ms")
+                click.echo("\n⏱️  Performance:")
+                click.echo(f"  Avg Response Time: {usage['avgResponseTime']:.2f}ms")
                 click.echo(f"  Error Rate: {usage['errorRate']:.2f}%")
                 click.echo(f"  Uptime: {usage['uptimePercentage']:.1f}%")
 
@@ -351,7 +347,7 @@ def check_quota(ctx, tenant_id: str, resource: str, amount: int):
 @click.option("--permission", required=True, help="Required permission")
 @click.pass_context
 def check_access(ctx, tenant_id: str, user: str, resource_type: str,
-                resource_id: Optional[str], permission: str):
+                resource_id: str | None, permission: str):
     """Check if user has access to specific resource"""
 
     async def check():
@@ -400,7 +396,7 @@ def check_access(ctx, tenant_id: str, user: str, resource_type: str,
 @click.option("--granted-by", required=True, help="User ID granting access")
 @click.pass_context
 def grant_access(ctx, tenant_id: str, user: str, resource_type: str,
-                resource_id: Optional[str], role: str, permissions: str, granted_by: str):
+                resource_id: str | None, role: str, permissions: str, granted_by: str):
     """Grant access to a resource"""
 
     async def grant():

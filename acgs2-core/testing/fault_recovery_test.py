@@ -1,5 +1,3 @@
-import logging
-
 #!/usr/bin/env python3
 """
 ACGS-2 Fault Recovery Test Suite
@@ -7,6 +5,7 @@ Tests system resilience and recovery from service failures.
 """
 
 import asyncio
+import logging
 import os
 import time
 from typing import Any, Dict, Optional
@@ -169,11 +168,11 @@ class FaultRecoveryTester:
 
             # Try requests during failure (should fail)
             failure_requests = 5
-            for i in range(failure_requests):
+            for _ in range(failure_requests):
                 try:
                     await client.test_end_to_end_workflow()
                     results["requests_during_failure"] += 1
-                except Exception:
+                except Exception:  # nosec B110 - Intentionally broad exception handling during failure testing
                     pass  # Expected during failure
 
             # Start recovery
@@ -243,7 +242,7 @@ class FaultRecoveryTester:
                     pytest.fail("Request should fail during cascading failure")
                 finally:
                     client._get_mock_response = original_mock
-            except Exception:
+            except Exception:  # nosec B110 - Intentionally broad exception handling in cascading failure test
                 pass  # Expected
 
             # Recover in reverse order
@@ -259,7 +258,7 @@ class FaultRecoveryTester:
 
             await self.fault_injector.wait_for_service_recovery("deliberation_layer", 15)
 
-            recovery_time = time.time() - recovery_start
+            results["recovery_time_seconds"] = time.time() - recovery_start
             results["total_downtime_seconds"] = time.time() - start_time
 
             # Test after recovery
@@ -291,7 +290,7 @@ class FaultRecoveryTester:
             for i in range(test_requests):
                 try:
                     start_time = time.time()
-                    result = await client.test_end_to_end_workflow()
+                    await client.test_end_to_end_workflow()
                     end_time = time.time()
 
                     latency = (end_time - start_time) * 1000
@@ -324,7 +323,7 @@ class FaultRecoveryTester:
         async with E2ETestClient(mock_mode=True) as client:
             results["is_mock"] = client.mock_mode
             # Send some messages before failure
-            for i in range(3):
+            for _ in range(3):
                 result = await client.test_end_to_end_workflow()
                 results["messages_before_failure"].append(result["message_id"])
 
@@ -333,11 +332,11 @@ class FaultRecoveryTester:
 
             # Send messages during failure
             failed_messages = []
-            for i in range(2):
+            for _ in range(2):
                 try:
                     result = await client.test_end_to_end_workflow()
                     failed_messages.append(result["message_id"])
-                except Exception:
+                except Exception:  # nosec B110 - Intentionally broad exception handling during audit failure test
                     pass  # Expected
 
             # Recover audit service
@@ -345,7 +344,7 @@ class FaultRecoveryTester:
             await self.fault_injector.wait_for_service_recovery("audit_ledger", 20)
 
             # Send messages after recovery
-            for i in range(3):
+            for _ in range(3):
                 result = await client.test_end_to_end_workflow()
                 results["messages_after_recovery"].append(result["message_id"])
 
@@ -353,7 +352,7 @@ class FaultRecoveryTester:
             try:
                 # Query audit for messages
                 audit_check = await client.get_from_service("audit_ledger", "/events?limit=10")
-                # In mock mode, the event might use 'id' instead of 'message_id' depending on E2ETestClient implementation
+                # In mock mode, event might use 'id' instead of 'message_id'
                 recorded_messages = []
                 for event in audit_check.get("events", []):
                     if "message_id" in event:
@@ -493,9 +492,8 @@ class FaultRecoveryTester:
         if rust_strategy and rust_strategy._breaker_tripped:
             results["breaker_tripped"] = True
         else:
-            logging.warning(
-                f"Breaker did not trip. Fail count: {getattr(rust_strategy, '_failure_count', 'N/A')}"
-            )
+            fail_count = getattr(rust_strategy, "_failure_count", "N/A")
+            logging.warning(f"Breaker did not trip. Fail count: {fail_count}")
 
         # 2. Run high concurrent load via Python (while breaker is OPEN)
         async def send_msg(i):
@@ -519,7 +517,6 @@ class FaultRecoveryTester:
             rust_strategy._last_failure_time = 0
 
         # 4. Probe and Reset (5 successes needed)
-        successes = 0
         for _ in range(15):  # Try up to 15 times to get 5 successes
             msg = AgentMessage(
                 content={"text": "probe"},

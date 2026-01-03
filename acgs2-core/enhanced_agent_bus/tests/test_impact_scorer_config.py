@@ -109,7 +109,8 @@ class TestImpactScorerConfig:
     def test_priority_boost(self):
         """Test critical priority boost configuration."""
         config = ScoringConfig(
-            priority_weight=0.1, critical_priority_boost=0.95  # Low weight  # High boost
+            priority_weight=0.1,
+            critical_priority_boost=0.95,  # Low weight  # High boost
         )
         scorer = ImpactScorer(config=config)
 

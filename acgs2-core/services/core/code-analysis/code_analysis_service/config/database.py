@@ -326,9 +326,7 @@ class DatabaseManager:
                 exc_info=True,
             )
 
-            return ensure_constitutional_compliance(
-                {"status": "unhealthy", "error": str(e)}
-            )
+            return ensure_constitutional_compliance({"status": "unhealthy", "error": str(e)})
 
     async def get_status(self) -> dict[str, Any]:
         """Get database manager status."""

@@ -255,7 +255,7 @@ async def example_6_gradual_degradation():
 
         # Run operations
         successful = 0
-        for i in range(20):
+        for _ in range(20):
             error = engine.should_inject_error("degradation_test")
             if not error:
                 successful += 1
@@ -280,7 +280,7 @@ async def example_7_recovery_testing():
     engine = get_chaos_engine()
 
     # Inject severe chaos
-    scenario = await engine.inject_errors(
+    await engine.inject_errors(
         target="recovery_test",
         error_rate=0.8,  # 80% failure rate
         error_type=ConnectionError,
@@ -289,7 +289,7 @@ async def example_7_recovery_testing():
 
     logger.info("Phase 1: High error rate (80%)")
     successful_during = 0
-    for i in range(10):
+    for _ in range(10):
         error = engine.should_inject_error("recovery_test")
         if not error:
             successful_during += 1
@@ -302,7 +302,7 @@ async def example_7_recovery_testing():
 
     logger.info("\nPhase 2: After chaos cleanup")
     successful_after = 0
-    for i in range(10):
+    for _ in range(10):
         error = engine.should_inject_error("recovery_test")
         if not error:
             successful_after += 1

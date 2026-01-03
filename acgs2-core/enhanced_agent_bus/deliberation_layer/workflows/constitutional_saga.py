@@ -604,14 +604,13 @@ class ConstitutionalSagaWorkflow:
             except asyncio.TimeoutError:
                 step.error = f"Timeout after {step.timeout_seconds}s"
                 logger.warning(
-                    f"Saga {self.saga_id}: Step '{step.name}' timed out " f"(attempt {attempt + 1})"
+                    f"Saga {self.saga_id}: Step '{step.name}' timed out (attempt {attempt + 1})"
                 )
 
             except Exception as e:
                 step.error = str(e)
                 logger.warning(
-                    f"Saga {self.saga_id}: Step '{step.name}' failed "
-                    f"(attempt {attempt + 1}): {e}"
+                    f"Saga {self.saga_id}: Step '{step.name}' failed (attempt {attempt + 1}): {e}"
                 )
 
             # Wait before retry

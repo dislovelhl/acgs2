@@ -29,6 +29,7 @@ logger = logging.getLogger(__name__)
 
 class NodeType(Enum):
     """Types of nodes in the governance graph."""
+
     CLASSIFIER = "classifier"
     VALIDATOR = "validator"
     DELIBERATOR = "deliberator"
@@ -45,6 +46,7 @@ class GovernanceState:
     Follows the Memory Object Protocol - workflow execution
     is the mutation of this persistent, typed state.
     """
+
     request_id: str
     action: str
     context: Dict[str, Any]
@@ -80,6 +82,7 @@ class GovernanceState:
 @dataclass
 class GraphNode:
     """A node in the governance graph."""
+
     name: str
     node_type: NodeType
     handler: Callable[[GovernanceState], Awaitable[GovernanceState]]
@@ -94,6 +97,7 @@ class GraphNode:
 @dataclass
 class GraphEdge:
     """An edge connecting nodes in the graph."""
+
     source: str
     target: str
     condition: Optional[Callable[[GovernanceState], bool]] = None
@@ -108,6 +112,7 @@ class GraphEdge:
 @dataclass
 class Checkpoint:
     """A checkpoint for state persistence."""
+
     checkpoint_id: str
     state: GovernanceState
     timestamp: datetime
@@ -148,15 +153,9 @@ class StateCheckpointer:
             return checkpoint.state
         return None
 
-    async def list_checkpoints(
-        self,
-        request_id: str
-    ) -> List[Checkpoint]:
+    async def list_checkpoints(self, request_id: str) -> List[Checkpoint]:
         """List checkpoints for a request."""
-        return [
-            cp for cp in self._checkpoints.values()
-            if cp.state.request_id == request_id
-        ]
+        return [cp for cp in self._checkpoints.values() if cp.state.request_id == request_id]
 
 
 class GovernanceGraph:
@@ -170,10 +169,7 @@ class GovernanceGraph:
     - Error recovery
     """
 
-    def __init__(
-        self,
-        checkpointer: Optional[StateCheckpointer] = None
-    ):
+    def __init__(self, checkpointer: Optional[StateCheckpointer] = None):
         """
         Initialize governance graph.
 
@@ -201,7 +197,7 @@ class GovernanceGraph:
         self,
         name: str,
         handler: Callable[[GovernanceState], Awaitable[GovernanceState]],
-        node_type: NodeType = NodeType.EXECUTOR
+        node_type: NodeType = NodeType.EXECUTOR,
     ) -> "GovernanceGraph":
         """Add a node to the graph."""
         node = GraphNode(
@@ -212,21 +208,14 @@ class GovernanceGraph:
         self._nodes[name] = node
         return self
 
-    def add_edge(
-        self,
-        source: str,
-        target: str
-    ) -> "GovernanceGraph":
+    def add_edge(self, source: str, target: str) -> "GovernanceGraph":
         """Add an unconditional edge."""
         edge = GraphEdge(source=source, target=target)
         self._edges.append(edge)
         return self
 
     def add_conditional_edges(
-        self,
-        source: str,
-        router: Callable[[GovernanceState], str],
-        routes: Dict[str, str]
+        self, source: str, router: Callable[[GovernanceState], str], routes: Dict[str, str]
     ) -> "GovernanceGraph":
         """
         Add conditional edges based on router function.
@@ -257,10 +246,7 @@ class GovernanceGraph:
         self._interrupt_nodes.add(node)
         return self
 
-    async def invoke(
-        self,
-        initial_state: GovernanceState
-    ) -> GovernanceState:
+    async def invoke(self, initial_state: GovernanceState) -> GovernanceState:
         """
         Execute the graph from initial state.
 
@@ -310,11 +296,7 @@ class GovernanceGraph:
 
         return state
 
-    async def _get_next_node(
-        self,
-        current: str,
-        state: GovernanceState
-    ) -> Optional[str]:
+    async def _get_next_node(self, current: str, state: GovernanceState) -> Optional[str]:
         """Get next node based on edges and state."""
         for edge in self._edges:
             if edge.source == current and edge.should_traverse(state):
@@ -322,9 +304,7 @@ class GovernanceGraph:
         return None
 
     async def resume(
-        self,
-        checkpoint_id: str,
-        state_updates: Optional[Dict[str, Any]] = None
+        self, checkpoint_id: str, state_updates: Optional[Dict[str, Any]] = None
     ) -> GovernanceState:
         """
         Resume execution from checkpoint.
@@ -462,7 +442,7 @@ class GovernanceGraphBuilder:
                 "simple": "executor",
                 "complex": "deliberator",
                 "requires_validation": "validator",
-            }
+            },
         )
 
         # Add remaining edges

@@ -44,7 +44,9 @@ class AdaptiveRouterProtocol(Protocol):
     """
 
     async def route_message(
-        self, message: Any, context: Optional[Dict[str, Any]] = None  # AgentMessage
+        self,
+        message: Any,
+        context: Optional[Dict[str, Any]] = None,  # AgentMessage
     ) -> Dict[str, Any]:
         """Route a message based on impact assessment.
 
@@ -123,7 +125,11 @@ class DeliberationQueueProtocol(Protocol):
         ...
 
     async def submit_human_decision(
-        self, item_id: str, reviewer: str, decision: Any, reasoning: str  # DeliberationStatus
+        self,
+        item_id: str,
+        reviewer: str,
+        decision: Any,
+        reasoning: str,  # DeliberationStatus
     ) -> bool:
         """Submit a human decision for a deliberation item.
 

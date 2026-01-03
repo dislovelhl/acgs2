@@ -27,7 +27,19 @@ logger = logging.getLogger(__name__)
 
 # Z3 imports (will be available in production environment)
 try:
-    from z3 import *
+    from z3 import (
+        And,
+        Bool,
+        BoolVal,
+        Function,
+        Int,
+        Not,
+        Or,
+        Solver,
+        is_bool,
+        is_int_value,
+        is_true,
+    )
 
     Z3_AVAILABLE = True
 except ImportError:
@@ -288,7 +300,7 @@ class Z3PolicyVerifier:
                     counterexample[str(var_name)] = value.as_long()
                 else:
                     counterexample[str(var_name)] = str(value)
-            except:
+            except (AttributeError, TypeError, ValueError):
                 counterexample[str(var_name)] = "unknown"
 
         return counterexample
@@ -356,13 +368,13 @@ class Z3PolicyVerifier:
         if Z3_AVAILABLE:
             # Simple variable substitution
             expr_str = constraint_str
-            for var_name, var in variables.items():
+            for var_name, _ in variables.items():
                 expr_str = expr_str.replace(var_name, f"variables['{var_name}']")
 
             # Evaluate in context (controlled Z3 expression building)
             try:
                 return eval(expr_str, {"variables": variables, "And": And, "Or": Or, "Not": Not})  # nosec B307
-            except:
+            except (NameError, SyntaxError, TypeError):
                 # Fallback to simple boolean
                 return BoolVal(True)
         else:
@@ -401,7 +413,7 @@ class Z3PolicyVerifier:
             error_messages.append("Policy set contains contradictions")
 
             # Try to identify conflicting policies (simplified)
-            for i, spec in enumerate(policy_specs):
+            for _, spec in enumerate(policy_specs):
                 single_solver = Solver()
                 if Z3_AVAILABLE:
                     single_solver.set("timeout", self.verification_timeout_ms)
@@ -468,7 +480,10 @@ class ConstitutionalVerifier:
                 "Not(And(executive_action, legislative_action))",  # precondition
                 "Not(And(executive_action, judicial_action))",  # precondition
                 "Not(And(legislative_action, judicial_action))",  # precondition
-                "Implies(same_branch, Not(Or(executive_action, legislative_action, judicial_action)))",  # invariant
+                (
+                    "Implies(same_branch, "
+                    "Not(Or(executive_action, legislative_action, judicial_action)))"
+                ),  # invariant
             ],
         )
         self.constitutional_policies["separation_of_powers"] = separation_policy
@@ -486,7 +501,9 @@ class ConstitutionalVerifier:
             constraints=[
                 "And(hash_matches, timestamp_valid)",  # precondition
                 "action_constitutional",  # invariant
-                "Implies(action_constitutional, And(hash_matches, timestamp_valid))",  # postcondition
+                (
+                    "Implies(action_constitutional, And(hash_matches, timestamp_valid))"
+                ),  # postcondition
             ],
         )
         self.constitutional_policies["constitutional_compliance"] = compliance_policy

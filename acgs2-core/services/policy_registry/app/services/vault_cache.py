@@ -128,10 +128,7 @@ class VaultCache(Generic[T]):
             return
 
         # Sort by timestamp and remove oldest
-        sorted_keys = sorted(
-            self._cache.keys(),
-            key=lambda k: self._cache[k][1]
-        )
+        sorted_keys = sorted(self._cache.keys(), key=lambda k: self._cache[k][1])
         for key in sorted_keys[:count]:
             del self._cache[key]
 
@@ -196,7 +193,9 @@ class VaultCacheManager:
         self._default_ttl = default_ttl
         self.public_keys: VaultCache[str] = VaultCache(ttl_seconds=default_ttl)
         self.key_info: VaultCache[Dict[str, Any]] = VaultCache(ttl_seconds=default_ttl)
-        self.secrets: VaultCache[Dict[str, Any]] = VaultCache(ttl_seconds=60)  # Shorter TTL for secrets
+        self.secrets: VaultCache[Dict[str, Any]] = VaultCache(
+            ttl_seconds=60
+        )  # Shorter TTL for secrets
 
     def invalidate_key(self, key_name: str) -> None:
         """

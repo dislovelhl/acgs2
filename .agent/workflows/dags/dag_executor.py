@@ -521,8 +521,7 @@ class DAGExecutor:
                 self._external_cache[node.cache_key] = result
 
             logger.debug(
-                f"DAG {self.dag_id}: Node '{node.id}' completed "
-                f"({node.execution_time_ms:.2f}ms)"
+                f"DAG {self.dag_id}: Node '{node.id}' completed ({node.execution_time_ms:.2f}ms)"
             )
 
             return (node.id, result, True)

@@ -172,7 +172,7 @@ class LLMReasoner:
             precedent_summaries = []
             for i, precedent in enumerate(conflicting_precedents):
                 summary = self._summarize_precedent(precedent)
-                precedent_summaries.append(f"Precedent {i+1}: {summary}")
+                precedent_summaries.append(f"Precedent {i + 1}: {summary}")
 
             precedents_text = "\n".join(precedent_summaries)
 
@@ -273,9 +273,9 @@ class LLMReasoner:
             )
 
             decision_text = f"""
-            Recommendation: {decision.get('recommendation', 'Unknown')}
-            Confidence: {decision.get('confidence', 0.0)}
-            Key Factors: {', '.join(decision.get('key_factors', []))}
+            Recommendation: {decision.get("recommendation", "Unknown")}
+            Confidence: {decision.get("confidence", 0.0)}
+            Key Factors: {", ".join(decision.get("key_factors", []))}
             """
 
             formatted_prompt = prompt.format_messages(
@@ -311,7 +311,7 @@ class LLMReasoner:
             # Summarize historical decisions
             historical_summary = "\n".join(
                 [
-                    f"Case {i+1}: {hist.get('recommendation', 'Unknown')} "
+                    f"Case {i + 1}: {hist.get('recommendation', 'Unknown')} "
                     f"(confidence: {hist.get('confidence', 0.0)})"
                     for i, hist in enumerate(historical_decisions[:5])
                 ]
@@ -445,7 +445,9 @@ class LLMReasoner:
             "reconciliation_approach": "Manual review recommended",
             "recommended_approach": "further_review",
             "influencing_factors": ["precedent_count", "similarity_scores"],
-            "precedent_hierarchy": [f"precedent_{i+1}" for i in range(len(conflicting_precedents))],
+            "precedent_hierarchy": [
+                f"precedent_{i + 1}" for i in range(len(conflicting_precedents))
+            ],
             "analyzed_by": "fallback_analyzer",
         }
 

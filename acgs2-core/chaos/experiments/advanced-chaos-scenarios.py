@@ -9,16 +9,18 @@ import logging
 import random
 import time
 from dataclasses import dataclass
-from typing import Dict, List, Optional
 from enum import Enum
+from typing import Dict, List
 
 from chaos.experiments.chaos_engine import ChaosEngine, ChaosExperiment
 from chaos.monitors.chaos_monitor import ChaosMonitor
 
 logger = logging.getLogger(__name__)
 
+
 class FailureMode(Enum):
     """Types of failures to inject."""
+
     NETWORK_PARTITION = "network_partition"
     RESOURCE_EXHAUSTION = "resource_exhaustion"
     DEPENDENCY_FAILURE = "dependency_failure"
@@ -27,9 +29,11 @@ class FailureMode(Enum):
     TIME_SKEW = "time_skew"
     AUTHENTICATION_FAILURE = "authentication_failure"
 
+
 @dataclass
 class AdvancedChaosScenario:
     """Advanced chaos engineering scenario."""
+
     name: str
     description: str
     failure_modes: List[FailureMode]
@@ -37,6 +41,7 @@ class AdvancedChaosScenario:
     blast_radius: str  # "single_service", "multi_service", "full_system"
     recovery_strategy: str
     success_criteria: Dict[str, float]
+
 
 class AdvancedChaosEngine:
     """Engine for running advanced chaos experiments."""
@@ -87,7 +92,7 @@ class AdvancedChaosEngine:
             "recovery_time_seconds": recovery_time,
             "final_metrics": final_metrics,
             "failures_injected": [f.value for f in scenario.failure_modes],
-            "blast_radius": scenario.blast_radius
+            "blast_radius": scenario.blast_radius,
         }
 
         logger.info(f"✅ Scenario {scenario.name} completed: {'PASSED' if success else 'FAILED'}")
@@ -119,7 +124,7 @@ class AdvancedChaosEngine:
             name="network_partition",
             target_service="agent-bus" if blast_radius == "single_service" else "all",
             chaos_type="network",
-            parameters={"action": "partition", "duration": "60s"}
+            parameters={"action": "partition", "duration": "60s"},
         )
         return await self.engine.execute_experiment(experiment)
 
@@ -129,7 +134,7 @@ class AdvancedChaosEngine:
             name="resource_exhaustion",
             target_service="api-gateway" if blast_radius == "single_service" else "all",
             chaos_type="stress",
-            parameters={"cpu": 90, "memory": 85, "duration": "45s"}
+            parameters={"cpu": 90, "memory": 85, "duration": "45s"},
         )
         return await self.engine.execute_experiment(experiment)
 
@@ -140,7 +145,7 @@ class AdvancedChaosEngine:
             name=f"{dependency}_failure",
             target_service=dependency,
             chaos_type="pod_kill",
-            parameters={"duration": "30s"}
+            parameters={"duration": "30s"},
         )
         return await self.engine.execute_experiment(experiment)
 
@@ -152,7 +157,7 @@ class AdvancedChaosEngine:
             name="data_corruption",
             target_service="redis",
             chaos_type="custom",
-            parameters={"corruption_type": "cache_poisoning", "duration": "20s"}
+            parameters={"corruption_type": "cache_poisoning", "duration": "20s"},
         )
         return await self.engine.execute_experiment(experiment)
 
@@ -163,7 +168,7 @@ class AdvancedChaosEngine:
             name="config_drift",
             target_service="all",
             chaos_type="config",
-            parameters={"drift_type": "env_var_change", "duration": "40s"}
+            parameters={"drift_type": "env_var_change", "duration": "40s"},
         )
         return await self.engine.execute_experiment(experiment)
 
@@ -173,7 +178,7 @@ class AdvancedChaosEngine:
             name="time_skew",
             target_service="all",
             chaos_type="time",
-            parameters={"skew_seconds": 300, "duration": "35s"}
+            parameters={"skew_seconds": 300, "duration": "35s"},
         )
         return await self.engine.execute_experiment(experiment)
 
@@ -183,7 +188,7 @@ class AdvancedChaosEngine:
             name="auth_failure",
             target_service="api-gateway",
             chaos_type="auth",
-            parameters={"failure_mode": "token_rejection", "rate": 0.3, "duration": "25s"}
+            parameters={"failure_mode": "token_rejection", "rate": 0.3, "duration": "25s"},
         )
         return await self.engine.execute_experiment(experiment)
 
@@ -203,7 +208,7 @@ class AdvancedChaosEngine:
         return {
             "duration": duration,
             "samples": len(metrics),
-            "avg_metrics": self._aggregate_metrics(metrics)
+            "avg_metrics": self._aggregate_metrics(metrics),
         }
 
     async def _execute_recovery(self, strategy: str, failures: List[Dict]):
@@ -223,7 +228,9 @@ class AdvancedChaosEngine:
         """Measure final system state after recovery."""
         return await self.monitor.collect_system_metrics()
 
-    def _evaluate_success(self, criteria: Dict[str, float], chaos_metrics: Dict, recovery_time: float) -> bool:
+    def _evaluate_success(
+        self, criteria: Dict[str, float], chaos_metrics: Dict, recovery_time: float
+    ) -> bool:
         """Evaluate if chaos scenario was successful."""
         # Check if system maintained required availability
         if "min_availability" in criteria:
@@ -259,6 +266,7 @@ class AdvancedChaosEngine:
 
         return aggregated
 
+
 # Pre-defined chaos scenarios
 PRODUCTION_CHAOS_SCENARIOS = [
     AdvancedChaosScenario(
@@ -268,13 +276,8 @@ PRODUCTION_CHAOS_SCENARIOS = [
         duration_seconds=60,
         blast_radius="single_service",
         recovery_strategy="automatic",
-        success_criteria={
-            "min_availability": 0.95,
-            "max_recovery_time": 30,
-            "max_error_rate": 0.1
-        }
+        success_criteria={"min_availability": 0.95, "max_recovery_time": 30, "max_error_rate": 0.1},
     ),
-
     AdvancedChaosScenario(
         name="network_partition_full",
         description="Test system behavior during complete network partition",
@@ -282,13 +285,8 @@ PRODUCTION_CHAOS_SCENARIOS = [
         duration_seconds=120,
         blast_radius="full_system",
         recovery_strategy="graceful_degradation",
-        success_criteria={
-            "min_availability": 0.8,
-            "max_recovery_time": 60,
-            "max_error_rate": 0.2
-        }
+        success_criteria={"min_availability": 0.8, "max_recovery_time": 60, "max_error_rate": 0.2},
     ),
-
     AdvancedChaosScenario(
         name="resource_exhaustion_cascade",
         description="Test cascading failures from resource exhaustion",
@@ -299,10 +297,9 @@ PRODUCTION_CHAOS_SCENARIOS = [
         success_criteria={
             "min_availability": 0.85,
             "max_recovery_time": 45,
-            "max_error_rate": 0.15
-        }
+            "max_error_rate": 0.15,
+        },
     ),
-
     AdvancedChaosScenario(
         name="data_integrity_failure",
         description="Test system response to data corruption",
@@ -310,13 +307,8 @@ PRODUCTION_CHAOS_SCENARIOS = [
         duration_seconds=75,
         blast_radius="multi_service",
         recovery_strategy="manual",
-        success_criteria={
-            "min_availability": 0.9,
-            "max_recovery_time": 40,
-            "max_error_rate": 0.05
-        }
+        success_criteria={"min_availability": 0.9, "max_recovery_time": 40, "max_error_rate": 0.05},
     ),
-
     AdvancedChaosScenario(
         name="time_synchronization_failure",
         description="Test impact of time synchronization issues",
@@ -327,10 +319,11 @@ PRODUCTION_CHAOS_SCENARIOS = [
         success_criteria={
             "min_availability": 0.75,
             "max_recovery_time": 50,
-            "max_error_rate": 0.25
-        }
-    )
+            "max_error_rate": 0.25,
+        },
+    ),
 ]
+
 
 async def run_production_chaos_suites():
     """Run all production chaos scenarios."""
@@ -343,33 +336,32 @@ async def run_production_chaos_suites():
             results.append(result)
 
             # Save result
-            with open(f"reports/chaos/scenario_{scenario.name}_{int(time.time())}.json", 'w') as f:
+            with open(f"reports/chaos/scenario_{scenario.name}_{int(time.time())}.json", "w") as f:
                 import json
+
                 json.dump(result, f, indent=2, default=str)
 
         except Exception as e:
             logger.error(f"Failed to run scenario {scenario.name}: {e}")
-            results.append({
-                "scenario": scenario.name,
-                "success": False,
-                "error": str(e)
-            })
+            results.append({"scenario": scenario.name, "success": False, "error": str(e)})
 
     # Generate summary report
     successful = sum(1 for r in results if r.get("success", False))
     total = len(results)
 
-    print("
-🎭 Chaos Engineering Results"    print("=" * 40)
+    print("🎭 Chaos Engineering Results")
+    print("=" * 40)
     print(f"Scenarios Run: {total}")
     print(f"Successful: {successful}")
-    print(f"Success Rate: {successful/total*100:.1f}%"    print()
+    print(f"Success Rate: {successful / total * 100:.1f}%")
+    print()
 
     for result in results:
         status = "✅" if result.get("success", False) else "❌"
         print(f"{status} {result['scenario']}")
 
     return results
+
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)

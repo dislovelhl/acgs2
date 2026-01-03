@@ -40,8 +40,7 @@ class LayerTimeoutError(Exception):
         self.constitutional_hash = CONSTITUTIONAL_HASH
 
         message = (
-            f"Layer '{layer_name}' exceeded timeout budget: "
-            f"{elapsed_ms:.2f}ms > {budget_ms:.2f}ms"
+            f"Layer '{layer_name}' exceeded timeout budget: {elapsed_ms:.2f}ms > {budget_ms:.2f}ms"
         )
         if operation:
             message += f" during '{operation}'"

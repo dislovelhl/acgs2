@@ -18,6 +18,7 @@ except ImportError:
 
 class WorkflowStatus(Enum):
     """Status of workflow execution."""
+
     PENDING = "pending"
     EXECUTING = "executing"
     COMPLETED = "completed"
@@ -47,6 +48,7 @@ class WorkflowResult:
         errors: List of errors during execution
         metadata: Additional result metadata
     """
+
     workflow_id: str
     status: WorkflowStatus
     output: Optional[Any] = None

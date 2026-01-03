@@ -61,9 +61,7 @@ def main():
     # Test 3: CLI health check (will fail without running services, but should show proper error)
     total_tests += 1
     # SECURITY: shell=False to prevent command injection
-    result = subprocess.run(
-        ["acgs2-cli", "health"], capture_output=True, text=True, timeout=10
-    )
+    result = subprocess.run(["acgs2-cli", "health"], capture_output=True, text=True, timeout=10)
     if "Health check failed" in result.stderr or "Connection refused" in result.stderr:
         print("✅ CLI health check: PASSED (expected failure without services)")
         tests_passed += 1

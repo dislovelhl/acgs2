@@ -17,10 +17,11 @@ def check_file_exists(filepath, description):
         print(f"❌ {description}: Missing")
         return False
 
+
 def check_file_contains(filepath, search_text, description):
     """Check if a file contains specific text."""
     try:
-        with open(filepath, 'r') as f:
+        with open(filepath, "r") as f:
             content = f.read()
             if search_text in content:
                 print(f"✅ {description}: Present")
@@ -32,11 +33,12 @@ def check_file_contains(filepath, search_text, description):
         print(f"❌ {description}: Error reading file - {e}")
         return False
 
+
 def main():
     """Run validation checks."""
-    print("="*80)
+    print("=" * 80)
     print("ACGS-2 IMPROVEMENTS VALIDATION")
-    print("="*80)
+    print("=" * 80)
 
     checks_passed = 0
     total_checks = 0
@@ -46,7 +48,7 @@ def main():
     if check_file_contains(
         "/home/dislove/document/acgs2/acgs2-core/enhanced_agent_bus/message_processor.py",
         "if profiler and profiler.config.enabled",
-        "MessageProcessor memory profiling optimization"
+        "MessageProcessor memory profiling optimization",
     ):
         checks_passed += 1
 
@@ -54,7 +56,7 @@ def main():
     total_checks += 1
     if check_file_exists(
         "/home/dislove/document/acgs2/acgs2-core/shared/json_utils.py",
-        "JSON serialization optimization"
+        "JSON serialization optimization",
     ):
         checks_passed += 1
 
@@ -62,7 +64,7 @@ def main():
     total_checks += 1
     if check_file_exists(
         "/home/dislove/document/acgs2/sdk/typescript/src/utils/logger.ts",
-        "TypeScript structured logging utility"
+        "TypeScript structured logging utility",
     ):
         checks_passed += 1
 
@@ -71,7 +73,7 @@ def main():
     if check_file_contains(
         "/home/dislove/document/acgs2/acgs2-core/shared/audit_client.py",
         "response = await self.client.post",
-        "Audit client real service integration"
+        "Audit client real service integration",
     ):
         checks_passed += 1
 
@@ -80,7 +82,7 @@ def main():
     if check_file_contains(
         "/home/dislove/document/acgs2/acgs2-core/shared/audit_client.py",
         "simulated_",
-        "Audit client fallback mechanism"
+        "Audit client fallback mechanism",
     ):
         checks_passed += 1
 
@@ -89,13 +91,13 @@ def main():
     if check_file_contains(
         "/home/dislove/document/acgs2/acgs2-core/shared/audit_client.py",
         'service_url: str = "http://localhost:8300"',
-        "Audit service URL configuration"
+        "Audit service URL configuration",
     ):
         checks_passed += 1
 
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("VALIDATION SUMMARY")
-    print("="*80)
+    print("=" * 80)
     print(f"Checks passed: {checks_passed}/{total_checks}")
 
     if checks_passed == total_checks:
@@ -104,6 +106,7 @@ def main():
     else:
         print("⚠️  Some improvements need verification")
         return False
+
 
 if __name__ == "__main__":
     success = main()

@@ -115,11 +115,11 @@ class MessageProcessingBenchmark:
 
     async def run(self, iterations: int = 1000) -> PerformanceResult:
         """Run message processing benchmark."""
-        logging.info(f"\n{'='*60}")
+        logging.info(f"\n{'=' * 60}")
         logging.info("Message Processing Performance Benchmark")
         logging.info(f"Iterations: {iterations}")
         logging.info(f"Constitutional Hash: {CONSTITUTIONAL_HASH}")
-        logging.info(f"{'='*60}\n")
+        logging.info(f"{'=' * 60}\n")
 
         self.results = []
         start_time = time.perf_counter()
@@ -189,9 +189,9 @@ class MessageProcessingBenchmark:
 
     def _print_result(self, result: PerformanceResult):
         """Print test result summary."""
-        logging.info(f"\n{'-'*60}")
+        logging.info(f"\n{'-' * 60}")
         logging.info("Results:")
-        logging.info(f"{'-'*60}")
+        logging.info(f"{'-' * 60}")
         logging.info(f"Iterations:     {result.iterations}")
         logging.info(f"Successful:     {result.successful} ({result.success_rate:.1%})")
         logging.error(f"Failed:         {result.failed}")
@@ -205,9 +205,9 @@ class MessageProcessingBenchmark:
         logging.info(f"  P99:          {result.p99_latency_ms:.3f}")
         logging.info(f"  Max:          {result.max_latency_ms:.3f}")
 
-        logging.info(f"\n{'-'*60}")
+        logging.info(f"\n{'-' * 60}")
         logging.info("Target Validation:")
-        logging.info(f"{'-'*60}")
+        logging.info(f"{'-' * 60}")
 
         meets_targets = result.meets_targets()
         logging.info(f"Overall:        {'✓ PASS' if meets_targets else '✗ FAIL'}")
@@ -227,9 +227,9 @@ class MessageProcessingBenchmark:
             f"Success Rate:   {'✓' if success_pass else '✗'} {result.success_rate:.1%} (target: >95%)"
         )
 
-        logging.info(f"\n{'-'*60}")
+        logging.info(f"\n{'-' * 60}")
         logging.info("Baseline Comparison:")
-        logging.info(f"{'-'*60}")
+        logging.info(f"{'-' * 60}")
         logging.info(f"Baseline ({BASELINE_METRICS['phase']}):")
         logging.info(f"  P99 Latency:  {BASELINE_METRICS['p99_latency_ms']}ms")
         logging.info(f"  Throughput:   {BASELINE_METRICS['throughput_rps']} RPS")
@@ -280,17 +280,17 @@ by comparing current performance against baseline metrics.
 
 | Metric | Target | Current | Status |
 |--------|--------|---------|--------|
-| P99 Latency | <{P99_LATENCY_TARGET_MS}ms | {self.result.p99_latency_ms:.3f}ms | {'✓ PASS' if self.result.p99_latency_ms < P99_LATENCY_TARGET_MS else '✗ FAIL'} |
-| Throughput | >{MIN_THROUGHPUT_RPS} RPS | {self.result.throughput_rps:.0f} RPS | {'✓ PASS' if self.result.throughput_rps >= MIN_THROUGHPUT_RPS else '✗ FAIL'} |
-| Success Rate | >95% | {self.result.success_rate:.1%} | {'✓ PASS' if self.result.success_rate >= 0.95 else '✗ FAIL'} |
-| Overall | All Targets | - | {'✓ PASS' if self.result.meets_targets() else '✗ FAIL'} |
+| P99 Latency | <{P99_LATENCY_TARGET_MS}ms | {self.result.p99_latency_ms:.3f}ms | {"✓ PASS" if self.result.p99_latency_ms < P99_LATENCY_TARGET_MS else "✗ FAIL"} |
+| Throughput | >{MIN_THROUGHPUT_RPS} RPS | {self.result.throughput_rps:.0f} RPS | {"✓ PASS" if self.result.throughput_rps >= MIN_THROUGHPUT_RPS else "✗ FAIL"} |
+| Success Rate | >95% | {self.result.success_rate:.1%} | {"✓ PASS" if self.result.success_rate >= 0.95 else "✗ FAIL"} |
+| Overall | All Targets | - | {"✓ PASS" if self.result.meets_targets() else "✗ FAIL"} |
 
 ### Baseline Comparison
 
 | Metric | Baseline | Current | Change |
 |--------|----------|---------|--------|
-| P99 Latency | {BASELINE_METRICS['p99_latency_ms']}ms | {self.result.p99_latency_ms:.3f}ms | {vs_baseline['p99_vs_baseline']} |
-| Throughput | {BASELINE_METRICS['throughput_rps']} RPS | {self.result.throughput_rps:.0f} RPS | {vs_baseline['throughput_vs_baseline']} |
+| P99 Latency | {BASELINE_METRICS["p99_latency_ms"]}ms | {self.result.p99_latency_ms:.3f}ms | {vs_baseline["p99_vs_baseline"]} |
+| Throughput | {BASELINE_METRICS["throughput_rps"]} RPS | {self.result.throughput_rps:.0f} RPS | {vs_baseline["throughput_vs_baseline"]} |
 
 ## Detailed Results
 
@@ -317,13 +317,13 @@ by comparing current performance against baseline metrics.
 
 **Latency Performance:**
 - P99 latency is {self.result.p99_latency_ms:.3f}ms
-- {'Well below' if self.result.p99_latency_ms < P99_LATENCY_TARGET_MS / 2 else 'Below' if self.result.p99_latency_ms < P99_LATENCY_TARGET_MS else 'Exceeds'} the {P99_LATENCY_TARGET_MS}ms target
-- {vs_baseline['p99_vs_baseline']} vs baseline
+- {"Well below" if self.result.p99_latency_ms < P99_LATENCY_TARGET_MS / 2 else "Below" if self.result.p99_latency_ms < P99_LATENCY_TARGET_MS else "Exceeds"} the {P99_LATENCY_TARGET_MS}ms target
+- {vs_baseline["p99_vs_baseline"]} vs baseline
 
 **Throughput Performance:**
 - Achieved {self.result.throughput_rps:.0f} RPS
-- {'Significantly exceeds' if self.result.throughput_rps > MIN_THROUGHPUT_RPS * 10 else 'Exceeds' if self.result.throughput_rps > MIN_THROUGHPUT_RPS else 'Below'} the {MIN_THROUGHPUT_RPS} RPS minimum
-- {vs_baseline['throughput_vs_baseline']} vs baseline
+- {"Significantly exceeds" if self.result.throughput_rps > MIN_THROUGHPUT_RPS * 10 else "Exceeds" if self.result.throughput_rps > MIN_THROUGHPUT_RPS else "Below"} the {MIN_THROUGHPUT_RPS} RPS minimum
+- {vs_baseline["throughput_vs_baseline"]} vs baseline
 
 ### Recommendations
 
@@ -351,8 +351,8 @@ by comparing current performance against baseline metrics.
 
 - **Timestamp:** {self.result.timestamp.isoformat()}
 - **Constitutional Hash:** {self.result.constitutional_hash}
-- **Baseline Phase:** {BASELINE_METRICS['phase']}
-- **Baseline Date:** {BASELINE_METRICS['test_date']}
+- **Baseline Phase:** {BASELINE_METRICS["phase"]}
+- **Baseline Date:** {BASELINE_METRICS["test_date"]}
 
 ---
 
@@ -414,11 +414,11 @@ async def main():
 
     args = parser.parse_args()
 
-    logging.info(f"\n{'#'*60}")
+    logging.info(f"\n{'#' * 60}")
     logging.info("# ACGS-2 Performance Validation Load Test")
     logging.info(f"# Constitutional Hash: {CONSTITUTIONAL_HASH}")
     logging.info(f"# Start Time: {datetime.now(timezone.utc)}")
-    logging.info(f"{'#'*60}\n")
+    logging.info(f"{'#' * 60}\n")
 
     # Run benchmark
     benchmark = MessageProcessingBenchmark()
@@ -429,9 +429,9 @@ async def main():
     report.save_markdown(args.markdown_output)
     report.save_json(args.json_output)
 
-    logging.info(f"\n{'='*60}")
+    logging.info(f"\n{'=' * 60}")
     logging.info("Performance Validation Complete")
-    logging.info(f"{'='*60}\n")
+    logging.info(f"{'=' * 60}\n")
 
     # Exit with appropriate code
     if result.meets_targets():

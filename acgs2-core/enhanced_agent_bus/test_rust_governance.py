@@ -118,10 +118,10 @@ async def test_rust_transparent_fallback():
         # 4. Verify circuit breaker tripped
         # We need 3 failures.
         for i in range(3):
-            logger.info(f"Triggering failure {i+1}...")
+            logger.info(f"Triggering failure {i + 1}...")
             await processor.process(msg)
             logger.info(
-                f"After failure {i+1}: breaker_tripped={rust_strategy._breaker_tripped}, failure_count={rust_strategy._failure_count}"
+                f"After failure {i + 1}: breaker_tripped={rust_strategy._breaker_tripped}, failure_count={rust_strategy._failure_count}"
             )
 
         assert rust_strategy._breaker_tripped

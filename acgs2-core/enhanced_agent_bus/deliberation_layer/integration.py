@@ -360,7 +360,7 @@ class DeliberationLayer(OPAGuardMixin):
             }
         except (ValueError, KeyError, TypeError) as e:
             logger.error(
-                f"Data error processing message {message.message_id}: " f"{type(e).__name__}: {e}"
+                f"Data error processing message {message.message_id}: {type(e).__name__}: {e}"
             )
             elapsed = datetime.now(timezone.utc) - start_time
             return {
@@ -370,8 +370,7 @@ class DeliberationLayer(OPAGuardMixin):
             }
         except (AttributeError, RuntimeError) as e:
             logger.error(
-                f"Runtime error processing message {message.message_id}: "
-                f"{type(e).__name__}: {e}"
+                f"Runtime error processing message {message.message_id}: {type(e).__name__}: {e}"
             )
             elapsed = datetime.now(timezone.utc) - start_time
             return {
@@ -519,8 +518,7 @@ class DeliberationLayer(OPAGuardMixin):
         processing_time = elapsed.total_seconds()
 
         logger.warning(
-            f"Message {message.message_id} denied by OPA Guard: "
-            f"{guard_result.validation_errors}"
+            f"Message {message.message_id} denied by OPA Guard: {guard_result.validation_errors}"
         )
 
         return {

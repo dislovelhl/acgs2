@@ -17,7 +17,7 @@ class MerkleTree:
     def build_tree(self, data_list: List[bytes]) -> None:
         """构建Merkle Tree"""
         self._original_data = data_list[:]
-        
+
         if not data_list:
             return
 
@@ -63,13 +63,13 @@ class MerkleTree:
         proof: List[Tuple[str, bool]] = []
         current_index = index
 
-        for level_idx, level in enumerate(self.tree[:-1]):  # 不包括根层
+        for _, level in enumerate(self.tree[:-1]):  # 不包括根层
             sibling_index = current_index ^ 1  # 切换左右兄弟
-            
+
             # 处理边界情况：如果是奇数个节点且是最后一个，兄弟是自己
             if sibling_index >= len(level):
                 sibling_index = current_index  # 使用自己作为兄弟
-            
+
             sibling_hash = level[sibling_index]
             is_left = current_index % 2 == 0
             proof.append((sibling_hash, is_left))
@@ -77,9 +77,7 @@ class MerkleTree:
 
         return proof
 
-    def verify_proof(self, leaf_data: bytes,
-                    proof: List[Tuple[str, bool]],
-                    root_hash: str) -> bool:
+    def verify_proof(self, leaf_data: bytes, proof: List[Tuple[str, bool]], root_hash: str) -> bool:
         """
         验证证明路径
         """
@@ -101,7 +99,7 @@ class MerkleTree:
         self._original_data.append(data)
         new_leaf_hash = hashlib.sha256(data).hexdigest()
         self.leaves.append(new_leaf_hash)
-        
+
         if not self.tree:
             self.tree = [[new_leaf_hash]]
             self.root = new_leaf_hash
@@ -110,14 +108,14 @@ class MerkleTree:
         # 更新树结构
         self.tree[0] = self.leaves[:]
         current_hash = new_leaf_hash
-        
+
         for i in range(len(self.tree) - 1):
             level = self.tree[i]
-            next_level = self.tree[i+1]
-            
+            next_level = self.tree[i + 1]
+
             # 计算父节点索引
             parent_idx = (len(level) - 1) // 2
-            
+
             if len(level) % 2 == 0:
                 # 如果当前层是偶数个节点，说明新加入的是右子节点
                 left = level[len(level) - 2]
@@ -125,18 +123,18 @@ class MerkleTree:
             else:
                 # 如果当前层是奇数个节点，说明新加入的是左子节点（或者是唯一的节点）
                 left = current_hash
-                right = current_hash # 复制自己
-            
+                right = current_hash  # 复制自己
+
             combined = left + right
             parent_hash = hashlib.sha256(combined.encode()).hexdigest()
-            
+
             if parent_idx < len(next_level):
                 next_level[parent_idx] = parent_hash
             else:
                 next_level.append(parent_hash)
-            
+
             current_hash = parent_hash
-            
+
         # 如果根层节点数增加，需要增加一层
         if len(self.tree[-1]) > 1:
             last_level = self.tree[-1]

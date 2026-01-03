@@ -3,7 +3,6 @@ Test configuration for Tenant Management service.
 Constitutional Hash: cdd01ef066bc6cf2
 """
 
-
 import pytest
 from shared.logging import init_service_logging
 

@@ -53,21 +53,14 @@ class PolicyEvaluationWorkflow(BaseWorkflow):
         evaluation_data = input.get("evaluation_data", {})
         context = input.get("context", {})
 
-        logger.info(
-            f"PolicyEvaluation {self.workflow_id}: Evaluating '{policy_path}'"
-        )
+        logger.info(f"PolicyEvaluation {self.workflow_id}: Evaluating '{policy_path}'")
 
         try:
             # Step 1: OPA Evaluation
-            eval_input = {
-                "message": evaluation_data,
-                "context": context
-            }
+            eval_input = {"message": evaluation_data, "context": context}
 
             result = await self.activities.evaluate_policy(
-                workflow_id=self.workflow_id,
-                policy_path=policy_path,
-                input_data=eval_input
+                workflow_id=self.workflow_id, policy_path=policy_path, input_data=eval_input
             )
             self._completed_steps.append("opa_evaluation")
 
@@ -78,8 +71,8 @@ class PolicyEvaluationWorkflow(BaseWorkflow):
                 "metadata": {
                     "policy_path": policy_path,
                     "policy_version": result.get("policy_version", "unknown"),
-                    "constitutional_hash": self.constitutional_hash
-                }
+                    "constitutional_hash": self.constitutional_hash,
+                },
             }
 
             return await self.complete(output)

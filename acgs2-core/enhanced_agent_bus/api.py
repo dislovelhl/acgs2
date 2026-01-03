@@ -343,7 +343,7 @@ async def startup_event():
         logger.info("Enhanced Agent Bus initialized successfully (dev mode)")
     except Exception as e:
         logger.error(f"Failed to initialize agent bus: {e}")
-        raise
+        raise RuntimeError(f"Failed to initialize agent bus: {e}") from e
 
 
 # Shutdown event

@@ -128,9 +128,7 @@ class AuditService:
         resource_id: str,
     ) -> dict[str, Any]:
         """Get audit trail for a resource."""
-        data = await self._client.get(
-            f"{self._base_path}/trails/{resource_type}/{resource_id}"
-        )
+        data = await self._client.get(f"{self._base_path}/trails/{resource_type}/{resource_id}")
         return data.get("data", data)
 
     async def create_export(

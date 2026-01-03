@@ -27,6 +27,7 @@ logger = logging.getLogger(__name__)
 
 class MCPResourceType(Enum):
     """Types of MCP resources."""
+
     TEXT = "text"
     JSON = "json"
     BINARY = "binary"
@@ -35,6 +36,7 @@ class MCPResourceType(Enum):
 @dataclass
 class MCPResponse:
     """Response from MCP tool or resource."""
+
     content: Any
     content_type: MCPResourceType = MCPResourceType.JSON
     metadata: Dict[str, Any] = field(default_factory=dict)
@@ -52,6 +54,7 @@ class MCPResponse:
 @dataclass
 class MCPResource:
     """An MCP resource definition."""
+
     uri: str
     name: str
     description: str
@@ -69,6 +72,7 @@ class MCPResource:
 @dataclass
 class MCPTool:
     """An MCP tool definition."""
+
     name: str
     description: str
     input_schema: Dict[str, Any]
@@ -85,6 +89,7 @@ class MCPTool:
 @dataclass
 class MCPPrompt:
     """An MCP prompt template."""
+
     name: str
     description: str
     arguments: List[Dict[str, Any]]
@@ -137,10 +142,12 @@ class ConstitutionalGovernanceEngine:
         for principle_id, principle_desc in self._principles.items():
             compliant = await self._check_principle(action, principle_id)
             if not compliant:
-                violations.append({
-                    "principle_id": principle_id,
-                    "description": principle_desc,
-                })
+                violations.append(
+                    {
+                        "principle_id": principle_id,
+                        "description": principle_desc,
+                    }
+                )
 
         return {
             "valid": len(violations) == 0,
@@ -149,11 +156,7 @@ class ConstitutionalGovernanceEngine:
             "constitutional_hash": CONSTITUTIONAL_HASH,
         }
 
-    async def _check_principle(
-        self,
-        action: Dict[str, Any],
-        principle_id: str
-    ) -> bool:
+    async def _check_principle(self, action: Dict[str, Any], principle_id: str) -> bool:
         """Check if action complies with a specific principle."""
         # Simple compliance check
         action_str = str(action).lower()
@@ -162,8 +165,10 @@ class ConstitutionalGovernanceEngine:
             return "corrupt" not in action_str
 
         if principle_id == "constitutional_compliance":
-            return action.get("constitutional_hash") == CONSTITUTIONAL_HASH or \
-                   "constitutional_hash" not in action
+            return (
+                action.get("constitutional_hash") == CONSTITUTIONAL_HASH
+                or "constitutional_hash" not in action
+            )
 
         return True
 
@@ -186,11 +191,7 @@ class ACGS2MCPServer:
     - Prompts: governance_decision, policy_evaluation, etc.
     """
 
-    def __init__(
-        self,
-        server_name: str = "acgs2-governance",
-        version: str = "1.0.0"
-    ):
+    def __init__(self, server_name: str = "acgs2-governance", version: str = "1.0.0"):
         """
         Initialize MCP server.
 
@@ -223,12 +224,9 @@ class ACGS2MCPServer:
             input_schema={
                 "type": "object",
                 "properties": {
-                    "action": {
-                        "type": "object",
-                        "description": "The action to validate"
-                    }
+                    "action": {"type": "object", "description": "The action to validate"}
                 },
-                "required": ["action"]
+                "required": ["action"],
             },
             handler=self._handle_validate,
         )
@@ -239,11 +237,8 @@ class ACGS2MCPServer:
             description="Check if an action complies with a specific policy",
             input_schema={
                 "type": "object",
-                "properties": {
-                    "action": {"type": "object"},
-                    "policy_id": {"type": "string"}
-                },
-                "required": ["action", "policy_id"]
+                "properties": {"action": {"type": "object"}, "policy_id": {"type": "string"}},
+                "required": ["action", "policy_id"],
             },
             handler=self._handle_check_policy,
         )
@@ -252,10 +247,7 @@ class ACGS2MCPServer:
         self._tools["get_constitutional_hash"] = MCPTool(
             name="get_constitutional_hash",
             description="Get the current constitutional hash for validation",
-            input_schema={
-                "type": "object",
-                "properties": {}
-            },
+            input_schema={"type": "object", "properties": {}},
             handler=self._handle_get_hash,
         )
 
@@ -292,11 +284,7 @@ class ACGS2MCPServer:
             ],
         )
 
-    async def handle_tool_call(
-        self,
-        tool_name: str,
-        arguments: Dict[str, Any]
-    ) -> MCPResponse:
+    async def handle_tool_call(self, tool_name: str, arguments: Dict[str, Any]) -> MCPResponse:
         """
         Handle an MCP tool call.
 
@@ -355,18 +343,12 @@ class ACGS2MCPServer:
             metadata={"uri": uri, "success": False},
         )
 
-    async def _handle_validate(
-        self,
-        arguments: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    async def _handle_validate(self, arguments: Dict[str, Any]) -> Dict[str, Any]:
         """Handle validate_constitutional_compliance tool."""
         action = arguments.get("action", {})
         return await self.governance_engine.validate(action)
 
-    async def _handle_check_policy(
-        self,
-        arguments: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    async def _handle_check_policy(self, arguments: Dict[str, Any]) -> Dict[str, Any]:
         """Handle check_policy tool."""
         action = arguments.get("action", {})
         policy_id = arguments.get("policy_id", "")
@@ -376,10 +358,7 @@ class ACGS2MCPServer:
         result["policy_id"] = policy_id
         return result
 
-    async def _handle_get_hash(
-        self,
-        arguments: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    async def _handle_get_hash(self, arguments: Dict[str, Any]) -> Dict[str, Any]:
         """Handle get_constitutional_hash tool."""
         return {
             "constitutional_hash": CONSTITUTIONAL_HASH,

@@ -132,7 +132,7 @@ class HITLManager:
         }
 
         # Simulate sending to Slack/Teams
-        logger.info(f"Notification sent to {channel}: " f"{json.dumps(payload, indent=2)}")
+        logger.info(f"Notification sent to {channel}: {json.dumps(payload, indent=2)}")
 
         # Update status to under review
         item.status = DeliberationStatus.UNDER_REVIEW

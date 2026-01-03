@@ -1,4 +1,5 @@
 import logging
+
 """
 ACGS-2 Phase 5 Verification Script
 Verifies:
@@ -56,7 +57,10 @@ async def verify_phase_5():
             "action": "transfer_funds",
             "amount": 1000000,
             "priority": "critical",
-            "details": "CRITICAL security breach risk emergency: unauthorized financial transaction payment transfer admin execute delete",
+            "details": (
+                "CRITICAL security breach risk emergency: unauthorized financial transaction "
+                "payment transfer admin execute delete"
+            ),
         },
         message_type=MessageType.COMMAND,
         priority=Priority.CRITICAL,
@@ -69,11 +73,11 @@ async def verify_phase_5():
 
     result = await bus.send_message(msg_high_impact)
     logging.info(f"Validation Result: {result.is_valid}")
-    logging.info(f"Impact Score: {result.metadata.get('impact_score', 0)
+    logging.info(f"Impact Score: {result.metadata.get('impact_score', 0)}")
 
     # Check deliberation queue
     pending_tasks = bus._deliberation_queue.get_pending_tasks()
-    logging.info(f"Pending Deliberation Tasks: {len(pending_tasks)
+    logging.info(f"Pending Deliberation Tasks: {len(pending_tasks)}")
 
     if len(pending_tasks) > 0:
         logging.info("✅ SUCCESS: High-impact message diverted to Deliberation Queue.")
@@ -97,7 +101,9 @@ async def verify_phase_5():
 
     anchor = BlockchainAnchor()
     latest_block = anchor.get_latest_block()
-    logging.info(f"Latest Anchored Block: {latest_block['index']} | Root: {latest_block['root_hash']}")
+    logging.info(
+        f"Latest Anchored Block: {latest_block['index']} | Root: {latest_block['root_hash']}"
+    )
 
     if latest_block["index"] > 0:
         logging.info("✅ SUCCESS: Merkle root anchored to Blockchain Mock.")

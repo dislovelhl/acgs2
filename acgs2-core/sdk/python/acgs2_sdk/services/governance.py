@@ -146,9 +146,7 @@ class GovernanceService:
 
     async def verify_decision_anchor(self, decision_id: str) -> dict[str, Any]:
         """Verify a decision's blockchain anchor."""
-        data = await self._client.get(
-            f"{self._base_path}/decisions/{decision_id}/verify"
-        )
+        data = await self._client.get(f"{self._base_path}/decisions/{decision_id}/verify")
         return data.get("data", data)
 
     async def validate_constitutional(

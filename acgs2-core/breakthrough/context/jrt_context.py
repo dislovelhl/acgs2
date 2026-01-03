@@ -23,6 +23,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class ContextSection:
     """A section of context with importance scoring."""
+
     content: Any
     start_position: int
     end_position: int
@@ -36,6 +37,7 @@ class ContextSection:
 @dataclass
 class PreparedContext:
     """Prepared context with JRT optimization."""
+
     original: Any
     prepared: Any
     critical_positions: List[int]
@@ -63,7 +65,7 @@ class JRTContextPreparator:
         importance_threshold: float = 0.7,
         max_repetitions: int = 2,
         max_expansion_ratio: float = 1.5,
-        constitutional_priority: float = 1.0
+        constitutional_priority: float = 1.0,
     ):
         """
         Initialize JRT Context Preparator.
@@ -93,9 +95,7 @@ class JRTContextPreparator:
         )
 
     async def prepare(
-        self,
-        context: Any,
-        sections: Optional[List[ContextSection]] = None
+        self, context: Any, sections: Optional[List[ContextSection]] = None
     ) -> PreparedContext:
         """
         Prepare context with JRT optimization.
@@ -116,21 +116,14 @@ class JRTContextPreparator:
 
         # Select sections for repetition
         sections_to_repeat = [
-            s for s in scored_sections
-            if s.importance_score >= self.importance_threshold
+            s for s in scored_sections if s.importance_score >= self.importance_threshold
         ]
 
         # Apply JRT strategy
-        prepared, repeated_ranges = await self._apply_jrt(
-            context,
-            sections_to_repeat
-        )
+        prepared, repeated_ranges = await self._apply_jrt(context, sections_to_repeat)
 
         # Compute critical positions for attention focusing
-        critical_positions = self._compute_critical_positions(
-            prepared,
-            sections_to_repeat
-        )
+        critical_positions = self._compute_critical_positions(prepared, sections_to_repeat)
 
         original_len = len(str(context))
         prepared_len = len(str(prepared))
@@ -144,10 +137,7 @@ class JRTContextPreparator:
             expansion_ratio=prepared_len / max(original_len, 1),
         )
 
-    async def _identify_sections(
-        self,
-        context: Any
-    ) -> List[ContextSection]:
+    async def _identify_sections(self, context: Any) -> List[ContextSection]:
         """
         Automatically identify sections in context.
 
@@ -162,35 +152,41 @@ class JRTContextPreparator:
         if isinstance(context, str):
             # Look for constitutional markers
             if CONSTITUTIONAL_HASH in context:
-                sections.append(ContextSection(
-                    content=context,
-                    start_position=0,
-                    end_position=len(context),
-                    importance_score=1.0,
-                    section_type="constitutional"
-                ))
+                sections.append(
+                    ContextSection(
+                        content=context,
+                        start_position=0,
+                        end_position=len(context),
+                        importance_score=1.0,
+                        section_type="constitutional",
+                    )
+                )
             else:
                 # Default section
-                sections.append(ContextSection(
-                    content=context,
-                    start_position=0,
-                    end_position=len(context),
-                    importance_score=0.5,
-                    section_type="user"
-                ))
+                sections.append(
+                    ContextSection(
+                        content=context,
+                        start_position=0,
+                        end_position=len(context),
+                        importance_score=0.5,
+                        section_type="user",
+                    )
+                )
         elif isinstance(context, dict):
             # Handle structured context
             pos = 0
             for key, value in context.items():
                 section_type = self._infer_section_type(key)
                 content_len = len(str(value))
-                sections.append(ContextSection(
-                    content=value,
-                    start_position=pos,
-                    end_position=pos + content_len,
-                    importance_score=self._type_weights.get(section_type, 0.5),
-                    section_type=section_type
-                ))
+                sections.append(
+                    ContextSection(
+                        content=value,
+                        start_position=pos,
+                        end_position=pos + content_len,
+                        importance_score=self._type_weights.get(section_type, 0.5),
+                        section_type=section_type,
+                    )
+                )
                 pos += content_len
 
         return sections
@@ -206,10 +202,7 @@ class JRTContextPreparator:
             return "system"
         return "user"
 
-    async def _score_sections(
-        self,
-        sections: List[ContextSection]
-    ) -> List[ContextSection]:
+    async def _score_sections(self, sections: List[ContextSection]) -> List[ContextSection]:
         """
         Score sections for importance.
 
@@ -232,20 +225,20 @@ class JRTContextPreparator:
             # This will be computed relative to full context later
 
             # Create new section with updated score
-            scored.append(ContextSection(
-                content=section.content,
-                start_position=section.start_position,
-                end_position=section.end_position,
-                importance_score=min(base_score, 1.0),
-                section_type=section.section_type
-            ))
+            scored.append(
+                ContextSection(
+                    content=section.content,
+                    start_position=section.start_position,
+                    end_position=section.end_position,
+                    importance_score=min(base_score, 1.0),
+                    section_type=section.section_type,
+                )
+            )
 
         return scored
 
     async def _apply_jrt(
-        self,
-        context: Any,
-        sections_to_repeat: List[ContextSection]
+        self, context: Any, sections_to_repeat: List[ContextSection]
     ) -> Tuple[Any, List[Tuple[int, int]]]:
         """
         Apply JRT strategy by repeating critical sections.
@@ -274,7 +267,7 @@ class JRTContextPreparator:
             parts.append(context)
 
             # Add critical sections at end (recency effect)
-            for section in sections_to_repeat[:self.max_repetitions]:
+            for section in sections_to_repeat[: self.max_repetitions]:
                 parts.append(f"[REPEATED] {section.content}")
                 current_pos = sum(len(p) for p in parts[:-1])
                 repeated_ranges.append((current_pos, current_pos + len(parts[-1])))
@@ -293,9 +286,7 @@ class JRTContextPreparator:
         return context, []
 
     def _compute_critical_positions(
-        self,
-        prepared: Any,
-        critical_sections: List[ContextSection]
+        self, prepared: Any, critical_sections: List[ContextSection]
     ) -> List[int]:
         """
         Compute positions that should receive focused attention.
@@ -333,18 +324,17 @@ class AdaptiveJRTPreparator(JRTContextPreparator):
         self._adaptation_threshold = 100  # Adapt after N samples
 
     async def record_feedback(
-        self,
-        prepared_context: PreparedContext,
-        recall_score: float,
-        processing_time_ms: float
+        self, prepared_context: PreparedContext, recall_score: float, processing_time_ms: float
     ) -> None:
         """Record feedback for adaptation."""
-        self._feedback_history.append({
-            "expansion_ratio": prepared_context.expansion_ratio,
-            "recall_score": recall_score,
-            "processing_time_ms": processing_time_ms,
-            "num_repetitions": len(prepared_context.repeated_sections),
-        })
+        self._feedback_history.append(
+            {
+                "expansion_ratio": prepared_context.expansion_ratio,
+                "recall_score": recall_score,
+                "processing_time_ms": processing_time_ms,
+                "num_repetitions": len(prepared_context.repeated_sections),
+            }
+        )
 
         # Adapt if enough samples
         if len(self._feedback_history) >= self._adaptation_threshold:
@@ -356,8 +346,12 @@ class AdaptiveJRTPreparator(JRTContextPreparator):
             return
 
         # Compute average metrics
-        avg_recall = sum(f["recall_score"] for f in self._feedback_history) / len(self._feedback_history)
-        avg_time = sum(f["processing_time_ms"] for f in self._feedback_history) / len(self._feedback_history)
+        avg_recall = sum(f["recall_score"] for f in self._feedback_history) / len(
+            self._feedback_history
+        )
+        avg_time = sum(f["processing_time_ms"] for f in self._feedback_history) / len(
+            self._feedback_history
+        )
 
         # Adjust importance threshold based on recall
         if avg_recall < 0.9:

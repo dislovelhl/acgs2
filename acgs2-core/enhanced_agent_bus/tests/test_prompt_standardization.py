@@ -25,7 +25,6 @@ async def test_analyze_message_impact_prompt_standardization():
             "enhanced_agent_bus.deliberation_layer.llm_assistant.JsonOutputParser"
         ) as mock_parser_class,
     ):
-
         # Mock LLM
         mock_llm = AsyncMock()
         mock_response = MagicMock()
@@ -85,7 +84,6 @@ async def test_generate_decision_reasoning_prompt_standardization():
             "enhanced_agent_bus.deliberation_layer.llm_assistant.JsonOutputParser"
         ) as mock_parser_class,
     ):
-
         mock_llm = AsyncMock()
         mock_response = MagicMock()
         mock_response.content = '{"reasoning": "test"}'

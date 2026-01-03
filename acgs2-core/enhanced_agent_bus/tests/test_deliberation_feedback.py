@@ -67,7 +67,6 @@ DeliberationTask = _deliberation_queue.DeliberationTask
 
 
 class TestDeliberationFeedback:
-
     @pytest.mark.asyncio
     async def test_feedback_loop_integration(self):
         """Test that resolving a deliberation item triggers router feedback."""

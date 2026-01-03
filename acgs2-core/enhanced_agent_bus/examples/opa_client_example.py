@@ -119,9 +119,9 @@ async def example_with_caching():
     result2 = await client.evaluate_policy(input_data, "data.acgs.allow")
     time2 = time.time() - start
 
-    logger.info(f"First evaluation: {time1*1000:.2f}ms")
-    logger.info(f"Second evaluation (cached): {time2*1000:.2f}ms")
-    logger.info(f"Speedup: {time1/time2:.1f}x")
+    logger.info(f"First evaluation: {time1 * 1000:.2f}ms")
+    logger.info(f"Second evaluation (cached): {time2 * 1000:.2f}ms")
+    logger.info(f"Speedup: {time1 / time2:.1f}x")
 
     # Print cache statistics
     stats = client.get_stats()

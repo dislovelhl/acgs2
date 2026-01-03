@@ -1,5 +1,3 @@
-import logging
-
 #!/usr/bin/env python3
 """
 PAG-QEC Framework: Predictive AI-Guided Quantum Error Correction
@@ -18,6 +16,7 @@ Based on 2025 breakthroughs:
 Author: ACGS-2 Quantum Research
 """
 
+import logging
 import random
 import time
 from collections import OrderedDict

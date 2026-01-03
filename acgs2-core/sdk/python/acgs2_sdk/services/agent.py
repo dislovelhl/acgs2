@@ -293,6 +293,4 @@ class AgentService:
         """
         if not self._agent_id:
             raise ValueError("Agent not registered")
-        await self._client.post(
-            f"{self._base_path}/{self._agent_id}/messages/{message_id}/ack"
-        )
+        await self._client.post(f"{self._base_path}/{self._agent_id}/messages/{message_id}/ack")

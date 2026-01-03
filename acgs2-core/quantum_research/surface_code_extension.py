@@ -1,5 +1,3 @@
-import logging
-
 #!/usr/bin/env python3
 """
 Surface Code Extension for PAG-QEC Framework
@@ -21,6 +19,7 @@ Based on 2025 research:
 Author: ACGS-2 Quantum Research
 """
 
+import logging
 import time
 from dataclasses import dataclass
 from enum import Enum

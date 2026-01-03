@@ -464,7 +464,7 @@ class LLMResponseGenerator(ResponseGenerator):
         # Build system prompt
         system_prompt = f"""You are {self.personality.name}, {self.personality.description}.
 
-Personality traits: {', '.join(self.personality.traits)}
+Personality traits: {", ".join(self.personality.traits)}
 Tone: {self.personality.tone}
 Verbosity: {self.personality.verbosity}
 

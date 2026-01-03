@@ -1,10 +1,10 @@
-import logging
 #!/usr/bin/env python3
 """
 Comprehensive fix for syntax errors in code-analysis service files.
 Constitutional Hash: cdd01ef066bc6cf2
 """
 
+import logging
 import re
 from pathlib import Path
 
@@ -80,18 +80,18 @@ def fix_try_except_around_functions(content: str) -> str:
     # Should be: async def foo():\n    """docstring"""
 
     # Remove try: before async def
-    content = re.sub(
-        r"(\s*)try:\s*\n\s*(async def \w+\([^)]*\)[^:]*:)\s*\n\s*except[^:]+:\s*\n\s*logger\.error[^\n]+\n\s*raise\s*\n",
-        r"\1\2\n",
-        content,
+    async_try_pattern = (
+        r"(\s*)try:\s*\n\s*(async def \w+\([^)]*\)[^:]*:)"
+        r"\s*\n\s*except[^:]+:\s*\n\s*logger\.error[^\n]+\n\s*raise\s*\n"
     )
+    content = re.sub(async_try_pattern, r"\1\2\n", content)
 
     # Remove try: before def
-    content = re.sub(
-        r"(\s*)try:\s*\n\s*(def \w+\([^)]*\)[^:]*:)\s*\n\s*except[^:]+:\s*\n\s*logger\.error[^\n]+\n\s*raise\s*\n",
-        r"\1\2\n",
-        content,
+    def_try_pattern = (
+        r"(\s*)try:\s*\n\s*(def \w+\([^)]*\)[^:]*:)"
+        r"\s*\n\s*except[^:]+:\s*\n\s*logger\.error[^\n]+\n\s*raise\s*\n"
     )
+    content = re.sub(def_try_pattern, r"\1\2\n", content)
 
     return content
 
@@ -151,22 +151,28 @@ def fix_bare_text_outside_strings(content: str) -> str:
 def remove_duplicate_code_blocks(content: str) -> str:
     """Remove duplicate code blocks appended to files."""
     # Remove duplicate FastAPI app definitions at end of file
-    content = re.sub(
-        r'\n# Constitutional Hash: cdd01ef066bc6cf2\nCONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"\n\napp = FastAPI\([^)]+\)\n\nlogger = logging\.getLogger\(__name__\)\n\n@app\.get\("/health"\)[^}]+\}\s*$',
-        "",
-        content,
-        flags=re.DOTALL,
+    pattern = (
+        r"\n# Constitutional Hash: cdd01ef066bc6cf2\n"
+        r'CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"\n\n'
+        r"app = FastAPI\([^)]+\)\n\n"
+        r"logger = logging\.getLogger\(__name__\)\n\n"
+        r'@app\.get\("/health"\)[^}]+\}\s*$'
     )
+    content = re.sub(pattern, "", content, flags=re.DOTALL)
     return content
 
 
 def remove_misplaced_pydantic_models(content: str) -> str:
     """Remove Pydantic models inserted in wrong places."""
-    content = re.sub(
-        r'# Pydantic Models for Constitutional Compliance\nclass ConstitutionalRequest\(BaseModel\):\n\s+constitutional_hash: str = "cdd01ef066bc6cf2"\n\s+\nclass ConstitutionalResponse\(BaseModel\):\n\s+constitutional_hash: str = "cdd01ef066bc6cf2"\n\s+status: str = "success"\n\n',
-        "",
-        content,
+    pattern = (
+        r"# Pydantic Models for Constitutional Compliance\n"
+        r"class ConstitutionalRequest\(BaseModel\):\n"
+        r'\s+constitutional_hash: str = "cdd01ef066bc6cf2"\n\s+\n'
+        r"class ConstitutionalResponse\(BaseModel\):\n"
+        r'\s+constitutional_hash: str = "cdd01ef066bc6cf2"\n'
+        r'\s+status: str = "success"\n\n'
     )
+    content = re.sub(pattern, "", content)
     return content
 
 
@@ -218,18 +224,18 @@ def fix_split_docstrings(content: str) -> str:
 
 def fix_extra_try_except_blocks(content: str) -> str:
     """Remove extraneous try/except blocks around simple statements."""
-    # Pattern: try:\n            required_fields = [...]\n        except...\n            raise\n        for field
-    content = re.sub(
-        r"(\s+)try:\s*\n\s+(\w+ = \[[^\]]+\])\s*\n\s+except Exception as e:\s*\n\s+logger\.error[^\n]+\n\s+raise\s*\n(\s+for)",
-        r"\1\2\n\3",
-        content,
+    # Pattern: try block around field assignments followed by for loop
+    pattern1 = (
+        r"(\s+)try:\s*\n\s+(\w+ = \[[^\]]+\])\s*\n"
+        r"\s+except Exception as e:\s*\n\s+logger\.error[^\n]+\n\s+raise\s*\n(\s+for)"
     )
+    content = re.sub(pattern1, r"\1\2\n\3", content)
     # Pattern around hashlib
-    content = re.sub(
-        r"(\s+)try:\s*\n\s+(key_hash = hashlib[^\n]+)\s*\n\s+except Exception as e:\s*\n\s+logger\.error[^\n]+\n\s+raise\s*\n(\s+return)",
-        r"\1\2\n\3",
-        content,
+    pattern2 = (
+        r"(\s+)try:\s*\n\s+(key_hash = hashlib[^\n]+)\s*\n"
+        r"\s+except Exception as e:\s*\n\s+logger\.error[^\n]+\n\s+raise\s*\n(\s+return)"
     )
+    content = re.sub(pattern2, r"\1\2\n\3", content)
     return content
 
 
@@ -273,9 +279,9 @@ def fix_file(filepath: Path) -> bool:
 
 def validate_syntax(filepath: Path) -> bool:
     """Check if file has valid Python syntax."""
-    import subprocess
+    import subprocess  # nosec
 
-    result = subprocess.run(
+    result = subprocess.run(  # nosec
         ["python3", "-m", "py_compile", str(filepath)], capture_output=True, text=True
     )
     return result.returncode == 0
@@ -299,7 +305,7 @@ def main():
 
         # Check if file has syntax errors
         if not validate_syntax(filepath):
-            logging.info(f"\n[BROKEN] {filepath.relative_to(base_dir)
+            logging.info(f"\n[BROKEN] {filepath.relative_to(base_dir)}")
             if fix_file(filepath):
                 fixed += 1
                 if validate_syntax(filepath):
@@ -310,13 +316,13 @@ def main():
             else:
                 still_broken.append(filepath)
 
-    logging.info(f"\n{'='*50}")
+    logging.info(f"\n{'=' * 50}")
     logging.info(f"Fixed: {fixed} files")
 
     if still_broken:
-        logging.info(f"\nStill broken ({len(still_broken)
+        logging.info(f"\nStill broken ({len(still_broken)}):")
         for f in still_broken:
-            logging.info(f"  - {f.relative_to(base_dir)
+            logging.info(f"  - {f.relative_to(base_dir)}")
     else:
         logging.info("\n✓ All files have valid syntax!")
 

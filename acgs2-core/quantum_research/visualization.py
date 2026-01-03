@@ -1,5 +1,3 @@
-import logging
-
 #!/usr/bin/env python3
 """
 Visualization Utilities for PAG-QEC Framework
@@ -15,6 +13,7 @@ Provides ASCII and text-based visualizations for:
 No matplotlib dependency - uses pure ASCII art for terminal display.
 """
 
+import logging
 from typing import Dict, List, Optional, Set, Tuple
 
 import numpy as np

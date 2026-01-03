@@ -1,8 +1,7 @@
-import logging
-
 #!/usr/bin/env python3
 """
-ACGS-2 Comprehensive Syntax Repair Tool
+ACGS-2 Comprehensive Syntax Repair Tool.
+
 Constitutional Hash: cdd01ef066bc6cf2
 
 Fixes multiple corruption patterns in Python files:
@@ -12,6 +11,7 @@ Fixes multiple corruption patterns in Python files:
 4. Unclosed parentheses from truncated code
 """
 
+import logging
 import re
 import sys
 from pathlib import Path
@@ -155,7 +155,6 @@ def fix_empty_with_blocks(content: str) -> Tuple[str, int]:
                 next_line = lines[i + 1]
                 if next_line.strip():
                     next_indent = len(next_line) - len(next_line.lstrip())
-                    expected_indent = len(indent) + 4
                     # If next line is except or at same/lower indent, add pass
                     if next_indent <= len(indent) or next_line.strip().startswith("except"):
                         new_lines.append(f"{indent}    pass")
@@ -178,11 +177,8 @@ def fix_broken_except_chain(content: str) -> Tuple[str, int]:
     new_lines = []
 
     skip_until_indent = -1
-    current_indent = 0
 
-    for i, line in enumerate(lines):
-        stripped = line.strip()
-
+    for _i, line in enumerate(lines):
         if skip_until_indent >= 0:
             if line.strip():
                 line_indent = len(line) - len(line.lstrip())
@@ -304,7 +300,6 @@ def add_pass_to_empty_blocks(content: str) -> Tuple[str, int]:
             if j < len(lines):
                 next_line = lines[j]
                 next_indent = len(next_line) - len(next_line.lstrip())
-                expected_indent = len(indent) + 4
 
                 # If next line is not properly indented, add pass
                 if next_indent <= len(indent):

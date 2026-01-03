@@ -181,7 +181,7 @@ class Z3Adapter(ACLAdapter[Z3Request, Z3Response]):
             except z3.Z3Exception:
                 # Fallback: treat as single boolean expression
                 logger.warning(
-                    f"[{CONSTITUTIONAL_HASH}] Failed to parse SMT-LIB2, " f"treating as expression"
+                    f"[{CONSTITUTIONAL_HASH}] Failed to parse SMT-LIB2, treating as expression"
                 )
                 return Z3Response(
                     result="unknown",

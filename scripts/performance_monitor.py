@@ -118,50 +118,54 @@ class PerformanceMonitor:
 
                 # For throughput (higher is better), check if below thresholds
                 if metric == "throughput_rps":
-                    if value <= thresholds["critical"]:
+                    crit = thresholds["critical"]
+                    warn = thresholds["warning"]
+                    if value <= crit:
                         anomalies.append(
                             {
                                 "timestamp": current_metrics["timestamp"],
                                 "metric": metric,
                                 "value": value,
-                                "threshold": thresholds["critical"],
+                                "threshold": crit,
                                 "severity": "critical",
-                                "message": f"Critical: {metric}={value} below minimum threshold {thresholds['critical']}",
+                                "message": f"Critical: {metric}={value} below min {crit}",
                             }
                         )
-                    elif value <= thresholds["warning"]:
+                    elif value <= warn:
                         anomalies.append(
                             {
                                 "timestamp": current_metrics["timestamp"],
                                 "metric": metric,
                                 "value": value,
-                                "threshold": thresholds["warning"],
+                                "threshold": warn,
                                 "severity": "warning",
-                                "message": f"Warning: {metric}={value} below minimum threshold {thresholds['warning']}",
+                                "message": f"Warning: {metric}={value} below min {warn}",
                             }
                         )
                 else:
                     # For other metrics (lower is better), check if above thresholds
-                    if value >= thresholds["critical"]:
+                    crit = thresholds["critical"]
+                    warn = thresholds["warning"]
+                    if value >= crit:
                         anomalies.append(
                             {
                                 "timestamp": current_metrics["timestamp"],
                                 "metric": metric,
                                 "value": value,
-                                "threshold": thresholds["critical"],
+                                "threshold": crit,
                                 "severity": "critical",
-                                "message": f"Critical: {metric}={value} exceeds threshold {thresholds['critical']}",
+                                "message": f"Critical: {metric}={value} exceeds {crit}",
                             }
                         )
-                    elif value >= thresholds["warning"]:
+                    elif value >= warn:
                         anomalies.append(
                             {
                                 "timestamp": current_metrics["timestamp"],
                                 "metric": metric,
                                 "value": value,
-                                "threshold": thresholds["warning"],
+                                "threshold": warn,
                                 "severity": "warning",
-                                "message": f"Warning: {metric}={value} exceeds threshold {thresholds['warning']}",
+                                "message": f"Warning: {metric}={value} exceeds {warn}",
                             }
                         )
 

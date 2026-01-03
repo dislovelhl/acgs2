@@ -249,7 +249,7 @@ class PrintToLoggingConverter:
                     logger_call = f"logging.{log_level.lower()}({args})"
 
                 return logger_call, []
-        except:
+        except (SyntaxError, ValueError):
             pass
 
         # Fallback: simple regex approach
@@ -271,7 +271,6 @@ class PrintToLoggingConverter:
     def convert_file(self) -> Tuple[str, List[str]]:
         """Convert all print statements in file to logging."""
         modified_lines = self.lines.copy()
-        replacements_made = []
         changes = []
 
         # Sort print statements by line number (reverse order to maintain line numbers)
@@ -447,9 +446,10 @@ def main():
 
     for category, stats in categories.items():
         action_word = "would convert" if dry_run else "converted"
-        print(
-            f"{category}: {stats['files']} files, {stats['print_statements']} print statements, {stats['converted']} {action_word}"
-        )
+        files_count = stats["files"]
+        stmts = stats["print_statements"]
+        conv = stats["converted"]
+        print(f"{category}: {files_count} files, {stmts} print statements, {conv} {action_word}")
 
     print()
     print(f"Total files analyzed: {len(results)}")

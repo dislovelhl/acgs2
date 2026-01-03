@@ -256,8 +256,7 @@ class MemoryProfiler:
             self._started = True
             self._baseline = tracemalloc.take_snapshot()
             logger.info(
-                f"[{CONSTITUTIONAL_HASH}] Memory profiler started "
-                f"(level={self.config.level.value})"
+                f"[{CONSTITUTIONAL_HASH}] Memory profiler started (level={self.config.level.value})"
             )
         except Exception as e:
             logger.warning(f"[{CONSTITUTIONAL_HASH}] Failed to start tracemalloc: {e}")

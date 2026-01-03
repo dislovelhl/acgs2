@@ -275,8 +275,9 @@ class CapabilityBasedRouter:
         self, msg: AgentMessage, reg: AgentRegistry, exclude: Optional[List[str]] = None
     ) -> List[str]:
         req, ex = (
-            msg.content.get("required_capabilities", []) if isinstance(msg.content, dict) else []
-        ), set(exclude or [])
+            (msg.content.get("required_capabilities", []) if isinstance(msg.content, dict) else []),
+            set(exclude or []),
+        )
         if msg.from_agent:
             ex.add(msg.from_agent)
         res = []

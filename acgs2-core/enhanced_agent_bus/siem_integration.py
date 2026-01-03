@@ -310,7 +310,7 @@ class SIEMEventFormatter:
         if correlation_id:
             sd_params.append(f'correlationId="{correlation_id}"')
 
-        sd_elements.append(f'[acgs2@12345 {" ".join(sd_params)}]')
+        sd_elements.append(f"[acgs2@12345 {' '.join(sd_params)}]")
         structured_data = "".join(sd_elements) if sd_elements else "-"
 
         return (
@@ -834,7 +834,7 @@ def security_audit(
             except Exception as e:
                 success = False
                 error_msg = str(e)
-                raise
+                raise RuntimeError(f"Function {func.__name__} failed: {e}") from e
             finally:
                 duration_ms = (time.monotonic() - start_time) * 1000
                 await log_security_event(

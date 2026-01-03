@@ -18,23 +18,28 @@ CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
 # Exceptions
 # =============================================================================
 
+
 class OktaAuthError(Exception):
     """Okta authentication error."""
+
     pass
 
 
 class OktaConfigError(Exception):
     """Okta configuration error."""
+
     pass
 
 
 class OktaProvisioningError(Exception):
     """Okta user provisioning error."""
+
     pass
 
 
 class OktaGroupError(Exception):
     """Okta group synchronization error."""
+
     pass
 
 
@@ -42,8 +47,10 @@ class OktaGroupError(Exception):
 # Enums
 # =============================================================================
 
+
 class OktaTokenType(str, Enum):
     """Okta token types."""
+
     ACCESS = "access_token"
     ID = "id_token"
     REFRESH = "refresh_token"
@@ -51,6 +58,7 @@ class OktaTokenType(str, Enum):
 
 class OktaGrantType(str, Enum):
     """Okta OAuth grant types."""
+
     AUTHORIZATION_CODE = "authorization_code"
     REFRESH_TOKEN = "refresh_token"
     CLIENT_CREDENTIALS = "client_credentials"
@@ -59,6 +67,7 @@ class OktaGrantType(str, Enum):
 
 class OktaScope(str, Enum):
     """Standard OIDC scopes."""
+
     OPENID = "openid"
     PROFILE = "profile"
     EMAIL = "email"
@@ -68,6 +77,7 @@ class OktaScope(str, Enum):
 
 class OktaUserStatus(str, Enum):
     """Okta user status."""
+
     STAGED = "STAGED"
     PROVISIONED = "PROVISIONED"
     ACTIVE = "ACTIVE"
@@ -82,19 +92,23 @@ class OktaUserStatus(str, Enum):
 # Data Classes
 # =============================================================================
 
+
 @dataclass
 class OktaConfig:
     """Okta OIDC configuration."""
+
     domain: str
     client_id: str
     client_secret: str
     redirect_uri: str
-    scopes: List[str] = field(default_factory=lambda: [
-        OktaScope.OPENID.value,
-        OktaScope.PROFILE.value,
-        OktaScope.EMAIL.value,
-        OktaScope.GROUPS.value,
-    ])
+    scopes: List[str] = field(
+        default_factory=lambda: [
+            OktaScope.OPENID.value,
+            OktaScope.PROFILE.value,
+            OktaScope.EMAIL.value,
+            OktaScope.GROUPS.value,
+        ]
+    )
 
     # API token for user management
     api_token: Optional[str] = None
@@ -159,6 +173,7 @@ class OktaConfig:
 @dataclass
 class OktaTokenResponse:
     """Okta token response."""
+
     access_token: str
     token_type: str
     expires_in: int
@@ -175,6 +190,7 @@ class OktaTokenResponse:
 @dataclass
 class OktaUserInfo:
     """Okta user information."""
+
     sub: str
     email: str
     email_verified: bool = False
@@ -197,6 +213,7 @@ class OktaUserInfo:
 @dataclass
 class OktaUser:
     """Okta user from management API."""
+
     id: str
     status: OktaUserStatus
     created: datetime
@@ -226,6 +243,7 @@ class OktaUser:
 @dataclass
 class OktaGroup:
     """Okta group."""
+
     id: str
     name: str
     description: Optional[str]
@@ -239,6 +257,7 @@ class OktaGroup:
 @dataclass
 class OktaAuthState:
     """OAuth state for CSRF protection."""
+
     state: str
     nonce: str
     code_verifier: str

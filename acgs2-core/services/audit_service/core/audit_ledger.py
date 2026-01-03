@@ -591,7 +591,7 @@ class AuditLedger:
                 storage_data = json.load(f)
                 self.batch_counter = storage_data.get("batch_counter", 0)
                 # Sort batches to maintain order if possible, though dict is insertion ordered in modern python
-                for b_id, b_data in storage_data.get("batches", {}).items():
+                for _, b_data in storage_data.get("batches", {}).items():
                     self._reconstruct_entries(b_data["entries"])
             # Rebuild the latest Merkle Tree if we have batches
             if self.entries:

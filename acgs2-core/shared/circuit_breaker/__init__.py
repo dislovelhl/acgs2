@@ -108,7 +108,7 @@ class ACGSCircuitBreakerListener(pybreaker.CircuitBreakerListener):
     def success(self, cb: pybreaker.CircuitBreaker):
         """Log successful calls."""
         logger.debug(
-            f"[{self.constitutional_hash}] Circuit breaker '{self.service_name}' " f"call succeeded"
+            f"[{self.constitutional_hash}] Circuit breaker '{self.service_name}' call succeeded"
         )
 
     def failure(self, cb: pybreaker.CircuitBreaker, exc: Exception):
@@ -250,7 +250,7 @@ def with_circuit_breaker(
                 return cb.call(func, *args, **kwargs)
             except pybreaker.CircuitBreakerError:
                 logger.warning(
-                    f"[{CONSTITUTIONAL_HASH}] Circuit open for '{service_name}', " f"using fallback"
+                    f"[{CONSTITUTIONAL_HASH}] Circuit open for '{service_name}', using fallback"
                 )
                 if fallback:
                     return fallback(*args, **kwargs)
@@ -262,7 +262,7 @@ def with_circuit_breaker(
                 return await cb.call(func, *args, **kwargs)
             except pybreaker.CircuitBreakerError:
                 logger.warning(
-                    f"[{CONSTITUTIONAL_HASH}] Circuit open for '{service_name}', " f"using fallback"
+                    f"[{CONSTITUTIONAL_HASH}] Circuit open for '{service_name}', using fallback"
                 )
                 if fallback:
                     result = fallback(*args, **kwargs)

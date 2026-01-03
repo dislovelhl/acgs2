@@ -65,8 +65,7 @@ class AdapterRegistry:
             adapter = adapter_class(name=name, config=config)
             self._adapters[name] = adapter
             logger.info(
-                f"[{CONSTITUTIONAL_HASH}] Created adapter '{name}' "
-                f"of type {adapter_class.__name__}"
+                f"[{CONSTITUTIONAL_HASH}] Created adapter '{name}' of type {adapter_class.__name__}"
             )
         return self._adapters[name]
 

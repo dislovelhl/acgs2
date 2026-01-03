@@ -270,7 +270,7 @@ class PSVSelfPlay:
         # Generate challenges for this round
         num_challenges = min(5, len(self.challenge_templates))  # 5 challenges per round
 
-        for i in range(num_challenges):
+        for _ in range(num_challenges):
             challenge = await self._generate_challenge(target_difficulty, mode)
             if challenge:
                 round_obj.challenges.append(challenge)
@@ -713,7 +713,7 @@ class PSVSelfPlay:
                     analysis["category_performance"][cat]["solved"] += 1
 
         # Calculate success rates
-        for cat, stats in analysis["category_performance"].items():
+        for _, stats in analysis["category_performance"].items():
             if stats["attempted"] > 0:
                 stats["success_rate"] = stats["solved"] / stats["attempted"]
 

@@ -234,7 +234,7 @@ class QuantumAnnealingOptimizer(QuantumInspiredOptimizer):
         measurements = self._quantum_measurement(state, num_shots=num_candidates * 10)
 
         candidates = []
-        for basis_state, count in measurements.items():
+        for basis_state, _ in measurements.items():
             if len(candidates) >= num_candidates:
                 break
 
@@ -345,7 +345,7 @@ class QuantumApproximationOptimizer(QuantumInspiredOptimizer):
             measurements = self._quantum_measurement(final_state, num_shots=100)
 
             # Evaluate candidate solutions
-            for basis_state, count in measurements.items():
+            for basis_state, _ in measurements.items():
                 binary_string = basis_state.strip("|⟩").strip()
                 solution = np.array([int(bit) for bit in binary_string])
 

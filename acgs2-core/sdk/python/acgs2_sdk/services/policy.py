@@ -148,9 +148,7 @@ class PolicyService:
         )
         return Policy.model_validate(data.get("data", data))
 
-    async def validate_rules(
-        self, rules: list[dict[str, Any]]
-    ) -> dict[str, Any]:
+    async def validate_rules(self, rules: list[dict[str, Any]]) -> dict[str, Any]:
         """Validate policy rules syntax.
 
         Args:

@@ -148,7 +148,6 @@ def process_file(file_path: str) -> bool:
 
             # Count changes
             original_lines = original_content.split("\n")
-            new_lines = new_content.split("\n")
             print_count = sum(1 for line in original_lines if "print(" in line)
             tool_logger.info(f"Converted {print_count} print statements in {file_path}")
             return True
@@ -194,7 +193,7 @@ def main():
                 content = f.read()
                 print_count = content.count("print(")
                 total_print_statements += print_count
-        except:
+        except OSError:
             pass
 
     print()

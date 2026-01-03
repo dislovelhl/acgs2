@@ -126,9 +126,7 @@ def show(ctx, request_id: str):
 @click.option("--pending-for", help="Filter by user who can approve")
 @click.option("--limit", type=int, default=20, help="Number of results to show")
 @click.pass_context
-def list(
-    ctx, status: str | None, requester: str | None, pending_for: str | None, limit: int
-):
+def list(ctx, status: str | None, requester: str | None, pending_for: str | None, limit: int):
     """List approval requests"""
 
     async def list_requests():

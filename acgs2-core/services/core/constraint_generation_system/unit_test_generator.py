@@ -136,7 +136,7 @@ class UnitTestGenerator:
         \"\"\"Test {func_name} with edge cases\"\"\"
         # Test with None values
         try:
-            result = {func_name}({', '.join(['None'] * len(args))})
+            result = {func_name}({", ".join(["None"] * len(args))})
             self.assertIsNotNone(result)
         except (TypeError, ValueError):
             # Expected for invalid inputs

@@ -58,12 +58,6 @@ def simplify_imports_in_file(file_path: str, dry_run: bool = True) -> Dict[str, 
                         try_start = min(
                             stmt.lineno for stmt in node.body if hasattr(stmt, "lineno")
                         )
-                        try_end = max(
-                            stmt.end_lineno for stmt in node.body if hasattr(stmt, "end_lineno")
-                        )
-                        handler_start = min(
-                            stmt.lineno for stmt in handler.body if hasattr(stmt, "lineno")
-                        )
                         handler_end = max(
                             stmt.end_lineno for stmt in handler.body if hasattr(stmt, "end_lineno")
                         )
@@ -76,16 +70,9 @@ def simplify_imports_in_file(file_path: str, dry_run: bool = True) -> Dict[str, 
                         simplified_imports = []
                         for stmt in node.body:
                             if isinstance(stmt, ast.ImportFrom) and stmt.module:
-                                if stmt.module.startswith("."):
-                                    # Keep relative imports as-is
-                                    simplified_imports.append(
-                                        f"from {stmt.module} import {', '.join(alias.name for alias in stmt.names)}"
-                                    )
-                                else:
-                                    # For absolute imports, keep them
-                                    simplified_imports.append(
-                                        f"from {stmt.module} import {', '.join(alias.name for alias in stmt.names)}"
-                                    )
+                                # Keep both relative and absolute imports as-is
+                                names = ", ".join(alias.name for alias in stmt.names)
+                                simplified_imports.append(f"from {stmt.module} import {names}")
 
                         changes.append(
                             {
@@ -182,9 +169,10 @@ def main():
                 total_complexity_removed += result["complexity_removed"]
                 total_lines_removed += result["lines_removed"]
 
-                print(
-                    f"✅ {Path(file_path).name}: {result['changes_made']} patterns, {result['complexity_removed']} complexity removed"
-                )
+                fname = Path(file_path).name
+                changes = result["changes_made"]
+                complexity = result["complexity_removed"]
+                print(f"✅ {fname}: {changes} patterns, {complexity} complexity removed")
 
     print()
     print("📊 SIMPLIFICATION SUMMARY")

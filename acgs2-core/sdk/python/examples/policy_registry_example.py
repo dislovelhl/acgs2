@@ -54,14 +54,12 @@ async def main():
                         "principal": "user:*",
                         "action": "read",
                         "resource": "document:*",
-                        "conditions": {
-                            "ip_address": {"type": "CIDR", "value": "192.168.1.0/24"}
-                        }
+                        "conditions": {"ip_address": {"type": "CIDR", "value": "192.168.1.0/24"}},
                     }
                 ],
                 description="Example security policy with IP restrictions",
                 tags=["security", "example"],
-                compliance_tags=["gdpr", "sox"]
+                compliance_tags=["gdpr", "sox"],
             )
             print(f"   Created policy: {new_policy.name} (ID: {new_policy.id})")
 
@@ -80,11 +78,8 @@ async def main():
                     "principal": "user:alice",
                     "action": "read",
                     "resource": "document:confidential",
-                    "context": {
-                        "ip_address": "192.168.1.100",
-                        "time": "2024-01-15T10:00:00Z"
-                    }
-                }
+                    "context": {"ip_address": "192.168.1.100", "time": "2024-01-15T10:00:00Z"},
+                },
             )
             print(f"   Verification: {'ALLOWED' if verification.allowed else 'DENIED'}")
 
@@ -105,11 +100,11 @@ async def main():
                         "resource": "document:*",
                         "conditions": {
                             "ip_address": {"type": "CIDR", "value": "192.168.1.0/24"},
-                            "department": {"type": "StringEquals", "value": "engineering"}
-                        }
+                            "department": {"type": "StringEquals", "value": "engineering"},
+                        },
                     }
                 ],
-                description="Enhanced policy with write permissions and department restrictions"
+                description="Enhanced policy with write permissions and department restrictions",
             )
             print(f"   Created version: {new_version.version}")
 
@@ -123,7 +118,7 @@ async def main():
             bundle = await policy_service.create_bundle(
                 name="security-bundle",
                 policies=[new_policy.id],
-                description="Bundle containing security policies"
+                description="Bundle containing security policies",
             )
             print(f"   Created bundle: {bundle.name} (ID: {bundle.id})")
 
@@ -136,8 +131,7 @@ async def main():
             if os.getenv("ACGS2_USERNAME") and os.getenv("ACGS2_PASSWORD"):
                 print("\n11. Authentication")
                 auth_result = await policy_service.authenticate(
-                    os.getenv("ACGS2_USERNAME"),
-                    os.getenv("ACGS2_PASSWORD")
+                    os.getenv("ACGS2_USERNAME"), os.getenv("ACGS2_PASSWORD")
                 )
                 print(f"   Authenticated as: {auth_result.user.username}")
                 print(f"   Roles: {', '.join(auth_result.user.roles)}")
@@ -147,6 +141,7 @@ async def main():
         except Exception as e:
             print(f"\n❌ Example failed: {e}")
             import traceback
+
             traceback.print_exc()
 
 

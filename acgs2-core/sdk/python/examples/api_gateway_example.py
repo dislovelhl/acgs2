@@ -51,8 +51,8 @@ async def main():
                 metadata={
                     "sdk_version": "2.0.0",
                     "language": "python",
-                    "use_case": "policy_management"
-                }
+                    "use_case": "policy_management",
+                },
             )
             print(f"   Feedback submitted with ID: {feedback.id}")
             print(f"   Status: {feedback.status}")
@@ -83,20 +83,29 @@ async def main():
 
             print(f"\n   Available Services ({len(services_response.services)}):")
             for service in services_response.services:
-                status_icon = "✅" if service.status == "healthy" else "⚠️" if service.status == "degraded" else "❌"
+                status_icon = (
+                    "✅"
+                    if service.status == "healthy"
+                    else "⚠️"
+                    if service.status == "degraded"
+                    else "❌"
+                )
                 print(f"     {status_icon} {service.name}")
                 print(f"         Status: {service.status}")
                 print(f"         Version: {service.version}")
                 if service.description:
                     print(f"         Description: {service.description}")
                 if service.endpoints:
-                    print(f"         Endpoints: {', '.join(service.endpoints[:3])}{'...' if len(service.endpoints) > 3 else ''}")
+                    print(
+                        f"         Endpoints: {', '.join(service.endpoints[:3])}{'...' if len(service.endpoints) > 3 else ''}"
+                    )
 
             print("\n✅ API Gateway example completed successfully!")
 
         except Exception as e:
             print(f"\n❌ Example failed: {e}")
             import traceback
+
             traceback.print_exc()
 
 

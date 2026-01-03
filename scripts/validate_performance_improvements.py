@@ -12,16 +12,20 @@ import sys
 import time
 
 # Add the enhanced_agent_bus to path
-sys.path.insert(0, '/home/dislove/document/acgs2/acgs2-core')
+sys.path.insert(0, "/home/dislove/document/acgs2/acgs2-core")
 
 # Mock missing dependencies to allow basic testing
-sys.modules['litellm'] = type(sys)('litellm')
-sys.modules['litellm.caching'] = type(sys)('caching')
-sys.modules['config'] = type(sys)('config')
-sys.modules['config'].BusConfiguration = type('BusConfiguration', (), {
-    'intelligence': type('obj', (object,), {'intent_classifier_enabled': False}),
-    'deliberation': type('obj', (object,), {'enabled': False})
-})()
+sys.modules["litellm"] = type(sys)("litellm")
+sys.modules["litellm.caching"] = type(sys)("caching")
+sys.modules["config"] = type(sys)("config")
+sys.modules["config"].BusConfiguration = type(
+    "BusConfiguration",
+    (),
+    {
+        "intelligence": type("obj", (object,), {"intent_classifier_enabled": False}),
+        "deliberation": type("obj", (object,), {"enabled": False}),
+    },
+)()
 
 try:
     from enhanced_agent_bus.memory_profiler import MemoryProfilingConfig, get_memory_profiler
@@ -60,7 +64,7 @@ async def test_memory_profiling_optimization():
         "content": "test message content",
         "constitutional_hash": "cdd01ef066bc6cf2",
         "timestamp": time.time(),
-        "metadata": {"test": True, "nested": {"value": 42}}
+        "metadata": {"test": True, "nested": {"value": 42}},
     }
 
     # Test JSON serialization performance (our optimization)
@@ -114,7 +118,7 @@ async def test_audit_client_integration():
             "message_id": "test-validation",
             "is_valid": True,
             "constitutional_hash": "cdd01ef066bc6cf2",
-            "timestamp": time.time()
+            "timestamp": time.time(),
         }
 
         hash_result = await client.report_validation(test_validation)
@@ -132,7 +136,7 @@ async def test_audit_client_integration():
         print(f"❌ Audit client test failed: {e}")
         return False
     finally:
-        if 'client' in locals():
+        if "client" in locals():
             await client.close()
 
 
@@ -143,10 +147,11 @@ async def test_structured_logging():
 
     # Check if our logging utilities can be imported
     try:
-        sys.path.insert(0, '/home/dislove/document/acgs2/sdk/typescript/src/utils')
+        sys.path.insert(0, "/home/dislove/document/acgs2/sdk/typescript/src/utils")
         # Note: We can't actually test TypeScript from Python, but we can verify the files exist
         import os
-        logger_path = '/home/dislove/document/acgs2/sdk/typescript/src/utils/logger.ts'
+
+        logger_path = "/home/dislove/document/acgs2/sdk/typescript/src/utils/logger.ts"
         if os.path.exists(logger_path):
             print("✅ TypeScript logger utility exists")
             return True
@@ -161,9 +166,9 @@ async def test_structured_logging():
 async def run_performance_validation():
     """Run all performance validation tests."""
 
-    print("="*80)
+    print("=" * 80)
     print("ACGS-2 PERFORMANCE IMPROVEMENTS VALIDATION")
-    print("="*80)
+    print("=" * 80)
 
     tests = [
         ("Memory Profiling Optimization", test_memory_profiling_optimization),
@@ -181,9 +186,9 @@ async def run_performance_validation():
             results.append((test_name, False))
 
     # Summary
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("VALIDATION SUMMARY")
-    print("="*80)
+    print("=" * 80)
 
     passed = 0
     total = len(results)

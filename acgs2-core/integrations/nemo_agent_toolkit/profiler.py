@@ -411,7 +411,7 @@ Latency:
   - P99: {m.p99_check_latency_ms:.2f}ms
 
 Constitutional Hash: {m.constitutional_hash}
-Collection Period: {m.collection_start.isoformat()} - {m.collection_end.isoformat() if m.collection_end else 'ongoing'}
+Collection Period: {m.collection_start.isoformat()} - {m.collection_end.isoformat() if m.collection_end else "ongoing"}
 """
 
 

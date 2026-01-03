@@ -16,6 +16,7 @@ from uuid import UUID, uuid4
 
 class SearchDomain(str, Enum):
     """Search domain types matching the Search Platform API."""
+
     CODE = "code"
     LOGS = "logs"
     DOCUMENTS = "documents"
@@ -24,6 +25,7 @@ class SearchDomain(str, Enum):
 
 class SearchEventType(str, Enum):
     """Event types for streaming search results."""
+
     STARTED = "started"
     MATCH = "match"
     PROGRESS = "progress"
@@ -34,6 +36,7 @@ class SearchEventType(str, Enum):
 @dataclass
 class TimeRange:
     """Time range filter for searches."""
+
     start: Optional[datetime] = None
     end: Optional[datetime] = None
 
@@ -49,6 +52,7 @@ class TimeRange:
 @dataclass
 class SearchScope:
     """Defines the scope of a search operation."""
+
     repos: List[str] = field(default_factory=list)
     paths: List[str] = field(default_factory=list)
     file_types: List[str] = field(default_factory=list)
@@ -72,6 +76,7 @@ class SearchScope:
 @dataclass
 class SearchOptions:
     """Search options and configuration."""
+
     case_sensitive: bool = False
     whole_word: bool = False
     regex: bool = True
@@ -99,6 +104,7 @@ class SearchOptions:
 @dataclass
 class SearchRequest:
     """Search request to send to the Search Platform API."""
+
     pattern: str
     domain: SearchDomain = SearchDomain.CODE
     scope: SearchScope = field(default_factory=SearchScope)
@@ -118,6 +124,7 @@ class SearchRequest:
 @dataclass
 class MatchMetadata:
     """Additional metadata for a search match."""
+
     language: Optional[str] = None
     encoding: Optional[str] = None
     binary: bool = False
@@ -136,6 +143,7 @@ class MatchMetadata:
 @dataclass
 class SearchMatch:
     """A single search match result."""
+
     file: str
     line_number: int
     column: int
@@ -166,6 +174,7 @@ class SearchMatch:
 @dataclass
 class SearchStats:
     """Statistics about a search operation."""
+
     total_matches: int = 0
     files_matched: int = 0
     files_searched: int = 0
@@ -188,6 +197,7 @@ class SearchStats:
 @dataclass
 class SearchResponse:
     """Complete search response from the Search Platform API."""
+
     id: UUID
     results: List[SearchMatch]
     stats: SearchStats
@@ -206,6 +216,7 @@ class SearchResponse:
 @dataclass
 class SearchEvent:
     """Streaming search event for real-time results."""
+
     event_type: SearchEventType
     data: Dict[str, Any]
     timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
@@ -221,6 +232,7 @@ class SearchEvent:
 @dataclass
 class HealthStatus:
     """Health status of the Search Platform."""
+
     status: str
     version: str
     workers: Dict[str, Any]
@@ -241,6 +253,7 @@ class HealthStatus:
 @dataclass
 class PlatformStats:
     """Statistics about the Search Platform."""
+
     total_workers: int
     healthy_workers: int
     active_searches: int

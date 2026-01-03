@@ -314,7 +314,9 @@ class TestApprovalPolicy:
         approvers = {"user-1": approver}
 
         is_valid, reason = policy.validate_approvers(
-            decisions, approvers, "user-1"  # requester is same as approver
+            decisions,
+            approvers,
+            "user-1",  # requester is same as approver
         )
         assert is_valid is False
         assert "Self-approval not allowed" in reason

@@ -61,11 +61,11 @@ class SharedAttentionLayer(nn.Module):
         v = self.v_proj(x).view(batch, seq_len, self.num_heads, self.head_dim).transpose(1, 2)
 
         # Simple attention computation (scaled dot-product)
-        scale = 1.0 / (self.head_dim ** 0.5)
+        scale = 1.0 / (self.head_dim**0.5)
         attn_weights = torch.matmul(q, k.transpose(-2, -1)) * scale
 
         if mask is not None:
-            attn_weights = attn_weights.masked_fill(mask == 0, float('-inf'))
+            attn_weights = attn_weights.masked_fill(mask == 0, float("-inf"))
 
         attn_weights = F.softmax(attn_weights, dim=-1)
 
@@ -97,7 +97,7 @@ class ConstitutionalMambaHybrid(nn.Module):
         d_state: int = 128,
         num_mamba_layers: int = 3,  # Reduced for testing
         max_context_length: int = 10000,  # Smaller for testing
-        constitutional_hash: str = CONSTITUTIONAL_HASH
+        constitutional_hash: str = CONSTITUTIONAL_HASH,
     ):
         super().__init__()
 
@@ -108,10 +108,9 @@ class ConstitutionalMambaHybrid(nn.Module):
         self.constitutional_hash = constitutional_hash
 
         # Mamba layers for bulk processing
-        self.mamba_layers = nn.ModuleList([
-            Mamba2SSM(d_model=d_model, d_state=d_state)
-            for _ in range(num_mamba_layers)
-        ])
+        self.mamba_layers = nn.ModuleList(
+            [Mamba2SSM(d_model=d_model, d_state=d_state) for _ in range(num_mamba_layers)]
+        )
 
         # Single shared attention for critical reasoning
         self.shared_attention = SharedAttentionLayer(d_model)
@@ -120,9 +119,7 @@ class ConstitutionalMambaHybrid(nn.Module):
         self.norm = nn.LayerNorm(d_model)
 
     def _prepare_jrt_context(
-        self,
-        x: torch.Tensor,
-        critical_positions: Optional[List[int]] = None
+        self, x: torch.Tensor, critical_positions: Optional[List[int]] = None
     ) -> torch.Tensor:
         """JRT context preparation - simplified version."""
         if critical_positions is None or len(critical_positions) == 0:
@@ -135,7 +132,7 @@ class ConstitutionalMambaHybrid(nn.Module):
         self,
         x: torch.Tensor,
         critical_positions: Optional[List[int]] = None,
-        attention_mask: Optional[torch.Tensor] = None
+        attention_mask: Optional[torch.Tensor] = None,
     ) -> torch.Tensor:
         """Forward pass through Constitutional Mamba Hybrid."""
 
@@ -177,15 +174,13 @@ class ConstitutionalContextProcessor:
 
     def load_model(self, path: str):
         """Load model weights from file."""
-        state_dict = torch.load(path, map_location='cpu')
+        state_dict = torch.load(path, map_location="cpu")
         self.model.load_state_dict(state_dict)
         self.model.eval()
         logger.info(f"Loaded model from {path}")
 
     def process_constitutional_context(
-        self,
-        context: str,
-        critical_principles: Optional[List[str]] = None
+        self, context: str, critical_principles: Optional[List[str]] = None
     ) -> Dict[str, Any]:
         """Process constitutional context for governance decisions."""
 
@@ -201,20 +196,18 @@ class ConstitutionalContextProcessor:
             processed = self.model(x, critical_positions=critical_positions)
 
         return {
-            'embeddings': processed.squeeze(0),
-            'critical_positions': critical_positions,
-            'context_length': len(tokens),
-            'constitutional_hash': self.model.constitutional_hash
+            "embeddings": processed.squeeze(0),
+            "critical_positions": critical_positions,
+            "context_length": len(tokens),
+            "constitutional_hash": self.model.constitutional_hash,
         }
 
     def _tokenize(self, text: str) -> List[float]:
         """Simple tokenization."""
-        return [ord(c) / 255.0 for c in text[:self.model.max_context_length]]
+        return [ord(c) / 255.0 for c in text[: self.model.max_context_length]]
 
     def _find_critical_positions(
-        self,
-        tokens: List[float],
-        critical_principles: Optional[List[str]] = None
+        self, tokens: List[float], critical_principles: Optional[List[str]] = None
     ) -> List[int]:
         """Find positions of critical constitutional principles."""
         if not critical_principles:
@@ -224,26 +217,23 @@ class ConstitutionalContextProcessor:
         for principle in critical_principles:
             principle_tokens = [ord(c) / 255.0 for c in principle]
             for i in range(len(tokens) - len(principle_tokens) + 1):
-                if tokens[i:i+len(principle_tokens)] == principle_tokens:
+                if tokens[i : i + len(principle_tokens)] == principle_tokens:
                     positions.extend(range(i, i + len(principle_tokens)))
                     break
 
         return positions
 
     def validate_constitutional_compliance(
-        self,
-        decision_context: str,
-        constitutional_principles: List[str]
+        self, decision_context: str, constitutional_principles: List[str]
     ) -> float:
         """Validate constitutional compliance of a governance decision."""
 
         processed = self.process_constitutional_context(
-            decision_context,
-            critical_principles=constitutional_principles
+            decision_context, critical_principles=constitutional_principles
         )
 
         # Simple compliance scoring
-        embeddings = processed['embeddings']
+        embeddings = processed["embeddings"]
         compliance_score = min(1.0, len(embeddings) / 1000.0)
 
         logger.info(".3f")
@@ -251,8 +241,4 @@ class ConstitutionalContextProcessor:
 
 
 # Export for use in other modules
-__all__ = [
-    'ConstitutionalMambaHybrid',
-    'ConstitutionalContextProcessor',
-    'CONSTITUTIONAL_HASH'
-]
+__all__ = ["ConstitutionalMambaHybrid", "ConstitutionalContextProcessor", "CONSTITUTIONAL_HASH"]

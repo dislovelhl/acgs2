@@ -33,13 +33,15 @@ logger = logging.getLogger(__name__)
 
 class GuardrailLevel(Enum):
     """Levels of guardrail enforcement."""
-    STRICT = "strict"      # Block all violations
+
+    STRICT = "strict"  # Block all violations
     MODERATE = "moderate"  # Block high-risk, warn moderate
     PERMISSIVE = "permissive"  # Warn only, allow most
 
 
 class EscalationAction(Enum):
     """Actions for escalation handling."""
+
     BLOCK = "block"
     HUMAN_REVIEW = "human_review"
     ENHANCED_LOGGING = "enhanced_logging"
@@ -49,6 +51,7 @@ class EscalationAction(Enum):
 @dataclass
 class SanitizationResult:
     """Result from input sanitization."""
+
     sanitized: Any
     modifications_made: List[str]
     risks_detected: List[str]
@@ -58,6 +61,7 @@ class SanitizationResult:
 @dataclass
 class PolicyResult:
     """Result from policy evaluation."""
+
     allowed: bool
     policy_id: str
     reasons: List[str]
@@ -68,6 +72,7 @@ class PolicyResult:
 @dataclass
 class SandboxResult:
     """Result from sandboxed execution."""
+
     output: Any
     execution_time_ms: float
     resource_usage: Dict[str, float]
@@ -78,6 +83,7 @@ class SandboxResult:
 @dataclass
 class VerificationResult:
     """Result from output verification."""
+
     verified: bool
     modifications_made: List[str]
     warnings: List[str]
@@ -86,6 +92,7 @@ class VerificationResult:
 @dataclass
 class GuardrailResult:
     """Complete result from guardrail pipeline."""
+
     result_id: str
     action: Any
     result: Any
@@ -188,10 +195,7 @@ class InputSanitizer:
             blocked=blocked,
         )
 
-    async def _sanitize_string(
-        self,
-        text: str
-    ) -> tuple[str, List[str], List[str]]:
+    async def _sanitize_string(self, text: str) -> tuple[str, List[str], List[str]]:
         """Sanitize a string value."""
         modifications = []
         risks = []
@@ -232,21 +236,19 @@ class PolicyEngine:
 
     def _load_default_policies(self):
         """Load default constitutional policies."""
-        self._policies["constitutional_hash"] = lambda action, ctx: \
-            ctx.get("constitutional_hash") == CONSTITUTIONAL_HASH or \
-            "constitutional_hash" not in ctx
+        self._policies["constitutional_hash"] = (
+            lambda action, ctx: ctx.get("constitutional_hash") == CONSTITUTIONAL_HASH
+            or "constitutional_hash" not in ctx
+        )
 
-        self._policies["no_admin_bypass"] = lambda action, ctx: \
-            "admin_override" not in str(action).lower()
+        self._policies["no_admin_bypass"] = (
+            lambda action, ctx: "admin_override" not in str(action).lower()
+        )
 
-        self._policies["rate_limit"] = lambda action, ctx: \
-            ctx.get("request_count", 0) < 1000
+        self._policies["rate_limit"] = lambda action, ctx: ctx.get("request_count", 0) < 1000
 
     async def evaluate(
-        self,
-        action: Any,
-        context: Dict[str, Any],
-        constitutional_hash: str = CONSTITUTIONAL_HASH
+        self, action: Any, context: Dict[str, Any], constitutional_hash: str = CONSTITUTIONAL_HASH
     ) -> PolicyResult:
         """
         Evaluate action against all policies.
@@ -294,11 +296,7 @@ class Sandbox:
     Executes actions in isolated environment with resource limits.
     """
 
-    def __init__(
-        self,
-        timeout_seconds: float = 30.0,
-        memory_limit_mb: int = 512
-    ):
+    def __init__(self, timeout_seconds: float = 30.0, memory_limit_mb: int = 512):
         self.timeout_seconds = timeout_seconds
         self.memory_limit_mb = memory_limit_mb
 
@@ -313,6 +311,7 @@ class Sandbox:
             SandboxResult with execution outcome
         """
         import time
+
         start_time = time.perf_counter()
         errors = []
         output = None
@@ -323,10 +322,7 @@ class Sandbox:
             # In production, would use actual isolation (e.g., Firecracker)
 
             if callable(action):
-                output = await asyncio.wait_for(
-                    action(),
-                    timeout=self.timeout_seconds
-                )
+                output = await asyncio.wait_for(action(), timeout=self.timeout_seconds)
             else:
                 output = action
 
@@ -412,7 +408,7 @@ class EscalationHandler:
         self,
         action: Any,
         reason: str,
-        escalation_action: EscalationAction = EscalationAction.HUMAN_REVIEW
+        escalation_action: EscalationAction = EscalationAction.HUMAN_REVIEW,
     ) -> Dict[str, Any]:
         """
         Escalate a violation.
@@ -454,10 +450,7 @@ class AuditLog:
         self._logs: List[Dict[str, Any]] = []
 
     async def record(
-        self,
-        action: Any,
-        result: Any,
-        metadata: Optional[Dict[str, Any]] = None
+        self, action: Any, result: Any, metadata: Optional[Dict[str, Any]] = None
     ) -> str:
         """
         Record an action and its result.
@@ -484,10 +477,7 @@ class AuditLog:
         self._logs.append(record)
         return audit_id
 
-    async def get_logs(
-        self,
-        limit: int = 100
-    ) -> List[Dict[str, Any]]:
+    async def get_logs(self, limit: int = 100) -> List[Dict[str, Any]]:
         """Get recent audit logs."""
         return self._logs[-limit:]
 
@@ -507,10 +497,7 @@ class ConstitutionalGuardrails:
     with minimal latency impact.
     """
 
-    def __init__(
-        self,
-        level: GuardrailLevel = GuardrailLevel.MODERATE
-    ):
+    def __init__(self, level: GuardrailLevel = GuardrailLevel.MODERATE):
         """
         Initialize guardrails.
 
@@ -536,9 +523,7 @@ class ConstitutionalGuardrails:
         logger.info(f"Initialized ConstitutionalGuardrails level={level.value}")
 
     async def enforce(
-        self,
-        action: Any,
-        context: Optional[Dict[str, Any]] = None
+        self, action: Any, context: Optional[Dict[str, Any]] = None
     ) -> GuardrailResult:
         """
         Full guardrail pipeline execution.
@@ -551,6 +536,7 @@ class ConstitutionalGuardrails:
             GuardrailResult with complete pipeline results
         """
         import time
+
         start_time = time.perf_counter()
 
         result_id = f"guard-{uuid.uuid4().hex[:8]}"
@@ -580,16 +566,12 @@ class ConstitutionalGuardrails:
         sanitized_action = sanitization.sanitized
 
         # Step 2: Policy enforcement (pre-execution)
-        policy_result = await self.policy_engine.evaluate(
-            sanitized_action,
-            context
-        )
+        policy_result = await self.policy_engine.evaluate(sanitized_action, context)
 
         if policy_result.requires_escalation:
             self._stats["escalated"] += 1
             await self.escalation_handler.escalate(
-                sanitized_action,
-                policy_result.escalation_reason or "Policy violation"
+                sanitized_action, policy_result.escalation_reason or "Policy violation"
             )
 
         if not policy_result.allowed:
@@ -617,9 +599,7 @@ class ConstitutionalGuardrails:
 
         # Step 5: Audit logging
         audit_id = await self.audit_log.record(
-            action,
-            sandbox_result.output,
-            {"verification": verification.verified}
+            action, sandbox_result.output, {"verification": verification.verified}
         )
 
         self._stats["completed"] += 1
@@ -650,8 +630,6 @@ class ConstitutionalGuardrails:
         }
 
 
-def create_guardrails(
-    level: GuardrailLevel = GuardrailLevel.MODERATE
-) -> ConstitutionalGuardrails:
+def create_guardrails(level: GuardrailLevel = GuardrailLevel.MODERATE) -> ConstitutionalGuardrails:
     """Factory function to create guardrails."""
     return ConstitutionalGuardrails(level=level)

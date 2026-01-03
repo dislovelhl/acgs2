@@ -34,7 +34,7 @@ select = ["E", "F", "B", "I"]
 
 [tool.black]
 line-length = 100
-target-version = ['py311']
+target-version = ['py312']
 
 [tool.mypy]
 # MyPy is configured per-package to avoid directory naming conflicts

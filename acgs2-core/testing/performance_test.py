@@ -1,5 +1,3 @@
-import logging
-
 #!/usr/bin/env python3
 """
 ACGS-2 Performance Test Suite
@@ -7,6 +5,7 @@ Tests system performance with focus on end-to-end latency < 5ms.
 """
 
 import asyncio
+import logging
 import os
 import statistics
 import time
@@ -67,7 +66,7 @@ class PerformanceTester:
                     latencies.append(float("inf"))  # Mark as failed
 
         # Calculate statistics
-        valid_latencies = [l for l in latencies if l != float("inf")]
+        valid_latencies = [lat for lat in latencies if lat != float("inf")]
 
         if not valid_latencies:
             return {"error": "All iterations failed"}
@@ -83,7 +82,7 @@ class PerformanceTester:
             "p95_latency_ms": statistics.quantiles(valid_latencies, n=20)[18],  # 95th percentile
             "p99_latency_ms": statistics.quantiles(valid_latencies, n=100)[98],  # 99th percentile
             "threshold_ms": self.latency_threshold,
-            "within_threshold": all(l < self.latency_threshold for l in valid_latencies),
+            "within_threshold": all(lat < self.latency_threshold for lat in valid_latencies),
         }
 
         return stats
@@ -146,7 +145,7 @@ class PerformanceTester:
                         logging.error(f"Service {service_name} iteration {i + 1} failed: {e}")
                         latencies.append(float("inf"))
 
-                valid_latencies = [l for l in latencies if l != float("inf")]
+                valid_latencies = [lat for lat in latencies if lat != float("inf")]
                 if valid_latencies:
                     service_latencies[service_name] = {
                         "mean_latency_ms": statistics.mean(valid_latencies),
@@ -201,9 +200,9 @@ class TestPerformance:
                 assert stats["mean_latency_ms"] < 1000, (
                     f"{service_name} mean latency {stats['mean_latency_ms']:.2f}ms too high"
                 )
-                logging.info(
-                    f"{service_name}: {stats['mean_latency_ms']:.2f}ms mean, {stats['p95_latency_ms']:.2f}ms p95"
-                )
+                mean_lat = stats["mean_latency_ms"]
+                p95_lat = stats["p95_latency_ms"]
+                logging.info(f"{service_name}: {mean_lat:.2f}ms mean, {p95_lat:.2f}ms p95")
             else:
                 pytest.fail(f"Service {service_name} failed all requests")
 
@@ -241,7 +240,7 @@ class TestPerformance:
         latencies = await asyncio.gather(*tasks)
 
         valid_latencies = [
-            l for l in latencies if isinstance(l, (int, float)) and l < 10000
+            lat for lat in latencies if isinstance(lat, (int, float)) and lat < 10000
         ]  # Filter out failures
 
         if valid_latencies:

@@ -215,7 +215,6 @@ class TestS3Storage:
             patch("app.services.storage_service.S3_AVAILABLE", True),
             patch("app.services.storage_service.boto3") as mock_boto3,
         ):
-
             mock_boto3.client.return_value = mock_s3_client
 
             from app.services.storage_service import StorageService
@@ -247,7 +246,6 @@ class TestS3Storage:
             patch("app.services.storage_service.settings", mock_settings),
             patch("app.services.storage_service.S3_AVAILABLE", True),
         ):
-
             from app.services.storage_service import StorageService
 
             service = StorageService()
@@ -269,7 +267,6 @@ class TestS3Storage:
             patch("app.services.storage_service.settings", mock_settings),
             patch("app.services.storage_service.S3_AVAILABLE", True),
         ):
-
             from app.services.storage_service import StorageService
 
             service = StorageService()
@@ -291,7 +288,6 @@ class TestS3Storage:
             patch("app.services.storage_service.settings", mock_settings),
             patch("app.services.storage_service.S3_AVAILABLE", True),
         ):
-
             from app.services.storage_service import StorageService
 
             service = StorageService()
@@ -331,7 +327,6 @@ class TestS3Fallback:
             patch("app.services.storage_service.settings", mock_settings),
             patch("app.services.storage_service.S3_AVAILABLE", True),
         ):
-
             from app.services.storage_service import StorageService
 
             service = StorageService()
@@ -363,7 +358,6 @@ class TestS3Fallback:
             patch("app.services.storage_service.settings", mock_settings),
             patch("app.services.storage_service.S3_AVAILABLE", True),
         ):
-
             from app.services.storage_service import StorageService
 
             service = StorageService()
@@ -485,7 +479,6 @@ class TestStorageInitialization:
             patch("app.services.storage_service.S3_AVAILABLE", True),
             patch("app.services.storage_service.boto3") as mock_boto3,
         ):
-
             from botocore.exceptions import NoCredentialsError
 
             mock_boto3.client.side_effect = NoCredentialsError()
@@ -518,7 +511,6 @@ class TestConstitutionalCompliance:
             patch("app.services.storage_service.settings", mock_settings),
             patch("app.services.storage_service.S3_AVAILABLE", True),
         ):
-
             from app.services.storage_service import StorageService
 
             service = StorageService()

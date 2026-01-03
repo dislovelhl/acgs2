@@ -32,15 +32,16 @@ class TestZ3SolverAdapter:
         """Test constraint addition and management."""
         try:
             import z3
+
             adapter = Z3SolverAdapter()
 
             # Add a simple constraint
-            x = z3.Bool('test_var')
+            x = z3.Bool("test_var")
             constraint = Z3Constraint(
                 name="test_constraint",
                 expression="(declare-const test_var Bool)",
                 natural_language="Test constraint",
-                confidence=0.8
+                confidence=0.8,
             )
 
             adapter.add_constraint("test", x, constraint)
@@ -54,10 +55,11 @@ class TestZ3SolverAdapter:
         """Test satisfiability checking."""
         try:
             import z3
+
             adapter = Z3SolverAdapter()
 
             # Add satisfiable constraint
-            x = z3.Bool('x')
+            x = z3.Bool("x")
             adapter.solver.add(x)  # x must be true
 
             result = adapter.check_sat()
@@ -103,8 +105,8 @@ class TestLLMAssistedZ3Adapter:
         elements = adapter._extract_policy_elements(policy)
 
         assert len(elements) >= 2  # Should find multiple elements
-        assert all('type' in elem for elem in elements)
-        assert all('text' in elem for elem in elements)
+        assert all("type" in elem for elem in elements)
+        assert all("text" in elem for elem in elements)
 
     @pytest.mark.asyncio
     async def test_constraint_verification(self, adapter):
@@ -115,7 +117,7 @@ class TestLLMAssistedZ3Adapter:
                 name="test1",
                 expression="(declare-const x Bool)\n(assert x)",
                 natural_language="x must be true",
-                confidence=0.8
+                confidence=0.8,
             )
         ]
 
@@ -180,11 +182,11 @@ class TestConstitutionalZ3Verifier:
     def test_verification_stats(self, verifier):
         """Test verification statistics."""
         stats = verifier.get_verification_stats()
-        assert 'total_policies' in stats
-        assert 'verified_policies' in stats
-        assert 'verification_rate' in stats
-        assert 'constitutional_hash' in stats
-        assert stats['constitutional_hash'] == CONSTITUTIONAL_HASH
+        assert "total_policies" in stats
+        assert "verified_policies" in stats
+        assert "verification_rate" in stats
+        assert "constitutional_hash" in stats
+        assert stats["constitutional_hash"] == CONSTITUTIONAL_HASH
 
 
 class TestDataStructures:
@@ -197,7 +199,7 @@ class TestDataStructures:
             expression="(declare-const x Bool)",
             natural_language="x must be true",
             confidence=0.85,
-            generated_by="test"
+            generated_by="test",
         )
 
         assert constraint.name == "test_constraint"
@@ -214,7 +216,7 @@ class TestDataStructures:
                 name="constraint1",
                 expression="(declare-const x Bool)",
                 natural_language="Test constraint",
-                confidence=0.8
+                confidence=0.8,
             )
         ]
 
@@ -222,7 +224,7 @@ class TestDataStructures:
             id="test-policy",
             natural_language="Test policy text",
             z3_constraints=constraints,
-            is_verified=True
+            is_verified=True,
         )
 
         assert policy.id == "test-policy"
@@ -235,10 +237,7 @@ class TestDataStructures:
     def test_verification_result_creation(self):
         """Test verification result creation."""
         result = Z3VerificationResult(
-            is_sat=True,
-            model={"x": True, "y": 42},
-            solve_time_ms=150.5,
-            solver_stats={"decls": 2}
+            is_sat=True, model={"x": True, "y": 42}, solve_time_ms=150.5, solver_stats={"decls": 2}
         )
 
         assert result.is_sat == True
@@ -266,8 +265,7 @@ class TestIntegration:
 
             # Verify policy
             policy = await verifier.verify_constitutional_policy(
-                "integration-test-policy",
-                policy_text
+                "integration-test-policy", policy_text
             )
 
             # Check results
@@ -279,16 +277,15 @@ class TestIntegration:
 
             # Test compliance checking
             is_compliant = await verifier.verify_policy_compliance(
-                policy.id,
-                {"user_authenticated": True, "data_encrypted": True}
+                policy.id, {"user_authenticated": True, "data_encrypted": True}
             )
 
             assert isinstance(is_compliant, bool)
 
             # Check stats
             stats = verifier.get_verification_stats()
-            assert stats['total_policies'] >= 1
-            assert stats['constitutional_hash'] == CONSTITUTIONAL_HASH
+            assert stats["total_policies"] >= 1
+            assert stats["constitutional_hash"] == CONSTITUTIONAL_HASH
 
         except ImportError:
             pytest.skip("Z3 not available")
@@ -316,6 +313,7 @@ class TestErrorHandling:
         """Test behavior when Z3 is not available."""
         # Temporarily mock Z3 availability
         import enhanced_agent_bus.verification.z3_adapter as z3_module
+
         original_available = z3_module.Z3_AVAILABLE
         z3_module.Z3_AVAILABLE = False
 
@@ -332,10 +330,7 @@ class TestErrorHandling:
             verifier = ConstitutionalZ3Verifier()
 
             # Empty policy
-            policy = await verifier.verify_constitutional_policy(
-                "empty-policy",
-                ""
-            )
+            policy = await verifier.verify_constitutional_policy("empty-policy", "")
 
             assert policy.id == "empty-policy"
             assert policy.natural_language == ""

@@ -110,7 +110,7 @@ class ChaosScenario:
         # Enforce max duration limit
         if self.duration_s > MAX_DURATION_S:
             logger.warning(
-                f"Duration {self.duration_s}s exceeds max {MAX_DURATION_S}s, " f"capping to max"
+                f"Duration {self.duration_s}s exceeds max {MAX_DURATION_S}s, capping to max"
             )
             self.duration_s = MAX_DURATION_S
 
@@ -218,15 +218,13 @@ class ChaosEngine:
         }
 
         logger.info(
-            f"[{self.constitutional_hash}] ChaosEngine initialized with "
-            f"constitutional compliance"
+            f"[{self.constitutional_hash}] ChaosEngine initialized with constitutional compliance"
         )
 
     def emergency_stop(self):
         """Emergency stop all chaos injection immediately."""
         logger.critical(
-            f"[{self.constitutional_hash}] EMERGENCY STOP activated - "
-            f"stopping all chaos scenarios"
+            f"[{self.constitutional_hash}] EMERGENCY STOP activated - stopping all chaos scenarios"
         )
         self._emergency_stop = True
 
@@ -433,7 +431,7 @@ class ChaosEngine:
             await self.deactivate_scenario(scenario.name)
         except asyncio.CancelledError:
             logger.info(
-                f"[{self.constitutional_hash}] Cleanup cancelled for " f"scenario: {scenario.name}"
+                f"[{self.constitutional_hash}] Cleanup cancelled for scenario: {scenario.name}"
             )
         except Exception as e:
             logger.error(
@@ -480,7 +478,7 @@ class ChaosEngine:
                     task.cancel()
                 del self._cleanup_tasks[scenario_name]
 
-        logger.info(f"[{self.constitutional_hash}] Deactivated chaos scenario: " f"{scenario_name}")
+        logger.info(f"[{self.constitutional_hash}] Deactivated chaos scenario: {scenario_name}")
 
     def get_active_scenarios(self) -> List[ChaosScenario]:
         """Get list of active chaos scenarios."""

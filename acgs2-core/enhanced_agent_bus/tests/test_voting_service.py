@@ -418,7 +418,9 @@ class TestElectionResults:
         """Test getting result of open election returns None."""
         participants = ["agent-1", "agent-2", "agent-3"]
         election_id = await voting_service.create_election(
-            valid_message, participants, timeout=3600  # Long timeout
+            valid_message,
+            participants,
+            timeout=3600,  # Long timeout
         )
 
         # Only one vote cast, election still open

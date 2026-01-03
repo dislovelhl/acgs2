@@ -49,7 +49,7 @@ class SQLAgent:
                     "attempts": attempt + 1,
                 }
             except Exception as e:
-                logger.warning(f"SQL execution failed (attempt {attempt+1}): {e}")
+                logger.warning(f"SQL execution failed (attempt {attempt + 1}): {e}")
                 last_error = str(e)
                 # Feed the traceback back for repair
                 current_query = f"The previous SQL resulted in an error: {last_error}. Natural Query: {natural_query}"

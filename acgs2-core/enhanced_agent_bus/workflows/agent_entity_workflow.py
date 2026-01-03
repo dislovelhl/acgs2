@@ -323,7 +323,7 @@ class ExecuteTaskActivity(WorkflowActivity):
         """
         start_time = datetime.now(timezone.utc)
         logger.info(
-            f"[{CONSTITUTIONAL_HASH}] Executing task {task.task_id} " f"of type {task.task_type}"
+            f"[{CONSTITUTIONAL_HASH}] Executing task {task.task_id} of type {task.task_type}"
         )
 
         try:
@@ -530,8 +530,7 @@ class AgentEntityWorkflow(WorkflowDefinition[AgentConfig, AgentResult]):
                     except asyncio.TimeoutError:
                         # Idle timeout - trigger shutdown
                         logger.info(
-                            f"[{CONSTITUTIONAL_HASH}] Agent {config.agent_id} "
-                            f"idle timeout reached"
+                            f"[{CONSTITUTIONAL_HASH}] Agent {config.agent_id} idle timeout reached"
                         )
                         self._shutdown_requested = True
                         self._shutdown_reason = "idle_timeout"

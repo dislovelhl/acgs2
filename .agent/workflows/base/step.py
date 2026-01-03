@@ -16,11 +16,12 @@ except ImportError:
     CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
 
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 class StepStatus(Enum):
     """Status of individual workflow step."""
+
     PENDING = "pending"
     EXECUTING = "executing"
     COMPLETED = "completed"
@@ -49,6 +50,7 @@ class StepCompensation:
         max_retries: Maximum retry attempts
         retry_delay_seconds: Delay between retries
     """
+
     name: str
     execute: Callable[[Dict[str, Any]], Awaitable[bool]]
     description: str = ""
@@ -85,6 +87,7 @@ class WorkflowStep:
         requires_constitutional_check: Validate hash before execution
         depends_on: List of step names this step depends on
     """
+
     name: str
     execute: Callable[[Dict[str, Any]], Awaitable[T]]
     compensation: Optional[StepCompensation] = None
@@ -121,9 +124,7 @@ class WorkflowStep:
         self.result = result
         self.completed_at = datetime.now(timezone.utc)
         if self.started_at:
-            self.execution_time_ms = (
-                self.completed_at - self.started_at
-            ).total_seconds() * 1000
+            self.execution_time_ms = (self.completed_at - self.started_at).total_seconds() * 1000
 
     def mark_failed(self, error: str) -> None:
         """Mark step as failed with error."""
@@ -131,9 +132,7 @@ class WorkflowStep:
         self.error = error
         self.completed_at = datetime.now(timezone.utc)
         if self.started_at:
-            self.execution_time_ms = (
-                self.completed_at - self.started_at
-            ).total_seconds() * 1000
+            self.execution_time_ms = (self.completed_at - self.started_at).total_seconds() * 1000
 
     def mark_skipped(self) -> None:
         """Mark step as skipped."""
@@ -203,6 +202,7 @@ def step(
         async def validate_input(context: Dict[str, Any]) -> bool:
             return context.get("input") is not None
     """
+
     def decorator(func: Callable[[Dict[str, Any]], Awaitable[T]]) -> WorkflowStep:
         return WorkflowStep(
             name=name,
@@ -214,6 +214,7 @@ def step(
             requires_constitutional_check=requires_constitutional_check,
             depends_on=depends_on or [],
         )
+
     return decorator
 
 
@@ -231,6 +232,7 @@ def with_compensation(
             lock_id = context.get("acquire_lock", {}).get("lock_id")
             return await release(lock_id)
     """
+
     def decorator(func: Callable[[Dict[str, Any]], Awaitable[bool]]) -> StepCompensation:
         return StepCompensation(
             name=compensation_name,
@@ -238,6 +240,7 @@ def with_compensation(
             description=description,
             max_retries=max_retries,
         )
+
     return decorator
 
 

@@ -1,8 +1,7 @@
-import logging
-
 #!/usr/bin/env python3
 """
-ACGS-2 Keyword Argument Type Hint Repair Tool
+ACGS-2 Keyword Argument Type Hint Repair Tool.
+
 Constitutional Hash: cdd01ef066bc6cf2
 
 Fixes incorrectly placed type annotations in function call keyword arguments.
@@ -16,6 +15,7 @@ Should be:
     )
 """
 
+import logging
 import re
 import sys
 from pathlib import Path
@@ -81,7 +81,7 @@ def fix_kwarg_type_hints(content: str) -> Tuple[str, int]:
     new_lines = []
     in_call = 0
 
-    for i, line in enumerate(lines):
+    for _i, line in enumerate(lines):
         # Track parentheses depth
         in_call += line.count("(") - line.count(")")
 

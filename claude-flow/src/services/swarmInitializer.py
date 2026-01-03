@@ -186,7 +186,9 @@ async def _persist_swarm_config(swarm_id: str, config: dict):
         # Save swarm configuration
         config_file = os.path.join(storage_dir, f"swarm_{swarm_id}.json")
         with open(config_file, "w") as f:
-            json.dump({**config, "persisted_at": time.time()}, f, indent=2)  # COMPATIBILITY: Python 3.11+
+            json.dump(
+                {**config, "persisted_at": time.time()}, f, indent=2
+            )  # COMPATIBILITY: Python 3.11+
 
     except Exception as e:
         # Log error but don't fail initialization

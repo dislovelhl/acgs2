@@ -164,9 +164,7 @@ class PerformanceMiddleware(BaseHTTPMiddleware):
         self.active_requests[request_id] = start_time
 
         # Get initial resource usage
-        initial_memory = (
-            self.process.memory_info().rss if self.enable_detailed_metrics else 0
-        )
+        initial_memory = self.process.memory_info().rss if self.enable_detailed_metrics else 0
 
         try:
             # Log request start
@@ -244,13 +242,9 @@ class PerformanceMiddleware(BaseHTTPMiddleware):
         status_code = str(response.status_code)
 
         # Update counters and histograms
-        REQUEST_COUNT.labels(
-            method=method, endpoint=endpoint, status_code=status_code
-        ).inc()
+        REQUEST_COUNT.labels(method=method, endpoint=endpoint, status_code=status_code).inc()
 
-        REQUEST_DURATION.labels(method=method, endpoint=endpoint).observe(
-            duration_seconds
-        )
+        REQUEST_DURATION.labels(method=method, endpoint=endpoint).observe(duration_seconds)
 
         # Track request times for P99 calculation
         self.request_times[endpoint].append(duration_ms)
@@ -311,9 +305,7 @@ class PerformanceMiddleware(BaseHTTPMiddleware):
                 request_id=request_id,
             )
 
-    def _check_performance_violations(
-        self, request: Request, duration_ms: float
-    ) -> None:
+    def _check_performance_violations(self, request: Request, duration_ms: float) -> None:
         """Check for performance target violations."""
         if duration_ms > self.latency_target_ms:
             logger.warning(

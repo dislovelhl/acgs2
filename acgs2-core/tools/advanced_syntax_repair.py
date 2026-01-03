@@ -1,7 +1,7 @@
-import logging
 #!/usr/bin/env python3
 """
-Advanced Syntax Repair Tool for ACGS-2 Codebase
+Advanced Syntax Repair Tool for ACGS-2 Codebase.
+
 Constitutional Hash: cdd01ef066bc6cf2
 
 This tool repairs systematic corruption patterns in Python files where
@@ -15,6 +15,7 @@ Corruption patterns handled:
 5. Truncated lines and orphaned code after raise statements
 """
 
+import logging
 import re
 import sys
 from pathlib import Path
@@ -36,42 +37,12 @@ def repair_file(file_path: Path) -> tuple[bool, int]:
     original = content
     fixes = 0
 
-    # Pattern 1: Try/except breaking function call arguments
-    # Matches: func_call(\n    try:\n        arg_start\n    except...raise\n        arg_continuation
-    pattern1 = re.compile(
-        r"(\w+)\(\s*\n"  # function call with open paren
-        r"(\s*)try:\s*\n"  # try block
-        r"\s+(\w+)="  # keyword arg start
-        r".*?"  # argument value
-        r"except \(ValueError, KeyError, TypeError\) as e:\s*\n"
-        r'\s+logger\.error\(f"Data operation failed: \{e\}"\)\s*\n'
-        r"\s+raise\s*\n"
-        r"(\s*)except Exception as e:\s*\n"
-        r'\s+logger\.error\(f"Unexpected error: \{e\}"\)\s*\n'
-        r"\s+raise\s*\n",
-        re.DOTALL,
-    )
+    # Note: Complex pattern matching done via line-by-line approach below
 
-    # Pattern 2: Simple try/except around expressions that should be direct
-    # This is the most common pattern - try wrapping a simple expression
-    pattern2 = re.compile(
-        r"^\s*try:\s*\n"
-        r"(\s+)([^\n]+)\n"  # The actual expression
-        r"\s*except \(ValueError, KeyError, TypeError\) as e:\s*\n"
-        r'\s+logger\.error\(f"Data operation failed: \{e\}"\)\s*\n'
-        r"\s+raise\s*\n"
-        r"\s*except Exception as e:\s*\n"
-        r'\s+logger\.error\(f"Unexpected error: \{e\}"\)\s*\n'
-        r"\s+raise\s*\n"
-        r"(\s+)([^\n]+)",  # Code that should follow the expression
-        re.MULTILINE,
-    )
+    # Pattern 3: Try/except block where content after raise joins with before except
+    # Example: "print(\n try:\n text\n except...raise\n , file=sys.stderr)"
 
-    # Pattern 3: Try/except block where the content after raise should be
-    # joined with the content before the except
-    # This handles cases like: "print(\n    try:\n        text\n    except...raise\n        , file=sys.stderr)"
-
-    # Let's use a line-by-line approach for more complex repairs
+    # Use a line-by-line approach for more complex repairs
     lines = content.split("\n")
     new_lines = []
     i = 0
@@ -96,7 +67,6 @@ def repair_file(file_path: Path) -> tuple[bool, int]:
                     and re.search(r'logger\.error\(f"Data operation failed:', next_block)
                     and re.search(r"except Exception as e:", next_block)
                 ):
-
                     # Find the actual content line (usually at i+1)
                     content_line = lines[i + 1].strip() if i + 1 < len(lines) else ""
 
@@ -111,7 +81,7 @@ def repair_file(file_path: Path) -> tuple[bool, int]:
                     ):
                         j += 1
 
-                    # Find the continuation line (code after raise that belongs to original expression)
+                    # Find continuation line (code after raise for original expression)
                     continuation_lines = []
                     while j < len(lines):
                         next_line = lines[j]
@@ -161,7 +131,7 @@ def repair_file(file_path: Path) -> tuple[bool, int]:
 
     # Additional pattern fixes using regex
 
-    # Fix pattern: "    try:\n        CONST = Value\n    except...raise\n" when CONST should just be assigned
+    # Fix: try block around const assignment (CONST = Value)
     content, count = re.subn(
         r"try:\s*\n"
         r"(\s+)([A-Z_]+\s*=\s*[^\n]+)\n"
@@ -177,7 +147,6 @@ def repair_file(file_path: Path) -> tuple[bool, int]:
     fixes += count
 
     # Fix broken relationship definitions in SQLAlchemy
-    # Pattern: relationship(\n"...",\nback_populates="...",\n       cascade=... followed by next definition
     content, count = re.subn(
         r'(relationship\([^)]+),\s*\n\s*(cascade="[^"]+",?)\s*\n(\s*)(\w+\s*=\s*relationship)',
         r"\1,\n        \2\n    )\n\n\3\4",
@@ -229,7 +198,6 @@ def repair_file(file_path: Path) -> tuple[bool, int]:
     fixes += count
 
     # Fix ternary expressions split across try/except
-    # Pattern: "value = (\n    try:\n        float(x)\n    except...raise\n    if condition\n    else default\n)"
     content, count = re.subn(
         r"(\w+\s*=\s*)\(\s*\n"
         r"\s*try:\s*\n"
@@ -249,7 +217,6 @@ def repair_file(file_path: Path) -> tuple[bool, int]:
     fixes += count
 
     # Fix broken keyword arguments in to_dict methods
-    # Pattern: "key": (\n    try:\n        value\n    except...raise\n    if cond\n    else default\n),
     content, count = re.subn(
         r'"(\w+)":\s*\(\s*\n'
         r"\s*try:\s*\n"
@@ -302,7 +269,7 @@ def main():
         # Exclude pycache and venv
         files = [f for f in files if "__pycache__" not in str(f) and ".venv" not in str(f)]
 
-    logging.info(f"Scanning {len(files)
+    logging.info(f"Scanning {len(files)} files...")
 
     for file_path in files:
         total_files += 1
@@ -310,7 +277,7 @@ def main():
         if was_modified:
             modified_files += 1
             total_fixes += fixes
-            logging.info(f"  Fixed: {file_path} ({fixes} repairs)
+            logging.info(f"  Fixed: {file_path} ({fixes} repairs)")
 
     logging.info("\nSummary:")
     logging.info(f"  Total files scanned: {total_files}")

@@ -667,7 +667,7 @@ class OPAGuard:
             # SECURITY: Respect fail_closed setting on exceptions
             if self.fail_closed:
                 logger.warning(
-                    "Constitutional compliance check failed - denying action " "(fail_closed=True)"
+                    "Constitutional compliance check failed - denying action (fail_closed=True)"
                 )
                 return False
             else:

@@ -11,15 +11,12 @@ Part of COV-001: Fix Coverage Discrepancy task execution.
 
 import json
 import os
-from pathlib import Path
 
 
 def analyze_coverage_accuracy():
     """Analyze and provide accurate coverage metrics."""
     print("🔧 COVERAGE REPORTING FIX - COV-001")
     print("=" * 50)
-
-    project_root = Path(".")
 
     # Check for coverage data files
     coverage_files = [
@@ -36,7 +33,7 @@ def analyze_coverage_accuracy():
                     coverage_data = json.load(f)
                 print(f"📊 Using coverage data from: {cov_file}")
                 break
-            except:
+            except (json.JSONDecodeError, OSError):
                 continue
 
     if not coverage_data:
@@ -94,9 +91,9 @@ def analyze_coverage_accuracy():
     # System-wide coverage
     if total_system_lines > 0:
         system_coverage = (total_system_covered / total_system_lines) * 100
-        print(
-            f"\\n🎯 SYSTEM-WIDE COVERAGE: {system_coverage:.2f}% ({total_system_covered}/{total_system_lines} lines)"
-        )
+        covered = total_system_covered
+        total = total_system_lines
+        print(f"\\n🎯 SYSTEM-WIDE COVERAGE: {system_coverage:.2f}% ({covered}/{total} lines)")
 
     # Provide recommendations
     print("\\n💡 RECOMMENDATIONS:")

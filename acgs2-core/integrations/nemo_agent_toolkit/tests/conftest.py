@@ -26,6 +26,7 @@ def clean_guardrails():
         ConstitutionalGuardrails,
         GuardrailConfig,
     )
+
     config = GuardrailConfig()
     return ConstitutionalGuardrails(config=config)
 

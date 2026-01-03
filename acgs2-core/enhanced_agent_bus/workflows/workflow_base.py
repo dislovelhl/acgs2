@@ -246,7 +246,7 @@ class WorkflowDefinition(ABC, Generic[TInput, TOutput]):
             )
         except asyncio.TimeoutError as e:
             logger.error(
-                f"[{CONSTITUTIONAL_HASH}] Activity {activity.name} timed out " f"after {timeout}s"
+                f"[{CONSTITUTIONAL_HASH}] Activity {activity.name} timed out after {timeout}s"
             )
             raise e
 

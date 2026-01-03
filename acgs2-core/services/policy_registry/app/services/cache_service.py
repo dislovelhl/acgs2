@@ -144,7 +144,9 @@ class CacheService:
         if self.redis_client:
             try:
                 await self.redis_client.setex(
-                    cache_key, self.redis_ttl * 24, json.dumps(cache_data)  # 24 hours
+                    cache_key,
+                    self.redis_ttl * 24,
+                    json.dumps(cache_data),  # 24 hours
                 )
             except Exception as e:
                 logger.warning(f"Redis set public key failed: {e}")

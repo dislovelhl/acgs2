@@ -1,8 +1,7 @@
-import logging
-
 #!/usr/bin/env python3
 """
-ACGS-2 Syntax Repair Tool
+ACGS-2 Syntax Repair Tool.
+
 Constitutional Hash: cdd01ef066bc6cf2
 
 Fixes corrupted try/except patterns that were incorrectly inserted around:
@@ -17,6 +16,7 @@ And restores them to:
     field: Type = value
 """
 
+import logging
 import re
 import sys
 from pathlib import Path
@@ -37,10 +37,7 @@ def fix_corrupted_try_except(content: str) -> Tuple[str, int]:
 
     # Pattern 0a: Named arguments with type annotations (e.g., pattern_type: str = "value")
     # Should be: pattern_type="value"
-    pattern0a = re.compile(
-        r'(\w+):\s*(?:str|int|float|bool|dict|list|Any|Optional)\s*=\s*(["\'][^"\']*["\']|[\d.]+|True|False|None|\{[^}]*\}|\[[^\]]*\])',
-        re.MULTILINE,
-    )
+    # Note: Pattern defined for reference but applied via fix_named_args below
 
     # Only apply in function call contexts (after opening paren or comma)
     def fix_named_args(match):

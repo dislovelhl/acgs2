@@ -88,7 +88,7 @@ class PolicyRegistryService:
                 "content": {"rules": request.rules},
                 "format": format,
                 "description": request.description,
-            }
+            },
         )
 
         return Policy(**data)
@@ -178,8 +178,7 @@ class PolicyRegistryService:
             Verification result
         """
         data = await self._client.post(
-            f"{self._base_path}/policies/{policy_id}/verify",
-            json={"input": input_data}
+            f"{self._base_path}/policies/{policy_id}/verify", json={"input": input_data}
         )
         return data
 
@@ -226,7 +225,7 @@ class PolicyRegistryService:
             json={
                 "content": {"rules": rules},
                 "description": description,
-            }
+            },
         )
         return data
 
@@ -254,8 +253,7 @@ class PolicyRegistryService:
             Authentication response with token
         """
         data = await self._client.post(
-            f"{self._base_path}/auth/token",
-            json={"username": username, "password": password}
+            f"{self._base_path}/auth/token", json={"username": username, "password": password}
         )
         return data
 
@@ -290,7 +288,7 @@ class PolicyRegistryService:
                 "name": name,
                 "policies": policies,
                 "description": description,
-            }
+            },
         )
         return data
 
