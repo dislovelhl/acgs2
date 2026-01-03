@@ -10,11 +10,9 @@ Multi-Tenant Isolation:
 
 import asyncio
 import logging
-import sys
-from pathlib import Path
 from typing import Any, Dict, Optional
 
-from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException
+from fastapi import BackgroundTasks, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
@@ -296,20 +294,58 @@ class DriftReportResponse(BaseModel):
 # Startup event
 @app.on_event("startup")
 async def startup_event():
-    """Initialize the agent bus on startup"""
+    """Initialize the agent bus and warm caches on startup"""
     global agent_bus
     try:
         logger.info("agent_bus_initializing", mode="development")
         # Simplified initialization for development
         agent_bus = {"status": "initialized", "services": ["redis", "kafka", "opa"]}
-        logger.info(
-            "agent_bus_initialized",
-            mode="development",
-            services=["redis", "kafka", "opa"],
-        )
+        logger.info("Enhanced Agent Bus initialized successfully (dev mode)")
+
+        # Cache warming - pre-populate L1 and L2 caches
+        await _warm_caches()
+
     except Exception as e:
         logger.error("agent_bus_initialization_failed", error=str(e), error_type=type(e).__name__)
         raise
+
+
+async def _warm_caches():
+    """
+    Warm caches at startup to prevent cold start performance degradation.
+
+    Loads top 100 keys to L2 (Redis), top 10 to L1 (in-process) based on
+    access patterns from L3 cache. Rate limited to 100 keys/sec.
+    """
+    try:
+        from . import CACHE_WARMING_AVAILABLE, warm_cache_on_startup
+
+        if not CACHE_WARMING_AVAILABLE:
+            logger.info("Cache warming not available - skipping")
+            return
+
+        logger.info("Starting cache warming...")
+        result = await warm_cache_on_startup(rate_limit=100)
+
+        if result and result.success:
+            logger.info(
+                f"Cache warming completed: warmed {result.keys_warmed} keys "
+                f"(L1: {result.l1_keys}, L2: {result.l2_keys}) "
+                f"in {result.duration_seconds:.2f}s"
+            )
+        elif result:
+            logger.warning(
+                f"Cache warming finished with status {result.status.value}: "
+                f"{result.error_message or 'unknown error'}"
+            )
+        else:
+            logger.warning("Cache warming returned no result")
+
+    except ImportError as e:
+        logger.info(f"Cache warming module not available: {e}")
+    except Exception as e:
+        # Don't fail startup if cache warming fails - it's an optimization
+        logger.warning(f"Cache warming failed (non-fatal): {e}")
 
 
 # Shutdown event
@@ -317,10 +353,20 @@ async def startup_event():
 async def shutdown_event():
     """Clean up on shutdown"""
     global agent_bus
-    logger.info("agent_bus_stopped", mode="development")
 
+    # Cancel any ongoing cache warming
+    try:
+        from . import CACHE_WARMING_AVAILABLE, get_cache_warmer
 
-# ===== API Endpoints =====
+        if CACHE_WARMING_AVAILABLE and get_cache_warmer is not None:
+            warmer = get_cache_warmer()
+            if warmer.is_warming:
+                logger.info("Cancelling ongoing cache warming...")
+                warmer.cancel()
+    except Exception as e:
+        logger.debug(f"Cache warming cleanup: {e}")
+
+    logger.info("Enhanced Agent Bus stopped (dev mode)")
 
 
 @app.get("/health", response_model=HealthResponse)
@@ -432,7 +478,7 @@ async def send_message(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"[tenant={tenant_id}] Error sending message: {e}")
+        logger.error(f"Error sending message: {e}")
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
@@ -462,7 +508,7 @@ async def get_message_status(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"[tenant={tenant_id}] Error getting message status: {e}")
+        logger.error(f"Error getting message status: {e}")
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
@@ -490,7 +536,7 @@ async def get_stats(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"[tenant={tenant_id}] Error getting stats: {e}")
+        logger.error(f"Error getting stats: {e}")
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
@@ -519,7 +565,7 @@ async def validate_policy(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"[tenant={tenant_id}] Error validating policy: {e}")
+        logger.error(f"Error validating policy: {e}")
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 

@@ -6,13 +6,21 @@ Tests for shared/redis_config.py
 """
 
 import os
-from unittest.mock import patch
+import threading
+from unittest.mock import MagicMock, patch
+
+import pytest
 
 # Import module under test
 from shared.redis_config import (
+    CONSTITUTIONAL_HASH,
     REDIS_URL,
     REDIS_URL_WITH_DB,
     RedisConfig,
+    RedisHealthCheckConfig,
+    RedisHealthListener,
+    RedisHealthState,
+    get_redis_config,
     get_redis_url,
 )
 
@@ -203,3 +211,512 @@ class TestRedisConfigIntegration:
 
         # db=2 should have /2
         assert "/2" in urls[2]
+
+
+# ============================================================================
+# Constitutional Compliance Tests
+# ============================================================================
+
+
+class TestConstitutionalCompliance:
+    """Test constitutional hash compliance."""
+
+    def test_constitutional_hash_present(self):
+        """Verify constitutional hash is present and correct."""
+        assert CONSTITUTIONAL_HASH == "cdd01ef066bc6cf2"
+
+    def test_constitutional_hash_in_module(self):
+        """Verify constitutional hash is exported."""
+        from shared import redis_config
+
+        assert hasattr(redis_config, "CONSTITUTIONAL_HASH")
+        assert redis_config.CONSTITUTIONAL_HASH == "cdd01ef066bc6cf2"
+
+
+# ============================================================================
+# RedisHealthState Enum Tests
+# ============================================================================
+
+
+class TestRedisHealthState:
+    """Test RedisHealthState enum."""
+
+    def test_healthy_state(self):
+        """Test HEALTHY state value."""
+        assert RedisHealthState.HEALTHY.value == "healthy"
+
+    def test_unhealthy_state(self):
+        """Test UNHEALTHY state value."""
+        assert RedisHealthState.UNHEALTHY.value == "unhealthy"
+
+    def test_recovering_state(self):
+        """Test RECOVERING state value."""
+        assert RedisHealthState.RECOVERING.value == "recovering"
+
+    def test_unknown_state(self):
+        """Test UNKNOWN state value."""
+        assert RedisHealthState.UNKNOWN.value == "unknown"
+
+    def test_all_states_defined(self):
+        """Test all expected states exist."""
+        states = [s.value for s in RedisHealthState]
+        assert "healthy" in states
+        assert "unhealthy" in states
+        assert "recovering" in states
+        assert "unknown" in states
+
+
+# ============================================================================
+# RedisHealthCheckConfig Tests
+# ============================================================================
+
+
+class TestRedisHealthCheckConfig:
+    """Test RedisHealthCheckConfig dataclass."""
+
+    def test_default_values(self):
+        """Test default configuration values."""
+        config = RedisHealthCheckConfig()
+        assert config.check_interval == 30.0
+        assert config.timeout == 5.0
+        assert config.unhealthy_threshold == 3
+        assert config.healthy_threshold == 1
+
+    def test_custom_values(self):
+        """Test custom configuration values."""
+        config = RedisHealthCheckConfig(
+            check_interval=60.0,
+            timeout=10.0,
+            unhealthy_threshold=5,
+            healthy_threshold=2,
+        )
+        assert config.check_interval == 60.0
+        assert config.timeout == 10.0
+        assert config.unhealthy_threshold == 5
+        assert config.healthy_threshold == 2
+
+    def test_partial_custom_values(self):
+        """Test partial custom configuration."""
+        config = RedisHealthCheckConfig(check_interval=15.0)
+        assert config.check_interval == 15.0
+        assert config.timeout == 5.0  # Default
+
+
+# ============================================================================
+# RedisHealthListener Tests
+# ============================================================================
+
+
+class TestRedisHealthListener:
+    """Test Redis health listener."""
+
+    def test_listener_initialization(self):
+        """Test listener initializes correctly."""
+        listener = RedisHealthListener("test_redis")
+        assert listener.name == "test_redis"
+        assert listener.constitutional_hash == CONSTITUTIONAL_HASH
+
+    def test_listener_default_name(self):
+        """Test listener default name."""
+        listener = RedisHealthListener()
+        assert listener.name == "redis"
+
+    def test_state_change_logging(self):
+        """Test state change is logged."""
+        listener = RedisHealthListener("test_redis")
+
+        with patch("shared.redis_config.logger") as mock_logger:
+            listener.on_state_change(RedisHealthState.UNKNOWN, RedisHealthState.HEALTHY)
+            mock_logger.warning.assert_called_once()
+            call_args = mock_logger.warning.call_args[0][0]
+            assert "test_redis" in call_args
+            assert "unknown" in call_args
+            assert "healthy" in call_args
+
+    def test_health_check_success_logging(self):
+        """Test successful health check is logged."""
+        listener = RedisHealthListener("test_redis")
+
+        with patch("shared.redis_config.logger") as mock_logger:
+            listener.on_health_check_success(1.5)
+            mock_logger.debug.assert_called_once()
+            call_args = mock_logger.debug.call_args[0][0]
+            assert "test_redis" in call_args
+            assert "1.50" in call_args  # Latency formatted
+
+    def test_health_check_failure_logging(self):
+        """Test failed health check is logged."""
+        listener = RedisHealthListener("test_redis")
+
+        with patch("shared.redis_config.logger") as mock_logger:
+            listener.on_health_check_failure(ConnectionError("Test error"))
+            mock_logger.warning.assert_called_once()
+            call_args = mock_logger.warning.call_args[0][0]
+            assert "test_redis" in call_args
+            assert "ConnectionError" in call_args
+            assert "Test error" in call_args
+
+
+# ============================================================================
+# RedisConfig Health Check Tests
+# ============================================================================
+
+
+class TestRedisConfigHealthCheck:
+    """Test RedisConfig health check functionality."""
+
+    @pytest.fixture
+    def redis_config(self):
+        """Create a fresh RedisConfig instance for testing."""
+        return RedisConfig()
+
+    def test_initial_state_unknown(self, redis_config):
+        """Test initial health state is UNKNOWN."""
+        assert redis_config.current_state == RedisHealthState.UNKNOWN
+
+    def test_is_healthy_property(self, redis_config):
+        """Test is_healthy property."""
+        assert redis_config.is_healthy is False  # UNKNOWN is not healthy
+
+    def test_register_health_callback(self, redis_config):
+        """Test registering a health callback."""
+        callback_called = []
+
+        def test_callback(old_state, new_state):
+            callback_called.append((old_state, new_state))
+
+        with patch("shared.redis_config.logger"):
+            redis_config.register_health_callback(test_callback)
+
+        # Callback should be registered
+        assert test_callback in redis_config._callbacks
+
+    def test_unregister_health_callback(self, redis_config):
+        """Test unregistering a health callback."""
+
+        def test_callback(old_state, new_state):
+            pass
+
+        with patch("shared.redis_config.logger"):
+            redis_config.register_health_callback(test_callback)
+            result = redis_config.unregister_health_callback(test_callback)
+
+        assert result is True
+        assert test_callback not in redis_config._callbacks
+
+    def test_unregister_nonexistent_callback(self, redis_config):
+        """Test unregistering a callback that doesn't exist."""
+
+        def test_callback(old_state, new_state):
+            pass
+
+        result = redis_config.unregister_health_callback(test_callback)
+        assert result is False
+
+    def test_add_listener(self, redis_config):
+        """Test adding a health listener."""
+        listener = RedisHealthListener("custom_listener")
+        redis_config.add_listener(listener)
+
+        assert listener in redis_config._listeners
+
+    def test_health_check_success(self, redis_config):
+        """Test health check with successful ping."""
+        mock_client = MagicMock()
+        mock_client.ping.return_value = True
+
+        is_healthy, latency = redis_config.health_check(redis_client=mock_client)
+
+        assert is_healthy is True
+        assert latency is not None
+        assert latency >= 0
+        mock_client.ping.assert_called_once()
+
+    def test_health_check_failure(self, redis_config):
+        """Test health check with failed ping."""
+        mock_client = MagicMock()
+        mock_client.ping.side_effect = ConnectionError("Connection refused")
+
+        is_healthy, latency = redis_config.health_check(redis_client=mock_client)
+
+        assert is_healthy is False
+        assert latency is not None
+
+    def test_health_check_no_client(self, redis_config):
+        """Test health check when client creation fails."""
+        with patch.object(redis_config, "_get_or_create_client", return_value=None):
+            is_healthy, latency = redis_config.health_check()
+
+        assert is_healthy is False
+
+    def test_consecutive_failures_threshold(self, redis_config):
+        """Test state becomes UNHEALTHY after consecutive failures."""
+        mock_client = MagicMock()
+        mock_client.ping.side_effect = ConnectionError("Connection refused")
+
+        # Perform multiple failed checks
+        for _ in range(redis_config.health_config.unhealthy_threshold):
+            redis_config.health_check(redis_client=mock_client)
+
+        assert redis_config.current_state == RedisHealthState.UNHEALTHY
+        assert redis_config._consecutive_failures == redis_config.health_config.unhealthy_threshold
+
+    def test_consecutive_successes_threshold(self, redis_config):
+        """Test state becomes HEALTHY after consecutive successes."""
+        mock_client = MagicMock()
+        mock_client.ping.return_value = True
+
+        # Perform multiple successful checks
+        for _ in range(redis_config.health_config.healthy_threshold):
+            redis_config.health_check(redis_client=mock_client)
+
+        assert redis_config.current_state == RedisHealthState.HEALTHY
+        assert redis_config._consecutive_successes >= redis_config.health_config.healthy_threshold
+
+    def test_state_transition_callback(self, redis_config):
+        """Test callback is invoked on state transition."""
+        callback_invocations = []
+
+        def test_callback(old_state, new_state):
+            callback_invocations.append((old_state, new_state))
+
+        with patch("shared.redis_config.logger"):
+            redis_config.register_health_callback(test_callback)
+
+        mock_client = MagicMock()
+        mock_client.ping.return_value = True
+
+        # Trigger state change from UNKNOWN to HEALTHY
+        redis_config.health_check(redis_client=mock_client)
+
+        assert len(callback_invocations) == 1
+        assert callback_invocations[0] == (RedisHealthState.UNKNOWN, RedisHealthState.HEALTHY)
+
+    def test_last_latency_ms_property(self, redis_config):
+        """Test last_latency_ms property is updated."""
+        mock_client = MagicMock()
+        mock_client.ping.return_value = True
+
+        redis_config.health_check(redis_client=mock_client)
+
+        assert redis_config.last_latency_ms is not None
+        assert redis_config.last_latency_ms >= 0
+
+    def test_last_check_time_property(self, redis_config):
+        """Test last_check_time property is updated."""
+        mock_client = MagicMock()
+        mock_client.ping.return_value = True
+
+        redis_config.health_check(redis_client=mock_client)
+
+        assert redis_config.last_check_time is not None
+
+    def test_get_health_stats(self, redis_config):
+        """Test get_health_stats returns comprehensive stats."""
+        mock_client = MagicMock()
+        mock_client.ping.return_value = True
+
+        redis_config.health_check(redis_client=mock_client)
+        stats = redis_config.get_health_stats()
+
+        assert "state" in stats
+        assert "is_healthy" in stats
+        assert "consecutive_failures" in stats
+        assert "consecutive_successes" in stats
+        assert "last_latency_ms" in stats
+        assert "last_check_time" in stats
+        assert "config" in stats
+        assert stats["is_healthy"] is True
+
+    def test_get_health_stats_config_section(self, redis_config):
+        """Test get_health_stats includes config section."""
+        stats = redis_config.get_health_stats()
+
+        assert "config" in stats
+        config = stats["config"]
+        assert "check_interval" in config
+        assert "timeout" in config
+        assert "unhealthy_threshold" in config
+        assert "healthy_threshold" in config
+
+    def test_reset_state(self, redis_config):
+        """Test reset method resets state to UNKNOWN."""
+        mock_client = MagicMock()
+        mock_client.ping.return_value = True
+
+        # Get to HEALTHY state
+        redis_config.health_check(redis_client=mock_client)
+        assert redis_config.current_state == RedisHealthState.HEALTHY
+
+        # Reset
+        with patch("shared.redis_config.logger"):
+            redis_config.reset()
+
+        assert redis_config.current_state == RedisHealthState.UNKNOWN
+        assert redis_config._consecutive_failures == 0
+        assert redis_config._consecutive_successes == 0
+        assert redis_config._last_check_time is None
+        assert redis_config._last_latency_ms is None
+
+    def test_reset_triggers_callback(self, redis_config):
+        """Test reset triggers callback when state changes."""
+        callback_invocations = []
+
+        def test_callback(old_state, new_state):
+            callback_invocations.append((old_state, new_state))
+
+        mock_client = MagicMock()
+        mock_client.ping.return_value = True
+
+        with patch("shared.redis_config.logger"):
+            redis_config.register_health_callback(test_callback)
+
+        redis_config.health_check(redis_client=mock_client)
+        callback_invocations.clear()
+
+        with patch("shared.redis_config.logger"):
+            redis_config.reset()
+
+        assert len(callback_invocations) == 1
+        assert callback_invocations[0] == (RedisHealthState.HEALTHY, RedisHealthState.UNKNOWN)
+
+
+# ============================================================================
+# RedisConfig Thread Safety Tests
+# ============================================================================
+
+
+class TestRedisConfigThreadSafety:
+    """Test thread safety of RedisConfig health checks."""
+
+    def test_concurrent_health_checks(self):
+        """Test concurrent health checks are thread-safe."""
+        config = RedisConfig()
+        mock_client = MagicMock()
+        mock_client.ping.return_value = True
+
+        results = []
+        errors = []
+
+        def perform_check():
+            try:
+                is_healthy, latency = config.health_check(redis_client=mock_client)
+                results.append((is_healthy, latency))
+            except Exception as e:
+                errors.append(e)
+
+        threads = [threading.Thread(target=perform_check) for _ in range(10)]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+
+        assert len(errors) == 0
+        assert len(results) == 10
+        assert all(r[0] is True for r in results)
+
+    def test_concurrent_callback_registration(self):
+        """Test concurrent callback registration is thread-safe."""
+        config = RedisConfig()
+        errors = []
+
+        def register_callback():
+            try:
+
+                def callback(old, new):
+                    pass
+
+                with patch("shared.redis_config.logger"):
+                    config.register_health_callback(callback)
+            except Exception as e:
+                errors.append(e)
+
+        threads = [threading.Thread(target=register_callback) for _ in range(10)]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+
+        assert len(errors) == 0
+        assert len(config._callbacks) == 10
+
+
+# ============================================================================
+# get_redis_config Singleton Tests
+# ============================================================================
+
+
+class TestGetRedisConfigSingleton:
+    """Test get_redis_config singleton function."""
+
+    def test_returns_redis_config_instance(self):
+        """Test get_redis_config returns RedisConfig instance."""
+        # Reset global to test fresh state
+        import shared.redis_config as rc
+
+        with patch.object(rc, "_global_redis_config", None):
+            config = get_redis_config()
+            assert isinstance(config, RedisConfig)
+
+    def test_returns_same_instance(self):
+        """Test get_redis_config returns same instance on multiple calls."""
+        import shared.redis_config as rc
+
+        with patch.object(rc, "_global_redis_config", None):
+            config1 = get_redis_config()
+            config2 = get_redis_config()
+            assert config1 is config2
+
+
+# ============================================================================
+# Async Health Check Tests
+# ============================================================================
+
+
+class TestAsyncHealthCheck:
+    """Test async health check functionality."""
+
+    @pytest.fixture
+    def redis_config(self):
+        """Create a fresh RedisConfig instance for testing."""
+        return RedisConfig()
+
+    @pytest.mark.asyncio
+    async def test_health_check_async_success(self, redis_config):
+        """Test async health check with successful ping."""
+        mock_client = MagicMock()
+        mock_client.ping = MagicMock(return_value=True)
+
+        # Make ping awaitable
+        async def async_ping():
+            return True
+
+        mock_client.ping = async_ping
+
+        is_healthy, latency = await redis_config.health_check_async(redis_client=mock_client)
+
+        assert is_healthy is True
+        assert latency is not None
+        assert latency >= 0
+
+    @pytest.mark.asyncio
+    async def test_health_check_async_failure(self, redis_config):
+        """Test async health check with failed ping."""
+        mock_client = MagicMock()
+
+        async def async_ping():
+            raise ConnectionError("Connection refused")
+
+        mock_client.ping = async_ping
+
+        is_healthy, latency = await redis_config.health_check_async(redis_client=mock_client)
+
+        assert is_healthy is False
+        assert latency is not None
+
+    @pytest.mark.asyncio
+    async def test_health_check_async_no_client(self, redis_config):
+        """Test async health check with no client."""
+        is_healthy, latency = await redis_config.health_check_async(redis_client=None)
+
+        assert is_healthy is False

@@ -161,6 +161,9 @@ lint.ignore = [
     "F403",   # star imports - intentional for re-export modules
 ]
 
+[tool.ruff.lint.isort]
+known-first-party = ["shared", "services", "enhanced_agent_bus"]
+
 [tool.ruff.lint.per-file-ignores]
 # Re-export modules intentionally import for external use
 "__init__.py" = ["F401"]
