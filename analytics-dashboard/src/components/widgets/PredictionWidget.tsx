@@ -8,7 +8,7 @@
  * - Summary statistics
  */
 
-import { memo, useCallback, useEffect, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import {
   AlertCircle,
   Calendar,
@@ -237,19 +237,23 @@ export function PredictionWidget(): JSX.Element {
 
   /**
    * Transform API predictions to chart data
+   * Memoized to prevent unnecessary recalculation on every render
    */
-  const chartData: ChartDataPoint[] =
-    data?.predictions.map((point) => ({
-      date: point.date,
-      displayDate: formatChartDate(point.date),
-      predicted: point.predicted_value,
-      lower: point.lower_bound,
-      upper: point.upper_bound,
-      confidenceRange: [point.lower_bound, point.upper_bound] as [
-        number,
-        number,
-      ],
-    })) || [];
+  const chartData: ChartDataPoint[] = useMemo(
+    () =>
+      data?.predictions.map((point) => ({
+        date: point.date,
+        displayDate: formatChartDate(point.date),
+        predicted: point.predicted_value,
+        lower: point.lower_bound,
+        upper: point.upper_bound,
+        confidenceRange: [point.lower_bound, point.upper_bound] as [
+          number,
+          number,
+        ],
+      })) || [],
+    [data?.predictions]
+  );
 
   // Loading state
   if (loadingState === "loading" && !data) {
