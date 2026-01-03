@@ -194,7 +194,7 @@ class PagerDutyCredentials(IntegrationCredentials):
                     "integration_key is required when using both authentication methods"
                 )
             if not self.api_token:
-                raise ValueError("api_token is required when using both authentication methods")
+                raise ValueError("api_token required when using both auth methods")
 
         # If using REST API, service_id should be provided for some operations
         if self.auth_type in (PagerDutyAuthType.REST_API, PagerDutyAuthType.BOTH):
