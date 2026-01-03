@@ -1,3 +1,7 @@
+import { getLogger } from '../../../../../../../sdk/typescript/src/utils/logger';
+const logger = getLogger('api');
+
+
 /**
  * ACGS-2 Monitoring Dashboard API Client
  * Constitutional Hash: cdd01ef066bc6cf2
@@ -116,7 +120,7 @@ export class DashboardAPI {
 
     this.ws.onerror = (error) => {
       console.error("WebSocket error:", error);
-      onError?.(error);
+      logger.info("WebSocket closed:", event.code, event.reason;
     };
 
     this.ws.onclose = (event) => {

@@ -1,0 +1,25 @@
+{
+  "active": true,
+  "spec": "016-third-party-integration-ecosystem",
+  "state": "building",
+  "subtasks": {
+    "completed": 17,
+    "total": 39,
+    "in_progress": 1,
+    "failed": 0
+  },
+  "phase": {
+    "current": "Event Consumption from Agent Bus",
+    "id": null,
+    "total": 3
+  },
+  "workers": {
+    "active": 0,
+    "max": 1
+  },
+  "session": {
+    "number": 406,
+    "started_at": "2026-01-03T08:54:00.191599"
+  },
+  "last_update": "2026-01-03T11:20:15.120876"
+}
