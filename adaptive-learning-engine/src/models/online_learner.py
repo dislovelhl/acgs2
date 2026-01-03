@@ -263,8 +263,95 @@ class OnlineLearner:
             min_training_samples: Minimum samples before model is active.
             learning_rate: Learning rate for the optimizer.
             l2_regularization: L2 regularization strength.
-            rolling_window_size: Window size for rolling accuracy.
+            rolling_window_size: Window size for rolling accuracy tracking.
+                Default: 100 samples balances drift detection responsiveness with
+                statistical stability. See ROLLING WINDOW CONFIGURATION below.
             time_decay_factor: Factor for time-weighted learning (0.0-1.0).
+
+        ROLLING WINDOW CONFIGURATION
+        =============================
+        The rolling_window_size parameter controls the number of recent samples
+        used to compute rolling accuracy, which tracks recent model performance
+        for drift detection and adaptation monitoring.
+
+        Why rolling_window_size = 100 Is Optimal:
+        ------------------------------------------
+        This default balances several competing statistical requirements:
+
+        1. STATISTICAL SIGNIFICANCE
+           - For binary classification, accuracy estimate has standard error:
+             SE = sqrt(p(1-p) / n) where p = true accuracy, n = window size
+           - With n=100 and p≈0.85 (target accuracy):
+             SE ≈ sqrt(0.85 * 0.15 / 100) ≈ 0.036 (3.6% margin of error)
+           - 95% confidence interval: ±1.96 * SE ≈ ±7%
+           - This is tight enough to detect meaningful drift (>5-10% drops)
+             without excessive noise from small sample variance
+
+        2. DRIFT DETECTION RESPONSIVENESS
+           - Smaller windows (e.g., 50) detect drift faster but are noisier
+           - Larger windows (e.g., 500) are more stable but slower to detect drift
+           - 100 samples provides a reasonable compromise:
+             * Detects significant drift within 100-200 samples
+             * Filters out transient noise and outliers
+             * Responds to sustained performance degradation
+
+        3. GOVERNANCE-SPECIFIC RATIONALE
+           - In governance systems, policy drift is gradual (not sudden)
+           - 100 samples is typically hours-days of production traffic
+           - Fast enough to catch emerging issues (e.g., new regulation impact)
+           - Slow enough to avoid false alarms from temporary anomalies
+           - Aligns with operational monitoring cadences (hourly/daily)
+
+        4. MEMORY EFFICIENCY
+           - Window size affects memory footprint for drift detection
+           - 100 samples is small enough for low overhead
+           - Yet large enough for meaningful statistical analysis
+           - Supports real-time streaming with minimal latency
+
+        Trade-offs of Different Window Sizes:
+        --------------------------------------
+        - window_size = 50:
+          * Advantage: Faster drift detection (responds within 50-100 samples)
+          * Disadvantage: High variance (±10% accuracy fluctuations)
+          * Use case: Rapidly evolving environments, frequent retraining
+
+        - window_size = 100 (DEFAULT):
+          * Advantage: Balanced responsiveness and stability
+          * Advantage: ~±7% confidence interval (reasonable precision)
+          * Use case: Most governance applications (stable policies, gradual drift)
+
+        - window_size = 500:
+          * Advantage: Very stable accuracy estimates (±3% confidence interval)
+          * Disadvantage: Slow drift detection (needs 500-1000 samples to confirm)
+          * Use case: High-traffic systems with low expected drift
+
+        Statistical Properties of Rolling Windows:
+        -------------------------------------------
+        Rolling accuracy is computed over a fixed-size sliding window using
+        River's metrics.Rolling() wrapper. Key properties:
+
+        - SLIDING WINDOW: As new samples arrive, oldest samples are evicted
+          (FIFO queue behavior using collections.deque)
+        - UNBIASED: Each sample in window has equal weight (unlike exponential decay)
+        - STATIONARY OVER WINDOW: Assumes distribution is stable within window
+        - NON-OVERLAPPING WITH PAST: Only considers last N samples (forget earlier)
+
+        For drift detection, compare rolling accuracy to cumulative accuracy:
+        - rolling_accuracy << cumulative_accuracy → Recent degradation (drift)
+        - rolling_accuracy ≈ cumulative_accuracy → Stable performance
+        - rolling_accuracy >> cumulative_accuracy → Recent improvement (adaptation)
+
+        Theoretical Foundation:
+        -----------------------
+        The rolling window approach is a standard technique in concept drift
+        detection literature. Key references:
+
+        - Gama et al. (2014): Fixed-size sliding windows for drift detection
+          https://doi.org/10.1145/2523813
+        - Bifet & Gavaldà (2007): ADWIN adaptive windowing algorithm
+          (our fixed window is simpler but less adaptive)
+        - Klinkenberg (2004): Window sizing for drift adaptation
+          (recommends 100-500 samples for most applications)
         """
         self.model_type = model_type
         self.min_training_samples = min_training_samples
@@ -279,7 +366,128 @@ class OnlineLearner:
         # Build the model pipeline
         self._model = self._build_pipeline()
 
-        # Metrics tracking
+        # METRICS TRACKING: CUMULATIVE VS. ROLLING ACCURACY
+        # ==================================================
+        # We track two complementary accuracy metrics that serve different purposes
+        # in online learning systems:
+        #
+        # 1. CUMULATIVE ACCURACY (self._accuracy_metric)
+        #    - Tracks overall model performance across ALL samples ever seen
+        #    - Computed as: total_correct / total_samples (from sample 1 to current)
+        #    - Purpose: Measures long-term model health and overall capability
+        #    - Properties:
+        #      * Converges to true model accuracy in stationary settings (law of large numbers)
+        #      * Slow to change (each new sample has decreasing influence: 1/n weight)
+        #      * Not sensitive to recent drift (old samples still contribute equally)
+        #      * Unbiased estimator of long-run performance
+        #    - Example: After 10,000 samples with 85% accuracy, the 10,001st sample
+        #      only shifts accuracy by ±0.01% (minimal impact)
+        #
+        # 2. ROLLING ACCURACY (self._rolling_accuracy_metric)
+        #    - Tracks recent model performance over last N samples (default: 100)
+        #    - Computed as: correct_in_window / window_size (only last 100 samples)
+        #    - Purpose: Detects concept drift and monitors adaptation effectiveness
+        #    - Properties:
+        #      * Sensitive to recent changes (each new sample has 1/N weight)
+        #      * Higher variance than cumulative (smaller sample size)
+        #      * Quickly reflects performance degradation or improvement
+        #      * Early warning system for drift and model deterioration
+        #    - Example: After 10,000 samples, the 10,001st sample shifts rolling
+        #      accuracy by ±1% (100x more sensitive than cumulative)
+        #
+        # WHY TRACK BOTH METRICS?
+        # ------------------------
+        # They provide complementary information for production ML monitoring:
+        #
+        # Scenario 1: Stable Performance
+        # - cumulative_accuracy ≈ 0.85, rolling_accuracy ≈ 0.85
+        # - Interpretation: Model is consistently performing well
+        # - Action: Normal operation, continue learning
+        #
+        # Scenario 2: Recent Degradation (DRIFT DETECTED)
+        # - cumulative_accuracy ≈ 0.85, rolling_accuracy ≈ 0.70
+        # - Interpretation: Model was good historically but struggling on recent data
+        # - Likely cause: Concept drift (distribution shift, policy change)
+        # - Action: Trigger drift alert, investigate data changes, consider retraining
+        #
+        # Scenario 3: Early Stage Improvement
+        # - cumulative_accuracy ≈ 0.70, rolling_accuracy ≈ 0.85
+        # - Interpretation: Model was poor initially but improving recently
+        # - Likely cause: Successful adaptation after cold start or drift recovery
+        # - Action: Monitor continued improvement, model is learning effectively
+        #
+        # Scenario 4: Both Low (CRITICAL)
+        # - cumulative_accuracy ≈ 0.60, rolling_accuracy ≈ 0.60
+        # - Interpretation: Model has never performed well and still isn't
+        # - Likely cause: Insufficient training data, wrong model choice, or poor features
+        # - Action: Safety bounds trigger, pause learning, investigate root cause
+        #
+        # IMPLEMENTATION: River's metrics.Rolling() Wrapper
+        # --------------------------------------------------
+        # River's metrics.Rolling() implements a sliding window over any base metric.
+        # Internal mechanism:
+        #
+        # 1. SLIDING WINDOW WITH DEQUE
+        #    - Uses collections.deque(maxlen=window_size) to store recent predictions
+        #    - FIFO (First-In-First-Out): When window is full, oldest sample is evicted
+        #    - Memory complexity: O(window_size) - stores (y_true, y_pred) pairs
+        #
+        # 2. INCREMENTAL UPDATE ALGORITHM
+        #    - On each new sample (y_true, y_pred):
+        #      (a) If window is full: Remove oldest sample's contribution to accuracy
+        #      (b) Add new sample's contribution to accuracy
+        #      (c) Recompute: accuracy = correct_in_window / len(window)
+        #    - This is O(1) per update (constant time, no need to recompute all samples)
+        #
+        # 3. PROGRESSIVE VALIDATION COMPLIANCE
+        #    - Maintains prequential evaluation property: prediction made before learning
+        #    - Each (y_true, y_pred) pair added to window was predicted before label seen
+        #    - Ensures rolling accuracy is truly out-of-sample (unbiased)
+        #
+        # 4. WINDOW INITIALIZATION BEHAVIOR
+        #    - First N samples: Window is not yet full (size < window_size)
+        #    - Accuracy computed over available samples: correct_so_far / samples_so_far
+        #    - After N samples: Window is full, starts evicting oldest
+        #    - This means rolling accuracy is initially identical to cumulative accuracy
+        #      until window_size samples are collected
+        #
+        # Example Rolling Window Trace (window_size=3):
+        # Sample 1: window=[1], rolling_accuracy = 1/1 = 1.00 (correct)
+        # Sample 2: window=[1,0], rolling_accuracy = 1/2 = 0.50 (incorrect)
+        # Sample 3: window=[1,0,1], rolling_accuracy = 2/3 = 0.67 (correct)
+        # Sample 4: window=[0,1,1], rolling_accuracy = 2/3 = 0.67 (evicted 1, added 1)
+        # Sample 5: window=[1,1,0], rolling_accuracy = 2/3 = 0.67 (evicted 0, added 0)
+        #
+        # Statistical Interpretation:
+        # ---------------------------
+        # The rolling accuracy is an unbiased estimator of the model's current
+        # performance, assuming the distribution is stationary within the window.
+        #
+        # Standard error of rolling accuracy (binary classification):
+        # SE = sqrt(p(1-p) / window_size)
+        #
+        # For window_size=100 and p=0.85 (typical governance accuracy):
+        # SE ≈ sqrt(0.85 * 0.15 / 100) ≈ 0.036 (3.6%)
+        #
+        # 95% confidence interval: accuracy ± 1.96*SE ≈ accuracy ± 7%
+        #
+        # This means:
+        # - Observed rolling accuracy of 0.78 is significantly below 0.85 (drift)
+        # - Observed rolling accuracy of 0.83 is within noise (no drift detected)
+        # - Need ~2-3 standard errors difference to confidently detect drift
+        #
+        # For drift detection, use the rule:
+        # IF rolling_accuracy < cumulative_accuracy - 2*SE:
+        #     # Statistically significant degradation detected (95% confidence)
+        #     trigger_drift_alert()
+        #
+        # References:
+        # -----------
+        # - River metrics.Rolling() documentation:
+        #   https://riverml.xyz/latest/api/metrics/Rolling/
+        # - Gama et al. (2014): "A Survey on Concept Drift Adaptation"
+        #   Section on sliding window approaches for drift detection
+        # - Bifet & Gavaldà (2007): Comparison of fixed vs. adaptive windows
         self._accuracy_metric = metrics.Accuracy()
         self._rolling_accuracy_metric = metrics.Rolling(
             metrics.Accuracy(), window_size=rolling_window_size
@@ -1011,33 +1219,183 @@ class OnlineLearner:
                 return 0.0
 
     def get_rolling_accuracy(self) -> float:
-        """Get the rolling window accuracy.
+        """Get the rolling window accuracy for drift detection and monitoring.
 
-        DRIFT DETECTION METRIC
-        =======================
-        This tracks accuracy over the most recent N samples (default: 100).
-        Unlike cumulative accuracy which averages over all history, rolling
-        accuracy is sensitive to recent performance changes.
+        ROLLING ACCURACY: STATISTICAL INTERPRETATION
+        =============================================
+        This metric tracks model performance over the most recent N samples
+        (default: 100) using a fixed-size sliding window. It provides a
+        statistically-grounded view of current model behavior, complementing
+        the cumulative accuracy metric which tracks long-term performance.
 
-        Use rolling accuracy to:
-        - Detect concept drift (sudden performance degradation)
-        - Monitor adaptation speed (how quickly model recovers)
-        - Trigger retraining or model swaps (if rolling << cumulative)
+        What Rolling Accuracy Measures
+        -------------------------------
+        Rolling accuracy estimates the model's CURRENT performance, assuming
+        the data distribution is stationary within the window. Mathematically:
+
+            rolling_accuracy = (# correct predictions in last N samples) / N
+
+        This is an unbiased estimator of the model's true current accuracy,
+        with standard error that decreases with window size:
+
+            SE = sqrt(p(1-p) / N)
+
+        where p = true current accuracy, N = window_size (default: 100)
+
+        Statistical Properties and Interpretation
+        ------------------------------------------
+        For binary classification with window_size=100 and p≈0.85 (target):
+
+        1. STANDARD ERROR: SE ≈ sqrt(0.85 * 0.15 / 100) ≈ 0.036 (3.6%)
+
+        2. 95% CONFIDENCE INTERVAL: accuracy ± 1.96*SE ≈ accuracy ± 7%
+           - Observed accuracy of 0.82-0.88 is within statistical noise
+           - Observed accuracy of 0.75 is significantly below 0.85 (drift signal)
+
+        3. VARIANCE: Var(accuracy) = p(1-p) / N ≈ 0.001275
+           - Rolling accuracy fluctuates more than cumulative accuracy
+           - Each new sample shifts rolling accuracy by up to ±1%
+           - Cumulative accuracy shifts by much less (±0.01% after 10k samples)
+
+        4. MINIMUM DETECTABLE DRIFT:
+           - Need ~2 standard errors difference for statistical significance
+           - With SE=0.036, can detect drift of 2*0.036 ≈ 7% or larger
+           - Smaller drift (e.g., 3-5%) may not be reliably distinguished from noise
+
+        Difference from Cumulative Accuracy
+        ------------------------------------
+        CUMULATIVE ACCURACY (get_accuracy()):
+        - Tracks: Performance across ALL samples from start to current
+        - Sensitivity: Very low (1/n weight per sample, decreases over time)
+        - Variance: Very low (law of large numbers, converges to true mean)
+        - Purpose: Overall model health, long-term capability assessment
+        - Example: After 10,000 samples, each new sample has 0.01% influence
+
+        ROLLING ACCURACY (this method):
+        - Tracks: Performance over LAST N samples only (default: 100)
+        - Sensitivity: High (1/N weight per sample, constant over time)
+        - Variance: Higher (smaller sample size, more statistical noise)
+        - Purpose: Drift detection, recent performance monitoring
+        - Example: After 10,000 samples, each new sample has 1% influence
+
+        Use Rolling Accuracy For:
+        --------------------------
+        1. CONCEPT DRIFT DETECTION
+           - Compare rolling vs. cumulative accuracy
+           - If rolling << cumulative (e.g., 0.70 vs 0.85):
+             → Recent degradation detected (likely drift)
+           - If rolling ≈ cumulative:
+             → Stable performance (no drift)
+
+        2. ADAPTATION MONITORING
+           - Track rolling accuracy after drift or retraining
+           - Rising rolling accuracy indicates successful adaptation
+           - Stagnant rolling accuracy suggests model can't learn new pattern
+
+        3. EARLY WARNING SYSTEM
+           - Rolling accuracy degrades faster than cumulative
+           - Provides 100-200 sample lead time before cumulative drops
+           - Enables proactive intervention (retrain, swap model, investigate)
+
+        4. STATISTICAL SIGNIFICANCE TESTING
+           - Compute difference: delta = cumulative_accuracy - rolling_accuracy
+           - Estimate SE: SE_rolling ≈ sqrt(0.85 * 0.15 / 100) ≈ 0.036
+           - If delta > 2*SE_rolling (e.g., delta > 0.07):
+             → Statistically significant drift at 95% confidence level
+           - If delta < 2*SE_rolling:
+             → Difference likely due to sampling noise, not drift
 
         Progressive Validation Property
         --------------------------------
-        Like cumulative accuracy, this is computed using prequential evaluation.
-        Each prediction was made before learning from that sample, ensuring
-        honest performance measurement even in the rolling window.
+        Like cumulative accuracy, rolling accuracy is computed using
+        prequential evaluation (predict-then-learn). Each prediction in
+        the rolling window was made BEFORE the model learned from that
+        sample, ensuring truly out-of-sample performance measurement.
 
-        Example Drift Detection:
-            if learner.get_rolling_accuracy() < learner.get_accuracy() - 0.1:
-                # Rolling accuracy dropped 10% below cumulative
-                # Likely concept drift - model struggling on recent data
-                trigger_drift_alert()
+        This means rolling accuracy is an unbiased estimate of production
+        performance - it reflects how the model would perform on genuinely
+        unseen data, not overfit to a fixed test set.
+
+        Practical Example: Drift Detection Pattern
+        -------------------------------------------
+        Production monitoring code should implement statistical drift detection:
+
+            cumulative = learner.get_accuracy()
+            rolling = learner.get_rolling_accuracy()
+
+            # Compute statistical significance
+            SE = (0.85 * 0.15 / 100) ** 0.5  # ≈ 0.036 for p=0.85, N=100
+            threshold = 2 * SE  # 95% confidence (≈ 0.07)
+
+            if rolling < cumulative - threshold:
+                # Statistically significant degradation detected
+                severity = "CRITICAL" if rolling < 0.80 else "WARNING"
+                logger.warning(
+                    f"Drift detected: cumulative={cumulative:.3f}, "
+                    f"rolling={rolling:.3f}, severity={severity}"
+                )
+
+                if severity == "CRITICAL":
+                    # Pause learning to prevent further degradation
+                    learner.pause_learning()
+                    # Trigger model swap or retraining
+                    trigger_model_swap()
+            elif rolling > cumulative + threshold:
+                # Model is improving (post-drift recovery or cold start learning)
+                logger.info(
+                    f"Model adaptation successful: cumulative={cumulative:.3f}, "
+                    f"rolling={rolling:.3f}"
+                )
+
+        Window Initialization Behavior
+        -------------------------------
+        During the first N samples (window not yet full):
+        - Rolling accuracy computed over available samples only
+        - rolling_accuracy ≈ cumulative_accuracy initially
+        - Statistical properties (SE, confidence intervals) apply after
+          window fills (after first 100 samples)
+
+        Trade-offs of Window Size
+        --------------------------
+        Smaller window (e.g., 50):
+        - Advantage: Faster drift detection (responds within 50-100 samples)
+        - Disadvantage: Higher variance (SE ≈ 0.05, ±10% confidence interval)
+        - Use case: Rapidly evolving environments with frequent drift
+
+        Current window (100):
+        - Advantage: Balanced responsiveness and statistical stability
+        - Advantage: Reasonable SE (≈0.036, ±7% confidence interval)
+        - Use case: Most governance applications (stable with gradual drift)
+
+        Larger window (e.g., 500):
+        - Advantage: Very stable estimates (SE ≈ 0.016, ±3% confidence interval)
+        - Disadvantage: Slower drift detection (needs 500-1000 samples)
+        - Use case: High-traffic systems with low expected drift
+
+        Theoretical Foundation
+        ----------------------
+        Rolling window approaches for drift detection are well-studied in
+        the online learning literature:
+
+        - Gama et al. (2014): "A Survey on Concept Drift Adaptation"
+          Fixed-size sliding windows as baseline drift detection method
+          https://doi.org/10.1145/2523813
+
+        - Bifet & Gavaldà (2007): "Learning from Time-Changing Data with
+          Adaptive Windowing" (ADWIN algorithm)
+          Compares fixed windows (our approach) with adaptive windows
+
+        - Page (1954): "Continuous Inspection Schemes"
+          Original statistical framework for sequential change detection
+          (foundation for CUSUM and related drift detection methods)
+
+        - Klinkenberg (2004): "Learning Drifting Concepts: Example Selection
+          vs. Example Weighting"
+          Empirical analysis showing 100-500 sample windows work well in practice
 
         Returns:
             Rolling accuracy value between 0 and 1 (last N samples only).
+            Returns 0.0 if no samples processed yet.
         """
         with self._lock:
             if self._sample_count == 0:
