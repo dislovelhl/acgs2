@@ -669,13 +669,17 @@ class DriftDetector:
 
         return checksum
 
-    def _to_dataframe(self, data: List[Dict[str, Any]]) -> pd.DataFrame:
+    def _to_dataframe(
+        self, data: List[Dict[str, Any]], data_source: Optional[str] = None
+    ) -> pd.DataFrame:
         """Convert list of dictionaries to DataFrame.
 
         Filters to numeric columns only for drift detection.
 
         Args:
             data: List of feature dictionaries.
+            data_source: Optional identifier for cache lookup ('reference' or 'current').
+                Used to enable DataFrame caching for performance optimization.
 
         Returns:
             DataFrame with numeric columns.
