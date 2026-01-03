@@ -15,6 +15,8 @@ Public API functions and classes are re-exported from this module to maintain
 backward compatibility with the original single-file structure.
 """
 
+from typing import Dict, Optional
+
 from .governance_engine import (
     AB_TESTING_AVAILABLE,
     DRIFT_MONITORING_AVAILABLE,
@@ -30,3 +32,47 @@ from .models import (
     ImpactLevel,
 )
 from .threshold_manager import AdaptiveThresholds
+
+# Constitutional imports
+try:
+    from ..exceptions import GovernanceError
+except ImportError:
+    from exceptions import GovernanceError
+
+
+# Global instance
+_adaptive_governance: Optional[AdaptiveGovernanceEngine] = None
+
+
+async def initialize_adaptive_governance(constitutional_hash: str) -> AdaptiveGovernanceEngine:
+    """Initialize the global adaptive governance engine."""
+    global _adaptive_governance
+
+    if _adaptive_governance is None:
+        _adaptive_governance = AdaptiveGovernanceEngine(constitutional_hash)
+        await _adaptive_governance.initialize()
+
+    return _adaptive_governance
+
+
+def get_adaptive_governance() -> Optional[AdaptiveGovernanceEngine]:
+    """Get the global adaptive governance engine instance."""
+    return _adaptive_governance
+
+
+async def evaluate_message_governance(message: Dict, context: Dict) -> GovernanceDecision:
+    """Evaluate a message using adaptive governance."""
+    governance = get_adaptive_governance()
+    if governance is None:
+        raise GovernanceError("Adaptive governance not initialized")
+
+    return await governance.evaluate_governance_decision(message, context)
+
+
+def provide_governance_feedback(
+    decision: GovernanceDecision, outcome_success: bool, human_override: Optional[bool] = None
+) -> None:
+    """Provide feedback to improve governance models."""
+    governance = get_adaptive_governance()
+    if governance:
+        governance.provide_feedback(decision, outcome_success, human_override)
