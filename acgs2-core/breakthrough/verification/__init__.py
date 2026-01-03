@@ -1,29 +1,60 @@
 """
-Layer 2: Verification & Validation
-===================================
+Verification Layer - Constitutional AI Governance
+================================================
 
 Constitutional Hash: cdd01ef066bc6cf2
 
-Implements integrated verification bypassing Gödel limitations with:
-- MACI: Role separation (Executive/Legislative/Judicial)
-- SagaLLM: Transaction guarantees with compensation
-- VeriPlan: Formal LTL verification via Z3
-
-References:
-- MACI: Multi-Agent Collaborative Intelligence (arXiv:2501.16689)
-- SagaLLM: Transaction Guarantees (arXiv:2503.11951)
-- VeriPlan: Formal Verification (arXiv:2502.17898)
+This layer provides mathematical guarantees for constitutional governance:
+- MACI: Multi-Agent Constitutional Intelligence with role separation
+- SagaLLM: Compensable transactions with LIFO rollback
+- Z3 SMT: Formal verification of policy consistency
 """
 
-from .maci_verifier import MACIVerificationPipeline, MACIRole
-from .saga_transactions import SagaConstitutionalTransaction, SagaCheckpoint
-from .veriplan_z3 import VeriPlanFormalVerifier, Z3ConstitutionalAdapter
+from .maci_roles import (
+    MACIOrchestrator,
+    ExecutiveAgent,
+    LegislativeAgent,
+    JudicialAgent,
+    ConstitutionalAgent,
+    Branch,
+    DecisionType
+)
+
+from .sagallm_transactions import (
+    SagaLLMOrchestrator,
+    TransactionCoordinator,
+    ConstitutionalOperationFactory,
+    SagaTransaction,
+    TransactionState
+)
+
+from .z3_smt_verifier import (
+    ConstitutionalVerifier,
+    Z3PolicyVerifier,
+    PolicySpecification,
+    VerificationResult
+)
 
 __all__ = [
-    "MACIVerificationPipeline",
-    "MACIRole",
-    "SagaConstitutionalTransaction",
-    "SagaCheckpoint",
-    "VeriPlanFormalVerifier",
-    "Z3ConstitutionalAdapter",
+    # MACI Role Separation
+    "MACIOrchestrator",
+    "ExecutiveAgent",
+    "LegislativeAgent",
+    "JudicialAgent",
+    "ConstitutionalAgent",
+    "Branch",
+    "DecisionType",
+
+    # SagaLLM Transactions
+    "SagaLLMOrchestrator",
+    "TransactionCoordinator",
+    "ConstitutionalOperationFactory",
+    "SagaTransaction",
+    "TransactionState",
+
+    # Z3 SMT Verification
+    "ConstitutionalVerifier",
+    "Z3PolicyVerifier",
+    "PolicySpecification",
+    "VerificationResult",
 ]

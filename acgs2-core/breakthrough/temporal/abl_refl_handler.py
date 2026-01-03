@@ -16,12 +16,13 @@ Design Principles:
 - Constitutional: All reflection grounded in immutable principles
 """
 
+import asyncio
 import hashlib
 import logging
 import time
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Protocol, Callable
 
 from .. import CONSTITUTIONAL_HASH
 
@@ -30,7 +31,6 @@ logger = logging.getLogger(__name__)
 
 class CognitiveMode(Enum):
     """Cognitive processing modes."""
-
     SYSTEM_1 = "system_1"  # Fast, intuitive, pattern-based
     SYSTEM_2 = "system_2"  # Slow, analytical, deliberate
     REFLECTION = "reflection"  # Conscious override and analysis
@@ -38,7 +38,6 @@ class CognitiveMode(Enum):
 
 class ReflectionTrigger(Enum):
     """Triggers for System 1→2 reflection."""
-
     CONSTITUTIONAL_IMPACT = "constitutional_impact"
     HIGH_STAKES = "high_stakes"
     NOVEL_SITUATION = "novel_situation"
@@ -51,7 +50,6 @@ class ReflectionTrigger(Enum):
 @dataclass
 class CognitiveState:
     """Current cognitive processing state."""
-
     mode: CognitiveMode
     confidence: float  # 0.0 to 1.0
     processing_time_ms: float
@@ -62,25 +60,20 @@ class CognitiveState:
     def should_reflect(self) -> bool:
         """Determine if reflection should be triggered."""
         return (
-            self.confidence < 0.7
-            or any(
-                trigger
-                in [
-                    ReflectionTrigger.CONSTITUTIONAL_IMPACT,
-                    ReflectionTrigger.HIGH_STAKES,
-                    ReflectionTrigger.NOVEL_SITUATION,
-                    ReflectionTrigger.CONFLICTING_EVIDENCE,
-                ]
-                for trigger in self.triggers_activated
-            )
-            or self.constitutional_alignment < 0.8
+            self.confidence < 0.7 or
+            any(trigger in [
+                ReflectionTrigger.CONSTITUTIONAL_IMPACT,
+                ReflectionTrigger.HIGH_STAKES,
+                ReflectionTrigger.NOVEL_SITUATION,
+                ReflectionTrigger.CONFLICTING_EVIDENCE
+            ] for trigger in self.triggers_activated) or
+            self.constitutional_alignment < 0.8
         )
 
 
 @dataclass
 class ReflectionStep:
     """A step in the reflection process."""
-
     step_id: str
     timestamp: float
     system1_response: Any
@@ -101,7 +94,6 @@ class ReflectionStep:
 @dataclass
 class EdgeCasePattern:
     """Pattern for detecting edge cases."""
-
     pattern_id: str
     description: str
     detection_criteria: Callable[[Any], bool]
@@ -158,7 +150,7 @@ class ABLReflHandler:
             pattern_id="constitutional_impact",
             description="Decisions that could impact constitutional principles",
             detection_criteria=lambda ctx: self._detect_constitutional_impact(ctx),
-            reflection_required=True,
+            reflection_required=True
         )
 
         # Novel situation pattern
@@ -166,7 +158,7 @@ class ABLReflHandler:
             pattern_id="novel_situation",
             description="Situations not seen in training data",
             detection_criteria=lambda ctx: self._detect_novelty(ctx),
-            reflection_required=True,
+            reflection_required=True
         )
 
         # Conflicting evidence pattern
@@ -174,7 +166,7 @@ class ABLReflHandler:
             pattern_id="conflicting_evidence",
             description="Multiple pieces of evidence suggesting different conclusions",
             detection_criteria=lambda ctx: self._detect_conflicts(ctx),
-            reflection_required=True,
+            reflection_required=True
         )
 
         # High stakes pattern
@@ -182,7 +174,7 @@ class ABLReflHandler:
             pattern_id="high_stakes",
             description="Decisions with significant consequences",
             detection_criteria=lambda ctx: self._detect_high_stakes(ctx),
-            reflection_required=True,
+            reflection_required=True
         )
 
     def _detect_constitutional_impact(self, context: Any) -> bool:
@@ -190,16 +182,8 @@ class ABLReflHandler:
         if isinstance(context, dict):
             text_content = str(context).lower()
             constitutional_keywords = [
-                "constitution",
-                "constitutional",
-                "principle",
-                "amendment",
-                "separation",
-                "power",
-                "branch",
-                "executive",
-                "legislative",
-                "judicial",
+                "constitution", "constitutional", "principle", "amendment",
+                "separation", "power", "branch", "executive", "legislative", "judicial"
             ]
             return any(keyword in text_content for keyword in constitutional_keywords)
         return False
@@ -227,21 +211,16 @@ class ABLReflHandler:
         if isinstance(context, dict):
             text = str(context).lower()
             high_stakes_keywords = [
-                "critical",
-                "emergency",
-                "urgent",
-                "severe",
-                "major",
-                "impact",
-                "consequence",
-                "risk",
-                "danger",
+                "critical", "emergency", "urgent", "severe", "major",
+                "impact", "consequence", "risk", "danger"
             ]
             return any(keyword in text for keyword in high_stakes_keywords)
         return False
 
     async def process_request(
-        self, request: Any, context: Optional[Dict[str, Any]] = None
+        self,
+        request: Any,
+        context: Optional[Dict[str, Any]] = None
     ) -> Tuple[Any, CognitiveState]:
         """
         Process a governance request using dual-process reasoning.
@@ -261,7 +240,7 @@ class ABLReflHandler:
             confidence=0.5,
             processing_time_ms=0.0,
             triggers_activated=[],
-            constitutional_alignment=0.5,
+            constitutional_alignment=0.5
         )
 
         # Phase 1: System 1 Fast Processing
@@ -291,15 +270,13 @@ class ABLReflHandler:
                 constitutional_check=reflection_data["constitutional_check"],
                 final_decision=reflected_response,
                 confidence_boost=reflection_data["confidence_boost"],
-                processing_overhead_ms=(time.time() - start_time) * 1000,
+                processing_overhead_ms=(time.time() - start_time) * 1000
             )
 
             self.reflection_history.append(reflection_step)
             self.current_state.mode = CognitiveMode.REFLECTION
             self.current_state.confidence += reflection_step.confidence_boost
-            self.current_state.constitutional_alignment = reflection_data[
-                "constitutional_alignment"
-            ]
+            self.current_state.constitutional_alignment = reflection_data["constitutional_alignment"]
 
             response = reflected_response
         else:
@@ -312,7 +289,9 @@ class ABLReflHandler:
         return response, self.current_state
 
     async def _system1_process(
-        self, request: Any, context: Optional[Dict[str, Any]]
+        self,
+        request: Any,
+        context: Optional[Dict[str, Any]]
     ) -> Tuple[Any, float]:
         """
         System 1 fast processing using pattern matching.
@@ -328,10 +307,7 @@ class ABLReflHandler:
             if "approve" in request_lower and "policy" in request_lower:
                 return {"decision": "approved", "reasoning": "Standard policy approval"}, 0.85
             elif "review" in request_lower and "constitutional" in request_lower:
-                return {
-                    "decision": "requires_judicial_review",
-                    "reasoning": "Constitutional matter",
-                }, 0.75
+                return {"decision": "requires_judicial_review", "reasoning": "Constitutional matter"}, 0.75
             elif "execute" in request_lower and "decision" in request_lower:
                 return {"decision": "executed", "reasoning": "Standard execution"}, 0.80
             else:
@@ -340,7 +316,10 @@ class ABLReflHandler:
             return {"decision": "escalate", "reasoning": "Non-text request"}, 0.50
 
     async def _detect_reflection_triggers(
-        self, request: Any, context: Optional[Dict[str, Any]], system1_response: Any
+        self,
+        request: Any,
+        context: Optional[Dict[str, Any]],
+        system1_response: Any
     ) -> List[ReflectionTrigger]:
         """Detect triggers that should initiate System 1→2 reflection."""
         triggers = []
@@ -349,7 +328,7 @@ class ABLReflHandler:
         full_context = {
             "request": request,
             "context": context,
-            "system1_response": system1_response,
+            "system1_response": system1_response
         }
 
         for pattern in self.edge_patterns.values():
@@ -359,7 +338,7 @@ class ABLReflHandler:
                     "constitutional_impact": ReflectionTrigger.CONSTITUTIONAL_IMPACT,
                     "novel_situation": ReflectionTrigger.NOVEL_SITUATION,
                     "conflicting_evidence": ReflectionTrigger.CONFLICTING_EVIDENCE,
-                    "high_stakes": ReflectionTrigger.HIGH_STAKES,
+                    "high_stakes": ReflectionTrigger.HIGH_STAKES
                 }
 
                 if pattern.pattern_id in trigger_map:
@@ -377,7 +356,7 @@ class ABLReflHandler:
         request: Any,
         context: Optional[Dict[str, Any]],
         system1_response: Any,
-        triggers: List[ReflectionTrigger],
+        triggers: List[ReflectionTrigger]
     ) -> Tuple[Any, Dict[str, Any]]:
         """
         System 2 analytical reflection process.
@@ -414,49 +393,49 @@ class ABLReflHandler:
             "confidence_boost": confidence_boost,
             "constitutional_alignment": constitutional_alignment,
             "processing_time_ms": processing_time,
-            "triggers_addressed": [t.value for t in triggers],
+            "triggers_addressed": [t.value for t in triggers]
         }
 
         return final_decision, reflection_data
 
     async def _analyze_system1_response(
-        self, system1_response: Any, triggers: List[ReflectionTrigger]
+        self,
+        system1_response: Any,
+        triggers: List[ReflectionTrigger]
     ) -> Dict[str, Any]:
         """Analyze the System 1 response for potential issues."""
         analysis = {
             "response_type": type(system1_response).__name__,
             "potential_issues": [],
-            "trigger_analysis": {},
+            "trigger_analysis": {}
         }
 
         # Analyze each trigger
         for trigger in triggers:
             if trigger == ReflectionTrigger.CONSTITUTIONAL_IMPACT:
-                analysis["trigger_analysis"][
-                    "constitutional"
-                ] = "System 1 may not fully consider constitutional implications"
+                analysis["trigger_analysis"]["constitutional"] = "System 1 may not fully consider constitutional implications"
                 analysis["potential_issues"].append("constitutional_oversight")
             elif trigger == ReflectionTrigger.NOVEL_SITUATION:
-                analysis["trigger_analysis"][
-                    "novelty"
-                ] = "Situation may require novel reasoning beyond patterns"
+                analysis["trigger_analysis"]["novelty"] = "Situation may require novel reasoning beyond patterns"
                 analysis["potential_issues"].append("pattern_limitation")
             elif trigger == ReflectionTrigger.CONFLICTING_EVIDENCE:
-                analysis["trigger_analysis"][
-                    "conflict"
-                ] = "Conflicting evidence requires careful analysis"
+                analysis["trigger_analysis"]["conflict"] = "Conflicting evidence requires careful analysis"
                 analysis["potential_issues"].append("evidence_conflict")
 
         return analysis
 
-    async def _perform_constitutional_review(self, request: Any, response: Any) -> Dict[str, Any]:
+    async def _perform_constitutional_review(
+        self,
+        request: Any,
+        response: Any
+    ) -> Dict[str, Any]:
         """Perform constitutional review of the request and response."""
         # Simplified constitutional review - in practice would use formal verification
         review = {
             "alignment_score": 0.9,  # High default alignment
             "violations": [],
             "recommendations": [],
-            "hash_verified": True,
+            "hash_verified": True
         }
 
         # Check for constitutional keywords
@@ -464,11 +443,8 @@ class ABLReflHandler:
         response_text = str(response).lower()
 
         constitutional_principles = [
-            "separation of powers",
-            "due process",
-            "constitutional compliance",
-            "judicial review",
-            "executive authority",
+            "separation of powers", "due process", "constitutional compliance",
+            "judicial review", "executive authority"
         ]
 
         for principle in constitutional_principles:
@@ -484,7 +460,7 @@ class ABLReflHandler:
         request: Any,
         context: Optional[Dict[str, Any]],
         system1_analysis: Dict[str, Any],
-        constitutional_check: Dict[str, Any],
+        constitutional_check: Dict[str, Any]
     ) -> Dict[str, Any]:
         """Perform deliberate System 2 reasoning."""
         reasoning = {
@@ -492,7 +468,7 @@ class ABLReflHandler:
             "evidence_evaluation": {},
             "alternative_considerations": [],
             "risk_assessment": {},
-            "final_recommendation": {},
+            "final_recommendation": {}
         }
 
         # Step 1: Break down the request
@@ -502,28 +478,28 @@ class ABLReflHandler:
         reasoning["evidence_evaluation"] = {
             "strength": "moderate",
             "consistency": "good",
-            "sufficiency": "adequate",
+            "sufficiency": "adequate"
         }
 
         # Step 3: Consider alternatives
         reasoning["alternative_considerations"] = [
             "Maintain System 1 decision",
             "Modify decision based on constitutional review",
-            "Escalate to human oversight",
+            "Escalate to human oversight"
         ]
 
         # Step 4: Risk assessment
         reasoning["risk_assessment"] = {
             "constitutional_risk": "low",
             "operational_risk": "medium",
-            "stakeholder_impact": "moderate",
+            "stakeholder_impact": "moderate"
         }
 
         # Step 5: Final recommendation
         reasoning["final_recommendation"] = {
             "decision": "proceed_with_caution",
             "confidence": "high",
-            "rationale": "System 2 analysis confirms constitutional alignment",
+            "rationale": "System 2 analysis confirms constitutional alignment"
         }
 
         return reasoning
@@ -533,7 +509,7 @@ class ABLReflHandler:
         request: Any,
         system1_response: Any,
         analysis: Dict[str, Any],
-        constitutional_check: Dict[str, Any],
+        constitutional_check: Dict[str, Any]
     ) -> Any:
         """Generate final decision after reflection."""
         # Use analysis to potentially override System 1 decision
@@ -546,15 +522,11 @@ class ABLReflHandler:
                 "original_system1": system1_response,
                 "reflection_override": True,
                 "reasoning": "Constitutional alignment below threshold",
-                "constitutional_check": constitutional_check,
+                "constitutional_check": constitutional_check
             }
         elif recommendation.get("decision") == "proceed_with_caution":
             # Enhance System 1 decision with additional safeguards
-            enhanced_response = (
-                system1_response.copy()
-                if isinstance(system1_response, dict)
-                else {"original": system1_response}
-            )
+            enhanced_response = system1_response.copy() if isinstance(system1_response, dict) else {"original": system1_response}
             enhanced_response["reflection_enhanced"] = True
             enhanced_response["constitutional_verified"] = True
             enhanced_response["risk_assessment"] = analysis.get("risk_assessment", {})
@@ -573,22 +545,24 @@ class ABLReflHandler:
             "system2_reflections": self.reflections_triggered,
             "reflection_rate": self.reflections_triggered / max(total_requests, 1),
             "avg_reflection_time_ms": (
-                sum(step.processing_overhead_ms for step in self.reflection_history)
-                / max(len(self.reflection_history), 1)
+                sum(step.processing_overhead_ms for step in self.reflection_history) /
+                max(len(self.reflection_history), 1)
             ),
             "edge_patterns": {
                 pattern_id: {
                     "trigger_count": pattern.trigger_count,
-                    "success_rate": pattern.historical_success_rate,
+                    "success_rate": pattern.historical_success_rate
                 }
                 for pattern_id, pattern in self.edge_patterns.items()
             },
             "reflection_history_size": len(self.reflection_history),
-            "constitutional_hash": CONSTITUTIONAL_HASH,
+            "constitutional_hash": CONSTITUTIONAL_HASH
         }
 
     async def learn_from_outcomes(
-        self, reflection_step: ReflectionStep, outcome_success: bool
+        self,
+        reflection_step: ReflectionStep,
+        outcome_success: bool
     ) -> None:
         """Learn from reflection outcomes to improve future decisions."""
         # Update pattern success rates
@@ -600,7 +574,7 @@ class ABLReflHandler:
             ReflectionTrigger.CONSTITUTIONAL_IMPACT: "constitutional_impact",
             ReflectionTrigger.NOVEL_SITUATION: "novel_situation",
             ReflectionTrigger.CONFLICTING_EVIDENCE: "conflicting_evidence",
-            ReflectionTrigger.HIGH_STAKES: "high_stakes",
+            ReflectionTrigger.HIGH_STAKES: "high_stakes"
         }
 
         if trigger in trigger_to_pattern:
@@ -610,6 +584,4 @@ class ABLReflHandler:
                 # Simple learning: update success rate
                 total = pattern.trigger_count
                 current_rate = pattern.historical_success_rate
-                pattern.historical_success_rate = (
-                    current_rate * (total - 1) + (1 if outcome_success else 0)
-                ) / total
+                pattern.historical_success_rate = (current_rate * (total - 1) + (1 if outcome_success else 0)) / total

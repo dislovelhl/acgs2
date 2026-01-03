@@ -15,11 +15,12 @@ Design Principles:
 - Integration with LLM reasoning for hybrid verification
 """
 
+import asyncio
 import hashlib
 import logging
 import time
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Union, Callable
 
 from .. import CONSTITUTIONAL_HASH
 
@@ -27,20 +28,7 @@ logger = logging.getLogger(__name__)
 
 # Z3 imports (will be available in production environment)
 try:
-    from z3 import (
-        And,
-        Bool,
-        BoolVal,
-        Function,
-        Int,
-        Not,
-        Or,
-        Solver,
-        is_bool,
-        is_int_value,
-        is_true,
-    )
-
+    from z3 import *
     Z3_AVAILABLE = True
 except ImportError:
     Z3_AVAILABLE = False
@@ -50,56 +38,34 @@ except ImportError:
     class MockZ3Object:
         def __init__(self, *args, **kwargs):
             pass
-
         def __str__(self):
             return "MockZ3Object"
-
         def __repr__(self):
             return "MockZ3Object"
-
         def __bool__(self):
             return True
-
         def __eq__(self, other):
             return True
-
         def __ne__(self, other):
             return False
 
-    def Bool(*args):
-        return MockZ3Object()
-
-    def Int(*args):
-        return MockZ3Object()
-
-    def Function(*args):
-        return MockZ3Object()
-
-    def Solver():
-        return MockSolver()
-
-    def sat():
-        return "sat"
-
-    def unsat():
-        return "unsat"
-
-    def unknown():
-        return "unknown"
+    def Bool(*args): return MockZ3Object()
+    def Int(*args): return MockZ3Object()
+    def Function(*args): return MockZ3Object()
+    def Solver(): return MockSolver()
+    def sat(): return "sat"
+    def unsat(): return "unsat"
+    def unknown(): return "unknown"
 
     class MockSolver:
         def __init__(self):
             self.assertions = []
-
         def add(self, *constraints):
             self.assertions.extend(constraints)
-
         def check(self):
             return sat()  # Always return satisfiable for mock
-
         def model(self):
             return {}
-
         def unsat_core(self):
             return []
 
@@ -107,7 +73,6 @@ except ImportError:
 @dataclass
 class PolicySpecification:
     """Mathematical specification of a constitutional policy."""
-
     policy_id: str
     name: str
     description: str
@@ -128,7 +93,6 @@ class PolicySpecification:
 @dataclass
 class VerificationResult:
     """Result of Z3 verification."""
-
     policy_id: str
     is_satisfiable: bool
     is_valid: bool
@@ -166,7 +130,9 @@ class Z3PolicyVerifier:
             logger.warning("Z3 not available - using simulation mode")
 
     async def verify_policy(
-        self, policy_spec: PolicySpecification, context: Optional[Dict[str, Any]] = None
+        self,
+        policy_spec: PolicySpecification,
+        context: Optional[Dict[str, Any]] = None
     ) -> VerificationResult:
         """
         Verify a policy specification using Z3.
@@ -213,7 +179,7 @@ class Z3PolicyVerifier:
                     is_valid=True,  # For now, satisfiable = valid
                     counterexample=counterexample,
                     verification_time_ms=verification_time,
-                    solver_result="sat",
+                    solver_result="sat"
                 )
 
             elif result == unsat:
@@ -225,7 +191,7 @@ class Z3PolicyVerifier:
                     counterexample=None,
                     verification_time_ms=verification_time,
                     solver_result="unsat",
-                    error_message="Policy contains contradictions",
+                    error_message="Policy contains contradictions"
                 )
 
             else:  # unknown
@@ -236,7 +202,7 @@ class Z3PolicyVerifier:
                     counterexample=None,
                     verification_time_ms=verification_time,
                     solver_result="unknown",
-                    error_message="Verification timed out or inconclusive",
+                    error_message="Verification timed out or inconclusive"
                 )
 
             # Cache result
@@ -259,11 +225,14 @@ class Z3PolicyVerifier:
                 counterexample=None,
                 verification_time_ms=verification_time,
                 solver_result="error",
-                error_message=str(e),
+                error_message=str(e)
             )
 
     async def _add_policy_constraints(
-        self, solver: Any, policy_spec: PolicySpecification, context: Optional[Dict[str, Any]]
+        self,
+        solver: Any,
+        policy_spec: PolicySpecification,
+        context: Optional[Dict[str, Any]]
     ) -> None:
         """Add policy constraints to the Z3 solver."""
 
@@ -300,13 +269,15 @@ class Z3PolicyVerifier:
                     counterexample[str(var_name)] = value.as_long()
                 else:
                     counterexample[str(var_name)] = str(value)
-            except (AttributeError, TypeError, ValueError):
+            except:
                 counterexample[str(var_name)] = "unknown"
 
         return counterexample
 
     def _get_cache_key(
-        self, policy_spec: PolicySpecification, context: Optional[Dict[str, Any]]
+        self,
+        policy_spec: PolicySpecification,
+        context: Optional[Dict[str, Any]]
     ) -> str:
         """Generate cache key for verification results."""
         context_str = str(sorted(context.items())) if context else ""
@@ -320,7 +291,7 @@ class Z3PolicyVerifier:
         name: str,
         description: str,
         variables: Dict[str, str],  # var_name -> var_type
-        constraints: List[str],  # Constraint expressions
+        constraints: List[str]  # Constraint expressions
     ) -> PolicySpecification:
         """
         Create a policy specification from high-level descriptions.
@@ -332,7 +303,11 @@ class Z3PolicyVerifier:
             variables: Variable declarations (name -> type)
             constraints: List of constraint expressions
         """
-        spec = PolicySpecification(policy_id=policy_id, name=name, description=description)
+        spec = PolicySpecification(
+            policy_id=policy_id,
+            name=name,
+            description=description
+        )
 
         # Create Z3 variables
         for var_name, var_type in variables.items():
@@ -362,21 +337,23 @@ class Z3PolicyVerifier:
         self.policy_specs[policy_id] = spec
         return spec
 
-    def _parse_constraint(self, constraint_str: str, variables: Dict[str, Any]) -> Any:
+    def _parse_constraint(
+        self,
+        constraint_str: str,
+        variables: Dict[str, Any]
+    ) -> Any:
         """Parse a constraint string into Z3 expression (simplified)."""
         # This is a very basic parser - in practice, would use a proper expression parser
         if Z3_AVAILABLE:
             # Simple variable substitution
             expr_str = constraint_str
-            for var_name, _ in variables.items():
+            for var_name, var in variables.items():
                 expr_str = expr_str.replace(var_name, f"variables['{var_name}']")
 
-            # Evaluate in context (controlled Z3 expression building)
+            # Evaluate in context (dangerous in production!)
             try:
-                return eval(
-                    expr_str, {"variables": variables, "And": And, "Or": Or, "Not": Not}
-                )  # nosec B307
-            except (NameError, SyntaxError, TypeError):
+                return eval(expr_str, {"variables": variables, "And": And, "Or": Or, "Not": Not})
+            except:
                 # Fallback to simple boolean
                 return BoolVal(True)
         else:
@@ -384,7 +361,8 @@ class Z3PolicyVerifier:
             return MockZ3Object()
 
     async def verify_policy_consistency(
-        self, policy_specs: List[PolicySpecification]
+        self,
+        policy_specs: List[PolicySpecification]
     ) -> Tuple[bool, str, List[VerificationResult]]:
         """
         Verify consistency across multiple policies.
@@ -415,7 +393,7 @@ class Z3PolicyVerifier:
             error_messages.append("Policy set contains contradictions")
 
             # Try to identify conflicting policies (simplified)
-            for _, spec in enumerate(policy_specs):
+            for i, spec in enumerate(policy_specs):
                 single_solver = Solver()
                 if Z3_AVAILABLE:
                     single_solver.set("timeout", self.verification_timeout_ms)
@@ -446,7 +424,7 @@ class Z3PolicyVerifier:
             "z3_available": Z3_AVAILABLE,
             "timeout_ms": self.verification_timeout_ms,
             "constitutional_hash": CONSTITUTIONAL_HASH,
-            "total_verifications": sum(spec.verified_count for spec in self.policy_specs.values()),
+            "total_verifications": sum(spec.verified_count for spec in self.policy_specs.values())
         }
 
 
@@ -476,17 +454,14 @@ class ConstitutionalVerifier:
                 "executive_action": "bool",
                 "legislative_action": "bool",
                 "judicial_action": "bool",
-                "same_branch": "bool",
+                "same_branch": "bool"
             },
             constraints=[
                 "Not(And(executive_action, legislative_action))",  # precondition
-                "Not(And(executive_action, judicial_action))",  # precondition
-                "Not(And(legislative_action, judicial_action))",  # precondition
-                (
-                    "Implies(same_branch, "
-                    "Not(Or(executive_action, legislative_action, judicial_action)))"
-                ),  # invariant
-            ],
+                "Not(And(executive_action, judicial_action))",     # precondition
+                "Not(And(legislative_action, judicial_action))",   # precondition
+                "Implies(same_branch, Not(Or(executive_action, legislative_action, judicial_action)))"  # invariant
+            ]
         )
         self.constitutional_policies["separation_of_powers"] = separation_policy
 
@@ -498,20 +473,20 @@ class ConstitutionalVerifier:
             variables={
                 "action_constitutional": "bool",
                 "hash_matches": "bool",
-                "timestamp_valid": "bool",
+                "timestamp_valid": "bool"
             },
             constraints=[
                 "And(hash_matches, timestamp_valid)",  # precondition
                 "action_constitutional",  # invariant
-                (
-                    "Implies(action_constitutional, And(hash_matches, timestamp_valid))"
-                ),  # postcondition
-            ],
+                "Implies(action_constitutional, And(hash_matches, timestamp_valid))"  # postcondition
+            ]
         )
         self.constitutional_policies["constitutional_compliance"] = compliance_policy
 
     async def verify_constitutional_compliance(
-        self, action_description: str, context: Optional[Dict[str, Any]] = None
+        self,
+        action_description: str,
+        context: Optional[Dict[str, Any]] = None
     ) -> Tuple[bool, str, List[VerificationResult]]:
         """
         Verify that an action complies with constitutional principles.
@@ -531,28 +506,29 @@ class ConstitutionalVerifier:
             variables={
                 "action_safe": "bool",
                 "constitutional": "bool",
-                "separation_maintained": "bool",
+                "separation_maintained": "bool"
             },
             constraints=[
                 "constitutional",  # precondition
-                "action_safe",  # invariant
-                "separation_maintained",  # postcondition
-            ],
+                "action_safe",     # invariant
+                "separation_maintained"  # postcondition
+            ]
         )
 
         # Verify against all constitutional policies
         all_policies = list(self.constitutional_policies.values()) + [action_policy]
 
-        is_consistent, message, results = await self.z3_verifier.verify_policy_consistency(
-            all_policies
-        )
+        is_consistent, message, results = await self.z3_verifier.verify_policy_consistency(all_policies)
 
         if is_consistent:
             return True, "Action constitutionally compliant", results
         else:
             return False, f"Constitutional violation: {message}", results
 
-    async def verify_governance_decision(self, decision_data: Dict[str, Any]) -> VerificationResult:
+    async def verify_governance_decision(
+        self,
+        decision_data: Dict[str, Any]
+    ) -> VerificationResult:
         """
         Verify a governance decision for mathematical consistency.
 
@@ -570,13 +546,13 @@ class ConstitutionalVerifier:
             variables={
                 "decision_consistent": "bool",
                 "no_contradictions": "bool",
-                "safety_preserved": "bool",
+                "safety_preserved": "bool"
             },
             constraints=[
                 "decision_consistent",  # precondition
-                "no_contradictions",  # invariant
-                "safety_preserved",  # postcondition
-            ],
+                "no_contradictions",     # invariant
+                "safety_preserved"       # postcondition
+            ]
         )
 
         return await self.z3_verifier.verify_policy(decision_policy, decision_data)
@@ -587,5 +563,5 @@ class ConstitutionalVerifier:
             "z3_stats": self.z3_verifier.get_verification_stats(),
             "constitutional_policies": len(self.constitutional_policies),
             "verifier_type": "ConstitutionalVerifier",
-            "mathematical_guarantees": Z3_AVAILABLE,
+            "mathematical_guarantees": Z3_AVAILABLE
         }
