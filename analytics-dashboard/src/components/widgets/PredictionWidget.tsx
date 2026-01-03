@@ -8,7 +8,7 @@
  * - Summary statistics
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { memo, useCallback, useEffect, useState } from "react";
 import {
   AlertCircle,
   Calendar,
@@ -137,7 +137,7 @@ function formatChartDate(dateString: string): string {
 /**
  * Custom tooltip component for the chart
  */
-function CustomTooltip({
+const CustomTooltip = memo(function CustomTooltip({
   active,
   payload,
 }: {
@@ -171,7 +171,7 @@ function CustomTooltip({
       </div>
     </div>
   );
-}
+});
 
 /**
  * PredictionWidget - Displays violation forecast chart with predictions
