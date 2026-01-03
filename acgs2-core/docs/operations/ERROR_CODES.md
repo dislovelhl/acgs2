@@ -1451,6 +1451,2332 @@ echo -n '{"event":"test"}' | openssl dgst -sha256 -hmac "your-secret"
 
 ---
 
+### ACGS-2001: AuthenticationError
+
+**Severity**: HIGH
+**Impact**: Service-Unavailable
+**Exception**: `AuthenticationError` (integration-service, sdk)
+**Location**: `integration-service/src/integrations/base.py`, `sdk/python/acgs2_sdk/exceptions.py`
+
+**Description**: Generic authentication failure when authenticating with external services or SDK.
+
+**Common Causes**:
+- Invalid credentials provided
+- Authentication token expired
+- Authentication service unavailable
+- Incorrect authentication method
+
+**Symptoms**:
+```
+AuthenticationError: Authentication failed
+401 Unauthorized
+Invalid credentials
+Authentication service returned error
+```
+
+**Resolution**:
+1. **Verify credentials are correct**:
+   ```bash
+   # Check authentication configuration
+   grep -E "API_KEY|AUTH_TOKEN|CLIENT_ID|CLIENT_SECRET" .env
+   ```
+
+2. **Check credential expiration**:
+   - Verify tokens haven't expired
+   - Refresh OAuth tokens if needed
+   - Check API key validity
+
+3. **Test authentication endpoint**:
+   ```bash
+   # Test service is accepting auth
+   curl -H "Authorization: Bearer <token>" https://api.example.com/test
+   ```
+
+4. **Check service logs** for specific error details:
+   ```bash
+   docker-compose logs integration-service | grep -i auth
+   ```
+
+**Example**:
+```bash
+# API key invalid
+ERROR: AuthenticationError: Invalid API key
+
+# Fix: Update API key in .env
+echo "API_KEY=your-valid-api-key-here" >> .env
+docker-compose restart integration-service
+```
+
+**Related Errors**: ACGS-2002, ACGS-2003, ACGS-2101
+
+---
+
+### ACGS-2002: AuthorizationError
+
+**Severity**: HIGH
+**Impact**: Service-Unavailable
+**Exception**: `AuthorizationError` (sdk)
+**Location**: `sdk/python/acgs2_sdk/exceptions.py`
+
+**Description**: User is authenticated but not authorized to perform the requested operation.
+
+**Common Causes**:
+- Insufficient permissions for operation
+- Role not assigned to user
+- Resource access control list (ACL) denies access
+- Organization/tenant membership required
+
+**Symptoms**:
+```
+403 Forbidden: You do not have permission to access this resource
+AuthorizationError: Insufficient permissions
+User lacks required role: admin
+```
+
+**Resolution**:
+1. **Verify user roles and permissions**:
+   ```bash
+   # Check user roles in database
+   docker-compose exec postgres psql -U acgs2 -c \
+     "SELECT user_id, roles FROM users WHERE email='user@example.com';"
+   ```
+
+2. **Review required permissions** for the operation:
+   - Check OPA policy requirements
+   - Verify RBAC role assignments
+   - Confirm tenant/organization membership
+
+3. **Assign required roles**:
+   ```bash
+   # Example: Assign admin role
+   docker-compose exec hitl-approvals python -c "
+   from app.models import User
+   user = User.query.filter_by(email='user@example.com').first()
+   user.roles.append('admin')
+   db.session.commit()
+   "
+   ```
+
+4. **Check OPA policies** allow the operation:
+   ```bash
+   # Query OPA directly
+   curl -X POST http://localhost:8181/v1/data/acgs2/rbac/allow \
+     -d '{"input": {"user": "user@example.com", "action": "read", "resource": "/api/approvals"}}'
+   ```
+
+**Example**:
+```bash
+# User lacks approval role
+ERROR: AuthorizationError: User lacks required role: approver
+
+# Fix: Add approver role
+# Via admin UI or database update
+```
+
+**Related Errors**: ACGS-2001, ACGS-2003, ACGS-2302, ACGS-2401
+
+---
+
+### ACGS-2003: AccessDeniedError
+
+**Severity**: HIGH
+**Impact**: Service-Degraded
+**Exception**: `AccessDeniedError` (tenant-management, tenant-integration)
+
+**Description**: Access denied to tenant resource or cross-tenant operation.
+
+**Common Causes**:
+- User not member of target tenant
+- Tenant disabled or suspended
+- Cross-tenant access not permitted
+- Tenant isolation policy violation
+
+**Symptoms**:
+```
+AccessDeniedError: User not authorized for tenant 'org-123'
+403 Forbidden: Tenant access denied
+User does not belong to this tenant
+```
+
+**Resolution**:
+1. **Verify tenant membership**:
+   ```bash
+   # Check user's tenants
+   docker-compose exec postgres psql -U acgs2 -c \
+     "SELECT user_id, tenant_id, role FROM tenant_memberships \
+      WHERE user_id='<user-id>';"
+   ```
+
+2. **Check tenant status**:
+   ```bash
+   # Verify tenant is active
+   docker-compose exec postgres psql -U acgs2 -c \
+     "SELECT id, name, status FROM tenants WHERE id='<tenant-id>';"
+   ```
+
+3. **Add user to tenant** if appropriate:
+   ```bash
+   # Via tenant admin API or database
+   curl -X POST http://localhost:8080/api/tenants/<tenant-id>/members \
+     -H "Authorization: Bearer <admin-token>" \
+     -d '{"user_id": "<user-id>", "role": "member"}'
+   ```
+
+**Example**:
+```bash
+# User tries to access tenant they don't belong to
+ERROR: AccessDeniedError: User not authorized for tenant 'acme-corp'
+
+# Fix: Add user to tenant (requires tenant admin permissions)
+```
+
+**Related Errors**: ACGS-2001, ACGS-2002, ACGS-2302
+
+---
+
+### ACGS-2102: InvalidApiKeyError
+
+**Severity**: HIGH
+**Impact**: Service-Degraded
+**Exception**: `InvalidApiKeyError` (integration-service)
+**Location**: `integration-service/src/webhooks/auth.py`
+
+**Description**: API key validation failed for webhook authentication.
+
+**Common Causes**:
+- Missing API key header
+- Invalid or revoked API key
+- API key not registered in handler
+- Wrong API key format
+
+**Symptoms**:
+```
+401 Unauthorized: Invalid API key
+Missing required header: X-API-Key
+API key not found or revoked
+```
+
+**Resolution**:
+1. **Verify API key header is sent**:
+   ```bash
+   # Test webhook with API key
+   curl -X POST http://localhost:8080/webhooks/integration \
+     -H "X-API-Key: your-api-key" \
+     -H "Content-Type: application/json" \
+     -d '{"event":"test"}'
+   ```
+
+2. **Check API key is registered**:
+   ```bash
+   # Verify API key in configuration
+   docker-compose exec integration-service python -c "
+   from src.webhooks.auth import validate_api_key
+   print(validate_api_key('your-api-key'))
+   "
+   ```
+
+3. **Generate new API key** if needed:
+   ```bash
+   # Generate secure API key
+   openssl rand -hex 32
+   ```
+
+4. **Update webhook configuration** with correct API key:
+   ```bash
+   # Update in external service sending webhooks
+   # and in ACGS webhook handler configuration
+   ```
+
+**Example**:
+```bash
+# API key mismatch
+ERROR: InvalidApiKeyError: API key validation failed
+
+# Debug: Check what key is being sent
+curl -v http://localhost:8080/webhooks/test \
+  -H "X-API-Key: test-key" 2>&1 | grep X-API-Key
+
+# Fix: Use correct API key from .env or generate new one
+```
+
+**Related Errors**: ACGS-2101, ACGS-2103, ACGS-2106
+
+---
+
+### ACGS-2103: InvalidBearerTokenError
+
+**Severity**: HIGH
+**Impact**: Service-Degraded
+**Exception**: `InvalidBearerTokenError` (integration-service)
+**Location**: `integration-service/src/webhooks/auth.py`
+
+**Description**: Bearer token authentication failed for webhook.
+
+**Common Causes**:
+- Expired OAuth token
+- Invalid token format
+- Token not in token store/database
+- Token signature validation failed
+
+**Symptoms**:
+```
+401 Unauthorized: Invalid bearer token
+Token expired or not found
+Invalid Authorization header format
+Expected: Bearer <token>
+```
+
+**Resolution**:
+1. **Verify token format**:
+   ```bash
+   # Correct format: Authorization: Bearer <token>
+   curl -X POST http://localhost:8080/webhooks/integration \
+     -H "Authorization: Bearer eyJhbGc..." \
+     -d '{"event":"test"}'
+   ```
+
+2. **Check token hasn't expired**:
+   ```bash
+   # Decode JWT to check expiration (if JWT)
+   echo "eyJhbGc..." | cut -d. -f2 | base64 -d | jq .exp
+   # Compare with current time: date +%s
+   ```
+
+3. **Refresh token** if expired:
+   ```bash
+   # Use OAuth refresh token flow
+   curl -X POST https://auth.example.com/oauth/token \
+     -d "grant_type=refresh_token" \
+     -d "refresh_token=<refresh-token>" \
+     -d "client_id=<client-id>"
+   ```
+
+4. **Verify token is registered** in system:
+   ```bash
+   # Check token store
+   docker-compose exec redis redis-cli GET "webhook_token:<token-prefix>"
+   ```
+
+**Example**:
+```bash
+# Expired token
+ERROR: InvalidBearerTokenError: Token expired
+
+# Fix: Get new token via OAuth flow or refresh existing token
+```
+
+**Related Errors**: ACGS-2104, ACGS-2501, ACGS-2502
+
+---
+
+### ACGS-2104: TokenExpiredError
+
+**Severity**: MEDIUM
+**Impact**: Service-Degraded
+**Exception**: `TokenExpiredError` (integration-service)
+**Location**: `integration-service/src/webhooks/auth.py`
+
+**Description**: OAuth or authentication token has expired.
+
+**Common Causes**:
+- Token TTL exceeded
+- System clock drift between systems
+- Token not refreshed before expiration
+- Refresh token also expired
+
+**Symptoms**:
+```
+TokenExpiredError: Token expired at 2026-01-03T10:00:00Z
+401 Unauthorized: Token no longer valid
+Token expired 2 hours ago
+```
+
+**Resolution**:
+1. **Use refresh token** to get new access token:
+   ```bash
+   curl -X POST https://auth.example.com/oauth/token \
+     -d "grant_type=refresh_token" \
+     -d "refresh_token=<refresh-token>" \
+     -d "client_id=<client-id>" \
+     -d "client_secret=<client-secret>"
+   ```
+
+2. **Check system clock synchronization**:
+   ```bash
+   # Verify time is synchronized
+   timedatectl status
+   # Or on macOS:
+   sudo sntp -sS time.apple.com
+   ```
+
+3. **Configure token refresh** before expiration:
+   ```bash
+   # Set token refresh margin (e.g., refresh 5 min before expiry)
+   TOKEN_REFRESH_MARGIN_SECONDS=300
+   ```
+
+4. **Re-authenticate** if refresh token also expired:
+   ```bash
+   # Initiate new OAuth flow
+   # Or re-authenticate via SSO
+   ```
+
+**Example**:
+```bash
+# Token expired
+ERROR: TokenExpiredError: Token expired
+
+# Automatic fix: System should auto-refresh
+# Manual fix: Re-authenticate or use refresh token
+```
+
+**Related Errors**: ACGS-2103, ACGS-2501
+
+---
+
+### ACGS-2105: SignatureTimestampError
+
+**Severity**: HIGH
+**Impact**: Service-Degraded
+**Exception**: `SignatureTimestampError` (integration-service)
+**Location**: `integration-service/src/webhooks/auth.py`
+
+**Description**: Webhook signature timestamp outside acceptable window (default 300 seconds). This protects against replay attacks.
+
+**Common Causes**:
+- Request replay attack attempt
+- Significant clock skew between systems (>5 minutes)
+- Network delay exceeding tolerance
+- Timestamp not included in signature
+- Incorrect timestamp format
+
+**Symptoms**:
+```
+SignatureTimestampError: Timestamp outside acceptable range
+Request timestamp too old: 2026-01-03T09:00:00Z
+Current time: 2026-01-03T09:10:00Z
+Tolerance: 300 seconds
+```
+
+**Resolution**:
+1. **Check system time synchronization**:
+   ```bash
+   # On Linux:
+   timedatectl status
+   sudo systemctl status systemd-timesyncd
+
+   # On macOS:
+   sudo sntp -sS time.apple.com
+
+   # Verify time matches:
+   date -u
+   ```
+
+2. **Increase timestamp tolerance** if legitimate delay:
+   ```bash
+   # Default: 300 seconds (5 minutes)
+   # Increase for high-latency networks
+   echo "SIGNATURE_TIMESTAMP_TOLERANCE=600" >> .env
+   docker-compose restart integration-service
+   ```
+
+3. **Check webhook sender configuration**:
+   - Ensure sender includes timestamp in signature
+   - Verify timestamp format (Unix epoch vs ISO 8601)
+   - Confirm sender's clock is synchronized
+
+4. **Investigate replay attack** if frequent:
+   ```bash
+   # Check for duplicate requests
+   docker-compose logs integration-service | \
+     grep SignatureTimestampError | \
+     grep -o "Request ID: [^\"]*" | \
+     sort | uniq -d
+   ```
+
+**Example**:
+```bash
+# Clock skew detected
+ERROR: SignatureTimestampError: Timestamp too old
+
+# Fix 1: Synchronize clocks
+sudo timedatectl set-ntp true
+
+# Fix 2: Increase tolerance temporarily
+echo "SIGNATURE_TIMESTAMP_TOLERANCE=600" >> .env
+docker-compose restart integration-service
+
+# Verify:
+curl -X POST http://localhost:8080/webhooks/github \
+  -H "X-Hub-Signature-256: sha256=<sig>" \
+  -H "X-Hub-Timestamp: $(date +%s)" \
+  -d '{"event":"test"}'
+```
+
+**Security Note**: Do not set tolerance too high (>900s/15min) as it weakens replay attack protection.
+
+**Related Errors**: ACGS-2101, ACGS-2107
+
+---
+
+### ACGS-2106: MissingAuthHeaderError
+
+**Severity**: HIGH
+**Impact**: Service-Degraded
+**Exception**: `MissingAuthHeaderError` (integration-service)
+**Location**: `integration-service/src/webhooks/auth.py`
+
+**Description**: Required authentication header is missing from webhook request.
+
+**Common Causes**:
+- Webhook sender not configured to send auth header
+- Header name mismatch (e.g., X-Signature vs X-Hub-Signature)
+- Proxy stripping authentication headers
+- Incorrect webhook endpoint configuration
+
+**Symptoms**:
+```
+401 Unauthorized: Missing required header: X-Signature
+MissingAuthHeaderError: No authentication header found
+Expected header: X-API-Key or Authorization
+```
+
+**Resolution**:
+1. **Verify required header name**:
+   ```bash
+   # Check webhook handler configuration
+   docker-compose logs integration-service | grep "Expected header"
+   ```
+
+2. **Common authentication headers**:
+   - `X-Signature`: HMAC signature
+   - `X-Hub-Signature-256`: GitHub webhooks (SHA256)
+   - `X-API-Key`: API key authentication
+   - `Authorization`: Bearer token or Basic auth
+
+3. **Test with correct header**:
+   ```bash
+   # Test different auth header types:
+
+   # HMAC signature:
+   curl -X POST http://localhost:8080/webhooks/integration \
+     -H "X-Signature: sha256=abc..." \
+     -d '{"event":"test"}'
+
+   # API key:
+   curl -X POST http://localhost:8080/webhooks/integration \
+     -H "X-API-Key: your-api-key" \
+     -d '{"event":"test"}'
+
+   # Bearer token:
+   curl -X POST http://localhost:8080/webhooks/integration \
+     -H "Authorization: Bearer <token>" \
+     -d '{"event":"test"}'
+   ```
+
+4. **Configure webhook sender** to include header:
+   - Check webhook configuration in external service
+   - Verify header name matches what ACGS expects
+   - Ensure authentication credentials are set
+
+5. **Check for proxy interference**:
+   ```bash
+   # If behind nginx/proxy, ensure headers are forwarded
+   # nginx.conf should include:
+   # proxy_set_header X-Signature $http_x_signature;
+   ```
+
+**Example**:
+```bash
+# Missing GitHub signature header
+ERROR: MissingAuthHeaderError: No X-Hub-Signature-256 header
+
+# Fix: Configure GitHub webhook to include secret
+# GitHub Repo → Settings → Webhooks → Edit webhook → Secret
+```
+
+**Related Errors**: ACGS-2101, ACGS-2102, ACGS-2107
+
+---
+
+### ACGS-2107: WebhookAuthError
+
+**Severity**: HIGH
+**Impact**: Service-Degraded
+**Exception**: `WebhookAuthError` (integration-service)
+**Location**: `integration-service/src/webhooks/auth.py`
+
+**Description**: Base exception for webhook authentication errors. Generic failure when specific error type not determined.
+
+**Common Causes**:
+- Authentication mechanism misconfigured
+- Unknown authentication method requested
+- Multiple authentication failures
+- Invalid authentication configuration
+
+**Symptoms**:
+```
+WebhookAuthError: Authentication failed
+Unable to authenticate webhook request
+Authentication configuration error
+```
+
+**Resolution**:
+1. **Check webhook authentication configuration**:
+   ```bash
+   # Review webhook auth settings
+   grep -E "WEBHOOK_AUTH|AUTH_METHOD" .env
+   ```
+
+2. **Verify authentication method** is supported:
+   - HMAC signature (recommended)
+   - API key
+   - Bearer token
+   - Basic auth
+
+3. **Review webhook handler logs** for specific error:
+   ```bash
+   docker-compose logs integration-service | grep -A 10 WebhookAuthError
+   ```
+
+4. **Test with curl** to isolate issue:
+   ```bash
+   # Minimal test request
+   curl -v -X POST http://localhost:8080/webhooks/test \
+     -H "Content-Type: application/json" \
+     -d '{"test":"data"}'
+   # Check what authentication is expected in response
+   ```
+
+**Example**:
+```bash
+# Generic auth failure
+ERROR: WebhookAuthError: Authentication failed
+
+# Diagnosis:
+docker-compose logs integration-service | tail -50
+
+# Common fixes:
+# 1. Check auth method configured
+# 2. Verify credentials match
+# 3. Ensure correct headers sent
+```
+
+**Related Errors**: ACGS-2101, ACGS-2102, ACGS-2103, ACGS-2105, ACGS-2106, ACGS-2108
+
+---
+
+### ACGS-2108: WebhookAuthenticationError
+
+**Severity**: HIGH
+**Impact**: Service-Degraded
+**Exception**: `WebhookAuthenticationError` (integration-service)
+**Location**: `integration-service/src/webhooks/delivery.py`
+
+**Description**: Webhook delivery authentication failed when ACGS sends webhook to external endpoint.
+
+**Common Causes**:
+- Invalid credentials for outbound webhook
+- External endpoint requires different auth method
+- Certificate validation failed (HTTPS)
+- Authentication endpoint unreachable
+
+**Symptoms**:
+```
+WebhookAuthenticationError: Failed to authenticate with external endpoint
+401 Unauthorized from https://example.com/webhook
+Certificate verification failed
+```
+
+**Resolution**:
+1. **Verify external endpoint credentials**:
+   ```bash
+   # Check webhook delivery configuration
+   docker-compose exec postgres psql -U acgs2 -c \
+     "SELECT id, url, auth_type FROM webhook_handlers;"
+   ```
+
+2. **Test endpoint authentication manually**:
+   ```bash
+   # Test with same credentials ACGS uses
+   curl -X POST https://example.com/webhook \
+     -H "Authorization: Bearer <token>" \
+     -d '{"test":"data"}'
+   ```
+
+3. **Check certificate if HTTPS**:
+   ```bash
+   # Verify SSL certificate
+   openssl s_client -connect example.com:443 -servername example.com
+
+   # If self-signed, may need to disable verification (not recommended for production)
+   WEBHOOK_VERIFY_SSL=false  # In .env
+   ```
+
+4. **Update webhook credentials**:
+   ```bash
+   # Via API or database
+   curl -X PATCH http://localhost:8080/api/webhooks/<webhook-id> \
+     -H "Authorization: Bearer <admin-token>" \
+     -d '{"auth_token": "new-token"}'
+   ```
+
+**Example**:
+```bash
+# External endpoint returns 401
+ERROR: WebhookAuthenticationError: External endpoint rejected auth
+
+# Fix: Update webhook credentials
+curl -X PATCH http://localhost:8080/api/webhooks/<id> \
+  -d '{"auth_token": "updated-token"}'
+```
+
+**Related Errors**: ACGS-2107, ACGS-5201, ACGS-5202
+
+---
+
+### ACGS-2201: OIDCAuthenticationError
+
+**Severity**: HIGH
+**Impact**: Service-Unavailable
+**Exception**: `OIDCAuthenticationError` (shared-auth)
+**Location**: `acgs2-core/shared/auth/oidc_handler.py`
+
+**Description**: OpenID Connect (OIDC) authentication failed during SSO login.
+
+**Common Causes**:
+- Invalid authorization code
+- State parameter mismatch (CSRF protection)
+- User denied consent at identity provider
+- Redirect URI mismatch
+- Client credentials invalid
+
+**Symptoms**:
+```
+OIDCAuthenticationError: Authentication failed
+Invalid authorization code
+State mismatch: CSRF protection triggered
+User denied authorization
+error=access_denied&error_description=User cancelled login
+```
+
+**Resolution**:
+1. **Verify OIDC configuration**:
+   ```bash
+   # Check OIDC settings in .env
+   grep -E "OIDC_|OPENID_" .env
+
+   # Required variables:
+   # OIDC_CLIENT_ID=<client-id>
+   # OIDC_CLIENT_SECRET=<client-secret>
+   # OIDC_DISCOVERY_URL=https://idp.example.com/.well-known/openid-configuration
+   # OIDC_REDIRECT_URI=http://localhost:8080/auth/callback
+   ```
+
+2. **Verify redirect URI** matches identity provider configuration:
+   ```bash
+   # Redirect URI must exactly match what's registered
+   # Common mistakes:
+   # - http vs https
+   # - trailing slash
+   # - localhost vs 127.0.0.1
+   # - port number
+   ```
+
+3. **Test OIDC discovery endpoint**:
+   ```bash
+   curl https://idp.example.com/.well-known/openid-configuration
+   # Should return JSON with endpoints
+   ```
+
+4. **Check identity provider logs** for rejection reason
+
+5. **Clear browser state** and retry:
+   ```bash
+   # Clear cookies and retry login
+   # State mismatch often caused by stale state parameter
+   ```
+
+**Example**:
+```bash
+# State mismatch error
+ERROR: OIDCAuthenticationError: State mismatch
+
+# Common cause: User navigated back/forward during OAuth flow
+# Fix: Clear browser cookies and retry login
+
+# Configuration error:
+ERROR: OIDCAuthenticationError: Redirect URI mismatch
+
+# Fix: Update redirect URI in identity provider to match:
+echo "OIDC_REDIRECT_URI=http://localhost:8080/auth/callback" >> .env
+# And register same URI in IdP configuration
+```
+
+**Related Errors**: ACGS-2202, ACGS-2203, ACGS-2204, ACGS-1505
+
+---
+
+### ACGS-2202: OIDCTokenError
+
+**Severity**: HIGH
+**Impact**: Service-Degraded
+**Exception**: `OIDCTokenError` (shared-auth)
+**Location**: `acgs2-core/shared/auth/oidc_handler.py`
+
+**Description**: OIDC token exchange or validation failed.
+
+**Common Causes**:
+- Invalid ID token signature
+- Token issuer (iss) mismatch
+- Token audience (aud) doesn't match client ID
+- Token expired
+- Token nonce mismatch
+- JWK keys not accessible
+
+**Symptoms**:
+```
+OIDCTokenError: Token validation failed
+Invalid signature: Token signature verification failed
+Issuer mismatch: expected 'https://idp.example.com', got 'https://other.com'
+Audience mismatch: token aud claim doesn't match client ID
+Token expired at 2026-01-03T10:00:00Z
+```
+
+**Resolution**:
+1. **Verify token issuer** matches OIDC provider:
+   ```bash
+   # Decode ID token (JWT) to inspect claims
+   # token format: header.payload.signature
+   echo "<token-payload-part>" | base64 -d | jq .
+
+   # Check iss (issuer) matches OIDC_DISCOVERY_URL domain
+   # Check aud (audience) matches OIDC_CLIENT_ID
+   # Check exp (expiration) is in future
+   ```
+
+2. **Check JWK keys are accessible**:
+   ```bash
+   # OIDC provider must expose public keys
+   curl https://idp.example.com/.well-known/jwks.json
+   # Should return JSON with keys array
+   ```
+
+3. **Verify client ID configuration**:
+   ```bash
+   # Ensure client ID matches what's registered
+   grep OIDC_CLIENT_ID .env
+   ```
+
+4. **Check clock synchronization**:
+   ```bash
+   # Token validation includes timestamp checks
+   timedatectl status
+   sudo timedatectl set-ntp true
+   ```
+
+5. **Test token endpoint**:
+   ```bash
+   # Exchange authorization code for tokens
+   curl -X POST https://idp.example.com/token \
+     -d "grant_type=authorization_code" \
+     -d "code=<auth-code>" \
+     -d "client_id=<client-id>" \
+     -d "client_secret=<client-secret>" \
+     -d "redirect_uri=<redirect-uri>"
+   ```
+
+**Example**:
+```bash
+# Issuer mismatch
+ERROR: OIDCTokenError: Issuer mismatch
+
+# Fix: Verify OIDC discovery URL
+curl https://idp.example.com/.well-known/openid-configuration | jq .issuer
+# Update .env to match:
+echo "OIDC_DISCOVERY_URL=https://correct-idp.example.com/.well-known/openid-configuration" >> .env
+```
+
+**Related Errors**: ACGS-2201, ACGS-2104
+
+---
+
+### ACGS-2203: OIDCProviderError
+
+**Severity**: HIGH
+**Impact**: Service-Degraded
+**Exception**: `OIDCProviderError` (shared-auth)
+**Location**: `acgs2-core/shared/auth/oidc_handler.py`
+
+**Description**: Error communicating with OIDC identity provider.
+
+**Common Causes**:
+- Network connectivity issues to identity provider
+- Identity provider is down or unavailable
+- DNS resolution failure for provider domain
+- Firewall blocking access to provider
+- Provider returned error response
+- TLS/SSL certificate issues
+
+**Symptoms**:
+```
+OIDCProviderError: Cannot connect to identity provider
+Connection refused: https://idp.example.com
+Timeout connecting to OIDC provider
+DNS resolution failed for idp.example.com
+SSL certificate verification failed
+Provider returned 500 Internal Server Error
+```
+
+**Resolution**:
+1. **Test connectivity to provider**:
+   ```bash
+   # Test DNS resolution
+   nslookup idp.example.com
+   dig idp.example.com
+
+   # Test HTTPS connectivity
+   curl -v https://idp.example.com/.well-known/openid-configuration
+
+   # Test from inside Docker network
+   docker-compose exec enhanced-agent-bus curl -v https://idp.example.com
+   ```
+
+2. **Check provider status**:
+   - Visit provider's status page
+   - Check for maintenance windows
+   - Verify provider is operational
+
+3. **Verify firewall rules** allow outbound HTTPS:
+   ```bash
+   # Check if port 443 accessible
+   telnet idp.example.com 443
+   nc -zv idp.example.com 443
+   ```
+
+4. **Check certificate validation**:
+   ```bash
+   # Test SSL certificate
+   openssl s_client -connect idp.example.com:443 -servername idp.example.com
+
+   # If corporate proxy with SSL inspection:
+   # May need to add CA certificate
+   ```
+
+5. **Configure HTTP proxy** if required:
+   ```bash
+   # If behind corporate proxy
+   echo "HTTPS_PROXY=http://proxy.corporate.com:8080" >> .env
+   echo "NO_PROXY=localhost,127.0.0.1" >> .env
+   docker-compose restart
+   ```
+
+**Example**:
+```bash
+# Provider unreachable
+ERROR: OIDCProviderError: Cannot connect to https://idp.example.com
+
+# Diagnosis:
+curl -v https://idp.example.com/.well-known/openid-configuration
+
+# Common fixes:
+# 1. Check VPN connection if required
+# 2. Verify DNS resolution
+# 3. Check firewall rules
+# 4. Wait for provider to recover if down
+```
+
+**Related Errors**: ACGS-2201, ACGS-2202, ACGS-4501
+
+---
+
+### ACGS-2204: OIDCError
+
+**Severity**: HIGH
+**Impact**: Service-Degraded
+**Exception**: `OIDCError` (shared-auth)
+**Location**: `acgs2-core/shared/auth/oidc_handler.py`
+
+**Description**: Base exception for OIDC-related errors. Generic OIDC failure when specific type not determined.
+
+**Resolution**: See related errors for specific OIDC issues:
+- ACGS-2201: OIDCAuthenticationError
+- ACGS-2202: OIDCTokenError
+- ACGS-2203: OIDCProviderError
+
+Check logs for more specific error details:
+```bash
+docker-compose logs | grep -i oidc | tail -50
+```
+
+**Related Errors**: ACGS-2201, ACGS-2202, ACGS-2203
+
+---
+
+### ACGS-2211: SAMLAuthenticationError
+
+**Severity**: HIGH
+**Impact**: Service-Unavailable
+**Exception**: `SAMLAuthenticationError` (shared-auth)
+**Location**: `acgs2-core/shared/auth/saml_handler.py`
+
+**Description**: SAML 2.0 authentication failed during SSO login.
+
+**Common Causes**:
+- Invalid SAML assertion
+- SAML response signature validation failed
+- Required attributes missing from assertion
+- Name ID format mismatch
+- Assertion conditions not met (time bounds, audience)
+
+**Symptoms**:
+```
+SAMLAuthenticationError: Authentication failed
+Invalid SAML response signature
+Required attribute 'email' missing from assertion
+Assertion not yet valid
+Assertion expired
+Audience restriction failed
+```
+
+**Resolution**:
+1. **Verify SAML configuration**:
+   ```bash
+   # Check SAML settings
+   grep -E "SAML_" .env
+
+   # Required:
+   # SAML_IDP_METADATA_URL=https://idp.example.com/metadata
+   # SAML_SP_ENTITY_ID=https://acgs2.example.com/saml/metadata
+   # SAML_ACS_URL=https://acgs2.example.com/saml/acs
+   ```
+
+2. **Download and inspect IdP metadata**:
+   ```bash
+   curl https://idp.example.com/metadata > idp-metadata.xml
+   # Verify certificate, endpoints, entity ID
+   ```
+
+3. **Check SP metadata** is registered with IdP:
+   ```bash
+   # Generate SP metadata
+   curl http://localhost:8080/saml/metadata > sp-metadata.xml
+   # Upload to IdP or provide SP metadata URL
+   ```
+
+4. **Verify clock synchronization** (critical for SAML):
+   ```bash
+   # SAML is very sensitive to time skew
+   timedatectl status
+   sudo timedatectl set-ntp true
+   ```
+
+5. **Check required SAML attributes** are provided:
+   ```bash
+   # Common required attributes:
+   # - email (urn:oid:0.9.2342.19200300.100.1.3)
+   # - firstName/givenName
+   # - lastName/surname
+   # - groups (for role mapping)
+   ```
+
+**Example**:
+```bash
+# Missing email attribute
+ERROR: SAMLAuthenticationError: Required attribute 'email' missing
+
+# Fix: Configure IdP to release email attribute
+# or map different attribute to email in ACGS:
+echo "SAML_ATTR_EMAIL=http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress" >> .env
+```
+
+**Related Errors**: ACGS-2212, ACGS-2213, ACGS-2214, ACGS-2215
+
+---
+
+### ACGS-2212: SAMLValidationError
+
+**Severity**: HIGH
+**Impact**: Service-Degraded
+**Exception**: `SAMLValidationError` (shared-auth)
+**Location**: `acgs2-core/shared/auth/saml_handler.py`
+
+**Description**: SAML assertion validation failed.
+
+**Common Causes**:
+- SAML response signature invalid
+- Assertion signature invalid
+- Certificate mismatch or expired
+- Assertion expired or not yet valid
+- Audience restriction failed
+- Recipient URL mismatch
+
+**Symptoms**:
+```
+SAMLValidationError: Assertion validation failed
+Signature verification failed
+Certificate expired
+Assertion audience doesn't match SP entity ID
+Assertion condition: NotBefore/NotOnOrAfter failed
+Recipient mismatch: expected https://acgs2.example.com/saml/acs
+```
+
+**Resolution**:
+1. **Verify IdP certificate**:
+   ```bash
+   # Extract certificate from metadata
+   xmllint --xpath "//X509Certificate/text()" idp-metadata.xml | \
+     base64 -d | \
+     openssl x509 -text -noout
+
+   # Check expiration date
+   ```
+
+2. **Check Assertion Consumer Service (ACS) URL**:
+   ```bash
+   # Must exactly match what IdP has configured
+   grep SAML_ACS_URL .env
+   # Should be: https://your-domain.com/saml/acs
+   ```
+
+3. **Verify SP Entity ID** matches IdP configuration:
+   ```bash
+   grep SAML_SP_ENTITY_ID .env
+   ```
+
+4. **Check time synchronization** (CRITICAL for SAML):
+   ```bash
+   # SAML assertions have tight time bounds (typically 5 minutes)
+   date -u
+   timedatectl status
+
+   # If time is off, SAML will fail
+   sudo timedatectl set-ntp true
+   ```
+
+5. **Inspect SAML response** for details:
+   ```bash
+   # Enable SAML debug logging
+   echo "SAML_DEBUG=true" >> .env
+   docker-compose restart
+
+   # Check logs for full SAML response
+   docker-compose logs | grep -A 50 "SAML Response"
+   ```
+
+**Example**:
+```bash
+# Certificate expired
+ERROR: SAMLValidationError: IdP certificate expired
+
+# Fix: Update IdP metadata with new certificate
+curl https://idp.example.com/metadata > idp-metadata.xml
+# Or update SAML_IDP_CERT in .env
+```
+
+**Related Errors**: ACGS-2211, ACGS-2214
+
+---
+
+### ACGS-2213: SAMLProviderError
+
+**Severity**: HIGH
+**Impact**: Service-Degraded
+**Exception**: `SAMLProviderError` (shared-auth)
+**Location**: `acgs2-core/shared/auth/saml_handler.py`
+
+**Description**: Error communicating with SAML identity provider.
+
+**Common Causes**:
+- IdP metadata URL unreachable
+- Network connectivity to IdP failed
+- IdP is down or unavailable
+- DNS resolution failure
+- SSL/TLS certificate issues
+
+**Symptoms**:
+```
+SAMLProviderError: Cannot connect to IdP
+Failed to fetch metadata from https://idp.example.com/metadata
+Connection timeout to SAML provider
+SSL certificate verification failed
+```
+
+**Resolution**:
+1. **Test connectivity to IdP**:
+   ```bash
+   # Test IdP metadata endpoint
+   curl -v https://idp.example.com/metadata
+
+   # Test IdP SSO endpoint
+   curl -v https://idp.example.com/sso
+   ```
+
+2. **Verify DNS resolution**:
+   ```bash
+   nslookup idp.example.com
+   dig idp.example.com
+   ```
+
+3. **Check SSL certificate**:
+   ```bash
+   openssl s_client -connect idp.example.com:443 -servername idp.example.com
+   ```
+
+4. **Test from Docker network**:
+   ```bash
+   docker-compose exec enhanced-agent-bus curl -v https://idp.example.com/metadata
+   ```
+
+5. **Check IdP status** page or contact IdP administrator
+
+**Example**:
+```bash
+# IdP metadata unreachable
+ERROR: SAMLProviderError: Cannot fetch metadata
+
+# Diagnosis:
+curl -v https://idp.example.com/metadata
+
+# Workaround: Use local metadata file
+# Download metadata when IdP is available:
+curl https://idp.example.com/metadata > idp-metadata.xml
+# Configure to use local file:
+echo "SAML_IDP_METADATA_FILE=/app/config/idp-metadata.xml" >> .env
+```
+
+**Related Errors**: ACGS-2211, ACGS-2203
+
+---
+
+### ACGS-2214: SAMLReplayError
+
+**Severity**: CRITICAL
+**Impact**: Security-Violation
+**Exception**: `SAMLReplayError` (shared-auth)
+**Location**: `acgs2-core/shared/auth/saml_handler.py`
+
+**Description**: SAML replay attack detected - same assertion used multiple times.
+
+**Common Causes**:
+- Replay attack attempt (malicious)
+- Browser back button during SSO flow
+- Assertion ID already used
+- Cached SAML response resubmitted
+
+**Symptoms**:
+```
+CRITICAL: SAMLReplayError: Assertion ID already used
+Replay attack detected: assertion ID <id> seen before
+Duplicate InResponseTo ID
+```
+
+**Security Impact**: This is a CRITICAL security error. SAML assertions must be single-use to prevent session hijacking.
+
+**Resolution**:
+1. **User action**: Initiate fresh SSO login
+   ```bash
+   # Don't use browser back button during SSO
+   # Start new login flow from application
+   ```
+
+2. **Check assertion ID cache**:
+   ```bash
+   # ACGS tracks used assertion IDs in Redis
+   docker-compose exec redis redis-cli KEYS "saml_assertion:*"
+   ```
+
+3. **Verify assertion ID uniqueness** in IdP configuration
+
+4. **If legitimate duplicate** (rare), may need to clear cache:
+   ```bash
+   # ONLY if confirmed not an attack
+   docker-compose exec redis redis-cli DEL "saml_assertion:<assertion-id>"
+   ```
+
+5. **Investigate potential attack**:
+   ```bash
+   # Check for repeated replay attempts from same IP
+   docker-compose logs | grep SAMLReplayError | \
+     grep -o "IP: [0-9.]*" | sort | uniq -c
+
+   # If attack confirmed, block IP at firewall level
+   ```
+
+**Example**:
+```bash
+# Replay detected
+CRITICAL: SAMLReplayError: Assertion ID already used
+
+# Legitimate cause: User clicked back button
+# Resolution: Start fresh login from application
+
+# If attack suspected:
+# 1. Alert security team
+# 2. Review logs for pattern
+# 3. Block source IP if confirmed attack
+```
+
+**Related Errors**: ACGS-2211, ACGS-2212
+
+---
+
+### ACGS-2215: SAMLError
+
+**Severity**: HIGH
+**Impact**: Service-Degraded
+**Exception**: `SAMLError` (shared-auth)
+**Location**: `acgs2-core/shared/auth/saml_handler.py`
+
+**Description**: Base exception for SAML-related errors. Generic SAML failure.
+
+**Resolution**: See related errors for specific SAML issues:
+- ACGS-2211: SAMLAuthenticationError
+- ACGS-2212: SAMLValidationError
+- ACGS-2213: SAMLProviderError
+- ACGS-2214: SAMLReplayError
+
+Check logs for specific error:
+```bash
+docker-compose logs | grep -i saml | tail -50
+```
+
+**Related Errors**: ACGS-2211, ACGS-2212, ACGS-2213, ACGS-2214
+
+---
+
+### ACGS-2221: AzureADAuthError
+
+**Severity**: HIGH
+**Impact**: Service-Degraded
+**Exception**: `AzureADAuthError` (identity-service)
+**Location**: `acgs2-core/services/identity/connectors/azure_ad_connector.py`
+
+**Description**: Azure Active Directory authentication error.
+
+**Common Causes**:
+- Invalid Azure AD credentials
+- Application not registered in Azure AD
+- Missing required permissions/scopes
+- Tenant ID incorrect
+- Multi-factor authentication required
+
+**Symptoms**:
+```
+AzureADAuthError: Authentication failed
+AADSTS70011: Invalid scope
+AADSTS50126: Invalid username or password
+AADSTS50076: MFA required
+```
+
+**Resolution**:
+1. **Verify Azure AD configuration**:
+   ```bash
+   grep -E "AZURE_AD_" .env
+
+   # Required:
+   # AZURE_AD_TENANT_ID=<tenant-id>
+   # AZURE_AD_CLIENT_ID=<application-id>
+   # AZURE_AD_CLIENT_SECRET=<client-secret>
+   ```
+
+2. **Check application registration**:
+   - Azure Portal → App Registrations → Your App
+   - Verify client ID matches
+   - Ensure client secret hasn't expired
+
+3. **Verify required API permissions**:
+   - Microsoft Graph API permissions
+   - User.Read (minimum)
+   - Additional permissions as needed
+
+4. **Test Azure AD connectivity**:
+   ```bash
+   # Test token endpoint
+   curl -X POST https://login.microsoftonline.com/<tenant-id>/oauth2/v2.0/token \
+     -d "client_id=<client-id>" \
+     -d "client_secret=<client-secret>" \
+     -d "scope=https://graph.microsoft.com/.default" \
+     -d "grant_type=client_credentials"
+   ```
+
+**Example**:
+```bash
+# Invalid tenant ID
+ERROR: AzureADAuthError: AADSTS90002: Tenant not found
+
+# Fix: Verify tenant ID in Azure Portal
+echo "AZURE_AD_TENANT_ID=<correct-tenant-id>" >> .env
+docker-compose restart identity-service
+```
+
+**Related Errors**: ACGS-2222, ACGS-2223, ACGS-2224
+
+---
+
+### ACGS-2222: AzureADConfigError
+
+**Severity**: HIGH
+**Impact**: Deployment-Blocking
+**Exception**: `AzureADConfigError` (identity-service)
+**Location**: `acgs2-core/services/identity/connectors/azure_ad_connector.py`
+
+**Description**: Azure AD configuration error prevents service startup.
+
+**Common Causes**:
+- Missing required Azure AD environment variables
+- Invalid tenant ID format
+- Client ID/secret not set
+- Configuration validation failed
+
+**Symptoms**:
+```
+AzureADConfigError: Missing required configuration
+AZURE_AD_TENANT_ID not set
+Invalid tenant ID format
+Service failed to start
+```
+
+**Resolution**:
+1. **Set required environment variables**:
+   ```bash
+   # Get from Azure Portal → App Registrations
+   echo "AZURE_AD_TENANT_ID=<tenant-id-or-domain.onmicrosoft.com>" >> .env
+   echo "AZURE_AD_CLIENT_ID=<application-id>" >> .env
+   echo "AZURE_AD_CLIENT_SECRET=<client-secret>" >> .env
+   ```
+
+2. **Verify tenant ID format**:
+   ```bash
+   # Can be GUID or domain name:
+   # GUID: 12345678-1234-1234-1234-123456789012
+   # Domain: contoso.onmicrosoft.com
+   ```
+
+3. **Restart service**:
+   ```bash
+   docker-compose restart identity-service
+   ```
+
+**Example**:
+```bash
+# Missing configuration
+ERROR: AzureADConfigError: AZURE_AD_CLIENT_ID not set
+
+# Fix:
+echo "AZURE_AD_CLIENT_ID=abc123..." >> .env
+docker-compose restart identity-service
+```
+
+**Related Errors**: ACGS-1101, ACGS-2221
+
+---
+
+### ACGS-2223: AzureADGraphError
+
+**Severity**: MEDIUM
+**Impact**: Service-Degraded
+**Exception**: `AzureADGraphError` (identity-service)
+**Location**: `acgs2-core/services/identity/connectors/azure_ad_connector.py`
+
+**Description**: Microsoft Graph API error when querying Azure AD.
+
+**Common Causes**:
+- Insufficient Graph API permissions
+- User not found in Azure AD
+- Group query failed
+- API rate limit exceeded
+- Network error calling Graph API
+
+**Symptoms**:
+```
+AzureADGraphError: Graph API request failed
+Insufficient privileges to complete the operation
+User not found
+Rate limit exceeded: retry after 60 seconds
+```
+
+**Resolution**:
+1. **Verify Graph API permissions**:
+   - Azure Portal → App Registrations → API Permissions
+   - Required: User.Read.All or Directory.Read.All
+   - Ensure admin consent granted
+
+2. **Check API rate limits**:
+   ```bash
+   # Graph API has rate limits
+   # Implement exponential backoff for retries
+   ```
+
+3. **Test Graph API manually**:
+   ```bash
+   # Get access token
+   TOKEN=$(curl -X POST \
+     https://login.microsoftonline.com/<tenant-id>/oauth2/v2.0/token \
+     -d "client_id=<client-id>" \
+     -d "client_secret=<client-secret>" \
+     -d "scope=https://graph.microsoft.com/.default" \
+     -d "grant_type=client_credentials" | jq -r .access_token)
+
+   # Query user
+   curl -H "Authorization: Bearer $TOKEN" \
+     https://graph.microsoft.com/v1.0/users/user@example.com
+   ```
+
+**Example**:
+```bash
+# Insufficient permissions
+ERROR: AzureADGraphError: Insufficient privileges
+
+# Fix: Grant required permissions in Azure Portal
+# Then grant admin consent
+```
+
+**Related Errors**: ACGS-2221, ACGS-2224
+
+---
+
+### ACGS-2224: AzureADError
+
+**Severity**: HIGH
+**Impact**: Service-Degraded
+**Exception**: `AzureADError` (identity-service)
+**Location**: `acgs2-core/services/identity/connectors/azure_ad_connector.py`
+
+**Description**: Base exception for Azure AD errors.
+
+**Resolution**: See related errors:
+- ACGS-2221: AzureADAuthError
+- ACGS-2222: AzureADConfigError
+- ACGS-2223: AzureADGraphError
+
+---
+
+### ACGS-2231: OktaAuthError
+
+**Severity**: HIGH
+**Impact**: Service-Degraded
+**Exception**: `OktaAuthError` (identity-service)
+**Location**: `acgs2-core/services/identity/connectors/okta_models.py`
+
+**Description**: Okta authentication error.
+
+**Common Causes**:
+- Invalid Okta API token
+- Okta domain incorrect
+- Application not configured in Okta
+- User authentication failed
+
+**Symptoms**:
+```
+OktaAuthError: Authentication failed
+Invalid Okta API token
+Okta domain not found
+E0000011: Invalid token provided
+```
+
+**Resolution**:
+1. **Verify Okta configuration**:
+   ```bash
+   grep -E "OKTA_" .env
+
+   # Required:
+   # OKTA_DOMAIN=your-domain.okta.com
+   # OKTA_API_TOKEN=<api-token>
+   # OKTA_CLIENT_ID=<client-id>
+   ```
+
+2. **Generate new API token** if needed:
+   - Okta Admin Console → Security → API → Tokens
+   - Create Token → Copy and save
+
+3. **Verify Okta domain**:
+   ```bash
+   # Format: your-domain.okta.com (no https://)
+   # Or: your-domain.oktapreview.com (preview)
+   ```
+
+4. **Test Okta API**:
+   ```bash
+   curl -H "Authorization: SSWS <api-token>" \
+     https://your-domain.okta.com/api/v1/users/me
+   ```
+
+**Example**:
+```bash
+# Invalid API token
+ERROR: OktaAuthError: Invalid token
+
+# Fix: Generate new token in Okta admin console
+echo "OKTA_API_TOKEN=<new-token>" >> .env
+docker-compose restart identity-service
+```
+
+**Related Errors**: ACGS-2232, ACGS-2233, ACGS-2234
+
+---
+
+### ACGS-2232: OktaConfigError
+
+**Severity**: HIGH
+**Impact**: Deployment-Blocking
+**Exception**: `OktaConfigError` (identity-service)
+**Location**: `acgs2-core/services/identity/connectors/okta_models.py`
+
+**Description**: Okta configuration error.
+
+**Common Causes**:
+- Missing Okta environment variables
+- Invalid domain format
+- API token not set
+
+**Resolution**:
+```bash
+# Set required configuration
+echo "OKTA_DOMAIN=your-domain.okta.com" >> .env
+echo "OKTA_API_TOKEN=<api-token>" >> .env
+echo "OKTA_CLIENT_ID=<client-id>" >> .env
+docker-compose restart identity-service
+```
+
+**Related Errors**: ACGS-1101, ACGS-2231
+
+---
+
+### ACGS-2233: OktaProvisioningError
+
+**Severity**: MEDIUM
+**Impact**: Service-Degraded
+**Exception**: `OktaProvisioningError` (identity-service)
+**Location**: `acgs2-core/services/identity/connectors/okta_models.py`
+
+**Description**: Okta user provisioning failed.
+
+**Common Causes**:
+- User already exists in Okta
+- Required user attributes missing
+- Email domain not allowed
+- Provisioning disabled
+
+**Resolution**: Check Okta user provisioning configuration and ensure required attributes are provided.
+
+**Related Errors**: ACGS-2231, ACGS-2234, ACGS-2311
+
+---
+
+### ACGS-2234: OktaGroupError
+
+**Severity**: MEDIUM
+**Impact**: Service-Degraded
+**Exception**: `OktaGroupError` (identity-service)
+**Location**: `acgs2-core/services/identity/connectors/okta_models.py`
+
+**Description**: Okta group operation failed.
+
+**Common Causes**:
+- Group not found in Okta
+- Insufficient permissions to manage groups
+- User already member of group
+- Group provisioning disabled
+
+**Resolution**: Verify Okta group exists and API token has group management permissions.
+
+**Related Errors**: ACGS-2231, ACGS-2233
+
+---
+
+### ACGS-2301: RoleVerificationError
+
+**Severity**: HIGH
+**Impact**: Security-Gap
+**Location**: `acgs2-core/services/hitl_approvals/app/services/approval_chain_engine.py:148`
+
+**Description**: Role verification failed or not implemented. **TODO**: Implement role verification via OPA (see TODO_CATALOG.md HIGH priority item).
+
+**Current Behavior**: Role verification is not currently performed via OPA, creating a security gap.
+
+**Common Causes**:
+- Role verification not implemented (TODO pending)
+- User role not found
+- OPA policy for role verification not loaded
+- Role assignment missing
+
+**Symptoms**:
+```
+RoleVerificationError: Cannot verify user role
+TODO: Implement role verification via OPA
+User role not validated
+```
+
+**Resolution**:
+
+**Temporary Workaround**:
+1. **Verify user roles in database**:
+   ```bash
+   docker-compose exec postgres psql -U acgs2 -c \
+     "SELECT id, email, roles FROM users WHERE email='user@example.com';"
+   ```
+
+2. **Check approval chain configuration**:
+   ```bash
+   # Ensure approval chains have correct role requirements
+   docker-compose exec postgres psql -U acgs2 -c \
+     "SELECT id, name, required_roles FROM approval_chains;"
+   ```
+
+**Permanent Fix** (TODO - HIGH priority):
+1. Implement OPA policy for role verification
+2. Add role verification call to approval chain engine
+3. Add role verification tests
+4. Document role verification process
+
+**TODO Reference**: See `TODO_CATALOG.md` - Item #2 (HIGH priority)
+
+**Example**:
+```bash
+# Role not verified via OPA
+WARN: RoleVerificationError: Role verification not implemented
+
+# Current workaround: Manual role assignment in database
+# Pending: OPA integration for role verification
+```
+
+**Related Errors**: ACGS-2302, ACGS-2401, ACGS-5101
+
+---
+
+### ACGS-2302: InsufficientPermissionsError
+
+**Severity**: HIGH
+**Impact**: Service-Degraded
+
+**Description**: User lacks required permissions for the requested operation.
+
+**Common Causes**:
+- User role doesn't grant required permission
+- Permission not assigned to role
+- User not member of required group
+- Resource-specific permission denied
+
+**Symptoms**:
+```
+403 Forbidden: Insufficient permissions
+User lacks permission: approve_high_risk
+Required role: approver, actual: viewer
+```
+
+**Resolution**:
+1. **Check required permissions** for operation:
+   ```bash
+   # Query OPA for required permissions
+   curl -X POST http://localhost:8181/v1/data/acgs2/rbac/required_permissions \
+     -d '{"input": {"action": "approve", "resource": "/api/approvals/123"}}'
+   ```
+
+2. **Verify user's current permissions**:
+   ```bash
+   # Query OPA for user permissions
+   curl -X POST http://localhost:8181/v1/data/acgs2/rbac/user_permissions \
+     -d '{"input": {"user": "user@example.com"}}'
+   ```
+
+3. **Grant required permission or role**:
+   ```bash
+   # Via admin API or database
+   curl -X POST http://localhost:8080/api/users/<user-id>/roles \
+     -H "Authorization: Bearer <admin-token>" \
+     -d '{"role": "approver"}'
+   ```
+
+**Example**:
+```bash
+# User can't approve high-risk items
+ERROR: InsufficientPermissionsError: Permission denied: approve_high_risk
+
+# Fix: Grant approver role with high-risk permission
+```
+
+**Related Errors**: ACGS-2002, ACGS-2301, ACGS-2401
+
+---
+
+### ACGS-2303: RoleMappingError
+
+**Severity**: MEDIUM
+**Impact**: Service-Degraded
+**Exception**: `RoleMappingError` (shared-auth)
+**Location**: `acgs2-core/shared/auth/role_mapper.py`
+
+**Description**: Failed to map identity provider groups/roles to ACGS roles.
+
+**Common Causes**:
+- Role mapping configuration missing
+- IdP group not mapped to ACGS role
+- Attribute name mismatch (groups vs roles)
+- Mapping rules syntax error
+
+**Symptoms**:
+```
+RoleMappingError: Cannot map IdP groups to ACGS roles
+No mapping found for group 'Engineering'
+Attribute 'groups' not found in SAML assertion
+```
+
+**Resolution**:
+1. **Configure role mappings**:
+   ```bash
+   # In .env or config file
+   cat > role_mappings.json <<EOF
+   {
+     "Engineering": ["developer", "viewer"],
+     "Approvers": ["approver"],
+     "Admins": ["admin"]
+   }
+   EOF
+   ```
+
+2. **Verify IdP provides group information**:
+   - SAML: Check 'groups' or 'roles' attribute in assertion
+   - OIDC: Check 'groups' claim in ID token
+   - Azure AD: Ensure group claims enabled
+
+3. **Check attribute name** configuration:
+   ```bash
+   # Configure which attribute contains groups
+   echo "ROLE_MAPPING_ATTRIBUTE=groups" >> .env
+   # Or for Azure AD:
+   echo "ROLE_MAPPING_ATTRIBUTE=roles" >> .env
+   ```
+
+**Example**:
+```bash
+# Group not mapped
+ERROR: RoleMappingError: No mapping for group 'Engineering'
+
+# Fix: Add mapping
+echo "ROLE_MAPPING_Engineering=developer,viewer" >> .env
+docker-compose restart
+```
+
+**Related Errors**: ACGS-2304, ACGS-2311
+
+---
+
+### ACGS-2304: ProviderNotFoundError
+
+**Severity**: HIGH
+**Impact**: Service-Degraded
+**Exception**: `ProviderNotFoundError` (shared-auth)
+**Location**: `acgs2-core/shared/auth/role_mapper.py`
+
+**Description**: Identity provider not found for role mapping.
+
+**Common Causes**:
+- Provider ID not configured
+- Provider not registered in system
+- Provider name typo
+- Multi-tenant provider issue
+
+**Resolution**:
+1. **List configured providers**:
+   ```bash
+   docker-compose exec postgres psql -U acgs2 -c \
+     "SELECT id, name, type FROM identity_providers;"
+   ```
+
+2. **Register provider** if missing:
+   ```bash
+   # Via admin API
+   curl -X POST http://localhost:8080/api/identity-providers \
+     -H "Authorization: Bearer <admin-token>" \
+     -d '{"name": "okta", "type": "oidc", "config": {...}}'
+   ```
+
+**Example**:
+```bash
+# Provider not found
+ERROR: ProviderNotFoundError: Provider 'okta' not found
+
+# Fix: Register provider in system
+```
+
+**Related Errors**: ACGS-2303, ACGS-2201, ACGS-2211
+
+---
+
+### ACGS-2311: ProvisioningError
+
+**Severity**: MEDIUM
+**Impact**: Service-Degraded
+**Exception**: `ProvisioningError` (shared-auth)
+**Location**: `acgs2-core/shared/auth/provisioning.py`
+
+**Description**: Base exception for user provisioning errors.
+
+**Resolution**: See related errors:
+- ACGS-2312: DomainNotAllowedError
+- ACGS-2313: ProvisioningDisabledError
+
+---
+
+### ACGS-2312: DomainNotAllowedError
+
+**Severity**: MEDIUM
+**Impact**: Service-Degraded
+**Exception**: `DomainNotAllowedError` (shared-auth)
+**Location**: `acgs2-core/shared/auth/provisioning.py`
+
+**Description**: User's email domain is not in the allowed list for auto-provisioning.
+
+**Common Causes**:
+- Domain allowlist configured but user domain not included
+- Typo in allowed domains configuration
+- Corporate domain not whitelisted
+
+**Symptoms**:
+```
+DomainNotAllowedError: Domain 'contractor.com' not in allowed list
+Auto-provisioning denied for user@contractor.com
+Allowed domains: example.com, corp.example.com
+```
+
+**Resolution**:
+1. **Check allowed domains configuration**:
+   ```bash
+   grep ALLOWED_EMAIL_DOMAINS .env
+   ```
+
+2. **Add domain to allowlist**:
+   ```bash
+   # Comma-separated list
+   echo "ALLOWED_EMAIL_DOMAINS=example.com,contractor.com,corp.example.com" >> .env
+   docker-compose restart
+   ```
+
+3. **Or disable domain restriction** (not recommended for production):
+   ```bash
+   # Allow all domains (use with caution)
+   echo "ALLOWED_EMAIL_DOMAINS=*" >> .env
+   ```
+
+**Example**:
+```bash
+# Domain not allowed
+ERROR: DomainNotAllowedError: contractor.com not in allowed list
+
+# Fix: Add domain
+echo "ALLOWED_EMAIL_DOMAINS=example.com,contractor.com" >> .env
+docker-compose restart
+```
+
+**Related Errors**: ACGS-2311, ACGS-2313
+
+---
+
+### ACGS-2313: ProvisioningDisabledError
+
+**Severity**: LOW
+**Impact**: Informational
+**Exception**: `ProvisioningDisabledError` (shared-auth)
+**Location**: `acgs2-core/shared/auth/provisioning.py`
+
+**Description**: Auto-provisioning is disabled, manual user creation required.
+
+**Resolution**:
+1. **Enable auto-provisioning** if desired:
+   ```bash
+   echo "AUTO_PROVISION_USERS=true" >> .env
+   docker-compose restart
+   ```
+
+2. **Or manually create user**:
+   ```bash
+   curl -X POST http://localhost:8080/api/users \
+     -H "Authorization: Bearer <admin-token>" \
+     -d '{"email": "user@example.com", "roles": ["viewer"]}'
+   ```
+
+**Related Errors**: ACGS-2311, ACGS-2312
+
+---
+
+### ACGS-2401: PolicyEvaluationError
+
+**Severity**: HIGH
+**Impact**: Service-Degraded
+**Exception**: `PolicyEvaluationError` (enhanced-agent-bus, hitl-approvals)
+**Location**: `enhanced_agent_bus/exceptions.py`, `hitl_approvals/app/core/opa_client.py`
+
+**Description**: OPA policy evaluation failed during execution.
+
+**Common Causes**:
+- Policy execution error (runtime error in Rego)
+- Invalid input data format
+- Policy returns error result
+- Missing required input fields
+- Type mismatch in policy evaluation
+
+**Symptoms**:
+```
+PolicyEvaluationError: Policy evaluation failed
+OPA returned error: undefined variable 'user'
+Type error in policy: expected string, got number
+Policy result: {"error": "division by zero"}
+```
+
+**Resolution**:
+1. **Check OPA policy syntax**:
+   ```bash
+   # Validate policy
+   curl -X PUT http://localhost:8181/v1/policies/test \
+     --data-binary @policy.rego
+
+   # If syntax error, fix and reload
+   ```
+
+2. **Verify input data format**:
+   ```bash
+   # Test policy with sample input
+   curl -X POST http://localhost:8181/v1/data/acgs2/policy/allow \
+     -d '{
+       "input": {
+         "user": "user@example.com",
+         "action": "read",
+         "resource": "/api/approvals"
+       }
+     }'
+   ```
+
+3. **Check OPA logs** for detailed error:
+   ```bash
+   docker-compose logs opa | tail -50
+   ```
+
+4. **Review policy logic** for runtime errors:
+   - Division by zero
+   - Null pointer access
+   - Array index out of bounds
+   - Undefined variables
+
+**Example**:
+```bash
+# Policy evaluation error
+ERROR: PolicyEvaluationError: undefined variable 'user.role'
+
+# Fix: Update policy or ensure input includes user.role
+curl -X POST http://localhost:8181/v1/data/acgs2/rbac/allow \
+  -d '{"input": {"user": {"email": "test@example.com", "role": "admin"}}}'
+```
+
+**Related Errors**: ACGS-2402, ACGS-2403, ACGS-2411
+
+---
+
+### ACGS-2402: PolicyNotFoundError
+
+**Severity**: HIGH
+**Impact**: Service-Degraded
+**Exception**: `PolicyNotFoundError` (enhanced-agent-bus)
+**Location**: `enhanced_agent_bus/exceptions.py`
+
+**Description**: Required OPA policy not found - query returns undefined.
+
+**Common Causes**:
+- Policy not loaded into OPA
+- Wrong policy path in query
+- Policy compilation failed
+- Policy bundle not deployed
+- Typo in policy package name
+
+**Symptoms**:
+```
+PolicyNotFoundError: Policy not found: acgs2.rbac.allow
+OPA query returned undefined
+No policy at path: data.acgs2.policy.constitutional
+Policy bundle failed to load
+```
+
+**Resolution**:
+1. **List loaded policies**:
+   ```bash
+   curl http://localhost:8181/v1/policies
+   # Should show all loaded .rego files
+   ```
+
+2. **Check policy bundle**:
+   ```bash
+   # If using bundle:
+   curl http://localhost:8181/v1/data
+   # Should show policy data
+   ```
+
+3. **Load missing policy**:
+   ```bash
+   # Upload policy
+   curl -X PUT http://localhost:8181/v1/policies/acgs2 \
+     --data-binary @acgs2-policies.rego
+   ```
+
+4. **Verify policy path**:
+   ```bash
+   # Query structure: data.<package>.<rule>
+   # If policy package is: package acgs2.rbac
+   # Query should be: data.acgs2.rbac.allow
+   ```
+
+5. **Check OPA startup logs**:
+   ```bash
+   docker-compose logs opa | grep -i "error\|fail"
+   # Look for bundle loading errors
+   ```
+
+**Example**:
+```bash
+# Policy not found
+ERROR: PolicyNotFoundError: acgs2.constitutional.validate undefined
+
+# Diagnosis:
+curl http://localhost:8181/v1/policies | jq .
+# Policy not loaded
+
+# Fix: Upload policy
+docker-compose restart opa
+# Or manually upload:
+curl -X PUT http://localhost:8181/v1/policies/constitutional \
+  --data-binary @constitutional-policy.rego
+```
+
+**Related Errors**: ACGS-2401, ACGS-2403, ACGS-2404
+
+---
+
+### ACGS-2404: OPANotInitializedError
+
+**Severity**: CRITICAL
+**Impact**: Service-Unavailable
+**Exception**: `OPANotInitializedError` (enhanced-agent-bus, hitl-approvals)
+**Location**: `enhanced_agent_bus/exceptions.py`, `hitl_approvals/app/core/opa_client.py`
+
+**Description**: OPA client not properly initialized before use.
+
+**Common Causes**:
+- Service startup race condition
+- OPA initialization failed silently
+- Configuration error during OPA client creation
+- OPA_URL not set
+
+**Symptoms**:
+```
+OPANotInitializedError: OPA client not initialized
+Cannot use OPA client before initialization
+Service startup failed: OPA client null
+```
+
+**Resolution**:
+1. **Check service initialization order**:
+   ```bash
+   # Ensure OPA starts before dependent services
+   docker-compose logs --tail=100 opa enhanced-agent-bus
+   ```
+
+2. **Verify OPA_URL is set**:
+   ```bash
+   grep OPA_URL .env
+   # Should be: OPA_URL=http://opa:8181
+   ```
+
+3. **Restart services in correct order**:
+   ```bash
+   docker-compose up -d opa
+   # Wait for OPA to be ready
+   sleep 5
+   docker-compose up -d enhanced-agent-bus hitl-approvals
+   ```
+
+4. **Check OPA health before service starts**:
+   ```bash
+   # Service should wait for OPA health check
+   curl http://localhost:8181/health
+   # Should return: {"status": "ok"}
+   ```
+
+**Example**:
+```bash
+# OPA not initialized
+ERROR: OPANotInitializedError: OPA client not initialized
+
+# Fix: Restart services in order
+docker-compose restart opa
+sleep 5
+docker-compose restart enhanced-agent-bus hitl-approvals
+```
+
+**Related Errors**: ACGS-2403, ACGS-1101
+
+---
+
+### ACGS-2411: PolicyError
+
+**Severity**: HIGH
+**Impact**: Service-Degraded
+**Exception**: `PolicyError` (enhanced-agent-bus)
+**Location**: `enhanced_agent_bus/exceptions.py`
+
+**Description**: Base exception for policy-related errors.
+
+**Resolution**: See related errors:
+- ACGS-2401: PolicyEvaluationError
+- ACGS-2402: PolicyNotFoundError
+
+---
+
+### ACGS-2412: OPAClientError
+
+**Severity**: HIGH
+**Impact**: Service-Degraded
+**Exception**: `OPAClientError` (hitl-approvals)
+**Location**: `hitl_approvals/app/core/opa_client.py`
+
+**Description**: Base exception for OPA client errors in HITL approvals service.
+
+**Resolution**: See related errors:
+- ACGS-2401: PolicyEvaluationError
+- ACGS-2403: OPAConnectionError
+- ACGS-2404: OPANotInitializedError
+
+---
+
+### ACGS-2413: OPAServiceError
+
+**Severity**: MEDIUM
+**Impact**: Service-Degraded
+**Exception**: `OPAServiceError` (cli)
+**Location**: `cli/opa_service.py`
+
+**Description**: Base exception for OPA service CLI errors.
+
+**Resolution**: Check CLI logs and OPA connectivity:
+```bash
+docker-compose logs cli | grep -i opa
+```
+
+**Related Errors**: ACGS-2403, ACGS-2411, ACGS-2412
+
+---
+
+### ACGS-2501: TokenRefreshError
+
+**Severity**: MEDIUM
+**Impact**: Service-Degraded
+
+**Description**: OAuth token refresh operation failed.
+
+**Common Causes**:
+- Refresh token expired
+- Refresh token revoked
+- Invalid client credentials
+- Token endpoint unreachable
+
+**Symptoms**:
+```
+TokenRefreshError: Failed to refresh access token
+Refresh token expired
+invalid_grant: Refresh token has been revoked
+```
+
+**Resolution**:
+1. **Check refresh token expiration**:
+   ```bash
+   # Refresh tokens typically last 30-90 days
+   # Check token expiration in database or token store
+   ```
+
+2. **Verify client credentials**:
+   ```bash
+   # Ensure client_id and client_secret correct
+   grep -E "CLIENT_ID|CLIENT_SECRET" .env
+   ```
+
+3. **Re-authenticate** if refresh token expired:
+   ```bash
+   # User must re-authenticate via SSO/OAuth flow
+   # Cannot refresh with expired refresh token
+   ```
+
+4. **Test token refresh**:
+   ```bash
+   curl -X POST https://auth.example.com/oauth/token \
+     -d "grant_type=refresh_token" \
+     -d "refresh_token=<refresh-token>" \
+     -d "client_id=<client-id>" \
+     -d "client_secret=<client-secret>"
+   ```
+
+**Example**:
+```bash
+# Refresh token expired
+ERROR: TokenRefreshError: Refresh token expired
+
+# Fix: User must re-authenticate
+# Redirect to SSO login page
+```
+
+**Related Errors**: ACGS-2104, ACGS-2502
+
+---
+
+### ACGS-2502: TokenRevocationError
+
+**Severity**: MEDIUM
+**Impact**: Service-Degraded
+
+**Description**: Token revocation operation failed during logout or security event.
+
+**Common Causes**:
+- Revocation endpoint unreachable
+- Token already revoked
+- Invalid token format
+- Insufficient client permissions
+
+**Symptoms**:
+```
+TokenRevocationError: Failed to revoke token
+Connection failed to revocation endpoint
+Token not found or already revoked
+```
+
+**Resolution**:
+1. **Check revocation endpoint**:
+   ```bash
+   # Test connectivity
+   curl https://auth.example.com/.well-known/openid-configuration | \
+     jq .revocation_endpoint
+   ```
+
+2. **Verify token is valid format**:
+   ```bash
+   # Ensure token isn't already expired/revoked
+   ```
+
+3. **Fallback**: Delete token locally even if revocation fails:
+   ```bash
+   # Remove from local token store
+   docker-compose exec redis redis-cli DEL "token:<token-id>"
+   ```
+
+**Example**:
+```bash
+# Revocation failed
+WARN: TokenRevocationError: Failed to revoke token at IdP
+
+# System should still delete token locally for security
+# User session terminated locally even if IdP revocation fails
+```
+
+**Related Errors**: ACGS-2501, ACGS-2104
+
+---
+
 ### ACGS-2403: OPAConnectionError
 
 **Severity**: CRITICAL
