@@ -49,9 +49,24 @@ jobs:
         run: |
           pip install -e .[test]
           pip install -r acgs2-core/requirements_optimized.txt
-      - name: Run All Tests
+          pip install pytest-cov
+      - name: Run All Tests with Coverage
         run: |
-          python3 test_all.py
+          cd acgs2-core/enhanced_agent_bus
+          python -m pytest tests/ -v --cov=enhanced_agent_bus --cov-report=xml --cov-report=term --cov-fail-under=80
+      - name: Upload coverage reports
+        uses: codecov/codecov-action@v4
+        with:
+          file: ./acgs2-core/enhanced_agent_bus/coverage.xml
+          flags: unittests
+          name: codecov-unified
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-reports
+          path: |
+            acgs2-core/enhanced_agent_bus/coverage.xml
+            acgs2-core/enhanced_agent_bus/.coverage
 
   test-rust:
     name: Rust Tests (1.80.0)
