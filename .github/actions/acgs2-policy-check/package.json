@@ -1,0 +1,23 @@
+{
+  "name": "acgs2-policy-check",
+  "version": "1.0.0",
+  "description": "ACGS2 Policy Check GitHub Action - Validates resources against governance policies in CI/CD pipelines",
+  "main": "index.js",
+  "scripts": {
+    "test": "node test.js",
+    "lint": "eslint index.js"
+  },
+  "keywords": [
+    "github-action",
+    "acgs2",
+    "policy",
+    "governance",
+    "compliance",
+    "security"
+  ],
+  "author": "ACGS2 Team",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

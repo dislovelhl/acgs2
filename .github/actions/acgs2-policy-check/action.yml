@@ -1,0 +1,77 @@
+name: 'ACGS2 Policy Check'
+description: 'Validates resources against ACGS2 governance policies in CI/CD pipelines'
+author: 'ACGS2 Team'
+
+branding:
+  icon: 'shield'
+  color: 'blue'
+
+inputs:
+  api-url:
+    description: 'ACGS2 Integration Service API URL'
+    required: true
+    default: 'http://localhost:8100'
+  api-token:
+    description: 'ACGS2 API authentication token'
+    required: false
+  policy-id:
+    description: 'Specific policy ID to check against (optional, checks all if not specified)'
+    required: false
+  resource-type:
+    description: 'Type of resource being validated (e.g., deployment, config, code)'
+    required: false
+    default: 'code'
+  resource-path:
+    description: 'Path to resource file or directory to validate'
+    required: false
+    default: '.'
+  fail-on-violation:
+    description: 'Whether to fail the workflow on policy violations'
+    required: false
+    default: 'true'
+  severity-threshold:
+    description: 'Minimum severity to fail on (critical, high, medium, low, info)'
+    required: false
+    default: 'high'
+  annotations:
+    description: 'Whether to create PR annotations for violations'
+    required: false
+    default: 'true'
+  report-format:
+    description: 'Output format for the report (json, markdown, summary)'
+    required: false
+    default: 'markdown'
+  timeout:
+    description: 'API request timeout in seconds'
+    required: false
+    default: '30'
+  include-patterns:
+    description: 'Glob patterns of files to include (comma-separated)'
+    required: false
+    default: '**/*'
+  exclude-patterns:
+    description: 'Glob patterns of files to exclude (comma-separated)'
+    required: false
+    default: 'node_modules/**,vendor/**,.git/**'
+
+outputs:
+  result:
+    description: 'Policy check result (pass or fail)'
+  violations-count:
+    description: 'Total number of policy violations found'
+  critical-count:
+    description: 'Number of critical severity violations'
+  high-count:
+    description: 'Number of high severity violations'
+  medium-count:
+    description: 'Number of medium severity violations'
+  low-count:
+    description: 'Number of low severity violations'
+  report:
+    description: 'Full policy check report in the specified format'
+  report-url:
+    description: 'URL to view the full report (if applicable)'
+
+runs:
+  using: 'node20'
+  main: 'index.js'

@@ -1,0 +1,228 @@
+# ACGS2 Policy Check Workflow Template
+#
+# This workflow validates your resources against ACGS2 governance policies.
+# Copy this file to .github/workflows/acgs2-policy-check.yml in your repository.
+#
+# Prerequisites:
+# 1. Add the ACGS2 policy check action to your repository
+# 2. Configure the following secrets:
+#    - ACGS2_API_URL: URL of your ACGS2 Integration Service
+#    - ACGS2_API_TOKEN: API authentication token
+
+name: ACGS2 Policy Validation
+
+on:
+  pull_request:
+    branches: [main, develop]
+  push:
+    branches: [main]
+  # Allow manual trigger for testing
+  workflow_dispatch:
+    inputs:
+      severity-threshold:
+        description: 'Minimum severity to fail on'
+        required: false
+        default: 'high'
+        type: choice
+        options:
+          - critical
+          - high
+          - medium
+          - low
+          - info
+
+# Cancel in-progress runs for the same branch
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  policy-check:
+    name: ACGS2 Governance Check
+    runs-on: ubuntu-latest
+
+    # Only run on PRs or main branch pushes
+    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
+
+    permissions:
+      contents: read
+      pull-requests: write
+      checks: write
+
+    outputs:
+      result: ${{ steps.policy.outputs.result }}
+      violations: ${{ steps.policy.outputs.violations-count }}
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get Changed Files
+        id: changed-files
+        uses: tj-actions/changed-files@v44
+        if: github.event_name == 'pull_request'
+        with:
+          files: |
+            **/*.yaml
+            **/*.yml
+            **/*.json
+            **/*.tf
+            **/*.py
+            **/*.js
+            **/*.ts
+            **/*.go
+            **/*.java
+            **/Dockerfile*
+
+      - name: ACGS2 Policy Check
+        id: policy
+        uses: ./.github/actions/acgs2-policy-check
+        with:
+          api-url: ${{ secrets.ACGS2_API_URL || 'http://localhost:8100' }}
+          api-token: ${{ secrets.ACGS2_API_TOKEN }}
+          resource-path: '.'
+          fail-on-violation: 'true'
+          severity-threshold: ${{ github.event.inputs.severity-threshold || 'high' }}
+          annotations: 'true'
+          report-format: 'markdown'
+          timeout: '60'
+          exclude-patterns: 'node_modules/**,vendor/**,.git/**,**/*_test.go,**/*.test.ts,**/*.test.js'
+
+      - name: Save Policy Report
+        if: always()
+        run: |
+          mkdir -p reports
+          echo '${{ steps.policy.outputs.report }}' | sed 's/%0A/\n/g' > reports/policy-report.md
+
+      - name: Upload Report Artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: acgs2-policy-report
+          path: reports/
+          retention-days: 30
+
+  # Add policy status to PR
+  update-pr:
+    name: Update PR Status
+    runs-on: ubuntu-latest
+    needs: policy-check
+    if: github.event_name == 'pull_request'
+
+    permissions:
+      pull-requests: write
+
+    steps:
+      - name: Add PR Comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const result = '${{ needs.policy-check.outputs.result }}';
+            const violations = '${{ needs.policy-check.outputs.violations }}';
+
+            const icon = result === 'pass' ? ':white_check_mark:' : ':x:';
+            const status = result === 'pass' ? 'Passed' : 'Failed';
+
+            const body = `## ACGS2 Policy Check ${icon}
+
+            **Status**: ${status}
+            **Violations Found**: ${violations}
+
+            ${result === 'pass'
+              ? 'All governance policies have been validated successfully.'
+              : 'Policy violations were detected. Please review the annotations and fix the issues before merging.'}
+
+            ---
+            _Powered by [ACGS2 Governance Platform](https://github.com/your-org/acgs2)_`;
+
+            // Find existing comment
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const existingComment = comments.find(c =>
+              c.user.login === 'github-actions[bot]' &&
+              c.body.includes('ACGS2 Policy Check')
+            );
+
+            if (existingComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existingComment.id,
+                body: body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: body,
+              });
+            }
+
+  # Kubernetes-specific validation (optional job)
+  k8s-policy-check:
+    name: Kubernetes Policy Check
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Check for K8s Changes
+        id: k8s-check
+        run: |
+          if [ -d "kubernetes/" ] || [ -d "k8s/" ] || [ -d "manifests/" ]; then
+            echo "has_k8s=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_k8s=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: ACGS2 K8s Policy Check
+        if: steps.k8s-check.outputs.has_k8s == 'true'
+        uses: ./.github/actions/acgs2-policy-check
+        with:
+          api-url: ${{ secrets.ACGS2_API_URL || 'http://localhost:8100' }}
+          api-token: ${{ secrets.ACGS2_API_TOKEN }}
+          resource-type: 'kubernetes'
+          resource-path: 'kubernetes/'
+          policy-id: 'k8s-security-baseline'
+          severity-threshold: 'high'
+          annotations: 'true'
+
+  # Terraform-specific validation (optional job)
+  terraform-policy-check:
+    name: Terraform Policy Check
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Check for Terraform Changes
+        id: tf-check
+        run: |
+          if [ -d "terraform/" ] || [ -d "infrastructure/" ]; then
+            echo "has_tf=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_tf=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: ACGS2 Terraform Policy Check
+        if: steps.tf-check.outputs.has_tf == 'true'
+        uses: ./.github/actions/acgs2-policy-check
+        with:
+          api-url: ${{ secrets.ACGS2_API_URL || 'http://localhost:8100' }}
+          api-token: ${{ secrets.ACGS2_API_TOKEN }}
+          resource-type: 'terraform'
+          resource-path: 'terraform/'
+          policy-id: 'cloud-security-baseline'
+          severity-threshold: 'high'
+          annotations: 'true'
