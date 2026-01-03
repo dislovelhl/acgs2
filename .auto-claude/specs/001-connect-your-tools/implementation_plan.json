@@ -4,7 +4,7 @@
   "workflow_type": "feature",
   "description": "Implement Linear integration into the ACGS2 integration-service to enable bidirectional synchronization between Linear issues and external tools (GitHub, GitLab, Slack). This will make Linear the source of truth for product development workflows by automatically syncing issue states, comments, and metadata across platforms.",
   "created_at": "2026-01-03T21:08:19.581Z",
-  "updated_at": "2026-01-03T21:25:23.352Z",
+  "updated_at": "2026-01-03T22:00:00.431Z",
   "status": "in_progress",
   "planStatus": "in_progress",
   "total_estimated_hours": 80,
@@ -49,69 +49,74 @@
         {
           "id": "1.4",
           "description": "Add Linear dependencies to requirements.txt",
-          "status": "pending",
+          "status": "completed",
           "dependencies": [
             "1.1"
           ],
           "estimated_hours": 1,
-          "notes": "Add: gql[all]>=3.5.0, PyGithub>=2.1.0, python-gitlab>=4.4.0, slack-sdk>=3.33.0",
+          "notes": "\u2705 Added Linear dependencies to requirements.txt: gql[all]>=3.5.0 (GraphQL client), PyGithub>=2.1.0 (GitHub API), python-gitlab>=4.4.0 (GitLab API), slack-sdk>=3.33.0 (Slack SDK). Pre-commit hook automatically sorted the dependencies alphabetically. All packages verified in subtask 1.1 are now included in requirements.txt.",
           "files_to_modify": [
             "integration-service/requirements.txt"
-          ]
+          ],
+          "updated_at": "2026-01-03T21:44:22.598691+00:00"
         },
         {
           "id": "1.5",
           "description": "Update .env.example with Linear environment variables",
-          "status": "pending",
+          "status": "completed",
           "dependencies": [
             "1.2"
           ],
           "estimated_hours": 1,
-          "notes": "Add: LINEAR_API_KEY, LINEAR_WEBHOOK_SECRET, LINEAR_TEAM_ID, LINEAR_PROJECT_ID, SLACK_BOT_TOKEN, SLACK_SIGNING_SECRET, SLACK_DEFAULT_CHANNEL",
+          "notes": "\u2705 Added Linear integration environment variables (LINEAR_API_KEY, LINEAR_WEBHOOK_SECRET, LINEAR_TEAM_ID, LINEAR_PROJECT_ID) and Slack integration variables (SLACK_BOT_TOKEN, SLACK_SIGNING_SECRET, SLACK_DEFAULT_CHANNEL) to integration-service/.env.example. Included setup instructions following existing patterns from JIRA and ServiceNow integrations. Committed with proper git message.",
           "files_to_modify": [
             "integration-service/.env.example"
-          ]
+          ],
+          "updated_at": "2026-01-03T21:46:02.068493+00:00"
         },
         {
           "id": "1.6",
           "description": "Create Linear configuration class using pydantic-settings",
-          "status": "pending",
+          "status": "completed",
           "dependencies": [
             "1.5"
           ],
           "estimated_hours": 2,
-          "notes": "Create src/config.py if doesn't exist. Add LinearConfig class with environment variable validation. Use sensitive=True for API keys.",
+          "notes": "\u2705 Created Linear configuration class using pydantic-settings at integration-service/src/config.py. Implemented LinearConfig, SlackConfig, and IntegrationServiceConfig classes with proper SecretStr for sensitive fields (LINEAR_API_KEY, LINEAR_WEBHOOK_SECRET, SLACK_BOT_TOKEN, SLACK_SIGNING_SECRET). Added singleton pattern with get_linear_config(), get_slack_config(), and get_service_config() helper functions. All fields properly typed with validation and default values. Committed successfully with all pre-commit hooks passing.",
           "files_to_modify": [
             "integration-service/src/config.py"
-          ]
+          ],
+          "updated_at": "2026-01-03T21:48:10.525180+00:00"
         },
         {
           "id": "1.7",
           "description": "Implement Linear GraphQL client with async support",
-          "status": "pending",
+          "status": "completed",
           "dependencies": [
             "1.2",
             "1.4",
             "1.6"
           ],
           "estimated_hours": 4,
-          "notes": "Create src/integrations/linear/client.py. Use AIOHTTPTransport for async FastAPI compatibility. Implement: create_issue, get_issue, update_issue, list_issues, add_comment methods.",
+          "notes": "\u2705 Implemented Linear GraphQL client at integration-service/src/integrations/linear/client.py. Created LinearClient class with async support using gql library and AIOHTTPTransport. Implemented all required methods: create_issue, get_issue, update_issue, list_issues, add_comment. Added comprehensive error handling with custom exception classes (LinearClientError, LinearAuthenticationError, LinearRateLimitError, LinearNotFoundError, LinearValidationError). Integrated retry logic with exponential backoff using tenacity. Supports pagination for large result sets. Rate limiting detection and handling. Async context manager support (__aenter__/__aexit__). All pre-commit hooks passed. Committed with hash 2476c97b9.",
           "files_to_modify": [
             "integration-service/src/integrations/linear/client.py"
-          ]
+          ],
+          "updated_at": "2026-01-03T21:56:40.715456+00:00"
         },
         {
           "id": "1.8",
           "description": "Write unit tests for Linear GraphQL client",
-          "status": "pending",
+          "status": "completed",
           "dependencies": [
             "1.7"
           ],
           "estimated_hours": 2,
-          "notes": "Create tests/integrations/test_linear_client.py. Mock GraphQL responses. Test: create_issue, query_issues, update_issue, error handling, pagination.",
+          "notes": "\u2705 Comprehensive test suite created for Linear GraphQL client at tests/integrations/test_linear_client.py. Includes 839 lines with 49 test functions covering: initialization, query execution, issue CRUD operations, comment creation, pagination, error handling (auth, rate limits, not found, validation), retry logic, and async context manager support. All tests follow existing patterns from test_jira.py. Committed with hash 45840bf5a.",
           "files_to_modify": [
             "tests/integrations/test_linear_client.py"
-          ]
+          ],
+          "updated_at": "2026-01-03T22:01:41.033052+00:00"
         }
       ]
     },
@@ -125,15 +130,16 @@
         {
           "id": "2.1",
           "description": "Create Pydantic models for Linear webhook payloads",
-          "status": "pending",
+          "status": "in_progress",
           "dependencies": [
             "1.2"
           ],
           "estimated_hours": 3,
-          "notes": "Create src/integrations/linear/models.py. Define models for: IssueEvent, CommentEvent, StatusChangeEvent. Include all webhook payload fields.",
+          "notes": "Starting implementation of Pydantic models for Linear webhook payloads. Reviewing existing patterns from integration-service/src/webhooks/models.py and integration-service/src/config/models.py",
           "files_to_modify": [
             "integration-service/src/integrations/linear/models.py"
-          ]
+          ],
+          "updated_at": "2026-01-03T22:03:11.513749+00:00"
         },
         {
           "id": "2.2",
@@ -648,5 +654,6 @@
     "Implement proper deduplication to prevent infinite sync loops",
     "Use Redis locks to prevent race conditions during bidirectional sync"
   ],
-  "last_updated": "2026-01-03T21:41:41.361645+00:00"
+  "last_updated": "2026-01-03T22:03:11.513758+00:00",
+  "recoveryNote": "Task recovered from stuck state at 2026-01-03T22:00:00.431Z"
 }

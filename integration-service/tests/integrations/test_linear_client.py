@@ -14,6 +14,7 @@ Tests cover:
 
 from __future__ import annotations
 
+import sys
 from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -21,8 +22,26 @@ import httpx
 import pytest
 from pydantic import SecretStr
 
-from src.config import LinearConfig
-from src.integrations.linear.client import (
+# Mock gql modules before importing the client (since gql isn't installed in test environment)
+gql_mock = MagicMock()
+gql_transport_mock = MagicMock()
+gql_transport_aiohttp_mock = MagicMock()
+
+# Create mock exception classes
+TransportQueryError = type("TransportQueryError", (Exception,), {})
+TransportServerError = type("TransportServerError", (Exception,), {})
+
+gql_transport_exceptions_mock = MagicMock()
+gql_transport_exceptions_mock.TransportQueryError = TransportQueryError
+gql_transport_exceptions_mock.TransportServerError = TransportServerError
+
+sys.modules["gql"] = gql_mock
+sys.modules["gql.transport"] = gql_transport_mock
+sys.modules["gql.transport.exceptions"] = gql_transport_exceptions_mock
+sys.modules["gql.transport.aiohttp"] = gql_transport_aiohttp_mock
+
+# Now import the client (after mocking gql modules)
+from src.integrations.linear.client import (  # noqa: E402
     LinearAuthenticationError,
     LinearClient,
     LinearClientError,
@@ -30,10 +49,6 @@ from src.integrations.linear.client import (
     LinearRateLimitError,
     LinearValidationError,
 )
-
-# Mock gql exceptions for testing
-TransportQueryError = type("TransportQueryError", (Exception,), {})
-TransportServerError = type("TransportServerError", (Exception,), {})
 
 if TYPE_CHECKING:
     pass
@@ -45,30 +60,34 @@ if TYPE_CHECKING:
 
 
 @pytest.fixture
-def sample_config() -> LinearConfig:
+def sample_config():
     """Create sample Linear configuration for testing."""
-    return LinearConfig(
-        linear_api_key=SecretStr("test-linear-api-key-12345"),
-        linear_api_url="https://api.linear.app/graphql",
-        linear_team_id="team-123",
-        linear_project_id="project-456",
-        linear_webhook_secret=SecretStr("test-webhook-secret"),
-    )
+    # Create a mock config object with all required attributes
+    config = MagicMock()
+    config.linear_api_key = SecretStr("test-linear-api-key-12345")
+    config.linear_api_url = "https://api.linear.app/graphql"
+    config.linear_team_id = "team-123"
+    config.linear_project_id = "project-456"
+    config.linear_webhook_secret = SecretStr("test-webhook-secret")
+    config.linear_timeout_seconds = 30.0
+    config.linear_max_retries = 3
+    return config
 
 
 @pytest.fixture
-def linear_client(sample_config: LinearConfig) -> LinearClient:
+def linear_client(sample_config) -> LinearClient:
     """Create a Linear client for testing."""
     return LinearClient(sample_config, timeout=30.0, max_retries=3)
 
 
 @pytest.fixture
-async def initialized_client(linear_client: LinearClient) -> LinearClient:
+async def initialized_client(linear_client: LinearClient):
     """Create an initialized Linear client for testing."""
     # Mock the transport and client initialization
     with patch("src.integrations.linear.client.AIOHTTPTransport") as mock_transport:
         with patch("src.integrations.linear.client.Client") as mock_client_class:
             mock_transport_instance = MagicMock()
+            mock_transport_instance.close = AsyncMock()  # Make close() async
             mock_transport.return_value = mock_transport_instance
 
             mock_client_instance = MagicMock()
@@ -109,7 +128,7 @@ class TestLinearClientInit:
             assert client.config == mock_config
             mock_get_config.assert_called_once()
 
-    def test_custom_timeout_and_retries(self, sample_config: LinearConfig):
+    def test_custom_timeout_and_retries(self, sample_config):
         """Test client accepts custom timeout and retry settings."""
         client = LinearClient(sample_config, timeout=60.0, max_retries=5)
 
@@ -173,9 +192,9 @@ class TestLinearClientInit:
                     await linear_client.initialize()
 
     @pytest.mark.asyncio
-    async def test_close_cleans_up_resources(self):
+    async def test_close_cleans_up_resources(self, sample_config):
         """Test that close properly cleans up resources."""
-        client = LinearClient()
+        client = LinearClient(sample_config)
 
         with patch("src.integrations.linear.client.AIOHTTPTransport") as mock_transport:
             with patch("src.integrations.linear.client.Client"):
@@ -769,27 +788,35 @@ class TestLinearAsyncContextManager:
     """Tests for async context manager support."""
 
     @pytest.mark.asyncio
-    async def test_async_context_manager_initialization(self, linear_client: LinearClient):
+    async def test_async_context_manager_initialization(self, sample_config):
         """Test that context manager initializes client."""
-        with patch("src.integrations.linear.client.AIOHTTPTransport"):
-            with patch("src.integrations.linear.client.Client"):
-                async with linear_client as client:
-                    assert client._initialized is True
+        client = LinearClient(sample_config)
 
-    @pytest.mark.asyncio
-    async def test_async_context_manager_cleanup(self, linear_client: LinearClient):
-        """Test that context manager cleans up on exit."""
         with patch("src.integrations.linear.client.AIOHTTPTransport") as mock_transport:
             with patch("src.integrations.linear.client.Client"):
                 mock_transport_instance = MagicMock()
                 mock_transport_instance.close = AsyncMock()
                 mock_transport.return_value = mock_transport_instance
 
-                async with linear_client:
+                async with client as initialized:
+                    assert initialized._initialized is True
+
+    @pytest.mark.asyncio
+    async def test_async_context_manager_cleanup(self, sample_config):
+        """Test that context manager cleans up on exit."""
+        client = LinearClient(sample_config)
+
+        with patch("src.integrations.linear.client.AIOHTTPTransport") as mock_transport:
+            with patch("src.integrations.linear.client.Client"):
+                mock_transport_instance = MagicMock()
+                mock_transport_instance.close = AsyncMock()
+                mock_transport.return_value = mock_transport_instance
+
+                async with client:
                     pass
 
                 mock_transport_instance.close.assert_called_once()
-                assert linear_client._initialized is False
+                assert client._initialized is False
 
 
 # ============================================================================
