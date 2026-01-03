@@ -745,11 +745,24 @@ async def list_policies(
     summary="Get policy details",
     description="Get details of a specific policy",
 )
-async def get_policy(policy_id: str) -> PolicyInfo:
+async def get_policy(
+    policy_id: str,
+    current_user: UserClaims = Depends(get_current_user),
+) -> PolicyInfo:
     """Get details of a specific policy."""
+    # Log the request with user/tenant context for audit trail
+    logger.info(
+        f"Get policy request: policy_id={policy_id}, "
+        f"user={current_user.sub}, tenant={current_user.tenant_id}"
+    )
+
     # Check demo policies first
     for policy in DEMO_POLICIES:
         if policy.id == policy_id:
+            logger.info(
+                f"Get policy complete: found demo policy {policy_id}, "
+                f"user={current_user.sub}, tenant={current_user.tenant_id}"
+            )
             return policy
 
     # Check OPA if available
@@ -763,7 +776,7 @@ async def get_policy(policy_id: str) -> PolicyInfo:
                     policy_data = result.get("result", {})
 
                     if policy_data:
-                        return PolicyInfo(
+                        policy_info = PolicyInfo(
                             id=policy_id,
                             name=policy_data.get("name", policy_id),
                             description=policy_data.get("description"),
@@ -772,9 +785,18 @@ async def get_policy(policy_id: str) -> PolicyInfo:
                             severity=ViolationSeverity(policy_data.get("severity", "medium")),
                             enabled=policy_data.get("enabled", True),
                         )
+                        logger.info(
+                            f"Get policy complete: found OPA policy {policy_id}, "
+                            f"user={current_user.sub}, tenant={current_user.tenant_id}"
+                        )
+                        return policy_info
         except Exception as e:
             logger.warning(f"Failed to get policy from OPA: {e}")
 
+    logger.warning(
+        f"Get policy failed: policy not found {policy_id}, "
+        f"user={current_user.sub}, tenant={current_user.tenant_id}"
+    )
     raise HTTPException(
         status_code=status.HTTP_404_NOT_FOUND,
         detail=f"Policy not found: {policy_id}",
