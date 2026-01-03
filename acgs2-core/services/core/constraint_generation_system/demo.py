@@ -80,7 +80,7 @@ async def demo_python_generation():
             extra={"test_preview": test_preview, "test_length": len(result.tests)},
         )
 
-    print("\n" + "=" * 50 + "\n")
+    logger.info("\n" + "=" * 50 + "\n")
 
 
 async def demo_javascript_generation():
@@ -141,12 +141,12 @@ async def demo_javascript_generation():
             extra={"test_preview": test_preview, "test_length": len(result.tests)},
         )
 
-    print("\n" + "=" * 50 + "\n")
+    logger.info("\n" + "=" * 50 + "\n")
 
 
 async def demo_language_constraints():
     """演示语言约束"""
-    print("=== 语言约束演示 ===")
+    logger.info("=== 语言约束演示 ===")
 
     constraints = LanguageConstraints()
 
@@ -154,20 +154,20 @@ async def demo_language_constraints():
 
     for lang in languages:
         lang_constraints = constraints.get_constraints(lang)
-        print(f"{lang.upper()} 约束:")
-        print(f"  语言: {lang_constraints['language']}")
-        print(f"  缩进风格: {lang_constraints['indent_style']}")
-        print(f"  缩进大小: {lang_constraints['indent_size']}")
-        print(f"  最大行长: {lang_constraints['max_line_length']}")
-        print(f"  文件扩展名: {lang_constraints['file_extension']}")
-        print()
+        logger.info(f"{lang.upper()} 约束:")
+        logger.info(f"  语言: {lang_constraints['language']}")
+        logger.info(f"  缩进风格: {lang_constraints['indent_style']}")
+        logger.info(f"  缩进大小: {lang_constraints['indent_size']}")
+        logger.info(f"  最大行长: {lang_constraints['max_line_length']}")
+        logger.info(f"  文件扩展名: {lang_constraints['file_extension']}")
+        logger.info()
 
-    print("=" * 50 + "\n")
+    logger.info("=" * 50 + "\n")
 
 
 async def demo_unit_test_generation():
     """演示单元测试生成"""
-    print("=== 单元测试生成演示 ===")
+    logger.info("=== 单元测试生成演示 ===")
 
     test_gen = UnitTestGenerator()
 
@@ -193,20 +193,20 @@ class MathUtils:
         return True
 '''
 
-    print("源代码:")
-    print(python_code)
+    logger.info("源代码:")
+    logger.info(python_code)
 
     tests = await test_gen.generate_tests(python_code, "python")
 
-    print("\n生成的测试:")
-    print(tests)
+    logger.info("\n生成的测试:")
+    logger.info(tests)
 
-    print("\n" + "=" * 50 + "\n")
+    logger.info("\n" + "=" * 50 + "\n")
 
 
 async def demo_quality_scoring():
     """演示质量评分"""
-    print("=== 代码质量评分演示 ===")
+    logger.info("=== 代码质量评分演示 ===")
 
     scorer = QualityScorer(enable_local_analysis=False)
 
@@ -235,20 +235,20 @@ def bubble_sort(arr):
 def sort(arr):return sorted(arr)  # 没有文档，没有错误处理
 """
 
-    print("好的代码质量评分:")
+    logger.info("好的代码质量评分:")
     good_score = await scorer.score_code(good_code, "python")
-    print(f"分数: {good_score}")
+    logger.info(f"分数: {good_score}")
 
-    print("\n差的代码质量评分:")
+    logger.info("\n差的代码质量评分:")
     bad_score = await scorer.score_code(bad_code, "python")
-    print(f"分数: {bad_score}")
+    logger.info(f"分数: {bad_score}")
 
-    print("\n" + "=" * 50 + "\n")
+    logger.info("\n" + "=" * 50 + "\n")
 
 
 async def demo_system_stats():
     """演示系统统计"""
-    print("=== 系统统计演示 ===")
+    logger.info("=== 系统统计演示 ===")
 
     generator = ConstraintGenerator()
 
@@ -262,14 +262,14 @@ async def demo_system_stats():
         await generator.generate_code(request)
 
     stats = generator.get_stats()
-    print("系统统计:")
-    print(f"  总生成次数: {stats['total_generations']}")
-    print(f"  成功生成次数: {stats['successful_generations']}")
-    print(f"  语法错误捕获: {stats['syntax_errors_caught']}")
-    print(f"  质量改进次数: {stats['quality_improvements']}")
-    print(f"  约束更新次数: {stats['constraint_updates']}")
+    logger.info("系统统计:")
+    logger.info(f"  总生成次数: {stats['total_generations']}")
+    logger.info(f"  成功生成次数: {stats['successful_generations']}")
+    logger.info(f"  语法错误捕获: {stats['syntax_errors_caught']}")
+    logger.info(f"  质量改进次数: {stats['quality_improvements']}")
+    logger.info(f"  约束更新次数: {stats['constraint_updates']}")
 
-    print("\n" + "=" * 50 + "\n")
+    logger.info("\n" + "=" * 50 + "\n")
 
 
 async def main():
@@ -315,13 +315,13 @@ async def main():
                 ]
             },
         )
-        print("\n里程碑目标:")
-        print("• 代码修复需求减80%")
-        print("• 语法正确率>99.5%")
-        print("• 生成任务中测试覆盖>90%")
+        logger.info("\n里程碑目标:")
+        logger.info("• 代码修复需求减80%")
+        logger.info("• 语法正确率>99.5%")
+        logger.info("• 生成任务中测试覆盖>90%")
 
     except Exception as e:
-        print(f"演示过程中出现错误: {e}")
+        logger.info(f"演示过程中出现错误: {e}")
         import traceback
 
         traceback.print_exc()

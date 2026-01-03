@@ -2,7 +2,8 @@
 
 Constitutional Hash: cdd01ef066bc6cf2
 
-Tests for HTTP/Z3 integration paths, error handling, caching, circuit breaker to improve coverage from 28-33% to >90%.
+Tests for HTTP/Z3 integration paths, error handling, caching, circuit breaker
+to improve coverage from 28-33% to >90%.
 
 Uses pytest-mock for external deps."""
 

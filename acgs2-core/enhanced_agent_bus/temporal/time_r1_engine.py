@@ -617,15 +617,15 @@ async def record_governance_decision(
 if __name__ == "__main__":
     # Example usage and testing
     async def main():
-        print("Testing Time-R1 Constitutional Timeline Engine...")
+        logger.info("Testing Time-R1 Constitutional Timeline Engine...")
 
         engine = ConstitutionalTimelineEngine(max_events=1000)
 
         # Test timeline status
         status = await engine.get_timeline_status()
-        print(f"✅ Engine status: {status['status']}")
-        print(f"✅ Immutable log: {status['capabilities']['immutable_log']}")
-        print(f"✅ Causal validation: {status['capabilities']['causal_validation']}")
+        logger.info(f"✅ Engine status: {status['status']}")
+        logger.info(f"✅ Immutable log: {status['capabilities']['immutable_log']}")
+        logger.info(f"✅ Causal validation: {status['capabilities']['causal_validation']}")
 
         # Test adding events
         event1 = await engine.add_event(
@@ -636,7 +636,7 @@ if __name__ == "__main__":
             causal_chain=[],
         )
 
-        print(f"✅ Added event 1: {event1.event_id}")
+        logger.info(f"✅ Added event 1: {event1.event_id}")
 
         event2 = await engine.add_event(
             event_type=TemporalEventType.GOVERNANCE_DECISION,
@@ -646,15 +646,15 @@ if __name__ == "__main__":
             causal_chain=[event1.event_id],
         )
 
-        print(f"✅ Added event 2: {event2.event_id} (caused by {event1.event_id})")
+        logger.info(f"✅ Added event 2: {event2.event_id} (caused by {event1.event_id})")
 
         # Test causal chain retrieval
         chain = engine.get_causal_chain(event2.event_id)
-        print(f"✅ Causal chain for event 2: {len(chain)} events")
+        logger.info(f"✅ Causal chain for event 2: {len(chain)} events")
 
         # Test state computation
         state = await engine.compute_state_from_log()
-        print(f"✅ Current state: {state['total_events']} total events")
+        logger.info(f"✅ Current state: {state['total_events']} total events")
 
         # Test disruption handling
         disruption = {
@@ -664,13 +664,13 @@ if __name__ == "__main__":
         }
 
         adaptation = await engine.handle_disruption(disruption)
-        print(f"✅ Disruption handled: {adaptation['disruption_type']}")
+        logger.info(f"✅ Disruption handled: {adaptation['disruption_type']}")
 
         # Test timeline integrity
         integrity_verified = engine.last_verified_hash == engine._compute_timeline_hash()
-        print(f"✅ Timeline integrity: {'verified' if integrity_verified else 'compromised'}")
+        logger.info(f"✅ Timeline integrity: {'verified' if integrity_verified else 'compromised'}")
 
-        print("✅ Time-R1 Constitutional Timeline Engine test completed!")
+        logger.info("✅ Time-R1 Constitutional Timeline Engine test completed!")
 
     # Run test
     asyncio.run(main())

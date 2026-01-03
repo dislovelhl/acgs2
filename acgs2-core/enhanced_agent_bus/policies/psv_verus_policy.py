@@ -299,7 +299,7 @@ method shouldLog(level: LogLevel) returns (log: bool)
     async def _apply_learned_improvements(self, dafny_spec: str, natural_spec: str) -> str:
         """Apply learned improvements from previous successful verifications."""
         # Look for similar successful patterns
-        spec_hash = hashlib.md5(natural_spec.encode()).hexdigest()[:8]
+        spec_hash = hashlib.md5(natural_spec.encode(), usedforsecurity=False).hexdigest()[:8]
 
         improvements = self.success_patterns.get(spec_hash, [])
 
@@ -319,7 +319,9 @@ method shouldLog(level: LogLevel) returns (log: bool)
         for error in errors:
             error_pattern = self._extract_error_pattern(error)
             if error_pattern:
-                spec_hash = hashlib.md5(original_spec.encode()).hexdigest()[:8]
+                spec_hash = hashlib.md5(original_spec.encode(), usedforsecurity=False).hexdigest()[
+                    :8
+                ]
                 if spec_hash not in self.success_patterns:
                     self.success_patterns[spec_hash] = []
                 self.success_patterns[spec_hash].append(f"fixed_{error_pattern}")
@@ -901,14 +903,14 @@ async def generate_policy_from_spec(
 if __name__ == "__main__":
     # Example usage and testing
     async def main():
-        print("Testing PSV-Verus Verified Policy Generator...")
+        logger.info("Testing PSV-Verus Verified Policy Generator...")
 
         generator = VerifiedPolicyGenerator(max_iterations=3)
 
         # Test status
         status = await generator.get_generator_status()
-        print(f"✅ Generator status: {status['status']}")
-        print("✅ Capabilities: DafnyPro + AlphaVerus integration")
+        logger.info(f"✅ Generator status: {status['status']}")
+        logger.info("✅ Capabilities: DafnyPro + AlphaVerus integration")
 
         # Test policy generation
         test_spec = PolicySpecification(
@@ -921,31 +923,31 @@ if __name__ == "__main__":
 
         verified_policy = await generator.generate_verified_policy(test_spec)
 
-        print("✅ Policy generation completed")
-        print(f"   Policy ID: {verified_policy.policy_id}")
-        print(f"   Verification status: {verified_policy.verification_status.value}")
-        print(f"   Confidence score: {verified_policy.confidence_score:.2f}")
-        print(f"   Rego policy length: {len(verified_policy.rego_policy)} chars")
-        print(f"   Dafny spec length: {len(verified_policy.dafny_spec)} chars")
+        logger.info("✅ Policy generation completed")
+        logger.info(f"   Policy ID: {verified_policy.policy_id}")
+        logger.info(f"   Verification status: {verified_policy.verification_status.value}")
+        logger.info(f"   Confidence score: {verified_policy.confidence_score:.2f}")
+        logger.info(f"   Rego policy length: {len(verified_policy.rego_policy)} chars")
+        logger.info(f"   Dafny spec length: {len(verified_policy.dafny_spec)} chars")
 
         # Test self-play improvement
         improvement_metrics = await generator.self_play_round(num_policies=2)
 
-        print("✅ Self-play round completed")
-        print(f"   Success rate: {improvement_metrics['success_rate']:.2f}")
-        print(f"   Average confidence: {improvement_metrics['average_confidence']:.2f}")
-        print(f"   Corpus size: {improvement_metrics['corpus_size']}")
+        logger.info("✅ Self-play round completed")
+        logger.info(f"   Success rate: {improvement_metrics['success_rate']:.2f}")
+        logger.info(f"   Average confidence: {improvement_metrics['average_confidence']:.2f}")
+        logger.info(f"   Corpus size: {improvement_metrics['corpus_size']}")
 
         # Test convenience function
         simple_policy = await generate_policy_from_spec(
             "Audit all administrative actions", domain="audit", criticality="critical"
         )
 
-        print(
+        logger.info(
             f"✅ Convenience function: verified={simple_policy.verification_status == VerificationStatus.VERIFIED}"
         )
 
-        print("✅ PSV-Verus Verified Policy Generator test completed!")
+        logger.info("✅ PSV-Verus Verified Policy Generator test completed!")
 
     # Run test
     asyncio.run(main())

@@ -534,14 +534,14 @@ if __name__ == "__main__":
     # Initialize processor
     success = initialize_mamba_processor(config)
     if success:
-        print("✅ Constitutional Mamba Hybrid Processor initialized")
+        logger.info("✅ Constitutional Mamba Hybrid Processor initialized")
 
         # Get manager and test
         manager = get_mamba_hybrid_processor()
         info = manager.get_model_info()
-        print(f"Model Info: {info}")
+        logger.info(f"Model Info: {info}")
 
         # Example processing (would need real embeddings)
-        print("Processor ready for 4M+ token context processing")
+        logger.info("Processor ready for 4M+ token context processing")
     else:
-        print("❌ Failed to initialize processor")
+        logger.info("❌ Failed to initialize processor")

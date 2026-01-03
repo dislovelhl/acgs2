@@ -304,7 +304,8 @@ class AIAssistant:
                 if not validation.is_valid:
                     return ProcessingResult(
                         success=False,
-                        response_text="I'm sorry, I couldn't process your message. Please try rephrasing.",
+                        response_text="I'm sorry, I couldn't process your message. "
+                        "Please try rephrasing.",
                         constitutional_hash=self.config.constitutional_hash,
                         metadata={"validation_errors": validation.errors},
                     )
