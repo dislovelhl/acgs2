@@ -86,7 +86,9 @@ async def main():
                 status_icon = (
                     "✅"
                     if service.status == "healthy"
-                    else "⚠️" if service.status == "degraded" else "❌"
+                    else "⚠️"
+                    if service.status == "degraded"
+                    else "❌"
                 )
                 print(f"     {status_icon} {service.name}")
                 print(f"         Status: {service.status}")

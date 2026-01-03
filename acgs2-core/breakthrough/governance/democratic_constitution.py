@@ -368,8 +368,7 @@ class PolisClient:
                 name="Conservative",
                 member_ids=set(
                     deliberation.participants[
-                        len(deliberation.participants)
-                        // 3 : 2
+                        len(deliberation.participants) // 3 : 2
                         * len(deliberation.participants)
                         // 3
                     ]

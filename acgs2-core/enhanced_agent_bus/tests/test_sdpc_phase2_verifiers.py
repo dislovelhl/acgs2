@@ -281,15 +281,15 @@ async def test_pacar_context_window_pruning():
     conversation_data = json.loads(stored_data)
 
     # After adding 1 message to 52, we have 53. Pruning should keep last 50.
-    assert (
-        len(conversation_data["messages"]) == 50
-    ), f"Expected 50 messages after pruning, got {len(conversation_data['messages'])}"
+    assert len(conversation_data["messages"]) == 50, (
+        f"Expected 50 messages after pruning, got {len(conversation_data['messages'])}"
+    )
 
     # Verify oldest messages were removed (messages 0, 1, 2 should be gone)
     # The first remaining message should be "Message number 3"
-    assert (
-        conversation_data["messages"][0]["content"] == "Message number 3"
-    ), "Oldest messages should have been pruned"
+    assert conversation_data["messages"][0]["content"] == "Message number 3", (
+        "Oldest messages should have been pruned"
+    )
 
     # Verify the new message is the last one
     assert conversation_data["messages"][-1]["content"] == "New message after pruning threshold"

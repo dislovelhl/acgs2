@@ -749,8 +749,8 @@ class CCAIFramework:
                 if stakeholder.consensus_contribution > 0:
                     if stakeholder_id not in patterns["stakeholder_influence"]:
                         patterns["stakeholder_influence"][stakeholder_id] = 0
-                    patterns["stakeholder_influence"][
-                        stakeholder_id
-                    ] += stakeholder.consensus_contribution
+                    patterns["stakeholder_influence"][stakeholder_id] += (
+                        stakeholder.consensus_contribution
+                    )
 
         return patterns

@@ -7,6 +7,55 @@ Example showing how to integrate tenant isolation into existing services.
 
 # Example: Integrating tenant isolation into Policy Service
 
+from datetime import datetime
+
+from fastapi import APIRouter, Depends
+from pydantic import BaseModel
+
+
+# Mock services and functions for example
+class PolicyService:
+    async def list(self, tenant_filter=None, skip=0, limit=100):
+        return []
+
+    async def create(self, policy_data):
+        return {"id": "policy-123", **policy_data}
+
+    async def get(self, policy_id):
+        return {"id": policy_id}
+
+
+def create_tenant_filter(tenant_id: str):
+    return {"tenant_id": tenant_id}
+
+
+async def get_current_tenant():
+    return {"tenant_id": "tenant-123", "user_id": "user-456"}
+
+
+async def validate_tenant_operation(tenant_id, user_id, resource, action):
+    pass
+
+
+def inject_tenant_id(data, tenant_id):
+    data["tenant_id"] = tenant_id
+    return data
+
+
+class Policy(BaseModel):
+    id: str
+    tenant_id: str
+    name: str
+    content: str
+    created_at: datetime
+    updated_at: datetime
+
+
+class CreatePolicyRequest(BaseModel):
+    name: str
+    content: str
+
+
 """
 # 1. Update service main.py to include tenant middleware
 
@@ -93,7 +142,7 @@ async def health_check():
 """
 
 # Example FastAPI router with tenant integration
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import HTTPException
 from shared.tenant_integration import (
     get_current_tenant,
     inject_tenant_id,
@@ -101,6 +150,9 @@ from shared.tenant_integration import (
 )
 
 router = APIRouter()
+
+# Mock policy service instance
+policy_service = PolicyService()
 
 
 @router.get("/policies/")

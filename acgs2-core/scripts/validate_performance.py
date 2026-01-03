@@ -1,5 +1,3 @@
-import logging
-
 #!/usr/bin/env python3
 """
 ACGS-2 Performance Validation Script
@@ -11,6 +9,7 @@ Used in CI/CD pipelines for performance gate enforcement.
 
 import argparse
 import json
+import logging
 import sys
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -204,7 +203,9 @@ def print_results(results: List[ValidationResult], format_type: str = "text") ->
             "overall_status": (
                 "fail"
                 if any(r.status == Status.FAIL for r in results)
-                else "warning" if any(r.status == Status.WARNING for r in results) else "pass"
+                else "warning"
+                if any(r.status == Status.WARNING for r in results)
+                else "pass"
             ),
         }
         logging.info(json.dumps(output, indent=2))
@@ -232,7 +233,9 @@ def print_results(results: List[ValidationResult], format_type: str = "text") ->
         overall_status = (
             "FAIL"
             if any(r.status == Status.FAIL for r in results)
-            else "WARNING" if any(r.status == Status.WARNING for r in results) else "PASS"
+            else "WARNING"
+            if any(r.status == Status.WARNING for r in results)
+            else "PASS"
         )
         logging.info(f"Overall Status: {overall_status}")
         logging.info("")

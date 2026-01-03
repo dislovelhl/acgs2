@@ -3,6 +3,7 @@ Tests for Constitutional Profiler
 Constitutional Hash: cdd01ef066bc6cf2
 """
 
+import asyncio
 import time
 from unittest.mock import MagicMock
 
@@ -475,7 +476,3 @@ class TestConstitutionalHashEnforcement:
             duration_ms=0,
         )
         assert event.constitutional_hash == "cdd01ef066bc6cf2"
-
-
-# Need this import for async tests
-import asyncio
