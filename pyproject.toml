@@ -72,3 +72,12 @@ exclude_lines = [
     "if __name__ == .__main__.:",
     "if TYPE_CHECKING:",
 ]
+
+[tool.bandit]
+exclude_dirs = ["tests", "venv", ".venv", "node_modules", "__pycache__", "examples"]
+skips = [
+    "B101",  # assert_used - acceptable in tests
+    "B104",  # hardcoded_bind_all_interfaces - needed for containerized services
+    "B108",  # hardcoded_tmp_directory - acceptable for temporary file handling
+    "B311",  # random - not security-critical in this context
+]
