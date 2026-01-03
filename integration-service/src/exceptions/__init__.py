@@ -73,7 +73,19 @@ from .auth import (
     TokenExpiredError,
     WebhookAuthError,
 )
+
+# Import base exception
 from .base import BaseIntegrationServiceError
+
+# Import delivery exceptions
+from .delivery import (
+    DeliveryConnectionError,
+    DeliveryError,
+    DeliveryTimeoutError,
+    WebhookConnectionError,
+    WebhookDeliveryError,
+    WebhookTimeoutError,
+)
 
 # Import retry exceptions
 from .retry import (
@@ -84,7 +96,7 @@ from .retry import (
     WebhookRetryError,
 )
 
-# Export base exception
+# Export all exceptions
 __all__ = [
     "BaseIntegrationServiceError",
     # Authentication exceptions
@@ -102,6 +114,13 @@ __all__ = [
     "NonRetryableError",
     "MaxRetriesExceededError",
     "WebhookRetryError",  # Backward compatibility alias
+    # Delivery exceptions
+    "DeliveryError",
+    "DeliveryTimeoutError",
+    "DeliveryConnectionError",
+    "WebhookDeliveryError",  # Backward compatibility alias
+    "WebhookTimeoutError",  # Backward compatibility alias
+    "WebhookConnectionError",  # Backward compatibility alias
 ]
 
 # Version information
