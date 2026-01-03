@@ -11,8 +11,15 @@ from dataclasses import dataclass, field, replace
 from typing import TYPE_CHECKING, Any, Optional
 from urllib.parse import urlparse
 
-import litellm
-from litellm.caching import Cache
+# Optional litellm import for AI features
+try:
+    import litellm
+    from litellm.caching import Cache
+    HAS_LITELLM = True
+except ImportError:
+    litellm = None  # type: ignore
+    Cache = None  # type: ignore
+    HAS_LITELLM = False
 
 # Import types conditionally to avoid circular imports
 if TYPE_CHECKING:
