@@ -249,4 +249,49 @@ describe("ComplianceWidget", () => {
       );
     });
   });
+
+  describe("Refresh Functionality", () => {
+    it("has a refresh button that reloads data", async () => {
+      render(<ComplianceWidget />);
+
+      await waitFor(() => {
+        expect(screen.getByText("84.5%")).toBeInTheDocument();
+      });
+
+      const refreshButton = screen.getByRole("button", {
+        name: /refresh compliance data/i,
+      });
+      expect(refreshButton).toBeInTheDocument();
+
+      fireEvent.click(refreshButton);
+
+      await waitFor(() => {
+        expect(refreshButton).toBeEnabled();
+      });
+    });
+  });
+
+  describe("Accessibility", () => {
+    it("has accessible button labels", async () => {
+      render(<ComplianceWidget />);
+
+      await waitFor(() => {
+        expect(screen.getByText("84.5%")).toBeInTheDocument();
+      });
+
+      expect(
+        screen.getByRole("button", { name: /refresh compliance data/i })
+      ).toBeInTheDocument();
+    });
+
+    it("has proper heading structure", async () => {
+      render(<ComplianceWidget />);
+
+      await waitFor(() => {
+        expect(screen.getByRole("heading", { level: 3 })).toHaveTextContent(
+          "Compliance Status"
+        );
+      });
+    });
+  });
 });
