@@ -32,7 +32,7 @@ if HAS_PYDANTIC_SETTINGS:
         host: str = Field("localhost", validation_alias="REDIS_HOST")
         port: int = Field(6379, validation_alias="REDIS_PORT")
         db: int = Field(0, validation_alias="REDIS_DB")
-        max_connections: int = Field(10, validation_alias="REDIS_MAX_CONNECTIONS")
+        max_connections: int = Field(100, validation_alias="REDIS_MAX_CONNECTIONS")
         socket_timeout: float = Field(5.0, validation_alias="REDIS_SOCKET_TIMEOUT")
         retry_on_timeout: bool = Field(True, validation_alias="REDIS_RETRY_ON_TIMEOUT")
         ssl: bool = Field(False, validation_alias="REDIS_SSL")
@@ -40,6 +40,8 @@ if HAS_PYDANTIC_SETTINGS:
             "none", validation_alias="REDIS_SSL_CERT_REQS"
         )  # none, optional, required
         ssl_ca_certs: Optional[str] = Field(None, validation_alias="REDIS_SSL_CA_CERTS")
+        socket_keepalive: bool = Field(True, validation_alias="REDIS_SOCKET_KEEPALIVE")
+        health_check_interval: int = Field(30, validation_alias="REDIS_HEALTH_CHECK_INTERVAL")
 
     class AISettings(BaseSettings):
         """AI Service settings."""
@@ -254,7 +256,7 @@ else:
         port: int = field(default_factory=lambda: int(os.getenv("REDIS_PORT", "6379")))
         db: int = field(default_factory=lambda: int(os.getenv("REDIS_DB", "0")))
         max_connections: int = field(
-            default_factory=lambda: int(os.getenv("REDIS_MAX_CONNECTIONS", "10"))
+            default_factory=lambda: int(os.getenv("REDIS_MAX_CONNECTIONS", "100"))
         )
         socket_timeout: float = field(
             default_factory=lambda: float(os.getenv("REDIS_SOCKET_TIMEOUT", "5.0"))
@@ -265,6 +267,12 @@ else:
         ssl: bool = field(default_factory=lambda: os.getenv("REDIS_SSL", "false").lower() == "true")
         ssl_cert_reqs: str = field(default_factory=lambda: os.getenv("REDIS_SSL_CERT_REQS", "none"))
         ssl_ca_certs: Optional[str] = field(default_factory=lambda: os.getenv("REDIS_SSL_CA_CERTS"))
+        socket_keepalive: bool = field(
+            default_factory=lambda: os.getenv("REDIS_SOCKET_KEEPALIVE", "true").lower() == "true"
+        )
+        health_check_interval: int = field(
+            default_factory=lambda: int(os.getenv("REDIS_HEALTH_CHECK_INTERVAL", "30"))
+        )
 
     @dataclass
     class AISettings:
@@ -326,21 +334,12 @@ else:
         jwt_public_key: str = field(
             default_factory=lambda: os.getenv("JWT_PUBLIC_KEY", "SYSTEM_PUBLIC_KEY_PLACEHOLDER")
         )
-        jwt_private_key: Optional[SecretStr] = field(
-            default_factory=lambda: (
-                SecretStr(os.getenv("JWT_PRIVATE_KEY", ""))
-                if os.getenv("JWT_PRIVATE_KEY")
-                else None
-            )
-        )
 
     @dataclass
     class OPASettings:
         url: str = field(default_factory=lambda: os.getenv("OPA_URL", "http://localhost:8181"))
         mode: str = field(default_factory=lambda: os.getenv("OPA_MODE", "http"))
-        fail_closed: bool = field(
-            default_factory=lambda: os.getenv("OPA_FAIL_CLOSED", "true").lower() == "true"
-        )
+        fail_closed: bool = True
         ssl_verify: bool = field(
             default_factory=lambda: os.getenv("OPA_SSL_VERIFY", "true").lower() == "true"
         )
@@ -380,6 +379,21 @@ else:
         )
         api_gateway_url: str = field(
             default_factory=lambda: os.getenv("API_GATEWAY_URL", "http://localhost:8080")
+        )
+        tenant_management_url: str = field(
+            default_factory=lambda: os.getenv("TENANT_MANAGEMENT_URL", "http://localhost:8500")
+        )
+        hitl_approvals_url: str = field(
+            default_factory=lambda: os.getenv("HITL_APPROVALS_URL", "http://localhost:8200")
+        )
+        ml_governance_url: str = field(
+            default_factory=lambda: os.getenv("ML_GOVERNANCE_URL", "http://localhost:8400")
+        )
+        compliance_docs_url: str = field(
+            default_factory=lambda: os.getenv("COMPLIANCE_DOCS_URL", "http://localhost:8100")
+        )
+        audit_service_url: str = field(
+            default_factory=lambda: os.getenv("AUDIT_SERVICE_URL", "http://localhost:8300")
         )
 
     @dataclass
@@ -466,8 +480,6 @@ else:
 
     @dataclass
     class MACISettings:
-        """MACI (Multi-Agent Constitutional Intelligence) enforcement settings."""
-
         strict_mode: bool = field(
             default_factory=lambda: os.getenv("MACI_STRICT_MODE", "true").lower() == "true"
         )
@@ -476,15 +488,13 @@ else:
 
     @dataclass
     class VaultSettings:
-        """HashiCorp Vault integration settings."""
-
         address: str = field(
             default_factory=lambda: os.getenv("VAULT_ADDR", "http://127.0.0.1:8200")
         )
         token: Optional[SecretStr] = field(
-            default_factory=lambda: (
-                SecretStr(os.getenv("VAULT_TOKEN", "")) if os.getenv("VAULT_TOKEN") else None
-            )
+            default_factory=lambda: SecretStr(os.getenv("VAULT_TOKEN", ""))
+            if os.getenv("VAULT_TOKEN")
+            else None
         )
         namespace: Optional[str] = field(default_factory=lambda: os.getenv("VAULT_NAMESPACE"))
         transit_mount: str = field(
@@ -533,14 +543,7 @@ else:
         )
 
 
-# Global settings instance
-settings = Settings()
-
-
-@lru_cache()
+@lru_cache(maxsize=1)
 def get_settings() -> Settings:
-    """Returns the global settings instance.
-
-    Uses lru_cache for consistency with FastAPI dependency injection patterns.
-    """
-    return settings
+    """Get cached application settings singleton."""
+    return Settings()

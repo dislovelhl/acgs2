@@ -29,9 +29,10 @@ class RedisConfig:
 
         # If it's a specialty call for another env var, still support os.getenv
         if env_var != "REDIS_URL":
-            # This part might need adjustment if the env_var URL doesn't follow the new scheme construction
-            # For now, we'll assume os.getenv provides a full URL or just the host:port part.
-            # A more robust solution might parse the env_var URL and apply scheme/db logic.
+            # This part might need adjustment if the env_var URL doesn't follow
+            # the new scheme construction. For now, we'll assume os.getenv
+            # provides a full URL or just the host:port part. A more robust
+            # solution might parse the env_var URL and apply scheme/db logic.
             env_url = os.getenv(env_var)
             if env_url:
                 base_url = env_url
@@ -41,12 +42,13 @@ class RedisConfig:
         # This check needs to be more robust if base_url can come from os.getenv
         # and already contain a db. For now, we assume base_url from settings
         # or env_var doesn't have a db number if we're about to append one.
-        if (
-            base_url.count("/") > 2
-        ):  # This check is for URLs like redis://host:port/db/something_else
-            # If the URL already has a path segment that looks like a DB, we might not want to append.
-            # This logic might need refinement depending on expected URL formats.
-            pass  # Keep the base_url as is if it already has multiple slashes indicating a path/db
+        # This check is for URLs like redis://host:port/db/something_else
+        if base_url.count("/") > 2:
+            # If the URL already has a path segment that looks like a DB,
+            # we might not want to append. This logic might need refinement
+            # depending on expected URL formats. Keep as is if it has
+            # multiple slashes indicating a path/db.
+            pass
 
         # Use db from settings if not explicitly provided as non-zero
         effective_db = db if db > 0 else settings.redis.db
@@ -71,6 +73,8 @@ class RedisConfig:
             "ssl": settings.redis.ssl,
             "ssl_cert_reqs": settings.redis.ssl_cert_reqs,
             "ssl_ca_certs": settings.redis.ssl_ca_certs,
+            "socket_keepalive": settings.redis.socket_keepalive,
+            "health_check_interval": settings.redis.health_check_interval,
         }
 
 

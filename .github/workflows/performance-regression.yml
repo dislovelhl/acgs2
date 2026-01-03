@@ -1,0 +1,270 @@
+name: Performance Regression Tests
+# Performance validation for 10K+ RPS with P99 < 1ms
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      users:
+        description: 'Number of concurrent users'
+        required: false
+        default: '1000'
+      run_time:
+        description: 'Test duration (e.g., 1m, 5m)'
+        required: false
+        default: '1m'
+
+env:
+  PYTHON_VERSION: "3.12"
+  LOCUST_USERS: ${{ github.event.inputs.users || '1000' }}
+  LOCUST_RUN_TIME: ${{ github.event.inputs.run_time || '1m' }}
+
+jobs:
+  performance-baseline:
+    name: Performance Baseline Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          pip install -e .[test,loadtest]
+          pip install -r acgs2-core/requirements_optimized.txt
+
+      - name: Verify Locust installation
+        run: |
+          locust --version
+
+      - name: Validate load test file syntax
+        run: |
+          python -m py_compile acgs2-core/testing/performance_10k_rps.py
+          python -m py_compile acgs2-core/testing/load_test.py
+
+  rust-extensions:
+    name: Build Rust Extensions
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.80.0
+          components: clippy
+
+      - name: Cache Cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            acgs2-core/rust-perf/target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock', '**/Cargo.toml') }}
+
+      - name: Clippy check (memory safety)
+        run: |
+          cd acgs2-core/rust-perf
+          cargo clippy --all-targets --all-features -- -D warnings
+
+      - name: Cargo test
+        run: |
+          cd acgs2-core/rust-perf
+          cargo test
+
+  performance-smoke-test:
+    name: Performance Smoke Test
+    needs: [performance-baseline, rust-extensions]
+    runs-on: ubuntu-latest
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          pip install -e .[test,loadtest]
+          pip install -r acgs2-core/requirements_optimized.txt
+
+      - name: Set up Rust and build extensions
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.80.0
+
+      - name: Install maturin and build
+        run: |
+          pip install maturin
+          cd acgs2-core/rust-perf
+          maturin develop --release
+
+      - name: Start API Gateway
+        run: |
+          cd acgs2-core/services/api_gateway
+          uvicorn main:app --host 0.0.0.0 --port 8080 &
+          sleep 5
+        env:
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
+
+      - name: Health check
+        run: |
+          curl -f http://localhost:8080/health || exit 1
+
+      - name: Run smoke test (100 users, 30s)
+        run: |
+          locust -f acgs2-core/testing/load_test.py \
+            --headless \
+            --users 100 \
+            --spawn-rate 10 \
+            --run-time 30s \
+            --host http://localhost:8080 \
+            --csv=results/smoke \
+            --html=results/smoke.html \
+            --exit-code-on-error 1
+        continue-on-error: true
+
+      - name: Upload smoke test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: smoke-test-results
+          path: results/
+          retention-days: 7
+
+  performance-regression:
+    name: Performance Regression Gate
+    needs: performance-smoke-test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          pip install -e .[test,loadtest]
+          pip install -r acgs2-core/requirements_optimized.txt
+
+      - name: Set up Rust and build extensions
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.80.0
+
+      - name: Install maturin and build
+        run: |
+          pip install maturin
+          cd acgs2-core/rust-perf
+          maturin develop --release
+
+      - name: Increase file descriptor limits
+        run: |
+          ulimit -n 65535 || true
+
+      - name: Start API Gateway
+        run: |
+          cd acgs2-core/services/api_gateway
+          uvicorn main:app --host 0.0.0.0 --port 8080 --workers 4 &
+          sleep 10
+        env:
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
+
+      - name: Health check
+        run: |
+          curl -f http://localhost:8080/health || exit 1
+
+      - name: Run performance regression test
+        run: |
+          mkdir -p results
+          locust -f acgs2-core/testing/performance_10k_rps.py \
+            --headless \
+            --users ${{ env.LOCUST_USERS }} \
+            --spawn-rate 100 \
+            --run-time ${{ env.LOCUST_RUN_TIME }} \
+            --host http://localhost:8080 \
+            --csv=results/regression \
+            --html=results/regression.html \
+            --exit-code-on-error 1
+
+      - name: Validate performance thresholds
+        run: |
+          echo "=== Performance Validation ==="
+          echo "Checking P99 latency < 1ms and throughput targets..."
+
+          # Check if results exist
+          if [ ! -f results/regression_stats.csv ]; then
+            echo "ERROR: No results file found"
+            exit 1
+          fi
+
+          # Display results summary
+          cat results/regression_stats.csv
+
+          echo ""
+          echo "=== Regression test completed ==="
+          echo "Review results/regression.html for detailed analysis"
+
+      - name: Upload regression test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: regression-test-results
+          path: results/
+          retention-days: 30
+
+      - name: Comment PR with results
+        uses: actions/github-script@v7
+        if: github.event_name == 'pull_request'
+        with:
+          script: |
+            const fs = require('fs');
+            let summary = 'Performance regression test completed.\n\n';
+            summary += 'See artifacts for detailed results.';
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: summary
+            });

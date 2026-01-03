@@ -1,5 +1,3 @@
-import logging
-
 #!/usr/bin/env python3
 """
 ACGS-2 Load Test Suite
@@ -7,15 +5,17 @@ Tests system behavior under concurrent load using Locust.
 """
 
 import json
+import logging
 import time
 import uuid
 from datetime import datetime, timezone
 
 import yaml
-from locust import HttpUser, between, events, task
+from locust import between, events, task
+from locust.contrib.fasthttp import FastHttpUser
 
 
-class E2EUser(HttpUser):
+class E2EUser(FastHttpUser):
     """Load test user that performs end-to-end workflows."""
 
     wait_time = between(1, 3)  # Wait 1-3 seconds between tasks

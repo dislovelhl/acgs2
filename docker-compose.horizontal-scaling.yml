@@ -1,0 +1,225 @@
+# ACGS-2 Horizontal Scaling Docker Compose
+# Validates 20K RPS with 2x API Gateway instances
+# Constitutional Hash: cdd01ef066bc6cf2
+# Version: 1.0.0
+#
+# Usage:
+#   docker compose -f docker-compose.horizontal-scaling.yml --env-file .env.dev up -d
+#   docker compose -f docker-compose.horizontal-scaling.yml down
+#
+# Scaling:
+#   docker compose -f docker-compose.horizontal-scaling.yml up -d --scale api-gateway=2
+#
+# Verification:
+#   locust -f acgs2-core/testing/performance_20k_rps_horizontal.py --headless \
+#     --users 20000 --spawn-rate 200 --run-time 5m --host http://localhost:8090
+
+services:
+  # NGINX Load Balancer for API Gateway instances
+  nginx-lb:
+    image: nginx:1.25-alpine
+    container_name: acgs-nginx-lb
+    ports:
+      - "8090:8090"  # External load-balanced port
+    volumes:
+      - ./acgs2-core/deploy/nginx-lb.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - api-gateway-1
+      - api-gateway-2
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8090/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - acgs-scaling
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+
+  # API Gateway Instance 1
+  api-gateway-1:
+    build:
+      context: ./acgs2-core/services/api_gateway
+      dockerfile: Dockerfile.dev
+    container_name: acgs-api-gateway-1
+    environment:
+      - INSTANCE_ID=api-gateway-1
+      - AGENT_BUS_URL=${AGENT_BUS_URL:-http://agent-bus:8000}
+      - ACGS_ENV=${ACGS_ENV:-development}
+      - CONSTITUTIONAL_HASH=${CONSTITUTIONAL_HASH:-cdd01ef066bc6cf2}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - JWT_SECRET=${JWT_SECRET:-dev-jwt-secret-min-32-chars-required}
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000,http://localhost:8080,http://localhost:8090,*}
+      # Redis configuration for shared state
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-dev_password}
+    ports:
+      - "8081:8080"  # Direct access for debugging
+    depends_on:
+      - redis
+      - agent-bus
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - acgs-scaling
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '1.0'
+          memory: 1G
+
+  # API Gateway Instance 2
+  api-gateway-2:
+    build:
+      context: ./acgs2-core/services/api_gateway
+      dockerfile: Dockerfile.dev
+    container_name: acgs-api-gateway-2
+    environment:
+      - INSTANCE_ID=api-gateway-2
+      - AGENT_BUS_URL=${AGENT_BUS_URL:-http://agent-bus:8000}
+      - ACGS_ENV=${ACGS_ENV:-development}
+      - CONSTITUTIONAL_HASH=${CONSTITUTIONAL_HASH:-cdd01ef066bc6cf2}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - JWT_SECRET=${JWT_SECRET:-dev-jwt-secret-min-32-chars-required}
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000,http://localhost:8080,http://localhost:8090,*}
+      # Redis configuration for shared state
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-dev_password}
+    ports:
+      - "8082:8080"  # Direct access for debugging
+    depends_on:
+      - redis
+      - agent-bus
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - acgs-scaling
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '1.0'
+          memory: 1G
+
+  # Redis for caching and state management (shared across instances)
+  redis:
+    image: redis:7-alpine
+    container_name: acgs-redis
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-dev_password} --maxclients 10000
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-dev_password}", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    networks:
+      - acgs-scaling
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+  # Agent Bus (single instance for backend services)
+  agent-bus:
+    build:
+      context: ./acgs2-core/enhanced_agent_bus
+      dockerfile: Dockerfile.dev
+    container_name: acgs-agent-bus
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env.dev
+    environment:
+      - OPA_URL=${OPA_URL:-http://opa:8181}
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
+      - KAFKA_BOOTSTRAP=${KAFKA_BOOTSTRAP:-kafka:29092}
+      - ACGS_ENV=${ACGS_ENV:-development}
+      - CONSTITUTIONAL_HASH=${CONSTITUTIONAL_HASH:-cdd01ef066bc6cf2}
+      - MACI_STRICT_MODE=${MACI_STRICT_MODE:-true}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    depends_on:
+      - opa
+      - redis
+    networks:
+      - acgs-scaling
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '1.0'
+          memory: 1G
+
+  # Open Policy Agent for policy decisions
+  opa:
+    image: openpolicyagent/opa:latest
+    container_name: acgs-opa
+    command: run --server --log-level info --addr 0.0.0.0:8181
+    ports:
+      - "8181:8181"
+    volumes:
+      - ./acgs2-core/enhanced_agent_bus/policies:/policies:ro
+    networks:
+      - acgs-scaling
+
+networks:
+  acgs-scaling:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.30.0.0/16
+
+# =============================================================================
+# Horizontal Scaling Configuration Notes
+# =============================================================================
+# This compose file validates horizontal scaling to 20K RPS:
+#
+# Architecture:
+#   [Client] --> [NGINX LB :8090] --> [API Gateway 1 :8081]
+#                                 --> [API Gateway 2 :8082]
+#                                       |
+#                                       v
+#                                 [Redis :6379] (shared cache)
+#
+# Load Testing:
+#   locust -f acgs2-core/testing/performance_20k_rps_horizontal.py \
+#     --headless --users 20000 --spawn-rate 200 --run-time 5m \
+#     --host http://localhost:8090
+#
+# Scaling Verification:
+#   1. Single instance: ~10K RPS on port 8081
+#   2. Two instances via LB: ~20K RPS on port 8090 (linear scaling)
+#
+# Monitoring:
+#   - Instance 1 metrics: curl http://localhost:8081/metrics
+#   - Instance 2 metrics: curl http://localhost:8082/metrics
+#   - NGINX status: curl http://localhost:8090/nginx_status
+#
+# Key Metrics:
+#   - Total RPS across both instances
+#   - P99 latency < 1ms
+#   - Load distribution (should be ~50/50)
+# =============================================================================
