@@ -38,6 +38,16 @@ from .gitlab_sync import (
     get_gitlab_sync_manager,
     reset_gitlab_sync_manager,
 )
+from .slack_notifier import (
+    SlackAuthenticationError,
+    SlackChannelNotFoundError,
+    SlackNotConfiguredError,
+    SlackNotifier,
+    SlackNotifierError,
+    SlackRateLimitError,
+    get_slack_notifier,
+    reset_slack_notifier,
+)
 from .state import (
     LinearStateConnectionError,
     LinearStateError,
@@ -93,6 +103,15 @@ __all__ = [
     "GitLabNotFoundError",
     "get_gitlab_sync_manager",
     "reset_gitlab_sync_manager",
+    # Slack Notifier
+    "SlackNotifier",
+    "SlackNotifierError",
+    "SlackAuthenticationError",
+    "SlackRateLimitError",
+    "SlackChannelNotFoundError",
+    "SlackNotConfiguredError",
+    "get_slack_notifier",
+    "reset_slack_notifier",
     # Webhook Auth
     "LinearWebhookAuthError",
     "get_linear_webhook_handler",
