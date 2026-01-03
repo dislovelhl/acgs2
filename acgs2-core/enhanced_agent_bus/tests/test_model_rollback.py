@@ -920,9 +920,7 @@ class TestRollbackPerformance:
         # Rollback should be very fast (sub-second)
         assert avg_latency < 0.1  # 100ms average
         assert max_latency < 1.0  # 1s max
-        logger.info(
-            f"Rollback latency: avg={avg_latency * 1000:.2f}ms, max={max_latency * 1000:.2f}ms"
-        )
+        logger.info(f"Rollback latency: avg={avg_latency*1000:.2f}ms, max={max_latency*1000:.2f}ms")
 
     @pytest.mark.skipif(not MLFLOW_AVAILABLE, reason="MLflow not installed")
     def test_model_load_latency_after_rollback(
@@ -951,4 +949,4 @@ class TestRollbackPerformance:
 
         # Model loading should be fast for cached/mocked scenario
         assert avg_load_time < 1.0  # 1s max for model load
-        logger.info(f"Model load latency: avg={avg_load_time * 1000:.2f}ms")
+        logger.info(f"Model load latency: avg={avg_load_time*1000:.2f}ms")

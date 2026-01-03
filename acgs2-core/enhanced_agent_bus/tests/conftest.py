@@ -38,6 +38,51 @@ try:
     import enhanced_agent_bus.utils as _utils
     import enhanced_agent_bus.validators as _validators
 
+    # Import online_learning module for ML tests
+    try:
+        import enhanced_agent_bus.online_learning as _online_learning
+
+        sys.modules["online_learning"] = _online_learning
+        sys.modules["enhanced_agent_bus.online_learning"] = _online_learning
+    except ImportError:
+        _online_learning = None  # River/numpy may not be installed
+
+    # Import ab_testing module for A/B testing tests
+    try:
+        import enhanced_agent_bus.ab_testing as _ab_testing
+
+        sys.modules["ab_testing"] = _ab_testing
+        sys.modules["enhanced_agent_bus.ab_testing"] = _ab_testing
+    except ImportError:
+        _ab_testing = None  # NumPy may not be installed
+
+    # Import ml_versioning module for MLflow tests
+    try:
+        import enhanced_agent_bus.ml_versioning as _ml_versioning
+
+        sys.modules["ml_versioning"] = _ml_versioning
+        sys.modules["enhanced_agent_bus.ml_versioning"] = _ml_versioning
+    except ImportError:
+        _ml_versioning = None  # MLflow may not be installed
+
+    # Import feedback_handler module for feedback tests
+    try:
+        import enhanced_agent_bus.feedback_handler as _feedback_handler
+
+        sys.modules["feedback_handler"] = _feedback_handler
+        sys.modules["enhanced_agent_bus.feedback_handler"] = _feedback_handler
+    except ImportError:
+        _feedback_handler = None  # pydantic may not be installed
+
+    # Import drift_monitoring module for drift detection tests
+    try:
+        import enhanced_agent_bus.drift_monitoring as _drift_monitoring
+
+        sys.modules["drift_monitoring"] = _drift_monitoring
+        sys.modules["enhanced_agent_bus.drift_monitoring"] = _drift_monitoring
+    except ImportError:
+        _drift_monitoring = None  # pandas/evidently may not be installed
+
     # Patch sys.models to point flat names to package-qualified modules
     sys.modules["audit_client"] = _audit_client
     sys.modules["models"] = _models
@@ -63,6 +108,51 @@ except ImportError:
         import registry as _registry
         import utils as _utils
         import validators as _validators
+
+        # Import online_learning module for ML tests (fallback)
+        try:
+            import online_learning as _online_learning
+
+            sys.modules["online_learning"] = _online_learning
+            sys.modules["enhanced_agent_bus.online_learning"] = _online_learning
+        except ImportError:
+            _online_learning = None  # River/numpy may not be installed
+
+        # Import ab_testing module for A/B testing tests (fallback)
+        try:
+            import ab_testing as _ab_testing
+
+            sys.modules["ab_testing"] = _ab_testing
+            sys.modules["enhanced_agent_bus.ab_testing"] = _ab_testing
+        except ImportError:
+            _ab_testing = None  # NumPy may not be installed
+
+        # Import ml_versioning module for MLflow tests (fallback)
+        try:
+            import ml_versioning as _ml_versioning
+
+            sys.modules["ml_versioning"] = _ml_versioning
+            sys.modules["enhanced_agent_bus.ml_versioning"] = _ml_versioning
+        except ImportError:
+            _ml_versioning = None  # MLflow may not be installed
+
+        # Import feedback_handler module for feedback tests (fallback)
+        try:
+            import feedback_handler as _feedback_handler
+
+            sys.modules["feedback_handler"] = _feedback_handler
+            sys.modules["enhanced_agent_bus.feedback_handler"] = _feedback_handler
+        except ImportError:
+            _feedback_handler = None  # pydantic may not be installed
+
+        # Import drift_monitoring module for drift detection tests (fallback)
+        try:
+            import drift_monitoring as _drift_monitoring
+
+            sys.modules["drift_monitoring"] = _drift_monitoring
+            sys.modules["enhanced_agent_bus.drift_monitoring"] = _drift_monitoring
+        except ImportError:
+            _drift_monitoring = None  # pandas/evidently may not be installed
 
         # Patch package names to point to flat modules
         sys.modules["audit_client"] = _audit_client

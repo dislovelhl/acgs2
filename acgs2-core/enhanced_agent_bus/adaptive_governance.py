@@ -7,6 +7,7 @@ self-evolving constitutional thresholds for intelligent AI safety governance.
 """
 
 import logging
+import os
 import threading
 import time
 from dataclasses import dataclass, field
@@ -18,15 +19,157 @@ import numpy as np
 from sklearn.ensemble import IsolationForest, RandomForestRegressor
 from sklearn.preprocessing import StandardScaler
 
+# MLflow imports for model versioning
+try:
+    import mlflow
+    from mlflow.tracking import MlflowClient
+
+    MLFLOW_AVAILABLE = True
+except ImportError:
+    MLFLOW_AVAILABLE = False
+    mlflow = None
+    MlflowClient = None
+
 # Constitutional imports
 try:
-    from .exceptions import (
-        GovernanceError,
-    )
+    from .exceptions import GovernanceError
 except ImportError:
-    from exceptions import (
-        GovernanceError,
+    from exceptions import GovernanceError
+
+# Feedback handler imports
+try:
+    from .feedback_handler import (
+        FeedbackEvent,
+        FeedbackHandler,
+        FeedbackType,
+        OutcomeStatus,
+        get_feedback_handler,
     )
+
+    FEEDBACK_HANDLER_AVAILABLE = True
+except ImportError:
+    try:
+        from feedback_handler import (
+            FeedbackEvent,
+            FeedbackHandler,
+            FeedbackType,
+            OutcomeStatus,
+            get_feedback_handler,
+        )
+
+        FEEDBACK_HANDLER_AVAILABLE = True
+    except ImportError:
+        FEEDBACK_HANDLER_AVAILABLE = False
+        FeedbackEvent = None
+        FeedbackHandler = None
+        FeedbackType = None
+        OutcomeStatus = None
+        get_feedback_handler = None
+
+# Drift monitoring imports
+try:
+    from .drift_monitoring import (
+        DRIFT_CHECK_INTERVAL_HOURS,
+        DriftDetector,
+        DriftReport,
+        DriftSeverity,
+        DriftStatus,
+        get_drift_detector,
+    )
+
+    DRIFT_MONITORING_AVAILABLE = True
+except ImportError:
+    try:
+        from drift_monitoring import (
+            DRIFT_CHECK_INTERVAL_HOURS,
+            DriftDetector,
+            DriftReport,
+            DriftSeverity,
+            DriftStatus,
+            get_drift_detector,
+        )
+
+        DRIFT_MONITORING_AVAILABLE = True
+    except ImportError:
+        DRIFT_MONITORING_AVAILABLE = False
+        DRIFT_CHECK_INTERVAL_HOURS = 6
+        DriftDetector = None
+        DriftReport = None
+        DriftSeverity = None
+        DriftStatus = None
+        get_drift_detector = None
+
+# Online learning imports (River model)
+try:
+    from .online_learning import (
+        RIVER_AVAILABLE,
+        LearningResult,
+        LearningStatus,
+        ModelType,
+        OnlineLearningPipeline,
+        PredictionResult,
+        get_online_learning_pipeline,
+    )
+
+    ONLINE_LEARNING_AVAILABLE = True
+except ImportError:
+    try:
+        from online_learning import (
+            RIVER_AVAILABLE,
+            LearningResult,
+            LearningStatus,
+            ModelType,
+            OnlineLearningPipeline,
+            PredictionResult,
+            get_online_learning_pipeline,
+        )
+
+        ONLINE_LEARNING_AVAILABLE = True
+    except ImportError:
+        ONLINE_LEARNING_AVAILABLE = False
+        RIVER_AVAILABLE = False
+        LearningResult = None
+        LearningStatus = None
+        ModelType = None
+        OnlineLearningPipeline = None
+        PredictionResult = None
+        get_online_learning_pipeline = None
+
+# A/B testing imports for traffic routing between champion and candidate models
+try:
+    from .ab_testing import (
+        AB_TEST_SPLIT,
+        ABTestRouter,
+        CohortType,
+        MetricsComparison,
+        PromotionResult,
+        RoutingResult,
+        get_ab_test_router,
+    )
+
+    AB_TESTING_AVAILABLE = True
+except ImportError:
+    try:
+        from ab_testing import (
+            AB_TEST_SPLIT,
+            ABTestRouter,
+            CohortType,
+            MetricsComparison,
+            PromotionResult,
+            RoutingResult,
+            get_ab_test_router,
+        )
+
+        AB_TESTING_AVAILABLE = True
+    except ImportError:
+        AB_TESTING_AVAILABLE = False
+        AB_TEST_SPLIT = 0.1
+        ABTestRouter = None
+        CohortType = None
+        MetricsComparison = None
+        PromotionResult = None
+        RoutingResult = None
+        get_ab_test_router = None
 
 logger = logging.getLogger(__name__)
 
@@ -96,10 +239,20 @@ class GovernanceDecision:
     recommended_threshold: float
     features_used: ImpactFeatures
     timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    decision_id: str = field(
+        default_factory=lambda: f"gov-{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S%f')}"
+    )
+    # A/B testing cohort assignment (champion or candidate)
+    cohort: Optional[str] = None
+    model_version: Optional[int] = None
 
 
 class AdaptiveThresholds:
     """ML-based dynamic threshold adjustment system."""
+
+    # MLflow configuration
+    MLFLOW_EXPERIMENT_NAME = "governance_thresholds"
+    MLFLOW_TRACKING_URI = os.getenv("MLFLOW_TRACKING_URI", "http://localhost:5000")
 
     def __init__(self, constitutional_hash: str):
         self.constitutional_hash = constitutional_hash
@@ -126,6 +279,44 @@ class AdaptiveThresholds:
 
         self.last_retraining = time.time()
         self.model_trained = False
+
+        # MLflow tracking
+        self._mlflow_initialized = False
+        self._mlflow_experiment_id: Optional[str] = None
+        self.model_version: Optional[int] = None
+        self._initialize_mlflow()
+
+    def _initialize_mlflow(self) -> None:
+        """Initialize MLflow tracking for training runs."""
+        if not MLFLOW_AVAILABLE:
+            logger.warning("MLflow not available. Training runs will not be tracked.")
+            return
+
+        try:
+            mlflow.set_tracking_uri(self.MLFLOW_TRACKING_URI)
+
+            # Create or get experiment
+            experiment = mlflow.get_experiment_by_name(self.MLFLOW_EXPERIMENT_NAME)
+            if experiment is None:
+                self._mlflow_experiment_id = mlflow.create_experiment(
+                    self.MLFLOW_EXPERIMENT_NAME,
+                    tags={
+                        "constitutional_hash": self.constitutional_hash,
+                        "model_type": "adaptive_thresholds",
+                    },
+                )
+            else:
+                self._mlflow_experiment_id = experiment.experiment_id
+
+            self._mlflow_initialized = True
+            logger.info(
+                f"MLflow initialized for experiment '{self.MLFLOW_EXPERIMENT_NAME}' "
+                f"(id: {self._mlflow_experiment_id})"
+            )
+
+        except Exception as e:
+            logger.warning(f"Failed to initialize MLflow tracking: {e}")
+            self._mlflow_initialized = False
 
     def get_adaptive_threshold(self, impact_level: ImpactLevel, features: ImpactFeatures) -> float:
         """Get ML-adjusted threshold for given impact level and features."""
@@ -204,7 +395,7 @@ class AdaptiveThresholds:
             logger.error(f"Error updating adaptive model: {e}")
 
     def _retrain_model(self) -> None:
-        """Retrain the ML model with accumulated data."""
+        """Retrain the ML model with accumulated data and log to MLflow."""
         try:
             if len(self.training_data) < 100:  # Minimum samples for training
                 return
@@ -223,11 +414,13 @@ class AdaptiveThresholds:
             # Scale features
             X_scaled = self.feature_scaler.fit_transform(X)
 
-            # Train model
-            self.threshold_model.fit(X_scaled, y)
-
-            # Update anomaly detector
-            self.anomaly_detector.fit(X_scaled)
+            # Log training run to MLflow
+            if self._mlflow_initialized and MLFLOW_AVAILABLE:
+                self._log_training_run_to_mlflow(X_scaled, y, recent_data)
+            else:
+                # Train without MLflow logging
+                self.threshold_model.fit(X_scaled, y)
+                self.anomaly_detector.fit(X_scaled)
 
             self.model_trained = True
             self.last_retraining = time.time()
@@ -236,6 +429,111 @@ class AdaptiveThresholds:
 
         except Exception as e:
             logger.error(f"Error retraining adaptive model: {e}")
+
+    def _log_training_run_to_mlflow(
+        self, X_scaled: np.ndarray, y: np.ndarray, recent_data: List[Dict]
+    ) -> None:
+        """Log training run with metrics and model to MLflow."""
+        try:
+            run_name = f"threshold_retrain_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}"
+
+            with mlflow.start_run(
+                experiment_id=self._mlflow_experiment_id,
+                run_name=run_name,
+            ) as run:
+                # Log training parameters
+                mlflow.log_params(
+                    {
+                        "n_estimators": self.threshold_model.n_estimators,
+                        "random_state": self.threshold_model.random_state,
+                        "n_jobs": self.threshold_model.n_jobs,
+                        "learning_rate": self.learning_rate,
+                        "confidence_threshold": self.confidence_threshold,
+                        "retraining_interval": self.retraining_interval,
+                        "constitutional_hash": self.constitutional_hash,
+                    }
+                )
+
+                # Train model
+                self.threshold_model.fit(X_scaled, y)
+
+                # Update anomaly detector
+                self.anomaly_detector.fit(X_scaled)
+
+                # Calculate training metrics
+                y_pred = self.threshold_model.predict(X_scaled)
+                mse = float(np.mean((y - y_pred) ** 2))
+                mae = float(np.mean(np.abs(y - y_pred)))
+                r2_score = float(1 - (np.sum((y - y_pred) ** 2) / np.sum((y - np.mean(y)) ** 2)))
+
+                # Calculate data distribution metrics
+                positive_feedback = sum(1 for d in recent_data if d.get("outcome_success", False))
+                human_feedback_count = sum(
+                    1 for d in recent_data if d.get("human_feedback") is not None
+                )
+
+                # Log metrics
+                mlflow.log_metrics(
+                    {
+                        "n_samples": len(recent_data),
+                        "n_features": X_scaled.shape[1],
+                        "mean_squared_error": mse,
+                        "mean_absolute_error": mae,
+                        "r2_score": r2_score,
+                        "target_mean": float(np.mean(y)),
+                        "target_std": float(np.std(y)),
+                        "positive_feedback_rate": positive_feedback / len(recent_data),
+                        "human_feedback_rate": human_feedback_count / len(recent_data),
+                    }
+                )
+
+                # Log feature importance
+                if hasattr(self.threshold_model, "feature_importances_"):
+                    feature_names = [
+                        "message_length",
+                        "agent_count",
+                        "tenant_complexity",
+                        "temporal_mean",
+                        "temporal_std",
+                        "semantic_similarity",
+                        "historical_precedence",
+                        "resource_utilization",
+                        "network_isolation",
+                        "risk_score",
+                        "confidence_level",
+                    ]
+                    for idx, importance in enumerate(self.threshold_model.feature_importances_):
+                        feature_name = (
+                            feature_names[idx] if idx < len(feature_names) else f"feature_{idx}"
+                        )
+                        mlflow.log_metric(f"importance_{feature_name}", float(importance))
+
+                # Log the trained model
+                mlflow.sklearn.log_model(
+                    self.threshold_model,
+                    artifact_path="threshold_model",
+                    registered_model_name=None,  # Don't auto-register; use ml_versioning for that
+                )
+
+                # Log anomaly detector as artifact
+                mlflow.sklearn.log_model(
+                    self.anomaly_detector,
+                    artifact_path="anomaly_detector",
+                )
+
+                # Store run info
+                self.model_version = run.info.run_id
+
+                logger.info(
+                    f"MLflow run logged: {run.info.run_id} "
+                    f"(MSE: {mse:.4f}, R2: {r2_score:.4f}, samples: {len(recent_data)})"
+                )
+
+        except Exception as e:
+            logger.warning(f"Failed to log training run to MLflow: {e}")
+            # Fallback to training without MLflow logging
+            self.threshold_model.fit(X_scaled, y)
+            self.anomaly_detector.fit(X_scaled)
 
     def _extract_feature_vector(self, features: ImpactFeatures) -> List[float]:
         """Extract numerical feature vector for ML prediction."""
@@ -256,6 +554,11 @@ class AdaptiveThresholds:
 
 class ImpactScorer:
     """ML-based impact assessment system."""
+
+    # MLflow configuration
+    MLFLOW_EXPERIMENT_NAME = "governance_impact_scorer"
+    MLFLOW_TRACKING_URI = os.getenv("MLFLOW_TRACKING_URI", "http://localhost:5000")
+    MLFLOW_MODEL_NAME = "governance_impact_scorer"
 
     def __init__(self, constitutional_hash: str):
         self.constitutional_hash = constitutional_hash
@@ -280,6 +583,44 @@ class ImpactScorer:
         # Training data
         self.training_samples: List[Tuple[ImpactFeatures, float]] = []
         self.model_trained = False
+
+        # MLflow tracking
+        self._mlflow_initialized = False
+        self._mlflow_experiment_id: Optional[str] = None
+        self.model_version: Optional[str] = None
+        self._initialize_mlflow()
+
+    def _initialize_mlflow(self) -> None:
+        """Initialize MLflow tracking for training runs."""
+        if not MLFLOW_AVAILABLE:
+            logger.warning("MLflow not available. ImpactScorer training runs will not be tracked.")
+            return
+
+        try:
+            mlflow.set_tracking_uri(self.MLFLOW_TRACKING_URI)
+
+            # Create or get experiment
+            experiment = mlflow.get_experiment_by_name(self.MLFLOW_EXPERIMENT_NAME)
+            if experiment is None:
+                self._mlflow_experiment_id = mlflow.create_experiment(
+                    self.MLFLOW_EXPERIMENT_NAME,
+                    tags={
+                        "constitutional_hash": self.constitutional_hash,
+                        "model_type": "impact_scorer",
+                    },
+                )
+            else:
+                self._mlflow_experiment_id = experiment.experiment_id
+
+            self._mlflow_initialized = True
+            logger.info(
+                f"MLflow initialized for ImpactScorer experiment '{self.MLFLOW_EXPERIMENT_NAME}' "
+                f"(id: {self._mlflow_experiment_id})"
+            )
+
+        except Exception as e:
+            logger.warning(f"Failed to initialize MLflow tracking for ImpactScorer: {e}")
+            self._mlflow_initialized = False
 
     async def assess_impact(self, message: Dict, context: Dict) -> ImpactFeatures:
         """Assess message impact using ML models and contextual analysis."""
@@ -461,7 +802,7 @@ class ImpactScorer:
             logger.error(f"Error updating impact scorer model: {e}")
 
     def _retrain_model(self) -> None:
-        """Retrain the impact assessment model."""
+        """Retrain the impact assessment model and log to MLflow."""
         try:
             if len(self.training_samples) < 50:
                 return
@@ -469,8 +810,9 @@ class ImpactScorer:
             # Prepare training data
             X = []
             y = []
+            recent_samples = self.training_samples[-500:]  # Last 500 samples
 
-            for features, actual_impact in self.training_samples[-500:]:  # Last 500 samples
+            for features, actual_impact in recent_samples:
                 feature_vector = [
                     features.message_length,
                     features.agent_count,
@@ -484,14 +826,125 @@ class ImpactScorer:
                 X.append(feature_vector)
                 y.append(actual_impact)
 
-            # Train model
-            self.impact_classifier.fit(X, y)
+            X_array = np.array(X)
+            y_array = np.array(y)
+
+            # Log training run to MLflow
+            if self._mlflow_initialized and MLFLOW_AVAILABLE:
+                self._log_training_run_to_mlflow(X_array, y_array, recent_samples)
+            else:
+                # Train without MLflow logging
+                self.impact_classifier.fit(X_array, y_array)
+
             self.model_trained = True
 
             logger.info(f"Retrained impact scorer with {len(X)} samples")
 
         except Exception as e:
             logger.error(f"Error retraining impact scorer: {e}")
+
+    def _log_training_run_to_mlflow(
+        self, X: np.ndarray, y: np.ndarray, recent_samples: List[Tuple[ImpactFeatures, float]]
+    ) -> None:
+        """Log training run with metrics and model to MLflow."""
+        try:
+            run_name = (
+                f"impact_scorer_retrain_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}"
+            )
+
+            with mlflow.start_run(
+                experiment_id=self._mlflow_experiment_id,
+                run_name=run_name,
+            ) as run:
+                # Log training parameters
+                mlflow.log_params(
+                    {
+                        "n_estimators": self.impact_classifier.n_estimators,
+                        "max_depth": self.impact_classifier.max_depth,
+                        "random_state": self.impact_classifier.random_state,
+                        "constitutional_hash": self.constitutional_hash,
+                        "n_samples": len(recent_samples),
+                        "n_features": X.shape[1],
+                    }
+                )
+
+                # Log feature weights
+                for feature_name, weight in self.feature_weights.items():
+                    mlflow.log_param(f"weight_{feature_name}", weight)
+
+                # Train model
+                self.impact_classifier.fit(X, y)
+
+                # Calculate training metrics
+                y_pred = self.impact_classifier.predict(X)
+                mse = float(np.mean((y - y_pred) ** 2))
+                mae = float(np.mean(np.abs(y - y_pred)))
+
+                # Avoid division by zero in R2 calculation
+                ss_tot = np.sum((y - np.mean(y)) ** 2)
+                if ss_tot > 0:
+                    r2_score = float(1 - (np.sum((y - y_pred) ** 2) / ss_tot))
+                else:
+                    r2_score = 0.0
+
+                # Calculate impact distribution metrics
+                high_impact_count = sum(1 for _, impact in recent_samples if impact >= 0.7)
+                medium_impact_count = sum(1 for _, impact in recent_samples if 0.3 <= impact < 0.7)
+                low_impact_count = sum(1 for _, impact in recent_samples if impact < 0.3)
+
+                # Log metrics
+                mlflow.log_metrics(
+                    {
+                        "n_samples": len(recent_samples),
+                        "n_features": X.shape[1],
+                        "mean_squared_error": mse,
+                        "mean_absolute_error": mae,
+                        "r2_score": r2_score,
+                        "target_mean": float(np.mean(y)),
+                        "target_std": float(np.std(y)),
+                        "high_impact_rate": high_impact_count / len(recent_samples),
+                        "medium_impact_rate": medium_impact_count / len(recent_samples),
+                        "low_impact_rate": low_impact_count / len(recent_samples),
+                    }
+                )
+
+                # Log feature importance
+                if hasattr(self.impact_classifier, "feature_importances_"):
+                    feature_names = [
+                        "message_length",
+                        "agent_count",
+                        "tenant_complexity",
+                        "temporal_mean",
+                        "semantic_similarity",
+                        "historical_precedence",
+                        "resource_utilization",
+                        "network_isolation",
+                    ]
+                    for idx, importance in enumerate(self.impact_classifier.feature_importances_):
+                        feature_name = (
+                            feature_names[idx] if idx < len(feature_names) else f"feature_{idx}"
+                        )
+                        mlflow.log_metric(f"importance_{feature_name}", float(importance))
+
+                # Log the trained model
+                mlflow.sklearn.log_model(
+                    self.impact_classifier,
+                    artifact_path="impact_classifier",
+                    registered_model_name=self.MLFLOW_MODEL_NAME,
+                )
+
+                # Store run info
+                self.model_version = run.info.run_id
+
+                logger.info(
+                    f"MLflow run logged for ImpactScorer: {run.info.run_id} "
+                    f"(MSE: {mse:.4f}, R2: {r2_score:.4f}, samples: {len(recent_samples)})"
+                )
+
+        except Exception as e:
+            logger.warning(f"Failed to log ImpactScorer training run to MLflow: {e}")
+            # Fallback to training without MLflow logging
+            self.impact_classifier.fit(X, y)
 
 
 class AdaptiveGovernanceEngine:
@@ -505,6 +958,17 @@ class AdaptiveGovernanceEngine:
         self.impact_scorer = ImpactScorer(constitutional_hash)
         self.threshold_manager = AdaptiveThresholds(constitutional_hash)
 
+        # Feedback handler for persistent storage
+        self._feedback_handler: Optional[FeedbackHandler] = None
+        if FEEDBACK_HANDLER_AVAILABLE:
+            try:
+                self._feedback_handler = get_feedback_handler()
+                self._feedback_handler.initialize_schema()
+                logger.info("Feedback handler initialized for governance engine")
+            except Exception as e:
+                logger.warning(f"Failed to initialize feedback handler: {e}")
+                self._feedback_handler = None
+
         # Performance tracking
         self.metrics = GovernanceMetrics()
         self.decision_history: List[GovernanceDecision] = []
@@ -516,6 +980,84 @@ class AdaptiveGovernanceEngine:
         # Background learning thread
         self.learning_thread: Optional[threading.Thread] = None
         self.running = False
+
+        # Drift detection configuration
+        self._drift_detector: Optional[DriftDetector] = None
+        self._last_drift_check: float = 0.0
+        self._drift_check_interval: int = DRIFT_CHECK_INTERVAL_HOURS * 3600  # Convert to seconds
+        self._latest_drift_report: Optional[DriftReport] = None
+        if DRIFT_MONITORING_AVAILABLE:
+            try:
+                self._drift_detector = get_drift_detector()
+                # Try to load reference data on initialization
+                if self._drift_detector.load_reference_data():
+                    logger.info("Drift detector initialized with reference data")
+                else:
+                    logger.warning("Drift detector initialized but reference data not loaded")
+            except Exception as e:
+                logger.warning(f"Failed to initialize drift detector: {e}")
+                self._drift_detector = None
+
+        # River online learning model for incremental updates
+        # Feature names for the River model must match ImpactFeatures
+        self._river_feature_names = [
+            "message_length",
+            "agent_count",
+            "tenant_complexity",
+            "temporal_mean",
+            "temporal_std",
+            "semantic_similarity",
+            "historical_precedence",
+            "resource_utilization",
+            "network_isolation",
+            "risk_score",
+            "confidence_level",
+        ]
+        self.river_model: Optional[OnlineLearningPipeline] = None
+        if ONLINE_LEARNING_AVAILABLE and RIVER_AVAILABLE:
+            try:
+                self.river_model = get_online_learning_pipeline(
+                    feature_names=self._river_feature_names,
+                    model_type=ModelType.REGRESSOR,  # Regressor for impact scoring
+                )
+                # Set sklearn model as fallback for cold start
+                if self.impact_scorer.model_trained:
+                    self.river_model.set_fallback_model(self.impact_scorer.impact_classifier)
+                logger.info(
+                    f"River online learning model initialized "
+                    f"(features: {len(self._river_feature_names)})"
+                )
+            except Exception as e:
+                logger.warning(f"Failed to initialize River model: {e}")
+                self.river_model = None
+        else:
+            if not ONLINE_LEARNING_AVAILABLE:
+                logger.warning("Online learning module not available, River model disabled")
+            elif not RIVER_AVAILABLE:
+                logger.warning("River library not installed, online learning disabled")
+
+        # A/B testing router for traffic routing between champion and candidate models
+        # Routes 90% traffic to champion, 10% to candidate (configurable via AB_TEST_SPLIT)
+        self._ab_test_router: Optional[ABTestRouter] = None
+        if AB_TESTING_AVAILABLE:
+            try:
+                self._ab_test_router = get_ab_test_router()
+                # Set the impact scorer's sklearn model as both champion and candidate initially
+                # Candidate will be updated when a new model version is registered
+                if self.impact_scorer.model_trained:
+                    self._ab_test_router.set_champion_model(
+                        self.impact_scorer.impact_classifier, version=1
+                    )
+                logger.info(
+                    f"A/B test router initialized "
+                    f"(champion_split={1 - AB_TEST_SPLIT:.0%}, "
+                    f"candidate_split={AB_TEST_SPLIT:.0%})"
+                )
+            except Exception as e:
+                logger.warning(f"Failed to initialize A/B test router: {e}")
+                self._ab_test_router = None
+        else:
+            logger.warning("A/B testing module not available, traffic routing disabled")
 
     async def initialize(self) -> None:
         """Initialize the adaptive governance engine."""
@@ -535,7 +1077,12 @@ class AdaptiveGovernanceEngine:
     async def evaluate_governance_decision(
         self, message: Dict, context: Dict
     ) -> GovernanceDecision:
-        """Make an adaptive governance decision for a message."""
+        """Make an adaptive governance decision for a message.
+
+        Traffic is routed between champion and candidate models based on A/B testing
+        configuration. By default, 90% of requests go to champion and 10% to candidate.
+        The routing is deterministic based on the decision_id hash.
+        """
         start_time = time.time()
 
         try:
@@ -552,6 +1099,41 @@ class AdaptiveGovernanceEngine:
             # Generate reasoning
             reasoning = self._generate_reasoning(action_allowed, impact_features, threshold)
 
+            # Generate decision_id first for A/B test routing
+            decision_id = f"gov-{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S%f')}"
+
+            # A/B test traffic routing between champion and candidate models
+            # Uses hash(decision_id) for deterministic routing (90% champion, 10% candidate)
+            cohort_name: Optional[str] = None
+            model_version: Optional[int] = None
+
+            if AB_TESTING_AVAILABLE and self._ab_test_router is not None:
+                try:
+                    # Route request based on decision_id hash
+                    routing_result = self._ab_test_router.route(decision_id)
+                    cohort_name = routing_result.cohort.value
+                    model_version = routing_result.model_version
+
+                    # Record request latency for A/B test metrics
+                    latency_ms = (time.time() - start_time) * 1000
+                    if routing_result.cohort == CohortType.CANDIDATE:
+                        self._ab_test_router._candidate_metrics.record_request(
+                            latency_ms=latency_ms,
+                            prediction=action_allowed,
+                        )
+                    else:
+                        self._ab_test_router._champion_metrics.record_request(
+                            latency_ms=latency_ms,
+                            prediction=action_allowed,
+                        )
+
+                    logger.debug(
+                        f"A/B test routing: decision {decision_id} -> {cohort_name} "
+                        f"(version: {model_version})"
+                    )
+                except Exception as e:
+                    logger.warning(f"A/B test routing failed, using default: {e}")
+
             decision = GovernanceDecision(
                 action_allowed=action_allowed,
                 impact_level=impact_level,
@@ -559,6 +1141,9 @@ class AdaptiveGovernanceEngine:
                 reasoning=reasoning,
                 recommended_threshold=threshold,
                 features_used=impact_features,
+                decision_id=decision_id,
+                cohort=cohort_name,
+                model_version=model_version,
             )
 
             # Record decision for learning
@@ -630,7 +1215,7 @@ class AdaptiveGovernanceEngine:
         outcome_success: bool,
         human_override: Optional[bool] = None,
     ) -> None:
-        """Provide feedback to improve the ML models."""
+        """Provide feedback to improve the ML models and store for training."""
         try:
             # Update threshold manager
             human_feedback = None
@@ -646,8 +1231,239 @@ class AdaptiveGovernanceEngine:
 
             self.impact_scorer.update_model(decision.features_used, actual_impact)
 
+            # Update River model for incremental online learning
+            self._update_river_model(decision, actual_impact)
+
+            # Store feedback event for persistent storage and later training
+            self._store_feedback_event(decision, outcome_success, human_override, actual_impact)
+
         except Exception as e:
             logger.error(f"Error processing feedback: {e}")
+
+    def _store_feedback_event(
+        self,
+        decision: GovernanceDecision,
+        outcome_success: bool,
+        human_override: Optional[bool],
+        actual_impact: float,
+    ) -> None:
+        """Store feedback event using the feedback handler for persistent storage."""
+        if not FEEDBACK_HANDLER_AVAILABLE or self._feedback_handler is None:
+            logger.debug("Feedback handler not available, skipping persistent storage")
+            return
+
+        try:
+            # Determine feedback type based on outcome and human override
+            if human_override is not None:
+                feedback_type = FeedbackType.CORRECTION
+            elif outcome_success:
+                feedback_type = FeedbackType.POSITIVE
+            else:
+                feedback_type = FeedbackType.NEGATIVE
+
+            # Determine outcome status
+            if outcome_success:
+                outcome_status = OutcomeStatus.SUCCESS
+            else:
+                outcome_status = OutcomeStatus.FAILURE
+
+            # Extract features as dict for storage
+            features_dict = {
+                "message_length": decision.features_used.message_length,
+                "agent_count": decision.features_used.agent_count,
+                "tenant_complexity": decision.features_used.tenant_complexity,
+                "temporal_patterns": decision.features_used.temporal_patterns,
+                "semantic_similarity": decision.features_used.semantic_similarity,
+                "historical_precedence": decision.features_used.historical_precedence,
+                "resource_utilization": decision.features_used.resource_utilization,
+                "network_isolation": decision.features_used.network_isolation,
+                "risk_score": decision.features_used.risk_score,
+                "confidence_level": decision.features_used.confidence_level,
+            }
+
+            # Build correction data if human override was provided
+            correction_data = None
+            if human_override is not None:
+                correction_data = {
+                    "original_decision": decision.action_allowed,
+                    "human_override": human_override,
+                    "correction_applied": human_override != decision.action_allowed,
+                }
+
+            # Create feedback event
+            feedback_event = FeedbackEvent(
+                decision_id=decision.decision_id,
+                feedback_type=feedback_type,
+                outcome=outcome_status,
+                features=features_dict,
+                actual_impact=actual_impact,
+                correction_data=correction_data,
+                metadata={
+                    "impact_level": decision.impact_level.value,
+                    "confidence_score": decision.confidence_score,
+                    "recommended_threshold": decision.recommended_threshold,
+                    "reasoning": decision.reasoning,
+                    "timestamp": decision.timestamp.isoformat(),
+                    "constitutional_hash": self.constitutional_hash,
+                },
+            )
+
+            # Store the feedback event
+            response = self._feedback_handler.store_feedback(feedback_event)
+            logger.debug(
+                f"Stored feedback event {response.feedback_id} for decision {decision.decision_id}"
+            )
+
+        except Exception as e:
+            logger.warning(f"Failed to store feedback event: {e}")
+
+    def _update_river_model(
+        self,
+        decision: GovernanceDecision,
+        actual_impact: float,
+    ) -> None:
+        """Update the River model with incremental online learning.
+
+        This enables continuous learning from feedback without requiring
+        full batch retraining. The River model uses AdaptiveRandomForest
+        which handles concept drift naturally.
+
+        Args:
+            decision: The governance decision that was made
+            actual_impact: The actual impact score based on outcome
+        """
+        if not ONLINE_LEARNING_AVAILABLE or self.river_model is None:
+            return
+
+        try:
+            # Extract features from the decision for River model
+            features = decision.features_used
+            features_dict = {
+                "message_length": float(features.message_length),
+                "agent_count": float(features.agent_count),
+                "tenant_complexity": float(features.tenant_complexity),
+                "temporal_mean": (
+                    float(np.mean(features.temporal_patterns))
+                    if features.temporal_patterns
+                    else 0.0
+                ),
+                "temporal_std": (
+                    float(np.std(features.temporal_patterns)) if features.temporal_patterns else 0.0
+                ),
+                "semantic_similarity": float(features.semantic_similarity),
+                "historical_precedence": float(features.historical_precedence),
+                "resource_utilization": float(features.resource_utilization),
+                "network_isolation": float(features.network_isolation),
+                "risk_score": float(features.risk_score),
+                "confidence_level": float(features.confidence_level),
+            }
+
+            # Learn from the feedback event incrementally
+            result = self.river_model.learn_from_feedback(
+                features=features_dict,
+                outcome=actual_impact,
+                decision_id=decision.decision_id,
+            )
+
+            if result.success:
+                logger.debug(
+                    f"River model updated for decision {decision.decision_id}, "
+                    f"total samples: {result.total_samples}"
+                )
+
+                # Update sklearn fallback model if River model is now ready
+                # but sklearn model wasn't trained yet
+                if self.river_model.adapter.is_ready and not self.impact_scorer.model_trained:
+                    logger.info(
+                        f"River model ready with {result.total_samples} samples, "
+                        "can now provide predictions"
+                    )
+            else:
+                logger.warning(
+                    f"River model update failed for decision {decision.decision_id}: "
+                    f"{result.error_message}"
+                )
+
+        except Exception as e:
+            logger.warning(f"Failed to update River model: {e}")
+
+    def get_river_model_stats(self) -> Optional[Dict]:
+        """Get statistics from the River online learning model.
+
+        Returns:
+            Dict with learning stats, or None if River model unavailable
+        """
+        if not ONLINE_LEARNING_AVAILABLE or self.river_model is None:
+            return None
+
+        try:
+            return self.river_model.get_stats()
+        except Exception as e:
+            logger.warning(f"Failed to get River model stats: {e}")
+            return None
+
+    def get_ab_test_router(self) -> Optional[ABTestRouter]:
+        """Get the A/B test router instance.
+
+        Returns:
+            ABTestRouter instance or None if not available
+        """
+        return self._ab_test_router
+
+    def get_ab_test_metrics(self) -> Optional[Dict]:
+        """Get A/B testing metrics for champion and candidate cohorts.
+
+        Returns:
+            Dict with metrics summary for both cohorts, or None if not available
+        """
+        if not AB_TESTING_AVAILABLE or self._ab_test_router is None:
+            return None
+
+        try:
+            return self._ab_test_router.get_metrics_summary()
+        except Exception as e:
+            logger.warning(f"Failed to get A/B test metrics: {e}")
+            return None
+
+    def get_ab_test_comparison(self) -> Optional[MetricsComparison]:
+        """Compare champion and candidate model performance.
+
+        Returns:
+            MetricsComparison with statistical analysis, or None if not available
+        """
+        if not AB_TESTING_AVAILABLE or self._ab_test_router is None:
+            return None
+
+        try:
+            return self._ab_test_router.compare_metrics()
+        except Exception as e:
+            logger.warning(f"Failed to compare A/B test metrics: {e}")
+            return None
+
+    def promote_candidate_model(self, force: bool = False) -> Optional[PromotionResult]:
+        """Promote the candidate model to champion if it performs better.
+
+        Args:
+            force: If True, bypass validation checks and promote regardless
+
+        Returns:
+            PromotionResult with status and details, or None if not available
+        """
+        if not AB_TESTING_AVAILABLE or self._ab_test_router is None:
+            logger.warning("A/B testing not available, cannot promote candidate")
+            return None
+
+        try:
+            result = self._ab_test_router.promote_candidate(force=force)
+            if result.status.value == "promoted":
+                logger.info(
+                    f"Candidate model promoted to champion: "
+                    f"v{result.previous_champion_version} -> v{result.new_champion_version}"
+                )
+            return result
+        except Exception as e:
+            logger.error(f"Failed to promote candidate model: {e}")
+            return None
 
     def _update_metrics(self, decision: GovernanceDecision, response_time: float) -> None:
         """Update performance metrics."""
@@ -687,12 +1503,131 @@ class AdaptiveGovernanceEngine:
                     logger.info("Triggering background model retraining")
                     # Retraining happens automatically in the model update methods
 
+                # Scheduled drift detection (every drift_check_interval)
+                self._run_scheduled_drift_detection()
+
                 # Log performance summary
                 self._log_performance_summary()
 
             except Exception as e:
                 logger.error(f"Background learning error: {e}")
                 time.sleep(60)  # Back off on errors
+
+    def _run_scheduled_drift_detection(self) -> None:
+        """Run drift detection if the scheduled interval has elapsed."""
+        if not DRIFT_MONITORING_AVAILABLE or self._drift_detector is None:
+            return
+
+        current_time = time.time()
+        time_since_last_check = current_time - self._last_drift_check
+
+        # Check if drift detection is due
+        if time_since_last_check < self._drift_check_interval:
+            return
+
+        logger.info(
+            f"drift_check_interval: Running scheduled drift detection "
+            f"(interval: {self._drift_check_interval / 3600:.1f} hours)"
+        )
+
+        try:
+            # Collect recent decision data for drift analysis
+            recent_data = self._collect_drift_data()
+
+            if recent_data is None or len(recent_data) == 0:
+                logger.info("drift_check_interval: Insufficient data for drift detection, skipping")
+                self._last_drift_check = current_time
+                return
+
+            # Run drift detection
+            drift_report = self._drift_detector.detect_drift(recent_data)
+            self._latest_drift_report = drift_report
+            self._last_drift_check = current_time
+
+            # Log drift detection results
+            if drift_report.status == DriftStatus.SUCCESS:
+                if drift_report.dataset_drift:
+                    logger.warning(
+                        f"drift_check_interval: Drift detected! "
+                        f"Severity: {drift_report.drift_severity.value}, "
+                        f"Drifted features: {drift_report.drifted_features}/{drift_report.total_features} "
+                        f"({drift_report.drift_share:.1%})"
+                    )
+
+                    # Log recommendations
+                    for recommendation in drift_report.recommendations:
+                        logger.info(f"drift_check_interval: Recommendation - {recommendation}")
+
+                    # Check if retraining should be triggered
+                    if self._drift_detector.should_trigger_retraining(drift_report):
+                        logger.warning(
+                            "drift_check_interval: Drift severity warrants model retraining"
+                        )
+                else:
+                    logger.info(
+                        f"drift_check_interval: No significant drift detected. "
+                        f"Drift share: {drift_report.drift_share:.1%}"
+                    )
+            else:
+                logger.warning(
+                    f"drift_check_interval: Drift detection completed with status: "
+                    f"{drift_report.status.value}. {drift_report.error_message or ''}"
+                )
+
+        except Exception as e:
+            logger.error(f"drift_check_interval: Error during drift detection: {e}")
+            # Still update last check time to prevent retry flood
+            self._last_drift_check = current_time
+
+    def _collect_drift_data(self):
+        """Collect recent decision data for drift analysis."""
+        try:
+            # Need pandas for DataFrame creation
+            try:
+                import pandas as pd
+            except ImportError:
+                logger.warning("pandas not available for drift data collection")
+                return None
+
+            # Collect features from recent decisions
+            if not self.decision_history:
+                return None
+
+            # Extract feature data from decision history
+            feature_records = []
+            for decision in self.decision_history:
+                features = decision.features_used
+                record = {
+                    "message_length": features.message_length,
+                    "agent_count": features.agent_count,
+                    "tenant_complexity": features.tenant_complexity,
+                    "temporal_mean": (
+                        np.mean(features.temporal_patterns) if features.temporal_patterns else 0.0
+                    ),
+                    "temporal_std": (
+                        np.std(features.temporal_patterns) if features.temporal_patterns else 0.0
+                    ),
+                    "semantic_similarity": features.semantic_similarity,
+                    "historical_precedence": features.historical_precedence,
+                    "resource_utilization": features.resource_utilization,
+                    "network_isolation": features.network_isolation,
+                    "risk_score": features.risk_score,
+                    "confidence_level": features.confidence_level,
+                }
+                feature_records.append(record)
+
+            if not feature_records:
+                return None
+
+            return pd.DataFrame(feature_records)
+
+        except Exception as e:
+            logger.error(f"Error collecting drift data: {e}")
+            return None
+
+    def get_latest_drift_report(self) -> Optional[DriftReport]:
+        """Get the most recent drift detection report."""
+        return self._latest_drift_report
 
     def _analyze_performance_trends(self) -> None:
         """Analyze performance trends for adaptive adjustments."""
@@ -826,4 +1761,8 @@ __all__ = [
     "get_adaptive_governance",
     "evaluate_message_governance",
     "provide_governance_feedback",
+    # Availability flags
+    "DRIFT_MONITORING_AVAILABLE",
+    "ONLINE_LEARNING_AVAILABLE",
+    "AB_TESTING_AVAILABLE",
 ]
