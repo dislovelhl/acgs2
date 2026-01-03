@@ -1,0 +1,8 @@
+# Gitleaks ignore file
+# https://github.com/gitleaks/gitleaks#gitleaksignore
+# Use fingerprints from gitleaks findings to ignore specific secrets
+
+# Development SAML SP certificates (self-signed, for testing only)
+# These are NOT used in production - production deployments generate their own certificates
+# Fingerprint format: file:rule:line
+acgs2-core/shared/auth/certs/sp.key:private-key:1

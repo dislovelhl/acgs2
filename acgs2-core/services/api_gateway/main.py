@@ -4,6 +4,8 @@ Simple development API gateway for routing requests to services
 """
 
 import json
+import logging
+import secrets
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -12,6 +14,9 @@ from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import ORJSONResponse
 from pydantic import BaseModel, Field
+from starlette.middleware.sessions import SessionMiddleware
+
+from routes import admin_sso_router, sso_router
 from shared.config import settings
 from shared.logging_config import (
     configure_logging,
@@ -53,31 +58,29 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Add GZip middleware for response compression
-app.add_middleware(GZipMiddleware, minimum_size=1000)
-
-# Add correlation ID middleware
-app.middleware("http")(create_correlation_middleware())
-
-# Add rate limiting middleware
-app.middleware("http")(
-    create_rate_limit_middleware(
-        requests_per_minute=100,  # 100 requests per minute
-        burst_limit=20,  # Burst up to 20 requests
-    )
+# Add SessionMiddleware for OAuth state management
+# Use JWT secret if available, otherwise generate a secure random key for development
+session_secret = (
+    settings.security.jwt_secret.get_secret_value()
+    if settings.security.jwt_secret
+    else secrets.token_urlsafe(32)
 )
 
-# Add authentication middleware
-app.add_middleware(AuthenticationMiddleware)
+if not settings.security.jwt_secret:
+    logger.warning(
+        "JWT_SECRET not configured - using generated session secret. "
+        "Set JWT_SECRET in production for consistent sessions across restarts."
+    )
 
-# Add rate limit headers
-app.add_middleware(add_rate_limit_headers())
-
-# Initialize metrics
-set_service_info("api-gateway", "1.0.0")
-
-# Add metrics endpoint
-app.add_api_route("/metrics", create_metrics_endpoint())
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=session_secret,
+    session_cookie="acgs2_session",
+    max_age=settings.sso.session_lifetime_seconds,
+    same_site="lax",
+    https_only=settings.env == "production",
+)
+logger.info("SessionMiddleware configured for OAuth state management")
 
 # Service URLs from centralized config
 AGENT_BUS_URL = settings.services.agent_bus_url
@@ -161,12 +164,7 @@ async def submit_feedback(
         )
 
     except Exception as e:
-        logger.error(
-            "feedback_processing_failed",
-            error_type=type(e).__name__,
-            error_message=str(e),
-            exc_info=True,
-        )
+        logger.error(f"Error processing feedback: {e}")
         raise HTTPException(status_code=500, detail="Failed to process feedback") from e
 
 
@@ -216,12 +214,7 @@ async def get_feedback_stats(user: UserClaims = Depends(get_current_user_optiona
         }
 
     except Exception as e:
-        logger.error(
-            "feedback_stats_retrieval_failed",
-            error_type=type(e).__name__,
-            error_message=str(e),
-            exc_info=True,
-        )
+        logger.error(f"Error getting feedback stats: {e}")
         raise HTTPException(status_code=500, detail="Failed to retrieve feedback statistics") from e
 
 
@@ -248,6 +241,13 @@ async def list_services():
                 service_info["health"] = "unreachable"
 
     return services
+
+
+# Include SSO router for OIDC/SAML authentication
+app.include_router(sso_router, prefix="/sso")
+
+# Include Admin SSO router for SSO provider configuration
+app.include_router(admin_sso_router, prefix="/admin/sso")
 
 
 # Proxy to Agent Bus (catch-all route - must be last)
@@ -294,21 +294,10 @@ async def proxy_to_agent_bus(request: Request, path: str):
             )
 
     except httpx.RequestError as e:
-        logger.error(
-            "proxy_request_failed",
-            target_url=target_url,
-            error_type=type(e).__name__,
-            error_message=str(e),
-        )
+        logger.error(f"Request error: {e}")
         raise HTTPException(status_code=502, detail="Service unavailable") from e
     except Exception as e:
-        logger.error(
-            "proxy_unexpected_error",
-            target_url=target_url,
-            error_type=type(e).__name__,
-            error_message=str(e),
-            exc_info=True,
-        )
+        logger.error(f"Unexpected error: {e}")
         raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
