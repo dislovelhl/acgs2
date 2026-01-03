@@ -231,11 +231,90 @@ npm test -- --coverage
 
 ## 🔒 Security Considerations
 
+### Secrets Detection and Protection
+
+ACGS-2 implements **automated secrets detection** to prevent accidental credential commits through a multi-layered pre-commit hook system:
+
+#### 🛡️ What Gets Detected
+
+The pre-commit hooks automatically scan for:
+- **AI Provider Credentials**: Anthropic, Claude Code, OpenRouter, HuggingFace, OpenAI API keys
+- **Infrastructure Secrets**: AWS keys, JWT secrets, Vault tokens, database passwords
+- **Generic Patterns**: 140+ built-in patterns for SSH keys, GitHub tokens, cloud credentials, etc.
+
+#### ✅ What You CAN Commit
+
+**Safe to commit:**
+- Development placeholders (e.g., `dev-jwt-secret-min-32-chars-required`, `test-api-key-placeholder`)
+- Example configuration files (`.env.example` with placeholder values)
+- Test fixtures clearly marked as fake secrets
+- Public certificates for testing (e.g., SAML test certificates)
+
+**Example safe values:**
+```env
+# .env.example
+JWT_SECRET=dev-jwt-secret-min-32-chars-required
+ANTHROPIC_API_KEY=your-anthropic-api-key-here
+POSTGRES_PASSWORD=test-password-123
+```
+
+#### ❌ What You CANNOT Commit
+
+**Never commit:**
+- Real API keys from any provider (Anthropic, OpenAI, AWS, etc.)
+- Production passwords or tokens
+- Private keys without `.gitleaksignore` exception
+- Actual JWT secrets or session keys
+- Real database credentials
+
+#### 🚨 When Pre-commit Hooks Fail
+
+If the secrets detection hooks block your commit:
+
+**1. Is it a real secret?**
+   - **YES**: Remove it and use `secrets_manager.py` or Vault
+   - **NO**: Follow the quick-fix guide below
+
+**2. Is it a false positive?**
+   - Check if it matches placeholder patterns (`dev-*`, `test-*`, `your-*`)
+   - Add to `.secrets-allowlist.yaml` if it's safe
+   - Add fingerprint to `.gitleaksignore` if needed
+
+**3. Quick fixes:**
+```bash
+# Option 1: Use secrets_manager.py for safe storage
+from acgs2_core.shared.secrets_manager import secrets_manager
+secrets_manager.set("MY_SECRET", "real-value-here")
+
+# Option 2: Add to allow-list for safe placeholders
+# Edit .secrets-allowlist.yaml and add your pattern
+
+# Option 3: Emergency bypass (use sparingly!)
+git commit --no-verify -m "message"  # Only for verified safe content
+```
+
+#### 📖 Documentation
+
+For comprehensive guidance:
+- **[Secrets Detection Guide](./docs/SECRETS_DETECTION.md)** - Complete documentation on what's detected and how it works
+- **[Quick-Fix Guide](./docs/SECRETS_QUICK_FIX.md)** - Step-by-step solutions for common issues
+- **[Secrets Manager Integration](./docs/SECRETS_DETECTION.md#integration-with-secrets_managerpy)** - How to use the safe storage system
+
+#### 🔧 Setup
+
+The secrets detection hooks are automatically installed when you run:
+```bash
+pre-commit install  # One-time setup
+```
+
+After installation, every commit is automatically scanned. The hooks run quickly (<5s) and provide actionable error messages if secrets are detected.
+
 ### Code Security
-- Never commit secrets or credentials
+- Never commit secrets or credentials (enforced by automated hooks)
 - Validate all inputs to prevent injection attacks
 - Use parameterized queries for database operations
 - Implement proper authentication and authorization
+- Use `secrets_manager.py` for credential storage and validation
 
 ### Reporting Security Issues
 - **DO NOT** create public GitHub issues for security vulnerabilities
