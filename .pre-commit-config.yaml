@@ -26,12 +26,7 @@ repos:
 #           [types-redis, types-requests, types-setuptools],
 #       },
 #     ]
-  - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.6.0
-    hooks:
-      - id: ruff
-        args: [--fix]  # Uses select from pyproject.toml
-      - id: ruff-format
+  # Note: ruff hooks are defined above in astral-sh/ruff-pre-commit repo
 
   # Python type checking (simplified) - set to manual due to package naming
   - repo: https://github.com/pre-commit/mirrors-mypy

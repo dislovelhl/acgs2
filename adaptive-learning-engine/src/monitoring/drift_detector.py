@@ -92,6 +92,13 @@ class DriftDetector:
     - Alert callbacks for integration
     - Thread-safe operations
     - Graceful degradation on errors
+    - DataFrame caching for performance optimization
+
+    Caching:
+        The detector implements an intelligent caching system to avoid redundant
+        DataFrame conversions and drift report computations. Caches are automatically
+        invalidated when the underlying data changes. Caching can be disabled for
+        testing or debugging purposes using the enable_caching parameter.
 
     Example usage:
         detector = DriftDetector(
@@ -118,6 +125,7 @@ class DriftDetector:
         check_interval_seconds: int = 300,
         drift_share_threshold: float = 0.5,
         enabled: bool = True,
+        enable_caching: bool = True,
     ) -> None:
         """Initialize the drift detector.
 
@@ -130,6 +138,11 @@ class DriftDetector:
             drift_share_threshold: Fraction of columns that must drift
                 to trigger dataset-level drift alert.
             enabled: Whether drift detection is enabled.
+            enable_caching: Whether to cache DataFrame conversions and drift
+                reports for performance. When enabled, the detector caches
+                reference/current DataFrames and reuses them when data hasn't
+                changed (detected via checksums). Disable for testing or when
+                memory is constrained. Default is True.
         """
         self.drift_threshold = drift_threshold
         self.reference_window_size = reference_window_size
@@ -167,7 +180,7 @@ class DriftDetector:
         self._known_columns: set = set()
 
         # Caching infrastructure
-        self._cache_enabled = True  # Enable caching by default
+        self._cache_enabled = enable_caching
         self._reference_df_cache: Optional[pd.DataFrame] = None
         self._current_df_cache: Optional[pd.DataFrame] = None
         self._reference_checksum: Optional[str] = None
@@ -182,6 +195,7 @@ class DriftDetector:
                 "reference_window_size": reference_window_size,
                 "current_window_size": current_window_size,
                 "enabled": enabled,
+                "enable_caching": enable_caching,
             },
         )
 
@@ -630,7 +644,7 @@ class DriftDetector:
             Hex string checksum representing the data.
         """
         if not data:
-            return hashlib.md5(b"empty").hexdigest()
+            return hashlib.md5(b"empty", usedforsecurity=False).hexdigest()
 
         # Start with length
         components = [str(len(data))]
@@ -651,7 +665,7 @@ class DriftDetector:
 
         # Combine all components and hash
         combined = "|".join(components)
-        checksum = hashlib.md5(combined.encode("utf-8")).hexdigest()
+        checksum = hashlib.md5(combined.encode("utf-8"), usedforsecurity=False).hexdigest()
 
         return checksum
 
