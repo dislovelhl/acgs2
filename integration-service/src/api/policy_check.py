@@ -13,8 +13,10 @@ from typing import Any, Dict, List, Optional
 from uuid import uuid4
 
 import httpx
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+from .auth import UserClaims, get_current_user
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -548,6 +550,7 @@ def generate_recommendations(
 )
 async def validate_policies(
     request: PolicyValidationRequest,
+    current_user: UserClaims = Depends(get_current_user),
 ) -> PolicyValidationResponse:
     """
     Validate resources against ACGS2 governance policies.
@@ -573,7 +576,8 @@ async def validate_policies(
 
         logger.info(
             f"Policy validation request: {len(request.resources)} resources, "
-            f"type={request.resource_type}, policy={request.policy_id}, platform={ci_platform}"
+            f"type={request.resource_type}, policy={request.policy_id}, platform={ci_platform}, "
+            f"user={current_user.sub}, tenant={current_user.tenant_id}"
         )
 
         # Try to evaluate with OPA first
@@ -634,7 +638,8 @@ async def validate_policies(
 
         logger.info(
             f"Policy validation complete: passed={passed}, "
-            f"violations={len(violations)}, time={validation_time_ms}ms"
+            f"violations={len(violations)}, time={validation_time_ms}ms, "
+            f"user={current_user.sub}, tenant={current_user.tenant_id}"
         )
 
         return response
