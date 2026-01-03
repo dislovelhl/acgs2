@@ -1,0 +1,25 @@
+{
+  "active": true,
+  "spec": "013-advanced-caching-with-tiered-strategy",
+  "state": "complete",
+  "subtasks": {
+    "completed": 18,
+    "total": 18,
+    "in_progress": 0,
+    "failed": 0
+  },
+  "phase": {
+    "current": "Integration and End-to-End Verification",
+    "id": null,
+    "total": 2
+  },
+  "workers": {
+    "active": 0,
+    "max": 1
+  },
+  "session": {
+    "number": 19,
+    "started_at": "2026-01-03T08:53:57.828059"
+  },
+  "last_update": "2026-01-03T09:12:40.537226"
+}

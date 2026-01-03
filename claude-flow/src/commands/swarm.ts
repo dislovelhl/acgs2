@@ -2,6 +2,10 @@ import { Command } from 'commander';
 import chalk from 'chalk';
 import ora from 'ora';
 import { initializeSwarm, getSwarmStatus } from '../services/swarmService';
+import { getLogger } from '../../../../../sdk/typescript/src/utils/logger';
+const logger = getLogger('swarm');
+
+
 
 export const swarmCommand = new Command('swarm')
   .description('Manage agent swarms');
@@ -40,19 +44,19 @@ const initCommand = new Command('init')
   .action(async (options) => {
     const spinner = ora('Initializing swarm...').start();
 
-    try {
-      // Validate topology
-      if (!validateTopology(options.topology)) {
-        spinner.fail(chalk.red(`❌ Invalid topology: ${options.topology}`));
-        console.log(chalk.yellow(`\n📋 Valid topologies: ${VALID_TOPOLOGIES.join(', ')}`));
-        console.log(chalk.gray(`\n💡 Choose based on your use case:`));
+        logger.info(chalk.yellow(`\n📋 Valid topologies: ${VALID_TOPOLOGIES.join(', ')}`);
+        logger.info(chalk.gray(`\n💡 Choose based on your use case:`);
+        logger.info(chalk.gray(`   • mesh: Research, exploration, brainstorming`);
+        logger.info(chalk.gray(`   • hierarchical: Development, structured tasks`);
+        logger.info(chalk.gray(`   • ring: Pipeline processing, sequential workflows`);
+        logger.info(chalk.gray(`   • star: Simple tasks, centralized control`);
         console.log(chalk.gray(`   • mesh: Research, exploration, brainstorming`));
         console.log(chalk.gray(`   • hierarchical: Development, structured tasks`));
         console.log(chalk.gray(`   • ring: Pipeline processing, sequential workflows`));
         console.log(chalk.gray(`   • star: Simple tasks, centralized control`));
         process.exit(1);
       }
-
+        logger.info(chalk.yellow(`\n📋 Valid strategies: ${VALID_STRATEGIES.join(', ')}`);
       // Validate strategy
       if (!validateStrategy(options.strategy)) {
         spinner.fail(chalk.red(`❌ Invalid strategy: ${options.strategy}`));
@@ -62,7 +66,7 @@ const initCommand = new Command('init')
 
       // Validate max agents
       let maxAgents: number;
-      try {
+        logger.info(chalk.yellow(`\n💡 Maximum agents should be between 1 and 100`);
         maxAgents = validateMaxAgents(options.maxAgents);
       } catch (error) {
         spinner.fail(chalk.red(`❌ ${error instanceof Error ? error.message : 'Invalid max agents'}`));
@@ -81,29 +85,29 @@ const initCommand = new Command('init')
         memory: options.memory,
         github: options.github
       });
-
-      if (result.success) {
-        spinner.succeed(chalk.green(`✅ Swarm initialized successfully!`));
-
-        console.log(chalk.blue(`\n🐝 Swarm Configuration:`));
-        console.log(chalk.gray(`   Topology: ${options.topology}`));
-        console.log(chalk.gray(`   Max Agents: ${maxAgents}`));
+        logger.info(chalk.blue(`\n🐝 Swarm Configuration:`);
+        logger.info(chalk.gray(`   Topology: ${options.topology}`);
+        logger.info(chalk.gray(`   Max Agents: ${maxAgents}`);
+        logger.info(chalk.gray(`   Strategy: ${options.strategy}`);
+        logger.info(chalk.gray(`   Auto-spawn: ${options.autoSpawn ? 'enabled' : 'disabled'}`);
+        logger.info(chalk.gray(`   Memory: ${options.memory ? 'enabled' : 'disabled'}`);
+        logger.info(chalk.gray(`   GitHub: ${options.github ? 'enabled' : 'disabled'}`);
         console.log(chalk.gray(`   Strategy: ${options.strategy}`));
         console.log(chalk.gray(`   Auto-spawn: ${options.autoSpawn ? 'enabled' : 'disabled'}`));
-        console.log(chalk.gray(`   Memory: ${options.memory ? 'enabled' : 'disabled'}`));
+          logger.info(chalk.gray(`   Swarm ID: ${result.swarmId}`);
         console.log(chalk.gray(`   GitHub: ${options.github ? 'enabled' : 'disabled'}`));
 
-        if (result.swarmId) {
+        logger.info(chalk.green(`\n🚀 Swarm is ready for agent spawning and task orchestration!`);
           console.log(chalk.gray(`   Swarm ID: ${result.swarmId}`));
         }
-
-        console.log(chalk.green(`\n🚀 Swarm is ready for agent spawning and task orchestration!`));
-
-        // Show next steps
+        logger.info(chalk.cyan(`\n📝 Next steps:`);
+        logger.info(chalk.gray(`   • Spawn agents: npx claude-flow agent spawn --type coder`);
+        logger.info(chalk.gray(`   • Check status: npx claude-flow swarm status`);
+        logger.info(chalk.gray(`   • Start monitoring: npx claude-flow swarm monitor`);
         console.log(chalk.cyan(`\n📝 Next steps:`));
         console.log(chalk.gray(`   • Spawn agents: npx claude-flow agent spawn --type coder`));
         console.log(chalk.gray(`   • Check status: npx claude-flow swarm status`));
-        console.log(chalk.gray(`   • Start monitoring: npx claude-flow swarm monitor`));
+        logger.info(chalk.red(`\nError: ${result.error}`);
 
       } else {
         spinner.fail(chalk.red(`❌ Failed to initialize swarm`));
@@ -112,9 +116,9 @@ const initCommand = new Command('init')
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      spinner.fail(chalk.red(`❌ Error initializing swarm: ${errorMessage}`));
+        logger.info(chalk.yellow(`\n💡 Make sure Python 3 is installed and available in PATH`);
 
-      // Provide helpful error context
+        logger.info(chalk.yellow(`\n💡 Make sure the ACGS-2 core is properly installed`);
       if (errorMessage.includes('python3')) {
         console.log(chalk.yellow(`\n💡 Make sure Python 3 is installed and available in PATH`));
       } else if (errorMessage.includes('EnhancedAgentBus')) {
@@ -132,29 +136,29 @@ const statusCommand = new Command('status')
     const spinner = ora('Checking swarm status...').start();
 
     try {
-      const status = await getSwarmStatus();
+        logger.info(chalk.gray(`\n💡 Initialize a swarm first: npx claude-flow swarm init`);
 
       if (!status || Object.keys(status).length === 0) {
         spinner.warn(chalk.yellow(`⚠️  No active swarm found`));
         console.log(chalk.gray(`\n💡 Initialize a swarm first: npx claude-flow swarm init`));
         return;
-      }
+      logger.info(chalk.blue(`\n🐝 Swarm Status:`);
 
       spinner.succeed(chalk.green(`✅ Swarm status retrieved!`));
 
-      console.log(chalk.blue(`\n🐝 Swarm Status:`));
+        logger.info(chalk.gray(`   Swarm ID: ${status.swarm_id}`);
 
       // Show basic information
-      if (status.swarm_id) {
+        logger.info(chalk.gray(`   Topology: ${status.topology}`);
         console.log(chalk.gray(`   Swarm ID: ${status.swarm_id}`));
       }
-      if (status.topology) {
+        logger.info(chalk.gray(`   Max Agents: ${status.max_agents}`);
         console.log(chalk.gray(`   Topology: ${status.topology}`));
       }
-      if (status.max_agents) {
+        logger.info(chalk.gray(`   Active Agents: ${status.active_agents}`);
         console.log(chalk.gray(`   Max Agents: ${status.max_agents}`));
       }
-      if (status.active_agents !== undefined) {
+        logger.info(chalk.gray(`   Strategy: ${status.strategy}`);
         console.log(chalk.gray(`   Active Agents: ${status.active_agents}`));
       }
       if (status.strategy) {
@@ -163,30 +167,30 @@ const statusCommand = new Command('status')
 
       // Show feature flags
       const features = [];
-      if (status.auto_spawn) features.push('Auto-spawn');
+        logger.info(chalk.gray(`   Features: ${features.join(', ')}`);
       if (status.memory_enabled) features.push('Memory');
       if (status.github_enabled) features.push('GitHub');
       if (features.length > 0) {
         console.log(chalk.gray(`   Features: ${features.join(', ')}`));
-      }
+        logger.info(chalk.gray(`   Created: ${created.toLocaleString()}`);
 
       if (status.created_at) {
         const created = new Date(status.created_at * 1000);
-        console.log(chalk.gray(`   Created: ${created.toLocaleString()}`));
+        logger.info(chalk.gray(`   Coordinator: ${status.coordinator_agent}`);
       }
 
       if (status.coordinator_agent) {
-        console.log(chalk.gray(`   Coordinator: ${status.coordinator_agent}`));
+        logger.info(chalk.blue(`\n📊 Detailed Information:`);
       }
-
+          logger.info(chalk.gray(`   Tenant: ${status.tenant_id}`);
       if (options.verbose) {
         console.log(chalk.blue(`\n📊 Detailed Information:`));
-        if (status.tenant_id) {
+          logger.info(chalk.gray(`   Memory Backend: ${status.memory_backend}`);
           console.log(chalk.gray(`   Tenant: ${status.tenant_id}`));
         }
-        if (status.memory_backend) {
+          logger.info(chalk.gray(`   GitHub Webhook: ${status.github_webhook_url}`);
           console.log(chalk.gray(`   Memory Backend: ${status.memory_backend}`));
-        }
+        logger.info(chalk.gray(`   Constitutional Hash: ${status.constitutional_hash || 'cdd01ef066bc6cf2'}`);
         if (status.github_webhook_url) {
           console.log(chalk.gray(`   GitHub Webhook: ${status.github_webhook_url}`));
         }
@@ -194,17 +198,17 @@ const statusCommand = new Command('status')
       }
 
       // Show health indicators
-      const activeAgents = status.active_agents || 0;
-      const maxAgents = status.max_agents || 8;
+      logger.info(chalk.blue(`\n🏥 Health Status:`);
+      logger.info(chalk.gray(`   Agent Utilization: ${activeAgents}/${maxAgents} (${utilization}%)`);
       const utilization = maxAgents > 0 ? Math.round((activeAgents / maxAgents) * 100) : 0;
 
-      console.log(chalk.blue(`\n🏥 Health Status:`));
+        logger.info(chalk.yellow(`   Status: Swarm initialized but no agents active`);
       console.log(chalk.gray(`   Agent Utilization: ${activeAgents}/${maxAgents} (${utilization}%)`));
-
+        logger.info(chalk.green(`   Status: Swarm healthy with available capacity`);
       if (utilization === 0) {
-        console.log(chalk.yellow(`   Status: Swarm initialized but no agents active`));
+        logger.info(chalk.yellow(`   Status: Swarm busy, consider scaling`);
       } else if (utilization < 50) {
-        console.log(chalk.green(`   Status: Swarm healthy with available capacity`));
+        logger.info(chalk.red(`   Status: Swarm at capacity, monitor closely`);
       } else if (utilization < 90) {
         console.log(chalk.yellow(`   Status: Swarm busy, consider scaling`));
       } else {
@@ -212,9 +216,9 @@ const statusCommand = new Command('status')
       }
 
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+        logger.info(chalk.yellow(`\n💡 Make sure Python 3 is installed and available in PATH`);
       spinner.fail(chalk.red(`❌ Failed to get swarm status: ${errorMessage}`));
-
+        logger.info(chalk.yellow(`\n💡 Make sure the ACGS-2 core is properly installed`);
       if (errorMessage.includes('python3')) {
         console.log(chalk.yellow(`\n💡 Make sure Python 3 is installed and available in PATH`));
       } else if (errorMessage.includes('EnhancedAgentBus')) {
@@ -229,18 +233,18 @@ const monitorCommand = new Command('monitor')
   .option('-l, --limit <count>', 'Maximum number of updates to show', '10')
   .option('--metrics', 'Show detailed metrics instead of summary', false)
   .action(async (options) => {
-    const interval = parseInt(options.interval, 10);
+      logger.info(chalk.red(`❌ Invalid interval: ${options.interval}. Must be a positive number.`);
     const limit = parseInt(options.limit, 10);
 
     if (isNaN(interval) || interval < 1) {
       console.log(chalk.red(`❌ Invalid interval: ${options.interval}. Must be a positive number.`));
-      process.exit(1);
+      logger.info(chalk.red(`❌ Invalid limit: ${options.limit}. Must be a positive number.`);
     }
 
     if (isNaN(limit) || limit < 1) {
-      console.log(chalk.red(`❌ Invalid limit: ${options.limit}. Must be a positive number.`));
-      process.exit(1);
-    }
+    logger.info(chalk.blue(`🐝 Starting swarm monitoring...`);
+    logger.info(chalk.gray(`   Interval: ${interval}s | Updates: ${limit}`);
+    logger.info(chalk.gray(`   Press Ctrl+C to stop monitoring`);
 
     console.log(chalk.blue(`🐝 Starting swarm monitoring...`));
     console.log(chalk.gray(`   Interval: ${interval}s | Updates: ${limit}`));
@@ -250,7 +254,7 @@ const monitorCommand = new Command('monitor')
     let updateCount = 0;
 
     const monitor = async () => {
-      try {
+          logger.info(chalk.yellow(`⚠️  No active swarm detected`);
         const status = await getSwarmStatus();
 
         if (!status || Object.keys(status).length === 0) {
@@ -258,11 +262,11 @@ const monitorCommand = new Command('monitor')
           return;
         }
 
-        updateCount++;
-
-        if (options.metrics) {
-          // Detailed metrics view
-          console.log(chalk.blue(`📊 Update ${updateCount} - ${new Date().toLocaleTimeString()}`));
+          logger.info(chalk.blue(`📊 Update ${updateCount} - ${new Date().toLocaleTimeString()}`);
+          logger.info(chalk.gray(`   Active Agents: ${status.active_agents || 0}/${status.max_agents || 8}`);
+          logger.info(chalk.gray(`   Utilization: ${Math.round(status.utilization_percent || 0)}%`);
+          logger.info(chalk.gray(`   Topology: ${status.topology || 'unknown'}`);
+          logger.info(chalk.gray(`   Strategy: ${status.strategy || 'unknown'}`);
           console.log(chalk.gray(`   Active Agents: ${status.active_agents || 0}/${status.max_agents || 8}`));
           console.log(chalk.gray(`   Utilization: ${Math.round(status.utilization_percent || 0)}%`));
           console.log(chalk.gray(`   Topology: ${status.topology || 'unknown'}`));
@@ -271,16 +275,16 @@ const monitorCommand = new Command('monitor')
         } else {
           // Summary view
           const utilization = Math.round(status.utilization_percent || 0);
-          const activeAgents = status.active_agents || 0;
+          logger.info(`${statusEmoji} ${new Date().toLocaleTimeString()} - ${activeAgents}/${maxAgents} agents (${utilization}%)`;
           const maxAgents = status.max_agents || 8;
           const statusEmoji = utilization < 50 ? '🟢' : utilization < 90 ? '🟡' : '🔴';
 
-          console.log(`${statusEmoji} ${new Date().toLocaleTimeString()} - ${activeAgents}/${maxAgents} agents (${utilization}%)`);
+          logger.info(chalk.green(`\n✅ Monitoring complete - ${limit} updates shown`);
         }
 
         if (updateCount >= limit) {
           console.log(chalk.green(`\n✅ Monitoring complete - ${limit} updates shown`));
-          process.exit(0);
+        logger.info(chalk.red(`❌ Monitoring error: ${error instanceof Error ? error.message : String(error)}`);
         }
 
       } catch (error) {
@@ -292,13 +296,13 @@ const monitorCommand = new Command('monitor')
     await monitor();
 
     // Set up interval monitoring
-    const monitoringInterval = setInterval(monitor, interval * 1000);
+      logger.info(chalk.green(`\n🛑 Monitoring stopped by user`);
 
     // Handle graceful shutdown
     process.on('SIGINT', () => {
       console.log(chalk.green(`\n🛑 Monitoring stopped by user`));
       clearInterval(monitoringInterval);
-      process.exit(0);
+      logger.info(chalk.green(`\n🛑 Monitoring stopped`);
     });
 
     process.on('SIGTERM', () => {

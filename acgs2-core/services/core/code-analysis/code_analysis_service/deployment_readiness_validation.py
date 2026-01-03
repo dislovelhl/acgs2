@@ -222,12 +222,8 @@ def run_deployment_readiness_validation() -> dict[str, Any]:
     }
 
     # Analyze results
-    passed_tests = [
-        name for name, result in test_results.items() if result.get("status") == "pass"
-    ]
-    failed_tests = [
-        name for name, result in test_results.items() if result.get("status") == "fail"
-    ]
+    passed_tests = [name for name, result in test_results.items() if result.get("status") == "pass"]
+    failed_tests = [name for name, result in test_results.items() if result.get("status") == "fail"]
 
     total_tests = len(test_results)
     passed_count = len(passed_tests)
