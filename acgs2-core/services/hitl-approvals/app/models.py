@@ -157,3 +157,57 @@ class EscalationPolicy(BaseModel):
     pagerduty_on_critical: bool = Field(
         True, description="Whether to trigger PagerDuty for critical escalations"
     )
+
+
+class AuditEntryType(str, Enum):
+    """Type of audit entry."""
+
+    APPROVAL_CREATED = "approval_created"
+    APPROVAL_APPROVED = "approval_approved"
+    APPROVAL_REJECTED = "approval_rejected"
+    APPROVAL_ESCALATED = "approval_escalated"
+    APPROVAL_EXPIRED = "approval_expired"
+    APPROVAL_CANCELLED = "approval_cancelled"
+    CHAIN_MODIFIED = "chain_modified"
+    POLICY_MODIFIED = "policy_modified"
+
+
+class AuditEntry(BaseModel):
+    """Immutable audit trail entry for HITL approval workflows.
+
+    Records all actions and state changes in the approval system
+    for compliance, debugging, and accountability purposes.
+    """
+
+    entry_id: str = Field(..., description="Unique identifier for this audit entry")
+    entry_type: AuditEntryType = Field(..., description="Type of audit entry")
+    timestamp: datetime = Field(
+        default_factory=datetime.utcnow, description="When the entry was created"
+    )
+
+    # Actor information
+    actor_id: str = Field(..., description="ID of the user or system that performed the action")
+    actor_type: str = Field(default="user", description="Type of actor (user, system, service)")
+    actor_role: Optional[str] = Field(None, description="Role of the actor if applicable")
+
+    # Target information
+    target_type: str = Field(..., description="Type of target (request, chain, policy)")
+    target_id: str = Field(..., description="ID of the target resource")
+
+    # State tracking
+    previous_state: Optional[Dict[str, Any]] = Field(None, description="State before the action")
+    new_state: Optional[Dict[str, Any]] = Field(None, description="State after the action")
+
+    # Additional context
+    action_details: Dict[str, Any] = Field(
+        default_factory=dict, description="Additional details about the action"
+    )
+    rationale: Optional[str] = Field(None, description="Reason for the action if provided")
+
+    # Integrity
+    checksum: Optional[str] = Field(
+        None, description="Hash of entry contents for integrity verification"
+    )
+    parent_entry_id: Optional[str] = Field(
+        None, description="ID of related parent audit entry for chaining"
+    )
