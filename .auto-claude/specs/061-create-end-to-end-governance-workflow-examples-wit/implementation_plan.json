@@ -1,0 +1,547 @@
+{
+  "feature": "Create end-to-end governance workflow examples with working code",
+  "description": "Create comprehensive examples demonstrating complete governance workflows from policy creation through enforcement to audit logging, targeting Enterprise DevOps/MLOps engineers deploying AI systems. The examples will show: defining constitutional policies, enforcing them on agent actions, handling HITL approvals, and auditing decisions.",
+  "created_at": "2026-01-03T21:27:54.052Z",
+  "updated_at": "2026-01-03T21:27:54.052Z",
+  "status": "in_progress",
+  "planStatus": "complete",
+  "phases": [
+    {
+      "phase_id": "phase_1",
+      "name": "Planning and Analysis",
+      "description": "Analyze existing examples and design the end-to-end governance workflow example",
+      "subtasks": [
+        {
+          "subtask_id": "1.1",
+          "title": "Review existing examples and identify gaps",
+          "description": "Analyze the existing 3 examples (basic-policy-evaluation, ai-model-approval, data-access-control) to understand patterns and identify what's missing for a complete end-to-end workflow",
+          "status": "completed",
+          "dependencies": [],
+          "files": [
+            "./examples/01-basic-policy-evaluation/",
+            "./examples/02-ai-model-approval/",
+            "./examples/03-data-access-control/",
+            "./examples/README.md"
+          ],
+          "acceptance_criteria": [
+            "Documented gaps in current examples",
+            "Identified patterns to follow",
+            "Clear understanding of what needs to be added"
+          ],
+          "completed_at": "2026-01-03T09:32:00Z",
+          "notes": "Completed comprehensive analysis. Created analysis-findings.md with 10 common patterns and 10 critical gaps identified. Recorded discoveries and gotchas to session context."
+        },
+        {
+          "subtask_id": "1.2",
+          "title": "Design end-to-end governance workflow architecture",
+          "description": "Design a comprehensive example that demonstrates: policy creation, enforcement, HITL approvals, and audit logging in a realistic AI agent deployment scenario",
+          "status": "completed",
+          "dependencies": ["1.1"],
+          "files": [
+            "./.auto-claude/specs/061-create-end-to-end-governance-workflow-examples-wit/architecture-design.md"
+          ],
+          "acceptance_criteria": [
+            "Workflow diagram created",
+            "Component interactions defined",
+            "Use case scenarios documented",
+            "Integration points with ACGS-2 core identified"
+          ],
+          "completed_at": "2026-01-03T21:45:00Z",
+          "notes": "Completed comprehensive architecture design. Created architecture-design.md with: 6-step workflow diagram, component architecture, sequence diagrams, 6 detailed use case scenarios (low-risk auto-approve, medium-risk with compliance, high-risk HITL, constitutional violation denial, HITL rejection, timeout/escalation), integration points with ACGS-2 core (constitutional policy, OPA, audit trail, HITL workflow, policy management, observability), technology stack, file structure, implementation priorities (MVP/Enhanced/Optional), and risk mitigation strategies."
+        },
+        {
+          "subtask_id": "1.3",
+          "title": "Define example scope and components",
+          "description": "Define the specific components for Example 04: what services, policies, and workflows will be demonstrated",
+          "status": "completed",
+          "dependencies": ["1.2"],
+          "files": [
+            "./.auto-claude/specs/061-create-end-to-end-governance-workflow-examples-wit/component-specification.md"
+          ],
+          "acceptance_criteria": [
+            "Components list finalized",
+            "File structure planned",
+            "Policy types identified",
+            "Agent actions defined"
+          ],
+          "completed_at": "2026-01-03T22:00:00Z",
+          "notes": "Completed comprehensive component specification. Created component-specification.md (1,000+ lines) defining: 35 files across 7 directories, 7 Python modules with detailed class/method specs, 4 Rego policies with complete rules, 11 concrete agent action examples across 5 risk levels, Docker Compose configuration for OPA/PostgreSQL/Redis, complete documentation plan, testing strategy, and implementation priorities. All acceptance criteria met: components finalized, file structure planned, policy types identified, agent actions defined. Ready for Phase 2 implementation."
+        }
+      ]
+    },
+    {
+      "phase_id": "phase_2",
+      "name": "Example 04 Structure Setup",
+      "description": "Create the directory structure, configuration files, and skeleton for Example 04",
+      "subtasks": [
+        {
+          "subtask_id": "2.1",
+          "title": "Create Example 04 directory structure",
+          "description": "Set up the complete directory structure for the end-to-end governance workflow example following the pattern of existing examples",
+          "status": "completed",
+          "dependencies": ["1.3"],
+          "files": [
+            "./examples/04-end-to-end-governance-workflow/",
+            "./examples/04-end-to-end-governance-workflow/policies/",
+            "./examples/04-end-to-end-governance-workflow/src/"
+          ],
+          "acceptance_criteria": [
+            "Directory structure created",
+            "Follows existing example patterns",
+            "All necessary subdirectories present"
+          ],
+          "completed_at": "2026-01-03T09:47:00Z",
+          "notes": "Created complete directory structure for Example 04 with all 35 files across 6 directories (src/, policies/, tests/, docs/, scripts/, plus root files). Structure follows component specification exactly and matches patterns from existing examples. All Python packages have __init__.py files, shell scripts are executable, and all placeholder files are created ready for implementation."
+        },
+        {
+          "subtask_id": "2.2",
+          "title": "Create Docker Compose configuration",
+          "description": "Create compose.yaml for OPA and any other required services (e.g., PostgreSQL for audit logs, Redis for state)",
+          "status": "completed",
+          "dependencies": ["2.1"],
+          "files": [
+            "./examples/04-end-to-end-governance-workflow/compose.yaml"
+          ],
+          "acceptance_criteria": [
+            "OPA service configured",
+            "Database service for audit logs (if needed)",
+            "All services properly networked",
+            "Environment variables documented"
+          ],
+          "completed_at": "2026-01-03T10:15:00Z",
+          "notes": "Created comprehensive compose.yaml with OPA (rootless), PostgreSQL 16 (with audit log storage), and optional Redis (enhanced profile). All services have health checks, proper networking, environment variable configuration, and volume mounts. Includes extensive quick reference documentation following patterns from Examples 01-03."
+        },
+        {
+          "subtask_id": "2.3",
+          "title": "Create requirements.txt and Python project setup",
+          "description": "Define Python dependencies and project configuration",
+          "status": "completed",
+          "dependencies": ["2.1"],
+          "files": [
+            "./examples/04-end-to-end-governance-workflow/requirements.txt",
+            "./examples/04-end-to-end-governance-workflow/pyproject.toml"
+          ],
+          "acceptance_criteria": [
+            "All required dependencies listed",
+            "Version constraints specified",
+            "Compatible with existing examples"
+          ],
+          "completed_at": "2026-01-03T22:15:00Z",
+          "notes": "Created requirements.txt and pyproject.toml following existing patterns from Examples 01-03 and ACGS-2 core services. Defined core dependencies (requests, psycopg2-binary, pydantic, python-dotenv), optional enhanced features (redis, fastapi, uvicorn), and development dependencies (pytest, black, mypy, ruff). Configured tool settings for pytest, coverage, ruff, black, and mypy. All dependencies have proper version constraints compatible with Python >=3.11. Constitutional hash included in headers."
+        }
+      ]
+    },
+    {
+      "phase_id": "phase_3",
+      "name": "Policy Implementation",
+      "description": "Create Rego policies demonstrating constitutional governance, risk assessment, and HITL requirements",
+      "subtasks": [
+        {
+          "subtask_id": "3.1",
+          "title": "Create constitutional policy definition",
+          "description": "Write Rego policy defining constitutional principles and constraints for AI agent actions",
+          "status": "pending",
+          "dependencies": ["2.1"],
+          "files": [
+            "./examples/04-end-to-end-governance-workflow/policies/constitutional.rego"
+          ],
+          "acceptance_criteria": [
+            "Policy validates against constitutional hash",
+            "Defines core principles",
+            "Handles edge cases",
+            "Well documented with comments"
+          ]
+        },
+        {
+          "subtask_id": "3.2",
+          "title": "Create agent action enforcement policy",
+          "description": "Write Rego policy that evaluates agent actions against constitutional principles and risk thresholds",
+          "status": "pending",
+          "dependencies": ["3.1"],
+          "files": [
+            "./examples/04-end-to-end-governance-workflow/policies/agent_actions.rego"
+          ],
+          "acceptance_criteria": [
+            "Policy evaluates action types",
+            "Risk scoring implemented",
+            "Contextual evaluation working",
+            "Denial reasons provided"
+          ]
+        },
+        {
+          "subtask_id": "3.3",
+          "title": "Create HITL approval policy",
+          "description": "Write Rego policy that determines when human approval is required based on risk scores and action types",
+          "status": "pending",
+          "dependencies": ["3.2"],
+          "files": [
+            "./examples/04-end-to-end-governance-workflow/policies/hitl_approval.rego"
+          ],
+          "acceptance_criteria": [
+            "HITL thresholds defined",
+            "Approval workflow logic implemented",
+            "Reviewer requirements specified",
+            "Escalation rules defined"
+          ]
+        },
+        {
+          "subtask_id": "3.4",
+          "title": "Create audit logging policy",
+          "description": "Write Rego policy that defines what should be logged and how decisions are recorded",
+          "status": "pending",
+          "dependencies": ["3.2"],
+          "files": [
+            "./examples/04-end-to-end-governance-workflow/policies/audit.rego"
+          ],
+          "acceptance_criteria": [
+            "Audit requirements defined",
+            "Log structure specified",
+            "Compliance metadata included",
+            "Retention rules defined"
+          ]
+        }
+      ]
+    },
+    {
+      "phase_id": "phase_4",
+      "name": "Python Service Implementation",
+      "description": "Build Python services demonstrating the governance workflow integration",
+      "subtasks": [
+        {
+          "subtask_id": "4.1",
+          "title": "Create OPA client module",
+          "description": "Build a reusable OPA client module for policy evaluation",
+          "status": "pending",
+          "dependencies": ["2.3"],
+          "files": [
+            "./examples/04-end-to-end-governance-workflow/src/opa_client.py"
+          ],
+          "acceptance_criteria": [
+            "Connection handling implemented",
+            "Error handling robust",
+            "Retry logic included",
+            "Type hints and documentation complete"
+          ]
+        },
+        {
+          "subtask_id": "4.2",
+          "title": "Create audit logger module",
+          "description": "Build module for recording governance decisions to an audit trail",
+          "status": "pending",
+          "dependencies": ["4.1"],
+          "files": [
+            "./examples/04-end-to-end-governance-workflow/src/audit_logger.py"
+          ],
+          "acceptance_criteria": [
+            "Structured logging implemented",
+            "Timestamps and metadata included",
+            "Immutable log format",
+            "Query capabilities provided"
+          ]
+        },
+        {
+          "subtask_id": "4.3",
+          "title": "Create HITL approval handler",
+          "description": "Build module that simulates human-in-the-loop approval workflow",
+          "status": "pending",
+          "dependencies": ["4.1"],
+          "files": [
+            "./examples/04-end-to-end-governance-workflow/src/hitl_handler.py"
+          ],
+          "acceptance_criteria": [
+            "Approval queue management",
+            "Reviewer assignment logic",
+            "Timeout handling",
+            "Decision recording"
+          ]
+        },
+        {
+          "subtask_id": "4.4",
+          "title": "Create governance workflow orchestrator",
+          "description": "Build main orchestrator that coordinates policy evaluation, HITL approvals, and audit logging",
+          "status": "pending",
+          "dependencies": ["4.1", "4.2", "4.3"],
+          "files": [
+            "./examples/04-end-to-end-governance-workflow/src/governance_workflow.py"
+          ],
+          "acceptance_criteria": [
+            "End-to-end workflow implemented",
+            "All components integrated",
+            "Error handling comprehensive",
+            "Observable execution flow"
+          ]
+        },
+        {
+          "subtask_id": "4.5",
+          "title": "Create CLI and interactive demo",
+          "description": "Build command-line interface and interactive demo script showing the workflow in action",
+          "status": "pending",
+          "dependencies": ["4.4"],
+          "files": [
+            "./examples/04-end-to-end-governance-workflow/run_demo.py",
+            "./examples/04-end-to-end-governance-workflow/cli.py"
+          ],
+          "acceptance_criteria": [
+            "Interactive demo works end-to-end",
+            "Multiple scenarios demonstrated",
+            "Clear output formatting",
+            "Help and usage instructions"
+          ]
+        },
+        {
+          "subtask_id": "4.6",
+          "title": "Create FastAPI service (optional)",
+          "description": "Build optional REST API service demonstrating production integration patterns",
+          "status": "pending",
+          "dependencies": ["4.4"],
+          "files": [
+            "./examples/04-end-to-end-governance-workflow/app.py",
+            "./examples/04-end-to-end-governance-workflow/src/models.py"
+          ],
+          "acceptance_criteria": [
+            "REST endpoints implemented",
+            "OpenAPI documentation generated",
+            "Error responses standardized",
+            "Health checks included"
+          ]
+        }
+      ]
+    },
+    {
+      "phase_id": "phase_5",
+      "name": "Documentation and Examples",
+      "description": "Create comprehensive documentation showing how to use the example",
+      "subtasks": [
+        {
+          "subtask_id": "5.1",
+          "title": "Create Example 04 README",
+          "description": "Write detailed README for the end-to-end governance workflow example",
+          "status": "pending",
+          "dependencies": ["4.5"],
+          "files": [
+            "./examples/04-end-to-end-governance-workflow/README.md"
+          ],
+          "acceptance_criteria": [
+            "Clear introduction and objectives",
+            "Step-by-step setup instructions",
+            "Usage examples with expected output",
+            "Troubleshooting section",
+            "Architecture diagram",
+            "Links to relevant docs"
+          ]
+        },
+        {
+          "subtask_id": "5.2",
+          "title": "Create workflow diagram and visuals",
+          "description": "Create visual diagrams showing the governance workflow, decision trees, and component interactions",
+          "status": "pending",
+          "dependencies": ["5.1"],
+          "files": [
+            "./examples/04-end-to-end-governance-workflow/docs/workflow-diagram.md"
+          ],
+          "acceptance_criteria": [
+            "Workflow diagram created",
+            "Component interaction diagram",
+            "Decision tree visualization",
+            "Diagrams embedded in README"
+          ]
+        },
+        {
+          "subtask_id": "5.3",
+          "title": "Create scenario walkthrough documentation",
+          "description": "Document specific scenarios with step-by-step walkthroughs showing the governance workflow in action",
+          "status": "pending",
+          "dependencies": ["5.1"],
+          "files": [
+            "./examples/04-end-to-end-governance-workflow/docs/scenarios.md"
+          ],
+          "acceptance_criteria": [
+            "At least 3 scenarios documented",
+            "Each scenario shows full workflow",
+            "Expected outputs included",
+            "Common variations explained"
+          ]
+        },
+        {
+          "subtask_id": "5.4",
+          "title": "Update examples/README.md",
+          "description": "Update the main examples README to include Example 04 in the catalog",
+          "status": "pending",
+          "dependencies": ["5.1"],
+          "files": [
+            "./examples/README.md"
+          ],
+          "acceptance_criteria": [
+            "Example 04 added to catalog table",
+            "Quick start section added",
+            "Links updated",
+            "Difficulty level and time estimate included"
+          ]
+        }
+      ]
+    },
+    {
+      "phase_id": "phase_6",
+      "name": "Testing and Validation",
+      "description": "Create tests and validate the example works end-to-end",
+      "subtasks": [
+        {
+          "subtask_id": "6.1",
+          "title": "Create unit tests for Python modules",
+          "description": "Write unit tests for all Python modules (OPA client, audit logger, HITL handler)",
+          "status": "pending",
+          "dependencies": ["4.4"],
+          "files": [
+            "./examples/04-end-to-end-governance-workflow/tests/test_opa_client.py",
+            "./examples/04-end-to-end-governance-workflow/tests/test_audit_logger.py",
+            "./examples/04-end-to-end-governance-workflow/tests/test_hitl_handler.py"
+          ],
+          "acceptance_criteria": [
+            "All modules have unit tests",
+            "Edge cases covered",
+            "Mocking used appropriately",
+            "Tests pass consistently"
+          ]
+        },
+        {
+          "subtask_id": "6.2",
+          "title": "Create integration tests",
+          "description": "Write integration tests that verify the complete workflow with OPA running",
+          "status": "pending",
+          "dependencies": ["4.4", "6.1"],
+          "files": [
+            "./examples/04-end-to-end-governance-workflow/tests/test_integration.py"
+          ],
+          "acceptance_criteria": [
+            "End-to-end workflow tested",
+            "OPA integration verified",
+            "Audit logging validated",
+            "HITL flow tested"
+          ]
+        },
+        {
+          "subtask_id": "6.3",
+          "title": "Create policy tests",
+          "description": "Write OPA tests for all Rego policies using OPA testing framework",
+          "status": "pending",
+          "dependencies": ["3.4"],
+          "files": [
+            "./examples/04-end-to-end-governance-workflow/policies/constitutional_test.rego",
+            "./examples/04-end-to-end-governance-workflow/policies/agent_actions_test.rego",
+            "./examples/04-end-to-end-governance-workflow/policies/hitl_approval_test.rego"
+          ],
+          "acceptance_criteria": [
+            "All policies have test coverage",
+            "Edge cases tested",
+            "Tests pass with opa test",
+            "Test scenarios documented"
+          ]
+        },
+        {
+          "subtask_id": "6.4",
+          "title": "Manual testing and validation",
+          "description": "Perform manual end-to-end testing of all scenarios and validate documentation accuracy",
+          "status": "pending",
+          "dependencies": ["4.5", "5.1", "6.2"],
+          "files": [],
+          "acceptance_criteria": [
+            "All scenarios run successfully",
+            "Documentation matches actual behavior",
+            "Error messages are helpful",
+            "Setup instructions work from scratch"
+          ]
+        }
+      ]
+    },
+    {
+      "phase_id": "phase_7",
+      "name": "Polish and Integration",
+      "description": "Final polish, ensure consistency with existing examples, and integration with main docs",
+      "subtasks": [
+        {
+          "subtask_id": "7.1",
+          "title": "Code quality and style consistency",
+          "description": "Ensure code follows project conventions, is properly formatted, and has consistent style with existing examples",
+          "status": "pending",
+          "dependencies": ["4.6", "6.4"],
+          "files": [
+            "./examples/04-end-to-end-governance-workflow/"
+          ],
+          "acceptance_criteria": [
+            "Code passes linting",
+            "Formatting consistent",
+            "Type hints complete",
+            "Docstrings comprehensive",
+            "Constitutional hash included in headers"
+          ]
+        },
+        {
+          "subtask_id": "7.2",
+          "title": "Add example to main documentation",
+          "description": "Reference the new example in main ACGS-2 documentation and getting-started guides",
+          "status": "pending",
+          "dependencies": ["5.4"],
+          "files": [
+            "./acgs2-core/docs/README.md",
+            "./acgs2-core/docs/user-guides/README.md"
+          ],
+          "acceptance_criteria": [
+            "Example linked from main docs",
+            "Getting-started guide updated",
+            "Cross-references added",
+            "Navigation updated"
+          ]
+        },
+        {
+          "subtask_id": "7.3",
+          "title": "Create CI/CD integration",
+          "description": "Ensure the example is included in CI/CD pipelines for automated testing",
+          "status": "pending",
+          "dependencies": ["6.3"],
+          "files": [
+            "./.github/workflows/examples-ci.yml"
+          ],
+          "acceptance_criteria": [
+            "Example tests run in CI",
+            "Policy tests validated",
+            "Docker compose validated",
+            "Documentation links checked"
+          ]
+        },
+        {
+          "subtask_id": "7.4",
+          "title": "Final review and cleanup",
+          "description": "Final review of all components, remove any temporary files, ensure everything is production-ready",
+          "status": "pending",
+          "dependencies": ["7.1", "7.2", "7.3"],
+          "files": [],
+          "acceptance_criteria": [
+            "No TODO comments remaining",
+            "No debug code left",
+            "All files have proper headers",
+            "License information included",
+            "Ready for production use"
+          ]
+        }
+      ]
+    }
+  ],
+  "workflow_type": "development",
+  "services_involved": [
+    "OPA (Open Policy Agent)",
+    "PostgreSQL (optional for audit logs)",
+    "Redis (optional for state management)",
+    "ACGS-2 Core Services (integration points)"
+  ],
+  "final_acceptance": [
+    "Example 04 demonstrates complete end-to-end governance workflow",
+    "Policy creation, enforcement, HITL approvals, and audit logging all working",
+    "Code runs successfully following README instructions",
+    "All test scenarios pass",
+    "Integration with OPA and ACGS-2 core services demonstrated",
+    "Code quality matches or exceeds existing examples",
+    "Documentation is comprehensive and accurate",
+    "Target audience (Enterprise DevOps/MLOps) can understand and use the example"
+  ],
+  "spec_file": "spec.md"
+}
