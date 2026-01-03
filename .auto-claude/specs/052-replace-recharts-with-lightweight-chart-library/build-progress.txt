@@ -1,0 +1,235 @@
+=== BUILD PROGRESS ===
+Feature: Replace recharts with Lightweight Chart Library
+Spec: 052-replace-recharts-with-lightweight-chart-library
+Status: Planning Complete
+
+=== IMPLEMENTATION PLAN CREATED ===
+Date: 2026-01-03
+Plan Status: Complete
+
+=== OVERVIEW ===
+This feature aims to replace recharts (~500KB unparsed, ~150KB gzipped) with a lightweight
+charting library to significantly reduce bundle size and improve dashboard performance.
+
+Current recharts usage identified in:
+1. analytics-dashboard/src/components/widgets/PredictionWidget.tsx
+   - Uses ComposedChart with Area (confidence intervals) and Line charts
+   - Custom tooltip implementation
+   - Responsive container
+
+2. acgs2-observability/monitoring/dashboard/src/components/MetricsChart.tsx
+   - Uses LineChart with multiple series (CPU, Memory, Disk)
+   - Lazy-loaded recharts components
+   - Custom tooltip styling
+
+=== IMPLEMENTATION PHASES ===
+
+Phase 1: Research & Library Selection (4 subtasks)
+- Analyze current usage patterns
+- Research alternatives (visx, uPlot, lightweight-charts)
+- Create proof-of-concept implementations
+- Select final library based on bundle size, API, TypeScript support
+
+Phase 2: Analytics Dashboard Migration (6 subtasks)
+- Install selected library
+- Create reusable chart wrapper components
+- Migrate PredictionWidget
+- Update tests
+- Verify functionality
+
+Phase 3: Observability Dashboard Migration (5 subtasks)
+- Install selected library
+- Create/copy chart wrappers
+- Migrate MetricsChart
+- Update/create tests
+- Verify functionality
+
+Phase 4: Cleanup & Verification (7 subtasks)
+- Remove recharts dependencies
+- Bundle analysis and size verification
+- Search for remaining references
+- Update documentation
+- Full test suite verification
+- Create migration summary report
+
+=== SUCCESS CRITERIA ===
+✓ recharts removed from both dashboards
+✓ All charts render correctly with new library
+✓ All tests pass
+✓ Bundle size reduced by at least 100KB (gzipped)
+✓ No visual or functional regressions
+✓ Documentation updated
+✓ Bundle analysis report completed
+
+=== NEXT STEPS ===
+1. Start Phase 1: Research lightweight charting alternatives
+2. Evaluate visx, uPlot, and lightweight-charts for feature parity
+3. Create proof-of-concept for PredictionWidget
+4. Make library selection based on bundle size and API ergonomics
+
+=== NOTES ===
+- Focus on maintaining visual consistency throughout migration
+- Ensure all current features are supported: multi-line charts, area charts,
+  confidence intervals, custom tooltips, responsive layouts
+- Both dashboards use React 18, TypeScript, and Vite
+- Existing tests mock recharts - will need similar mocking approach for new library
+- The MetricsChart already has lazy loading optimization which may be adapted
+
+---
+End of Initial Planning
+
+=== PHASE 1: RESEARCH & LIBRARY SELECTION ===
+
+[COMPLETED] Subtask 1.1: Analyze current recharts usage patterns
+Date: 2026-01-03
+Duration: ~30 minutes
+
+What was done:
+- Analyzed PredictionWidget.tsx (548 lines) in analytics-dashboard
+- Analyzed MetricsChart.tsx (263 lines) in observability dashboard
+- Reviewed test files and mocking strategies
+- Documented all recharts imports and component usage
+- Created comprehensive analysis document: recharts-usage-analysis.md
+
+Key Findings:
+
+1. PredictionWidget (Analytics Dashboard):
+   - Uses ComposedChart with 4 overlaid series:
+     * 1x Area chart (confidence interval with gradient)
+     * 3x Line charts (lower bound, upper bound, predicted - 2 dashed, 1 solid)
+   - Custom tooltip component with Tailwind styling
+   - SVG gradient definitions for area fills
+   - Purple color theme (#7C3AED, #8B5CF6, #C4B5FD)
+   - Animations disabled
+   - Data format includes tuple for confidenceRange: [lower, upper]
+   - Migration Complexity: MEDIUM-HIGH
+
+2. MetricsChart (Observability Dashboard):
+   - Uses simple LineChart with 3 series (CPU, Memory, Disk)
+   - All recharts components lazy-loaded with React.lazy()
+   - Standard tooltip with custom styling
+   - CartesianGrid with dashed pattern
+   - Fixed Y-axis domain [0, 100] for percentages
+   - Blue/Purple/Orange color scheme
+   - Component heavily optimized (React.memo, useMemo)
+   - Migration Complexity: LOW-MEDIUM
+
+3. Testing:
+   - Both use Vitest for testing
+   - Recharts components mocked in tests
+   - Tests use data-testid attributes to verify chart rendering
+
+4. Bundle Impact:
+   - Current recharts: ~500KB unparsed, ~150KB gzipped
+   - Lazy loading only used in MetricsChart
+   - PredictionWidget eagerly imports all components
+
+Feature Requirements Identified:
+✓ ComposedChart capability (overlay Area + multiple Lines)
+✓ Multi-series line charts
+✓ Custom React tooltips
+✓ SVG gradient support
+✓ Dashed stroke patterns
+✓ Custom axis formatters
+✓ Responsive container
+✓ Hover interactions (active dots)
+✓ Animation control (disable)
+✓ TypeScript support
+✓ React 18 compatibility
+✓ Lazy loading support
+
+Files Created:
+- .auto-claude/specs/052-replace-recharts-with-lightweight-chart-library/recharts-usage-analysis.md
+
+Next Steps:
+- Proceed to Subtask 1.2: Research lightweight alternatives
+- Focus evaluation on ComposedChart capability (PredictionWidget is the complex case)
+- Target bundle size: <50KB (vs 150KB current)
+
+---
+
+[COMPLETED] Subtask 1.2: Research lightweight alternatives
+Date: 2026-01-03
+Duration: ~45 minutes
+
+What was done:
+- Researched and evaluated 4 lightweight charting libraries
+- Compared bundle sizes, features, React integration, TypeScript support
+- Evaluated each library against 17 feature requirements
+- Created comprehensive research document: library-research.md
+
+Libraries Evaluated:
+
+1. visx (Airbnb) - ⭐ PRIMARY RECOMMENDATION
+   - Bundle: ~35-45KB gzipped (73% reduction vs recharts)
+   - ComposedChart: ⭐⭐⭐⭐⭐ Excellent (full control, SVG-based)
+   - React Integration: ⭐⭐⭐⭐⭐ First-class (built for React)
+   - TypeScript: ⭐⭐⭐⭐⭐ Native TypeScript
+   - Overall Score: 8.5/10
+   - Pros: Best balance of size & features, perfect for complex charts
+   - Cons: More code required (low-level primitives), steeper learning curve
+
+2. uPlot (Leon Sorokin)
+   - Bundle: ~12KB gzipped (92% reduction!) - SMALLEST
+   - ComposedChart: ⭐⭐ Limited (canvas-based, hard to overlay Area+Line)
+   - React Integration: ⭐⭐⭐ Needs wrapper (not built for React)
+   - TypeScript: ⭐⭐⭐⭐ Good support
+   - Overall Score: 6.5/10
+   - Pros: Smallest bundle, extremely fast, great for simple line charts
+   - Cons: Poor for ComposedChart use case (PredictionWidget), imperative API
+
+3. lightweight-charts (TradingView)
+   - Bundle: ~13KB gzipped (91% reduction)
+   - ComposedChart: ⭐⭐⭐ Possible but awkward (designed for financial charts)
+   - React Integration: ⭐⭐ Needs wrapper
+   - TypeScript: ⭐⭐⭐⭐⭐ Native TypeScript
+   - Overall Score: 7/10
+   - Pros: Very small, professional quality, great for time-series
+   - Cons: Wrong focus (financial charts), not ideal for our use case
+
+4. Apache ECharts
+   - Bundle: ~50-70KB gzipped minimum (even tree-shaken)
+   - ComposedChart: ⭐⭐⭐⭐⭐ Excellent
+   - React Integration: ⭐⭐⭐⭐ Good wrapper available
+   - TypeScript: ⭐⭐⭐⭐ Good support
+   - Overall Score: 6/10
+   - Pros: Feature-complete, great for complex charts
+   - Cons: Bundle too large, defeats primary goal
+
+Feature Coverage Matrix:
+✅ visx: Meets all 17 requirements, best for ComposedChart
+⚠️ uPlot: Fails ComposedChart requirement (critical for PredictionWidget)
+⚠️ lightweight-charts: Awkward for non-financial use cases
+⚠️ ECharts: Bundle size too large (defeats goal)
+
+Decision:
+PRIMARY RECOMMENDATION: visx
+- Best balance of bundle size (~40KB) and feature completeness
+- Excellent support for ComposedChart (PredictionWidget's complex overlay)
+- First-class React & TypeScript integration
+- Complete customization control (SVG, gradients, custom tooltips)
+- Tree-shakeable (only import needed packages)
+- Active maintenance by Airbnb
+
+ALTERNATIVE: Hybrid Approach (visx + uPlot)
+- visx for PredictionWidget (complex ComposedChart) - ~40KB
+- uPlot for MetricsChart (simple LineChart) - ~12KB
+- Total: ~52KB (still 65% reduction)
+- Trade-off: Two libraries to maintain
+
+Files Created:
+- .auto-claude/specs/052-replace-recharts-with-lightweight-chart-library/library-research.md
+  * 900+ lines of detailed analysis
+  * Comparison matrix
+  * Code examples for each library
+  * Feature requirement coverage
+  * Recommendations with rationale
+
+Next Steps:
+- Proceed to Subtask 1.3: Create proof-of-concept implementations
+- Build POC with visx for both PredictionWidget and MetricsChart
+- Optionally test hybrid approach (visx + uPlot)
+- Measure bundle sizes and compare
+- Evaluate code complexity vs bundle savings
+
+---
