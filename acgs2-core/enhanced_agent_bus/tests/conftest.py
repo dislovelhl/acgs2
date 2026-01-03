@@ -56,6 +56,33 @@ try:
     except ImportError:
         _ab_testing = None  # NumPy may not be installed
 
+    # Import ml_versioning module for MLflow tests
+    try:
+        import enhanced_agent_bus.ml_versioning as _ml_versioning
+
+        sys.modules["ml_versioning"] = _ml_versioning
+        sys.modules["enhanced_agent_bus.ml_versioning"] = _ml_versioning
+    except ImportError:
+        _ml_versioning = None  # MLflow may not be installed
+
+    # Import feedback_handler module for feedback tests
+    try:
+        import enhanced_agent_bus.feedback_handler as _feedback_handler
+
+        sys.modules["feedback_handler"] = _feedback_handler
+        sys.modules["enhanced_agent_bus.feedback_handler"] = _feedback_handler
+    except ImportError:
+        _feedback_handler = None  # pydantic may not be installed
+
+    # Import drift_monitoring module for drift detection tests
+    try:
+        import enhanced_agent_bus.drift_monitoring as _drift_monitoring
+
+        sys.modules["drift_monitoring"] = _drift_monitoring
+        sys.modules["enhanced_agent_bus.drift_monitoring"] = _drift_monitoring
+    except ImportError:
+        _drift_monitoring = None  # pandas/evidently may not be installed
+
     # Patch sys.models to point flat names to package-qualified modules
     sys.modules["audit_client"] = _audit_client
     sys.modules["models"] = _models
@@ -99,6 +126,33 @@ except ImportError:
             sys.modules["enhanced_agent_bus.ab_testing"] = _ab_testing
         except ImportError:
             _ab_testing = None  # NumPy may not be installed
+
+        # Import ml_versioning module for MLflow tests (fallback)
+        try:
+            import ml_versioning as _ml_versioning
+
+            sys.modules["ml_versioning"] = _ml_versioning
+            sys.modules["enhanced_agent_bus.ml_versioning"] = _ml_versioning
+        except ImportError:
+            _ml_versioning = None  # MLflow may not be installed
+
+        # Import feedback_handler module for feedback tests (fallback)
+        try:
+            import feedback_handler as _feedback_handler
+
+            sys.modules["feedback_handler"] = _feedback_handler
+            sys.modules["enhanced_agent_bus.feedback_handler"] = _feedback_handler
+        except ImportError:
+            _feedback_handler = None  # pydantic may not be installed
+
+        # Import drift_monitoring module for drift detection tests (fallback)
+        try:
+            import drift_monitoring as _drift_monitoring
+
+            sys.modules["drift_monitoring"] = _drift_monitoring
+            sys.modules["enhanced_agent_bus.drift_monitoring"] = _drift_monitoring
+        except ImportError:
+            _drift_monitoring = None  # pandas/evidently may not be installed
 
         # Patch package names to point to flat modules
         sys.modules["audit_client"] = _audit_client
