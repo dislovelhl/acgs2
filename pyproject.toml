@@ -63,6 +63,7 @@ source = ["acgs2-core", "acgs2-observability", "acgs2-research", "acgs2-infra", 
 omit = ["*/tests/*", "*/venv/*", ".venv/*", "*/node_modules/*", "*/__pycache__/*"]
 
 [tool.coverage.report]
+fail_under = 80
 exclude_lines = [
     "pragma: no cover",
     "def __repr__",
