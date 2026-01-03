@@ -77,7 +77,7 @@ def training_dataset() -> List[Dict[str, Any]]:
 def online_learner() -> OnlineLearner:
     """Fresh OnlineLearner with low min_training_samples for testing."""
     return OnlineLearner(
-        min_samples_for_active=5,  # Low for quick testing
+        min_training_samples=5,  # Low for quick testing
     )
 
 
