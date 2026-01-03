@@ -64,8 +64,15 @@ export default defineConfig(({ mode }) => ({
         manualChunks: {
           // React core - changes rarely
           "vendor-react": ["react", "react-dom"],
-          // Charting library - largest dependency
-          "vendor-recharts": ["recharts"],
+          // Charting library - visx for lightweight charts
+          "vendor-charts": [
+            "@visx/shape",
+            "@visx/scale",
+            "@visx/axis",
+            "@visx/tooltip",
+            "@visx/gradient",
+            "@visx/responsive",
+          ],
           // Icons - used across components
           "vendor-icons": ["lucide-react"],
         },
@@ -81,7 +88,17 @@ export default defineConfig(({ mode }) => ({
 
   // Optimize dependencies
   optimizeDeps: {
-    include: ["react", "react-dom", "recharts", "lucide-react"],
+    include: [
+      "react",
+      "react-dom",
+      "lucide-react",
+      "@visx/shape",
+      "@visx/scale",
+      "@visx/axis",
+      "@visx/tooltip",
+      "@visx/gradient",
+      "@visx/responsive",
+    ],
   },
 
   // Enable CSS preprocessing optimizations
