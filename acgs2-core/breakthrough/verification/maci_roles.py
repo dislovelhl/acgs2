@@ -22,8 +22,15 @@ import logging
 import time
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, List, Optional, Protocol, Set, Tuple
+from typing import Dict, List, Optional, Protocol, Set, Tuple
 
+from ...shared.types import (
+    AuditTrail,
+    ConstitutionalContext,
+    DecisionData,
+    JSONDict,
+    PolicyData,
+)
 from .. import CONSTITUTIONAL_HASH
 
 logger = logging.getLogger(__name__)
@@ -51,14 +58,14 @@ class ConstitutionalDecision:
     decision_id: str
     branch: Branch
     decision_type: DecisionType
-    content: Any
+    content: DecisionData
     justification: str
     timestamp: float
     constitutional_hash: str = CONSTITUTIONAL_HASH
     requires_consensus: bool = False
     consensus_threshold: float = 0.67  # 2/3 majority
     execution_deadline: Optional[float] = None
-    audit_trail: List[Dict[str, Any]] = field(default_factory=list)
+    audit_trail: AuditTrail = field(default_factory=list)
 
     def __post_init__(self):
         if not self.decision_id:
@@ -115,7 +122,7 @@ class AgentProtocol(Protocol):
 
     async def make_decision(
         self,
-        context: Any,
+        context: ConstitutionalContext,
         decision_type: DecisionType
     ) -> ConstitutionalDecision:
         """Make a decision within constitutional bounds."""
@@ -124,7 +131,7 @@ class AgentProtocol(Protocol):
     async def validate_decision(
         self,
         decision: ConstitutionalDecision,
-        context: Any
+        context: ConstitutionalContext
     ) -> Tuple[bool, str]:
         """Validate a decision against constitutional principles."""
         ...
@@ -156,7 +163,7 @@ class ConstitutionalAgent:
 
     async def make_decision(
         self,
-        context: Any,
+        context: ConstitutionalContext,
         decision_type: DecisionType
     ) -> ConstitutionalDecision:
         """Make a decision within constitutional bounds."""
@@ -207,7 +214,7 @@ class ConstitutionalAgent:
     async def validate_decision(
         self,
         decision: ConstitutionalDecision,
-        context: Any
+        context: ConstitutionalContext
     ) -> Tuple[bool, str]:
         """Validate a decision against constitutional principles."""
         # Check constitutional hash
@@ -233,7 +240,7 @@ class ConstitutionalAgent:
     async def _judicial_review(
         self,
         decision: ConstitutionalDecision,
-        context: Any
+        context: ConstitutionalContext
     ) -> Tuple[bool, str]:
         """Judicial review of executive decisions."""
         # Placeholder for constitutional review logic
@@ -243,7 +250,7 @@ class ConstitutionalAgent:
     async def _legislative_review(
         self,
         decision: ConstitutionalDecision,
-        context: Any
+        context: ConstitutionalContext
     ) -> Tuple[bool, str]:
         """Judicial review of legislative decisions."""
         # Placeholder for constitutional review logic
@@ -256,13 +263,13 @@ class ExecutiveAgent(ConstitutionalAgent):
     def __init__(self, agent_id: str):
         super().__init__(agent_id, Branch.EXECUTIVE)
         self.execution_queue: List[ConstitutionalDecision] = []
-        self.enforcement_actions: List[Dict[str, Any]] = []
+        self.enforcement_actions: List[JSONDict] = []
 
     async def execute_decision(
         self,
         decision: ConstitutionalDecision,
-        context: Any
-    ) -> Dict[str, Any]:
+        context: ConstitutionalContext
+    ) -> JSONDict:
         """Execute a decision with compensable operations."""
         execution_record = {
             "decision_id": decision.decision_id,
@@ -307,8 +314,8 @@ class ExecutiveAgent(ConstitutionalAgent):
     async def _perform_execution(
         self,
         decision: ConstitutionalDecision,
-        context: Any
-    ) -> Any:
+        context: ConstitutionalContext
+    ) -> JSONDict:
         """Perform the actual execution of a decision."""
         # Placeholder for execution logic
         # In practice, this would interface with the runtime system
@@ -321,12 +328,12 @@ class LegislativeAgent(ConstitutionalAgent):
 
     def __init__(self, agent_id: str):
         super().__init__(agent_id, Branch.LEGISLATIVE)
-        self.proposed_policies: List[Dict[str, Any]] = []
-        self.active_policies: Dict[str, Dict[str, Any]] = {}
+        self.proposed_policies: List[JSONDict] = []
+        self.active_policies: Dict[str, PolicyData] = {}
 
     async def propose_policy(
         self,
-        policy_content: Any,
+        policy_content: PolicyData,
         justification: str
     ) -> ConstitutionalDecision:
         """Propose a new policy for consideration."""
@@ -347,7 +354,7 @@ class LegislativeAgent(ConstitutionalAgent):
     async def amend_policy(
         self,
         policy_id: str,
-        amendments: Dict[str, Any],
+        amendments: PolicyData,
         justification: str
     ) -> ConstitutionalDecision:
         """Amend an existing policy."""
@@ -372,13 +379,13 @@ class JudicialAgent(ConstitutionalAgent):
 
     def __init__(self, agent_id: str):
         super().__init__(agent_id, Branch.JUDICIAL)
-        self.review_cases: List[Dict[str, Any]] = []
-        self.resolved_disputes: List[Dict[str, Any]] = []
+        self.review_cases: List[JSONDict] = []
+        self.resolved_disputes: List[JSONDict] = []
 
     async def review_constitutionality(
         self,
         decision: ConstitutionalDecision,
-        context: Any
+        context: ConstitutionalContext
     ) -> Tuple[bool, str]:
         """Review a decision for constitutional compliance."""
         case_record = {
@@ -407,7 +414,7 @@ class JudicialAgent(ConstitutionalAgent):
         self,
         dispute_description: str,
         parties_involved: List[str],
-        context: Any
+        context: ConstitutionalContext
     ) -> ConstitutionalDecision:
         """Resolve a constitutional dispute."""
         dispute_record = {
@@ -454,8 +461,8 @@ class MACIOrchestrator:
         self,
         requesting_branch: Branch,
         decision_type: DecisionType,
-        content: Any,
-        context: Any
+        content: DecisionData,
+        context: ConstitutionalContext
     ) -> Tuple[bool, str, Optional[ConstitutionalDecision]]:
         """
         Process a decision request through the constitutional system.
@@ -554,7 +561,7 @@ class MACIOrchestrator:
         # In practice, this would involve deliberation and voting
         return True  # Default to approval for now
 
-    def get_system_status(self) -> Dict[str, Any]:
+    def get_system_status(self) -> JSONDict:
         """Get the current status of the MACI system."""
         return {
             "constitutional_hash": CONSTITUTIONAL_HASH,
