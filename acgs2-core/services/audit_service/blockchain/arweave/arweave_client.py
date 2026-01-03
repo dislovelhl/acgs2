@@ -263,15 +263,13 @@ class ArweaveClient:
             # return dict(status)
 
             # 模拟状态
+            hash_val = hash(transaction_id) & 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
+            block_hash = f"block_{hash_val:064x}"[:64]
             mock_status = {
                 "transaction_id": transaction_id,
                 "status": "confirmed",
                 "block_height": 1234567,
-                "block_hash": (
-                    f"block_{hash(transaction_id) & 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF:064x}"[
-                        :64
-                    ]
-                ),
+                "block_hash": block_hash,
                 "confirmations": 10,
             }
 
