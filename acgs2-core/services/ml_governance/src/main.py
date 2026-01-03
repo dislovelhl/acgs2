@@ -11,6 +11,8 @@ import structlog
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from shared.security.cors_config import get_cors_config
+
 from .api.feedback import router as feedback_router
 from .api.governance import router as governance_router
 from .api.models import router as models_router
@@ -63,14 +65,8 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# Add CORS middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # Configure based on environment
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# Add CORS middleware (configured based on environment)
+app.add_middleware(CORSMiddleware, **get_cors_config())
 
 # Include API routers
 app.include_router(governance_router, prefix="/api/v1")
