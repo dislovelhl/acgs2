@@ -16,6 +16,7 @@ import {
   RefreshCw,
   TrendingUp,
 } from "lucide-react";
+import { LoadingState, API_BASE_URL } from "../../lib";
 
 /** Insight data structure from the API */
 interface InsightData {
@@ -27,13 +28,6 @@ interface InsightData {
   model_used: string | null;
   cached: boolean;
 }
-
-/** Widget loading state */
-type LoadingState = "idle" | "loading" | "success" | "error";
-
-/** API URL from environment */
-const API_BASE_URL =
-  import.meta.env.VITE_ANALYTICS_API_URL || "http://localhost:8080";
 
 /**
  * Formats a confidence score as a percentage with color coding
