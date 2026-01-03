@@ -809,14 +809,14 @@ async def verify_decision_maci(
 if __name__ == "__main__":
     # Example usage and testing
     async def main():
-        print("Testing MACI Constitutional Verification Pipeline...")
+        logger.info("Testing MACI Constitutional Verification Pipeline...")
 
         pipeline = ConstitutionalVerificationPipeline()
 
         # Test pipeline status
         status = await pipeline.get_pipeline_status()
-        print(f"✅ Pipeline status: {status['status']}")
-        print(f"✅ Gödel bypass: {status['godel_bypass_implemented']}")
+        logger.info(f"✅ Pipeline status: {status['status']}")
+        logger.info(f"✅ Gödel bypass: {status['godel_bypass_implemented']}")
 
         # Test decision verification
         test_context = {
@@ -832,13 +832,14 @@ if __name__ == "__main__":
             description="Grant admin access to user for system maintenance",
         )
 
-        print(
-            f"✅ Verification result: valid={result.is_valid}, confidence={result.confidence_score:.2f}"
+        logger.info(
+            f"✅ Verification result: valid={result.is_valid}, "
+            f"confidence={result.confidence_score:.2f}"
         )
-        print(f"✅ Violations found: {len(result.violations)}")
-        print(f"✅ Justifications: {len(result.justifications)}")
+        logger.info(f"✅ Violations found: {len(result.violations)}")
+        logger.info(f"✅ Justifications: {len(result.justifications)}")
 
-        print("✅ MACI Pipeline test completed successfully!")
+        logger.info("✅ MACI Pipeline test completed successfully!")
 
     # Run test
     asyncio.run(main())

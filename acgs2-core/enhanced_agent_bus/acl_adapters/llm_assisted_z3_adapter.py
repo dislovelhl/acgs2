@@ -122,9 +122,12 @@ class SMTGenerationPrompts:
     def get_constraint_generation_prompt(constraint: NaturalLanguageConstraint) -> str:
         """Generate prompt for SMT constraint creation."""
         return f"""
-You are an expert formal methods engineer specializing in SMT (Satisfiability Modulo Theories) constraint generation for constitutional AI governance systems.
+You are an expert formal methods engineer specializing in SMT
+(Satisfiability Modulo Theories) constraint generation for constitutional
+AI governance systems.
 
-Given the natural language constraint, generate a valid SMT-LIB2 formula that captures its formal semantics.
+Given the natural language constraint, generate a valid SMT-LIB2 formula
+that captures its formal semantics.
 
 **Natural Language Constraint:**
 {constraint.description}
@@ -517,7 +520,8 @@ if __name__ == "__main__":
 
         # Test constraint generation
         test_constraint = NaturalLanguageConstraint(
-            description="Users must have admin level access and be authenticated to modify system policies",
+            description="Users must have admin level access and be authenticated "
+            "to modify system policies",
             context={"system_type": "governance", "access_level": "admin"},
             domain="access_control",
             criticality="critical",

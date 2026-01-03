@@ -5,6 +5,7 @@ Monitors Redis for approval timeouts and triggers auto-escalation.
 
 import asyncio
 import logging
+from typing import Optional
 
 import redis.asyncio as redis
 
@@ -39,7 +40,8 @@ class EscalationWorker:
                 logger.info("Enabled Redis keyspace notifications for expired keys")
             except Exception as e:
                 logger.warning(
-                    f"Could not enable keyspace notifications: {e}. Ensure Redis user has CONFIG permissions."
+                    f"Could not enable keyspace notifications: {e}. "
+                    "Ensure Redis user has CONFIG permissions."
                 )
 
             # Subscribe to expiration events

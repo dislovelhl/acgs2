@@ -813,14 +813,14 @@ async def deliberate_on_proposal(
 if __name__ == "__main__":
     # Example usage and testing
     async def main():
-        print("Testing CCAI Democratic Constitutional Governance...")
+        logger.info("Testing CCAI Democratic Constitutional Governance...")
 
         governance = DemocraticConstitutionalGovernance()
 
         # Test status
         status = await governance.get_governance_status()
-        print(f"✅ Governance status: {status['status']}")
-        print("✅ Capabilities: Polis deliberation enabled")
+        logger.info(f"✅ Governance status: {status['status']}")
+        logger.info("✅ Capabilities: Polis deliberation enabled")
 
         # Register stakeholders
         tech_expert = await governance.register_stakeholder(
@@ -834,7 +834,7 @@ if __name__ == "__main__":
         )
 
         stakeholders = [tech_expert, ethicist, end_user]
-        print(f"✅ Registered {len(stakeholders)} stakeholders")
+        logger.info(f"✅ Registered {len(stakeholders)} stakeholders")
 
         # Create proposal
         proposal = await governance.propose_constitutional_change(
@@ -848,17 +848,17 @@ if __name__ == "__main__":
             proposer=tech_expert,
         )
 
-        print(f"✅ Created proposal: {proposal.title}")
+        logger.info(f"✅ Created proposal: {proposal.title}")
 
         # Run deliberation
         result = await governance.run_deliberation(proposal, stakeholders, duration_hours=24)
 
-        print("✅ Deliberation completed")
-        print(f"   Participants: {result.total_participants}")
-        print(f"   Statements: {result.statements_submitted}")
-        print(f"   Clusters: {result.clusters_identified}")
-        print(f"   Consensus reached: {result.consensus_reached}")
-        print(f"   Approved amendments: {len(result.approved_amendments)}")
+        logger.info("✅ Deliberation completed")
+        logger.info(f"   Participants: {result.total_participants}")
+        logger.info(f"   Statements: {result.statements_submitted}")
+        logger.info(f"   Clusters: {result.clusters_identified}")
+        logger.info(f"   Consensus reached: {result.consensus_reached}")
+        logger.info(f"   Approved amendments: {len(result.approved_amendments)}")
 
         # Test fast governance
         test_decision = {
@@ -868,10 +868,10 @@ if __name__ == "__main__":
         }
 
         fast_result = await governance.fast_govern(test_decision, 1000, stakeholders)
-        print(f"✅ Fast governance: approved={fast_result['immediate_decision']['approved']}")
-        print(f"   Deliberation pending: {fast_result['deliberation_pending']}")
+        logger.info(f"✅ Fast governance: approved={fast_result['immediate_decision']['approved']}")
+        logger.info(f"   Deliberation pending: {fast_result['deliberation_pending']}")
 
-        print("✅ CCAI Democratic Governance test completed!")
+        logger.info("✅ CCAI Democratic Governance test completed!")
 
     # Run test
     asyncio.run(main())
