@@ -17,10 +17,12 @@ import logging
 import re
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional
+from typing import Callable, Dict, List, Optional, Union
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from ..types import ConfigDict as ConfigDictType
+from ..types import JSONDict, JSONValue
 from .base import EventSeverity, IntegrationEvent
 
 logger = logging.getLogger(__name__)
@@ -120,7 +122,7 @@ class FieldValidationRule(BaseModel):
     """Validation rule for a ticket field."""
 
     validation_type: FieldValidationType = Field(..., description="Type of validation to perform")
-    value: Optional[Any] = Field(
+    value: Optional[JSONValue] = Field(
         None, description="Value for the validation (e.g., max length, regex pattern)"
     )
     error_message: Optional[str] = Field(
@@ -140,7 +142,9 @@ class FieldMapping(BaseModel):
     )
 
     # Value configuration based on mapping type
-    static_value: Optional[Any] = Field(None, description="Static value to use (for STATIC type)")
+    static_value: Optional[JSONValue] = Field(
+        None, description="Static value to use (for STATIC type)"
+    )
     template: Optional[str] = Field(
         None,
         description="Template string with {placeholders} (for TEMPLATE type)",
@@ -151,17 +155,19 @@ class FieldMapping(BaseModel):
     transform_name: Optional[str] = Field(
         None, description="Name of the transform function (for TRANSFORM type)"
     )
-    transform_params: Dict[str, Any] = Field(
+    transform_params: Dict[str, JSONValue] = Field(
         default_factory=dict,
         description="Parameters for the transform function",
     )
 
     # Conditional mapping
-    conditions: List[Dict[str, Any]] = Field(
+    conditions: List[JSONDict] = Field(
         default_factory=list,
         description="Conditions for CONDITIONAL mapping [{field, operator, value, result}]",
     )
-    default_value: Optional[Any] = Field(None, description="Default value if no condition matches")
+    default_value: Optional[JSONValue] = Field(
+        None, description="Default value if no condition matches"
+    )
 
     # Validation
     validation_rules: List[FieldValidationRule] = Field(
@@ -171,7 +177,7 @@ class FieldMapping(BaseModel):
 
     # Metadata
     description: Optional[str] = Field(None, description="Description of this field mapping")
-    provider_specific: Dict[str, Any] = Field(
+    provider_specific: JSONDict = Field(
         default_factory=dict,
         description="Provider-specific configuration",
     )
@@ -258,11 +264,11 @@ class TicketMappingConfig(BaseModel):
     )
 
     # Provider-specific settings
-    jira_settings: Dict[str, Any] = Field(
+    jira_settings: ConfigDictType = Field(
         default_factory=dict,
         description="Jira-specific settings (e.g., project_key, issue_type)",
     )
-    servicenow_settings: Dict[str, Any] = Field(
+    servicenow_settings: ConfigDictType = Field(
         default_factory=dict,
         description="ServiceNow-specific settings (e.g., category, subcategory)",
     )
@@ -292,7 +298,7 @@ class FieldMappingResult(BaseModel):
     """Result of applying a field mapping."""
 
     field_name: str = Field(..., description="Name of the mapped field")
-    value: Any = Field(..., description="Computed value for the field")
+    value: Optional[JSONValue] = Field(None, description="Computed value for the field")
     success: bool = Field(default=True, description="Whether mapping succeeded")
     error_message: Optional[str] = Field(None, description="Error message if mapping failed")
     validation_errors: List[str] = Field(
@@ -306,7 +312,7 @@ class TicketMappingResult(BaseModel):
     """Result of applying all field mappings for a ticket."""
 
     success: bool = Field(default=True, description="Whether all required mappings succeeded")
-    fields: Dict[str, Any] = Field(default_factory=dict, description="Mapped field values")
+    fields: Dict[str, JSONValue] = Field(default_factory=dict, description="Mapped field values")
     field_results: List[FieldMappingResult] = Field(
         default_factory=list, description="Individual field mapping results"
     )
@@ -328,7 +334,7 @@ class FieldValidator:
 
     @staticmethod
     def validate(
-        value: Any,
+        value: JSONValue,
         rules: List[FieldValidationRule],
         field_name: str,
     ) -> List[str]:
@@ -354,7 +360,7 @@ class FieldValidator:
 
     @staticmethod
     def _validate_rule(
-        value: Any,
+        value: JSONValue,
         rule: FieldValidationRule,
         field_name: str,
     ) -> Optional[str]:
@@ -426,7 +432,7 @@ class FieldValidator:
 
 
 # Type for transform functions
-TransformFunc = Callable[[IntegrationEvent, Dict[str, Any]], Any]
+TransformFunc = Callable[[IntegrationEvent, Dict[str, JSONValue]], JSONValue]
 
 
 class FieldTransformers:
@@ -457,50 +463,56 @@ class FieldTransformers:
 
 # Built-in transforms
 @FieldTransformers.register("severity_to_jira_priority")
-def severity_to_jira_priority(event: IntegrationEvent, params: Dict[str, Any]) -> str:
+def severity_to_jira_priority(event: IntegrationEvent, params: Dict[str, JSONValue]) -> str:
     """Convert event severity to Jira priority name."""
     custom_map = params.get("mapping", {})
     if custom_map and event.severity.value in custom_map:
-        return custom_map[event.severity.value]
+        return str(custom_map[event.severity.value])
     return DEFAULT_JIRA_PRIORITY_MAP.get(event.severity, JiraPriority.MEDIUM).value
 
 
 @FieldTransformers.register("severity_to_servicenow_impact")
-def severity_to_servicenow_impact(event: IntegrationEvent, params: Dict[str, Any]) -> str:
+def severity_to_servicenow_impact(event: IntegrationEvent, params: Dict[str, JSONValue]) -> str:
     """Convert event severity to ServiceNow impact value."""
     custom_map = params.get("mapping", {})
     if custom_map and event.severity.value in custom_map:
-        return custom_map[event.severity.value]
+        return str(custom_map[event.severity.value])
     return DEFAULT_SERVICENOW_IMPACT_MAP.get(event.severity, ServiceNowImpactUrgency.MEDIUM).value
 
 
 @FieldTransformers.register("severity_to_servicenow_urgency")
-def severity_to_servicenow_urgency(event: IntegrationEvent, params: Dict[str, Any]) -> str:
+def severity_to_servicenow_urgency(event: IntegrationEvent, params: Dict[str, JSONValue]) -> str:
     """Convert event severity to ServiceNow urgency value."""
     custom_map = params.get("mapping", {})
     if custom_map and event.severity.value in custom_map:
-        return custom_map[event.severity.value]
+        return str(custom_map[event.severity.value])
     return DEFAULT_SERVICENOW_URGENCY_MAP.get(event.severity, ServiceNowImpactUrgency.MEDIUM).value
 
 
 @FieldTransformers.register("format_timestamp")
-def format_timestamp(event: IntegrationEvent, params: Dict[str, Any]) -> str:
+def format_timestamp(event: IntegrationEvent, params: Dict[str, JSONValue]) -> str:
     """Format event timestamp to a specific format."""
     fmt = params.get("format", "%Y-%m-%d %H:%M:%S")
-    return event.timestamp.strftime(fmt)
+    return event.timestamp.strftime(str(fmt))
 
 
 @FieldTransformers.register("format_tags")
-def format_tags(event: IntegrationEvent, params: Dict[str, Any]) -> str:
+def format_tags(event: IntegrationEvent, params: Dict[str, JSONValue]) -> str:
     """Format event tags as a string."""
     separator = params.get("separator", ", ")
-    return separator.join(event.tags)
+    return str(separator).join(event.tags)
 
 
 @FieldTransformers.register("build_labels")
-def build_labels(event: IntegrationEvent, params: Dict[str, Any]) -> List[str]:
+def build_labels(event: IntegrationEvent, params: Dict[str, JSONValue]) -> List[str]:
     """Build a list of labels from event data."""
-    base_labels = params.get("base_labels", ["governance", "acgs2"])
+    base_labels_param = params.get("base_labels", ["governance", "acgs2"])
+    # Ensure base_labels is a list
+    if isinstance(base_labels_param, list):
+        base_labels = [str(label) for label in base_labels_param]
+    else:
+        base_labels = ["governance", "acgs2"]
+
     labels = list(base_labels)
 
     if params.get("include_severity", True):
@@ -516,27 +528,29 @@ def build_labels(event: IntegrationEvent, params: Dict[str, Any]) -> List[str]:
 
 
 @FieldTransformers.register("truncate")
-def truncate(event: IntegrationEvent, params: Dict[str, Any]) -> str:
+def truncate(event: IntegrationEvent, params: Dict[str, JSONValue]) -> str:
     """Truncate a field value to max length."""
     source_field = params.get("source_field", "title")
-    max_length = params.get("max_length", 255)
+    max_length_param = params.get("max_length", 255)
+    max_length = int(max_length_param) if isinstance(max_length_param, (int, float, str)) else 255
     suffix = params.get("suffix", "...")
 
-    value = getattr(event, source_field, "") or ""
+    value = getattr(event, str(source_field), "") or ""
     if len(value) > max_length:
-        return value[: max_length - len(suffix)] + suffix
+        return value[: max_length - len(str(suffix))] + str(suffix)
     return value
 
 
 @FieldTransformers.register("json_details")
-def json_details(event: IntegrationEvent, params: Dict[str, Any]) -> str:
+def json_details(event: IntegrationEvent, params: Dict[str, JSONValue]) -> str:
     """Format event details as JSON string."""
     import json
 
-    indent = params.get("indent", 2)
+    indent_param = params.get("indent", 2)
+    indent = int(indent_param) if isinstance(indent_param, (int, float, str)) else 2
     include_fields = params.get("include_fields", None)
 
-    if include_fields:
+    if include_fields and isinstance(include_fields, list):
         details = {k: v for k, v in event.details.items() if k in include_fields}
     else:
         details = event.details
@@ -545,29 +559,31 @@ def json_details(event: IntegrationEvent, params: Dict[str, Any]) -> str:
 
 
 @FieldTransformers.register("concatenate")
-def concatenate(event: IntegrationEvent, params: Dict[str, Any]) -> str:
+def concatenate(event: IntegrationEvent, params: Dict[str, JSONValue]) -> str:
     """Concatenate multiple event fields."""
-    fields = params.get("fields", [])
+    fields_param = params.get("fields", [])
+    fields = fields_param if isinstance(fields_param, list) else []
     separator = params.get("separator", " ")
 
     values = []
     for field in fields:
-        value = getattr(event, field, None)
+        value = getattr(event, str(field), None)
         if value is not None:
             values.append(str(value))
 
-    return separator.join(values)
+    return str(separator).join(values)
 
 
 @FieldTransformers.register("map_value")
-def map_value(event: IntegrationEvent, params: Dict[str, Any]) -> Any:
+def map_value(event: IntegrationEvent, params: Dict[str, JSONValue]) -> JSONValue:
     """Map a field value using a lookup table."""
     source_field = params.get("source_field", "")
-    mapping = params.get("mapping", {})
+    mapping_param = params.get("mapping", {})
+    mapping = mapping_param if isinstance(mapping_param, dict) else {}
     default = params.get("default", None)
 
-    value = getattr(event, source_field, None)
-    if value is not None:
+    value = getattr(event, str(source_field), None)
+    if value is not None and isinstance(mapping, dict):
         return mapping.get(str(value), default)
     return default
 
@@ -695,7 +711,7 @@ class TicketFieldMapper:
                 error_message=str(e),
             )
 
-    def _compute_value(self, event: IntegrationEvent, mapping: FieldMapping) -> Any:
+    def _compute_value(self, event: IntegrationEvent, mapping: FieldMapping) -> JSONValue:
         """Compute the field value based on mapping type."""
         if mapping.mapping_type == FieldMappingType.STATIC:
             return mapping.static_value
@@ -737,7 +753,7 @@ class TicketFieldMapper:
 
         return self.TEMPLATE_PATTERN.sub(replace_placeholder, template)
 
-    def _get_event_field(self, event: IntegrationEvent, field_path: str) -> Any:
+    def _get_event_field(self, event: IntegrationEvent, field_path: str) -> JSONValue:
         """
         Get a field value from an event, supporting nested paths.
 
@@ -749,7 +765,7 @@ class TicketFieldMapper:
             Field value or None if not found
         """
         parts = field_path.split(".")
-        value: Any = event
+        value: Union[IntegrationEvent, JSONValue] = event
 
         for part in parts:
             if hasattr(value, part):
@@ -759,14 +775,17 @@ class TicketFieldMapper:
             else:
                 return None
 
-        return value
+        # Ensure we return a JSONValue type
+        if isinstance(value, (str, int, float, bool, dict, list, type(None))):
+            return value  # type: ignore[return-value]
+        return str(value)
 
     def _apply_transform(
         self,
         event: IntegrationEvent,
         transform_name: str,
-        params: Dict[str, Any],
-    ) -> Any:
+        params: Dict[str, JSONValue],
+    ) -> JSONValue:
         """
         Apply a transform function to compute a field value.
 
@@ -792,9 +811,9 @@ class TicketFieldMapper:
     def _apply_conditional(
         self,
         event: IntegrationEvent,
-        conditions: List[Dict[str, Any]],
-        default: Any,
-    ) -> Any:
+        conditions: List[JSONDict],
+        default: JSONValue,
+    ) -> JSONValue:
         """
         Apply conditional logic to determine field value.
 
@@ -817,8 +836,8 @@ class TicketFieldMapper:
             Result from matching condition or default
         """
         for condition in conditions:
-            field = condition.get("field", "")
-            operator = condition.get("operator", "eq")
+            field = str(condition.get("field", ""))
+            operator = str(condition.get("operator", "eq"))
             expected = condition.get("value")
             result = condition.get("result")
 
@@ -829,7 +848,7 @@ class TicketFieldMapper:
 
         return default
 
-    def _evaluate_condition(self, actual: Any, operator: str, expected: Any) -> bool:
+    def _evaluate_condition(self, actual: JSONValue, operator: str, expected: JSONValue) -> bool:
         """Evaluate a single condition."""
         if actual is None:
             return operator == "eq" and expected is None
@@ -839,17 +858,18 @@ class TicketFieldMapper:
         elif operator == "ne":
             return actual != expected
         elif operator == "gt":
-            return actual > expected
+            return actual > expected  # type: ignore[operator]
         elif operator == "gte":
-            return actual >= expected
+            return actual >= expected  # type: ignore[operator]
         elif operator == "lt":
-            return actual < expected
+            return actual < expected  # type: ignore[operator]
         elif operator == "lte":
-            return actual <= expected
+            return actual <= expected  # type: ignore[operator]
         elif operator == "in":
-            return actual in (expected or [])
+            expected_list = expected if isinstance(expected, list) else []
+            return actual in expected_list
         elif operator == "contains":
-            return expected in str(actual)
+            return str(expected) in str(actual)
         elif operator == "regex":
             return bool(re.match(str(expected), str(actual)))
 
@@ -941,7 +961,7 @@ def create_jira_mapping_config(
     labels: Optional[List[str]] = None,
     summary_template: str = "[ACGS-2] {title}",
     severity_mapping: Optional[Dict[str, str]] = None,
-    custom_fields: Optional[Dict[str, Any]] = None,
+    custom_fields: Optional[Dict[str, JSONValue]] = None,
 ) -> TicketMappingConfig:
     """
     Create a default Jira ticket mapping configuration.
@@ -1035,7 +1055,7 @@ def create_servicenow_mapping_config(
     assignment_group: Optional[str] = None,
     summary_template: str = "[ACGS-2] {title}",
     severity_mapping: Optional[Dict[str, str]] = None,
-    additional_fields: Optional[Dict[str, Any]] = None,
+    additional_fields: Optional[Dict[str, JSONValue]] = None,
 ) -> TicketMappingConfig:
     """
     Create a default ServiceNow incident mapping configuration.
