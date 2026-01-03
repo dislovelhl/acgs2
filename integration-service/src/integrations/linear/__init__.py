@@ -5,6 +5,14 @@ Provides GraphQL client and integration components for Linear.app
 """
 
 from .client import LinearClient
+from .deduplication import (
+    DeduplicationError,
+    DuplicateEventError,
+    LinearDeduplicationManager,
+    SyncLoopDetectedError,
+    get_dedup_manager,
+    reset_dedup_manager,
+)
 from .state import (
     LinearStateConnectionError,
     LinearStateError,
@@ -31,6 +39,13 @@ __all__ = [
     "LinearStateLockError",
     "get_state_manager",
     "reset_state_manager",
+    # Deduplication
+    "LinearDeduplicationManager",
+    "DeduplicationError",
+    "DuplicateEventError",
+    "SyncLoopDetectedError",
+    "get_dedup_manager",
+    "reset_dedup_manager",
     # Webhook Auth
     "LinearWebhookAuthError",
     "get_linear_webhook_handler",
