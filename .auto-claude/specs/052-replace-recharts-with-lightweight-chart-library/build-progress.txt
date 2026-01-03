@@ -349,3 +349,126 @@ Next Steps:
 - Prepare for Phase 2: Analytics Dashboard Migration
 
 ---
+
+[COMPLETED] Subtask 1.4: Compare bundle sizes, API ergonomics, feature parity, TypeScript support; select final library
+Date: 2026-01-03
+Duration: ~30 minutes
+
+What was done:
+- Created comprehensive final library selection document
+- Compared all 4 candidate libraries across 6 key criteria
+- Analyzed bundle sizes, API ergonomics, feature parity, TypeScript support, and migration complexity
+- Evaluated hybrid approach (visx + uPlot) and rejected it
+- Documented detailed rationale for library selection
+- Created implementation plan for next phases
+
+Comparison Summary:
+
+1. Bundle Size Analysis:
+   - recharts (current): ~150KB gzipped
+   - visx: ~40KB gzipped (73% reduction) ✅
+   - uPlot: ~12KB gzipped (92% reduction) ⚠️ Feature gaps
+   - lightweight-charts: ~13KB gzipped (91% reduction) ⚠️ Wrong use case
+   - ECharts: ~50-70KB gzipped (67% reduction) ❌ Too large
+
+2. API Ergonomics:
+   - visx: ⭐⭐⭐⭐⭐ Declarative React-first API
+   - uPlot: ⭐⭐⭐ Imperative, needs wrapper
+   - lightweight-charts: ⭐⭐ Imperative, financial focus
+   - ECharts: ⭐⭐⭐⭐ Declarative, good wrapper
+
+3. Feature Parity:
+   - visx: ✅ 17/17 requirements (100%)
+   - uPlot: ❌ 12/17 requirements (70%) - Cannot render area bands
+   - lightweight-charts: ⚠️ 14/17 requirements (85%) - Workarounds needed
+   - ECharts: ✅ 17/17 requirements (100%)
+
+4. TypeScript Support:
+   - visx: ⭐⭐⭐⭐⭐ Native TypeScript, excellent inference
+   - uPlot: ⭐⭐⭐⭐ Good TypeScript support
+   - lightweight-charts: ⭐⭐⭐⭐⭐ Native TypeScript
+   - ECharts: ⭐⭐⭐⭐ Good TypeScript support
+
+5. Migration Complexity:
+   - visx: Medium - Clear path, POC successful (LOW RISK)
+   - uPlot: High - Feature gaps, cannot migrate PredictionWidget (HIGH RISK)
+   - lightweight-charts: High - Requires workarounds (MEDIUM-HIGH RISK)
+   - ECharts: Medium - Similar to visx (MEDIUM RISK)
+
+FINAL DECISION: **visx (Airbnb)** 🏆
+
+Overall Score: 8.5/10
+
+Why visx was selected:
+✅ Excellent bundle size reduction (73% = 110KB savings per dashboard)
+✅ 100% feature parity - No compromises
+✅ Perfect visual fidelity - Exact match to recharts
+✅ React-first declarative API - Best developer experience
+✅ Native TypeScript with excellent type inference
+✅ Low migration risk - POC proves feasibility
+✅ Handles both simple (MetricsChart) and complex (PredictionWidget) cases
+✅ Active maintenance by Airbnb
+✅ Tree-shakeable modular packages
+✅ Comprehensive documentation
+
+Why alternatives were rejected:
+
+❌ uPlot: CRITICAL - Cannot render confidence interval area bands
+  - Feature gap is a showstopper for PredictionWidget
+  - 92% bundle reduction not worth losing critical features
+
+❌ lightweight-charts: Wrong use case (financial charts)
+  - Requires approximations for area bands
+  - Imperative API not React-friendly
+
+❌ ECharts: Bundle size too large (50-70KB)
+  - Defeats primary goal of bundle size reduction
+  - Only 67% reduction vs visx's 73%
+
+Hybrid Approach (visx + uPlot): REJECTED
+- Additional 12KB savings not worth maintaining two libraries
+- Prefer consistency and single API
+- visx handles both simple and complex cases well
+
+Expected Outcomes:
+- Bundle Size Reduction: ~220KB total (110KB per dashboard)
+- Feature Completeness: 100% (all requirements met)
+- Performance: Improved TTI and LCP due to smaller bundle
+- Visual Quality: Exact match to current implementation
+- Migration Time: ~3-4 days total (2 days analytics, 1 day observability, 0.5 days cleanup)
+
+Files Created:
+- .auto-claude/specs/052-replace-recharts-with-lightweight-chart-library/final-library-selection.md
+  * Comprehensive 11-section analysis document
+  * Detailed comparison matrix
+  * Bundle size analysis
+  * API ergonomics evaluation
+  * Feature parity assessment
+  * TypeScript support comparison
+  * Migration complexity analysis
+  * Risk assessment
+  * Decision log
+  * Implementation checklist
+  * visx package overview
+
+Phase 1 Status: ✅ COMPLETE
+All research subtasks completed successfully:
+✅ Subtask 1.1 - Usage analysis
+✅ Subtask 1.2 - Library research
+✅ Subtask 1.3 - Proof-of-concept implementations
+✅ Subtask 1.4 - Final library selection
+
+Next Steps:
+- Proceed to Phase 2: Analytics Dashboard Migration
+- Start Subtask 2.1: Install visx in analytics-dashboard
+- Begin creating reusable chart wrapper components
+- Ready for production implementation
+
+---
+
+=== PHASE 1 COMPLETE ===
+All research and selection tasks completed successfully.
+Library selected: visx
+Ready to begin Phase 2: Analytics Dashboard Migration
+
+---
