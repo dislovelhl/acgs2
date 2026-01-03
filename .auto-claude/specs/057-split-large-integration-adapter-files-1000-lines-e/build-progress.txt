@@ -231,7 +231,35 @@ Successfully extracted AuthResult and OAuthToken models. Key features:
 - Dependencies: pydantic, datetime, WebhookAuthType from ..models
 - All pre-commit hooks passed (ruff, bandit, etc.)
 
-**Next:** Subtask 2.3 - Create webhooks/auth/base.py (WebhookAuthHandler abstract base class and WebhookAuthRegistry)
+### ✅ Subtask 2.3: Create webhooks/auth/base.py (COMPLETED)
+
+**File:** `integration-service/src/webhooks/auth/base.py`
+**Lines:** 178 lines
+**Commit:** 596c47c60
+
+Successfully extracted WebhookAuthHandler abstract base class and WebhookAuthRegistry. Key features:
+- WebhookAuthHandler: Abstract base class defining the interface for all auth handlers
+- WebhookAuthRegistry: Centralized registry for managing and looking up handlers by type
+- Supports both incoming request verification and outgoing request authentication
+- Dependencies: abc, logging, typing, ..models.WebhookAuthType, .models.AuthResult
+- All pre-commit hooks passed (ruff, bandit, etc.)
+
+### ✅ Subtask 2.4: Create webhooks/auth/api_key.py (COMPLETED)
+
+**File:** `integration-service/src/webhooks/auth/api_key.py`
+**Lines:** 144 lines
+**Commit:** 533fd206f
+
+Successfully extracted ApiKeyAuthHandler class. Key features:
+- Validates API keys in request headers against a set of known valid keys
+- Supports multiple header formats (X-API-Key, Authorization with API-Key prefix)
+- Case-insensitive header lookup
+- Constant-time comparison to prevent timing attacks
+- Optional key prefix handling
+- Dependencies: logging, secrets, typing, pydantic.SecretStr, ..models.WebhookAuthType, .base.WebhookAuthHandler, .models.AuthResult
+- All pre-commit hooks passed (ruff, bandit, etc.)
+
+**Next:** Subtask 2.5 - Create webhooks/auth/hmac.py (HmacAuthHandler class)
 
 ### Blockers
 
@@ -240,7 +268,7 @@ Successfully extracted AuthResult and OAuthToken models. Key features:
 - Commits are passing all quality gates successfully
 
 ### Next Steps
-1. Continue Phase 2: Split webhooks/auth.py (8 remaining subtasks)
+1. Continue Phase 2: Split webhooks/auth.py (7 remaining subtasks)
 2. Begin Phase 3: Split integrations/ticket_mapping.py (9 subtasks)
 3. Begin Phase 4: Split integrations/servicenow_adapter.py (8 subtasks)
 
