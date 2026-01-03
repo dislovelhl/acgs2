@@ -7,7 +7,7 @@ validation, sensible defaults, and secure credential handling.
 
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, Dict, List, Literal, Optional, Union
+from typing import Dict, List, Literal, Optional, Union
 from uuid import uuid4
 
 from pydantic import (
@@ -19,12 +19,14 @@ from pydantic import (
     model_validator,
 )
 
+from ..types import ValidatorValue
+
 
 class AuthType(str, Enum):
     """Authentication types supported by integrations."""
 
     API_KEY = "api_key"
-    API_TOKEN = "api_token"
+    API_TOKEN = "api_token"  # nosec B105 - Not a hardcoded password, just an enum value
     BASIC = "basic"
     OAUTH2 = "oauth2"
     BEARER = "bearer"
@@ -107,7 +109,7 @@ class BaseIntegrationConfig(BaseModel):
 
     @field_validator("tags", mode="before")
     @classmethod
-    def validate_tags(cls, v: Any) -> List[str]:
+    def validate_tags(cls, v: ValidatorValue) -> List[str]:
         """Ensure tags is a list of strings."""
         if v is None:
             return []

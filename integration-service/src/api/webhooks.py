@@ -7,12 +7,13 @@ delivery status monitoring, and subscription management.
 
 import logging
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Dict, List, Optional
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, ConfigDict, Field, SecretStr, field_validator
 
+from ..types import JSONDict, ValidatorValue
 from ..webhooks.models import (
     WebhookAuthType,
     WebhookConfig,
@@ -152,7 +153,7 @@ class WebhookCreateRequest(BaseModel):
 
     @field_validator("severity_filter", mode="before")
     @classmethod
-    def validate_severity_filter(cls, v: Any) -> List[str]:
+    def validate_severity_filter(cls, v: ValidatorValue) -> List[str]:
         """Validate severity filter values."""
         if v is None:
             return ["critical", "high", "medium", "low", "info"]
@@ -287,7 +288,7 @@ class WebhookTestRequest(BaseModel):
         default=WebhookEventType.SYSTEM_ALERT,
         description="Event type for test event",
     )
-    payload: Optional[Dict[str, Any]] = Field(None, description="Custom test payload")
+    payload: Optional[JSONDict] = Field(None, description="Custom test payload")
 
 
 class WebhookTestResponse(BaseModel):
@@ -644,7 +645,7 @@ async def test_webhook(
 
 @router.get(
     "/{webhook_id}/deliveries",
-    response_model=Dict[str, Any],
+    response_model=JSONDict,
     summary="Get webhook delivery history",
     description="Get delivery history for a webhook subscription",
 )
@@ -655,7 +656,7 @@ async def get_webhook_deliveries(
     ),
     limit: int = Query(50, ge=1, le=200, description="Maximum number of deliveries"),
     storage: Dict[str, WebhookSubscription] = Depends(get_webhook_storage),
-) -> Dict[str, Any]:
+) -> JSONDict:
     """Get delivery history for a webhook subscription."""
     subscription = storage.get(webhook_id)
     if not subscription:
