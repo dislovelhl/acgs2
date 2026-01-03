@@ -62,7 +62,6 @@ Status Codes:
     - 504: Gateway Timeout (timeout errors)
 """
 
-# Import authentication exceptions
 from .auth import (
     AuthenticationError,
     InvalidApiKeyError,
@@ -73,11 +72,7 @@ from .auth import (
     TokenExpiredError,
     WebhookAuthError,
 )
-
-# Import base exception
 from .base import BaseIntegrationServiceError
-
-# Import delivery exceptions
 from .delivery import (
     DeliveryConnectionError,
     DeliveryError,
@@ -86,8 +81,11 @@ from .delivery import (
     WebhookDeliveryError,
     WebhookTimeoutError,
 )
-
-# Import retry exceptions
+from .integration import (
+    IntegrationConnectionError,
+    IntegrationError,
+    RateLimitError,
+)
 from .retry import (
     MaxRetriesExceededError,
     NonRetryableError,
@@ -95,12 +93,7 @@ from .retry import (
     RetryError,
     WebhookRetryError,
 )
-
-# Import validation exceptions
-from .validation import (
-    ConfigValidationError,
-    ValidationError,
-)
+from .validation import ConfigValidationError, ValidationError
 
 # Export all exceptions
 __all__ = [
@@ -127,6 +120,10 @@ __all__ = [
     "WebhookDeliveryError",  # Backward compatibility alias
     "WebhookTimeoutError",  # Backward compatibility alias
     "WebhookConnectionError",  # Backward compatibility alias
+    # Integration exceptions
+    "IntegrationError",
+    "RateLimitError",
+    "IntegrationConnectionError",
     # Validation exceptions
     "ValidationError",
     "ConfigValidationError",
