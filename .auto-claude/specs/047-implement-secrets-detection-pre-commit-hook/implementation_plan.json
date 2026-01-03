@@ -232,7 +232,9 @@
           "subtask_id": "5.2",
           "title": "Create automated tests for hooks",
           "description": "Build tests/test_secrets_detection.py to validate hook behavior",
-          "status": "pending",
+          "status": "completed",
+          "completed_at": "2026-01-04T02:40:00.000Z",
+          "notes": "Successfully created comprehensive test suite (tests/test_secrets_detection.py, 762 lines) with 66 test methods across 14 test classes. Tests cover all 8 CREDENTIAL_PATTERNS from secrets_manager.py, placeholder detection, allow-list integration, test fixtures validation, gitleaks integration, and end-to-end scenarios. Updated .pre-commit-config.yaml to exclude test files (tests/test_.*\\.py$) from secrets scanning to prevent false positives from test fixtures. All acceptance criteria met: ✅ Tests verify gitleaks catches common secrets (TestGitleaksIntegration class), ✅ Tests verify custom hook catches ACGS-2 patterns (TestSecretPatternDetection - all 8 patterns tested), ✅ Tests verify allow-lists work correctly (TestAllowlistIntegration - 3 tier system), ✅ Tests verify false positives are handled (TestPlaceholderDetection - 10 test methods). Integration points tested: check-secrets-pre-commit.py, secrets_manager.py CREDENTIAL_PATTERNS, .secrets-allowlist.yaml, test fixtures, gitleaks config. Commit: 267c48fbf. All pre-commit hooks pass (ruff, bandit, gitleaks, ACGS-2 secrets detection).",
           "acceptance_criteria": [
             "Tests verify gitleaks catches common secrets",
             "Tests verify custom hook catches ACGS-2 patterns",
