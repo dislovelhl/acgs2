@@ -17,11 +17,12 @@ import logging
 import re
 import secrets
 from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 import httpx
 from pydantic import BaseModel, ConfigDict, Field, SecretStr
 
+from ..types import ErrorDetails, MetadataDict, ModelContext
 from .models import WebhookAuthType
 
 logger = logging.getLogger(__name__)
@@ -40,7 +41,7 @@ class WebhookAuthError(Exception):
         message: str,
         error_code: str = "AUTH_ERROR",
         status_code: int = 401,
-        details: Optional[Dict[str, Any]] = None,
+        details: Optional[ErrorDetails] = None,
     ):
         self.message = message
         self.error_code = error_code
@@ -53,7 +54,7 @@ class InvalidSignatureError(WebhookAuthError):
     """Raised when HMAC signature verification fails."""
 
     def __init__(
-        self, message: str = "Invalid signature", details: Optional[Dict[str, Any]] = None
+        self, message: str = "Invalid signature", details: Optional[ErrorDetails] = None
     ):
         super().__init__(
             message=message,
@@ -67,7 +68,7 @@ class InvalidApiKeyError(WebhookAuthError):
     """Raised when API key validation fails."""
 
     def __init__(
-        self, message: str = "Invalid or missing API key", details: Optional[Dict[str, Any]] = None
+        self, message: str = "Invalid or missing API key", details: Optional[ErrorDetails] = None
     ):
         super().__init__(
             message=message,
@@ -83,7 +84,7 @@ class InvalidBearerTokenError(WebhookAuthError):
     def __init__(
         self,
         message: str = "Invalid or expired bearer token",
-        details: Optional[Dict[str, Any]] = None,
+        details: Optional[ErrorDetails] = None,
     ):
         super().__init__(
             message=message,
@@ -97,7 +98,7 @@ class TokenExpiredError(WebhookAuthError):
     """Raised when OAuth token has expired."""
 
     def __init__(
-        self, message: str = "Token has expired", details: Optional[Dict[str, Any]] = None
+        self, message: str = "Token has expired", details: Optional[ErrorDetails] = None
     ):
         super().__init__(
             message=message,
@@ -113,7 +114,7 @@ class SignatureTimestampError(WebhookAuthError):
     def __init__(
         self,
         message: str = "Request timestamp is too old or in the future",
-        details: Optional[Dict[str, Any]] = None,
+        details: Optional[ErrorDetails] = None,
     ):
         super().__init__(
             message=message,
@@ -130,7 +131,7 @@ class MissingAuthHeaderError(WebhookAuthError):
         self,
         header_name: str,
         message: Optional[str] = None,
-        details: Optional[Dict[str, Any]] = None,
+        details: Optional[ErrorDetails] = None,
     ):
         msg = message or f"Missing required header: {header_name}"
         super().__init__(
@@ -155,7 +156,7 @@ class AuthResult(BaseModel):
         None, description="Authenticated principal (user, key ID, etc.)"
     )
     scopes: List[str] = Field(default_factory=list, description="Granted scopes/permissions")
-    metadata: Dict[str, Any] = Field(default_factory=dict, description="Additional auth metadata")
+    metadata: MetadataDict = Field(default_factory=dict, description="Additional auth metadata")
 
     # Error details (if not authenticated)
     error_code: Optional[str] = Field(None, description="Error code if authentication failed")
@@ -172,7 +173,7 @@ class AuthResult(BaseModel):
         auth_type: WebhookAuthType,
         principal: Optional[str] = None,
         scopes: Optional[List[str]] = None,
-        metadata: Optional[Dict[str, Any]] = None,
+        metadata: Optional[MetadataDict] = None,
     ) -> "AuthResult":
         """Create a successful authentication result."""
         return cls(
@@ -189,7 +190,7 @@ class AuthResult(BaseModel):
         auth_type: WebhookAuthType,
         error_code: str,
         error_message: str,
-        metadata: Optional[Dict[str, Any]] = None,
+        metadata: Optional[MetadataDict] = None,
     ) -> "AuthResult":
         """Create a failed authentication result."""
         return cls(
@@ -222,7 +223,7 @@ class OAuthToken(BaseModel):
         str_strip_whitespace=True,
     )
 
-    def model_post_init(self, _: Any) -> None:
+    def model_post_init(self, __context: ModelContext) -> None:
         """Calculate expiration time if not set."""
         if self.expires_at is None and self.expires_in is not None:
             self.expires_at = self.issued_at + timedelta(seconds=self.expires_in)
@@ -788,7 +789,7 @@ class OAuthBearerAuthHandler(WebhookAuthHandler):
 
     async def _validate_token_remote(
         self, token_value: str
-    ) -> Tuple[bool, Optional[Dict[str, Any]]]:
+    ) -> Tuple[bool, Optional[MetadataDict]]:
         """Validate token against remote token info endpoint."""
         if self._token_info_url is None:
             return False, None

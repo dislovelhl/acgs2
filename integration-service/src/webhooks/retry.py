@@ -10,7 +10,7 @@ import logging
 import random
 from datetime import datetime, timedelta, timezone
 from functools import wraps
-from typing import Any, Callable, Optional, Set, TypeVar
+from typing import Callable, Optional, Set, TypeVar
 
 import httpx
 from tenacity import (
@@ -21,6 +21,7 @@ from tenacity import (
     wait_exponential,
 )
 
+from ..types import ArgsType, KwargsType
 from .config import WebhookRetryPolicy
 
 logger = logging.getLogger(__name__)
@@ -359,9 +360,9 @@ def with_retry(
     if retryable_status_codes is None:
         retryable_status_codes = {429, 500, 502, 503, 504}
 
-    def decorator(func: Callable) -> Callable:
+    def decorator(func: Callable[..., T]) -> Callable[..., T]:
         @wraps(func)
-        async def wrapper(*args: Any, **kwargs: Any) -> Any:
+        async def wrapper(*args: ArgsType, **kwargs: KwargsType) -> T:
             backoff = ExponentialBackoff(
                 initial_delay=initial_delay,
                 max_delay=max_delay,
