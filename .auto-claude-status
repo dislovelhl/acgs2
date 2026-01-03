@@ -3,7 +3,7 @@
   "spec": "034-add-compliancewidget-to-analytics-dashboard",
   "state": "building",
   "subtasks": {
-    "completed": 5,
+    "completed": 6,
     "total": 26,
     "in_progress": 1,
     "failed": 0
@@ -18,8 +18,8 @@
     "max": 1
   },
   "session": {
-    "number": 25,
+    "number": 26,
     "started_at": "2026-01-03T17:42:01.124246"
   },
-  "last_update": "2026-01-03T18:12:49.168957"
+  "last_update": "2026-01-03T18:14:49.094941"
 }
