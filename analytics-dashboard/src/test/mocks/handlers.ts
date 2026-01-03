@@ -326,6 +326,13 @@ export const errorHandlers = {
     );
   }),
 
+  complianceError: http.get(`${API_BASE_URL}/compliance`, () => {
+    return HttpResponse.json(
+      { detail: "Compliance service unavailable" },
+      { status: 503 }
+    );
+  }),
+
   queryError: http.post(`${API_BASE_URL}/query`, () => {
     return HttpResponse.json(
       { detail: "Query processing failed" },
