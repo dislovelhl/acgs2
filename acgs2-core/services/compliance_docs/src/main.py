@@ -12,6 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from shared.config import settings
 
 from .api import evidence_router, reports_router, templates_router
+from .cleanup import background_cleanup, ensure_output_directory, get_cleanup_status
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -28,9 +29,22 @@ async def lifespan(app: FastAPI):
     """Application lifespan manager for startup and shutdown events."""
     # Startup
     logger.info(f"Starting {SERVICE_NAME} in {ENVIRONMENT} environment")
+
+    # Ensure output directory exists
+    ensure_output_directory()
+
+    # Start background cleanup task
+    await background_cleanup.start()
+    logger.info("Background cleanup task started")
+
     yield
+
     # Shutdown
     logger.info(f"Shutting down {SERVICE_NAME}")
+
+    # Stop background cleanup task
+    await background_cleanup.stop()
+    logger.info("Background cleanup task stopped")
 
 
 app = FastAPI(
@@ -70,6 +84,17 @@ async def readiness_check():
         "status": "ready",
         "service": SERVICE_NAME,
     }
+
+
+@app.get("/cleanup/status")
+async def cleanup_status():
+    """
+    Get the current status of the background cleanup task.
+
+    Returns information about the cleanup configuration and whether
+    the background task is currently running.
+    """
+    return get_cleanup_status()
 
 
 # Include API routers
