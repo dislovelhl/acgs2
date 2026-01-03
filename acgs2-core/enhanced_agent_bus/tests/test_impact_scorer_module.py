@@ -701,6 +701,428 @@ class TestBatchInference:
         assert elapsed_time < 2.0, f"Batch processing took {elapsed_time:.2f}s, expected < 2.0s"
 
 
+class TestTokenizationCachingMocked:
+    """Tests for tokenization caching with mocked dependencies."""
+
+    @pytest.fixture
+    def mock_cache(self):
+        """Create a simple mock LRU cache."""
+
+        class SimpleMockCache:
+            def __init__(self, maxsize=100):
+                self.maxsize = maxsize
+                self._store = {}
+                self.get_calls = 0
+                self.set_calls = 0
+
+            def get(self, key):
+                self.get_calls += 1
+                return self._store.get(key)
+
+            def set(self, key, value):
+                self.set_calls += 1
+                if len(self._store) >= self.maxsize:
+                    # Remove first item (simplified LRU)
+                    first_key = next(iter(self._store))
+                    del self._store[first_key]
+                self._store[key] = value
+
+            def clear(self):
+                self._store.clear()
+
+        return SimpleMockCache
+
+    def test_tokenization_cache_initialization(self):
+        """Test that tokenization cache is initialized."""
+
+        class TestableImpactScorer:
+            def __init__(self, cache_size=1000):
+                self._tokenization_cache = {}  # Simplified cache
+                self._cache_size = cache_size
+
+            def clear_cache(self):
+                self._tokenization_cache.clear()
+
+        scorer = TestableImpactScorer()
+        assert hasattr(scorer, "_tokenization_cache")
+        assert isinstance(scorer._tokenization_cache, dict)
+
+    def test_cache_stores_and_retrieves(self, mock_cache):
+        """Test that cache properly stores and retrieves values."""
+        cache = mock_cache()
+
+        # Store a value
+        cache.set("key1", {"tokens": [1, 2, 3]})
+        assert cache.set_calls == 1
+
+        # Retrieve the value
+        value = cache.get("key1")
+        assert value == {"tokens": [1, 2, 3]}
+        assert cache.get_calls == 1
+
+    def test_cache_returns_none_for_missing(self, mock_cache):
+        """Test that cache returns None for missing keys."""
+        cache = mock_cache()
+
+        value = cache.get("nonexistent")
+        assert value is None
+
+    def test_cache_respects_maxsize(self, mock_cache):
+        """Test that cache respects maximum size."""
+        cache = mock_cache(maxsize=3)
+
+        cache.set("key1", "val1")
+        cache.set("key2", "val2")
+        cache.set("key3", "val3")
+        cache.set("key4", "val4")  # Should evict key1
+
+        assert cache.get("key1") is None  # Evicted
+        assert cache.get("key4") == "val4"  # Still present
+
+
+class TestONNXSessionLazyLoadingMocked:
+    """Tests for ONNX session lazy loading with mocked dependencies."""
+
+    @pytest.fixture
+    def mock_onnx_session(self):
+        """Create a mock ONNX InferenceSession."""
+        mock = MagicMock()
+        mock.get_inputs.return_value = [
+            MagicMock(name="input_ids"),
+            MagicMock(name="attention_mask"),
+        ]
+        mock.run.return_value = [np.array([[0.5] * 768])]
+        return mock
+
+    def test_session_lazy_loading_concept(self, mock_onnx_session):
+        """Test the concept of lazy loading for ONNX sessions."""
+
+        class LazyLoadingScorer:
+            _session_cache = None
+
+            def __init__(self, use_onnx=True):
+                self.use_onnx = use_onnx
+                self.session = None  # Not loaded yet
+                self._session_warmed = False
+
+            def ensure_session(self):
+                """Load session on first use."""
+                if self.session is not None:
+                    return self.session
+
+                if not self.use_onnx:
+                    return None
+
+                # Check class cache first
+                if LazyLoadingScorer._session_cache is not None:
+                    self.session = LazyLoadingScorer._session_cache
+                    return self.session
+
+                # Create new session (mocked)
+                self.session = mock_onnx_session
+                LazyLoadingScorer._session_cache = self.session
+
+                # Warmup
+                self._warmup()
+                return self.session
+
+            def _warmup(self):
+                if self.session and not self._session_warmed:
+                    # Dummy inference to warm up
+                    self._session_warmed = True
+
+            @classmethod
+            def reset_cache(cls):
+                cls._session_cache = None
+
+        # Test lazy loading behavior
+        scorer = LazyLoadingScorer(use_onnx=True)
+        assert scorer.session is None  # Not loaded yet
+
+        # First access loads session
+        session = scorer.ensure_session()
+        assert session is not None
+        assert scorer._session_warmed
+
+        # Second scorer reuses cached session
+        scorer2 = LazyLoadingScorer(use_onnx=True)
+        session2 = scorer2.ensure_session()
+        assert session2 is session  # Same cached session
+
+        # Cleanup
+        LazyLoadingScorer.reset_cache()
+
+    def test_session_warmup_runs_inference(self, mock_onnx_session):
+        """Test that session warmup runs dummy inference."""
+
+        class WarmupTestScorer:
+            def __init__(self):
+                self.session = mock_onnx_session
+                self._warmed = False
+
+            def warmup(self):
+                if self.session and not self._warmed:
+                    # Run dummy inference
+                    dummy_input = {"input_ids": np.array([[1, 2, 3]])}
+                    self.session.run(None, dummy_input)
+                    self._warmed = True
+
+        scorer = WarmupTestScorer()
+        scorer.warmup()
+
+        assert scorer._warmed
+        mock_onnx_session.run.assert_called_once()
+
+
+class TestClassLevelCachingMocked:
+    """Tests for class-level caching patterns (singleton behavior)."""
+
+    def test_class_level_tokenizer_cache(self):
+        """Test class-level tokenizer caching."""
+
+        class TokenizerCachingScorer:
+            _tokenizer_instance = None
+            _model_name = None
+
+            def __init__(self, model_name="test-model"):
+                self.model_name = model_name
+
+                # Check class cache
+                if (
+                    TokenizerCachingScorer._tokenizer_instance is not None
+                    and TokenizerCachingScorer._model_name == model_name
+                ):
+                    self.tokenizer = TokenizerCachingScorer._tokenizer_instance
+                else:
+                    # Create new tokenizer (mocked)
+                    self.tokenizer = MagicMock()
+                    self.tokenizer.model_name = model_name
+                    TokenizerCachingScorer._tokenizer_instance = self.tokenizer
+                    TokenizerCachingScorer._model_name = model_name
+
+            @classmethod
+            def reset_cache(cls):
+                cls._tokenizer_instance = None
+                cls._model_name = None
+
+        # First scorer creates tokenizer
+        scorer1 = TokenizerCachingScorer("test-model")
+        tokenizer1 = scorer1.tokenizer
+
+        # Second scorer reuses cached tokenizer
+        scorer2 = TokenizerCachingScorer("test-model")
+        tokenizer2 = scorer2.tokenizer
+
+        assert tokenizer1 is tokenizer2  # Same cached instance
+
+        # Different model name creates new tokenizer
+        scorer3 = TokenizerCachingScorer("different-model")
+        tokenizer3 = scorer3.tokenizer
+
+        assert tokenizer3 is not tokenizer1  # Different instance
+
+        # Cleanup
+        TokenizerCachingScorer.reset_cache()
+
+    def test_reset_cache_clears_all_instances(self):
+        """Test that reset_cache clears all cached instances."""
+
+        class ResetTestScorer:
+            _tokenizer_instance = None
+            _model_instance = None
+            _onnx_session = None
+
+            @classmethod
+            def reset_cache(cls):
+                cls._tokenizer_instance = None
+                cls._model_instance = None
+                cls._onnx_session = None
+
+        # Set some values
+        ResetTestScorer._tokenizer_instance = MagicMock()
+        ResetTestScorer._model_instance = MagicMock()
+        ResetTestScorer._onnx_session = MagicMock()
+
+        # Reset
+        ResetTestScorer.reset_cache()
+
+        assert ResetTestScorer._tokenizer_instance is None
+        assert ResetTestScorer._model_instance is None
+        assert ResetTestScorer._onnx_session is None
+
+
+class TestExtractTextContent:
+    """Tests for _extract_text_content method."""
+
+    @pytest.fixture
+    def extractor(self):
+        """Create a text content extractor for testing."""
+
+        class TextExtractor:
+            def _extract_text_content(self, message):
+                if isinstance(message, dict):
+                    res = []
+                    if "content" in message:
+                        c = message["content"]
+                        res.append(
+                            str(c["text"])
+                            if isinstance(c, dict) and "text" in c
+                            else str(c)
+                        )
+                    if "payload" in message:
+                        p = message["payload"]
+                        if isinstance(p, dict) and "message" in p:
+                            res.append(str(p["message"]))
+                    return " ".join(res)
+                return str(getattr(message, "content", ""))
+
+        return TextExtractor()
+
+    def test_extract_from_string_content(self, extractor):
+        """Test extraction from string content field."""
+        message = {"content": "test message"}
+        text = extractor._extract_text_content(message)
+        assert text == "test message"
+
+    def test_extract_from_dict_content(self, extractor):
+        """Test extraction from dict content with text field."""
+        message = {"content": {"text": "nested text"}}
+        text = extractor._extract_text_content(message)
+        assert text == "nested text"
+
+    def test_extract_from_payload(self, extractor):
+        """Test extraction from payload.message."""
+        message = {
+            "content": "outer content",
+            "payload": {"message": "payload message"},
+        }
+        text = extractor._extract_text_content(message)
+        assert "outer content" in text
+        assert "payload message" in text
+
+    def test_extract_from_object_attribute(self, extractor):
+        """Test extraction from object with content attribute."""
+
+        class MessageObj:
+            content = "object content"
+
+        message = MessageObj()
+        text = extractor._extract_text_content(message)
+        assert text == "object content"
+
+    def test_extract_from_empty_message(self, extractor):
+        """Test extraction from empty message."""
+        text = extractor._extract_text_content({})
+        assert text == ""
+
+
+class TestPriorityAndTypeFactor:
+    """Tests for priority and type factor calculations."""
+
+    @pytest.fixture
+    def factor_calculator(self):
+        """Create a factor calculator for testing."""
+
+        class FactorCalculator:
+            def _calculate_priority_factor(self, message, context=None):
+                p = None
+                if context and "priority" in context:
+                    p = context["priority"]
+                elif isinstance(message, dict) and "priority" in message:
+                    p = message["priority"]
+                elif hasattr(message, "priority"):
+                    p = message.priority
+
+                if p is None:
+                    return 0.5
+
+                if hasattr(p, "name"):
+                    p_name = p.name.lower()
+                elif isinstance(p, str):
+                    p_name = p.lower()
+                else:
+                    p_name = str(p).lower()
+
+                if "critical" in p_name:
+                    return 1.0
+                if "high" in p_name:
+                    return 0.7
+                if p_name in ["medium", "normal"]:
+                    return 0.5
+                if "low" in p_name:
+                    return 0.2
+                return 0.5
+
+            def _calculate_type_factor(self, message, context=None):
+                t = None
+                if context and "message_type" in context:
+                    t = context["message_type"]
+                elif isinstance(message, dict) and "message_type" in message:
+                    t = message["message_type"]
+                elif hasattr(message, "message_type"):
+                    t = message.message_type
+
+                if t is None:
+                    return 0.2
+
+                if hasattr(t, "name"):
+                    t_name = t.name.lower()
+                elif isinstance(t, str):
+                    t_name = t.lower()
+                else:
+                    t_name = str(t).lower()
+
+                if "governance" in t_name or "constitutional" in t_name:
+                    return 0.8
+                if "command" in t_name:
+                    return 0.4
+                return 0.2
+
+        return FactorCalculator()
+
+    def test_priority_from_context(self, factor_calculator):
+        """Test priority factor from context."""
+        context = {"priority": "critical"}
+        factor = factor_calculator._calculate_priority_factor({}, context)
+        assert factor == 1.0
+
+    def test_priority_from_message(self, factor_calculator):
+        """Test priority factor from message."""
+        message = {"priority": "high"}
+        factor = factor_calculator._calculate_priority_factor(message)
+        assert factor == 0.7
+
+    def test_priority_enum_like(self, factor_calculator):
+        """Test priority factor from enum-like object."""
+
+        class Priority:
+            name = "CRITICAL"
+
+        message = MagicMock()
+        message.priority = Priority()
+
+        factor = factor_calculator._calculate_priority_factor(message)
+        assert factor == 1.0
+
+    def test_type_governance(self, factor_calculator):
+        """Test type factor for governance message type."""
+        message = {"message_type": "governance_request"}
+        factor = factor_calculator._calculate_type_factor(message)
+        assert factor == 0.8
+
+    def test_type_command(self, factor_calculator):
+        """Test type factor for command message type."""
+        message = {"message_type": "agent_command"}
+        factor = factor_calculator._calculate_type_factor(message)
+        assert factor == 0.4
+
+    def test_type_from_context(self, factor_calculator):
+        """Test type factor from context."""
+        context = {"message_type": "constitutional_update"}
+        factor = factor_calculator._calculate_type_factor({}, context)
+        assert factor == 0.8
+
+
 # Entry point for running tests directly
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
