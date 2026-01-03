@@ -14,6 +14,7 @@ import { describe, it, expect } from "vitest";
 import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import { http, HttpResponse } from "msw";
 import { server } from "../../../test/mocks/server";
+import { errorHandlers } from "../../../test/mocks/handlers";
 import { ComplianceWidget } from "../ComplianceWidget";
 
 const API_BASE_URL = "http://localhost:8080";
@@ -207,6 +208,45 @@ describe("ComplianceWidget", () => {
       expect(
         screen.getByText("No policy violations detected")
       ).toBeInTheDocument();
+    });
+  });
+
+  describe("Error Handling", () => {
+    it("displays error message when API fails", async () => {
+      server.use(errorHandlers.complianceError);
+
+      render(<ComplianceWidget />);
+
+      await waitFor(() => {
+        expect(
+          screen.getByText(/Compliance service unavailable/)
+        ).toBeInTheDocument();
+      });
+
+      expect(screen.getByText("Try Again")).toBeInTheDocument();
+    });
+
+    it("retries fetch when Try Again is clicked", async () => {
+      server.use(errorHandlers.complianceError);
+
+      render(<ComplianceWidget />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Try Again")).toBeInTheDocument();
+      });
+
+      // Reset handlers
+      server.resetHandlers();
+
+      // Click retry
+      fireEvent.click(screen.getByText("Try Again"));
+
+      await waitFor(
+        () => {
+          expect(screen.getByText("84.5%")).toBeInTheDocument();
+        },
+        { timeout: 5000 }
+      );
     });
   });
 });
