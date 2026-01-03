@@ -1,25 +1,25 @@
 {
   "active": true,
-  "spec": "020-multi-region-global-deployment-support",
-  "state": "complete",
+  "spec": "022-fix-optimized-bert-inference",
+  "state": "building",
   "subtasks": {
-    "completed": 25,
-    "total": 25,
-    "in_progress": 0,
+    "completed": 10,
+    "total": 17,
+    "in_progress": 1,
     "failed": 0
   },
   "phase": {
-    "current": "Integration Testing and Documentation",
+    "current": "Enable and Validate Optimized Path",
     "id": null,
-    "total": 6
+    "total": 4
   },
   "workers": {
     "active": 0,
     "max": 1
   },
   "session": {
-    "number": 20,
-    "started_at": "2026-01-03T08:54:11.221496"
+    "number": 405,
+    "started_at": "2026-01-03T08:54:08.512600"
   },
-  "last_update": "2026-01-03T09:20:12.741640"
+  "last_update": "2026-01-03T11:20:14.920382"
 }
