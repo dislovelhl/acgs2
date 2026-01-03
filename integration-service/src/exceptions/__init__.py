@@ -62,8 +62,6 @@ Status Codes:
     - 504: Gateway Timeout (timeout errors)
 """
 
-from .base import BaseIntegrationServiceError
-
 # Import authentication exceptions
 from .auth import (
     AuthenticationError,
@@ -74,6 +72,16 @@ from .auth import (
     SignatureTimestampError,
     TokenExpiredError,
     WebhookAuthError,
+)
+from .base import BaseIntegrationServiceError
+
+# Import retry exceptions
+from .retry import (
+    MaxRetriesExceededError,
+    NonRetryableError,
+    RetryableError,
+    RetryError,
+    WebhookRetryError,
 )
 
 # Export base exception
@@ -88,6 +96,12 @@ __all__ = [
     "SignatureTimestampError",
     "TokenExpiredError",
     "WebhookAuthError",  # Backward compatibility alias
+    # Retry exceptions
+    "RetryError",
+    "RetryableError",
+    "NonRetryableError",
+    "MaxRetriesExceededError",
+    "WebhookRetryError",  # Backward compatibility alias
 ]
 
 # Version information
