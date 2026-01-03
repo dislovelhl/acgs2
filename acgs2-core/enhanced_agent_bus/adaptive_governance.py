@@ -135,6 +135,42 @@ except ImportError:
         PredictionResult = None
         get_online_learning_pipeline = None
 
+# A/B testing imports for traffic routing between champion and candidate models
+try:
+    from .ab_testing import (
+        AB_TEST_SPLIT,
+        ABTestRouter,
+        CohortType,
+        MetricsComparison,
+        PromotionResult,
+        RoutingResult,
+        get_ab_test_router,
+    )
+
+    AB_TESTING_AVAILABLE = True
+except ImportError:
+    try:
+        from ab_testing import (
+            AB_TEST_SPLIT,
+            ABTestRouter,
+            CohortType,
+            MetricsComparison,
+            PromotionResult,
+            RoutingResult,
+            get_ab_test_router,
+        )
+
+        AB_TESTING_AVAILABLE = True
+    except ImportError:
+        AB_TESTING_AVAILABLE = False
+        AB_TEST_SPLIT = 0.1
+        ABTestRouter = None
+        CohortType = None
+        MetricsComparison = None
+        PromotionResult = None
+        RoutingResult = None
+        get_ab_test_router = None
+
 logger = logging.getLogger(__name__)
 
 
@@ -206,6 +242,9 @@ class GovernanceDecision:
     decision_id: str = field(
         default_factory=lambda: f"gov-{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S%f')}"
     )
+    # A/B testing cohort assignment (champion or candidate)
+    cohort: Optional[str] = None
+    model_version: Optional[int] = None
 
 
 class AdaptiveThresholds:
@@ -997,6 +1036,29 @@ class AdaptiveGovernanceEngine:
             elif not RIVER_AVAILABLE:
                 logger.warning("River library not installed, online learning disabled")
 
+        # A/B testing router for traffic routing between champion and candidate models
+        # Routes 90% traffic to champion, 10% to candidate (configurable via AB_TEST_SPLIT)
+        self._ab_test_router: Optional[ABTestRouter] = None
+        if AB_TESTING_AVAILABLE:
+            try:
+                self._ab_test_router = get_ab_test_router()
+                # Set the impact scorer's sklearn model as both champion and candidate initially
+                # Candidate will be updated when a new model version is registered
+                if self.impact_scorer.model_trained:
+                    self._ab_test_router.set_champion_model(
+                        self.impact_scorer.impact_classifier, version=1
+                    )
+                logger.info(
+                    f"A/B test router initialized "
+                    f"(champion_split={1 - AB_TEST_SPLIT:.0%}, "
+                    f"candidate_split={AB_TEST_SPLIT:.0%})"
+                )
+            except Exception as e:
+                logger.warning(f"Failed to initialize A/B test router: {e}")
+                self._ab_test_router = None
+        else:
+            logger.warning("A/B testing module not available, traffic routing disabled")
+
     async def initialize(self) -> None:
         """Initialize the adaptive governance engine."""
         logger.info("Initializing Adaptive Governance Engine")
@@ -1015,7 +1077,12 @@ class AdaptiveGovernanceEngine:
     async def evaluate_governance_decision(
         self, message: Dict, context: Dict
     ) -> GovernanceDecision:
-        """Make an adaptive governance decision for a message."""
+        """Make an adaptive governance decision for a message.
+
+        Traffic is routed between champion and candidate models based on A/B testing
+        configuration. By default, 90% of requests go to champion and 10% to candidate.
+        The routing is deterministic based on the decision_id hash.
+        """
         start_time = time.time()
 
         try:
@@ -1032,6 +1099,41 @@ class AdaptiveGovernanceEngine:
             # Generate reasoning
             reasoning = self._generate_reasoning(action_allowed, impact_features, threshold)
 
+            # Generate decision_id first for A/B test routing
+            decision_id = f"gov-{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S%f')}"
+
+            # A/B test traffic routing between champion and candidate models
+            # Uses hash(decision_id) for deterministic routing (90% champion, 10% candidate)
+            cohort_name: Optional[str] = None
+            model_version: Optional[int] = None
+
+            if AB_TESTING_AVAILABLE and self._ab_test_router is not None:
+                try:
+                    # Route request based on decision_id hash
+                    routing_result = self._ab_test_router.route(decision_id)
+                    cohort_name = routing_result.cohort.value
+                    model_version = routing_result.model_version
+
+                    # Record request latency for A/B test metrics
+                    latency_ms = (time.time() - start_time) * 1000
+                    if routing_result.cohort == CohortType.CANDIDATE:
+                        self._ab_test_router._candidate_metrics.record_request(
+                            latency_ms=latency_ms,
+                            prediction=action_allowed,
+                        )
+                    else:
+                        self._ab_test_router._champion_metrics.record_request(
+                            latency_ms=latency_ms,
+                            prediction=action_allowed,
+                        )
+
+                    logger.debug(
+                        f"A/B test routing: decision {decision_id} -> {cohort_name} "
+                        f"(version: {model_version})"
+                    )
+                except Exception as e:
+                    logger.warning(f"A/B test routing failed, using default: {e}")
+
             decision = GovernanceDecision(
                 action_allowed=action_allowed,
                 impact_level=impact_level,
@@ -1039,6 +1141,9 @@ class AdaptiveGovernanceEngine:
                 reasoning=reasoning,
                 recommended_threshold=threshold,
                 features_used=impact_features,
+                decision_id=decision_id,
+                cohort=cohort_name,
+                model_version=model_version,
             )
 
             # Record decision for learning
@@ -1295,6 +1400,69 @@ class AdaptiveGovernanceEngine:
             return self.river_model.get_stats()
         except Exception as e:
             logger.warning(f"Failed to get River model stats: {e}")
+            return None
+
+    def get_ab_test_router(self) -> Optional[ABTestRouter]:
+        """Get the A/B test router instance.
+
+        Returns:
+            ABTestRouter instance or None if not available
+        """
+        return self._ab_test_router
+
+    def get_ab_test_metrics(self) -> Optional[Dict]:
+        """Get A/B testing metrics for champion and candidate cohorts.
+
+        Returns:
+            Dict with metrics summary for both cohorts, or None if not available
+        """
+        if not AB_TESTING_AVAILABLE or self._ab_test_router is None:
+            return None
+
+        try:
+            return self._ab_test_router.get_metrics_summary()
+        except Exception as e:
+            logger.warning(f"Failed to get A/B test metrics: {e}")
+            return None
+
+    def get_ab_test_comparison(self) -> Optional[MetricsComparison]:
+        """Compare champion and candidate model performance.
+
+        Returns:
+            MetricsComparison with statistical analysis, or None if not available
+        """
+        if not AB_TESTING_AVAILABLE or self._ab_test_router is None:
+            return None
+
+        try:
+            return self._ab_test_router.compare_metrics()
+        except Exception as e:
+            logger.warning(f"Failed to compare A/B test metrics: {e}")
+            return None
+
+    def promote_candidate_model(self, force: bool = False) -> Optional[PromotionResult]:
+        """Promote the candidate model to champion if it performs better.
+
+        Args:
+            force: If True, bypass validation checks and promote regardless
+
+        Returns:
+            PromotionResult with status and details, or None if not available
+        """
+        if not AB_TESTING_AVAILABLE or self._ab_test_router is None:
+            logger.warning("A/B testing not available, cannot promote candidate")
+            return None
+
+        try:
+            result = self._ab_test_router.promote_candidate(force=force)
+            if result.status.value == "promoted":
+                logger.info(
+                    f"Candidate model promoted to champion: "
+                    f"v{result.previous_champion_version} -> v{result.new_champion_version}"
+                )
+            return result
+        except Exception as e:
+            logger.error(f"Failed to promote candidate model: {e}")
             return None
 
     def _update_metrics(self, decision: GovernanceDecision, response_time: float) -> None:
@@ -1596,4 +1764,5 @@ __all__ = [
     # Availability flags
     "DRIFT_MONITORING_AVAILABLE",
     "ONLINE_LEARNING_AVAILABLE",
+    "AB_TESTING_AVAILABLE",
 ]
