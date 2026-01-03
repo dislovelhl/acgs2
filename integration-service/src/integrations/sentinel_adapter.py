@@ -790,15 +790,15 @@ class SentinelAdapter(BaseIntegration):
         _ = event  # Reference event to avoid unused parameter warning
         return None
 
-    async def send_events_batch(
+    async def _do_send_events_batch(
         self,
         events: List[IntegrationEvent],
     ) -> List[IntegrationResult]:
         """
-        Send multiple events to Sentinel in a batch.
+        Send multiple events to Sentinel in a batch using Azure Monitor Ingestion API.
 
-        Optimizes delivery by sending multiple events in a single request,
-        respecting Azure's limits (1MB max, 500 records).
+        Implements Sentinel-specific batch delivery with all-or-nothing semantics,
+        respecting Azure's limits (1MB max payload, 500 records max).
 
         Args:
             events: List of governance events to send
@@ -807,18 +807,17 @@ class SentinelAdapter(BaseIntegration):
             List of IntegrationResults for each event
 
         Raises:
-            AuthenticationError: If not authenticated
+            RateLimitError: If rate limited by Azure Monitor
             DeliveryError: If batch delivery fails
+            AuthenticationError: If authentication fails
         """
-        if not self._authenticated:
-            raise AuthenticationError("Integration is not authenticated", self.name)
-
         if not events:
             return []
 
         logger.debug(f"Sending batch of {len(events)} events to Sentinel")
 
         try:
+            # Ensure we have a valid token
             access_token = await self._get_access_token()
             client = await self.get_http_client()
 
@@ -841,11 +840,19 @@ class SentinelAdapter(BaseIntegration):
                 json=sentinel_events,
             )
 
+            # Handle rate limiting
+            if response.status_code == 429:
+                retry_after = int(response.headers.get("Retry-After", 60))
+                raise RateLimitError(
+                    "Azure Monitor rate limit exceeded",
+                    self.name,
+                    retry_after=retry_after,
+                )
+
+            # Handle success (200 or 204)
             if response.status_code in (200, 204):
                 # All events succeeded
-                self._events_sent += len(events)
-                self._last_success = datetime.now(timezone.utc)
-
+                logger.debug(f"Batch of {len(events)} events sent to Sentinel successfully")
                 return [
                     IntegrationResult(
                         success=True,
@@ -855,43 +862,98 @@ class SentinelAdapter(BaseIntegration):
                     )
                     for event in events
                 ]
+
+            # Handle errors
+            if response.status_code == 400:
+                # Parse Azure error response
+                try:
+                    error_data = response.json()
+                    error_msg = error_data.get("error", {}).get("message", "Bad request")
+                except json.JSONDecodeError:
+                    error_msg = "Invalid batch data format"
+                raise DeliveryError(
+                    f"Invalid batch data: {error_msg}",
+                    self.name,
+                    details={"status_code": 400},
+                )
+
+            elif response.status_code == 401:
+                # Token may have expired - clear it and retry will refresh
+                self._access_token = None
+                self._token_expires_at = None
+                raise AuthenticationError(
+                    "Access token expired or invalid",
+                    self.name,
+                )
+
+            elif response.status_code == 403:
+                raise DeliveryError(
+                    "Access denied - Service Principal lacks required permissions",
+                    self.name,
+                    details={"status_code": 403},
+                )
+
+            elif response.status_code == 404:
+                raise DeliveryError(
+                    f"DCR or stream not found: {self.sentinel_credentials.dcr_immutable_id}",
+                    self.name,
+                    details={"status_code": 404},
+                )
+
+            elif response.status_code == 413:
+                raise DeliveryError(
+                    "Batch payload too large (exceeded 1MB limit)",
+                    self.name,
+                    details={"status_code": 413},
+                )
+
+            elif response.status_code == 503:
+                raise DeliveryError(
+                    "Azure Monitor service temporarily unavailable",
+                    self.name,
+                    details={"status_code": 503, "should_retry": True},
+                )
+
             else:
-                # Batch failed - return failures for all events
+                # Unexpected error
                 try:
                     error_data = response.json()
                     error_msg = error_data.get("error", {}).get("message", "Batch delivery failed")
                 except json.JSONDecodeError:
                     error_msg = f"Batch delivery failed: HTTP {response.status_code}"
+                raise DeliveryError(
+                    error_msg,
+                    self.name,
+                    details={"status_code": response.status_code},
+                )
 
-                self._events_failed += len(events)
-                self._last_failure = datetime.now(timezone.utc)
+        except (RateLimitError, AuthenticationError):
+            # Re-raise these specific exceptions
+            raise
 
-                return [
-                    IntegrationResult(
-                        success=False,
-                        integration_name=self.name,
-                        operation="send_event",
-                        error_code="BATCH_FAILED",
-                        error_message=error_msg,
-                    )
-                    for _ in events
-                ]
+        except DeliveryError:
+            # Re-raise delivery errors
+            raise
+
+        except httpx.TimeoutException as e:
+            raise DeliveryError(
+                f"Request timed out: {str(e)}",
+                self.name,
+                details={"should_retry": True},
+            ) from e
+
+        except httpx.NetworkError as e:
+            raise DeliveryError(
+                f"Network error: {str(e)}",
+                self.name,
+                details={"should_retry": True},
+            ) from e
 
         except Exception as e:
-            # Return failures for all events
-            self._events_failed += len(events)
-            self._last_failure = datetime.now(timezone.utc)
-
-            return [
-                IntegrationResult(
-                    success=False,
-                    integration_name=self.name,
-                    operation="send_event",
-                    error_code="BATCH_ERROR",
-                    error_message=str(e),
-                )
-                for _ in events
-            ]
+            raise DeliveryError(
+                f"Unexpected error: {str(e)}",
+                self.name,
+            ) from e
 
     async def _do_test_connection(self) -> IntegrationResult:
         """
