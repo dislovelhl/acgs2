@@ -332,6 +332,277 @@ docker-compose restart enhanced-agent-bus
 
 ---
 
+### ACGS-1103: EnvironmentVariableTypeError
+
+**Severity**: HIGH
+**Impact**: Deployment-Blocking
+
+**Description**: Environment variable type does not match expected type.
+
+**Common Causes**:
+- String provided where integer expected (e.g., port numbers)
+- Boolean value incorrectly formatted (must be "true"/"false", not "yes"/"no")
+- Numeric values with extra characters
+- List/array values not properly comma-separated
+
+**Symptoms**:
+```
+TypeError: Cannot convert 'yes' to boolean
+ValueError: invalid literal for int() with base 10: '8080port'
+Expected integer for REDIS_MAX_CONNECTIONS, got 'unlimited'
+```
+
+**Resolution**:
+1. **Check expected type in documentation**:
+   - Integers: Port numbers, timeouts, connection limits
+   - Booleans: Feature flags, debug modes (use "true"/"false")
+   - URLs: Must include protocol
+   - Lists: Comma-separated values
+
+2. **Common type fixes**:
+   ```bash
+   # Wrong: DEBUG_MODE=yes
+   # Right: DEBUG_MODE=true
+
+   # Wrong: REDIS_PORT=6379port
+   # Right: REDIS_PORT=6379
+
+   # Wrong: REDIS_MAX_CONNECTIONS=unlimited
+   # Right: REDIS_MAX_CONNECTIONS=100
+   ```
+
+3. **Verify numeric values**:
+   ```bash
+   # Ensure no extra characters
+   grep -E "PORT|TIMEOUT|MAX|LIMIT" .env
+   ```
+
+**Example**:
+```bash
+# Wrong type
+REDIS_MAX_CONNECTIONS=unlimited
+
+# Fix:
+sed -i 's/REDIS_MAX_CONNECTIONS=unlimited/REDIS_MAX_CONNECTIONS=100/' .env
+docker-compose restart integration-service
+```
+
+**Related Errors**: ACGS-1101, ACGS-1102
+
+---
+
+### ACGS-1201: ConfigValidationError
+
+**Severity**: HIGH
+**Impact**: Deployment-Blocking
+**Exception**: `ConfigValidationError` (integration-service)
+**Location**: `integration-service/src/config/validation.py`
+
+**Description**: Configuration validation failed against defined schema or rules.
+
+**Common Causes**:
+- Invalid URL format in configuration
+- Missing required configuration fields
+- Invalid enum values (e.g., wrong log level)
+- Regex pattern mismatch (e.g., invalid email format)
+- Value constraints violated (min/max ranges)
+
+**Symptoms**:
+```
+ConfigValidationError: Invalid configuration
+  - Field 'log_level' must be one of: DEBUG, INFO, WARNING, ERROR
+  - Field 'webhook_url' must match pattern: https?://.*
+  - Field 'timeout' must be between 1 and 300 seconds
+```
+
+**Resolution**:
+1. **Review validation error message** - it will specify which field(s) failed
+
+2. **Check configuration schema**:
+   ```bash
+   # Look for validation rules in code
+   grep -r "ConfigValidationError" integration-service/src/config/
+   ```
+
+3. **Common validation fixes**:
+   ```bash
+   # Log level must be valid enum
+   # Wrong: LOG_LEVEL=verbose
+   # Right: LOG_LEVEL=INFO
+
+   # URLs must have protocol
+   # Wrong: WEBHOOK_URL=example.com/hook
+   # Right: WEBHOOK_URL=https://example.com/hook
+
+   # Timeouts must be in valid range
+   # Wrong: REQUEST_TIMEOUT=0
+   # Right: REQUEST_TIMEOUT=30
+   ```
+
+4. **Validate configuration before deployment**:
+   ```bash
+   # Run validation check
+   docker-compose run --rm integration-service python -c "
+   from src.config.validation import validate_config
+   validate_config()
+   "
+   ```
+
+**Example**:
+```bash
+# Invalid log level
+LOG_LEVEL=verbose
+
+# Fix:
+sed -i 's/LOG_LEVEL=verbose/LOG_LEVEL=INFO/' .env
+docker-compose restart integration-service
+```
+
+**Related Errors**: ACGS-1001, ACGS-1202, ACGS-1203
+
+---
+
+### ACGS-1202: ConfigFileNotFoundError
+
+**Severity**: HIGH
+**Impact**: Deployment-Blocking
+
+**Description**: Required configuration file not found.
+
+**Common Causes**:
+- `.env` file missing (not created from `.env.example`)
+- Configuration file in wrong directory
+- File path typo in startup script
+- File not mounted in Docker container
+
+**Symptoms**:
+```
+Error: Configuration file not found: .env
+FileNotFoundError: [Errno 2] No such file or directory: '/app/.env'
+Container exits immediately after start
+```
+
+**Resolution**:
+1. **Check if .env file exists**:
+   ```bash
+   ls -la .env
+   ```
+
+2. **Create from example if missing**:
+   ```bash
+   cp .env.example .env
+   ```
+
+3. **Verify file location**:
+   ```bash
+   # .env should be in repository root
+   pwd
+   ls .env
+   ```
+
+4. **For Docker containers, check volume mount**:
+   ```yaml
+   # In docker-compose.yml:
+   services:
+     service-name:
+       volumes:
+         - ./.env:/app/.env  # Ensure this line exists
+   ```
+
+5. **Check file permissions**:
+   ```bash
+   chmod 644 .env
+   ```
+
+**Example**:
+```bash
+# .env missing
+ls .env
+# ls: cannot access '.env': No such file or directory
+
+# Fix:
+cp .env.example .env
+# Edit required values
+nano .env
+# Restart services
+docker-compose up -d
+```
+
+**Related Errors**: ACGS-1101, ACGS-1201
+
+---
+
+### ACGS-1203: ConfigSchemaValidationError
+
+**Severity**: HIGH
+**Impact**: Deployment-Blocking
+
+**Description**: Configuration does not match expected schema version or structure.
+
+**Common Causes**:
+- Schema version mismatch (old config with new code)
+- Required fields missing from configuration
+- Invalid field types in config file
+- Nested configuration structure incorrect
+- YAML/JSON syntax errors
+
+**Symptoms**:
+```
+SchemaValidationError: Configuration schema mismatch
+  Expected schema version: 2.0
+  Found schema version: 1.5
+  Missing required fields: ['constitutional_hash', 'opa_config']
+```
+
+**Resolution**:
+1. **Check schema version**:
+   ```bash
+   # Look for version field in config
+   grep -i version config.yaml
+   ```
+
+2. **Update configuration to match schema**:
+   ```bash
+   # Compare with example config
+   diff config.yaml config.example.yaml
+   ```
+
+3. **Add missing required fields**:
+   ```yaml
+   # config.yaml
+   version: "2.0"
+   constitutional_hash: "cdd01ef066bc6cf2"
+   opa_config:
+     url: "http://opa:8181"
+     timeout: 30
+   ```
+
+4. **Validate YAML/JSON syntax**:
+   ```bash
+   # For YAML
+   python -c "import yaml; yaml.safe_load(open('config.yaml'))"
+
+   # For JSON
+   python -c "import json; json.load(open('config.json'))"
+   ```
+
+5. **Check for common syntax errors**:
+   - Incorrect indentation (YAML)
+   - Missing commas (JSON)
+   - Unquoted strings with special characters
+
+**Example**:
+```bash
+# Old config missing required fields
+# Fix by adding constitutional_hash
+echo "constitutional_hash: cdd01ef066bc6cf2" >> config.yaml
+docker-compose restart
+```
+
+**Related Errors**: ACGS-1001, ACGS-1201, ACGS-1202
+
+---
+
 ### ACGS-1301: ConstitutionalHashMismatchError
 
 **Severity**: CRITICAL
@@ -406,6 +677,381 @@ docker-compose logs enhanced-agent-bus | grep "Constitutional hash validated"
 
 ---
 
+### ACGS-1302: ConstitutionalValidationError
+
+**Severity**: CRITICAL
+**Impact**: Service-Unavailable
+**Exception**: `ConstitutionalValidationError` (enhanced-agent-bus)
+**Location**: `acgs2-core/enhanced_agent_bus/exceptions.py`
+
+**Description**: Constitutional validation check failed during runtime. The system enforces constitutional compliance for all operations.
+
+**Common Causes**:
+- Operation violates constitutional rules
+- Alignment check failures
+- Policy compliance violations
+- Constitutional principles not satisfied
+- Safety constraints violated
+
+**Symptoms**:
+```
+ConstitutionalValidationError: Operation violates constitutional requirements
+Constitutional alignment check failed
+Safety constraints not satisfied
+Policy compliance validation failed
+```
+
+**Resolution**:
+1. **Review the validation error** - it will specify which constitutional requirement failed
+
+2. **Check constitutional logs**:
+   ```bash
+   docker-compose logs enhanced-agent-bus | grep "Constitutional"
+   ```
+
+3. **Verify operation meets constitutional requirements**:
+   - Check if operation aligns with defined policies
+   - Ensure all safety constraints are met
+   - Verify alignment principles are satisfied
+
+4. **Review constitutional documentation**:
+   ```bash
+   # Check constitutional hash and principles
+   grep CONSTITUTIONAL_HASH .env
+   cat acgs2-core/docs/operations/constitutional_principles.md
+   ```
+
+5. **If legitimate operation is being rejected**:
+   - Review constitutional policies in OPA
+   - Check for overly restrictive rules
+   - Consult with governance team
+
+**⚠️ Important**: Do not bypass constitutional validation. These checks are critical safety mechanisms.
+
+**Example**:
+```bash
+# Check constitutional validation logs
+docker-compose logs enhanced-agent-bus | grep -A 5 "ConstitutionalValidationError"
+
+# Verify constitutional hash is correct
+echo $CONSTITUTIONAL_HASH
+# Should be: cdd01ef066bc6cf2
+```
+
+**Related Errors**: ACGS-1301, ACGS-6101, ACGS-6201
+
+---
+
+### ACGS-1401: OPAConfigurationError
+
+**Severity**: CRITICAL
+**Impact**: Deployment-Blocking
+
+**Description**: OPA service configuration invalid or incorrect.
+
+**Common Causes**:
+- Using `localhost` instead of Docker network service name
+- Incorrect port number (should be 8181)
+- Missing protocol in URL (`http://`)
+- Wrong OPA endpoint path
+- OPA_URL not set in environment
+
+**Symptoms**:
+```
+OPAConfigurationError: Invalid OPA_URL
+Cannot parse OPA URL: localhost:8181
+OPA_URL must include protocol (http:// or https://)
+```
+
+**Resolution**:
+1. **Check OPA_URL format**:
+   ```bash
+   grep OPA_URL .env
+   # Should be: OPA_URL=http://opa:8181
+   ```
+
+2. **Common configuration mistakes**:
+   ```bash
+   # Wrong: OPA_URL=localhost:8181
+   # Right: OPA_URL=http://localhost:8181  (from host)
+
+   # Wrong: OPA_URL=opa:8181
+   # Right: OPA_URL=http://opa:8181  (from container)
+   ```
+
+3. **Fix OPA URL**:
+   ```bash
+   # For Docker Compose (from within containers):
+   sed -i 's|OPA_URL=.*|OPA_URL=http://opa:8181|' .env
+
+   # For host access:
+   sed -i 's|OPA_URL=.*|OPA_URL=http://localhost:8181|' .env
+   ```
+
+4. **Verify OPA is accessible**:
+   ```bash
+   # From host:
+   curl http://localhost:8181/health
+
+   # From container:
+   docker-compose exec enhanced-agent-bus curl http://opa:8181/health
+   ```
+
+**Example**:
+```bash
+# Wrong OPA URL
+OPA_URL=opa:8181
+
+# Fix:
+echo "OPA_URL=http://opa:8181" >> .env
+docker-compose restart enhanced-agent-bus
+
+# Verify:
+docker-compose logs enhanced-agent-bus | grep "Connected to OPA"
+```
+
+**Related Errors**: ACGS-1102, ACGS-2403, ACGS-4401
+
+---
+
+### ACGS-1402: KafkaConfigurationError
+
+**Severity**: CRITICAL
+**Impact**: Deployment-Blocking
+
+**Description**: Kafka configuration invalid or bootstrap servers incorrect.
+
+**Common Causes**:
+- Wrong Kafka port (9092 vs 19092 vs 29092 confusion)
+- Using localhost instead of Docker service name
+- Incorrect listener configuration
+- Multiple broker addresses with typos
+
+**Symptoms**:
+```
+KafkaConfigurationError: Invalid KAFKA_BOOTSTRAP_SERVERS
+Cannot connect to broker: localhost:9092
+Kafka listener confusion: Use kafka:19092 from containers
+```
+
+**Kafka Port Guide**:
+- **9092**: External access from host (localhost:9092)
+- **19092**: Internal Docker network (kafka:19092)
+- **29092**: Additional internal listener (if configured)
+
+**Resolution**:
+1. **Check Kafka bootstrap servers**:
+   ```bash
+   grep KAFKA_BOOTSTRAP_SERVERS .env
+   ```
+
+2. **Fix common port confusion**:
+   ```bash
+   # From within Docker containers (most services):
+   # Right: KAFKA_BOOTSTRAP_SERVERS=kafka:19092
+
+   # From host machine (development tools):
+   # Right: KAFKA_BOOTSTRAP_SERVERS=localhost:9092
+
+   # Wrong: KAFKA_BOOTSTRAP_SERVERS=localhost:19092
+   # Wrong: KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+   ```
+
+3. **Update configuration**:
+   ```bash
+   # For container-based services:
+   sed -i 's|KAFKA_BOOTSTRAP_SERVERS=.*|KAFKA_BOOTSTRAP_SERVERS=kafka:19092|' .env
+   ```
+
+4. **Verify Kafka is accessible**:
+   ```bash
+   # From host:
+   docker-compose exec kafka kafka-topics --list --bootstrap-server localhost:9092
+
+   # From container:
+   docker-compose exec enhanced-agent-bus nc -zv kafka 19092
+   ```
+
+**Example**:
+```bash
+# Wrong port from container
+KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+
+# Fix:
+sed -i 's|KAFKA_BOOTSTRAP_SERVERS=kafka:9092|KAFKA_BOOTSTRAP_SERVERS=kafka:19092|' .env
+docker-compose restart hitl-approvals
+
+# Verify:
+docker-compose logs hitl-approvals | grep "Connected to Kafka"
+```
+
+**Related Errors**: ACGS-1102, ACGS-4201, ACGS-4202
+
+---
+
+### ACGS-1403: DatabaseConfigurationError
+
+**Severity**: CRITICAL
+**Impact**: Deployment-Blocking
+
+**Description**: Database connection string invalid or credentials incorrect.
+
+**Common Causes**:
+- Invalid PostgreSQL URL format
+- Wrong credentials (username/password)
+- Incorrect database name
+- Using localhost instead of Docker service name
+- Missing database driver in URL (`postgresql://` vs `postgres://`)
+
+**Symptoms**:
+```
+DatabaseConfigurationError: Invalid DATABASE_URL
+Invalid connection string format
+Could not parse DATABASE_URL
+Missing password in connection string
+```
+
+**Connection String Format**:
+```
+postgresql://username:password@host:port/database_name
+```
+
+**Resolution**:
+1. **Check DATABASE_URL format**:
+   ```bash
+   grep DATABASE_URL .env
+   # Should look like: postgresql://user:pass@postgres:5432/dbname
+   ```
+
+2. **Common format issues**:
+   ```bash
+   # Missing protocol:
+   # Wrong: DATABASE_URL=postgres:5432/acgs2_db
+   # Right: DATABASE_URL=postgresql://acgs2:password@postgres:5432/acgs2_db
+
+   # Missing database name:
+   # Wrong: DATABASE_URL=postgresql://user:pass@postgres:5432
+   # Right: DATABASE_URL=postgresql://user:pass@postgres:5432/acgs2_db
+
+   # Wrong host (from container):
+   # Wrong: DATABASE_URL=postgresql://user:pass@localhost:5432/db
+   # Right: DATABASE_URL=postgresql://user:pass@postgres:5432/db
+   ```
+
+3. **Fix DATABASE_URL**:
+   ```bash
+   # Standard format for Docker Compose:
+   echo "DATABASE_URL=postgresql://acgs2:acgs2password@postgres:5432/acgs2_db" >> .env
+   ```
+
+4. **Verify database is accessible**:
+   ```bash
+   # From host (if port 5432 is exposed):
+   psql postgresql://acgs2:acgs2password@localhost:5432/acgs2_db -c "SELECT 1"
+
+   # From container:
+   docker-compose exec hitl-approvals pg_isready -h postgres -p 5432
+   ```
+
+5. **Check credentials match docker-compose.yml**:
+   ```bash
+   # Verify username, password, database name match
+   grep -A 5 "POSTGRES_" docker-compose.yml
+   ```
+
+**Example**:
+```bash
+# Wrong: missing protocol
+DATABASE_URL=postgres:5432/acgs2_db
+
+# Fix:
+sed -i 's|DATABASE_URL=.*|DATABASE_URL=postgresql://acgs2:acgs2password@postgres:5432/acgs2_db|' .env
+docker-compose restart hitl-approvals
+
+# Verify connection:
+docker-compose logs hitl-approvals | grep "Database connected"
+```
+
+**Related Errors**: ACGS-1102, ACGS-4301, ACGS-4302
+
+---
+
+### ACGS-1501: TLSConfigurationError
+
+**Severity**: HIGH
+**Impact**: Service-Unavailable
+
+**Description**: TLS/SSL configuration invalid or certificates missing.
+
+**Common Causes**:
+- Invalid or expired certificate
+- Certificate chain incomplete
+- Private key doesn't match certificate
+- Certificate file permissions incorrect
+- Self-signed certificate not trusted
+
+**Symptoms**:
+```
+TLSConfigurationError: Invalid certificate
+SSL handshake failed
+Certificate verification failed
+Private key does not match certificate
+```
+
+**Resolution**:
+1. **Check certificate validity**:
+   ```bash
+   # Check certificate expiration
+   openssl x509 -in cert.pem -noout -dates
+
+   # Verify certificate chain
+   openssl verify -CAfile ca.pem cert.pem
+   ```
+
+2. **Verify private key matches certificate**:
+   ```bash
+   # Get certificate modulus
+   openssl x509 -in cert.pem -noout -modulus | md5sum
+
+   # Get private key modulus (should match)
+   openssl rsa -in key.pem -noout -modulus | md5sum
+   ```
+
+3. **Check file permissions**:
+   ```bash
+   # Certificates should be readable
+   chmod 644 cert.pem ca.pem
+
+   # Private keys should be restricted
+   chmod 600 key.pem
+   ```
+
+4. **For self-signed certificates in development**:
+   ```bash
+   # Disable SSL verification (DEVELOPMENT ONLY)
+   export SSL_VERIFY=false
+
+   # Or add to .env:
+   echo "SSL_VERIFY=false" >> .env
+   ```
+
+**Example**:
+```bash
+# Certificate doesn't match key
+# Fix: regenerate certificate or use correct key
+
+# For development, generate self-signed cert:
+openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -days 365 -nodes
+
+# Update configuration:
+echo "TLS_CERT_PATH=/path/to/cert.pem" >> .env
+echo "TLS_KEY_PATH=/path/to/key.pem" >> .env
+```
+
+**Related Errors**: ACGS-1502, ACGS-1503
+
+---
+
 ### ACGS-1502: CORSConfigurationError
 
 **Severity**: CRITICAL (Security)
@@ -454,6 +1100,266 @@ docker-compose logs enhanced-agent-bus | grep "Constitutional hash validated"
 **TODO Reference**: See `TODO_CATALOG.md` - CRITICAL priority
 
 **Related Errors**: ACGS-1501, ACGS-1503
+
+---
+
+### ACGS-1503: SecretNotFoundError
+
+**Severity**: CRITICAL
+**Impact**: Deployment-Blocking
+
+**Description**: Required secret not found in secret store or environment.
+
+**Common Causes**:
+- Kubernetes secret not created
+- Secret key name mismatch
+- Vault/AWS Secrets Manager misconfiguration
+- Environment variable for secret not set
+- Secret not mounted in container
+
+**Symptoms**:
+```
+SecretNotFoundError: Required secret not found: WEBHOOK_SECRET
+Kubernetes secret 'acgs2-secrets' does not exist
+Failed to fetch secret from Vault: path not found
+```
+
+**Resolution**:
+1. **For Kubernetes deployments, create secret**:
+   ```bash
+   # Create secret from literals
+   kubectl create secret generic acgs2-secrets \
+     --from-literal=WEBHOOK_SECRET=your-secret-here \
+     --from-literal=DATABASE_PASSWORD=db-password
+
+   # Or from file
+   kubectl create secret generic acgs2-secrets \
+     --from-file=.env
+   ```
+
+2. **Verify secret exists**:
+   ```bash
+   kubectl get secret acgs2-secrets
+   kubectl describe secret acgs2-secrets
+   ```
+
+3. **Check secret is mounted in pod**:
+   ```yaml
+   # In deployment.yaml:
+   env:
+     - name: WEBHOOK_SECRET
+       valueFrom:
+         secretKeyRef:
+           name: acgs2-secrets
+           key: WEBHOOK_SECRET
+   ```
+
+4. **For Vault, check path and policies**:
+   ```bash
+   # Test Vault access
+   vault kv get secret/acgs2/webhooks
+
+   # Verify policy allows read
+   vault policy read acgs2-read-policy
+   ```
+
+5. **For AWS Secrets Manager**:
+   ```bash
+   # Verify secret exists
+   aws secretsmanager describe-secret --secret-id acgs2/production
+
+   # Test retrieval
+   aws secretsmanager get-secret-value --secret-id acgs2/production
+   ```
+
+**Example**:
+```bash
+# Kubernetes: create missing secret
+kubectl create secret generic acgs2-secrets \
+  --from-literal=WEBHOOK_SECRET=$(openssl rand -hex 32) \
+  --from-literal=JWT_SECRET=$(openssl rand -hex 32)
+
+# Restart pods to pick up secret
+kubectl rollout restart deployment/integration-service
+```
+
+**Related Errors**: ACGS-1101, ACGS-1501, ACGS-1502
+
+---
+
+### ACGS-1504: OIDCConfigurationError
+
+**Severity**: HIGH
+**Impact**: Service-Unavailable
+**Exception**: `OIDCConfigurationError` (shared-auth)
+**Location**: `acgs2-core/shared/auth/oidc_handler.py`
+
+**Description**: OIDC (OpenID Connect) provider configuration error.
+
+**Common Causes**:
+- Missing client ID or client secret
+- Invalid OIDC discovery URL
+- Provider not properly registered
+- Redirect URI mismatch
+- Incorrect scopes configuration
+
+**Symptoms**:
+```
+OIDCConfigurationError: Missing OIDC_CLIENT_ID
+Failed to fetch OIDC discovery document from https://auth.example.com/.well-known/openid-configuration
+Invalid redirect URI: must match configured value
+```
+
+**Resolution**:
+1. **Check required OIDC environment variables**:
+   ```bash
+   grep -E "OIDC_" .env
+   # Required variables:
+   # OIDC_PROVIDER_URL=https://auth.example.com
+   # OIDC_CLIENT_ID=your-client-id
+   # OIDC_CLIENT_SECRET=your-client-secret
+   # OIDC_REDIRECT_URI=https://yourapp.example.com/auth/callback
+   ```
+
+2. **Test OIDC discovery endpoint**:
+   ```bash
+   curl https://auth.example.com/.well-known/openid-configuration
+   # Should return JSON with issuer, authorization_endpoint, token_endpoint, etc.
+   ```
+
+3. **Verify client ID and secret with provider**:
+   - Log into your OIDC provider (Auth0, Okta, Keycloak, etc.)
+   - Check client application settings
+   - Regenerate secret if needed
+
+4. **Fix redirect URI mismatch**:
+   ```bash
+   # Redirect URI must exactly match provider configuration
+   # Including protocol (https://) and path
+   OIDC_REDIRECT_URI=https://app.example.com/auth/callback
+   ```
+
+5. **Verify scopes**:
+   ```bash
+   # Common OIDC scopes
+   OIDC_SCOPES=openid,profile,email
+   ```
+
+**Example**:
+```bash
+# Missing OIDC client ID
+# Fix by adding to .env:
+cat >> .env << EOF
+OIDC_PROVIDER_URL=https://auth.example.com
+OIDC_CLIENT_ID=acgs2-client-id
+OIDC_CLIENT_SECRET=your-secret-here
+OIDC_REDIRECT_URI=https://app.example.com/auth/callback
+OIDC_SCOPES=openid,profile,email
+EOF
+
+# Restart service
+docker-compose restart hitl-approvals
+```
+
+**Related Errors**: ACGS-1102, ACGS-1505, ACGS-2201, ACGS-2202
+
+---
+
+### ACGS-1505: SAMLConfigurationError
+
+**Severity**: HIGH
+**Impact**: Service-Unavailable
+**Exception**: `SAMLConfigurationError` (shared-auth)
+**Location**: `acgs2-core/shared/auth/saml_config.py`
+
+**Description**: SAML (Security Assertion Markup Language) configuration error.
+
+**Common Causes**:
+- Invalid IdP (Identity Provider) metadata
+- Certificate issues (expired, missing, wrong format)
+- SP (Service Provider) entity ID mismatch
+- Assertion Consumer Service (ACS) URL incorrect
+- Missing or invalid signing certificate
+
+**Symptoms**:
+```
+SAMLConfigurationError: Invalid IdP metadata
+Failed to parse SAML certificate
+SP entity ID mismatch: expected 'https://app.example.com', got 'http://localhost'
+ACS URL not configured in IdP
+```
+
+**Resolution**:
+1. **Check required SAML environment variables**:
+   ```bash
+   grep -E "SAML_" .env
+   # Required variables:
+   # SAML_IDP_METADATA_URL=https://idp.example.com/metadata
+   # SAML_SP_ENTITY_ID=https://app.example.com
+   # SAML_ACS_URL=https://app.example.com/saml/acs
+   # SAML_CERT_PATH=/path/to/cert.pem
+   # SAML_KEY_PATH=/path/to/key.pem
+   ```
+
+2. **Verify IdP metadata is accessible**:
+   ```bash
+   curl https://idp.example.com/metadata
+   # Should return XML with IdP configuration
+   ```
+
+3. **Check certificate validity**:
+   ```bash
+   # Verify certificate hasn't expired
+   openssl x509 -in saml-cert.pem -noout -dates
+
+   # Check certificate matches key
+   openssl x509 -in saml-cert.pem -noout -modulus | md5sum
+   openssl rsa -in saml-key.pem -noout -modulus | md5sum
+   # The two hashes should match
+   ```
+
+4. **Verify SP entity ID matches IdP configuration**:
+   ```bash
+   # Entity ID must exactly match what's configured in IdP
+   # Usually the base URL of your application
+   SAML_SP_ENTITY_ID=https://app.example.com
+   ```
+
+5. **Check ACS URL is registered with IdP**:
+   - Log into IdP admin console
+   - Verify ACS URL is in allowed callback URLs
+   - Ensure it matches exactly (including https://)
+
+6. **Validate SAML response**:
+   ```bash
+   # Use SAML tracer browser extension to debug
+   # Check for common issues:
+   # - Clock skew (NotBefore/NotOnOrAfter)
+   # - Signature validation failures
+   # - Attribute mapping issues
+   ```
+
+**Example**:
+```bash
+# Configure SAML authentication
+cat >> .env << EOF
+SAML_IDP_METADATA_URL=https://idp.example.com/metadata
+SAML_SP_ENTITY_ID=https://app.example.com
+SAML_ACS_URL=https://app.example.com/saml/acs
+SAML_CERT_PATH=/app/certs/saml-cert.pem
+SAML_KEY_PATH=/app/certs/saml-key.pem
+EOF
+
+# Mount certificates in docker-compose.yml:
+# volumes:
+#   - ./certs/saml-cert.pem:/app/certs/saml-cert.pem:ro
+#   - ./certs/saml-key.pem:/app/certs/saml-key.pem:ro
+
+# Restart service
+docker-compose restart hitl-approvals
+```
+
+**Related Errors**: ACGS-1102, ACGS-1501, ACGS-1504, ACGS-2211, ACGS-2214
 
 ---
 
