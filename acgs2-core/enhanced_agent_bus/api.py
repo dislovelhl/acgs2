@@ -6,11 +6,25 @@ Constitutional Hash: cdd01ef066bc6cf2
 
 import asyncio
 import logging
+import uuid
+from datetime import datetime, timezone
 from typing import Dict, Any, Optional
 from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 import os
+
+# Import MessageProcessor and models with fallback handling
+try:
+    from .message_processor import MessageProcessor
+    from .models import AgentMessage, MessageType, Priority
+except (ImportError, ValueError):
+    try:
+        from message_processor import MessageProcessor  # type: ignore
+        from models import AgentMessage, MessageType, Priority  # type: ignore
+    except ImportError:
+        from enhanced_agent_bus.message_processor import MessageProcessor  # type: ignore
+        from enhanced_agent_bus.models import AgentMessage, MessageType, Priority  # type: ignore
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -26,6 +40,7 @@ app = FastAPI(
 # Removed allow_origins=["*"] to prevent CORS vulnerability (OWASP A05:2021)
 try:
     from shared.security.cors_config import get_cors_config
+
     cors_config = get_cors_config()
     logger.info("CORS: Using secure configuration from shared module")
 except ImportError:
@@ -61,6 +76,9 @@ app.add_middleware(CORSMiddleware, **cors_config)
 
 # Global agent bus instance - simplified for development
 agent_bus = None
+
+# Global message processor instance - initialized in isolated mode
+message_processor: Optional[MessageProcessor] = None
 
 
 # Request/Response Models
@@ -98,11 +116,16 @@ class HealthResponse(BaseModel):
 @app.on_event("startup")
 async def startup_event():
     """Initialize the agent bus on startup"""
-    global agent_bus
+    global agent_bus, message_processor
     try:
         logger.info("Initializing Enhanced Agent Bus (simplified for development)...")
         # Simplified initialization for development
         agent_bus = {"status": "initialized", "services": ["redis", "kafka", "opa"]}
+
+        # Initialize MessageProcessor in isolated mode (no external dependencies)
+        message_processor = MessageProcessor(isolated_mode=True)
+        logger.info("MessageProcessor initialized in isolated mode")
+
         logger.info("Enhanced Agent Bus initialized successfully (dev mode)")
     except Exception as e:
         logger.error(f"Failed to initialize agent bus: {e}")
@@ -133,32 +156,63 @@ async def health_check():
 
 @app.post("/messages", response_model=MessageResponse)
 async def send_message(request: MessageRequest, background_tasks: BackgroundTasks):
-    """Send a message to the agent bus"""
+    """Send a message to the agent bus with MessageProcessor integration"""
     if not agent_bus:
         raise HTTPException(status_code=503, detail="Agent bus not initialized")
 
     try:
-        import uuid
-        from datetime import datetime, timezone
-
-        # Create simplified message response
+        # Create message ID and timestamp
         message_id = str(uuid.uuid4())
         timestamp = datetime.now(timezone.utc)
 
-        # Process message asynchronously with real logic
-        async def process_message(msg_id: str, content: str):
-            logger.info(f"Processing message {msg_id}: {content[:50]}...")
-            # TODO: Implement actual message processing logic
-            # This could involve validation, routing, or delegation to message processor
-            # For now, use a lightweight placeholder that doesn't block
-            import hashlib
+        # Map request message_type to MessageType enum
+        message_type_map = {
+            "user_request": MessageType.COMMAND,
+            "command": MessageType.COMMAND,
+            "query": MessageType.QUERY,
+            "event": MessageType.EVENT,
+            "notification": MessageType.NOTIFICATION,
+            "task_request": MessageType.TASK_REQUEST,
+        }
+        msg_type = message_type_map.get(request.message_type.lower(), MessageType.COMMAND)
 
-            # Perform lightweight validation hash to simulate processing
-            content_hash = hashlib.sha256(content.encode()).hexdigest()[:16]
-            logger.info(f"Message {msg_id} validated (hash: {content_hash})")
-            logger.info(f"Message {msg_id} processed successfully")
+        # Map request priority to Priority enum
+        priority_map = {
+            "low": Priority.LOW,
+            "normal": Priority.NORMAL,
+            "medium": Priority.MEDIUM,
+            "high": Priority.HIGH,
+            "critical": Priority.CRITICAL,
+        }
+        msg_priority = priority_map.get(request.priority.lower(), Priority.NORMAL)
 
-        background_tasks.add_task(process_message, message_id, request.content)
+        # Create AgentMessage from request
+        agent_message = AgentMessage(
+            message_id=message_id,
+            content={"text": request.content, **(request.metadata or {})},
+            from_agent=request.sender,
+            to_agent=request.recipient or "",
+            message_type=msg_type,
+            priority=msg_priority,
+            tenant_id=request.tenant_id or "",
+        )
+
+        # Process message asynchronously with MessageProcessor
+        async def process_message_with_processor(msg: AgentMessage):
+            logger.info(f"Processing message {msg.message_id}: {str(msg.content)[:50]}...")
+            if message_processor:
+                result = await message_processor.process(msg)
+                if result.is_valid:
+                    logger.info(f"Message {msg.message_id} validated successfully")
+                else:
+                    logger.warning(f"Message {msg.message_id} validation failed: {result.errors}")
+            else:
+                logger.warning(
+                    f"MessageProcessor not available, skipping validation for {msg.message_id}"
+                )
+            logger.info(f"Message {msg.message_id} processed successfully")
+
+        background_tasks.add_task(process_message_with_processor, agent_message)
 
         return MessageResponse(
             message_id=message_id,
@@ -234,7 +288,7 @@ if __name__ == "__main__":
 
     uvicorn.run(
         app,
-        host="0.0.0.0",
+        host="0.0.0.0",  # nosec B104 - Intentional for container deployment
         port=8000,
         reload=False,  # Disable reload to avoid import issues in containers
         log_level="info",
