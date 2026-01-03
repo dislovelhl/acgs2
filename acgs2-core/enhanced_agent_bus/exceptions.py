@@ -237,6 +237,36 @@ class MessageRoutingError(MessageError):
         )
 
 
+class RateLimitExceeded(MessageError):
+    """Raised when an agent exceeds its message rate limit."""
+
+    def __init__(
+        self,
+        agent_id: str,
+        limit: int,
+        window_seconds: int,
+        retry_after_ms: Optional[int] = None,
+    ) -> None:
+        self.agent_id = agent_id
+        self.limit = limit
+        self.window_seconds = window_seconds
+        self.retry_after_ms = retry_after_ms
+        message = (
+            f"Agent '{agent_id}' exceeded rate limit of {limit} messages per {window_seconds}s"
+        )
+        if retry_after_ms is not None:
+            message += f" (retry after {retry_after_ms}ms)"
+        super().__init__(
+            message=message,
+            details={
+                "agent_id": agent_id,
+                "limit": limit,
+                "window_seconds": window_seconds,
+                "retry_after_ms": retry_after_ms,
+            },
+        )
+
+
 # =============================================================================
 # Agent Registration Errors
 # =============================================================================
@@ -718,6 +748,7 @@ __all__ = [
     "MessageDeliveryError",
     "MessageTimeoutError",
     "MessageRoutingError",
+    "RateLimitExceeded",
     # Agent
     "AgentError",
     "AgentNotRegisteredError",
