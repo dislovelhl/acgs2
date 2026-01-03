@@ -4,11 +4,12 @@ Mamba-2 Hybrid Processor for ACGS-2 Constitutional AI Governance
 Implements breakthrough architecture for O(n) context handling with 4M+ token support.
 """
 
+import logging
+from typing import Any, Dict, List, Optional
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from typing import Optional, List, Dict, Any, Tuple
-import logging
 
 logger = logging.getLogger(__name__)
 

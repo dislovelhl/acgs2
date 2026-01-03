@@ -16,9 +16,9 @@ References:
 """
 
 from .democratic_constitution import (
-    DemocraticConstitutionalGovernance,
-    DeliberationResult,
     ConstitutionalAmendment,
+    DeliberationResult,
+    DemocraticConstitutionalGovernance,
 )
 
 __all__ = [

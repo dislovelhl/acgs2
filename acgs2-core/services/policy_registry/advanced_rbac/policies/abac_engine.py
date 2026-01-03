@@ -3,24 +3,20 @@ ACGS-2 Attribute-Based Access Control (ABAC) Engine
 Constitutional Hash: cdd01ef066bc6cf2
 """
 
-import asyncio
 import re
 import time
-from dataclasses import dataclass
-from datetime import datetime
-from typing import Any, Dict, List, Optional, Set, Tuple
 from collections import defaultdict
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 from ..models.abac_models import (
     ABACPolicy,
     ABACRule,
     AccessRequest,
-    PolicyDecision,
+    Attribute,
     AttributeCondition,
     ComparisonOperator,
     LogicalOperator,
-    AttributeCategory,
-    Attribute,
+    PolicyDecision,
 )
 
 

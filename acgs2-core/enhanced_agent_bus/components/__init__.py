@@ -6,12 +6,12 @@ Each component has a single responsibility and can be tested and maintained inde
 """
 
 from .agent_registry_manager import AgentRegistryManager
-from .message_bus import MessageBus
-from .constitutional_validator import ConstitutionalValidator
-from .tenant_manager import TenantManager
-from .metrics_collector import MetricsCollector
-from .lifecycle_manager import LifecycleManager
 from .configuration_manager import ConfigurationManager
+from .constitutional_validator import ConstitutionalValidator
+from .lifecycle_manager import LifecycleManager
+from .message_bus import MessageBus
+from .metrics_collector import MetricsCollector
+from .tenant_manager import TenantManager
 
 __all__ = [
     "AgentRegistryManager",

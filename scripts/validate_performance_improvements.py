@@ -8,9 +8,8 @@ are working correctly and providing the expected benefits.
 """
 
 import asyncio
-import time
 import sys
-from typing import Dict, List
+import time
 
 # Add the enhanced_agent_bus to path
 sys.path.insert(0, '/home/dislove/document/acgs2/acgs2-core')
@@ -25,14 +24,14 @@ sys.modules['config'].BusConfiguration = type('BusConfiguration', (), {
 })()
 
 try:
-    from enhanced_agent_bus.memory_profiler import get_memory_profiler, MemoryProfilingConfig
+    from enhanced_agent_bus.memory_profiler import MemoryProfilingConfig, get_memory_profiler
     from shared.json_utils import dumps
 except ImportError as e:
     print(f"Failed to import required modules: {e}")
     # Try fallback imports
     try:
-        from memory_profiler import get_memory_profiler, MemoryProfilingConfig
         from json_utils import dumps
+        from memory_profiler import MemoryProfilingConfig, get_memory_profiler
     except ImportError:
         print("Core modules not available, running basic validation only")
         BASIC_VALIDATION_ONLY = True

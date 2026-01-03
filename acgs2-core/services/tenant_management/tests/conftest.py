@@ -3,9 +3,8 @@ Test configuration for Tenant Management service.
 Constitutional Hash: cdd01ef066bc6cf2
 """
 
-import pytest
-from unittest.mock import MagicMock
 
+import pytest
 from shared.logging import init_service_logging
 
 # Initialize test logging

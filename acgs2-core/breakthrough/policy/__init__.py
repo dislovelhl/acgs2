@@ -16,9 +16,9 @@ References:
 """
 
 from .verified_policy_generator import (
-    VerifiedPolicyGenerator,
-    VerifiedPolicy,
     PolicyVerificationError,
+    VerifiedPolicy,
+    VerifiedPolicyGenerator,
 )
 
 __all__ = [

@@ -8,37 +8,33 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import httpx
-from fastapi import BackgroundTasks, FastAPI, HTTPException, Request, Response, Depends
+from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import ORJSONResponse
 from pydantic import BaseModel, Field
-from starlette.middleware.gzip import GZipMiddleware
-
 from shared.config import settings
+from shared.logging import (
+    create_correlation_middleware,
+    init_service_logging,
+    log_error,
+)
 from shared.metrics import (
+    HTTP_REQUEST_DURATION,
+    HTTP_REQUESTS_TOTAL,
     create_metrics_endpoint,
     set_service_info,
     track_request_metrics,
-    HTTP_REQUESTS_TOTAL,
-    HTTP_REQUEST_DURATION,
-)
-from shared.logging import (
-    init_service_logging,
-    create_correlation_middleware,
-    log_request_start,
-    log_request_end,
-    log_error,
-    get_logger,
 )
 from shared.security.auth import (
     AuthenticationMiddleware,
-    get_current_user_optional,
     UserClaims,
+    get_current_user_optional,
 )
 from shared.security.rate_limiter import (
-    create_rate_limit_middleware,
     add_rate_limit_headers,
+    create_rate_limit_middleware,
 )
+from starlette.middleware.gzip import GZipMiddleware
 
 # Initialize structured logging
 logger = init_service_logging("api-gateway")

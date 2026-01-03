@@ -16,10 +16,10 @@ except ImportError:
     from models import AgentMessage, MessageStatus  # type: ignore
 
 try:
+    from ..config import BusConfiguration
     from .deliberation_queue import DeliberationStatus, get_deliberation_queue
     from .impact_scorer import calculate_message_impact
     from .intent_classifier import IntentClassifier, IntentType
-    from ..config import BusConfiguration
 except (ImportError, ValueError):
     # Fallback for direct execution or testing
     try:

@@ -7,6 +7,7 @@ Constitutional Hash: cdd01ef066bc6cf2
 import os
 import sys
 
+
 def check_file_exists(filepath, description):
     """Check if a file exists and report status."""
     if os.path.exists(filepath):

@@ -5,16 +5,15 @@ Constitutional Hash: cdd01ef066bc6cf2
 """
 
 from ..real_time.dashboard_engine import (
+    KPI,
+    AlertRule,
+    AlertSeverity,
     Dashboard,
     DashboardPanel,
     DashboardType,
-    KPI,
     KPICategory,
     MetricType,
-    AlertRule,
-    AlertSeverity,
 )
-
 
 # Executive Dashboard KPIs
 executive_kpis = [
@@ -459,9 +458,9 @@ operational_dashboard = Dashboard(
 async def register_executive_dashboard():
     """Register the executive dashboard with KPIs and alerts"""
     from ..real_time.dashboard_engine import (
-        register_dashboard_kpi,
-        register_dashboard_alert,
         dashboard_engine,
+        register_dashboard_alert,
+        register_dashboard_kpi,
     )
 
     # Register KPIs
@@ -479,9 +478,9 @@ async def register_executive_dashboard():
 async def register_operational_dashboard():
     """Register the operational dashboard with KPIs and alerts"""
     from ..real_time.dashboard_engine import (
-        register_dashboard_kpi,
-        register_dashboard_alert,
         dashboard_engine,
+        register_dashboard_alert,
+        register_dashboard_kpi,
     )
 
     # Register KPIs

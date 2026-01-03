@@ -10,8 +10,7 @@ and operational performance across the ACGS-2 platform.
 import asyncio
 import logging
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional, Set
-from uuid import uuid4
+from typing import Any, Dict, List, Optional
 
 from .models import (
     AgentCapability,

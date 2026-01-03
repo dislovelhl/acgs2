@@ -13,7 +13,6 @@ from .models import (
     CreateTenantRequest,
     Tenant,
     TenantAccessPolicy,
-    TenantResourceQuota,
     TenantStatus,
     TenantTier,
     TenantUsageMetrics,

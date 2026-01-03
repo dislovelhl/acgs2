@@ -3,10 +3,7 @@ Edge case and error condition tests for API Gateway.
 Constitutional Hash: cdd01ef066bc6cf2
 """
 
-import json
-import pytest
-from unittest.mock import patch, MagicMock
-from fastapi.testclient import TestClient
+from unittest.mock import patch
 
 
 class TestEdgeCases:
@@ -57,6 +54,7 @@ class TestEdgeCases:
     def test_concurrent_requests(self, client, sample_feedback):
         """Test handling of concurrent requests."""
         import asyncio
+
         import httpx
 
         async def make_request():
@@ -243,7 +241,6 @@ class TestResourceLimits:
     def test_many_concurrent_connections(self, client, sample_feedback):
         """Test handling of many concurrent connections."""
         import threading
-        import time
 
         results = []
         errors = []

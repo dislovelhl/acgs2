@@ -7,17 +7,16 @@ Manages configurable approval workflows with role-based routing and escalation p
 import asyncio
 import json
 import logging
+from dataclasses import asdict, dataclass
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import Dict, List, Optional, Any, Tuple
-from dataclasses import dataclass, asdict
+from typing import Any, Dict, List, Optional
 from uuid import uuid4
 
 import redis.asyncio as redis
 from kafka import KafkaProducer
 
 from ..config.settings import settings
-
 
 logger = logging.getLogger(__name__)
 

@@ -4,7 +4,6 @@ ACGS-2 Auto Quality Fixer
 Automatically fixes common code quality issues
 """
 
-import os
 import re
 from pathlib import Path
 

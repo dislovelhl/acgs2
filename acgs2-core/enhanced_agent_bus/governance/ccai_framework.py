@@ -14,12 +14,12 @@ legitimate governance through democratic deliberation.
 
 import asyncio
 import logging
-from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional, Set, Protocol
-from enum import Enum
 import statistics
 import uuid
+from dataclasses import dataclass, field
+from datetime import datetime, timezone
+from enum import Enum
+from typing import Any, Dict, List, Optional
 
 # Import centralized constitutional hash
 try:
@@ -814,7 +814,7 @@ if __name__ == "__main__":
         # Test status
         status = await governance.get_governance_status()
         print(f"✅ Governance status: {status['status']}")
-        print(f"✅ Capabilities: Polis deliberation enabled")
+        print("✅ Capabilities: Polis deliberation enabled")
 
         # Register stakeholders
         tech_expert = await governance.register_stakeholder(
@@ -847,7 +847,7 @@ if __name__ == "__main__":
         # Run deliberation
         result = await governance.run_deliberation(proposal, stakeholders, duration_hours=24)
 
-        print(f"✅ Deliberation completed")
+        print("✅ Deliberation completed")
         print(f"   Participants: {result.total_participants}")
         print(f"   Statements: {result.statements_submitted}")
         print(f"   Clusters: {result.clusters_identified}")

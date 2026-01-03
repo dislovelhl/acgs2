@@ -8,13 +8,10 @@ to perform constitutional verification with metrics tracking.
 """
 
 import asyncio
-import json
 import logging
-from typing import Dict, Any
 
 from enhanced_agent_bus.deliberation_layer.llm_assistant import LLMAssistant
 from enhanced_agent_bus.deliberation_layer.pacar_verifier import PACARVerifier
-from enhanced_agent_bus.deliberation_layer.models import MessageRole
 
 # Configure logging
 logging.basicConfig(

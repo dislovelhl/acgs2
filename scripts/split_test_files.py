@@ -5,9 +5,8 @@ Automatically splits large test files into focused modules
 """
 
 import re
-import os
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Dict, List
 
 
 class TestFileSplitter:

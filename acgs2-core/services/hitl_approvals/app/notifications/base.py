@@ -5,9 +5,8 @@ Base notification interfaces and utilities
 import asyncio
 import logging
 from abc import ABC, abstractmethod
-from typing import Dict, Any, Optional
 from dataclasses import dataclass
-from datetime import datetime
+from typing import Any, Dict, Optional
 
 logger = logging.getLogger(__name__)
 

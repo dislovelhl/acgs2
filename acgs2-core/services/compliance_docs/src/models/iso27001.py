@@ -3,7 +3,8 @@ ISO 27001:2022 compliance models and data structures
 """
 
 from datetime import date, datetime
-from typing import List, Optional, Dict, Any
+from typing import Any, Dict, List, Optional
+
 from pydantic import BaseModel, Field
 
 

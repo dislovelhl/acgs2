@@ -3,8 +3,9 @@ Layer 3: Temporal Reasoning - Time-R1 Engine
 Constitutional Hash: cdd01ef066bc6cf2
 """
 from datetime import datetime
-from typing import List, Dict, Any
 from enum import Enum
+from typing import Any, Dict, List
+
 
 class EventType(Enum):
     DECISION = "decision"

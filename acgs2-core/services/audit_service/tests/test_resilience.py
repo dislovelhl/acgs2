@@ -1,8 +1,9 @@
 import asyncio
 import json
-from unittest.mock import MagicMock, AsyncMock, patch
-from services.audit_service.blockchain.solana.solana_client import SolanaClient, HAS_SOLANA
 import logging
+from unittest.mock import AsyncMock, MagicMock, patch
+
+from services.audit_service.blockchain.solana.solana_client import SolanaClient
 
 
 async def test_multi_rpc_failover():

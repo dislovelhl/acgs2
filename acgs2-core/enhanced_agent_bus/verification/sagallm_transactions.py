@@ -14,12 +14,12 @@ by ensuring governance decisions maintain state consistency.
 
 import asyncio
 import logging
+import uuid
+from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional, Callable, Awaitable, Protocol
 from enum import Enum
-from contextlib import asynccontextmanager
-import uuid
+from typing import Any, Awaitable, Callable, Dict, List, Optional
 
 # Import centralized constitutional hash
 try:

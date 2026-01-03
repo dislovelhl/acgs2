@@ -6,10 +6,8 @@ Constitutional Hash: cdd01ef066bc6cf2
 SECURITY: Uses shell=False for subprocess calls to prevent command injection.
 """
 
-import shlex
 import subprocess
 import sys
-from pathlib import Path
 
 
 def run_command(cmd_args: list, description: str) -> bool:

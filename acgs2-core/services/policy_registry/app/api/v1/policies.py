@@ -44,7 +44,7 @@ async def create_policy(
             name=name, tenant_id=tenant_id, content=content, format=format, description=description
         )
         return policy.model_dump()
-    except Exception as e:
+    except Exception:
         # Improved error handling - don't leak internal details
         raise HTTPException(
             status_code=400,
@@ -97,7 +97,7 @@ async def create_policy_version(
             ab_test_group=ab_group,
         )
         return policy_version.model_dump()
-    except ValueError as e:
+    except ValueError:
         # Improved error handling - don't leak internal details
         raise HTTPException(
             status_code=400,
@@ -129,7 +129,7 @@ async def activate_policy_version(
     try:
         await policy_service.activate_version(policy_id, version)
         return {"message": f"Policy {policy_id} version {version} activated"}
-    except ValueError as e:
+    except ValueError:
         # Improved error handling - don't leak internal details
         raise HTTPException(
             status_code=400,

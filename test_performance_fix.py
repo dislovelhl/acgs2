@@ -4,8 +4,8 @@ Quick Performance Test for MessageProcessor Optimizations
 """
 
 import asyncio
-import time
 import sys
+import time
 from pathlib import Path
 
 # Add the enhanced_agent_bus to path

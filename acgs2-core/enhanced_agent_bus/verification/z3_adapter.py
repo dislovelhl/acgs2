@@ -12,11 +12,11 @@ Key Features:
 - Constitutional compliance verification
 """
 
-import re
 import logging
-from typing import Dict, List, Any, Optional, Tuple, Union
+import re
 from dataclasses import dataclass
 from datetime import datetime
+from typing import Any, Dict, List, Optional
 
 try:
     import z3

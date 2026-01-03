@@ -6,11 +6,9 @@ Tracks code quality trends and provides alerts
 
 import json
 import os
-from pathlib import Path
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional
-import matplotlib.pyplot as plt
-import pandas as pd
+from pathlib import Path
+from typing import Dict, List
 
 
 class QualityMetricsMonitor:

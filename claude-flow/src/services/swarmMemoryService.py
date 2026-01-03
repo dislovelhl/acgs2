@@ -8,7 +8,6 @@ conversations, and learned patterns across sessions.
 COMPATIBILITY: Python 3.11+ compatible
 """
 
-import asyncio
 import json
 import logging
 import time

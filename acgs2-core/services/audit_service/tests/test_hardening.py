@@ -1,8 +1,9 @@
 import asyncio
-import os
 import json
-from services.audit_service.blockchain.solana.solana_client import SolanaClient
 import logging
+import os
+
+from services.audit_service.blockchain.solana.solana_client import SolanaClient
 
 
 async def test_env_wallet_loading():

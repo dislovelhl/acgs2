@@ -5,12 +5,10 @@ Constitutional Hash: cdd01ef066bc6cf2
 Shared utilities for integrating tenant isolation across ACGS-2 services.
 """
 
-import asyncio
 import logging
 from typing import Any, Callable, Dict, Optional
 
 import httpx
-
 from shared.config import get_config
 
 logger = logging.getLogger(__name__)

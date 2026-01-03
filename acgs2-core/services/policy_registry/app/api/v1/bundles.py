@@ -62,7 +62,7 @@ async def upload_bundle(
             metadata={"storage_path": storage_path},
         )
         return bundle
-    except Exception as e:
+    except Exception:
         # Improved error handling - don't leak internal details
         raise HTTPException(
             status_code=400,

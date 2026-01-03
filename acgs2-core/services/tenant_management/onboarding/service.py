@@ -8,11 +8,10 @@ validation, and automated configuration.
 
 import asyncio
 import logging
-from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional
-from uuid import uuid4
+from datetime import datetime
+from typing import Any, Dict, Optional
 
-from ...models import Tenant, TenantStatus, TenantTier
+from ...models import Tenant, TenantTier
 from ...service import TenantManagementService
 from .models import (
     ComplianceConfigurationRequest,

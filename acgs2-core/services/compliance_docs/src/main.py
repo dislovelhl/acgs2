@@ -3,24 +3,19 @@ ACGS-2 Compliance Documentation Service
 Generates compliance documentation and evidence exports for SOC 2, ISO 27001, GDPR, and EU AI Act
 """
 
-import logging
 import os
 from datetime import datetime, timezone
-from pathlib import Path
 
-from fastapi import FastAPI, Response
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
-
+from shared.logging import (
+    create_correlation_middleware,
+    init_service_logging,
+)
 from shared.metrics import (
     create_metrics_endpoint,
     set_service_info,
     track_request_metrics,
-)
-from shared.logging import (
-    init_service_logging,
-    create_correlation_middleware,
-    get_logger,
 )
 
 # Initialize structured logging

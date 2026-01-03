@@ -5,14 +5,13 @@ Constitutional Hash: cdd01ef066bc6cf2
 """
 
 import asyncio
-import json
 import logging
 import time
+from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import Any, Dict, List, Optional, Callable, Union
-from collections import defaultdict
+from typing import Any, Callable, Dict, List, Optional
 
 import prometheus_client as prom
 

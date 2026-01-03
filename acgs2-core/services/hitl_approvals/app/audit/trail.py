@@ -2,17 +2,16 @@
 Audit trail for HITL approval events
 """
 
-import logging
 import json
+import logging
+from dataclasses import asdict, dataclass
 from datetime import datetime
-from typing import Dict, List, Any, Optional
-from dataclasses import dataclass, asdict
+from typing import Any, Dict, List, Optional
 from uuid import uuid4
 
 import httpx
 
 from ..config.settings import settings
-
 
 logger = logging.getLogger(__name__)
 

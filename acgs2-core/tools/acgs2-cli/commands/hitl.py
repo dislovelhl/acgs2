@@ -6,11 +6,9 @@ Constitutional Hash: cdd01ef066bc6cf2
 import asyncio
 import json
 import sys
-from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any
 
 import click
-
 from acgs2_sdk import HITLApprovalsService, create_client
 
 
@@ -31,10 +29,10 @@ def hitl(ctx):
 def create(
     ctx,
     request_type: str,
-    payload: Optional[str],
-    payload_file: Optional[str],
-    risk_score: Optional[float],
-    required_approvers: Optional[int],
+    payload: str | None,
+    payload_file: str | None,
+    risk_score: float | None,
+    required_approvers: int | None,
 ):
     """Create a new approval request"""
 
@@ -45,11 +43,11 @@ def create(
                 hitl_service = HITLApprovalsService(client)
 
                 # Parse payload
-                request_payload: Dict[str, Any] = {}
+                request_payload: dict[str, Any] = {}
                 if payload:
                     request_payload = json.loads(payload)
                 elif payload_file:
-                    with open(payload_file, "r") as f:
+                    with open(payload_file) as f:
                         request_payload = json.load(f)
                 else:
                     click.secho("❌ Must provide either --payload or --payload-file", fg="red")
@@ -129,7 +127,7 @@ def show(ctx, request_id: str):
 @click.option("--limit", type=int, default=20, help="Number of results to show")
 @click.pass_context
 def list(
-    ctx, status: Optional[str], requester: Optional[str], pending_for: Optional[str], limit: int
+    ctx, status: str | None, requester: str | None, pending_for: str | None, limit: int
 ):
     """List approval requests"""
 
@@ -232,7 +230,7 @@ def escalate(ctx, request_id: str, reason: str):
 @click.argument("request_id")
 @click.option("--reason", help="Reason for cancellation")
 @click.pass_context
-def cancel(ctx, request_id: str, reason: Optional[str]):
+def cancel(ctx, request_id: str, reason: str | None):
     """Cancel an approval request"""
 
     async def cancel_request():

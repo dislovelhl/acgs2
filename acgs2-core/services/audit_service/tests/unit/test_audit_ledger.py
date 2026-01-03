@@ -3,12 +3,12 @@ Unit tests for audit ledger functionality.
 Constitutional Hash: cdd01ef066bc6cf2
 """
 
-import pytest
-import json
 from datetime import datetime, timezone
-from unittest.mock import patch, MagicMock, AsyncMock
+from unittest.mock import AsyncMock, MagicMock
 
-from ..core.audit_ledger import AuditLedger, AuditEntry
+import pytest
+
+from ..core.audit_ledger import AuditEntry, AuditLedger
 
 
 class TestAuditEntry:

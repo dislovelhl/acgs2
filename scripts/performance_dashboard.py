@@ -5,9 +5,9 @@ Analyzes performance trends and alerts on regressions
 """
 
 import json
-import glob
+from datetime import datetime
 from pathlib import Path
-from datetime import datetime, timedelta
+
 import matplotlib.pyplot as plt
 import pandas as pd
 

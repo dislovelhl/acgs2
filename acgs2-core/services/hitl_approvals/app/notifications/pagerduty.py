@@ -3,12 +3,11 @@ PagerDuty notification provider for HITL approvals
 """
 
 import logging
-from typing import Dict, Any
+from typing import Any, Dict
+
 import httpx
-import json
 
-from .base import NotificationProvider, NotificationMessage
-
+from .base import NotificationMessage, NotificationProvider
 
 logger = logging.getLogger(__name__)
 

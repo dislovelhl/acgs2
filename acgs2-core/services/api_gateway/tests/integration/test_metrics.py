@@ -3,8 +3,6 @@ Integration tests for metrics and monitoring.
 Constitutional Hash: cdd01ef066bc6cf2
 """
 
-import pytest
-import json
 from unittest.mock import patch
 
 
@@ -68,7 +66,7 @@ class TestMetricsIntegration:
 
         # Check that metrics were attempted to be collected
         # (We can't easily test the actual metric values without a full metrics registry)
-        from shared.metrics import HTTP_REQUESTS_TOTAL, HTTP_REQUEST_DURATION
+        from shared.metrics import HTTP_REQUEST_DURATION, HTTP_REQUESTS_TOTAL
 
         # These should be the metric objects (not None)
         assert HTTP_REQUESTS_TOTAL is not None
@@ -108,13 +106,13 @@ class TestStructuredLoggingIntegration:
         """Test that request logging follows structured format."""
         # This is hard to test directly without log capture,
         # but we can verify the logging imports are working
-        from shared.logging import init_service_logging, get_logger
+        from shared.logging import get_logger
 
         logger = get_logger("test")
         assert logger is not None
 
         # Verify logging functions exist
-        from shared.logging import log_request_start, log_request_end, log_error
+        from shared.logging import log_error, log_request_end, log_request_start
 
         assert callable(log_request_start)
         assert callable(log_request_end)
@@ -122,7 +120,7 @@ class TestStructuredLoggingIntegration:
 
     def test_business_event_logging(self, client, sample_feedback):
         """Test business event logging structure."""
-        from shared.logging import log_business_event, get_logger
+        from shared.logging import get_logger, log_business_event
 
         logger = get_logger("test")
 

@@ -134,8 +134,8 @@ class TestEnhancedAgentBusRedisIntegration:
             "redis.asyncio.ConnectionPool.from_url", return_value=mock_pool
         ) as mock_pool_from_url:
             with patch("redis.asyncio.Redis", return_value=mock_redis_client):
-                from enhanced_agent_bus.config import BusConfiguration
                 from enhanced_agent_bus.agent_bus import EnhancedAgentBus
+                from enhanced_agent_bus.config import BusConfiguration
                 from enhanced_agent_bus.registry import (
                     DEFAULT_REDIS_MAX_CONNECTIONS,
                     DEFAULT_REDIS_SOCKET_CONNECT_TIMEOUT,

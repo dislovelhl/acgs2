@@ -7,10 +7,9 @@ import asyncio
 import json
 import sys
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any
 
 import click
-
 from acgs2_sdk import ComplianceService, PolicyService, create_client
 
 
@@ -38,9 +37,9 @@ def create_policy(
     ctx,
     name: str,
     rules_file: str,
-    description: Optional[str],
-    tags: Optional[str],
-    compliance_tags: Optional[str],
+    description: str | None,
+    tags: str | None,
+    compliance_tags: str | None,
 ):
     """Create a new policy"""
 
@@ -51,7 +50,7 @@ def create_policy(
                 policy_service = PolicyService(client)
 
                 # Load rules from file
-                with open(rules_file, "r") as f:
+                with open(rules_file) as f:
                     rules = json.load(f)
 
                 policy_data = {
@@ -89,7 +88,7 @@ def create_policy(
 @click.option("--tags", help="Filter by tags (comma-separated)")
 @click.option("--limit", type=int, default=20, help="Number of results to show")
 @click.pass_context
-def list_policies(ctx, status: Optional[str], tags: Optional[str], limit: int):
+def list_policies(ctx, status: str | None, tags: str | None, limit: int):
     """List policies"""
 
     async def list():
@@ -98,7 +97,7 @@ def list_policies(ctx, status: Optional[str], tags: Optional[str], limit: int):
             async with create_client(sdk_config) as client:
                 policy_service = PolicyService(client)
 
-                params: Dict[str, Any] = {"page_size": limit}
+                params: dict[str, Any] = {"page_size": limit}
                 if status:
                     params["status"] = status
                 if tags:
@@ -186,12 +185,12 @@ def show_policy(ctx, policy_id: str):
 def update_policy(
     ctx,
     policy_id: str,
-    name: Optional[str],
-    rules_file: Optional[str],
-    description: Optional[str],
-    status: Optional[str],
-    tags: Optional[str],
-    compliance_tags: Optional[str],
+    name: str | None,
+    rules_file: str | None,
+    description: str | None,
+    status: str | None,
+    tags: str | None,
+    compliance_tags: str | None,
 ):
     """Update a policy"""
 
@@ -201,12 +200,12 @@ def update_policy(
             async with create_client(sdk_config) as client:
                 policy_service = PolicyService(client)
 
-                update_data: Dict[str, Any] = {}
+                update_data: dict[str, Any] = {}
 
                 if name:
                     update_data["name"] = name
                 if rules_file:
-                    with open(rules_file, "r") as f:
+                    with open(rules_file) as f:
                         update_data["rules"] = json.load(f)
                 if description:
                     update_data["description"] = description
@@ -333,7 +332,7 @@ def deploy_policy(ctx, policy_id: str):
 @click.option("--context", help="JSON test context")
 @click.option("--context-file", type=click.Path(exists=True), help="JSON file with test context")
 @click.pass_context
-def test_policy(ctx, policy_file: str, context: Optional[str], context_file: Optional[str]):
+def test_policy(ctx, policy_file: str, context: str | None, context_file: str | None):
     """Test a policy against sample context"""
 
     async def test():
@@ -343,7 +342,7 @@ def test_policy(ctx, policy_file: str, context: Optional[str], context_file: Opt
                 policy_service = PolicyService(client)
 
                 # Load policy from file
-                with open(policy_file, "r") as f:
+                with open(policy_file) as f:
                     policy_data = json.load(f)
 
                 # Create temporary policy
@@ -357,11 +356,11 @@ def test_policy(ctx, policy_file: str, context: Optional[str], context_file: Opt
 
                 try:
                     # Load test context
-                    test_context: Dict[str, Any] = {}
+                    test_context: dict[str, Any] = {}
                     if context:
                         test_context = json.loads(context)
                     elif context_file:
-                        with open(context_file, "r") as f:
+                        with open(context_file) as f:
                             test_context = json.load(f)
                     else:
                         click.secho("❌ Must provide either --context or --context-file", fg="red")

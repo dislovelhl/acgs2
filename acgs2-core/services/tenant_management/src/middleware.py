@@ -8,7 +8,7 @@ Middleware components for enforcing tenant isolation across ACGS-2 services.
 import logging
 from typing import Any, Callable, Dict, Optional
 
-from fastapi import Request, Response, HTTPException, status
+from fastapi import HTTPException, Request, Response, status
 from fastapi.responses import JSONResponse
 
 from .service import TenantManagementService

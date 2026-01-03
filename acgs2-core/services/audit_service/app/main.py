@@ -3,27 +3,23 @@ Audit Service - Main FastAPI Application
 Constitutional Hash: cdd01ef066bc6cf2
 """
 
-import logging
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from typing import Any, Dict, List
 
-from fastapi import FastAPI, HTTPException, Response
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-
-from ..core.audit_ledger import AuditLedger
+from shared.logging import (
+    create_correlation_middleware,
+    init_service_logging,
+)
 from shared.metrics import (
     create_metrics_endpoint,
     set_service_info,
     track_request_metrics,
 )
-from shared.logging import (
-    init_service_logging,
-    create_correlation_middleware,
-    log_business_event,
-    log_error,
-    get_logger,
-)
+
+from ..core.audit_ledger import AuditLedger
 
 # Centralized settings
 try:

@@ -6,11 +6,9 @@ Constitutional Hash: cdd01ef066bc6cf2
 import asyncio
 import json
 import sys
-from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any
 
 import click
-
 from acgs2_sdk import MLGovernanceService, create_client
 
 
@@ -42,8 +40,8 @@ def create_model(
     name: str,
     framework: str,
     model_type: str,
-    description: Optional[str],
-    accuracy: Optional[float],
+    description: str | None,
+    accuracy: float | None,
 ):
     """Create/register a new ML model"""
 
@@ -86,7 +84,7 @@ def create_model(
 @click.option("--type", "model_type", help="Filter by model type")
 @click.option("--limit", type=int, default=20, help="Number of results to show")
 @click.pass_context
-def list_models(ctx, framework: Optional[str], model_type: Optional[str], limit: int):
+def list_models(ctx, framework: str | None, model_type: str | None, limit: int):
     """List ML models"""
 
     async def list():
@@ -167,7 +165,7 @@ def show_model(ctx, model_id: str):
 @click.option("--accuracy", type=float, help="New accuracy score")
 @click.pass_context
 def update_model(
-    ctx, model_id: str, name: Optional[str], description: Optional[str], accuracy: Optional[float]
+    ctx, model_id: str, name: str | None, description: str | None, accuracy: float | None
 ):
     """Update ML model"""
 
@@ -177,7 +175,7 @@ def update_model(
             async with create_client(sdk_config) as client:
                 ml_service = MLGovernanceService(client)
 
-                update_data: Dict[str, Any] = {}
+                update_data: dict[str, Any] = {}
                 if name:
                     update_data["name"] = name
                 if description:
@@ -267,7 +265,7 @@ def check_drift(ctx, model_id: str):
 @click.argument("model_id")
 @click.option("--threshold", type=int, help="Feedback threshold for retraining")
 @click.pass_context
-def retrain_model(ctx, model_id: str, threshold: Optional[int]):
+def retrain_model(ctx, model_id: str, threshold: int | None):
     """Trigger model retraining"""
 
     async def retrain():
@@ -339,10 +337,10 @@ def predict(ctx, model_id: str, features: str, confidence: bool):
 def submit_feedback(
     ctx,
     model_id: str,
-    prediction_id: Optional[str],
+    prediction_id: str | None,
     feedback_type: str,
     value: str,
-    user: Optional[str],
+    user: str | None,
 ):
     """Submit feedback for model improvement"""
 
@@ -408,7 +406,7 @@ def create_ab_test(
     duration: int,
     split: float,
     metric: str,
-    description: Optional[str],
+    description: str | None,
 ):
     """Create an A/B test"""
 

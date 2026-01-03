@@ -144,7 +144,7 @@ async def issue_token(
         return {"access_token": token, "token_type": "bearer"}
     except HTTPException:
         raise
-    except Exception as e:
+    except Exception:
         # Improved error handling - don't leak internal details
         raise HTTPException(
             status_code=400,

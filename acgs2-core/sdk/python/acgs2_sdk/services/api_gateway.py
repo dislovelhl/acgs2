@@ -3,7 +3,7 @@ ACGS-2 API Gateway Service
 Constitutional Hash: cdd01ef066bc6cf2
 """
 
-from typing import TYPE_CHECKING, Any, Dict, List
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from acgs2_sdk.client import ACGS2Client
@@ -20,7 +20,7 @@ class APIGatewayService:
         """
         self._client = client
 
-    async def health_check(self) -> Dict[str, Any]:
+    async def health_check(self) -> dict[str, Any]:
         """Check API gateway health.
 
         Returns:
@@ -35,8 +35,8 @@ class APIGatewayService:
         rating: int,
         title: str,
         description: str = "",
-        metadata: Dict[str, Any] = None,
-    ) -> Dict[str, Any]:
+        metadata: dict[str, Any] = None,
+    ) -> dict[str, Any]:
         """Submit user feedback.
 
         Args:
@@ -63,7 +63,7 @@ class APIGatewayService:
 
         return await self._client.post("/feedback", json=data)
 
-    async def get_feedback_stats(self) -> Dict[str, Any]:
+    async def get_feedback_stats(self) -> dict[str, Any]:
         """Get feedback statistics.
 
         Returns:
@@ -71,7 +71,7 @@ class APIGatewayService:
         """
         return await self._client.get("/feedback/stats")
 
-    async def list_services(self) -> Dict[str, Any]:
+    async def list_services(self) -> dict[str, Any]:
         """List available services.
 
         Returns:

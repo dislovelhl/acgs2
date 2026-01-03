@@ -3,15 +3,10 @@ Test configuration and fixtures for API Gateway service.
 Constitutional Hash: cdd01ef066bc6cf2
 """
 
-import asyncio
-import pytest
-from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock
 
+import pytest
 from fastapi.testclient import TestClient
-from fastapi import FastAPI
-
-from shared.config import settings
 from shared.logging import init_service_logging
 
 # Initialize test logging

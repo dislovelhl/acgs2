@@ -4,11 +4,7 @@ Constitutional Hash: cdd01ef066bc6cf2
 """
 
 import json
-import pytest
-from pathlib import Path
-from unittest.mock import patch, MagicMock
-
-from fastapi.testclient import TestClient
+from unittest.mock import MagicMock, patch
 
 
 class TestHealthEndpoints:

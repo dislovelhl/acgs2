@@ -20,10 +20,10 @@ except ImportError:
     aioredis = None
     REDIS_AVAILABLE = False
 
-from ..deliberation_layer.llm_assistant import get_llm_assistant
-from .pacar_manager import PACARManager
-from .conversation import MessageRole
 from ..config import BusConfiguration
+from ..deliberation_layer.llm_assistant import get_llm_assistant
+from .conversation import MessageRole
+from .pacar_manager import PACARManager
 
 logger = logging.getLogger(__name__)
 

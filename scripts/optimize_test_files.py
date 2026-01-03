@@ -4,10 +4,9 @@ ACGS-2 Test File Optimization Script
 Analyzes and provides recommendations for splitting large test files
 """
 
-import os
 import re
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Dict, List
 
 
 class TestFileAnalyzer:
@@ -34,7 +33,7 @@ class TestFileAnalyzer:
         try:
             with open(file_path, "r", encoding="utf-8") as f:
                 content = f.read()
-        except Exception as e:
+        except Exception:
             return None
 
         lines = content.split("\n")
@@ -114,7 +113,7 @@ class TestFileAnalyzer:
             "line_count": analysis["line_count"],
             "issues": [
                 f"Moderately large file ({analysis['line_count']} lines)",
-                f"Multiple concerns in single file",
+                "Multiple concerns in single file",
             ],
             "recommended_splits": self._suggest_splits(analysis["classes"]),
             "priority_score": analysis["line_count"] + analysis["class_count"] * 10,

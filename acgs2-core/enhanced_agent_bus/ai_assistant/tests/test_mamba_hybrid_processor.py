@@ -5,25 +5,26 @@ Constitutional Hash: cdd01ef066bc6cf2
 Tests the breakthrough Mamba-2 hybrid architecture for 4M+ token context processing.
 """
 
+import os
+import sys
+from unittest.mock import Mock, patch
+
+import numpy as np
 import pytest
 import torch
-import numpy as np
-from unittest.mock import Mock, patch
-import sys
-import os
 
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 from mamba_hybrid_processor import (
+    CONSTITUTIONAL_HASH,
+    ConstitutionalMambaHybrid,
     MambaConfig,
+    MambaHybridManager,
     MambaSSM,
     SharedAttentionLayer,
-    ConstitutionalMambaHybrid,
-    MambaHybridManager,
     get_mamba_hybrid_processor,
     initialize_mamba_processor,
-    CONSTITUTIONAL_HASH
 )
 
 

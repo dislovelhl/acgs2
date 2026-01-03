@@ -9,12 +9,10 @@ Supports per-user, per-IP, and per-endpoint rate limits.
 import asyncio
 import time
 from dataclasses import dataclass, field
-from typing import Dict, Optional, Tuple, Union
-from collections import defaultdict
+from typing import Dict, Tuple
 
-from fastapi import HTTPException, Request, Response
+from fastapi import HTTPException, Request
 from fastapi.responses import JSONResponse
-
 from shared.logging import get_logger
 
 logger = get_logger(__name__)
@@ -356,8 +354,6 @@ def configure_rate_limits(
 # ============================================================================
 
 from shared.metrics import (
-    Counter,
-    Gauge,
     _get_or_create_counter,
     _get_or_create_gauge,
 )

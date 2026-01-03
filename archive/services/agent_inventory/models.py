@@ -8,10 +8,10 @@ agent lifecycle tracking, capability assessment, and operational visibility.
 
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional
 from uuid import uuid4
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field
 
 
 class AgentStatus(str, Enum):

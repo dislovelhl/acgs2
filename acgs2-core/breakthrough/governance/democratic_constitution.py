@@ -16,14 +16,14 @@ References:
 """
 
 import asyncio
-from dataclasses import dataclass, field
-from datetime import datetime, timedelta
-from typing import Any, Callable, Dict, List, Optional, Set
-from enum import Enum
-import uuid
 import logging
+import uuid
+from dataclasses import dataclass, field
+from datetime import datetime
+from enum import Enum
+from typing import Any, Dict, List, Optional, Set
 
-from .. import CONSTITUTIONAL_HASH, CONSENSUS_THRESHOLD
+from .. import CONSENSUS_THRESHOLD, CONSTITUTIONAL_HASH
 
 logger = logging.getLogger(__name__)
 

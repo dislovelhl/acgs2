@@ -2,10 +2,10 @@
 Pydantic models for compliance data structures
 """
 
-from .soc2 import *
-from .iso27001 import *
-from .gdpr import *
 from .euaiact import *
+from .gdpr import *
+from .iso27001 import *
+from .soc2 import *
 
 __all__ = [
     # SOC 2 models

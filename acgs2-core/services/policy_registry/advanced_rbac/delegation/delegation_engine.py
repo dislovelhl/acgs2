@@ -4,20 +4,16 @@ Advanced delegation capabilities with constraints and revocation
 Constitutional Hash: cdd01ef066bc6cf2
 """
 
-import asyncio
-import time
-from dataclasses import dataclass, field
+from collections import defaultdict
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional, Set, Tuple
-from collections import defaultdict
 
 from ..models.abac_models import (
-    DelegationGrant,
-    DelegationChain,
-    DelegationScope,
-    DelegationType,
-    AttributeCondition,
     AccessRequest,
+    AttributeCondition,
+    DelegationChain,
+    DelegationGrant,
+    DelegationScope,
 )
 
 

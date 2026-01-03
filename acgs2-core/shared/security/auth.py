@@ -5,15 +5,13 @@ Constitutional Hash: cdd01ef066bc6cf2
 Provides JWT-based authentication and role-based authorization for all services.
 """
 
-import time
 from datetime import datetime, timedelta
-from typing import Optional, Dict, Any, List
+from typing import List, Optional
 
-from fastapi import HTTPException, Depends, Request
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi import Depends, HTTPException, Request
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError, jwt
 from pydantic import BaseModel
-
 from shared.config import settings
 from shared.logging import get_logger
 

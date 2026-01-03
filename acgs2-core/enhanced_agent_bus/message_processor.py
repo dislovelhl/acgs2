@@ -6,6 +6,7 @@ from contextlib import nullcontext
 from typing import Any, Callable, Dict, List, Optional
 
 try:
+    from .config import BusConfiguration
     from .imports import (
         CIRCUIT_BREAKER_ENABLED,
         METERING_AVAILABLE,
@@ -24,8 +25,8 @@ try:
     from .models import CONSTITUTIONAL_HASH, AgentMessage, MessageStatus, MessageType, Priority
     from .utils import LRUCache
     from .validators import ValidationResult
-    from .config import BusConfiguration
 except (ImportError, ValueError):
+    from config import BusConfiguration  # type: ignore
     from imports import (
         CIRCUIT_BREAKER_ENABLED,  # type: ignore
         METERING_AVAILABLE,
@@ -43,7 +44,6 @@ except (ImportError, ValueError):
     from models import CONSTITUTIONAL_HASH, AgentMessage, MessageType, Priority  # type: ignore
     from utils import LRUCache  # type: ignore
     from validators import ValidationResult  # type: ignore
-    from config import BusConfiguration  # type: ignore
 
 logger = logging.getLogger(__name__)
 

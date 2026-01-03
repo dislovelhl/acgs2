@@ -3,11 +3,11 @@
 import pytest
 import torch
 from enhanced_agent_bus.context.mamba_hybrid import (
-    ConstitutionalMambaHybrid,
-    ConstitutionalContextProcessor,
     CONSTITUTIONAL_HASH,
+    ConstitutionalContextProcessor,
+    ConstitutionalMambaHybrid,
     Mamba2SSM,
-    SharedAttentionLayer
+    SharedAttentionLayer,
 )
 
 

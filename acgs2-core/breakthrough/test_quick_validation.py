@@ -7,20 +7,17 @@ Constitutional Hash: cdd01ef066bc6cf2
 Validates that all core components can be imported and basic functionality works.
 """
 
-import asyncio
 import sys
-from datetime import datetime
-from typing import Dict, Any
 
 # Import from __init__
 try:
     from . import (
+        CONSENSUS_THRESHOLD,
         CONSTITUTIONAL_HASH,
+        EDGE_CASE_ACCURACY_TARGET,
+        JAILBREAK_PREVENTION_TARGET,
         MAX_CONTEXT_LENGTH,
         VERIFICATION_THRESHOLD,
-        EDGE_CASE_ACCURACY_TARGET,
-        CONSENSUS_THRESHOLD,
-        JAILBREAK_PREVENTION_TARGET,
         Layer,
     )
     print("✅ Core constants imported successfully")

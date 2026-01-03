@@ -2,9 +2,10 @@
 Basic API tests for development environment
 """
 
-import pytest
-import httpx
 import asyncio
+
+import httpx
+import pytest
 
 
 @pytest.fixture

@@ -11,14 +11,15 @@ This breakthrough addresses Challenge 1: Attention & Context Solutions
 by enabling unlimited context length with maintained performance.
 """
 
+import logging
+import math
+from contextlib import contextmanager
+from dataclasses import dataclass
+from typing import Any, Dict, List, Optional, Tuple, Union
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from typing import Optional, List, Dict, Any, Tuple, Union
-import math
-import logging
-from dataclasses import dataclass
-from contextlib import contextmanager
 
 # Import centralized constitutional hash
 try:
@@ -263,7 +264,7 @@ class ConstitutionalMambaHybrid(nn.Module):
         # Memory management
         self.register_buffer('memory_cache', torch.zeros(1, 1, config.d_model))
 
-        logger.info(f"Initialized Constitutional Mamba Hybrid Processor")
+        logger.info("Initialized Constitutional Mamba Hybrid Processor")
         logger.info(f"Config: {config.num_mamba_layers} Mamba layers, "
                    f"shared attention: {config.use_shared_attention}")
         logger.info(f"Max context: {config.max_context_length:,} tokens")

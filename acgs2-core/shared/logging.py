@@ -21,7 +21,6 @@ except ImportError:
 
 from .constants import CONSTITUTIONAL_HASH
 
-
 # ============================================================================
 # Structured Logging Configuration
 # ============================================================================
@@ -205,7 +204,8 @@ def create_correlation_middleware():
         app.middleware("http")(create_correlation_middleware())
     """
     import uuid
-    from fastapi import Request, Response
+
+    from fastapi import Request
 
     async def correlation_middleware(request: Request, call_next):
         # Generate or extract correlation ID

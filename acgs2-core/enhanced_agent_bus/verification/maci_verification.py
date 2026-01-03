@@ -16,8 +16,8 @@ import asyncio
 import logging
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional, Union, Protocol
 from enum import Enum
+from typing import Any, Dict, List, Protocol
 
 # Import centralized constitutional hash
 try:

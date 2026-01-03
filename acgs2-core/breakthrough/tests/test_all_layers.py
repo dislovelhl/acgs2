@@ -18,7 +18,7 @@ def test_layer1_context():
 
 def test_layer2_verification():
     """Test Layer 2: Verification."""
-    from breakthrough.verification import MACIVerificationPipeline, MACIRole
+    from breakthrough.verification import MACIRole, MACIVerificationPipeline
     pipeline = MACIVerificationPipeline()
     assert pipeline.constitutional_hash == CONSTITUTIONAL_HASH
     assert MACIRole.EXECUTIVE.value == "executive"
@@ -55,8 +55,10 @@ def test_layer4_policy():
 def test_integrations():
     """Test Integrations."""
     from breakthrough.integrations import (
-        ACGS2MCPServer, ConstitutionalClassifier,
-        GovernanceGraph, ConstitutionalGuardrails
+        ACGS2MCPServer,
+        ConstitutionalClassifier,
+        ConstitutionalGuardrails,
+        GovernanceGraph,
     )
     
     mcp = ACGS2MCPServer()
@@ -71,7 +73,7 @@ def test_integrations():
 async def test_async_operations():
     """Test async operations."""
     from breakthrough.context import ConstitutionalMambaHybrid
-    from breakthrough.integrations import ConstitutionalClassifier, GovernanceState, GovernanceGraph
+    from breakthrough.integrations import ConstitutionalClassifier, GovernanceGraph, GovernanceState
     
     # Test Mamba processing
     processor = ConstitutionalMambaHybrid()

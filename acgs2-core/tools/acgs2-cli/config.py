@@ -6,7 +6,6 @@ Constitutional Hash: cdd01ef066bc6cf2
 import json
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
 
 
 @dataclass
@@ -14,13 +13,13 @@ class CLIConfig:
     """CLI configuration settings"""
 
     base_url: str = "http://localhost:8080"
-    api_key: Optional[str] = None
+    api_key: str | None = None
     tenant_id: str = "acgs-dev"
     timeout: float = 30.0
-    config_file: Optional[Path] = None
+    config_file: Path | None = None
 
     @classmethod
-    def load(cls, config_path: Optional[str] = None) -> "CLIConfig":
+    def load(cls, config_path: str | None = None) -> "CLIConfig":
         """Load configuration from file or environment"""
         config = cls()
 
@@ -34,13 +33,13 @@ class CLIConfig:
 
         if config_file.exists():
             try:
-                with open(config_file, "r") as f:
+                with open(config_file) as f:
                     data = json.load(f)
                     for key, value in data.items():
                         if hasattr(config, key):
                             setattr(config, key, value)
                 config.config_file = config_file
-            except Exception as e:
+            except Exception:
                 # Ignore config file errors, use defaults
                 pass
 
@@ -66,7 +65,7 @@ class CLIConfig:
 
 
 # Global configuration instance
-_config: Optional[CLIConfig] = None
+_config: CLIConfig | None = None
 
 
 def get_config() -> CLIConfig:

@@ -1,14 +1,13 @@
 import asyncio
-import time
-from services.audit_service.core.audit_ledger import AuditLedger, AuditLedgerConfig
 import logging
+import time
 
+from services.audit_service.core.audit_ledger import AuditLedger, AuditLedgerConfig
 from services.audit_service.core.blockchain_anchor_manager import (
     AnchorBackend,
     AnchorResult,
     AnchorStatus,
 )
-from shared.constants import CONSTITUTIONAL_HASH
 
 
 async def test_ledger_metrics():

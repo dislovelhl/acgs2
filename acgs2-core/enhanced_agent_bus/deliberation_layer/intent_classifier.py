@@ -451,7 +451,7 @@ Respond with ONLY the category name in lowercase."""
         if self.is_llm_available() and intent == IntentType.GENERAL:
             try:
                 # Prepare prompt for intent classification
-                system_prompt = f"""Classify the following user input into one of these categories:
+                system_prompt = """Classify the following user input into one of these categories:
 - factual: Question about facts, data, history, or specific entities.
 - creative: Request for story, poem, song, or creative writing.
 - reasoning: Complex logical problem, math, or step-by-step analysis.

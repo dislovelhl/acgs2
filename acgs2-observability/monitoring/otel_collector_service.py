@@ -7,12 +7,10 @@ providing unified monitoring, tracing, and logging capabilities.
 """
 
 import asyncio
-import json
 import logging
 import os
 import subprocess
-import time
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -457,8 +455,8 @@ class OTelIntegrationService:
         for service_name, info in self._service_registry.items():
             if info.get("telemetry_enabled"):
                 endpoints[service_name] = [
-                    f"otlp_grpc://localhost:4317",
-                    f"otlp_http://localhost:4318",
+                    "otlp_grpc://localhost:4317",
+                    "otlp_http://localhost:4318",
                 ]
         return endpoints
 

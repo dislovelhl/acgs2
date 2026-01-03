@@ -8,22 +8,21 @@ and access control in the ACGS-2 platform.
 """
 
 import uvicorn
-from fastapi import FastAPI, Request, Response
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
-
-from .api import router
-from .service import TenantManagementService
+from shared.logging import (
+    create_correlation_middleware,
+    init_service_logging,
+)
 from shared.metrics import (
     create_metrics_endpoint,
     set_service_info,
     track_request_metrics,
 )
-from shared.logging import (
-    init_service_logging,
-    create_correlation_middleware,
-    get_logger,
-)
+
+from .api import router
+from .service import TenantManagementService
 
 # Initialize structured logging
 logger = init_service_logging("tenant-management")

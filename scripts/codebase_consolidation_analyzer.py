@@ -6,16 +6,13 @@ Identifies redundant utilities and consolidation opportunities in the 52k+ Pytho
 
 import ast
 import hashlib
-import json
 import os
 import re
 import time
-from collections import Counter, defaultdict
-from dataclasses import dataclass, field
+from collections import defaultdict
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List, Set, Tuple
-
-import networkx as nx
+from typing import Dict, List
 
 
 @dataclass
@@ -144,7 +141,7 @@ class CodebaseConsolidationAnalyzer:
                 for imp in imports:
                     self.import_patterns[imp].append(str(file_path))
 
-            except (SyntaxError, UnicodeDecodeError) as e:
+            except (SyntaxError, UnicodeDecodeError):
                 # Skip files with syntax errors or encoding issues
                 continue
             except Exception as e:

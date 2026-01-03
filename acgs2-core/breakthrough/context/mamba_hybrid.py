@@ -15,13 +15,12 @@ Design Decisions:
 - Single shared attention reduces parameters while maintaining quality
 """
 
-import asyncio
-from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple
-from enum import Enum
 import hashlib
-import time
 import logging
+import time
+from dataclasses import dataclass, field
+from enum import Enum
+from typing import Any, Dict, List, Optional, Tuple
 
 from .. import CONSTITUTIONAL_HASH, MAX_CONTEXT_LENGTH
 

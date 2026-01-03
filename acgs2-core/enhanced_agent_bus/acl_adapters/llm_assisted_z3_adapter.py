@@ -13,11 +13,10 @@ import asyncio
 import logging
 import re
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple, Union
 from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional, Tuple
 
-from .z3_adapter import Z3Adapter, Z3Request, Z3Response, Z3AdapterConfig
-from .base import AdapterResult
+from .z3_adapter import Z3Adapter, Z3AdapterConfig, Z3Request, Z3Response
 
 # Import centralized constitutional hash
 try:
@@ -503,7 +502,7 @@ if __name__ == "__main__":
         # Test status
         status = await adapter.get_adapter_status()
         print(f"✅ Adapter status: {status['status']}")
-        print(f"✅ Capabilities: LLM + Z3 integration enabled")
+        print("✅ Capabilities: LLM + Z3 integration enabled")
 
         # Test constraint generation
         test_constraint = NaturalLanguageConstraint(

@@ -7,10 +7,9 @@ import asyncio
 import json
 import sys
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any
 
 import click
-
 from acgs2_sdk import ComplianceService, PolicyService, create_client
 
 
@@ -19,7 +18,7 @@ from acgs2_sdk import ComplianceService, PolicyService, create_client
 @click.option("--context", help="JSON context for testing")
 @click.option("--interactive", "-i", is_flag=True, help="Start interactive mode")
 @click.pass_context
-def playground(ctx, policy: Optional[str], context: Optional[str], interactive: bool):
+def playground(ctx, policy: str | None, context: str | None, interactive: bool):
     """Interactive policy playground for testing governance rules"""
 
     if not interactive and not policy:
@@ -38,7 +37,7 @@ def playground(ctx, policy: Optional[str], context: Optional[str], interactive: 
                 if policy:
                     if Path(policy).exists():
                         # Load from file
-                        with open(policy, "r") as f:
+                        with open(policy) as f:
                             policy_data = json.load(f)
                         current_policy = await policy_service.create(
                             {
@@ -54,7 +53,7 @@ def playground(ctx, policy: Optional[str], context: Optional[str], interactive: 
                         click.secho(f"📋 Loaded policy: {current_policy.name}", fg="blue")
 
                 # Load initial context if specified
-                current_context: Dict[str, Any] = {}
+                current_context: dict[str, Any] = {}
                 if context:
                     current_context = json.loads(context)
                     click.secho("📝 Loaded test context", fg="blue")
@@ -145,7 +144,7 @@ async def run_interactive_mode(
             elif command.startswith("load-context "):
                 parts = command.split(" ", 1)
                 if len(parts) > 1:
-                    with open(parts[1], "r") as f:
+                    with open(parts[1]) as f:
                         current_context = json.load(f)
                     click.secho("✅ Context loaded from file", fg="green")
                 else:
@@ -243,7 +242,7 @@ async def handle_load_policy(policy_service, temp_policies, policy_file):
             click.secho(f"❌ File not found: {policy_file}", fg="red")
             return
 
-        with open(policy_file, "r") as f:
+        with open(policy_file) as f:
             policy_data = json.load(f)
 
         policy = await policy_service.create(

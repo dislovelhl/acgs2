@@ -2,8 +2,9 @@
 Layer 2: Verification & Validation
 Constitutional Hash: cdd01ef066bc6cf2
 """
-from typing import Any
 from enum import Enum
+from typing import Any
+
 
 class MACIRole(Enum):
     EXECUTIVE = "executive"

@@ -96,8 +96,8 @@ async def health_check():
 from fastapi import APIRouter, Depends, HTTPException
 from shared.tenant_integration import (
     get_current_tenant,
-    validate_tenant_operation,
     inject_tenant_id,
+    validate_tenant_operation,
 )
 
 router = APIRouter()

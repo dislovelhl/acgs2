@@ -4,13 +4,13 @@ FastAPI application for the Enhanced Agent Bus service
 Constitutional Hash: cdd01ef066bc6cf2
 """
 
-import asyncio
 import logging
+import os
 from typing import Annotated, Any, Dict, Optional
+
 from fastapi import BackgroundTasks, FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
-import os
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)

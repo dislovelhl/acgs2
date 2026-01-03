@@ -7,7 +7,6 @@ import asyncio
 from unittest.mock import AsyncMock, patch
 
 import pytest
-
 from enhanced_agent_bus.config import BusConfiguration
 from enhanced_agent_bus.deliberation_layer.intent_classifier import (
     ClassificationResult,

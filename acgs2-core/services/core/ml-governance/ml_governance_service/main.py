@@ -4,9 +4,9 @@ Adaptive ML models with feedback loops and drift detection
 Constitutional Hash: cdd01ef066bc6cf2
 """
 
-from fastapi import FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(
     title="ACGS-2 ML Governance Service",

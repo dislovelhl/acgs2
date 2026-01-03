@@ -5,33 +5,28 @@ Human-in-the-Loop approval workflow engine for ACGS-2 AI governance.
 """
 
 import logging
-import sys
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Response
+from app.api.routes import router
+from app.config.settings import settings
+from app.core.approval_chain import approval_engine
+from app.notifications.base import notification_manager
+from app.notifications.pagerduty import PagerDutyProvider
+from app.notifications.slack import SlackProvider
+from app.notifications.teams import TeamsProvider
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
-
-from app.config.settings import settings
+from shared.logging import (
+    create_correlation_middleware,
+    init_service_logging,
+)
 from shared.metrics import (
     create_metrics_endpoint,
     set_service_info,
 )
-from shared.logging import (
-    init_service_logging,
-    create_correlation_middleware,
-    get_logger,
-)
-from app.core.approval_chain import approval_engine
-from app.notifications.base import notification_manager
-from app.notifications.slack import SlackProvider
-from app.notifications.teams import TeamsProvider
-from app.notifications.pagerduty import PagerDutyProvider
-from app.api.routes import router
-
 
 # Initialize structured logging
-from shared.logging import init_service_logging
 
 logger = init_service_logging("hitl-approvals")
 

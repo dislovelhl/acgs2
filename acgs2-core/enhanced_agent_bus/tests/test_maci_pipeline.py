@@ -1,18 +1,19 @@
 """Tests for MACI Verification Pipeline."""
 
-import pytest
 import asyncio
 from datetime import datetime
+
+import pytest
 from enhanced_agent_bus.verification.maci_pipeline import (
-    MACIVerificationPipeline,
-    ExecutiveAgent,
-    LegislativeAgent,
-    JudicialAgent,
-    GovernanceDecision,
-    VerificationResult,
-    ConstitutionalPrinciple,
+    CONSTITUTIONAL_HASH,
     AgentRole,
-    CONSTITUTIONAL_HASH
+    ConstitutionalPrinciple,
+    ExecutiveAgent,
+    GovernanceDecision,
+    JudicialAgent,
+    LegislativeAgent,
+    MACIVerificationPipeline,
+    VerificationResult,
 )
 
 

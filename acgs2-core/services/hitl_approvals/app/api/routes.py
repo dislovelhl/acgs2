@@ -3,15 +3,14 @@ FastAPI routes for HITL Approvals service
 """
 
 import logging
-from typing import Dict, List, Optional, Any
 from datetime import datetime
+from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, HTTPException, BackgroundTasks, Depends
+from fastapi import APIRouter, BackgroundTasks, HTTPException
 from pydantic import BaseModel, Field
 
-from ..core.approval_chain import approval_engine, ApprovalPriority, ApprovalStatus
-from ..notifications.base import notification_manager, NotificationMessage
-
+from ..core.approval_chain import ApprovalPriority, ApprovalStatus, approval_engine
+from ..notifications.base import NotificationMessage, notification_manager
 
 logger = logging.getLogger(__name__)
 
