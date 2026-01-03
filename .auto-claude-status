@@ -1,6 +1,6 @@
 {
   "active": true,
-  "spec": "018-policy-marketplace-and-community-templates",
+  "spec": "019-advanced-analytics-and-insights-dashboard",
   "state": "complete",
   "subtasks": {
     "completed": 23,
@@ -9,17 +9,17 @@
     "failed": 0
   },
   "phase": {
-    "current": "End-to-End Integration",
+    "current": "Integration & Testing",
     "id": null,
-    "total": 3
+    "total": 4
   },
   "workers": {
     "active": 0,
     "max": 1
   },
   "session": {
-    "number": 19,
-    "started_at": "2026-01-03T08:54:05.581042"
+    "number": 18,
+    "started_at": "2026-01-03T08:54:04.012080"
   },
-  "last_update": "2026-01-03T09:12:28.367746"
+  "last_update": "2026-01-03T09:01:28.120613"
 }
