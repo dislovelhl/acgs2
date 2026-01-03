@@ -8,10 +8,12 @@ and access control in the ACGS-2 platform.
 """
 
 import os
+
 import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
+
 from shared.logging import (
     create_correlation_middleware,
     init_service_logging,

@@ -13,14 +13,14 @@ by ensuring constitutional history maintains logical and temporal integrity.
 """
 
 import asyncio
-import logging
-from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional, Set, Tuple, Protocol
-from enum import Enum
 import hashlib
 import json
+import logging
 from collections import defaultdict
+from dataclasses import dataclass, field
+from datetime import datetime, timezone
+from enum import Enum
+from typing import Any, Dict, List, Optional, Set
 
 # Import centralized constitutional hash
 try:

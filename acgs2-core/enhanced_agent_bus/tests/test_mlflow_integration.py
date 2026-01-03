@@ -10,7 +10,7 @@ import logging
 import os
 import sys
 from datetime import datetime, timezone
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 

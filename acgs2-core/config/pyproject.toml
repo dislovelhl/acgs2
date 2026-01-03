@@ -32,7 +32,7 @@ exclude_lines = [
     "if TYPE_CHECKING:",
     "if typing.TYPE_CHECKING:",
     "except ImportError:",
-    "class .*\bProtocol\):",
+    'class .*\bProtocol\):',
 ]
 fail_under = 75
 show_missing = true

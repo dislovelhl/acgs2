@@ -13,22 +13,19 @@ Tests cover:
 """
 
 import io
-import tempfile
 from datetime import datetime, timezone
-from pathlib import Path
 from unittest.mock import patch
 
 import pytest
 from docx import Document
-
 from generators.docx_generator import (
     ComplianceDOCXGenerator,
     ComplianceDOCXStyles,
     DOCXTableBuilder,
+    _ensure_output_dir,
+    _get_output_path,
     generate_docx,
     generate_docx_to_buffer,
-    _get_output_path,
-    _ensure_output_dir,
 )
 from models.base import ComplianceFramework
 

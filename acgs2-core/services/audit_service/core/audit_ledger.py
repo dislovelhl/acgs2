@@ -43,6 +43,7 @@ except ImportError:
 
 try:
     import redis
+
     from shared.config import settings
 
     HAS_REDIS = True

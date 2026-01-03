@@ -13,13 +13,12 @@ by making policy generation mathematically verifiable.
 """
 
 import asyncio
+import hashlib
 import logging
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional, Tuple, Protocol
 from enum import Enum
-import re
-import hashlib
+from typing import Any, Dict, List, Optional, Tuple
 
 # Import centralized constitutional hash
 try:
@@ -910,7 +909,7 @@ if __name__ == "__main__":
         # Test status
         status = await generator.get_generator_status()
         print(f"✅ Generator status: {status['status']}")
-        print(f"✅ Capabilities: DafnyPro + AlphaVerus integration")
+        print("✅ Capabilities: DafnyPro + AlphaVerus integration")
 
         # Test policy generation
         test_spec = PolicySpecification(
@@ -923,7 +922,7 @@ if __name__ == "__main__":
 
         verified_policy = await generator.generate_verified_policy(test_spec)
 
-        print(f"✅ Policy generation completed")
+        print("✅ Policy generation completed")
         print(f"   Policy ID: {verified_policy.policy_id}")
         print(f"   Verification status: {verified_policy.verification_status.value}")
         print(f"   Confidence score: {verified_policy.confidence_score:.2f}")
@@ -933,7 +932,7 @@ if __name__ == "__main__":
         # Test self-play improvement
         improvement_metrics = await generator.self_play_round(num_policies=2)
 
-        print(f"✅ Self-play round completed")
+        print("✅ Self-play round completed")
         print(f"   Success rate: {improvement_metrics['success_rate']:.2f}")
         print(f"   Average confidence: {improvement_metrics['average_confidence']:.2f}")
         print(f"   Corpus size: {improvement_metrics['corpus_size']}")

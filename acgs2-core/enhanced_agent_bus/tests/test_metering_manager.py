@@ -8,6 +8,7 @@ Comprehensive tests for the MeteringManager class and factory function.
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+
 from enhanced_agent_bus.metering_manager import MeteringManager, create_metering_manager
 from enhanced_agent_bus.models import CONSTITUTIONAL_HASH, AgentMessage, MessageType, Priority
 

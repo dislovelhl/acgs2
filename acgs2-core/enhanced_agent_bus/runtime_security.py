@@ -27,10 +27,10 @@ except ImportError:
     CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
 
 try:
+    from .constitutional_classifier import ComplianceResult, get_constitutional_classifier
     from .security.tenant_validator import TenantValidator
     from .security_helpers import detect_prompt_injection
     from .validators import validate_constitutional_hash
-    from .constitutional_classifier import get_constitutional_classifier, ComplianceResult
 except ImportError:
     # Fallback for standalone usage
     detect_prompt_injection = None  # type: ignore

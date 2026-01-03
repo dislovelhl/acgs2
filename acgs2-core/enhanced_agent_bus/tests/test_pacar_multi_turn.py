@@ -3,14 +3,14 @@ Tests for PACAR multi-turn support.
 Constitutional Hash: cdd01ef066bc6cf2
 """
 
-import pytest
-from unittest.mock import AsyncMock, patch, MagicMock
-from datetime import datetime, timezone
+from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
+
+from enhanced_agent_bus.config import BusConfiguration
+from enhanced_agent_bus.sdpc.conversation import MessageRole
 from enhanced_agent_bus.sdpc.pacar_manager import PACARManager
 from enhanced_agent_bus.sdpc.pacar_verifier import PACARVerifier
-from enhanced_agent_bus.sdpc.conversation import MessageRole, ConversationState
-from enhanced_agent_bus.config import BusConfiguration
 
 
 @pytest.fixture

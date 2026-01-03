@@ -20,9 +20,8 @@ import statistics
 import sys
 import time
 from dataclasses import dataclass, field
-from pathlib import Path
-from typing import Any, Dict, List, Optional
-from unittest.mock import MagicMock, patch
+from typing import List
+from unittest.mock import patch
 
 import numpy as np
 import pytest
@@ -1016,7 +1015,7 @@ def run_benchmarks():
 
     # Batch scoring benchmark
     batch_sizes = [1, 8, 16, 32]
-    print(f"\nBatch Scoring:")
+    print("\nBatch Scoring:")
     print(f"{'Batch':<8} {'P50 (ms)':<12} {'P99 (ms)':<12} {'Throughput (req/s)':<20}")
     print("-" * 52)
 

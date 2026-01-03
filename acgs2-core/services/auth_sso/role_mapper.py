@@ -9,7 +9,7 @@ Maps Identity Provider group memberships to MACI roles:
 """
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import List
 
 from .config import IdPConfig
 from .models import RoleMappingRule
@@ -85,7 +85,7 @@ class RoleMapper:
         mappings = idp_config.role_mappings
 
         if not mappings:
-            logger.debug(f"No role mappings configured for IdP, using default")
+            logger.debug("No role mappings configured for IdP, using default")
             return [idp_config.default_role or self.default_role]
 
         # Sort by priority (higher first)

@@ -23,12 +23,10 @@ try:
     from .interfaces import ProcessingStrategy
     from .memory_profiler import ProfilingLevel, get_memory_profiler
     from .models import CONSTITUTIONAL_HASH, AgentMessage, MessageStatus, MessageType, Priority
+    from .runtime_security import get_runtime_security_scanner
     from .utils import LRUCache
     from .validators import ValidationResult
-    from .config import BusConfiguration
-    from .runtime_security import get_runtime_security_scanner
 except (ImportError, ValueError):
-    from config import BusConfiguration  # type: ignore
     from imports import (
         CIRCUIT_BREAKER_ENABLED,  # type: ignore
         METERING_AVAILABLE,
@@ -42,12 +40,13 @@ except (ImportError, ValueError):
         rust_bus,
     )
     from interfaces import ProcessingStrategy  # type: ignore
-    from memory_profiler import ProfilingLevel, get_memory_profiler  # type: ignore
+    from memory_profiler import get_memory_profiler  # type: ignore
     from models import CONSTITUTIONAL_HASH, AgentMessage, MessageType, Priority  # type: ignore
+    from runtime_security import get_runtime_security_scanner  # type: ignore
     from utils import LRUCache  # type: ignore
     from validators import ValidationResult  # type: ignore
-    from config import BusConfiguration  # type: ignore
-    from runtime_security import get_runtime_security_scanner  # type: ignore
+
+    from config import BusConfiguration  # type: ignore  # type: ignore
 
 logger = logging.getLogger(__name__)
 

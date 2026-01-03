@@ -1,7 +1,10 @@
-import pytest
+from unittest.mock import patch
+
 import numpy as np
-from unittest.mock import Mock, patch
-from enhanced_agent_bus.deliberation_layer.impact_scorer import ImpactScorer, ScoringConfig
+import pytest
+
+from enhanced_agent_bus.deliberation_layer.impact_scorer import ImpactScorer
+
 
 class TestImpactScorerOptimized:
     @pytest.fixture

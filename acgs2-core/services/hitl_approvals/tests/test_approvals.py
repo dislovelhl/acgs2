@@ -2,12 +2,11 @@
 Tests for HITL approvals API endpoints
 """
 
-import pytest
-from fastapi.testclient import TestClient
 from unittest.mock import AsyncMock, patch
 
+import pytest
+from fastapi.testclient import TestClient
 from src.main import app
-from src.core.models import ApprovalPriority
 
 
 @pytest.fixture

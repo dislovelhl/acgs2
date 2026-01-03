@@ -1,17 +1,17 @@
 """Tests for Z3 SMT Solver Integration."""
 
+
 import pytest
-import asyncio
-from datetime import datetime
+
 from enhanced_agent_bus.verification.z3_adapter import (
-    Z3SolverAdapter,
-    LLMAssistedZ3Adapter,
-    ConstitutionalZ3Verifier,
-    ConstitutionalPolicy,
-    Z3Constraint,
-    Z3VerificationResult,
     CONSTITUTIONAL_HASH,
-    verify_policy_formally
+    ConstitutionalPolicy,
+    ConstitutionalZ3Verifier,
+    LLMAssistedZ3Adapter,
+    Z3Constraint,
+    Z3SolverAdapter,
+    Z3VerificationResult,
+    verify_policy_formally,
 )
 
 

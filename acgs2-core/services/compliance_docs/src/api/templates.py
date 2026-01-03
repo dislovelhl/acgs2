@@ -16,7 +16,7 @@ from typing import Any
 from fastapi import APIRouter, HTTPException, Path
 from pydantic import BaseModel, Field
 
-from ..models.base import ComplianceFramework, ExportFormat
+from ..models.base import ComplianceFramework
 from ..template_engine import list_templates, template_exists
 
 logger = logging.getLogger(__name__)

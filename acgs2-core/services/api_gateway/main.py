@@ -4,7 +4,6 @@ Simple development API gateway for routing requests to services
 """
 
 import json
-import logging
 import secrets
 from datetime import datetime, timezone
 from pathlib import Path
@@ -14,40 +13,21 @@ from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import ORJSONResponse
 from pydantic import BaseModel, Field
-from shared.config import settings
-from shared.logging import (
-    create_correlation_middleware,
-    init_service_logging,
-    log_error,
-)
-from shared.otel_config import init_otel
-from shared.metrics import (
-    HTTP_REQUEST_DURATION,
-    HTTP_REQUESTS_TOTAL,
-    create_metrics_endpoint,
-    set_service_info,
-    track_request_metrics,
-)
-from shared.security.auth import (
-    AuthenticationMiddleware,
-    UserClaims,
-    get_current_user_optional,
-)
-from shared.security.rate_limiter import (
-    add_rate_limit_headers,
-    create_rate_limit_middleware,
-)
-from starlette.middleware.gzip import GZipMiddleware
 
 from routes import admin_sso_router, sso_router
 from shared.config import settings
 from shared.logging_config import (
     configure_logging,
     get_logger,
-    instrument_fastapi,
-    setup_opentelemetry,
 )
-from shared.middleware.correlation_id import add_correlation_id_middleware
+from shared.metrics import (
+    track_request_metrics,
+)
+from shared.otel_config import init_otel
+from shared.security.auth import (
+    UserClaims,
+    get_current_user_optional,
+)
 
 # Service name for logging and tracing
 SERVICE_NAME = "api_gateway"

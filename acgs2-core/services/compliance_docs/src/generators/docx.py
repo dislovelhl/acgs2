@@ -9,8 +9,8 @@ from typing import Any, Dict
 
 try:
     from docx import Document
-    from docx.shared import Inches, Pt
     from docx.enum.text import WD_ALIGN_PARAGRAPH
+    from docx.shared import Inches, Pt
 
     DOCX_AVAILABLE = True
 except ImportError:

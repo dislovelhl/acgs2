@@ -3,10 +3,11 @@ Model management and monitoring API endpoints
 """
 
 from typing import List, Optional
+
 from fastapi import APIRouter, HTTPException
 
 from ..core.engine import ml_engine
-from ..core.models import ModelMetrics, DriftDetectionResult
+from ..core.models import DriftDetectionResult, ModelMetrics
 
 router = APIRouter(prefix="/models", tags=["models"])
 

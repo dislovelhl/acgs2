@@ -7,14 +7,14 @@ import logging
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 
-from fastapi import FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
 import structlog
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
-from .core.engine import MLGovernanceEngine
-from .api.governance import router as governance_router
 from .api.feedback import router as feedback_router
+from .api.governance import router as governance_router
 from .api.models import router as models_router
+from .core.engine import MLGovernanceEngine
 
 # Configure structured logging
 logging.basicConfig(level=logging.INFO)

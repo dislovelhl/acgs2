@@ -6,13 +6,11 @@ Implements compensable transaction guarantees for LLM workflows.
 Bypasses self-verification limitations through LIFO rollback and formal checkpoints.
 """
 
-import asyncio
 import logging
-from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from enum import Enum
-from typing import Any, Callable, Dict, List, Optional, Awaitable
 import uuid
+from dataclasses import dataclass
+from enum import Enum
+from typing import Any, Awaitable, Callable, Dict, List, Optional
 
 try:
     from shared.constants import CONSTITUTIONAL_HASH

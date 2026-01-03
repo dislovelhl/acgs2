@@ -9,11 +9,11 @@ Implements JIT user provisioning:
 """
 
 import logging
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Protocol
-from dataclasses import dataclass
 
-from .models import SSOUser, IdPType
+from .models import IdPType, SSOUser
 
 logger = logging.getLogger(__name__)
 

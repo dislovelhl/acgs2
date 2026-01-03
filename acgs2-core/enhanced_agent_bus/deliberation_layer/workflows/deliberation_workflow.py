@@ -335,9 +335,9 @@ class DefaultDeliberationActivities(DeliberationActivities):
         Kafka, processed by VoteEventConsumer, and stored in Redis. This method polls
         Redis for election status and votes.
         """
-        from ..redis_election_store import get_election_store
-        from ..voting_service import VotingService
         import time
+
+        from ..redis_election_store import get_election_store
 
         # Get election store and voting service
         election_store = await get_election_store()

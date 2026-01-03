@@ -11,7 +11,7 @@ import os
 import sys
 from datetime import datetime, timezone
 from typing import Any, Dict, Optional
-from unittest.mock import AsyncMock, patch
+from unittest.mock import patch
 
 import pytest
 from httpx import ASGITransport, AsyncClient

@@ -25,20 +25,6 @@ from .vote_collector import (
     reset_vote_collector,
 )
 from .voting_service import Election, Vote, VotingService, VotingStrategy
-from .redis_integration import (
-    REDIS_AVAILABLE,
-    RedisDeliberationQueue,
-    RedisVotingSystem,
-    get_redis_deliberation_queue,
-    get_redis_voting_system,
-)
-from .vote_collector import (
-    VoteEvent,
-    VoteSession,
-    EventDrivenVoteCollector,
-    get_vote_collector,
-    reset_vote_collector,
-)
 
 # Lazy import for impact_scorer - requires numpy (optional ml dependency)
 _impact_scorer_module = None

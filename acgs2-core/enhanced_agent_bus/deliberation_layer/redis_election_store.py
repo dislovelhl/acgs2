@@ -8,7 +8,7 @@ Replaces in-memory storage with distributed, persistent storage.
 
 import json
 import logging
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 try:

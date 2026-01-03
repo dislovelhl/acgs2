@@ -29,7 +29,6 @@ try:
     from .validators import ValidationResult
 except (ImportError, ValueError):
     try:
-        from config import settings  # type: ignore
         from exceptions import (  # type: ignore
             OPAConnectionError,
             OPANotInitializedError,
@@ -37,6 +36,8 @@ except (ImportError, ValueError):
         )
         from models import CONSTITUTIONAL_HASH, AgentMessage  # type: ignore
         from validators import ValidationResult  # type: ignore
+
+        from config import settings  # type: ignore
     except ImportError:
         try:
             from enhanced_agent_bus.config import settings
@@ -49,11 +50,11 @@ except (ImportError, ValueError):
             from enhanced_agent_bus.validators import ValidationResult
         except ImportError:
             # Fallback for sharing with shared package
-            from shared.config import settings  # type: ignore
-
             from exceptions import OPANotInitializedError  # type: ignore
             from models import CONSTITUTIONAL_HASH  # type: ignore
             from validators import ValidationResult  # type: ignore
+
+            from shared.config import settings  # type: ignore
 
 # Import centralized Redis config for caching
 try:

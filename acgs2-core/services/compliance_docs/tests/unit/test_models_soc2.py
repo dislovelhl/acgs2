@@ -2,14 +2,14 @@
 Unit tests for SOC 2 compliance models
 """
 
-import pytest
 from datetime import date
 
+import pytest
 from src.models.soc2 import (
+    SOC2ComplianceReport,
     SOC2ControlMapping,
     SOC2Evidence,
     SOC2TrustServiceCriteria,
-    SOC2ComplianceReport
 )
 
 

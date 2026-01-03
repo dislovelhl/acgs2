@@ -23,8 +23,9 @@ try:
     from ..exceptions import AgentBusError
 except (ImportError, ValueError):
     try:
-        from config import BusConfiguration  # type: ignore
         from exceptions import AgentBusError  # type: ignore
+
+        from config import BusConfiguration  # type: ignore
     except ImportError:
         try:
             from enhanced_agent_bus.config import BusConfiguration

@@ -6,7 +6,6 @@ Tests for DI pattern implementation including interfaces, registries, and core i
 """
 
 import pytest
-
 from core import EnhancedAgentBus, MessageProcessor
 from interfaces import (
     AgentRegistry,

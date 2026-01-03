@@ -6,10 +6,10 @@ ACGS-2 Adaptive Governance Tests
 Constitutional Hash: cdd01ef066bc6cf2
 """
 
-import asyncio
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock
 
 import pytest
+
 from enhanced_agent_bus.adaptive_governance import (
     AdaptiveGovernanceEngine,
     AdaptiveThresholds,

@@ -5,19 +5,20 @@ Handles approval chain execution, escalation logic, and state management
 
 import asyncio
 import json
-from datetime import datetime, timezone, timedelta
-from typing import Dict, List, Optional, Any
+from datetime import datetime, timedelta, timezone
+from typing import Any, Dict, Optional
+
 import structlog
 
 from .models import (
     ApprovalChain,
-    ApprovalRequest,
-    ApprovalStep,
     ApprovalDecision,
-    ApprovalStatus,
     ApprovalPriority,
+    ApprovalRequest,
+    ApprovalStatus,
+    ApprovalStep,
+    AuditEntry,
     EscalationRule,
-    AuditEntry
 )
 
 logger = structlog.get_logger()

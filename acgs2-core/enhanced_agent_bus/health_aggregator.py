@@ -22,6 +22,7 @@ except ImportError:
 
 try:
     import pybreaker
+
     from shared.circuit_breaker import CircuitBreakerRegistry
 
     CIRCUIT_BREAKER_AVAILABLE = True

@@ -24,8 +24,8 @@ import os
 import sys
 import time
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
-from unittest.mock import MagicMock, Mock, patch
+from typing import Dict, List
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -36,14 +36,9 @@ if enhanced_agent_bus_dir not in sys.path:
 
 # Import modules for testing
 from ml_versioning import (
-    DEFAULT_CANDIDATE_ALIAS,
-    DEFAULT_CHAMPION_ALIAS,
     DEFAULT_MODEL_NAME,
     MLFLOW_AVAILABLE,
     MLflowVersionManager,
-    ModelVersionInfo,
-    RegistrationResult,
-    RollbackResult,
 )
 
 logger = logging.getLogger(__name__)

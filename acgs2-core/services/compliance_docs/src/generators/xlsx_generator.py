@@ -33,7 +33,6 @@ from openpyxl.worksheet.worksheet import Worksheet
 
 from ..models.base import ComplianceFramework
 
-
 logger = logging.getLogger(__name__)
 
 

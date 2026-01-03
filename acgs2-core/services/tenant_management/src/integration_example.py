@@ -143,6 +143,7 @@ async def health_check():
 
 # Example FastAPI router with tenant integration
 from fastapi import HTTPException
+
 from shared.tenant_integration import (
     get_current_tenant,
     inject_tenant_id,

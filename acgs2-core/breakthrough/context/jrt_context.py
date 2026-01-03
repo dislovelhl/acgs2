@@ -11,9 +11,9 @@ Research shows +11% recall improvement when critical sections
 are strategically repeated in the context window.
 """
 
+import logging
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple
-import logging
 
 from .. import CONSTITUTIONAL_HASH
 

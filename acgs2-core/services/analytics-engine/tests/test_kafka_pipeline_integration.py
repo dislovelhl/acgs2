@@ -9,15 +9,12 @@ Tests the end-to-end flow:
 4. Check analytics-engine logs for successful processing
 """
 
-import asyncio
-import json
 import logging
 import os
 import sys
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from typing import Any
-from unittest.mock import AsyncMock, MagicMock, patch
-from uuid import uuid4
+from unittest.mock import patch
 
 import pandas as pd
 import pytest

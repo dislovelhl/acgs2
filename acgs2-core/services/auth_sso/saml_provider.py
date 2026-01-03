@@ -17,8 +17,8 @@ from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 from urllib.parse import urlencode
 
-from .config import SPConfig, IdPConfig
-from .models import SSOUser, SSOProtocol, IdPType
+from .config import IdPConfig, SPConfig
+from .models import SSOProtocol, SSOUser
 
 logger = logging.getLogger(__name__)
 
@@ -26,8 +26,8 @@ logger = logging.getLogger(__name__)
 SAML_AVAILABLE = False
 try:
     from onelogin.saml2.auth import OneLogin_Saml2_Auth
-    from onelogin.saml2.utils import OneLogin_Saml2_Utils
     from onelogin.saml2.settings import OneLogin_Saml2_Settings
+    from onelogin.saml2.utils import OneLogin_Saml2_Utils
     SAML_AVAILABLE = True
 except ImportError:
     logger.warning(

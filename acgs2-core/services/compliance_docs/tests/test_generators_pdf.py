@@ -13,21 +13,18 @@ Tests cover:
 """
 
 import io
-import tempfile
 from datetime import datetime, timezone
-from pathlib import Path
 from unittest.mock import patch
 
 import pytest
-
 from generators.pdf_generator import (
     CompliancePDFGenerator,
     CompliancePDFStyles,
     PDFTableBuilder,
+    _ensure_output_dir,
+    _get_output_path,
     generate_pdf,
     generate_pdf_to_buffer,
-    _get_output_path,
-    _ensure_output_dir,
 )
 from models.base import ComplianceFramework
 

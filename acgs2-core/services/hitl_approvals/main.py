@@ -7,6 +7,10 @@ Human-in-the-Loop approval workflow engine for ACGS-2 AI governance.
 import logging
 from contextlib import asynccontextmanager
 
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
+
 from app.api.routes import router
 from app.config.settings import settings
 from app.core.approval_chain import approval_engine
@@ -14,9 +18,6 @@ from app.notifications.base import notification_manager
 from app.notifications.pagerduty import PagerDutyProvider
 from app.notifications.slack import SlackProvider
 from app.notifications.teams import TeamsProvider
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from shared.logging import create_correlation_middleware, init_service_logging
 from shared.metrics import create_metrics_endpoint, set_service_info
 
@@ -147,6 +148,7 @@ app = FastAPI(
 
 # Configure CORS based on environment for security
 import os
+
 cors_origins = os.getenv("CORS_ALLOWED_ORIGINS", "").split(",")
 if not cors_origins or cors_origins == [""]:
     # Default secure configuration - no external origins allowed

@@ -8,21 +8,20 @@ including message processing for all 12 message types, rate limiting,
 circuit breaker patterns, and comprehensive error handling.
 """
 
-import asyncio
 import logging
 import os
 import uuid
 from contextvars import ContextVar
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Annotated, Any, Dict, List, Optional, Union
+from typing import Annotated, Any, Dict, List, Optional
 
 from fastapi import BackgroundTasks, FastAPI, Header, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from slowapi import Limiter, _rate_limit_exceeded_handler
-from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
+from slowapi.util import get_remote_address
 
 try:
     from shared.logging import create_correlation_middleware, init_service_logging
@@ -35,11 +34,11 @@ except ImportError:
     create_correlation_middleware = None
 
 try:
-    from .models import AgentMessage, MessageType, Priority, MessageStatus
     from .message_processor import MessageProcessor
+    from .models import AgentMessage, MessageStatus, MessageType, Priority
 except (ImportError, ValueError):
-    from models import AgentMessage, MessageType, Priority, MessageStatus # type: ignore
-    from message_processor import MessageProcessor # type: ignore
+    from message_processor import MessageProcessor  # type: ignore
+    from models import AgentMessage, MessageType, Priority  # type: ignore
 
 # Initialize Limiter
 limiter = Limiter(key_func=get_remote_address)
@@ -51,8 +50,8 @@ correlation_id_var: ContextVar[str] = ContextVar('correlation_id', default='unkn
 RATE_LIMITING_AVAILABLE = False
 try:
     from slowapi import Limiter, _rate_limit_exceeded_handler
-    from slowapi.util import get_remote_address
     from slowapi.errors import RateLimitExceeded
+    from slowapi.util import get_remote_address
     RATE_LIMITING_AVAILABLE = True
 except ImportError:
     logger.warning("slowapi not available - rate limiting disabled")

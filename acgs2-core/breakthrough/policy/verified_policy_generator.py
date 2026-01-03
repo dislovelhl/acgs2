@@ -15,14 +15,13 @@ References:
 - DafnyPro: LLM-Assisted Proofs (POPL 2026)
 """
 
-import asyncio
-from dataclasses import dataclass, field
-from datetime import datetime
-from typing import Any, Dict, List, Optional, Tuple
-from enum import Enum
-import uuid
 import logging
 import re
+import uuid
+from dataclasses import dataclass, field
+from datetime import datetime
+from enum import Enum
+from typing import Any, Dict, List, Optional
 
 from .. import CONSTITUTIONAL_HASH, VERIFICATION_THRESHOLD
 
@@ -117,8 +116,8 @@ class LLMProposer:
             )
 
             proposals.append(
-                f"A policy combining multiple verified policies with "
-                f"conflict resolution"
+                "A policy combining multiple verified policies with "
+                "conflict resolution"
             )
 
         # Default challenging proposals

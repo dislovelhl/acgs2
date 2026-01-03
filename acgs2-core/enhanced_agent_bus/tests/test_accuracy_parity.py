@@ -21,7 +21,7 @@ The validation dataset covers:
 import json
 import logging
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Tuple
 from unittest.mock import patch
 
 import numpy as np
@@ -29,13 +29,11 @@ import pytest
 
 # Import the module under test
 from enhanced_agent_bus.deliberation_layer.impact_scorer import (
-    ImpactScorer,
     ONNX_AVAILABLE,
     TRANSFORMERS_AVAILABLE,
-    ScoringConfig,
+    ImpactScorer,
     reset_impact_scorer,
 )
-
 
 logger = logging.getLogger(__name__)
 

@@ -8,6 +8,7 @@ from typing import Any, Dict
 from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+
 from shared.audit_client import AuditClient
 from shared.logging import (
     create_correlation_middleware,

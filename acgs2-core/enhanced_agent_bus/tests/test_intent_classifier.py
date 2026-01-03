@@ -3,12 +3,12 @@ Unit tests for SDPC IntentClassifier.
 Constitutional Hash: cdd01ef066bc6cf2
 """
 
-import asyncio
+
+from unittest.mock import AsyncMock, patch
 
 import pytest
-from unittest.mock import AsyncMock, patch
+
 from enhanced_agent_bus.deliberation_layer.intent_classifier import IntentClassifier, IntentType
-from enhanced_agent_bus.config import BusConfiguration
 
 
 def test_classify_factual():

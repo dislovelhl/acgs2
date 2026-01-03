@@ -522,7 +522,6 @@ class RedisVotingSystem:
             # Subscribe to vote channel
             await self.subscribe_to_votes(item_id)
 
-            import asyncio
             deadline = datetime.now(timezone.utc).timestamp() + timeout_seconds
 
             while len(collected_votes) < required_votes:

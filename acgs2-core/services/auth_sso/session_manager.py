@@ -9,15 +9,16 @@ Manages SSO sessions including:
 - Logout handling
 """
 
-import jwt
 import logging
 import os
 import secrets
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
 
+import jwt
+
 from .config import SSOConfig
-from .models import SSOSession, SSOUser, IdPType
+from .models import IdPType, SSOSession, SSOUser
 
 logger = logging.getLogger(__name__)
 

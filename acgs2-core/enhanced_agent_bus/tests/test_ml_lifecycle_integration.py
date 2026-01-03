@@ -20,13 +20,11 @@ These tests verify the integration between:
 - adaptive_governance (AdaptiveGovernanceEngine)
 """
 
-import asyncio
 import logging
 import os
 import sys
 from datetime import datetime, timezone
-from typing import Any, Dict, List
-from unittest.mock import AsyncMock, MagicMock, Mock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -38,16 +36,12 @@ if enhanced_agent_bus_dir not in sys.path:
 # Import modules for testing (alphabetically sorted for ruff I001)
 from ab_testing import (
     ABTestRouter,
-    CohortMetrics,
     CohortType,
     ComparisonResult,
-    MetricsComparison,
     PromotionResult,
     PromotionStatus,
-    RoutingResult,
 )
 from drift_monitoring import (
-    EVIDENTLY_AVAILABLE,
     PANDAS_AVAILABLE,
     DriftDetector,
     DriftReport,
@@ -58,7 +52,6 @@ from drift_monitoring import (
 from feedback_handler import (
     FeedbackEvent,
     FeedbackHandler,
-    FeedbackResponse,
     FeedbackType,
     OutcomeStatus,
 )
@@ -68,16 +61,10 @@ from ml_versioning import (
     DEFAULT_MODEL_NAME,
     MLFLOW_AVAILABLE,
     MLflowVersionManager,
-    ModelVersionInfo,
-    RegistrationResult,
-    RollbackResult,
 )
 from online_learning import (
     KAFKA_AVAILABLE,
-    NUMPY_AVAILABLE,
     RIVER_AVAILABLE,
-    LearningResult,
-    LearningStats,
     LearningStatus,
     OnlineLearningPipeline,
     RiverSklearnAdapter,

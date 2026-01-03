@@ -33,8 +33,8 @@ from typing import Optional
 
 from sqlalchemy import DateTime, Index, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
-from shared.database import Base
 
+from shared.database import Base
 
 # Default expiration time for SAML requests (5 minutes)
 DEFAULT_REQUEST_EXPIRY_MINUTES = 5

@@ -3,15 +3,15 @@ Approval request API endpoints
 """
 
 from typing import List, Optional
-from fastapi import APIRouter, HTTPException, Depends
-from pydantic import BaseModel
+
+from fastapi import APIRouter, HTTPException
 
 from ..core.engine import ApprovalEngine
 from ..core.models import (
-    CreateApprovalRequest,
     ApprovalResponse,
+    ApprovalStatus,
     ApprovalStatusResponse,
-    ApprovalStatus
+    CreateApprovalRequest,
 )
 
 router = APIRouter(prefix="/approvals", tags=["approvals"])

@@ -3,12 +3,14 @@ CLI for starting the ACGS-2 MCP Server.
 Constitutional Hash: cdd01ef066bc6cf2
 """
 
-import asyncio
 import argparse
+import asyncio
 import logging
 import sys
-from .server import MCPServer, create_mcp_server
+
 from .config import MCPConfig, TransportType
+from .server import create_mcp_server
+
 
 def main():
     parser = argparse.ArgumentParser(description="ACGS-2 MCP Server")

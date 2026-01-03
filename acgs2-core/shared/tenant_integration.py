@@ -9,6 +9,7 @@ import logging
 from typing import Any, Callable, Dict, Optional
 
 import httpx
+
 from shared.config import get_config
 
 logger = logging.getLogger(__name__)

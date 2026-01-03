@@ -8,6 +8,7 @@ Comprehensive tests for validation strategy implementations.
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+
 from enhanced_agent_bus.models import CONSTITUTIONAL_HASH, AgentMessage
 from enhanced_agent_bus.validation_strategies import (
     CompositeValidationStrategy,

@@ -10,6 +10,9 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any
 
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from pydantic import BaseModel
+
 from app.models.schemas import (
     AnalysisRequest,
     AnalysisResponse,
@@ -25,8 +28,6 @@ from app.utils.constitutional import (
     ensure_constitutional_compliance,
 )
 from app.utils.logging import get_logger, log_api_request, log_api_response
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
-from pydantic import BaseModel
 
 logger = get_logger("api.v1")
 

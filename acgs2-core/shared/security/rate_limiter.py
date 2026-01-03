@@ -48,6 +48,7 @@ from typing import Dict, List, Optional, Tuple
 
 from fastapi import HTTPException, Request
 from fastapi.responses import JSONResponse
+
 from shared.logging import get_logger
 
 logger = get_logger(__name__)

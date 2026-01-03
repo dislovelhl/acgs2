@@ -13,7 +13,7 @@ import logging
 import os
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
 
 import numpy as np
 
@@ -120,7 +120,6 @@ class ImpactScorer:
                 self.tokenizer = AutoTokenizer.from_pretrained(model_name)
                 if self._onnx_enabled:
                     import pathlib
-                    import os
 
                     # Path to the optimized ONNX model
                     model_dir = pathlib.Path(__file__).parent / "optimized_models"

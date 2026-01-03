@@ -6,6 +6,7 @@ Constitutional Hash: cdd01ef066bc6cf2
 from unittest.mock import MagicMock
 
 import pytest
+
 from shared.logging import init_service_logging
 
 # Initialize test logging

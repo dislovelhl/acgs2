@@ -1,13 +1,13 @@
+from unittest.mock import AsyncMock, Mock, patch
+
 import pytest
-import asyncio
-from unittest.mock import Mock, patch, AsyncMock
-from datetime import datetime, timezone
+
 from enhanced_agent_bus.deliberation_layer.workflows.deliberation_workflow import (
-    DeliberationWorkflow,
-    DeliberationWorkflowInput,
     DefaultDeliberationActivities,
-    Vote
+    DeliberationWorkflow,
+    Vote,
 )
+
 
 class TestDeliberationWorkflowOptimized:
     @pytest.fixture

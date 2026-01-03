@@ -9,6 +9,7 @@ import asyncio
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+
 from enhanced_agent_bus.models import CONSTITUTIONAL_HASH
 
 # Use package-relative imports to maintain class identity

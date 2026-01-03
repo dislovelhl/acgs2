@@ -6,11 +6,11 @@ Fast neural classifier for constitutional compliance checking.
 Blocks 95% of jailbreak attempts while reducing over-refusals.
 """
 
-import logging
 import asyncio
-from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+import logging
 import time
+from dataclasses import dataclass, field
+from typing import Any, Dict, Optional
 
 try:
     from shared.constants import CONSTITUTIONAL_HASH
@@ -21,13 +21,12 @@ logger = logging.getLogger(__name__)
 
 # Backend Detection
 try:
-    import torch
     import numpy as np
+    import torch
     from transformers import AutoModel, AutoTokenizer
     TRANSFORMERS_AVAILABLE = True
 except ImportError:
     TRANSFORMERS_AVAILABLE = False
-    import numpy as np
 
 @dataclass
 class ComplianceResult:

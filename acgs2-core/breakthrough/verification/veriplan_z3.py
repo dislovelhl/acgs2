@@ -14,14 +14,12 @@ References:
 - Z3 SMT Solver
 """
 
-import asyncio
-from dataclasses import dataclass, field
-from datetime import datetime
-from typing import Any, Dict, List, Optional, Tuple, Union
-from enum import Enum
-import uuid
 import logging
 import re
+import uuid
+from dataclasses import dataclass, field
+from enum import Enum
+from typing import Any, Dict, List, Optional, Tuple
 
 from .. import CONSTITUTIONAL_HASH
 

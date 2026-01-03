@@ -5,11 +5,9 @@ Generates compliance documentation and evidence exports for SOC 2, ISO 27001, GD
 
 import logging
 from datetime import datetime, timezone
-from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)

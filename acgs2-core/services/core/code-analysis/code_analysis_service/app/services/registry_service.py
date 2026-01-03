@@ -17,6 +17,7 @@ import time
 from datetime import datetime, timezone
 
 import httpx
+
 from app.utils.constitutional import (
     CONSTITUTIONAL_HASH,
     ensure_constitutional_compliance,

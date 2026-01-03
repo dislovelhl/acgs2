@@ -8,18 +8,11 @@ Implements hybrid classification with LLM fallback for ambiguous cases.
 
 import json
 import logging
-import json
 from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple
-from urllib.parse import urlparse
 
 import litellm
-from ..config import BusConfiguration
 
-import litellm
-from ..config import BusConfiguration
-
-import litellm
 from ..config import BusConfiguration
 
 
@@ -327,7 +320,7 @@ Respond with ONLY a JSON object in this exact format:
         if intent == IntentType.GENERAL and self.config.llm_model:
             try:
                 # Prepare prompt for intent classification
-                system_prompt = f"""
+                system_prompt = """
                 Classify the following user input into one of these categories:
                 - factual: Question about facts, data, history, or specific entities.
                 - creative: Request for story, poem, song, or creative writing.

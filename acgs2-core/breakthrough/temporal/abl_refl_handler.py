@@ -16,13 +16,12 @@ Design Principles:
 - Constitutional: All reflection grounded in immutable principles
 """
 
-import asyncio
 import hashlib
 import logging
 import time
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple, Protocol, Callable
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from .. import CONSTITUTIONAL_HASH
 

@@ -1,7 +1,9 @@
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
+
 from enhanced_agent_bus.deliberation_layer.llm_assistant import LLMAssistant
-import time
+
 
 @pytest.mark.asyncio
 async def test_llm_metrics_recording():

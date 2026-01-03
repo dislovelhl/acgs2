@@ -25,6 +25,7 @@ except ImportError:
 
 try:
     import pybreaker
+
     from shared.circuit_breaker import (
         CircuitBreakerConfig,
         get_circuit_breaker,

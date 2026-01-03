@@ -10,16 +10,14 @@ Validates:
 - Concurrent session support
 """
 
-import asyncio
+
 import pytest
-from datetime import datetime, timezone
-from unittest.mock import AsyncMock, MagicMock, patch
 
 # Import test targets
 from enhanced_agent_bus.deliberation_layer.vote_collector import (
+    EventDrivenVoteCollector,
     VoteEvent,
     VoteSession,
-    EventDrivenVoteCollector,
     get_vote_collector,
     reset_vote_collector,
 )

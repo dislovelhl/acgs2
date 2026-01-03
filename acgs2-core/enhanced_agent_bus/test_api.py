@@ -2,7 +2,6 @@
 Basic API tests for development environment
 """
 
-import asyncio
 
 import httpx
 import pytest

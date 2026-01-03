@@ -5,6 +5,7 @@ Integration tests for SDPC Phase 2 Verification Layer
 from unittest.mock import AsyncMock
 
 import pytest
+
 from enhanced_agent_bus.message_processor import MessageProcessor
 from enhanced_agent_bus.models import AgentMessage, MessageType
 

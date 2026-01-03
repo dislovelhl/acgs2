@@ -3,9 +3,11 @@ Integration Tests for PACAR API Support
 Constitutional Hash: cdd01ef066bc6cf2
 """
 
+from unittest.mock import patch
+
 import pytest
 from fastapi.testclient import TestClient
-from unittest.mock import patch
+
 from enhanced_agent_bus.api import app
 
 client = TestClient(app)

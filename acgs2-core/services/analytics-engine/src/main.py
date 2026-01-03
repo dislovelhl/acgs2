@@ -30,9 +30,9 @@ from typing import Any, Dict, List, Optional
 
 import pandas as pd
 
-from .anomaly_detector import AnomalyDetector, AnomalyDetectionResult
+from .anomaly_detector import AnomalyDetectionResult, AnomalyDetector
 from .data_processor import GovernanceDataProcessor, ProcessedMetrics
-from .insight_generator import InsightGenerator, InsightGenerationResult
+from .insight_generator import InsightGenerationResult, InsightGenerator
 from .pdf_exporter import PDFExporter, PDFExportResult, PDFReportMetadata
 from .predictor import ViolationForecast, ViolationPredictor
 

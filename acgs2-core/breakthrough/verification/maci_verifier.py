@@ -16,13 +16,12 @@ References:
 - MACI: Multi-Agent Collaborative Intelligence (arXiv:2501.16689)
 """
 
-import asyncio
+import logging
+import uuid
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Callable, Awaitable
 from enum import Enum
-import uuid
-import logging
+from typing import Any, Dict, List, Optional
 
 from .. import CONSTITUTIONAL_HASH
 

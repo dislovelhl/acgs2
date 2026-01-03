@@ -23,9 +23,10 @@ import uuid
 from datetime import datetime, timezone
 from typing import Optional
 
-from shared.database import Base
 from sqlalchemy import Boolean, DateTime, Enum, Index, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
+
+from shared.database import Base
 
 
 class SSOProviderType(str, enum.Enum):

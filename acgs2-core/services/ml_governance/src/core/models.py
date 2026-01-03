@@ -4,9 +4,10 @@ Core ML models and data structures for adaptive governance
 
 from datetime import datetime, timezone
 from enum import Enum
-from typing import List, Optional, Dict, Any, Union
-from pydantic import BaseModel, Field
+from typing import Any, Dict, List, Optional
+
 import numpy as np
+from pydantic import BaseModel, Field
 
 
 class GovernanceDecision(str, Enum):

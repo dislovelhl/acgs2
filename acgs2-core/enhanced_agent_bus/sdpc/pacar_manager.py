@@ -3,13 +3,13 @@ PACAR Manager for multi-turn session and history management.
 Constitutional Hash: cdd01ef066bc6cf2
 """
 
-import json
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
+
 import redis.asyncio as redis
 
-from .conversation import ConversationMessage, ConversationState, MessageRole
 from ..config import BusConfiguration
+from .conversation import ConversationMessage, ConversationState, MessageRole
 
 logger = logging.getLogger(__name__)
 

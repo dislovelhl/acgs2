@@ -5,7 +5,6 @@ Constitutional Hash: cdd01ef066bc6cf2
 Tests for shared/tiered_cache.py focusing on tier promotion/demotion logic.
 """
 
-import asyncio
 import threading
 import time
 from unittest.mock import AsyncMock, MagicMock, patch

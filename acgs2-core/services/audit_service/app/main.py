@@ -9,6 +9,7 @@ from typing import Any, Dict, List
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+
 from shared.logging_config import (
     configure_logging,
     get_logger,

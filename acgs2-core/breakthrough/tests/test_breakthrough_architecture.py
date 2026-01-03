@@ -13,73 +13,69 @@ Tests all 4 layers and quick-win integrations:
 """
 
 import asyncio
-import pytest
 from datetime import datetime
-from typing import Dict, Any
+
+import pytest
 
 # Import breakthrough components
 from .. import CONSTITUTIONAL_HASH
+from ..context.jrt_context import JRTContextPreparator
 
 # Layer 1: Context & Memory
 from ..context.mamba_hybrid import (
     ConstitutionalMambaHybrid,
     ProcessingMode,
-    MambaConfig,
 )
-from ..context.jrt_context import JRTContextPreparator
 from ..context.memory_system import (
     ConstitutionalMemorySystem,
     GovernanceCase,
     GovernanceDecision,
 )
 
-# Layer 2: Verification
-from ..verification.maci_verifier import (
-    MACIVerificationPipeline,
-    GovernanceDecision as MACIDecision,
-    MACIRole,
-)
-from ..verification.saga_transactions import (
-    SagaConstitutionalTransaction,
-    SagaOrchestrator,
-)
-from ..verification.veriplan_z3 import VeriPlanFormalVerifier
-
-# Layer 3: Temporal & Symbolic
-from ..temporal.timeline_engine import (
-    ConstitutionalTimelineEngine,
-    ConstitutionalEvent,
-    EventType,
-    TimelineEventFactory,
-)
-from ..symbolic.edge_case_handler import ConstitutionalEdgeCaseHandler
-
 # Layer 4: Governance & Policy
 from ..governance.democratic_constitution import (
     DemocraticConstitutionalGovernance,
-    ConstitutionalProposal,
 )
-from ..policy.verified_policy_generator import (
-    VerifiedPolicyGenerator,
-    PolicyVerificationError,
+from ..integrations.constitutional_classifiers import (
+    AgentAction,
+    ConstitutionalClassifier,
+)
+from ..integrations.langgraph_orchestration import (
+    GovernanceGraphBuilder,
+    GovernanceState,
 )
 
 # Integrations
 from ..integrations.mcp_server import ACGS2MCPServer
-from ..integrations.constitutional_classifiers import (
-    ConstitutionalClassifier,
-    AgentAction,
-)
-from ..integrations.langgraph_orchestration import (
-    GovernanceGraph,
-    GovernanceState,
-    GovernanceGraphBuilder,
-)
 from ..integrations.runtime_guardrails import (
     ConstitutionalGuardrails,
     GuardrailLevel,
 )
+from ..policy.verified_policy_generator import (
+    VerifiedPolicyGenerator,
+)
+from ..symbolic.edge_case_handler import ConstitutionalEdgeCaseHandler
 
+# Layer 3: Temporal & Symbolic
+from ..temporal.timeline_engine import (
+    ConstitutionalEvent,
+    ConstitutionalTimelineEngine,
+    EventType,
+    TimelineEventFactory,
+)
+from ..verification.maci_verifier import (
+    GovernanceDecision as MACIDecision,
+)
+
+# Layer 2: Verification
+from ..verification.maci_verifier import (
+    MACIRole,
+    MACIVerificationPipeline,
+)
+from ..verification.saga_transactions import (
+    SagaConstitutionalTransaction,
+)
+from ..verification.veriplan_z3 import VeriPlanFormalVerifier
 
 # ============================================================================
 # Layer 1: Context & Memory Tests
@@ -329,8 +325,9 @@ class TestConstitutionalTimeline:
         """Test that temporal ordering is enforced."""
         timeline = ConstitutionalTimelineEngine()
 
-        from ..temporal.timeline_engine import TemporalViolationError
         from datetime import timedelta
+
+        from ..temporal.timeline_engine import TemporalViolationError
 
         # Add first event
         event1 = ConstitutionalEvent(

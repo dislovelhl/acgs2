@@ -18,6 +18,7 @@ from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+
 from enhanced_agent_bus.deliberation_layer.workflows.constitutional_saga import (
     CONSTITUTIONAL_HASH,
     DefaultSagaActivities,

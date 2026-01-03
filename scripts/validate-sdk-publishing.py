@@ -7,12 +7,12 @@ Constitutional Hash: cdd01ef066bc6cf2
 Validates that all SDKs are ready for publishing to their respective registries.
 """
 
-import os
-import sys
 import json
 import subprocess
+import sys
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import List, Tuple
+
 
 # ANSI color codes for output
 class Colors:

@@ -22,7 +22,7 @@ import logging
 import time
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, List, Optional, Protocol, Tuple, Callable, Awaitable
+from typing import Any, Awaitable, Callable, Dict, List, Optional, Tuple
 
 from .. import CONSTITUTIONAL_HASH
 

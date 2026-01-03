@@ -14,6 +14,7 @@ from datetime import datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+
 from enhanced_agent_bus.deliberation_layer.adaptive_router import (
     AdaptiveRouter,
     get_adaptive_router,

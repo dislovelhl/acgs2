@@ -11,23 +11,23 @@ Tests the OWASP-compliant 5-layer guardrail system:
 Constitutional Hash: cdd01ef066bc6cf2
 """
 
+from unittest.mock import AsyncMock
+
 import pytest
-from unittest.mock import AsyncMock, MagicMock
 
 from ..runtime_safety_guardrails import (
-    RuntimeSafetyGuardrails,
-    RuntimeSafetyGuardrailsConfig,
-    InputSanitizer,
-    InputSanitizerConfig,
     AgentEngine,
-    ToolRunnerSandbox,
-    OutputVerifier,
     AuditLog,
     GuardrailLayer,
+    InputSanitizer,
+    InputSanitizerConfig,
+    OutputVerifier,
+    RuntimeSafetyGuardrails,
+    RuntimeSafetyGuardrailsConfig,
     SafetyAction,
-    ViolationSeverity,
+    ToolRunnerSandbox,
     Violation,
-    GuardrailResult,
+    ViolationSeverity,
 )
 
 
@@ -383,11 +383,8 @@ class TestGuardrailConfiguration:
     def test_custom_configuration(self):
         """Test custom configuration."""
         from ..runtime_safety_guardrails import (
-            InputSanitizerConfig,
             AgentEngineConfig,
-            SandboxConfig,
-            OutputVerifierConfig,
-            AuditLogConfig,
+            InputSanitizerConfig,
         )
 
         config = RuntimeSafetyGuardrailsConfig(

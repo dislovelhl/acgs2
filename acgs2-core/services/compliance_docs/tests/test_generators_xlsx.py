@@ -14,25 +14,22 @@ Tests cover:
 """
 
 import io
-import tempfile
 from datetime import datetime, timezone
-from pathlib import Path
 from unittest.mock import patch
 
 import pytest
-from openpyxl import load_workbook
-
 from generators.xlsx_generator import (
+    LARGE_FILE_THRESHOLD,
     ComplianceXLSXGenerator,
     ComplianceXLSXStyles,
     XLSXTableBuilder,
+    _ensure_output_dir,
+    _get_output_path,
     generate_xlsx,
     generate_xlsx_to_buffer,
-    _get_output_path,
-    _ensure_output_dir,
-    LARGE_FILE_THRESHOLD,
 )
 from models.base import ComplianceFramework
+from openpyxl import load_workbook
 
 
 class TestComplianceXLSXStyles:

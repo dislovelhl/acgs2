@@ -5,10 +5,10 @@ Constitutional Hash: cdd01ef066bc6cf2
 Tests for all 12 message types, error scenarios, rate limiting, and performance SLA.
 """
 
-import pytest
-import httpx
 from datetime import datetime
 
+import httpx
+import pytest
 
 # Base URL for API tests - can be overridden via environment variable
 API_BASE_URL = "http://localhost:8000"

@@ -2,16 +2,10 @@
 Governance prediction API endpoints
 """
 
-from typing import Optional
 from fastapi import APIRouter, HTTPException
 
 from ..core.engine import ml_engine
-from ..core.models import (
-    PredictRequest,
-    PredictResponse,
-    GovernanceRequest,
-    GovernanceResponse
-)
+from ..core.models import GovernanceRequest, PredictRequest, PredictResponse
 
 router = APIRouter(prefix="/governance", tags=["governance"])
 

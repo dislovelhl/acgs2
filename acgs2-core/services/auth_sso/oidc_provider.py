@@ -11,17 +11,14 @@ Implements OIDC RP functionality:
 
 import base64
 import hashlib
-import json
 import logging
-import os
 import secrets
 import time
-from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, Optional
 from urllib.parse import urlencode
 
 from .config import IdPConfig
-from .models import SSOUser, SSOProtocol
+from .models import SSOProtocol, SSOUser
 
 logger = logging.getLogger(__name__)
 
@@ -29,8 +26,7 @@ logger = logging.getLogger(__name__)
 AUTHLIB_AVAILABLE = False
 try:
     from authlib.integrations.httpx_client import AsyncOAuth2Client
-    from authlib.jose import jwt
-    from authlib.jose import JsonWebKey
+    from authlib.jose import JsonWebKey, jwt
     AUTHLIB_AVAILABLE = True
 except ImportError:
     logger.warning(

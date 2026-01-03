@@ -15,31 +15,22 @@ but test the full integration between all internal components.
 
 import asyncio
 import logging
-from datetime import datetime, timezone
 from typing import Any, Dict, List
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock
 
 import pytest
 from httpx import ASGITransport, AsyncClient
 
-from app.audit.ledger import AuditLedger, get_audit_ledger, reset_audit_ledger
+from app.audit.ledger import get_audit_ledger, reset_audit_ledger
 from app.core.approval_engine import (
-    ApprovalEngine,
     get_approval_engine,
-    initialize_approval_engine,
     reset_approval_engine,
 )
 from app.core.escalation import (
-    EscalationEngine,
-    EscalationTimerManager,
-    get_escalation_engine,
     reset_escalation_engine,
     reset_escalation_manager,
 )
 from app.core.kafka_client import (
-    HITLEventType,
-    HITLKafkaClient,
-    HITLTopic,
     reset_kafka_client,
 )
 from app.models import (
@@ -48,9 +39,7 @@ from app.models import (
     ApprovalPriority,
     ApprovalStatus,
     AuditEntryType,
-    EscalationPolicy,
 )
-from app.notifications.base import NotificationResult, NotificationStatus
 
 logger = logging.getLogger(__name__)
 

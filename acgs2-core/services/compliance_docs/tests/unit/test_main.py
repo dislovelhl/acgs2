@@ -2,10 +2,7 @@
 Unit tests for compliance-docs-service main application
 """
 
-import pytest
 from fastapi.testclient import TestClient
-
-from src.main import app
 
 
 class TestMainApplication:

@@ -25,9 +25,9 @@ except ImportError:
 # Import Mamba-2 Hybrid Processor for long context
 try:
     from .mamba_hybrid_processor import (
-        get_mamba_hybrid_processor,
         MambaConfig,
-        initialize_mamba_processor
+        get_mamba_hybrid_processor,
+        initialize_mamba_processor,
     )
     MAMBA_AVAILABLE = True
 except ImportError:

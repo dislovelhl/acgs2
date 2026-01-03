@@ -29,7 +29,7 @@ except ImportError:
     VotingStrategy = None
 
 try:
-    from .vote_models import VoteEvent, VoteDecision
+    from .vote_models import VoteDecision, VoteEvent
 except ImportError:
     VoteEvent = None
     VoteDecision = None
@@ -196,8 +196,8 @@ class VoteEventConsumer:
     ) -> None:
         """Publish audit record for vote event."""
         try:
-            from .vote_models import VoteEventType
             from .audit_signature import sign_audit_record
+            from .vote_models import VoteEventType
 
             tenant_id = election_data.get("tenant_id", self.tenant_id)
 

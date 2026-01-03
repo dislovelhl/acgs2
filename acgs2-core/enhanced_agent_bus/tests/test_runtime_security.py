@@ -3,10 +3,10 @@ Tests for ACGS-2 Runtime Security Scanner
 Constitutional Hash: cdd01ef066bc6cf2
 """
 
-import asyncio
-from datetime import datetime, timezone
+from datetime import datetime
 
 import pytest
+
 from enhanced_agent_bus.runtime_security import (
     CONSTITUTIONAL_HASH,
     RuntimeSecurityConfig,

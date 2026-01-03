@@ -14,7 +14,6 @@ Tests cover:
 from datetime import datetime, timezone
 
 import pytest
-
 from template_engine import (
     _control_id_format,
     _current_year,

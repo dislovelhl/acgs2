@@ -3,13 +3,12 @@ Unit tests for EU AI Act document generators
 Constitutional Hash: cdd01ef066bc6cf2
 """
 
-import pytest
 import tempfile
-from pathlib import Path
 from datetime import date
 
-from src.generators.pdf import PDFGenerator
+import pytest
 from src.generators.docx import DOCXGenerator
+from src.generators.pdf import PDFGenerator
 from src.generators.xlsx import XLSXGenerator
 
 

@@ -2,11 +2,12 @@
 Core models for HITL approval workflows and chains
 """
 
+import uuid
 from datetime import datetime, timezone
 from enum import Enum
-from typing import List, Optional, Dict, Any, Union
+from typing import Any, Dict, List, Optional
+
 from pydantic import BaseModel, Field, validator
-import uuid
 
 
 class ApprovalStatus(str, Enum):

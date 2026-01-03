@@ -10,6 +10,7 @@ from datetime import datetime, timezone
 from typing import Any
 
 import redis.asyncio as redis
+
 from app.utils.constitutional import (
     CONSTITUTIONAL_HASH,
     ensure_constitutional_compliance,

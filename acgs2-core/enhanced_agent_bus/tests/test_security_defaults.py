@@ -15,10 +15,11 @@ import pytest
 
 # Import patterns matching existing test conventions
 try:
-    from config import BusConfiguration
     from models import CONSTITUTIONAL_HASH, AgentMessage
     from policy_client import PolicyRegistryClient, get_policy_client
     from validation_strategies import RustValidationStrategy
+
+    from config import BusConfiguration
 except ImportError:
     from ..config import BusConfiguration
     from ..models import CONSTITUTIONAL_HASH, AgentMessage

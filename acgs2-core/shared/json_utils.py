@@ -19,7 +19,7 @@ try:
             if default:
                 return orjson.dumps(obj, default=default, option=option).decode('utf-8')
             return orjson.dumps(obj, option=option).decode('utf-8')
-        except (TypeError, ValueError) as e:
+        except (TypeError, ValueError):
             # Fallback to standard json for complex objects
             return json.dumps(obj, default=str, **kwargs)
 
@@ -29,7 +29,7 @@ try:
             if isinstance(s, str):
                 s = s.encode('utf-8')
             return orjson.loads(s)
-        except (orjson.JSONDecodeError, UnicodeDecodeError) as e:
+        except (orjson.JSONDecodeError, UnicodeDecodeError):
             # Fallback to standard json
             if isinstance(s, bytes):
                 s = s.decode('utf-8')

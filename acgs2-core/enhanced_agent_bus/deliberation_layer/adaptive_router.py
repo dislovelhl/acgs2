@@ -20,7 +20,6 @@ try:
     from .deliberation_queue import DeliberationStatus, get_deliberation_queue
     from .impact_scorer import calculate_message_impact
     from .intent_classifier import IntentClassifier, IntentType
-    from ..config import BusConfiguration
 except (ImportError, ValueError):
     # Fallback for direct execution or testing
     try:
@@ -40,7 +39,7 @@ except (ImportError, ValueError):
             from ..config import BusConfiguration
         except (ImportError, ValueError):
             try:
-                from config import BusConfiguration # type: ignore
+                from config import BusConfiguration  # type: ignore
             except ImportError:
                 BusConfiguration = None
 

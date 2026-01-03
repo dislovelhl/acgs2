@@ -9,31 +9,27 @@ Tests the complete deliberation workflow including:
 - Multi-stakeholder consensus
 """
 
-import asyncio
+
 import pytest
-from datetime import datetime, timezone
-from unittest.mock import AsyncMock, MagicMock, patch
 
 # Import test targets
 from enhanced_agent_bus.deliberation_layer import (
-    VotingService,
-    VotingStrategy,
-    Vote,
     DeliberationQueue,
     DeliberationTask,
-    get_redis_deliberation_queue,
+    Vote,
+    VotingService,
+    VotingStrategy,
     get_redis_voting_system,
 )
 from enhanced_agent_bus.deliberation_layer.vote_collector import (
-    VoteEvent,
-    VoteSession,
     EventDrivenVoteCollector,
+    VoteEvent,
 )
 from enhanced_agent_bus.deliberation_layer.workflows.deliberation_workflow import (
+    DefaultDeliberationActivities,
     DeliberationWorkflow,
     DeliberationWorkflowInput,
     WorkflowStatus,
-    DefaultDeliberationActivities,
 )
 
 

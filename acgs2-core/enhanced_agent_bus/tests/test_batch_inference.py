@@ -10,7 +10,7 @@ import os
 import sys
 import time
 from pathlib import Path
-from unittest.mock import MagicMock, patch, PropertyMock
+from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
@@ -186,7 +186,7 @@ class TestONNXSessionLazyLoading:
 
     def test_onnx_enabled_flag_depends_on_availability(self):
         """Test that _onnx_enabled depends on ONNX_AVAILABLE."""
-        from deliberation_layer.impact_scorer import ImpactScorer, ONNX_AVAILABLE
+        from deliberation_layer.impact_scorer import ImpactScorer
 
         with patch('deliberation_layer.impact_scorer.TRANSFORMERS_AVAILABLE', False):
             scorer = ImpactScorer(use_onnx=True)
@@ -618,7 +618,6 @@ class TestGlobalFunctions:
         from deliberation_layer.impact_scorer import (
             get_impact_scorer,
             reset_impact_scorer,
-            _global_scorer,
         )
 
         # Get a scorer first
@@ -657,9 +656,9 @@ class TestGlobalFunctions:
         """Test that helper functions return empty dicts."""
         from deliberation_layer.impact_scorer import (
             get_gpu_decision_matrix,
+            get_profiling_report,
             get_reasoning_matrix,
             get_risk_profile,
-            get_profiling_report,
             get_vector_space_metrics,
         )
 

@@ -14,10 +14,9 @@ from typing import Any, Optional
 from jinja2 import (
     Environment,
     FileSystemLoader,
-    select_autoescape,
     TemplateNotFound,
+    select_autoescape,
 )
-
 
 # Default templates path relative to service directory
 _DEFAULT_TEMPLATES_PATH = Path(__file__).parent / "templates"

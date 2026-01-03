@@ -4,11 +4,14 @@ Constitutional Hash: cdd01ef066bc6cf2
 """
 
 from datetime import datetime, timezone
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from services.audit_service.core.audit_ledger import AuditLedger, ValidationResult, AuditLedgerConfig
-from unittest.mock import patch, MagicMock
+
+from services.audit_service.core.audit_ledger import (
+    AuditLedger,
+    AuditLedgerConfig,
+)
 
 
 class TestAuditEntry:

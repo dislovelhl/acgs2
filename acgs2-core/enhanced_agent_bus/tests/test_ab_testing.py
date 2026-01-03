@@ -9,8 +9,8 @@ and model promotion validation. Tests verify traffic split within ±2% variance.
 import logging
 import os
 import sys
-from datetime import datetime, timedelta, timezone
-from unittest.mock import MagicMock, Mock, patch
+from datetime import datetime, timezone
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -41,7 +41,6 @@ from ab_testing import (
     get_ab_test_metrics,
     get_ab_test_router,
     promote_candidate_model,
-    route_and_predict,
     route_request,
 )
 

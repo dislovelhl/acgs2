@@ -3,9 +3,10 @@ Unit tests for EU AI Act compliance validation
 Constitutional Hash: cdd01ef066bc6cf2
 """
 
-import pytest
-from datetime import date, datetime
+from datetime import date
 
+import pytest
+from src.api.euaiact_routes import ComplianceValidationRequest, _perform_compliance_validation
 from src.models.euaiact import (
     ComplianceStatus,
     EUAIActComplianceChecklist,
@@ -13,7 +14,6 @@ from src.models.euaiact import (
     FindingSeverity,
     HighRiskCategory,
 )
-from src.api.euaiact_routes import _perform_compliance_validation, ComplianceValidationRequest
 
 
 @pytest.mark.asyncio

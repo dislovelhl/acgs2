@@ -8,14 +8,14 @@ Configuration management for SSO service including:
 - Attribute and role mappings
 """
 
-import os
 import json
 import logging
+import os
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from .models import IdPType, SSOProtocol, AttributeMapping, RoleMappingRule, IdPMetadata
+from .models import AttributeMapping, IdPMetadata, IdPType, RoleMappingRule, SSOProtocol
 
 logger = logging.getLogger(__name__)
 

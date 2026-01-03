@@ -9,6 +9,7 @@ from typing import Any, Optional
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+
 from enhanced_agent_bus.deliberation_layer.opa_guard_mixin import OPAGuardMixin
 
 # =============================================================================

@@ -16,13 +16,12 @@ Design Principles:
 - Uncertainty quantification for governance decisions
 """
 
-import asyncio
 import hashlib
 import logging
 import time
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple, Set, Union, Callable
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 from .. import CONSTITUTIONAL_HASH
 

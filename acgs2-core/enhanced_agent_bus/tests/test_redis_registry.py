@@ -2,6 +2,7 @@ import json
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+
 from enhanced_agent_bus.models import CONSTITUTIONAL_HASH
 from enhanced_agent_bus.registry import RedisAgentRegistry
 
@@ -137,9 +138,6 @@ class TestEnhancedAgentBusRedisIntegration:
                 from enhanced_agent_bus.agent_bus import EnhancedAgentBus
                 from enhanced_agent_bus.config import BusConfiguration
                 from enhanced_agent_bus.registry import (
-                    DEFAULT_REDIS_MAX_CONNECTIONS,
-                    DEFAULT_REDIS_SOCKET_CONNECT_TIMEOUT,
-                    DEFAULT_REDIS_SOCKET_TIMEOUT,
                     RedisAgentRegistry,
                 )
 

@@ -16,9 +16,8 @@ import asyncio
 import logging
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional, Tuple, Protocol
 from enum import Enum
-import math
+from typing import Any, Dict, List, Optional, Tuple
 
 # Import centralized constitutional hash
 try:

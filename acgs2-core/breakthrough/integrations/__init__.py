@@ -13,9 +13,9 @@ Implements quick-win integrations for immediate value:
 Timeline: Weeks 1-6
 """
 
-from .mcp_server import ACGS2MCPServer, MCPResponse
-from .constitutional_classifiers import ConstitutionalClassifier, ComplianceResult
+from .constitutional_classifiers import ComplianceResult, ConstitutionalClassifier
 from .langgraph_orchestration import GovernanceGraph, GovernanceState
+from .mcp_server import ACGS2MCPServer, MCPResponse
 from .runtime_guardrails import ConstitutionalGuardrails, GuardrailResult
 
 __all__ = [

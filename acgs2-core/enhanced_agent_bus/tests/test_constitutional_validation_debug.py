@@ -10,7 +10,6 @@ import logging
 logger = logging.getLogger(__name__)
 
 import pytest
-
 from core import MessageProcessor
 
 # Import from module names that conftest.py patches

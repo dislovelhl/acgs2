@@ -21,14 +21,13 @@ Output:
 import cProfile
 import io
 import logging
-import os
 import pstats
 import statistics
 import sys
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Dict, List, Optional
 
 import numpy as np
 
@@ -747,7 +746,7 @@ def main():
         f.write(report)
 
     logger.info(f"Profile report saved to: {report_path}")
-    print(f"\nProfile report generated with memory/CPU metrics")
+    print("\nProfile report generated with memory/CPU metrics")
 
     return 0
 

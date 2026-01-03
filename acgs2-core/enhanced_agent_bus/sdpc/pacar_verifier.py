@@ -6,7 +6,6 @@ Constitutional Hash: cdd01ef066bc6cf2
 Orchestrates multi-agent critique and validation.
 """
 
-import json
 import logging
 from typing import Any, Dict, Optional
 
@@ -20,9 +19,8 @@ except ImportError:
 
 from ..config import BusConfiguration
 from ..deliberation_layer.llm_assistant import get_llm_assistant
-from .pacar_manager import PACARManager
 from .conversation import MessageRole
-from ..config import BusConfiguration
+from .pacar_manager import PACARManager
 
 logger = logging.getLogger(__name__)
 

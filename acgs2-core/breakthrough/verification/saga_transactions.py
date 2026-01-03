@@ -15,14 +15,13 @@ References:
 """
 
 import asyncio
+import logging
+import uuid
+from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any, Callable, Dict, List, Optional, Awaitable
 from enum import Enum
-from contextlib import asynccontextmanager
-import uuid
-import logging
-import traceback
+from typing import Any, Awaitable, Callable, Dict, List, Optional
 
 from .. import CONSTITUTIONAL_HASH
 
@@ -341,7 +340,6 @@ class SagaConstitutionalTransaction:
 
     def get_result(self) -> TransactionResult:
         """Get the transaction result."""
-        import time
 
         processing_time = 0.0
         if self._start_time:

@@ -7,15 +7,14 @@ Constitutional Hash: cdd01ef066bc6cf2
 Validates causal chains in the constitutional timeline.
 """
 
-from .timeline_engine import (
-    ConstitutionalTimelineEngine,
-    ConstitutionalEvent,
-    CausalViolationError,
-)
-from typing import Dict, List, Any
 import logging
+from typing import Any, Dict
 
 from .. import CONSTITUTIONAL_HASH
+from .timeline_engine import (
+    ConstitutionalEvent,
+    ConstitutionalTimelineEngine,
+)
 
 logger = logging.getLogger(__name__)
 

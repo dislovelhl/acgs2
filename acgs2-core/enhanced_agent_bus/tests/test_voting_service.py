@@ -8,6 +8,7 @@ Comprehensive tests for the deliberation layer voting service.
 from datetime import datetime, timezone
 
 import pytest
+
 from enhanced_agent_bus.deliberation_layer.voting_service import (
     Election,
     Vote,

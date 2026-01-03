@@ -6,12 +6,11 @@ Unit tests for River-based online learning module with sklearn compatibility ada
 Tests adapter pattern, online learning pipeline, Kafka consumer, and module-level functions.
 """
 
-import asyncio
 import logging
 import os
 import sys
 from datetime import datetime, timezone
-from unittest.mock import AsyncMock, MagicMock, Mock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 

@@ -15,12 +15,11 @@ Design Principles:
 - Integration with LLM reasoning for hybrid verification
 """
 
-import asyncio
 import hashlib
 import logging
 import time
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple, Union, Callable
+from typing import Any, Dict, List, Optional, Tuple
 
 from .. import CONSTITUTIONAL_HASH
 

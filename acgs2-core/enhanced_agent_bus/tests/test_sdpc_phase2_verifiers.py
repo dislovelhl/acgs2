@@ -6,6 +6,7 @@ import json
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+
 from enhanced_agent_bus.deliberation_layer.intent_classifier import IntentType
 from enhanced_agent_bus.sdpc.asc_verifier import ASCVerifier
 from enhanced_agent_bus.sdpc.graph_check import GraphCheckVerifier

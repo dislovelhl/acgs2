@@ -16,13 +16,11 @@ References:
 - ABL-Refl: Abductive Reflection (arXiv:2412.08457)
 """
 
-import asyncio
-from dataclasses import dataclass, field
-from datetime import datetime
-from typing import Any, Dict, List, Optional, Set, Tuple
-from enum import Enum
-import uuid
 import logging
+import uuid
+from dataclasses import dataclass, field
+from enum import Enum
+from typing import Any, Dict, List, Optional, Tuple
 
 from .. import CONSTITUTIONAL_HASH, EDGE_CASE_ACCURACY_TARGET
 
@@ -131,7 +129,7 @@ class NeuralClassifier:
         ]
 
         self._predictions_made = 0
-        logger.info(f"Initialized NeuralClassifier (System 1)")
+        logger.info("Initialized NeuralClassifier (System 1)")
 
     async def predict(
         self,

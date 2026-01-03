@@ -6,10 +6,10 @@ Constitutional Hash: cdd01ef066bc6cf2
 
 import asyncio
 import json
-from datetime import datetime, timezone
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock
 
 import pytest
+
 from enhanced_agent_bus.runtime_security import (
     SecurityEvent,
     SecurityEventType,

@@ -29,9 +29,10 @@ import uuid
 from datetime import datetime, timezone
 from typing import Optional
 
-from shared.database import Base
 from sqlalchemy import DateTime, Index, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
+
+from shared.database import Base
 
 
 class SSORoleMapping(Base):

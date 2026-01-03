@@ -8,7 +8,7 @@ for high-risk AI systems per EU Regulation 2024/1689.
 
 from datetime import date, datetime
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import List, Optional
 
 from pydantic import BaseModel, Field, field_validator
 

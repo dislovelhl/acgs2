@@ -4,12 +4,11 @@ Human-in-the-Loop workflow automation and approval chains
 """
 
 import logging
-from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 
-from fastapi import FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
 import structlog
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from .api.approvals import router as approvals_router
 

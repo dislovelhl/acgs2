@@ -12,13 +12,12 @@ incompleteness theorems through strict role separation:
 No agent validates its own output, ensuring mathematical consistency.
 """
 
-import asyncio
 import hashlib
-from dataclasses import dataclass, field
-from typing import Dict, List, Any, Optional, Union
-from enum import Enum
 import logging
+from dataclasses import dataclass, field
 from datetime import datetime
+from enum import Enum
+from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 

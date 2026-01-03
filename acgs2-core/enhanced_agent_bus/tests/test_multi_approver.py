@@ -9,7 +9,6 @@ from datetime import datetime, timedelta
 from typing import List
 
 import pytest
-
 from deliberation_layer.multi_approver import (
     CONSTITUTIONAL_HASH,
     ApprovalDecision,

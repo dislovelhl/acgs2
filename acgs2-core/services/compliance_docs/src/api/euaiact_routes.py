@@ -6,26 +6,24 @@ FastAPI routes for EU AI Act compliance validation, document generation, and exp
 """
 
 import logging
-from datetime import date, datetime
-from pathlib import Path
+from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, HTTPException, Query
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
+from ..generators import DOCXGenerator, PDFGenerator, XLSXGenerator
 from ..models.euaiact import (
+    ComplianceStatus,
     EUAIActComplianceChecklist,
     EUAIActComplianceFinding,
     EUAIActHumanOversight,
     EUAIActQuarterlyReport,
     EUAIActRiskAssessment,
-    ComplianceStatus,
     FindingSeverity,
     HighRiskCategory,
-    RiskLevel,
 )
-from ..generators import DOCXGenerator, PDFGenerator, XLSXGenerator
 
 logger = logging.getLogger(__name__)
 

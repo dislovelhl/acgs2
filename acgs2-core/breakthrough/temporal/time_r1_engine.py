@@ -15,13 +15,12 @@ Design Principles:
 - Event log serves as constitutional audit trail
 """
 
-import asyncio
 import hashlib
 import logging
 import time
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, List, Optional, Set, Tuple, Protocol
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 from .. import CONSTITUTIONAL_HASH
 
