@@ -22,6 +22,7 @@ import {
   Sparkles,
   X,
 } from "lucide-react";
+import { LoadingState, API_BASE_URL } from "../lib";
 
 /** Query response data structure from the API */
 interface QueryResponse {
@@ -38,13 +39,6 @@ interface QueryHistoryItem {
   response: QueryResponse;
   timestamp: Date;
 }
-
-/** Widget loading state */
-type LoadingState = "idle" | "loading" | "success" | "error";
-
-/** API URL from environment */
-const API_BASE_URL =
-  import.meta.env.VITE_ANALYTICS_API_URL || "http://localhost:8080";
 
 /** Maximum number of queries to keep in history */
 const MAX_HISTORY_ITEMS = 5;
