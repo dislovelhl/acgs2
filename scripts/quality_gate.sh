@@ -61,7 +61,7 @@ echo
 echo "🔍 Checking for Bare Except Clauses..."
 echo "------------------------------------"
 
-BARE_EXCEPT_COUNT=$(grep -r "except:" --include="*.py" enhanced_agent_bus services | grep -v "# " | wc -l)
+BARE_EXCEPT_COUNT=$(grep -r "except:" --include="*.py" --exclude-dir=".venv" --exclude-dir="venv" --exclude-dir="test_venv" enhanced_agent_bus services | grep -v "# " | wc -l)
 if [ "$BARE_EXCEPT_COUNT" -gt 0 ]; then
     echo -e "${RED}❌ Found $BARE_EXCEPT_COUNT bare except clauses in core modules${NC}"
 else
@@ -72,7 +72,7 @@ echo
 echo "📝 Checking for Print Statements in Production Code..."
 echo "---------------------------------------------------"
 
-PRINT_COUNT=$(find enhanced_agent_bus services -name "*.py" -not -path "*/tests/*" -not -path "*/test_*" -not -name "*test.py" | xargs grep -l "print(" 2>/dev/null | wc -l)
+PRINT_COUNT=$(find enhanced_agent_bus services -name "*.py" -not -path "*/tests/*" -not -path "*/test_*" -not -name "*test.py" -not -path "*/.venv/*" -not -path "*/venv/*" -not -path "*/test_venv/*" | xargs grep -l "print(" 2>/dev/null | wc -l)
 if [ "$PRINT_COUNT" -gt 0 ]; then
     echo -e "${YELLOW}⚠️  Found $PRINT_COUNT print statements in production code${NC}"
     echo "   (Should use logging instead)"

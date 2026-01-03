@@ -41,7 +41,8 @@ class LocalFileSystemAnchor:
                     # Simple integrity check
                     if not self._verify_chain():
                         logger.error(
-                            "Audit anchor chain integrity failure! Local storage might be tampered with."
+                            "Audit anchor chain integrity failure! Local "
+                            "storage might be tampered with."
                         )
                         # In production, we might want to alert here.
             else:

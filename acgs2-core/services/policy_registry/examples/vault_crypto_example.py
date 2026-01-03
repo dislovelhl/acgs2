@@ -18,16 +18,21 @@ Requirements:
 """
 
 import asyncio
+import logging
 import os
 import sys
 from datetime import datetime, timezone
+
+# Configure logging for examples
+logging.basicConfig(level=logging.INFO, format="%(message)s")
+logger = logging.getLogger(__name__)
 
 # Add parent directories to path
 parent_dir = os.path.dirname(os.path.dirname(__file__))
 if parent_dir not in sys.path:
     sys.path.insert(0, parent_dir)
 
-from app.services.vault_crypto_service import (
+from app.services.vault_crypto_service import (  # noqa: E402
     CONSTITUTIONAL_HASH,
     VaultConfig,
     VaultCryptoService,

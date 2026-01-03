@@ -18,6 +18,8 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Tuple
 
+from shared.constants import CONSTITUTIONAL_HASH
+
 from .merkle_tree.merkle_tree import MerkleTree
 
 # Blockchain anchoring - prefer unified manager, fallback to local
@@ -50,7 +52,6 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
-from shared.constants import CONSTITUTIONAL_HASH
 
 # Import ValidationResult from the canonical source (enhanced_agent_bus)
 try:
@@ -590,7 +591,7 @@ class AuditLedger:
             with open(self.persistence_file, "r") as f:
                 storage_data = json.load(f)
                 self.batch_counter = storage_data.get("batch_counter", 0)
-                # Sort batches to maintain order if possible, though dict is insertion ordered in modern python
+                # Sort batches to maintain order if possible
                 for _, b_data in storage_data.get("batches", {}).items():
                     self._reconstruct_entries(b_data["entries"])
             # Rebuild the latest Merkle Tree if we have batches

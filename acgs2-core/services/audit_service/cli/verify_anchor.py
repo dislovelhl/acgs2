@@ -1,5 +1,4 @@
-import logging
-
+#!/usr/bin/env python3
 """
 ACGS-2 Audit Service - Anchor Verification CLI
 Constitutional Hash: cdd01ef066bc6cf2
@@ -7,6 +6,7 @@ CLI tool to verify a Merkle Root against the anchored blockchain.
 """
 
 import argparse
+import logging
 import sys
 from pathlib import Path
 
