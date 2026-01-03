@@ -11,6 +11,8 @@ import sys
 from .config import MCPConfig, TransportType
 from .server import create_mcp_server
 
+logger = logging.getLogger(__name__)
+
 
 def main():
     parser = argparse.ArgumentParser(description="ACGS-2 MCP Server")
