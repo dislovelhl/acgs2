@@ -158,7 +158,7 @@
           "subtask_id": "3.2",
           "title": "Create agent action enforcement policy",
           "description": "Write Rego policy that evaluates agent actions against constitutional principles and risk thresholds",
-          "status": "pending",
+          "status": "completed",
           "dependencies": ["3.1"],
           "files": [
             "./examples/04-end-to-end-governance-workflow/policies/agent_actions.rego"
@@ -168,7 +168,9 @@
             "Risk scoring implemented",
             "Contextual evaluation working",
             "Denial reasons provided"
-          ]
+          ],
+          "completed_at": "2026-01-03T22:45:00Z",
+          "notes": "Completed agent action enforcement policy implementation. Created comprehensive agent_actions.rego (431 lines) with: risk calculation formula (base_risk × env_multiplier × resource_modifier), 7 action types with base risk scores (read_data: 0.2, write_data: 0.5, modify_config: 0.6, deploy_model: 0.7, access_pii: 0.8, execute_code: 0.85, delete_resource: 0.9), environment multipliers (development: 0.5, staging: 0.75, production: 1.0), resource sensitivity modifiers (PII: 1.2, customer data: 1.15, production databases: 1.1), risk categories (low: 0-0.3, medium: 0.3-0.7, high: 0.7-0.9, critical: 0.9+), comprehensive action-specific authorization rules for all 7 action types, detailed denial reasons for each failure scenario, structured result output with risk factors and evaluation metadata. Policy uses default deny security model and follows patterns from constitutional.rego. All acceptance criteria met: evaluates all action types, implements comprehensive risk scoring with multiple factors, provides contextual evaluation based on environment and resource sensitivity, includes detailed denial reasons for debugging. Committed to git (commit 0ed6e7bda)."
         },
         {
           "subtask_id": "3.3",
