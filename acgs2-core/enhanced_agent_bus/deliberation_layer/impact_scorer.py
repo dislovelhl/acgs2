@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from dataclasses import dataclass
 from typing import Any, Dict, Optional
@@ -274,8 +275,8 @@ class ImpactScorer:
                     # Manual cosine similarity fallback
                     sims = [cosine_similarity_fallback(emb, kw) for kw in kw_emb]
                     embedding_score = max(sims) if sims else 0.0
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug("Embedding-based scoring failed, using keyword score: %s", e)
 
         return max(keyword_score, embedding_score)
 
