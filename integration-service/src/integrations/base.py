@@ -671,28 +671,61 @@ class BaseIntegration(abc.ABC):
 
         Optimizes delivery by sending multiple events in a single API call where
         supported, reducing network overhead and improving throughput for high-volume
-        governance event scenarios.
+        governance event scenarios. This method provides automatic retry logic,
+        comprehensive metrics tracking, and fallback support for adapters without
+        native batch capabilities.
 
         For adapters that don't support native batch operations, this method will
-        automatically fall back to sending events one-by-one using send_event().
+        automatically fall back to sending events one-by-one using _do_send_event(),
+        providing transparent batch API support across all integrations.
+
+        Performance Characteristics:
+            - Batch operations reduce API calls from N to 1 for batch-capable adapters
+            - Network latency reduced from N*RTT to 1*RTT for batch operations
+            - Recommended for sending 10+ events when the adapter supports batching
+            - Empty list returns immediately with no side effects
+
+        Retry Behavior:
+            - Automatically retries batch operations up to 3 times (configurable)
+            - Uses exponential backoff: 1s, 2s, 4s, up to 16s between retries
+            - Retries on: TimeoutException, NetworkError, DeliveryError
+            - Does NOT retry on: AuthenticationError, ValidationError
+            - RateLimitError includes retry_after hint from service
+
+        Metrics Tracking:
+            - _batches_sent: Incremented for successful batches (all or partial success)
+            - _batches_failed: Incremented when all events in batch fail
+            - _batch_events_total: Total count of events successfully sent via batches
+            - _events_sent: Per-event success count (same as send_event)
+            - _events_failed: Per-event failure count (same as send_event)
+            - Metrics accessible via integration.metrics property
 
         Args:
-            events: List of governance events to send
+            events: List of governance events to send. Can be empty (returns empty list).
+                   Events are processed in the order provided, and results maintain
+                   the same ordering for correlation.
 
         Returns:
             List of IntegrationResults, one for each input event. Results are returned
-            in the same order as the input events.
+            in the same order as the input events, allowing direct correlation via
+            zip(events, results). Empty list returns empty results.
 
         Raises:
-            AuthenticationError: If not authenticated
-            DeliveryError: If batch delivery fails after retries
-            RateLimitError: If rate limited by the external service
+            AuthenticationError: If the integration is not authenticated. Call
+                               authenticate() before sending events.
+            DeliveryError: If batch delivery fails after all retry attempts. Contains
+                          details about the final failure reason.
+            RateLimitError: If rate limited by the external service. The retry_after
+                           attribute indicates when to retry (seconds).
 
         Example:
+            Basic batch sending:
             ```python
+            # Send a batch of events
             events = [event1, event2, event3]
             results = await adapter.send_events_batch(events)
 
+            # Check results for each event
             for event, result in zip(events, results):
                 if result.success:
                     logger.info(f"Event {event.event_id} sent successfully")
@@ -700,11 +733,50 @@ class BaseIntegration(abc.ABC):
                     logger.error(f"Event {event.event_id} failed: {result.error_message}")
             ```
 
+            Checking batch metrics:
+            ```python
+            # Send multiple batches
+            await adapter.send_events_batch(batch1)
+            await adapter.send_events_batch(batch2)
+
+            # Check batch statistics
+            metrics = adapter.metrics
+            logger.info(f"Batches sent: {metrics['batches_sent']}")
+            logger.info(f"Total events via batch: {metrics['batch_events_total']}")
+            logger.info(f"Batch success rate: {metrics['batches_sent']/(metrics['batches_sent']+metrics['batches_failed']):.1%}")
+            ```
+
+            Handling partial success:
+            ```python
+            results = await adapter.send_events_batch(events)
+            successful = [r for r in results if r.success]
+            failed = [r for r in results if not r.success]
+
+            if failed:
+                logger.warning(f"Partial batch failure: {len(failed)}/{len(events)} failed")
+                # Retry failed events individually if needed
+                for idx, result in enumerate(results):
+                    if not result.success:
+                        await adapter.send_event(events[idx])
+            ```
+
         Note:
             Batch semantics depend on the adapter implementation:
-            - Some adapters use all-or-nothing semantics (e.g., Splunk HEC)
-            - Others may support partial success
-            - Default fallback sends events individually, allowing mixed results
+            - Splunk HEC: All-or-nothing semantics (all succeed or all fail)
+            - Sentinel DCR: All-or-nothing semantics (all succeed or all fail)
+            - Jira/ServiceNow: Default one-by-one fallback allows partial success
+            - Custom adapters: Can implement either semantic by overriding
+              _do_send_events_batch()
+
+            Thread Safety:
+            - This method is async-safe but not thread-safe
+            - Metrics updates are not atomic across threads
+            - Use separate adapter instances for concurrent threads
+
+            Authentication:
+            - Must call authenticate() before using this method
+            - Authentication state checked before each batch
+            - Raises AuthenticationError immediately if not authenticated
         """
         if not self._authenticated:
             error_msg = "Integration is not authenticated"
@@ -786,40 +858,103 @@ class BaseIntegration(abc.ABC):
         """
         Perform the actual batch event delivery.
 
-        Subclasses should override this method to implement adapter-specific batch
-        delivery logic when the external service supports batch operations.
+        This is the core method that subclasses override to implement adapter-specific
+        batch delivery logic when the external service supports batch operations.
+        This method is called by send_events_batch() after authentication checks and
+        is wrapped with automatic retry logic.
 
         If not overridden, the base implementation will automatically fall back to
         sending events one-by-one using _do_send_event(), allowing all adapters to
-        support batch operations transparently.
+        support batch operations transparently without additional implementation.
+
+        Implementation Contract:
+            - Called ONLY by send_events_batch() after authentication is verified
+            - Wrapped with automatic retry logic (3 attempts, exponential backoff)
+            - Should NOT handle authentication (handled by send_events_batch)
+            - Should NOT track metrics (handled by send_events_batch)
+            - MUST return one IntegrationResult per input event in same order
+            - MUST preserve event ordering in results for correlation
+
+        When to Override:
+            Override this method if:
+            - The external service has a dedicated batch API endpoint
+            - Batch operations are significantly more efficient than individual calls
+            - The service supports sending multiple events in a single HTTP request
+            - You want to implement custom batch size limits or chunking
+
+            Do NOT override if:
+            - The service only supports individual event submission
+            - The default one-by-one fallback is acceptable for your use case
+            - Examples: Jira, ServiceNow (no native batch APIs)
+
+        Error Handling:
+            Subclass implementations should raise:
+            - RateLimitError: When rate limited (include retry_after if available)
+            - DeliveryError: For general delivery failures (will trigger retry)
+            - AuthenticationError: If token/credentials become invalid mid-request
+            - IntegrationConnectionError: For network/connectivity issues
+
+            Do NOT catch and suppress exceptions - let them propagate for retry logic.
+            The send_events_batch() method handles retry orchestration and metrics.
+
+        Batch Size Considerations:
+            - Respect service-specific limits (e.g., Splunk HEC, Sentinel 1MB/500 records)
+            - Consider implementing chunking for large batches
+            - Document recommended batch sizes in adapter-specific docstrings
+            - Return appropriate errors if batch size exceeds service limits
 
         Args:
-            events: List of governance events to send
+            events: List of governance events to send. Guaranteed to be non-empty
+                   (empty lists handled by send_events_batch). Events must be
+                   processed in the order provided.
 
         Returns:
             List of IntegrationResults for each event, in the same order as input.
             Each result indicates success or failure for the corresponding event.
+            - For all-or-nothing semantics: All results have same success status
+            - For partial success: Mixed success/failure results allowed
+            - Empty input returns empty list (but should not occur in practice)
 
-        Note:
-            Subclass implementations should:
-            - Format events according to the external service's batch API
-            - Respect any batch size limits (e.g., max events, max payload size)
-            - Handle all-or-nothing vs partial success semantics appropriately
-            - Raise RateLimitError with retry_after if rate limited
-            - Return one IntegrationResult per input event
+        Raises:
+            RateLimitError: Service rate limit exceeded. Set retry_after attribute
+                          to indicate when to retry (seconds from now).
+            DeliveryError: Batch delivery failed. Will trigger retry logic.
+            AuthenticationError: Authentication token expired or invalid.
+            IntegrationConnectionError: Network or connectivity issues.
 
-        Example Implementation:
+        Implementation Examples:
+
+            All-or-nothing batch (Splunk/Sentinel pattern):
             ```python
             async def _do_send_events_batch(
                 self,
                 events: List[IntegrationEvent]
             ) -> List[IntegrationResult]:
+                '''Send events using service's batch API (all-or-nothing).'''
+                if not events:
+                    return []
+
                 # Format events for service's batch API
                 batch_payload = self._format_batch_payload(events)
 
                 # Send batch request
-                response = await self.client.post("/batch", json=batch_payload)
+                client = await self.get_http_client()
+                response = await client.post(
+                    "/api/batch",
+                    json=batch_payload,
+                    headers={"Authorization": f"Bearer {self.token}"}
+                )
 
+                # Handle rate limiting
+                if response.status_code == 429:
+                    retry_after = int(response.headers.get("Retry-After", 60))
+                    raise RateLimitError(
+                        "Batch rate limited",
+                        self.name,
+                        retry_after=retry_after
+                    )
+
+                # All-or-nothing semantics
                 if response.status_code == 200:
                     # All events succeeded
                     return [
@@ -833,17 +968,103 @@ class BaseIntegration(abc.ABC):
                     ]
                 else:
                     # All events failed
+                    error_msg = response.text or f"HTTP {response.status_code}"
                     return [
                         IntegrationResult(
                             success=False,
                             integration_name=self.name,
                             operation="send_event",
                             error_code="BATCH_FAILED",
-                            error_message=response.text,
+                            error_message=error_msg,
                         )
                         for _ in events
                     ]
             ```
+
+            Partial success batch (custom pattern):
+            ```python
+            async def _do_send_events_batch(
+                self,
+                events: List[IntegrationEvent]
+            ) -> List[IntegrationResult]:
+                '''Send events with per-event success/failure tracking.'''
+                if not events:
+                    return []
+
+                # Format events for service's batch API
+                batch_payload = [self._format_event(e) for e in events]
+
+                # Send batch request
+                client = await self.get_http_client()
+                response = await client.post("/api/batch", json=batch_payload)
+
+                if response.status_code != 200:
+                    # Entire batch failed
+                    raise DeliveryError(
+                        f"Batch request failed: {response.text}",
+                        self.name
+                    )
+
+                # Parse per-event results from response
+                results = []
+                response_data = response.json()
+                for idx, event in enumerate(events):
+                    event_result = response_data["results"][idx]
+                    if event_result["status"] == "success":
+                        results.append(IntegrationResult(
+                            success=True,
+                            integration_name=self.name,
+                            operation="send_event",
+                            external_id=event_result["id"],
+                        ))
+                    else:
+                        results.append(IntegrationResult(
+                            success=False,
+                            integration_name=self.name,
+                            operation="send_event",
+                            error_code=event_result["error_code"],
+                            error_message=event_result["error_message"],
+                        ))
+
+                return results
+            ```
+
+            Chunking large batches:
+            ```python
+            async def _do_send_events_batch(
+                self,
+                events: List[IntegrationEvent]
+            ) -> List[IntegrationResult]:
+                '''Send events in chunks to respect service limits.'''
+                MAX_BATCH_SIZE = 100  # Service limit
+
+                if len(events) <= MAX_BATCH_SIZE:
+                    # Single batch
+                    return await self._send_single_batch(events)
+
+                # Chunk and send multiple batches
+                results = []
+                for i in range(0, len(events), MAX_BATCH_SIZE):
+                    chunk = events[i:i + MAX_BATCH_SIZE]
+                    chunk_results = await self._send_single_batch(chunk)
+                    results.extend(chunk_results)
+
+                return results
+            ```
+
+        Default Fallback Implementation:
+            If not overridden, sends events one-by-one using _do_send_event():
+            - Processes events sequentially in order
+            - Each event gets individual IntegrationResult
+            - Exceptions caught and converted to failure results
+            - Allows partial success (some events succeed, others fail)
+            - Suitable for adapters without batch APIs (Jira, ServiceNow)
+
+        See Also:
+            - send_events_batch(): Public API with auth checks and metrics
+            - _send_events_batch_with_retry(): Retry wrapper for this method
+            - Splunk adapter: Reference implementation with all-or-nothing semantics
+            - Sentinel adapter: Reference implementation with Azure DCR API
         """
         # Default implementation: send events one-by-one
         # Subclasses can override this for more efficient batch operations
