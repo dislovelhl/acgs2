@@ -23,6 +23,15 @@ try:
 except ImportError:
     TRANSFORMERS_AVAILABLE = False
 
+# ONNX Runtime availability check
+ONNX_AVAILABLE = False
+try:
+    import onnxruntime as ort
+
+    ONNX_AVAILABLE = True
+except ImportError:
+    pass
+
 PROFILING_AVAILABLE = False
 
 
@@ -50,7 +59,14 @@ class ImpactAnalysis:
 class ImpactScorer:
     """Streamlined ImpactScorer v3.0.0 (ONNX/BERT optimized).
 
-    Features tokenization caching and class-level model singleton for efficiency.
+    Features tokenization caching, class-level model singleton, and lazy ONNX
+    session loading with warmup for optimal performance.
+
+    ONNX Session Management:
+    - Lazy loading: Session created on first inference, not at initialization
+    - Class-level caching: Single ONNX session shared across instances
+    - Warmup: Pre-warms execution path to avoid cold-start latency
+    - Optimized: Graph optimization and threading configured for performance
     """
 
     # Class-level tokenizer and model cache (singleton pattern to avoid reloading)
@@ -58,18 +74,34 @@ class ImpactScorer:
     _model_instance: Optional[Any] = None
     _cached_model_name: Optional[str] = None
 
+    # Class-level ONNX session cache (singleton pattern for efficiency)
+    _onnx_session_instance: Optional[Any] = None
+    _cached_onnx_path: Optional[str] = None
+
+    # Default ONNX model path (relative to deliberation_layer directory)
+    DEFAULT_ONNX_PATH = "optimized_models/distilbert_base_uncased.onnx"
+
     def __init__(
         self,
         config: Optional[ScoringConfig] = None,
         model_name: str = "distilbert-base-uncased",
         use_onnx: bool = True,
         tokenization_cache_size: int = 1000,
+        onnx_model_path: Optional[str] = None,
     ):
         self.config = config or ScoringConfig()
         self.model_name = model_name
         self.use_onnx = use_onnx
-        self._onnx_enabled = use_onnx if TRANSFORMERS_AVAILABLE else False
+        # ONNX enabled only if both use_onnx=True AND ONNX runtime is available
+        self._onnx_enabled = use_onnx and ONNX_AVAILABLE and TRANSFORMERS_AVAILABLE
         self._bert_enabled = False
+
+        # ONNX session configuration
+        # Session is lazy loaded - not created until first inference
+        self._onnx_model_path = onnx_model_path
+        self._onnx_session_warmed_up = False
+        # session attribute for compatibility - will be populated lazily
+        self.session = None
 
         # Initialize tokenization cache for repeated text inputs
         try:
@@ -93,7 +125,9 @@ class ImpactScorer:
                     ImpactScorer._cached_model_name = model_name
 
                 if use_onnx:
-                    self.session = None
+                    # ONNX mode: session will be lazy loaded on first inference
+                    # self.session stays None until _ensure_onnx_session() is called
+                    pass
                 else:
                     # Use class-level cached model if available
                     if (
@@ -277,13 +311,198 @@ class ImpactScorer:
 
     @classmethod
     def reset_class_cache(cls) -> None:
-        """Reset class-level tokenizer and model cache.
+        """Reset class-level tokenizer, model, and ONNX session cache.
 
         Use this when switching models or to free memory.
         """
         cls._tokenizer_instance = None
         cls._model_instance = None
         cls._cached_model_name = None
+        cls._onnx_session_instance = None
+        cls._cached_onnx_path = None
+
+    def _get_onnx_model_path(self) -> Optional[str]:
+        """
+        Get the ONNX model path, resolving from environment or default.
+
+        Priority:
+        1. Instance-level onnx_model_path (constructor parameter)
+        2. Environment variable ONNX_MODEL_PATH
+        3. Default path relative to this module
+
+        Returns:
+            Absolute path to ONNX model file, or None if not found.
+        """
+        import os
+        from pathlib import Path
+
+        # Priority 1: Instance-level path
+        if self._onnx_model_path:
+            path = Path(self._onnx_model_path)
+            if path.exists():
+                return str(path.resolve())
+
+        # Priority 2: Environment variable
+        env_path = os.environ.get("ONNX_MODEL_PATH")
+        if env_path:
+            path = Path(env_path)
+            if path.exists():
+                return str(path.resolve())
+
+        # Priority 3: Default path relative to this module
+        module_dir = Path(__file__).parent
+        default_path = module_dir / self.DEFAULT_ONNX_PATH
+        if default_path.exists():
+            return str(default_path.resolve())
+
+        return None
+
+    def _ensure_onnx_session(self) -> Optional[Any]:
+        """
+        Lazily load ONNX session on first inference.
+
+        Creates the session only when needed, using class-level caching to share
+        the session across instances. Performs warmup on first load.
+
+        Returns:
+            ONNX InferenceSession or None if unavailable.
+        """
+        if not self._onnx_enabled or not ONNX_AVAILABLE:
+            return None
+
+        onnx_path = self._get_onnx_model_path()
+        if onnx_path is None:
+            logger.debug("ONNX model file not found, skipping ONNX inference")
+            return None
+
+        # Check class-level cache
+        if (
+            ImpactScorer._onnx_session_instance is not None
+            and ImpactScorer._cached_onnx_path == onnx_path
+        ):
+            self.session = ImpactScorer._onnx_session_instance
+            # Warmup if not done for this instance
+            if not self._onnx_session_warmed_up:
+                self._warmup_session()
+            return self.session
+
+        # Create new session with optimization
+        session = self._create_onnx_session(onnx_path)
+        if session is not None:
+            # Update class-level cache
+            ImpactScorer._onnx_session_instance = session
+            ImpactScorer._cached_onnx_path = onnx_path
+            self.session = session
+            # Perform warmup
+            self._warmup_session()
+            logger.info(f"ONNX session loaded and cached: {onnx_path}")
+
+        return self.session
+
+    def _create_onnx_session(self, onnx_path: str) -> Optional[Any]:
+        """
+        Create ONNX Runtime session with performance optimizations.
+
+        Configures the session with:
+        - Maximum graph optimization level
+        - Optimal threading configuration
+        - CPU execution provider (GPU can be added later)
+
+        Args:
+            onnx_path: Path to the ONNX model file.
+
+        Returns:
+            Configured ONNX InferenceSession or None on failure.
+        """
+        if not ONNX_AVAILABLE:
+            return None
+
+        try:
+            # Configure session options for optimal performance
+            sess_options = ort.SessionOptions()
+
+            # Enable all graph optimizations (constant folding, operator fusion, etc.)
+            sess_options.graph_optimization_level = (
+                ort.GraphOptimizationLevel.ORT_ENABLE_ALL
+            )
+
+            # Configure threading for CPU efficiency
+            # intra_op: threads for parallel ops within a single operator
+            # inter_op: threads for parallel execution of independent operators
+            sess_options.intra_op_num_threads = 4
+            sess_options.inter_op_num_threads = 2
+
+            # Execution mode: parallel for better throughput
+            sess_options.execution_mode = ort.ExecutionMode.ORT_PARALLEL
+
+            # Create session with CPU provider
+            # GPU providers (CUDA, TensorRT) can be added in priority order
+            providers = ["CPUExecutionProvider"]
+
+            session = ort.InferenceSession(
+                onnx_path,
+                sess_options=sess_options,
+                providers=providers,
+            )
+
+            logger.debug(f"ONNX session created with providers: {providers}")
+            return session
+
+        except Exception as e:
+            logger.warning(f"Failed to create ONNX session: {e}")
+            return None
+
+    def _warmup_session(self) -> None:
+        """
+        Pre-warm the ONNX session to avoid cold-start latency.
+
+        Runs a dummy inference to:
+        - Trigger JIT compilation (if applicable)
+        - Allocate memory for inference buffers
+        - Prime the execution path
+
+        This significantly reduces latency on the first real inference.
+        """
+        if self.session is None or self._onnx_session_warmed_up:
+            return
+
+        if not hasattr(self, "tokenizer") or self.tokenizer is None:
+            self._onnx_session_warmed_up = True
+            return
+
+        try:
+            # Create dummy input matching expected model input shape
+            dummy_text = "warmup inference"
+            dummy_inputs = self.tokenizer(
+                dummy_text,
+                padding="max_length",
+                truncation=True,
+                max_length=512,
+                return_tensors="np",
+            )
+
+            # Get input names from session
+            input_names = [inp.name for inp in self.session.get_inputs()]
+
+            # Create input feed
+            input_feed = {}
+            if "input_ids" in input_names:
+                input_feed["input_ids"] = dummy_inputs["input_ids"].astype(np.int64)
+            if "attention_mask" in input_names:
+                input_feed["attention_mask"] = dummy_inputs["attention_mask"].astype(
+                    np.int64
+                )
+
+            # Run warmup inference
+            _ = self.session.run(None, input_feed)
+
+            self._onnx_session_warmed_up = True
+            logger.debug("ONNX session warmup completed")
+
+        except Exception as e:
+            # Warmup failure is non-critical, log and continue
+            logger.debug(f"ONNX session warmup failed (non-critical): {e}")
+            self._onnx_session_warmed_up = True
 
     def _extract_text_content(self, message: Any) -> str:
         if isinstance(message, dict):
