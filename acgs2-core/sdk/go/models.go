@@ -258,3 +258,178 @@ type PaginatedResponse[T any] struct {
 	PageSize    int     `json:"pageSize"`
 	TotalPages  int     `json:"totalPages"`
 }
+
+// =============================================================================
+// Policy Registry Models
+// =============================================================================
+
+// PolicyStatus represents the lifecycle status of a policy
+type PolicyStatus string
+
+const (
+	PolicyStatusDraft         PolicyStatus = "draft"
+	PolicyStatusPendingReview PolicyStatus = "pending_review"
+	PolicyStatusApproved      PolicyStatus = "approved"
+	PolicyStatusActive        PolicyStatus = "active"
+	PolicyStatusDeprecated    PolicyStatus = "deprecated"
+	PolicyStatusArchived      PolicyStatus = "archived"
+)
+
+// Policy represents a governance policy
+type Policy struct {
+	ID               string                 `json:"id"`
+	Name             string                 `json:"name"`
+	Version          string                 `json:"version"`
+	Description      *string                `json:"description,omitempty"`
+	Status           PolicyStatus           `json:"status"`
+	Rules            []map[string]interface{} `json:"rules"`
+	TenantID         *string                `json:"tenantId,omitempty"`
+	CreatedAt        string                 `json:"createdAt"`
+	UpdatedAt        string                 `json:"updatedAt"`
+	ConstitutionalHash string               `json:"constitutionalHash"`
+}
+
+// CreatePolicyRequest represents a request to create a new policy
+type CreatePolicyRequest struct {
+	Name        string                   `json:"name"`
+	Description *string                  `json:"description,omitempty"`
+	Rules       []map[string]interface{} `json:"rules"`
+	Tags        []string                 `json:"tags,omitempty"`
+	ComplianceTags []string              `json:"complianceTags,omitempty"`
+}
+
+// UpdatePolicyRequest represents a request to update a policy
+type UpdatePolicyRequest struct {
+	Name        *string                  `json:"name,omitempty"`
+	Description *string                  `json:"description,omitempty"`
+	Rules       []map[string]interface{} `json:"rules,omitempty"`
+	Status      *PolicyStatus            `json:"status,omitempty"`
+	Tags        []string                 `json:"tags,omitempty"`
+	ComplianceTags []string              `json:"complianceTags,omitempty"`
+}
+
+// PolicyVersion represents a version of a policy
+type PolicyVersion struct {
+	ID          string      `json:"id"`
+	PolicyID    string      `json:"policyId"`
+	Version     string      `json:"version"`
+	Content     interface{} `json:"content"`
+	Description *string     `json:"description,omitempty"`
+	CreatedAt   string      `json:"createdAt"`
+	CreatedBy   string      `json:"createdBy"`
+}
+
+// PolicyBundle represents a collection of policies
+type PolicyBundle struct {
+	ID          string   `json:"id"`
+	Name        string   `json:"name"`
+	Description *string  `json:"description,omitempty"`
+	Policies    []string `json:"policies"`
+	TenantID    *string  `json:"tenantId,omitempty"`
+	CreatedAt   string   `json:"createdAt"`
+	UpdatedAt   string   `json:"updatedAt"`
+}
+
+// CreateBundleRequest represents a request to create a policy bundle
+type CreateBundleRequest struct {
+	Name        string   `json:"name"`
+	Policies    []string `json:"policies"`
+	Description *string  `json:"description,omitempty"`
+}
+
+// AuthRequest represents an authentication request
+type AuthRequest struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
+// AuthResponse represents an authentication response
+type AuthResponse struct {
+	AccessToken string `json:"accessToken"`
+	TokenType   string `json:"tokenType"`
+	ExpiresIn   int    `json:"expiresIn"`
+	User        struct {
+		ID       string   `json:"id"`
+		Username string   `json:"username"`
+		Roles    []string `json:"roles"`
+		TenantID *string  `json:"tenantId,omitempty"`
+	} `json:"user"`
+}
+
+// PolicyVerificationRequest represents a policy verification request
+type PolicyVerificationRequest struct {
+	Input interface{} `json:"input"`
+}
+
+// PolicyVerificationResponse represents a policy verification response
+type PolicyVerificationResponse struct {
+	Allowed    bool     `json:"allowed"`
+	Reason     *string  `json:"reason,omitempty"`
+	Violations []string `json:"violations,omitempty"`
+}
+
+// =============================================================================
+// API Gateway Models
+// =============================================================================
+
+// HealthCheckResponse represents a health check response
+type HealthCheckResponse struct {
+	Status             string  `json:"status"`
+	Version            *string `json:"version,omitempty"`
+	Timestamp          string  `json:"timestamp"`
+	ConstitutionalHash string  `json:"constitutionalHash"`
+}
+
+// FeedbackRequest represents a user feedback request
+type FeedbackRequest struct {
+	UserID    string                 `json:"userId"`
+	Category  string                 `json:"category"`
+	Rating    int                    `json:"rating"`
+	Title     string                 `json:"title"`
+	Description *string               `json:"description,omitempty"`
+	Metadata  map[string]interface{} `json:"metadata,omitempty"`
+}
+
+// FeedbackResponse represents a feedback submission response
+type FeedbackResponse struct {
+	ID        string `json:"id"`
+	Status    string `json:"status"`
+	Timestamp string `json:"timestamp"`
+}
+
+// FeedbackStats represents feedback statistics
+type FeedbackStats struct {
+	TotalFeedback     int                        `json:"totalFeedback"`
+	AverageRating     float64                    `json:"averageRating"`
+	CategoryBreakdown map[string]int             `json:"categoryBreakdown"`
+	RecentFeedback    []FeedbackSummary          `json:"recentFeedback"`
+}
+
+// FeedbackSummary represents a summary of feedback
+type FeedbackSummary struct {
+	ID        string `json:"id"`
+	UserID    string `json:"userId"`
+	Category  string `json:"category"`
+	Rating    int    `json:"rating"`
+	Title     string `json:"title"`
+	Timestamp string `json:"timestamp"`
+}
+
+// ServiceInfo represents information about a service
+type ServiceInfo struct {
+	Name        string   `json:"name"`
+	Version     string   `json:"version"`
+	Status      string   `json:"status"`
+	Endpoints   []string `json:"endpoints"`
+	Description *string  `json:"description,omitempty"`
+}
+
+// ServicesResponse represents the services listing response
+type ServicesResponse struct {
+	Services []ServiceInfo `json:"services"`
+	Gateway  struct {
+		Version           string `json:"version"`
+		Uptime            int    `json:"uptime"`
+		ActiveConnections int    `json:"activeConnections"`
+	} `json:"gateway"`
+}

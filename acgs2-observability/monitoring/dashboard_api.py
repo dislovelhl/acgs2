@@ -736,13 +736,30 @@ def create_dashboard_app() -> FastAPI:
         lifespan=lifespan,
     )
 
-    # Add CORS middleware
+    # Configure CORS based on environment for security
+    cors_origins = os.getenv("CORS_ALLOWED_ORIGINS", "").split(",")
+    if not cors_origins or cors_origins == [""]:
+        # Default secure configuration - no external origins allowed
+        cors_origins = []
+
+    # Allow localhost for development (but not in production)
+    if os.getenv("ENVIRONMENT", "").lower() == "development":
+        cors_origins.extend(
+            [
+                "http://localhost:3000",
+                "http://localhost:8080",
+                "http://127.0.0.1:3000",
+                "http://127.0.0.1:8080",
+            ]
+        )
+
+    # Add CORS middleware with secure configuration
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],  # In production, restrict this
+        allow_origins=cors_origins,
         allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
+        allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        allow_headers=["Authorization", "Content-Type", "X-Correlation-ID"],
     )
 
     @app.get("/dashboard/overview", response_model=DashboardOverview)

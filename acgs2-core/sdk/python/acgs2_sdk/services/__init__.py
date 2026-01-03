@@ -4,19 +4,23 @@ Constitutional Hash: cdd01ef066bc6cf2
 """
 
 from acgs2_sdk.services.agent import AgentService
+from acgs2_sdk.services.api_gateway import APIGatewayService
 from acgs2_sdk.services.audit import AuditService
 from acgs2_sdk.services.compliance import ComplianceService
 from acgs2_sdk.services.governance import GovernanceService
 from acgs2_sdk.services.hitl_approvals import HITLApprovalsService
 from acgs2_sdk.services.ml_governance import MLGovernanceService
 from acgs2_sdk.services.policy import PolicyService
+from acgs2_sdk.services.policy_registry import PolicyRegistryService
 
 __all__ = [
     "AgentService",
+    "APIGatewayService",
     "AuditService",
     "ComplianceService",
     "GovernanceService",
     "HITLApprovalsService",
     "MLGovernanceService",
     "PolicyService",
+    "PolicyRegistryService",
 ]
