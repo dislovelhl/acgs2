@@ -130,16 +130,16 @@
         {
           "id": "2.1",
           "description": "Create Pydantic models for Linear webhook payloads",
-          "status": "in_progress",
+          "status": "completed",
           "dependencies": [
             "1.2"
           ],
           "estimated_hours": 3,
-          "notes": "Starting implementation of Pydantic models for Linear webhook payloads. Reviewing existing patterns from integration-service/src/webhooks/models.py and integration-service/src/config/models.py",
+          "notes": "\u2705 Successfully created comprehensive Pydantic models for Linear webhook payloads at integration-service/src/integrations/linear/models.py. Includes:\n- Core webhook models: LinearWebhookPayload, IssueWebhookData, CommentWebhookData\n- Event-specific convenience wrappers: IssueEvent, CommentEvent, StatusChangeEvent\n- Supporting models: LinearUser, LinearTeam, LinearWorkflowState, LinearProject, LinearCycle, LinearLabel, LinearIssue, LinearComment\n- Proper enums for WebhookAction, LinearWebhookType, IssuePriority\n- Comprehensive field validation and model validators\n- Change tracking support with updatedFrom field\n- Proper logging for debugging parse failures\n- Follows existing patterns from webhooks/models.py and config/models.py\n- All linting checks passed\n- Committed in 4c8daa58f",
           "files_to_modify": [
             "integration-service/src/integrations/linear/models.py"
           ],
-          "updated_at": "2026-01-03T22:03:11.513749+00:00"
+          "updated_at": "2026-01-03T22:06:26.187844+00:00"
         },
         {
           "id": "2.2",
@@ -654,6 +654,6 @@
     "Implement proper deduplication to prevent infinite sync loops",
     "Use Redis locks to prevent race conditions during bidirectional sync"
   ],
-  "last_updated": "2026-01-03T22:03:11.513758+00:00",
+  "last_updated": "2026-01-03T22:06:26.187853+00:00",
   "recoveryNote": "Task recovered from stuck state at 2026-01-03T22:00:00.431Z"
 }
