@@ -5,6 +5,83 @@ Constitutional Hash: cdd01ef066bc6cf2
 Evidently-based concept drift detection for monitoring model performance.
 Compares reference (baseline) vs. current (recent) data distributions
 to detect when the model needs updating or rollback.
+
+STATISTICAL DRIFT DETECTION ALGORITHMS
+======================================
+
+This module uses Evidently's DataDriftPreset which automatically selects
+appropriate statistical tests based on feature types:
+
+1. KOLMOGOROV-SMIRNOV (K-S) TEST - For continuous numerical features
+   ----------------------------------------------------------------------
+   Mathematical Foundation:
+   - Compares empirical cumulative distribution functions (ECDFs)
+   - Test statistic: D = max|F_ref(x) - F_curr(x)|
+   - Null hypothesis: Both samples come from the same distribution
+   - Sensitive to differences in shape, location, and scale
+
+   When Used:
+   - Continuous numerical features (e.g., floats, unbounded integers)
+   - Non-parametric: no assumptions about underlying distribution
+   - Works well for detecting shifts in mean, variance, or shape
+
+   Interpretation:
+   - p-value < 0.05: Reject null hypothesis (drift detected)
+   - D statistic ∈ [0, 1]: larger values indicate greater divergence
+
+2. POPULATION STABILITY INDEX (PSI) - For categorical/binned numerical features
+   ------------------------------------------------------------------------------
+   Mathematical Foundation:
+   - PSI = Σ (P_curr - P_ref) × ln(P_curr / P_ref)
+   - Where P_curr, P_ref are proportions in each bin/category
+   - Measures information gain from reference to current distribution
+   - Symmetric measure: PSI(A,B) ≠ PSI(B,A) but comparable
+
+   When Used:
+   - Categorical features (discrete values)
+   - Binned numerical features (e.g., age groups)
+   - Default for features with <10 unique values
+
+   Interpretation (Industry Standard Thresholds):
+   - PSI < 0.1:  No significant shift (stable)
+   - PSI 0.1-0.2: Small shift (monitor)
+   - PSI 0.2-0.25: Moderate shift (investigate) ← DEFAULT THRESHOLD
+   - PSI > 0.25: Severe shift (actionable drift)
+
+   Why drift_threshold=0.2 is chosen:
+   - Balances sensitivity vs. false positive rate
+   - Aligns with industry best practices (model risk management)
+   - Triggers investigation before drift becomes severe (0.25+)
+   - Appropriate for governance: conservative enough to catch issues early
+
+3. CHI-SQUARED TEST - For categorical features with low cardinality
+   ------------------------------------------------------------------
+   Mathematical Foundation:
+   - χ² = Σ (O_i - E_i)² / E_i
+   - Where O_i = observed counts, E_i = expected counts
+   - Tests independence between distribution membership and category
+   - Degrees of freedom: (# categories - 1)
+
+   When Used:
+   - Low-cardinality categorical features (<10 categories)
+   - Alternative to PSI for sparse categorical data
+   - Requires sufficient samples per category (typically 5+)
+
+   Interpretation:
+   - p-value < 0.05: Reject null hypothesis (drift detected)
+   - Larger χ² indicates stronger evidence of distributional change
+
+TEST SELECTION LOGIC
+====================
+Evidently automatically selects the appropriate test:
+- Continuous numerical (>10 unique values) → K-S test
+- Low-cardinality categorical (<10 unique values) → Chi-squared or PSI
+- High-cardinality categorical → PSI on binned distribution
+
+For more details, see:
+- Evidently docs: https://docs.evidentlyai.com/
+- PSI explanation: https://www.lexjansen.com/wuss/2017/47_Final_Paper_PDF.pdf
+- K-S test: Massey, F.J. (1951). "The Kolmogorov-Smirnov Test"
 """
 
 import asyncio
@@ -82,10 +159,27 @@ class DriftDetector:
 
     Monitors concept drift by comparing reference (baseline) data distribution
     against current (recent) prediction data. Uses Evidently's DataDriftPreset
-    which includes multiple statistical tests (K-S, PSI, etc.).
+    which includes multiple statistical tests:
+    - Kolmogorov-Smirnov (K-S) test for continuous numerical features
+    - Population Stability Index (PSI) for categorical/binned features
+    - Chi-squared test for low-cardinality categorical features
+
+    See the module docstring above for detailed explanations of each statistical
+    test, their mathematical foundations, and when they are applied.
+
+    DRIFT DETECTION METHODOLOGY
+    ---------------------------
+    1. Reference data (baseline): Established distribution from known-good period
+    2. Current data (recent): Latest prediction data to compare against baseline
+    3. Per-feature test: Each feature tested with appropriate statistical test
+    4. Dataset-level drift: Triggered when ≥50% of features show drift
+       (configurable via drift_share_threshold)
+
+    The default drift_threshold=0.2 corresponds to "moderate drift" on the PSI
+    scale, catching distribution shifts before they become severe (>0.25).
 
     Features:
-    - Configurable drift threshold (PSI-based)
+    - Configurable drift threshold (PSI-based, default 0.2)
     - Automatic reference data management
     - Low-traffic detection (insufficient data warning)
     - Alert callbacks for integration
@@ -94,7 +188,7 @@ class DriftDetector:
 
     Example usage:
         detector = DriftDetector(
-            drift_threshold=0.2,
+            drift_threshold=0.2,  # PSI threshold for moderate drift
             reference_window_size=1000,
             current_window_size=100,
         )
@@ -106,6 +200,7 @@ class DriftDetector:
         result = detector.check_drift()
         if result.drift_detected:
             print(f"Drift detected! Score: {result.drift_score}")
+            print(f"Drifted columns: {result.columns_drifted}")
     """
 
     def __init__(
@@ -121,7 +216,26 @@ class DriftDetector:
         """Initialize the drift detector.
 
         Args:
-            drift_threshold: PSI threshold for column drift (default 0.2).
+            drift_threshold: PSI threshold for column-level drift detection (default 0.2).
+                This threshold is used for categorical/binned features when Evidently
+                applies the Population Stability Index (PSI) test.
+
+                Industry-standard PSI threshold interpretations:
+                - < 0.1:  No significant drift (distribution is stable)
+                - 0.1-0.2: Small drift (monitor but no immediate action)
+                - 0.2-0.25: Moderate drift (investigate and consider retraining)
+                - > 0.25: Severe drift (actionable - retrain or rollback)
+
+                Default of 0.2 chosen because:
+                - Catches moderate drift before it becomes severe (0.25+)
+                - Balances sensitivity vs. false positive rate
+                - Conservative threshold appropriate for governance applications
+                - Aligns with model risk management best practices
+
+                For K-S and Chi-squared tests, Evidently uses p-value < 0.05
+                instead of this threshold, but the 0.2 PSI threshold is the
+                primary tuning parameter for drift sensitivity.
+
             reference_window_size: Number of samples in reference dataset.
             current_window_size: Number of recent samples for comparison.
             min_samples_for_drift: Minimum samples needed for drift check.
@@ -387,6 +501,25 @@ class DriftDetector:
                 current_df = current_df[feature_columns]
 
                 # Run Evidently drift detection
+                # =============================
+                # DataDriftPreset applies statistical tests to detect distribution shifts:
+                #
+                # For each feature, Evidently automatically selects the appropriate test:
+                # - Continuous numerical features → Kolmogorov-Smirnov (K-S) test
+                #   * Compares cumulative distribution functions
+                #   * Returns p-value (drift if p < 0.05)
+                #
+                # - Categorical/low-cardinality features → Chi-squared or PSI
+                #   * Chi-squared tests category distribution independence
+                #   * PSI measures information gain between distributions
+                #   * Returns drift score compared to threshold
+                #
+                # Dataset-level drift is triggered when:
+                #   share_of_drifted_columns >= drift_share_threshold (default 0.5)
+                #   i.e., at least 50% of features show drift
+                #
+                # This prevents false alarms from single noisy features while
+                # catching systematic distribution shifts across multiple features.
                 drift_report = Report(
                     metrics=[
                         DataDriftPreset(
@@ -658,11 +791,19 @@ class DriftDetector:
                     share_of_drifted_columns = result.get("share_of_drifted_columns", 0.0)
 
                 # Column-level drift
+                # Evidently returns per-column drift results with test-specific metrics
                 drift_by_columns = result.get("drift_by_columns", {})
                 for col_name, col_data in drift_by_columns.items():
                     if isinstance(col_data, dict):
                         columns_drifted[col_name] = col_data.get("drift_detected", False)
-                        # Try to get drift score (p-value or statistic varies by test)
+
+                        # Extract drift score - varies by statistical test used:
+                        # - K-S test: p-value (0-1, lower = more drift, <0.05 = significant)
+                        # - PSI test: PSI value (0+, higher = more drift, >0.2 = moderate)
+                        # - Chi-squared: p-value (0-1, lower = more drift, <0.05 = significant)
+                        #
+                        # Evidently may report as "drift_score" or "stattest_score"
+                        # depending on test type and version
                         drift_score = col_data.get("drift_score", 0.0)
                         if drift_score is None:
                             drift_score = col_data.get("stattest_score", 0.0) or 0.0
