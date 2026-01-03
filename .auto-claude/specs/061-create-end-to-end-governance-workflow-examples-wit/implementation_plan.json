@@ -176,7 +176,7 @@
           "subtask_id": "3.3",
           "title": "Create HITL approval policy",
           "description": "Write Rego policy that determines when human approval is required based on risk scores and action types",
-          "status": "pending",
+          "status": "completed",
           "dependencies": ["3.2"],
           "files": [
             "./examples/04-end-to-end-governance-workflow/policies/hitl_approval.rego"
@@ -186,7 +186,9 @@
             "Approval workflow logic implemented",
             "Reviewer requirements specified",
             "Escalation rules defined"
-          ]
+          ],
+          "completed_at": "2026-01-03T18:16:00Z",
+          "notes": "Completed HITL approval policy implementation. Created comprehensive hitl_approval.rego (285 lines, 8.4KB) with: risk threshold (0.7) for HITL requirement, always-require approval rules for 4 action types (deploy_model in production, delete_resource, access_pii, execute_code), reviewer expertise assignment (ml_safety_specialist, data_protection_officer, security_lead, senior_devops), timeout configuration (2 hours for risk < 0.8, 4 hours for risk >= 0.8), escalation logic to 4 levels (security_director, compliance_officer, ml_director, cto), human-readable rationale generation for each scenario, priority levels for approval queue (critical, high, medium, normal), bypass attempt detection and warning, structured output for workflow integration. Policy follows patterns from constitutional.rego and agent_actions.rego with comprehensive inline comments and clear sectioning. All acceptance criteria met: HITL thresholds defined, approval workflow logic implemented, reviewer requirements specified, escalation rules defined. Committed to git (commit 566929b05)."
         },
         {
           "subtask_id": "3.4",
