@@ -99,6 +99,42 @@ except ImportError:
         DriftStatus = None
         get_drift_detector = None
 
+# Online learning imports (River model)
+try:
+    from .online_learning import (
+        RIVER_AVAILABLE,
+        LearningResult,
+        LearningStatus,
+        ModelType,
+        OnlineLearningPipeline,
+        PredictionResult,
+        get_online_learning_pipeline,
+    )
+
+    ONLINE_LEARNING_AVAILABLE = True
+except ImportError:
+    try:
+        from online_learning import (
+            RIVER_AVAILABLE,
+            LearningResult,
+            LearningStatus,
+            ModelType,
+            OnlineLearningPipeline,
+            PredictionResult,
+            get_online_learning_pipeline,
+        )
+
+        ONLINE_LEARNING_AVAILABLE = True
+    except ImportError:
+        ONLINE_LEARNING_AVAILABLE = False
+        RIVER_AVAILABLE = False
+        LearningResult = None
+        LearningStatus = None
+        ModelType = None
+        OnlineLearningPipeline = None
+        PredictionResult = None
+        get_online_learning_pipeline = None
+
 logger = logging.getLogger(__name__)
 
 
@@ -923,6 +959,44 @@ class AdaptiveGovernanceEngine:
                 logger.warning(f"Failed to initialize drift detector: {e}")
                 self._drift_detector = None
 
+        # River online learning model for incremental updates
+        # Feature names for the River model must match ImpactFeatures
+        self._river_feature_names = [
+            "message_length",
+            "agent_count",
+            "tenant_complexity",
+            "temporal_mean",
+            "temporal_std",
+            "semantic_similarity",
+            "historical_precedence",
+            "resource_utilization",
+            "network_isolation",
+            "risk_score",
+            "confidence_level",
+        ]
+        self.river_model: Optional[OnlineLearningPipeline] = None
+        if ONLINE_LEARNING_AVAILABLE and RIVER_AVAILABLE:
+            try:
+                self.river_model = get_online_learning_pipeline(
+                    feature_names=self._river_feature_names,
+                    model_type=ModelType.REGRESSOR,  # Regressor for impact scoring
+                )
+                # Set sklearn model as fallback for cold start
+                if self.impact_scorer.model_trained:
+                    self.river_model.set_fallback_model(self.impact_scorer.impact_classifier)
+                logger.info(
+                    f"River online learning model initialized "
+                    f"(features: {len(self._river_feature_names)})"
+                )
+            except Exception as e:
+                logger.warning(f"Failed to initialize River model: {e}")
+                self.river_model = None
+        else:
+            if not ONLINE_LEARNING_AVAILABLE:
+                logger.warning("Online learning module not available, River model disabled")
+            elif not RIVER_AVAILABLE:
+                logger.warning("River library not installed, online learning disabled")
+
     async def initialize(self) -> None:
         """Initialize the adaptive governance engine."""
         logger.info("Initializing Adaptive Governance Engine")
@@ -1052,6 +1126,9 @@ class AdaptiveGovernanceEngine:
 
             self.impact_scorer.update_model(decision.features_used, actual_impact)
 
+            # Update River model for incremental online learning
+            self._update_river_model(decision, actual_impact)
+
             # Store feedback event for persistent storage and later training
             self._store_feedback_event(decision, outcome_success, human_override, actual_impact)
 
@@ -1134,6 +1211,91 @@ class AdaptiveGovernanceEngine:
 
         except Exception as e:
             logger.warning(f"Failed to store feedback event: {e}")
+
+    def _update_river_model(
+        self,
+        decision: GovernanceDecision,
+        actual_impact: float,
+    ) -> None:
+        """Update the River model with incremental online learning.
+
+        This enables continuous learning from feedback without requiring
+        full batch retraining. The River model uses AdaptiveRandomForest
+        which handles concept drift naturally.
+
+        Args:
+            decision: The governance decision that was made
+            actual_impact: The actual impact score based on outcome
+        """
+        if not ONLINE_LEARNING_AVAILABLE or self.river_model is None:
+            return
+
+        try:
+            # Extract features from the decision for River model
+            features = decision.features_used
+            features_dict = {
+                "message_length": float(features.message_length),
+                "agent_count": float(features.agent_count),
+                "tenant_complexity": float(features.tenant_complexity),
+                "temporal_mean": (
+                    float(np.mean(features.temporal_patterns))
+                    if features.temporal_patterns
+                    else 0.0
+                ),
+                "temporal_std": (
+                    float(np.std(features.temporal_patterns)) if features.temporal_patterns else 0.0
+                ),
+                "semantic_similarity": float(features.semantic_similarity),
+                "historical_precedence": float(features.historical_precedence),
+                "resource_utilization": float(features.resource_utilization),
+                "network_isolation": float(features.network_isolation),
+                "risk_score": float(features.risk_score),
+                "confidence_level": float(features.confidence_level),
+            }
+
+            # Learn from the feedback event incrementally
+            result = self.river_model.learn_from_feedback(
+                features=features_dict,
+                outcome=actual_impact,
+                decision_id=decision.decision_id,
+            )
+
+            if result.success:
+                logger.debug(
+                    f"River model updated for decision {decision.decision_id}, "
+                    f"total samples: {result.total_samples}"
+                )
+
+                # Update sklearn fallback model if River model is now ready
+                # but sklearn model wasn't trained yet
+                if self.river_model.adapter.is_ready and not self.impact_scorer.model_trained:
+                    logger.info(
+                        f"River model ready with {result.total_samples} samples, "
+                        "can now provide predictions"
+                    )
+            else:
+                logger.warning(
+                    f"River model update failed for decision {decision.decision_id}: "
+                    f"{result.error_message}"
+                )
+
+        except Exception as e:
+            logger.warning(f"Failed to update River model: {e}")
+
+    def get_river_model_stats(self) -> Optional[Dict]:
+        """Get statistics from the River online learning model.
+
+        Returns:
+            Dict with learning stats, or None if River model unavailable
+        """
+        if not ONLINE_LEARNING_AVAILABLE or self.river_model is None:
+            return None
+
+        try:
+            return self.river_model.get_stats()
+        except Exception as e:
+            logger.warning(f"Failed to get River model stats: {e}")
+            return None
 
     def _update_metrics(self, decision: GovernanceDecision, response_time: float) -> None:
         """Update performance metrics."""
@@ -1433,4 +1595,5 @@ __all__ = [
     "provide_governance_feedback",
     # Availability flags
     "DRIFT_MONITORING_AVAILABLE",
+    "ONLINE_LEARNING_AVAILABLE",
 ]
