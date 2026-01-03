@@ -20,10 +20,20 @@ from .base import (
     RateLimitError,
     ValidationError,
 )
+from .jira_adapter import (
+    JiraAdapter,
+    JiraCredentials,
+    JiraDeploymentType,
+)
 from .sentinel_adapter import (
     AzureCloud,
     SentinelAdapter,
     SentinelCredentials,
+)
+from .servicenow_adapter import (
+    ServiceNowAdapter,
+    ServiceNowAuthType,
+    ServiceNowCredentials,
 )
 from .splunk_adapter import (
     SplunkAdapter,
@@ -53,4 +63,12 @@ __all__ = [
     "AzureCloud",
     "SentinelAdapter",
     "SentinelCredentials",
+    # Jira ticketing integration
+    "JiraAdapter",
+    "JiraCredentials",
+    "JiraDeploymentType",
+    # ServiceNow ticketing integration
+    "ServiceNowAdapter",
+    "ServiceNowAuthType",
+    "ServiceNowCredentials",
 ]
