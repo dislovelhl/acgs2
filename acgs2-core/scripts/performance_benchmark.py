@@ -442,18 +442,15 @@ async def main():
     logger.info(f"Constitutional Hash: {report['constitutional_hash']}")
     logger.info(f"Timestamp: {report['timestamp']}")
     logger.error(f"Overall Result: {'PASSED' if report['summary']['overall_passed'] else 'FAILED'}")
-    logger.info(
-        f"Tests Passed: {report['summary']['passed_tests']}/{report['summary']['total_tests']}"
-    )
+    logger.info(f"Tests Passed: {report['summary']['passed_tests']}/{report['summary']['total_tests']}")
     logger.info("")
 
     logger.debug("DETAILED RESULTS:")
     for result in report["results"]:
         status = "✅ PASS" if result["passed"] else "❌ FAIL"
-        metric = result["metric"]
-        actual = result["actual"]
-        target = result["target"]
-        logger.info(f"  {metric}: {actual:.3f} (target: {target:.3f}) {status}")
+        logger.info(
+            f"  {result['metric']}: {result['actual']:.3f} (target: {result['target']:.3f}) {status}"
+        )
 
     logger.info("")
     logger.info("RECOMMENDATIONS:")

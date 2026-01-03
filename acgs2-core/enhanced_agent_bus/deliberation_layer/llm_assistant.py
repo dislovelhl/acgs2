@@ -104,9 +104,7 @@ class LLMAssistant:
         if not self.llm:
             return {}
 
-        metrics_registry = (
-            MetricsRegistry(service_name="llm-assistant") if MetricsRegistry else None
-        )
+        metrics_registry = MetricsRegistry(service_name="llm-assistant") if MetricsRegistry else None
 
         start_time = time.time()
         try:
@@ -118,9 +116,7 @@ class LLMAssistant:
 
             # Record latency
             if metrics_registry:
-                metrics_registry.record_latency(
-                    "llm_invocation_latency", latency_ms, {"model": self.model_name}
-                )
+                metrics_registry.record_latency("llm_invocation_latency", latency_ms, {"model": self.model_name})
 
             # Track tokens if available (LangChain ChatOpenAI response_metadata)
             token_usage = {}
@@ -129,39 +125,28 @@ class LLMAssistant:
                 token_usage = {
                     "prompt_tokens": usage.get("prompt_tokens", 0),
                     "completion_tokens": usage.get("completion_tokens", 0),
-                    "total_tokens": usage.get("total_tokens", 0),
+                    "total_tokens": usage.get("total_tokens", 0)
                 }
                 if metrics_registry:
-                    metrics_registry.increment_counter(
-                        "llm_tokens_total", token_usage["total_tokens"], {"model": self.model_name}
-                    )
-                    metrics_registry.increment_counter(
-                        "llm_tokens_prompt",
-                        token_usage["prompt_tokens"],
-                        {"model": self.model_name},
-                    )
-                    metrics_registry.increment_counter(
-                        "llm_tokens_completion",
-                        token_usage["completion_tokens"],
-                        {"model": self.model_name},
-                    )
+                    metrics_registry.increment_counter("llm_tokens_total", token_usage["total_tokens"], {"model": self.model_name})
+                    metrics_registry.increment_counter("llm_tokens_prompt", token_usage["prompt_tokens"], {"model": self.model_name})
+                    metrics_registry.increment_counter("llm_tokens_completion", token_usage["completion_tokens"], {"model": self.model_name})
 
             result = JsonOutputParser().parse(resp.content)
             if isinstance(result, dict):
-                result["_metrics"] = {"latency_ms": latency_ms, "token_usage": token_usage}
+                result["_metrics"] = {
+                    "latency_ms": latency_ms,
+                    "token_usage": token_usage
+                }
             return result
         except Exception as e:
             latency_ms = (time.time() - start_time) * 1000
             logger.error(f"LLM invoke failed after {latency_ms:.2f}ms: {e}")
             if metrics_registry:
-                metrics_registry.increment_counter(
-                    "llm_invocation_failure", 1, {"model": self.model_name, "error": str(type(e))}
-                )
+                metrics_registry.increment_counter("llm_invocation_failure", 1, {"model": self.model_name, "error": str(type(e))})
             return {}
 
-    async def ainvoke_multi_turn(
-        self, sys_prompt: str, messages: List[Dict[str, str]]
-    ) -> Dict[str, Any]:
+    async def ainvoke_multi_turn(self, sys_prompt: str, messages: List[Dict[str, str]]) -> Dict[str, Any]:
         """Invoke LLM with a list of messages for multi-turn support."""
         if not self.llm:
             return {}

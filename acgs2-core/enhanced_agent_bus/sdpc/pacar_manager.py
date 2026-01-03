@@ -3,13 +3,13 @@ PACAR Manager for multi-turn session and history management.
 Constitutional Hash: cdd01ef066bc6cf2
 """
 
+import json
 import logging
-from typing import Any, Dict, Optional
-
+from typing import Any, Dict, List, Optional
 import redis.asyncio as redis
 
-from ..config import BusConfiguration
 from .conversation import ConversationMessage, ConversationState, MessageRole
+from ..config import BusConfiguration
 
 logger = logging.getLogger(__name__)
 
@@ -60,17 +60,13 @@ class PACARManager:
             await r.setex(
                 f"pacar:session:{session_id}",
                 3600,  # 1 hour TTL
-                state.model_dump_json(),
+                state.model_dump_json()
             )
         except Exception as e:
             logger.error(f"Failed to save PACAR state to Redis for {session_id}: {e}")
 
     async def add_message(
-        self,
-        session_id: str,
-        role: MessageRole,
-        content: str,
-        metadata: Optional[Dict[str, Any]] = None,
+        self, session_id: str, role: MessageRole, content: str, metadata: Optional[Dict[str, Any]] = None
     ) -> ConversationState:
         """Adds a message to the conversation history."""
         state = await self.get_state(session_id)

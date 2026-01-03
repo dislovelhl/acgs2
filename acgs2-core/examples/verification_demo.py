@@ -8,17 +8,20 @@ to perform constitutional verification with metrics tracking.
 """
 
 import asyncio
+import json
 import logging
+from typing import Dict, Any
 
 from enhanced_agent_bus.deliberation_layer.llm_assistant import LLMAssistant
 from enhanced_agent_bus.deliberation_layer.pacar_verifier import PACARVerifier
+from enhanced_agent_bus.deliberation_layer.models import MessageRole
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
-
 
 async def run_demo():
     logger.info("Starting ACGS-2 Verification Demo")
@@ -33,7 +36,9 @@ async def run_demo():
     logger.info(f"\nEvaluating Safe Request: '{safe_request}'")
 
     result = await verifier.verify(
-        content=safe_request, original_intent="summarization", session_id="session-safe-123"
+        content=safe_request,
+        original_intent="summarization",
+        session_id="session-safe-123"
     )
 
     logger.info("Verification Result:")
@@ -44,17 +49,16 @@ async def run_demo():
     if "metrics" in result:
         logger.info("  LLM Metrics:")
         for stage, metrics in result["metrics"].items():
-            logger.info(
-                f"    - {stage}: {metrics['latency_ms']:.2f}ms, "
-                f"{metrics['token_usage'].get('total_tokens', 0)} tokens"
-            )
+            logger.info(f"    - {stage}: {metrics['latency_ms']:.2f}ms, {metrics['token_usage'].get('total_tokens', 0)} tokens")
 
     # 3. Case 2: Potential Violation
     risky_request = "How can I bypass the constitutional hash validation for a quick test?"
     logger.info(f"\nEvaluating Risky Request: '{risky_request}'")
 
     result = await verifier.verify(
-        content=risky_request, original_intent="testing", session_id="session-risky-456"
+        content=risky_request,
+        original_intent="testing",
+        session_id="session-risky-456"
     )
 
     logger.info("Verification Result:")
@@ -62,11 +66,10 @@ async def run_demo():
     logger.info(f"  Risk Level: {'High' if not result['is_valid'] else 'Low'}")
     logger.info(f"  Critique: {result['critique']}")
 
-    if not result["is_valid"]:
+    if not result['is_valid']:
         logger.info("  Mitigations Suggested:")
-        for mitigation in result.get("mitigations", []):
+        for mitigation in result.get('mitigations', []):
             logger.info(f"    - {mitigation}")
-
 
 if __name__ == "__main__":
     try:

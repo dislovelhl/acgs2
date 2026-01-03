@@ -171,7 +171,7 @@ services:
   hitl-approvals:
     build:
       context: ./services/hitl_approvals
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dev
     ports:
       - "8200:8200"
     environment:
@@ -192,57 +192,9 @@ services:
       timeout: 5s
       retries: 3
 
-  audit-service:
-    build:
-      context: ./services/audit_service
-    ports:
-      - "8300:8084"
-    environment:
-      - ENVIRONMENT=development
-      - REDIS_URL=redis://redis:6379/0
-      - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
-      - TENANT_ID=acgs-dev
-    volumes:
-      - ./services/audit_service:/app
-      - /app/__pycache__
-    depends_on:
-      - redis
-      - kafka
-    networks:
-      - acgs-dev
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8084/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-
-  tenant-management:
-    build:
-      context: ./services/tenant_management
-    ports:
-      - "8500:8500"
-    environment:
-      - ENVIRONMENT=development
-      - REDIS_URL=redis://redis:6379/0
-      - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
-      - TENANT_ID=acgs-dev
-    volumes:
-      - ./services/tenant_management:/app
-      - /app/__pycache__
-    depends_on:
-      - redis
-      - kafka
-    networks:
-      - acgs-dev
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8500/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-
   ml-governance:
     build:
-      context: ./services/core/ml-governance/ml_governance_service
+      context: ./services/ml_governance
       dockerfile: Dockerfile.dev
     ports:
       - "8400:8400"
@@ -286,3 +238,7 @@ services:
 volumes:
   redis_data:
   ml_models:
+
+networks:
+  acgs-dev:
+    driver: bridge

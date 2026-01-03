@@ -176,7 +176,7 @@ class EncryptedPayload:
 
         try:
             version = int(version_str[1:])
-        except ValueError:
+        except ValueError as e:
             raise CiphertextFormatError(f"Invalid version number: '{version_str}'") from e
 
         try:

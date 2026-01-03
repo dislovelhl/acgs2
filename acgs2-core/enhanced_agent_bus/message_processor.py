@@ -25,6 +25,7 @@ try:
     from .models import CONSTITUTIONAL_HASH, AgentMessage, MessageStatus, MessageType, Priority
     from .utils import LRUCache
     from .validators import ValidationResult
+    from .config import BusConfiguration
 except (ImportError, ValueError):
     from config import BusConfiguration  # type: ignore
     from imports import (
@@ -268,18 +269,9 @@ class MessageProcessor:
             verifications["graph"] = sdpc_metadata["sdpc_graph_grounded"]
 
         if impact_score > 0.8 or msg.message_type == MessageType.TASK_REQUEST:
-            # Use multi-turn context tracking when session_id is present
-            # Prefer session_id extracted above, fall back to msg.conversation_id
-            effective_session_id = session_id or getattr(msg, "conversation_id", None)
-            if effective_session_id:
-                pacar_res = await self.pacar_verifier.verify_with_context(
-                    content_str,
-                    intent.value,
-                    session_id=effective_session_id,
-                    tenant_id=getattr(msg, "tenant_id", "default"),
-                )
-            else:
-                pacar_res = await self.pacar_verifier.verify(content_str, intent.value)
+            pacar_res = await self.pacar_verifier.verify(
+                content_str, intent.value, session_id=msg.conversation_id
+            )
             sdpc_metadata["sdpc_pacar_valid"] = pacar_res.get("is_valid", False)
             sdpc_metadata["sdpc_pacar_confidence"] = pacar_res.get("confidence", 0.0)
             verifications["pacar"] = sdpc_metadata["sdpc_pacar_valid"]

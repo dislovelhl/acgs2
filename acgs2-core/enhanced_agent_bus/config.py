@@ -11,16 +11,8 @@ from dataclasses import dataclass, field, replace
 from typing import TYPE_CHECKING, Any, Optional
 from urllib.parse import urlparse
 
-# Optional litellm import for AI features
-try:
-    import litellm
-    from litellm.caching import Cache
-
-    HAS_LITELLM = True
-except ImportError:
-    litellm = None  # type: ignore
-    Cache = None  # type: ignore
-    HAS_LITELLM = False
+import litellm
+from litellm.caching import Cache
 
 # Import types conditionally to avoid circular imports
 if TYPE_CHECKING:
@@ -85,17 +77,13 @@ class BusConfiguration:
     enable_maci: bool = True
     maci_strict_mode: bool = True
 
-    # LLM classification settings
-    # Controls hybrid intent classification with LLM fallback for ambiguous cases
-    llm_enabled: bool = True
-    llm_model_version: str = "openai/gpt-4o-mini"
-    llm_cache_ttl: int = 3600  # seconds
-    llm_confidence_threshold: float = 0.7  # Below this, use LLM
-    llm_max_tokens: int = 100  # Required for Anthropic models
-
-    # A/B testing settings for LLM vs rule-based comparison
-    enable_ab_testing: bool = False
-    ab_test_llm_percentage: int = 20  # Percentage of ambiguous cases routed to LLM
+    # LLM Configuration for high-ambiguity intent classification
+    # Added for Spec 001
+    llm_model: str = "anthropic/claude-3-5-sonnet-20240620"
+    llm_cache_ttl: int = 3600
+    llm_confidence_threshold: float = 0.8
+    llm_max_tokens: int = 100
+    llm_use_cache: bool = True
 
     # Optional dependency injections (set to None for defaults)
     # Note: These are typed as Any to avoid circular imports at runtime
@@ -146,75 +134,28 @@ class BusConfiguration:
 
     @classmethod
     def from_environment(cls) -> "BusConfiguration":
-        """Load configuration from environment variables.
-
-        Environment variables:
-            REDIS_URL: Redis connection URL
-            KAFKA_BOOTSTRAP_SERVERS: Kafka servers
-            AUDIT_SERVICE_URL: Audit service endpoint
-            USE_DYNAMIC_POLICY: Enable dynamic policy (true/false)
-            POLICY_FAIL_CLOSED: Fail closed mode (true/false)
-            USE_KAFKA: Enable Kafka (true/false)
-            USE_REDIS_REGISTRY: Use Redis registry (true/false)
-            USE_RUST_BACKEND: Enable Rust backend (true/false)
-            METERING_ENABLED: Enable metering (true/false)
-            LLM_ENABLED: Enable LLM classification (true/false)
-            LLM_MODEL_VERSION: LLM model version (e.g., openai/gpt-4o-mini)
-            LLM_CACHE_TTL: LLM cache TTL in seconds
-            LLM_CONFIDENCE_THRESHOLD: Confidence threshold for LLM fallback (0.0-1.0)
-            LLM_MAX_TOKENS: Maximum tokens for LLM response
-            ENABLE_AB_TESTING: Enable A/B testing (true/false)
-            AB_TEST_LLM_PERCENTAGE: Percentage of ambiguous cases for LLM (0-100)
-        """
-        import os
-
-        def _parse_bool(value: Optional[str], default: bool = False) -> bool:
-            if value is None:
-                return default
-            return value.lower() in ("true", "1", "yes", "on")
-
-        def _parse_int(value: Optional[str], default: int) -> int:
-            if value is None:
-                return default
-            try:
-                return int(value)
-            except ValueError:
-                return default
-
-        def _parse_float(value: Optional[str], default: float) -> float:
-            if value is None:
-                return default
-            try:
-                return float(value)
-            except ValueError:
-                return default
-
-        return cls(
-            redis_url=os.environ.get("REDIS_URL", DEFAULT_REDIS_URL),
-            kafka_bootstrap_servers=os.environ.get("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092"),
-            audit_service_url=os.environ.get("AUDIT_SERVICE_URL", "http://localhost:8001"),
-            use_dynamic_policy=_parse_bool(os.environ.get("USE_DYNAMIC_POLICY"), False),
-            policy_fail_closed=_parse_bool(os.environ.get("POLICY_FAIL_CLOSED"), False),
-            use_kafka=_parse_bool(os.environ.get("USE_KAFKA"), False),
-            use_redis_registry=_parse_bool(os.environ.get("USE_REDIS_REGISTRY"), False),
-            use_rust=_parse_bool(os.environ.get("USE_RUST_BACKEND"), True),
-            enable_metering=_parse_bool(os.environ.get("METERING_ENABLED"), True),
-            # SECURITY FIX: Default to True per audit finding 2025-12
-            enable_maci=_parse_bool(os.environ.get("MACI_ENABLED"), True),
-            maci_strict_mode=_parse_bool(os.environ.get("MACI_STRICT_MODE"), True),
-            # LLM classification settings
-            llm_enabled=_parse_bool(os.environ.get("LLM_ENABLED"), True),
-            llm_model_version=os.environ.get("LLM_MODEL_VERSION", "openai/gpt-4o-mini"),
-            llm_cache_ttl=_parse_int(os.environ.get("LLM_CACHE_TTL"), 3600),
-            llm_confidence_threshold=_parse_float(os.environ.get("LLM_CONFIDENCE_THRESHOLD"), 0.7),
-            llm_max_tokens=_parse_int(os.environ.get("LLM_MAX_TOKENS"), 100),
-            # A/B testing settings
-            enable_ab_testing=_parse_bool(os.environ.get("ENABLE_AB_TESTING"), False),
-            ab_test_llm_percentage=_parse_int(os.environ.get("AB_TEST_LLM_PERCENTAGE"), 20),
+        """Load configuration from environment variables."""
+        config = cls(
+            redis_url=os.getenv("REDIS_URL", DEFAULT_REDIS_URL),
+            kafka_bootstrap_servers=os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092"),
+            audit_service_url=os.getenv("AUDIT_SERVICE_URL", "http://localhost:8001"),
+            use_dynamic_policy=os.getenv("USE_DYNAMIC_POLICY", "false").lower() == "true",
+            policy_fail_closed=os.getenv("POLICY_FAIL_CLOSED", "true").lower() == "true",
+            use_kafka=os.getenv("USE_KAFKA", "false").lower() == "true",
+            use_redis_registry=os.getenv("USE_REDIS_REGISTRY", "false").lower() == "true",
+            use_rust=os.getenv("USE_RUST", "true").lower() == "true",
+            enable_metering=os.getenv("ENABLE_METERING", "true").lower() == "true",
+            enable_maci=os.getenv("ENABLE_MACI", "true").lower() == "true",
+            maci_strict_mode=os.getenv("MACI_STRICT_MODE", "true").lower() == "true",
+            llm_model=os.getenv("LLM_MODEL", "anthropic/claude-3-5-sonnet-20240620"),
+            llm_cache_ttl=int(os.getenv("LLM_CACHE_TTL", "3600")),
+            llm_confidence_threshold=float(os.getenv("LLM_CONFIDENCE_THRESHOLD", "0.8")),
+            llm_max_tokens=int(os.getenv("LLM_MAX_TOKENS", "100")),
+            llm_use_cache=os.getenv("LLM_USE_CACHE", "true").lower() == "true",
         )
 
         # Initialize LiteLLM Cache if enabled
-        if config.llm_use_cache and HAS_LITELLM and Cache is not None:
+        if config.llm_use_cache:
             try:
                 parsed_url = urlparse(config.redis_url)
                 litellm.cache = Cache(
@@ -225,11 +166,7 @@ class BusConfiguration:
                 )
             except Exception:
                 # Fallback to in-memory if redis fails or isn't available
-                try:
-                    litellm.cache = Cache()
-                except Exception:
-                    # Disable caching if Cache() fails
-                    config = replace(config, llm_use_cache=False)
+                litellm.cache = Cache()
 
         return config
 

@@ -7,47 +7,26 @@ from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-
-from ..core.audit_ledger import AuditEntry, AuditLedger
+from services.audit_service.core.audit_ledger import AuditLedger, ValidationResult, AuditLedgerConfig
+from unittest.mock import patch, MagicMock
 
 
 class TestAuditEntry:
     """Test AuditEntry data structure."""
 
-    def test_audit_entry_creation(self):
-        """Test creating an audit entry."""
-        entry_data = {
-            "batch_id": "batch-123",
-            "entry_hash": "hash-456",
-            "data": {"action": "test", "user": "test-user"},
-            "timestamp": datetime.now(timezone.utc),
-            "metadata": {"source": "test"},
-        }
+    # Disable Redis for unit tests to ensure isolation
+    config = AuditLedgerConfig(
+        batch_size=3,
+        redis_url=None,
+        enable_blockchain_anchoring=False,
+        persistence_file=str(storage_path)
+    )
 
-        entry = AuditEntry(**entry_data)
-
-        assert entry.batch_id == "batch-123"
-        assert entry.entry_hash == "hash-456"
-        assert entry.data == {"action": "test", "user": "test-user"}
-        assert entry.metadata == {"source": "test"}
-
-    def test_audit_entry_to_dict(self):
-        """Test converting audit entry to dictionary."""
-        entry = AuditEntry(
-            batch_id="batch-123",
-            entry_hash="hash-456",
-            data={"action": "test"},
-            timestamp=datetime.now(timezone.utc),
-            metadata={"source": "test"},
-        )
-
-        entry_dict = entry.to_dict()
-
-        assert entry_dict["batch_id"] == "batch-123"
-        assert entry_dict["entry_hash"] == "hash-456"
-        assert entry_dict["data"] == {"action": "test"}
-        assert entry_dict["metadata"] == {"source": "test"}
-        assert "timestamp" in entry_dict
+    with patch("redis.from_url", side_effect=Exception("Redis disabled for tests")):
+        l = AuditLedger(config=config)
+        await l.start()
+        yield l
+        await l.stop()
 
 
 class TestAuditLedger:

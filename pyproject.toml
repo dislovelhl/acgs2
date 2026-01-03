@@ -68,9 +68,8 @@ target-version = ['py312']
 # NOTE: This configuration is for individual component testing only.
 # For running all tests across components, use: ./scripts/run_all_tests.sh
 # This avoids pytest configuration conflicts between root and component-specific configs.
-# pytest-xdist: -n auto enables parallel execution, --dist=loadscope reuses fixtures across workers
-# To disable parallel execution, override with: pytest -n 0
-addopts = "-q --maxfail=3 -n auto --dist=loadscope"
+addopts = "-q --maxfail=3"
+asyncio_mode = "auto"
 markers = [
     "constitutional: marks tests as related to constitutional compliance",
     "integration: marks tests as integration tests requiring external services",
