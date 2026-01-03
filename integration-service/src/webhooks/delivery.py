@@ -17,6 +17,13 @@ from uuid import uuid4
 
 import httpx
 
+from exceptions.auth import AuthenticationError
+from exceptions.delivery import (
+    DeliveryConnectionError,
+    DeliveryError,
+    DeliveryTimeoutError,
+)
+
 from .config import WebhookFrameworkConfig, WebhookRetryPolicy
 from .models import (
     WebhookAuthType,
@@ -39,37 +46,26 @@ from .retry import (
 logger = logging.getLogger(__name__)
 
 
-class WebhookDeliveryError(Exception):
-    """Base exception for webhook delivery errors."""
+# Backward compatibility aliases
+# These maintain API compatibility for existing code that imports from webhooks.delivery
+WebhookDeliveryError = DeliveryError
+WebhookAuthenticationError = AuthenticationError
+WebhookTimeoutError = DeliveryTimeoutError
+WebhookConnectionError = DeliveryConnectionError
 
-    def __init__(
-        self,
-        message: str,
-        delivery_id: Optional[str] = None,
-        status_code: Optional[int] = None,
-    ):
-        self.message = message
-        self.delivery_id = delivery_id
-        self.status_code = status_code
-        super().__init__(self.message)
-
-
-class WebhookAuthenticationError(WebhookDeliveryError):
-    """Raised when webhook authentication fails."""
-
-    pass
-
-
-class WebhookTimeoutError(WebhookDeliveryError):
-    """Raised when webhook delivery times out."""
-
-    pass
-
-
-class WebhookConnectionError(WebhookDeliveryError):
-    """Raised when connection to webhook endpoint fails."""
-
-    pass
+# Public API exports - make exceptions and classes available for import from this module
+__all__ = [
+    "WebhookDeliveryError",
+    "WebhookAuthenticationError",
+    "WebhookTimeoutError",
+    "WebhookConnectionError",
+    "DeliveryError",
+    "DeliveryTimeoutError",
+    "DeliveryConnectionError",
+    "AuthenticationError",
+    "DeadLetterQueue",
+    "WebhookDeliveryEngine",
+]
 
 
 class DeadLetterQueue:
