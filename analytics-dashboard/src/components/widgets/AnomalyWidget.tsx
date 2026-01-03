@@ -16,26 +16,8 @@ import {
   Shield,
   XOctagon,
 } from "lucide-react";
-
-/** Anomaly data structure from the API */
-interface AnomalyItem {
-  anomaly_id: string;
-  timestamp: string;
-  severity_score: number;
-  severity_label: "critical" | "high" | "medium" | "low";
-  affected_metrics: Record<string, number | string>;
-  description: string;
-}
-
-/** Anomalies response from the API */
-interface AnomaliesResponse {
-  analysis_timestamp: string;
-  total_records_analyzed: number;
-  anomalies_detected: number;
-  contamination_rate: number;
-  anomalies: AnomalyItem[];
-  model_trained: boolean;
-}
+import type { AnomalyItem, AnomaliesResponse } from "../../types/anomalies";
+import { useAnomalies } from "../../hooks";
 
 /** Widget loading state */
 type LoadingState = "idle" | "loading" | "success" | "error";
