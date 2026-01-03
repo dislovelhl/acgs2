@@ -24,8 +24,15 @@ import uuid
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional
+from typing import Callable, Dict, List, Optional, Union
 
+from ...shared.types import (
+    AuditTrail,
+    ContextData,
+    JSONDict,
+    JSONValue,
+    MetadataDict,
+)
 from .. import CONSTITUTIONAL_HASH
 
 logger = logging.getLogger(__name__)
@@ -49,7 +56,7 @@ class EscalationAction(Enum):
 @dataclass
 class SanitizationResult:
     """Result from input sanitization."""
-    sanitized: Any
+    sanitized: JSONValue
     modifications_made: List[str]
     risks_detected: List[str]
     blocked: bool = False
@@ -68,7 +75,7 @@ class PolicyResult:
 @dataclass
 class SandboxResult:
     """Result from sandboxed execution."""
-    output: Any
+    output: Optional[JSONValue]
     execution_time_ms: float
     resource_usage: Dict[str, float]
     errors: List[str]
@@ -87,8 +94,8 @@ class VerificationResult:
 class GuardrailResult:
     """Complete result from guardrail pipeline."""
     result_id: str
-    action: Any
-    result: Any
+    action: Union[Callable, JSONValue]
+    result: Optional[JSONValue]
     sanitization: SanitizationResult
     policy_result: PolicyResult
     sandbox_result: Optional[SandboxResult]
@@ -97,7 +104,7 @@ class GuardrailResult:
     processing_time_ms: float
     constitutional_hash: str = CONSTITUTIONAL_HASH
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> JSONDict:
         return {
             "result_id": self.result_id,
             "constitutional_hash": self.constitutional_hash,
@@ -134,7 +141,7 @@ class InputSanitizer:
     def __init__(self, level: GuardrailLevel = GuardrailLevel.MODERATE):
         self.level = level
 
-    async def sanitize(self, input_data: Any) -> SanitizationResult:
+    async def sanitize(self, input_data: JSONValue) -> SanitizationResult:
         """
         Sanitize input data.
 
@@ -227,7 +234,7 @@ class PolicyEngine:
     """
 
     def __init__(self):
-        self._policies: Dict[str, Callable[[Any, Dict], bool]] = {}
+        self._policies: Dict[str, Callable[[Union[Callable, JSONValue], ContextData], bool]] = {}
         self._load_default_policies()
 
     def _load_default_policies(self):
@@ -244,8 +251,8 @@ class PolicyEngine:
 
     async def evaluate(
         self,
-        action: Any,
-        context: Dict[str, Any],
+        action: Union[Callable, JSONValue],
+        context: ContextData,
         constitutional_hash: str = CONSTITUTIONAL_HASH
     ) -> PolicyResult:
         """
@@ -302,7 +309,7 @@ class Sandbox:
         self.timeout_seconds = timeout_seconds
         self.memory_limit_mb = memory_limit_mb
 
-    async def execute(self, action: Any) -> SandboxResult:
+    async def execute(self, action: Union[Callable, JSONValue]) -> SandboxResult:
         """
         Execute action in sandbox.
 
@@ -368,7 +375,7 @@ class OutputVerifier:
         r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b",  # Email
     ]
 
-    async def verify(self, output: Any) -> VerificationResult:
+    async def verify(self, output: Optional[JSONValue]) -> VerificationResult:
         """
         Verify output for compliance.
 
@@ -406,14 +413,14 @@ class EscalationHandler:
 
     def __init__(self):
         self._handlers: Dict[EscalationAction, Callable] = {}
-        self._escalation_log: List[Dict[str, Any]] = []
+        self._escalation_log: List[JSONDict] = []
 
     async def escalate(
         self,
-        action: Any,
+        action: Union[Callable, JSONValue],
         reason: str,
         escalation_action: EscalationAction = EscalationAction.HUMAN_REVIEW
-    ) -> Dict[str, Any]:
+    ) -> JSONDict:
         """
         Escalate a violation.
 
@@ -451,13 +458,13 @@ class AuditLog:
     """
 
     def __init__(self):
-        self._logs: List[Dict[str, Any]] = []
+        self._logs: AuditTrail = []
 
     async def record(
         self,
-        action: Any,
-        result: Any,
-        metadata: Optional[Dict[str, Any]] = None
+        action: Union[Callable, JSONValue],
+        result: Union[str, JSONValue],
+        metadata: Optional[MetadataDict] = None
     ) -> str:
         """
         Record an action and its result.
@@ -487,7 +494,7 @@ class AuditLog:
     async def get_logs(
         self,
         limit: int = 100
-    ) -> List[Dict[str, Any]]:
+    ) -> AuditTrail:
         """Get recent audit logs."""
         return self._logs[-limit:]
 
@@ -537,8 +544,8 @@ class ConstitutionalGuardrails:
 
     async def enforce(
         self,
-        action: Any,
-        context: Optional[Dict[str, Any]] = None
+        action: Union[Callable, JSONValue],
+        context: Optional[ContextData] = None
     ) -> GuardrailResult:
         """
         Full guardrail pipeline execution.
@@ -637,7 +644,7 @@ class ConstitutionalGuardrails:
             processing_time_ms=processing_time,
         )
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> JSONDict:
         """Get guardrails statistics."""
         total = self._stats["total_requests"]
         block_rate = self._stats["blocked"] / max(total, 1)
