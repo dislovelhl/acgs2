@@ -166,7 +166,9 @@
           "subtask_id": "4.1",
           "title": "Create secrets detection documentation",
           "description": "Document how the secrets detection works and how to handle findings",
-          "status": "pending",
+          "status": "completed",
+          "completed_at": "2026-01-03T23:55:00.000Z",
+          "notes": "Created comprehensive docs/SECRETS_DETECTION.md (600+ lines) covering: what secrets are detected (AI providers, infrastructure, 140+ generic patterns), safe vs unsafe examples with visual indicators, multi-layered detection architecture, integration with secrets_manager.py as single source of truth, step-by-step false positive resolution (3 solutions), troubleshooting guide (6 common issues), configuration files reference, best practices DO/DON'T lists, example workflows (3 scenarios), security impact and incident response. Documentation follows ACGS-2 style with constitutional hash and comprehensive examples. All acceptance criteria met. Commit: 9b1ab9dbd",
           "acceptance_criteria": [
             "Documentation explains what secrets are detected",
             "Clear steps for resolving false positives",

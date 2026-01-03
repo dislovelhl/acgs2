@@ -272,11 +272,46 @@ All subtasks in Phase 3 completed successfully. The custom ACGS-2 secrets detect
 
 ---
 
+## Current Status: Phase 4 - Documentation and Developer Experience (In Progress)
+
+### Completed Subtasks:
+
+#### ✅ Subtask 4.1 - Create secrets detection documentation (2026-01-03)
+- Created comprehensive documentation: `docs/SECRETS_DETECTION.md` (600+ lines)
+- Documented all detected secret types:
+  * AI provider credentials (5 types): Anthropic, Claude Code, OpenRouter, HuggingFace, OpenAI
+  * Infrastructure secrets (3 types): AWS, JWT, Vault
+  * 140+ generic patterns via gitleaks
+- Provided safe vs unsafe secret examples with visual indicators (✅/❌)
+- Explained multi-layered detection architecture (pre-commit + CI/CD + runtime)
+- Documented integration with secrets_manager.py as single source of truth
+- Created step-by-step false positive resolution guide with 3 solution paths:
+  * Solution A: Use development placeholders (preferred)
+  * Solution B: Add to allow-list configuration
+  * Solution C: Add to .gitleaksignore (last resort)
+- Added comprehensive troubleshooting section covering 6 common issues
+- Included configuration files reference for all 4 config files
+- Added best practices DO/DON'T lists for developer guidance
+- Provided 3 example workflows: new API integration, false positive handling, secret rotation
+- Documented security impact and incident response procedures
+- Follows ACGS-2 documentation style with constitutional hash and version metadata
+- Commit: 9b1ab9dbd
+
+**Acceptance Criteria Met:**
+- ✅ Documentation explains what secrets are detected (comprehensive tables and lists)
+- ✅ Clear steps for resolving false positives (3-step process with 3 solution options)
+- ✅ Examples of safe vs unsafe secrets (detailed code blocks with explanations)
+- ✅ Integration with secrets_manager.py explained (dedicated section on single source of truth)
+
+---
+
+---
+
 ## Next Steps:
-1. Proceed to Phase 4: Documentation and Developer Experience
-   - Subtask 4.1: Create secrets detection documentation
+1. Continue Phase 4: Documentation and Developer Experience
    - Subtask 4.2: Create developer quick-fix guide
    - Subtask 4.3: Update contributing guidelines
+2. Then proceed to Phase 5: Testing and Validation
 
 ## Blockers:
 None
