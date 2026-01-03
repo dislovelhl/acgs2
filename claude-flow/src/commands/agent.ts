@@ -2,7 +2,7 @@ import { Command } from 'commander';
 import chalk from 'chalk';
 import ora from 'ora';
 import { spawnAgent, listAgents } from '../services/agentService';
-import { getLogger } from '../../../../../sdk/typescript/src/utils/logger';
+import { getLogger } from '../../../sdk/typescript/src/utils/logger';
 const logger = getLogger('agent');
 
 

@@ -17,9 +17,9 @@ try:
         """Fast JSON serialization using orjson."""
         try:
             if default:
-                return orjson.dumps(obj, default=default, option=option).decode("utf-8")
-            return orjson.dumps(obj, option=option).decode("utf-8")
-        except (TypeError, ValueError):
+                return orjson.dumps(obj, default=default, option=option).decode('utf-8')
+            return orjson.dumps(obj, option=option).decode('utf-8')
+        except (TypeError, ValueError) as e:
             # Fallback to standard json for complex objects
             return json.dumps(obj, default=str, **kwargs)
 
@@ -27,12 +27,12 @@ try:
         """Fast JSON deserialization using orjson."""
         try:
             if isinstance(s, str):
-                s = s.encode("utf-8")
+                s = s.encode('utf-8')
             return orjson.loads(s)
-        except (orjson.JSONDecodeError, UnicodeDecodeError):
+        except (orjson.JSONDecodeError, UnicodeDecodeError) as e:
             # Fallback to standard json
             if isinstance(s, bytes):
-                s = s.decode("utf-8")
+                s = s.decode('utf-8')
             return json.loads(s, **kwargs)
 
 except ImportError:
@@ -44,7 +44,7 @@ except ImportError:
     def loads(s: Union[str, bytes], **kwargs) -> Any:
         """Standard JSON deserialization when orjson unavailable."""
         if isinstance(s, bytes):
-            s = s.decode("utf-8")
+            s = s.decode('utf-8')
         return json.loads(s, **kwargs)
 
 
@@ -53,20 +53,18 @@ def dump_bytes(obj: Any) -> bytes:
     """Serialize to JSON bytes (orjson optimized)."""
     try:
         import orjson
-
         return orjson.dumps(obj)
     except ImportError:
-        return json.dumps(obj, default=str).encode("utf-8")
+        return json.dumps(obj, default=str).encode('utf-8')
 
 
 def dump_compact(obj: Any) -> str:
     """Serialize to compact JSON string (no whitespace)."""
     try:
         import orjson
-
-        return orjson.dumps(obj, option=orjson.OPT_NON_STR_KEYS).decode("utf-8")
+        return orjson.dumps(obj, option=orjson.OPT_NON_STR_KEYS).decode('utf-8')
     except ImportError:
-        return json.dumps(obj, separators=(",", ":"), default=str)
+        return json.dumps(obj, separators=(',', ':'), default=str)
 
 
 def dump_pretty(obj: Any, indent: int = 2) -> str:

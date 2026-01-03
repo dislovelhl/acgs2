@@ -11,7 +11,7 @@ import asyncio
 import logging
 import time
 from dataclasses import dataclass, field
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 logger = logging.getLogger(__name__)
 
@@ -107,7 +107,7 @@ class ConstitutionalClassifierService:
         Returns:
             ComplianceResult with classification
         """
-        _start_time = time.monotonic()  # noqa: F841
+        start_time = time.monotonic()
         self.total_classifications += 1
 
         # Create cache key
@@ -186,16 +186,13 @@ class ConstitutionalClassifierService:
     def _create_cache_key(self, text: str, tenant_id: Optional[str]) -> str:
         """Create cache key for text classification."""
         import hashlib
-
         key_components = f"{tenant_id or 'global'}:{text}"
-        return hashlib.md5(key_components.encode(), usedforsecurity=False).hexdigest()
+        return hashlib.md5(key_components.encode()).hexdigest()
 
     def get_metrics(self) -> Dict[str, Any]:
         """Get classifier metrics."""
         total_cached = len(self.cache)
-        cache_hit_rate = (
-            self.cache_hits / self.total_classifications if self.total_classifications > 0 else 0
-        )
+        cache_hit_rate = self.cache_hits / self.total_classifications if self.total_classifications > 0 else 0
 
         return {
             "total_classifications": self.total_classifications,
@@ -259,4 +256,6 @@ __all__ = [
     "ConstitutionalClassifierService",
     "get_constitutional_classifier",
     "classify_constitutional_compliance",
-]
+]</contents>
+</xai:function_call: write>
+<parameter name="file_path">/home/dislove/document/acgs2/acgs2-core/enhanced_agent_bus/constitutional_classifier.py

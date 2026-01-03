@@ -26,7 +26,11 @@ def find_console_logs(root_dir: str) -> Dict[str, List[Tuple[int, str]]]:
     console_logs = {}
 
     for ts_file in Path(root_dir).rglob("*.ts"):
-        if "node_modules" in str(ts_file) or "dist" in str(ts_file) or ".git" in str(ts_file):
+        if (
+            "node_modules" in str(ts_file)
+            or "dist" in str(ts_file)
+            or ".git" in str(ts_file)
+        ):
             continue
 
         try:
@@ -62,11 +66,12 @@ def replace_console_logs(file_path: str, statements: List[Tuple[int, str]]) -> i
         content = f.read()
 
     replacements = 0
-    lines = content.split("\n")
+    lines = content.split('\n')
 
     # Check if logger import is already present
     has_logger_import = any(
-        "from" in line and "logger" in line and "utils/logger" in line for line in lines
+        'from' in line and 'logger' in line and 'utils/logger' in line
+        for line in lines
     )
 
     if not has_logger_import and statements:
@@ -76,16 +81,16 @@ def replace_console_logs(file_path: str, statements: List[Tuple[int, str]]) -> i
             # Adjust relative path based on file location
             rel_path = os.path.relpath(
                 "/home/dislove/document/acgs2/sdk/typescript/src/utils/logger.ts",
-                os.path.dirname(file_path),
+                os.path.dirname(file_path)
             )
             import_line = f"import {{ getLogger }} from '{rel_path.replace('.ts', '')}';"
 
         # Find a good place to insert the import
         insert_index = 0
         for i, line in enumerate(lines):
-            if line.strip().startswith("import") or line.strip().startswith("//"):
+            if line.strip().startswith('import') or line.strip().startswith('//'):
                 insert_index = i + 1
-            elif line.strip() and not line.strip().startswith("//"):
+            elif line.strip() and not line.strip().startswith('//'):
                 break
 
         lines.insert(insert_index, import_line)
@@ -93,11 +98,11 @@ def replace_console_logs(file_path: str, statements: List[Tuple[int, str]]) -> i
 
     for line_num, line_content in statements:
         # Skip if already processed
-        if "getLogger(" in line_content or "logger." in line_content:
+        if 'getLogger(' in line_content or 'logger.' in line_content:
             continue
 
         # Extract the console.log content
-        match = re.search(r"console\.log\((.+)\);?", line_content.strip())
+        match = re.search(r'console\.log\((.+)\);?', line_content.strip())
         if not match:
             continue
 
@@ -105,24 +110,16 @@ def replace_console_logs(file_path: str, statements: List[Tuple[int, str]]) -> i
 
         # Create logger instance if not present
         logger_var = "logger"
-        if f"const {logger_var} =" not in "\n".join(lines):
+        if f"const {logger_var} =" not in '\n'.join(lines):
             # Add logger initialization near the top
             logger_init = f"const {logger_var} = getLogger('{Path(file_path).stem}');"
 
             # Find where to insert it (after imports)
             insert_idx = 0
             for i, line in enumerate(lines):
-                if (
-                    line.strip().startswith("import")
-                    or line.strip().startswith("const")
-                    and "getLogger" in line
-                ):
+                if line.strip().startswith('import') or line.strip().startswith('const') and 'getLogger' in line:
                     insert_idx = i + 1
-                elif (
-                    line.strip()
-                    and not line.strip().startswith("//")
-                    and not line.strip().startswith("import")
-                ):
+                elif line.strip() and not line.strip().startswith('//') and not line.strip().startswith('import'):
                     break
 
             if insert_idx > 0:
@@ -130,10 +127,10 @@ def replace_console_logs(file_path: str, statements: List[Tuple[int, str]]) -> i
                 lines.insert(insert_idx + 1, "")
 
         # Replace console.log with structured logging
-        if '"success"' in log_content and "json.dumps" in log_content:
+        if '"success"' in log_content and 'json.dumps' in log_content:
             # Replace print(json.dumps({"success": False, "error": "..."}))
             new_line = f"{logger_var}.error({log_content});"
-        elif "json.dumps" in log_content:
+        elif 'json.dumps' in log_content:
             # Replace print(json.dumps(result))
             new_line = f"{logger_var}.logResult({log_content.replace('JSON.stringify', '')});"
         else:
@@ -145,13 +142,13 @@ def replace_console_logs(file_path: str, statements: List[Tuple[int, str]]) -> i
         if adjusted_line_num < len(lines):
             lines[adjusted_line_num] = line_content.replace(
                 f"console.log({log_content})",
-                new_line.replace("console.log(", "").replace(");", ""),
+                new_line.replace("console.log(", "").replace(");", "")
             )
             replacements += 1
 
     # Write back the modified content
     with open(file_path, "w", encoding="utf-8") as f:
-        f.write("\n".join(lines))
+        f.write('\n'.join(lines))
 
     return replacements
 

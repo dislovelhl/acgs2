@@ -100,23 +100,62 @@ async def initialize_swarm(
 
                 # Create memory namespace for this swarm
                 memory_key = f"swarm:{swarm_id}:memory"
-                await redis_client.set(
-                    memory_key,
-                    json.dumps(
-                        {
-                            "swarm_id": swarm_id,
-                            "initialized_at": time.time(),  # COMPATIBILITY: Python 3.11+
-                            "memory_type": "persistent",
-                            "backend": "redis",
-                        }
-                    ),
-                )
+
+                # Initialize comprehensive memory structure
+                memory_structure = {
+                    "swarm_id": swarm_id,
+                    "initialized_at": time.time(),  # COMPATIBILITY: Python 3.11+
+                    "memory_type": "persistent",
+                    "backend": "redis",
+                    "namespaces": {
+                        "agents": f"swarm:{swarm_id}:agents",
+                        "conversations": f"swarm:{swarm_id}:conversations",
+                        "tasks": f"swarm:{swarm_id}:tasks",
+                        "patterns": f"swarm:{swarm_id}:patterns",
+                        "metrics": f"swarm:{swarm_id}:metrics"
+                    },
+                    "capabilities": {
+                        "agent_state_persistence": True,
+                        "conversation_history": True,
+                        "task_progress_tracking": True,
+                        "pattern_learning": True,
+                        "cross_session_memory": True
+                    }
+                }
+
+                # Store memory structure
+                await redis_client.set(memory_key, json.dumps(memory_structure))
+
+                # Initialize memory namespaces with empty collections
+                for namespace_name, namespace_key in memory_structure["namespaces"].items():
+                    await redis_client.set(f"{namespace_key}:index", json.dumps({
+                        "namespace": namespace_name,
+                        "swarm_id": swarm_id,
+                        "created_at": time.time(),
+                        "item_count": 0,
+                        "last_updated": time.time()
+                    }))
 
                 swarm_config["memory_backend"] = "redis"
                 swarm_config["memory_key"] = memory_key
+                swarm_config["memory_namespaces"] = memory_structure["namespaces"]
+                swarm_config["memory_capabilities"] = memory_structure["capabilities"]
                 swarm_config["memory_initialized"] = True
 
-                logger.info(f"Persistent memory initialized for swarm {swarm_id}")
+                # Initialize memory service for immediate use
+                from swarmMemoryService import SwarmMemoryService
+                memory_service = SwarmMemoryService(swarm_id, redis_client)
+
+                # Store initial swarm state in memory
+                await memory_service.store_agent_state("coordinator", {
+                    "agent_id": swarm_config.get("coordinator_agent", f"coordinator-{swarm_id}"),
+                    "status": "active",
+                    "capabilities": ["coordination", "orchestration"],
+                    "last_seen": time.time()
+                })
+
+                swarm_config["memory_service_initialized"] = True
+                logger.info(f"Persistent memory fully initialized for swarm {swarm_id} with {len(memory_structure['namespaces'])} namespaces and memory service")
 
             except Exception as e:
                 log_warning(logger, f"Failed to initialize persistent memory: {e}")

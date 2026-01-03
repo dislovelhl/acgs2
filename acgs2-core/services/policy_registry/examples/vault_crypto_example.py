@@ -79,29 +79,29 @@ async def example_key_generation():
             key_name="example-ed25519",
             key_type="ed25519",
         )
-        logger.info("\nEd25519 Key:")
-        logger.info(f"  Success: {ed_result['success']}")
-        logger.info(f"  Key name: {ed_result['key_name']}")
-        logger.info(f"  Vault path: {ed_result['vault_path']}")
-        logger.info(f"  Public key (truncated): {ed_result['public_key'][:32]}...")
+    logger.info("\nEd25519 Key:")
+    logger.info(f"  Success: {ed_result['success']}")
+    logger.info(f"  Key name: {ed_result['key_name']}")
+    logger.info(f"  Vault path: {ed_result['vault_path']}")
+    logger.info(f"  Public key (truncated): {ed_result['public_key'][:32]}...")
 
         # Generate ECDSA-P256 key
         ecdsa_result = await service.generate_keypair(
             key_name="example-ecdsa",
             key_type="ecdsa-p256",
         )
-        logger.info("\nECDSA-P256 Key:")
-        logger.info(f"  Success: {ecdsa_result['success']}")
-        logger.info(f"  Key name: {ecdsa_result['key_name']}")
+    logger.info("\nECDSA-P256 Key:")
+    logger.info(f"  Success: {ecdsa_result['success']}")
+    logger.info(f"  Key name: {ecdsa_result['key_name']}")
 
         # Generate RSA-2048 key
         rsa_result = await service.generate_keypair(
             key_name="example-rsa",
             key_type="rsa-2048",
         )
-        logger.info("\nRSA-2048 Key:")
-        logger.info(f"  Success: {rsa_result['success']}")
-        logger.info(f"  Key name: {rsa_result['key_name']}")
+    logger.info("\nRSA-2048 Key:")
+    logger.info(f"  Success: {rsa_result['success']}")
+    logger.info(f"  Key name: {rsa_result['key_name']}")
 
 
 async def example_signing_verification():
@@ -116,11 +116,11 @@ async def example_signing_verification():
 
         # Data to sign
         original_data = b"This is important constitutional governance data"
-        logger.info(f"\nOriginal data: {original_data.decode()}")
+    logger.info(f"\nOriginal data: {original_data.decode()}")
 
         # Sign the data
         signature = await service.sign(key_name="signing-key", data=original_data)
-        logger.info(f"Signature (truncated): {signature[:40]}...")
+    logger.info(f"Signature (truncated): {signature[:40]}...")
 
         # Verify the signature
         is_valid = await service.verify(
@@ -128,7 +128,7 @@ async def example_signing_verification():
             data=original_data,
             signature=signature,
         )
-        logger.info(f"Signature valid: {is_valid}")
+    logger.info(f"Signature valid: {is_valid}")
 
         # Try with tampered data
         tampered_data = b"This data has been tampered with!"
@@ -137,7 +137,7 @@ async def example_signing_verification():
             data=tampered_data,
             signature=signature,
         )
-        logger.info(f"Tampered data valid: {is_tampered_valid} (should be False)")
+    logger.info(f"Tampered data valid: {is_tampered_valid} (should be False)")
 
 
 async def example_encryption_decryption():
@@ -149,22 +149,22 @@ async def example_encryption_decryption():
     async with VaultCryptoService(fallback_enabled=True) as service:
         # Secret data
         secret_data = b"Constitutional governance secrets - TOP SECRET"
-        logger.info(f"\nOriginal plaintext: {secret_data.decode()}")
+    logger.info(f"\nOriginal plaintext: {secret_data.decode()}")
 
         # Encrypt the data
         ciphertext = await service.encrypt(
             key_name="encryption-key",
             plaintext=secret_data,
         )
-        logger.info(f"Ciphertext: {ciphertext[:50]}...")
+    logger.info(f"Ciphertext: {ciphertext[:50]}...")
 
         # Decrypt the data
         decrypted = await service.decrypt(
             key_name="encryption-key",
             ciphertext=ciphertext,
         )
-        logger.info(f"Decrypted: {decrypted.decode()}")
-        logger.info(f"Match: {decrypted == secret_data}")
+    logger.info(f"Decrypted: {decrypted.decode()}")
+    logger.info(f"Match: {decrypted == secret_data}")
 
 
 async def example_key_rotation():
@@ -177,16 +177,16 @@ async def example_key_rotation():
         # Generate initial key
         await service.generate_keypair(key_name="rotate-key")
         original_public_key = await service.get_public_key(key_name="rotate-key")
-        logger.info(f"\nOriginal public key: {original_public_key[:32]}...")
+    logger.info(f"\nOriginal public key: {original_public_key[:32]}...")
 
         # Rotate the key
         rotate_result = await service.rotate_key(key_name="rotate-key")
-        logger.info(f"Rotation success: {rotate_result['success']}")
+    logger.info(f"Rotation success: {rotate_result['success']}")
 
         # Get new public key
         new_public_key = await service.get_public_key(key_name="rotate-key")
-        logger.info(f"New public key: {new_public_key[:32]}...")
-        logger.info(f"Keys different: {original_public_key != new_public_key}")
+    logger.info(f"New public key: {new_public_key[:32]}...")
+    logger.info(f"Keys different: {original_public_key != new_public_key}")
 
 
 async def example_policy_signature():
@@ -224,9 +224,9 @@ async def example_policy_signature():
             "expires_at": "2026-01-15",
         }
 
-        logger.info(f"\nPolicy: {policy_content['name']}")
-        logger.info(f"Version: {policy_content['version']}")
-        logger.info(f"Rules: {len(policy_content['rules'])}")
+    logger.info(f"\nPolicy: {policy_content['name']}")
+    logger.info(f"Version: {policy_content['version']}")
+    logger.info(f"Rules: {len(policy_content['rules'])}")
 
         # Create policy signature
         signature = await service.create_policy_signature(
@@ -236,12 +236,12 @@ async def example_policy_signature():
             key_name="policy-signing-key",
         )
 
-        logger.info("\nSignature created:")
-        logger.info(f"  Signature ID: {signature.signature_id}")
-        logger.info(f"  Policy ID: {signature.policy_id}")
-        logger.info(f"  Version: {signature.version}")
-        logger.info(f"  Algorithm: {signature.algorithm}")
-        logger.info(f"  Key fingerprint: {signature.key_fingerprint[:16]}...")
+    logger.info("\nSignature created:")
+    logger.info(f"  Signature ID: {signature.signature_id}")
+    logger.info(f"  Policy ID: {signature.policy_id}")
+    logger.info(f"  Version: {signature.version}")
+    logger.info(f"  Algorithm: {signature.algorithm}")
+    logger.info(f"  Key fingerprint: {signature.key_fingerprint[:16]}...")
 
         # Verify the signature
         is_valid = await service.verify_policy_signature(
@@ -249,7 +249,7 @@ async def example_policy_signature():
             signature=signature,
             key_name="policy-signing-key",
         )
-        logger.info(f"Signature valid: {is_valid}")
+    logger.info(f"Signature valid: {is_valid}")
 
         # Try with tampered content
         tampered_policy = policy_content.copy()
@@ -260,7 +260,7 @@ async def example_policy_signature():
             signature=signature,
             key_name="policy-signing-key",
         )
-        logger.info(f"Tampered policy valid: {is_tampered_valid} (should be False)")
+    logger.info(f"Tampered policy valid: {is_tampered_valid} (should be False)")
 
 
 async def example_audit_logging():
@@ -286,9 +286,7 @@ async def example_audit_logging():
 
     logger.info("\nRecent operations:")
     for entry in audit_log[-5:]:
-        logger.info(
-            f"  - {entry['operation']}: key={entry['key_name']}, success={entry['success']}"
-        )
+    logger.info(f"  - {entry['operation']}: key={entry['key_name']}, success={entry['success']}")
 
     # Filter by operation type
     key_gen_entries = service.get_audit_log(operation=VaultOperation.GENERATE_KEY)
@@ -350,10 +348,10 @@ async def example_with_vault_server():
     vault_token = os.getenv("VAULT_TOKEN")
 
     if not vault_addr or not vault_token:
-        logger.info("\nVault not configured. Set VAULT_ADDR and VAULT_TOKEN to test.")
-        logger.info("Example: export VAULT_ADDR=http://127.0.0.1:8200")
-        logger.info("         export VAULT_TOKEN=hvs.your-token")
-        logger.info("\nSkipping Vault server example...")
+    logger.info("\nVault not configured. Set VAULT_ADDR and VAULT_TOKEN to test.")
+    logger.info("Example: export VAULT_ADDR=http://127.0.0.1:8200")
+    logger.info("         export VAULT_TOKEN=hvs.your-token")
+    logger.info("\nSkipping Vault server example...")
         return
 
     logger.info(f"\nConnecting to Vault at: {vault_addr}")
@@ -371,14 +369,14 @@ async def example_with_vault_server():
         result = await service.initialize()
 
         if result["vault_available"]:
-            logger.info("Successfully connected to Vault!")
+    logger.info("Successfully connected to Vault!")
 
             # Check Vault health
             health = await service.health_check()
             if "vault_health" in health:
                 vault_health = health["vault_health"]
-                logger.info(f"Vault version: {vault_health.get('version', 'unknown')}")
-                logger.info(f"Vault sealed: {vault_health.get('sealed', 'unknown')}")
+    logger.info(f"Vault version: {vault_health.get('version', 'unknown')}")
+    logger.info(f"Vault sealed: {vault_health.get('sealed', 'unknown')}")
 
             # Generate a key in Vault
             import uuid
@@ -387,13 +385,13 @@ async def example_with_vault_server():
             key_result = await service.generate_keypair(key_name=key_name)
 
             if key_result["success"]:
-                logger.info(f"\nCreated key in Vault: {key_name}")
-                logger.info(f"Vault path: {key_result['vault_path']}")
+    logger.info(f"\nCreated key in Vault: {key_name}")
+    logger.info(f"Vault path: {key_result['vault_path']}")
 
                 # Sign some data
                 test_data = b"Data signed with Vault Transit"
                 signature = await service.sign(key_name=key_name, data=test_data)
-                logger.info("Signed data with Vault Transit")
+    logger.info("Signed data with Vault Transit")
 
                 # Verify the signature
                 is_valid = await service.verify(
@@ -401,13 +399,13 @@ async def example_with_vault_server():
                     data=test_data,
                     signature=signature,
                 )
-                logger.info(f"Signature verified: {is_valid}")
+    logger.info(f"Signature verified: {is_valid}")
         else:
-            logger.info("Could not connect to Vault")
-            logger.info(f"Error: {result.get('error', 'Unknown error')}")
+    logger.info("Could not connect to Vault")
+    logger.info(f"Error: {result.get('error', 'Unknown error')}")
 
     except Exception as e:
-        logger.info(f"Error connecting to Vault: {e}")
+    logger.info(f"Error connecting to Vault: {e}")
 
 
 async def example_context_manager():
@@ -418,13 +416,13 @@ async def example_context_manager():
 
     # Using async context manager for automatic cleanup
     async with VaultCryptoService(fallback_enabled=True) as service:
-        logger.info("\nService initialized via context manager")
+    logger.info("\nService initialized via context manager")
 
         result = await service.generate_keypair(key_name="context-key")
-        logger.info(f"Key generated: {result['success']}")
+    logger.info(f"Key generated: {result['success']}")
 
         health = await service.health_check()
-        logger.info(f"Service healthy: {health['constitutional_valid']}")
+    logger.info(f"Service healthy: {health['constitutional_valid']}")
 
     logger.info("Service automatically cleaned up")
 
@@ -458,32 +456,32 @@ async def example_error_handling():
 
     async with VaultCryptoService(fallback_enabled=True) as service:
         # Try to get non-existent key
-        logger.info("\nAttempting to get non-existent key...")
+    logger.info("\nAttempting to get non-existent key...")
         try:
             await service.get_public_key(key_name="does-not-exist")
         except RuntimeError as e:
-            logger.info(f"Caught expected error: {e}")
+    logger.info(f"Caught expected error: {e}")
 
         # Generate a key for testing
         await service.generate_keypair(key_name="error-test-key")
 
         # Try to verify with invalid signature
-        logger.info("\nAttempting to verify with invalid signature...")
+    logger.info("\nAttempting to verify with invalid signature...")
         is_valid = await service.verify(
             key_name="error-test-key",
             data=b"test data",
             signature="not-a-valid-signature",
         )
-        logger.info(f"Invalid signature result: {is_valid} (expected False)")
+    logger.info(f"Invalid signature result: {is_valid} (expected False)")
 
         # Key generation with Vault unavailable and fallback disabled
-        logger.info("\nAttempting operation with disabled fallback...")
+    logger.info("\nAttempting operation with disabled fallback...")
         no_fallback_service = VaultCryptoService(fallback_enabled=False)
         await no_fallback_service.initialize()
 
         result = await no_fallback_service.generate_keypair(key_name="will-fail")
         if not result["success"]:
-            logger.info(f"Expected failure: {result.get('error', 'Unknown error')}")
+    logger.info(f"Expected failure: {result.get('error', 'Unknown error')}")
 
 
 async def main():
@@ -513,7 +511,7 @@ async def main():
         try:
             await example()
         except Exception as e:
-            logger.info(f"\nError in {example.__name__}: {e}")
+    logger.info(f"\nError in {example.__name__}: {e}")
             import traceback
 
             traceback.print_exc()

@@ -4,25 +4,23 @@ Quick Performance Test for MessageProcessor Optimizations
 """
 
 import asyncio
-import sys
 import time
+import sys
 from pathlib import Path
 
 # Add the enhanced_agent_bus to path
-sys.path.insert(0, str(Path(__file__).parent / "acgs2-core"))
-
+sys.path.insert(0, str(Path(__file__).parent / 'acgs2-core'))
 
 # Mock the missing dependencies
 class MockConfig:
     def __init__(self):
-        self.intelligence = type("obj", (object,), {"intent_classifier_enabled": False})
-        self.deliberation = type("obj", (object,), {"enabled": False})
-
+        self.intelligence = type('obj', (object,), {'intent_classifier_enabled': False})
+        self.deliberation = type('obj', (object,), {'enabled': False})
 
 # Mock imports that cause issues
-sys.modules["litellm"] = type(sys)("litellm")
-sys.modules["config"] = type(sys)("config")
-sys.modules["config"].BusConfiguration = MockConfig
+sys.modules['litellm'] = type(sys)('litellm')
+sys.modules['config'] = type(sys)('config')
+sys.modules['config'].BusConfiguration = MockConfig
 
 try:
     from enhanced_agent_bus.message_processor import MessageProcessor
@@ -36,14 +34,14 @@ try:
 
         # Create a simple test message
         msg = AgentMessage(
-            message_id="test-1",
-            from_agent="test-agent",
-            to_agent="bus",
+            message_id='test-1',
+            from_agent='test-agent',
+            to_agent='bus',
             message_type=MessageType.TASK_REQUEST,
             priority=Priority.NORMAL,
-            content="test message",
-            tenant_id="test-tenant",
-            constitutional_hash="cdd01ef066bc6cf2",
+            content='test message',
+            tenant_id='test-tenant',
+            constitutional_hash='cdd01ef066bc6cf2'
         )
 
         # Test processing performance
@@ -51,7 +49,7 @@ try:
         iterations = 100
 
         results = []
-        for _i in range(iterations):
+        for i in range(iterations):
             result = await processor.process(msg)
             results.append(result)
 
@@ -91,6 +89,5 @@ try:
 except Exception as e:
     print(f"Test failed with error: {e}")
     import traceback
-
     traceback.print_exc()
     sys.exit(1)

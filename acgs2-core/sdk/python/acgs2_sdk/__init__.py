@@ -43,12 +43,14 @@ from acgs2_sdk.models import (
 )
 from acgs2_sdk.services import (
     AgentService,
+    APIGatewayService,
     AuditService,
     ComplianceService,
     GovernanceService,
     HITLApprovalsService,
     MLGovernanceService,
     PolicyService,
+    PolicyRegistryService,
 )
 
 __version__ = "2.0.0"
@@ -96,10 +98,12 @@ __all__ = [
     "Priority",
     # Services
     "AgentService",
+    "APIGatewayService",
     "AuditService",
     "ComplianceService",
     "GovernanceService",
     "HITLApprovalsService",
     "MLGovernanceService",
     "PolicyService",
+    "PolicyRegistryService",
 ]

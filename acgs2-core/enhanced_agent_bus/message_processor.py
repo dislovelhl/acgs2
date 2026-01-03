@@ -213,12 +213,13 @@ class MessageProcessor:
         start = time.perf_counter()
 
         # Memory profiling integration (fire-and-forget, <5μs impact)
+        # Only create profiler context if profiling is actually enabled
         profiler = get_memory_profiler()
         operation_name = f"message_processing_{msg.message_type.value}_{msg.priority.value}"
 
         context_manager = (
             profiler.profile_async(operation_name, trace_id=msg.message_id)
-            if profiler
+            if profiler and profiler.config.enabled
             else nullcontext()
         )
 

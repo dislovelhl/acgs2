@@ -132,13 +132,13 @@ async def demo_language_constraints():
 
     for lang in languages:
         lang_constraints = constraints.get_constraints(lang)
-        logger.info(f"{lang.upper()} 约束:")
-        logger.info(f"  语言: {lang_constraints['language']}")
-        logger.info(f"  缩进风格: {lang_constraints['indent_style']}")
-        logger.info(f"  缩进大小: {lang_constraints['indent_size']}")
-        logger.info(f"  最大行长: {lang_constraints['max_line_length']}")
-        logger.info(f"  文件扩展名: {lang_constraints['file_extension']}")
-        logger.info()
+    logger.info(f"{lang.upper()} 约束:")
+    logger.info(f"  语言: {lang_constraints['language']}")
+    logger.info(f"  缩进风格: {lang_constraints['indent_style']}")
+    logger.info(f"  缩进大小: {lang_constraints['indent_size']}")
+    logger.info(f"  最大行长: {lang_constraints['max_line_length']}")
+    logger.info(f"  文件扩展名: {lang_constraints['file_extension']}")
+        print()
 
     logger.info("=" * 50 + "\n")
 
@@ -276,24 +276,27 @@ async def main():
         await demo_quality_scoring()
         await demo_system_stats()
 
-        logger.info("Demo sequence completed successfully", extra={
-            "features": [
-                "Guidance/Outlines库集成",
-                "CFG和JSON Schema约束定义",
-                "多语言支持 (Python, JavaScript, Java, C++, Go)",
-                "动态约束更新",
-                "单元测试自动生成",
-                "SonarQube质量评分集成",
-                "反馈循环至模型微调"
-            ]
-        })
-        print("\n里程碑目标:")
-        print("• 代码修复需求减80%")
-        print("• 语法正确率>99.5%")
-        print("• 生成任务中测试覆盖>90%")
+        logger.info(
+            "Demo sequence completed successfully",
+            extra={
+                "features": [
+                    "Guidance/Outlines库集成",
+                    "CFG和JSON Schema约束定义",
+                    "多语言支持 (Python, JavaScript, Java, C++, Go)",
+                    "动态约束更新",
+                    "单元测试自动生成",
+                    "SonarQube质量评分集成",
+                    "反馈循环至模型微调",
+                ]
+            },
+        )
+    logger.info("\n里程碑目标:")
+    logger.info("• 代码修复需求减80%")
+    logger.info("• 语法正确率>99.5%")
+    logger.info("• 生成任务中测试覆盖>90%")
 
     except Exception as e:
-        logger.info(f"演示过程中出现错误: {e}")
+    logger.info(f"演示过程中出现错误: {e}")
         import traceback
 
         traceback.print_exc()

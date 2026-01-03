@@ -59,7 +59,7 @@ export class ACGS2Client {
 
   constructor(config: ClientConfig) {
     this.config = { ...defaultConfig, ...config };
-    this.logger = config.logger ?? (process.env.NODE_ENV === 'development' ? createLogger() : silentLogger);
+    this.logger = config.logger ?? (process.env['NODE_ENV'] === 'development' ? createLogger() : silentLogger);
     this.accessToken = config.accessToken;
 
     // Create axios instance
@@ -347,5 +347,3 @@ export function createClient(config: ClientConfig): ACGS2Client {
 // =============================================================================
 // Export Types
 // =============================================================================
-
-export type { ClientConfig };

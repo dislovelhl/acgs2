@@ -1,4 +1,4 @@
-import { getLogger } from '../../../../../sdk/typescript/src/utils/logger';
+import { getLogger } from 'utils/logger';
 const logger = getLogger('index');
 
 

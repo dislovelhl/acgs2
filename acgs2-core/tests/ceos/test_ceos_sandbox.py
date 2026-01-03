@@ -12,7 +12,7 @@ async def test_firecracker_cold_start_simulation():
     """Verify Firecracker cold start simulation meets <150ms target."""
     provider = get_sandbox_provider("firecracker")
 
-    result = await provider.execute_code("print('Isolation check')", "python")
+    logger.info('Isolation check')", "python")
 
     assert result["status"] == "success"
     assert result["duration_ms"] < 150  # CEOS Mandate

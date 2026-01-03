@@ -2,7 +2,7 @@ import { Command } from 'commander';
 import chalk from 'chalk';
 import ora from 'ora';
 import { listCoordinationTasks, executeCoordinationTask, getCoordinationStatus, generateCoordinationReport } from '../services/coordinationService';
-import { getLogger } from '../../../../../sdk/typescript/src/utils/logger';
+import { getLogger } from '../../../sdk/typescript/src/utils/logger';
 const logger = getLogger('coordination');
 
 

@@ -2,7 +2,7 @@ import { Command } from 'commander';
 import chalk from 'chalk';
 import ora from 'ora';
 import { orchestrateTask } from '../services/taskService';
-import { getLogger } from '../../../../../sdk/typescript/src/utils/logger';
+import { getLogger } from '../../../sdk/typescript/src/utils/logger';
 const logger = getLogger('task');
 
 

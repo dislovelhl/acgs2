@@ -8,7 +8,7 @@ import { getLogger, cliOutput } from '../utils/logging_config';
 const logger = getLogger('commands/analyze');
 
 // Type definitions for analysis results
-import { getLogger } from '../../../../../sdk/typescript/src/utils/logger';
+import { getLogger } from '../../../sdk/typescript/src/utils/logger';
 const logger = getLogger('analyze');
 
 
