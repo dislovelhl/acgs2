@@ -446,7 +446,8 @@ class MACIOrchestrator:
         ):
             return (
                 False,
-                f"Branch {requesting_branch.value} not permitted to make {decision_type.value} decisions",
+                f"Branch {requesting_branch.value} not permitted to make "
+                f"{decision_type.value} decisions",
                 None,
             )
 
@@ -527,7 +528,8 @@ class MACIOrchestrator:
         else:
             return (
                 False,
-                f"Consensus failed ({approved_votes}/{len(votes)} < {decision.consensus_threshold})",
+                f"Consensus failed ({approved_votes}/{len(votes)} < "
+                f"{decision.consensus_threshold})",
             )
 
     async def _get_branch_vote(

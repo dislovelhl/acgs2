@@ -107,7 +107,7 @@ class ConstitutionalClassifierService:
         Returns:
             ComplianceResult with classification
         """
-        start_time = time.monotonic()
+        _start_time = time.monotonic()  # noqa: F841
         self.total_classifications += 1
 
         # Create cache key

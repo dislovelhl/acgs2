@@ -53,7 +53,7 @@ except ImportError:
                 return [("result", 0.8)]  # Mock result
 
         def get_evaluatable(self):
-            return MockEngine()
+            return MockProbLog.Engine()
 
     problog = MockProbLog()
     PROBLOG_AVAILABLE = False
@@ -98,7 +98,8 @@ class ProbabilisticFact:
     def __post_init__(self):
         if not self.fact_id:
             self.fact_id = hashlib.sha256(
-                f"{self.predicate}_{'_'.join(str(arg) for arg in self.arguments)}_{self.probability}".encode()
+                f"{self.predicate}_{'_'.join(str(arg) for arg in self.arguments)}_"
+                f"{self.probability}".encode()
             ).hexdigest()[:16]
 
     @property

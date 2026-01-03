@@ -248,7 +248,7 @@ class NetworkChaosInjector(BaseChaosInjector):
         latency_ms = failure.parameters.get("latency_ms", 100)
 
         # Use tc (traffic control) to add latency
-        cmd = f"tc qdisc add dev eth0 root netem delay {latency_ms}ms"
+        # cmd = f"tc qdisc add dev eth0 root netem delay {latency_ms}ms"
         # Execute command on target (would use Kubernetes API in real implementation)
 
         self.logger.info(f"Injected {latency_ms}ms latency on {target.resource_id}")
@@ -258,7 +258,7 @@ class NetworkChaosInjector(BaseChaosInjector):
         """Inject packet loss"""
         loss_percentage = failure.parameters.get("loss_percentage", 10.0)
 
-        cmd = f"tc qdisc add dev eth0 root netem loss {loss_percentage}%"
+        # cmd = f"tc qdisc add dev eth0 root netem loss {loss_percentage}%"
         # Execute command on target
 
         self.logger.info(f"Injected {loss_percentage}% packet loss on {target.resource_id}")
@@ -268,7 +268,7 @@ class NetworkChaosInjector(BaseChaosInjector):
         """Inject bandwidth limitation"""
         bandwidth_mbps = failure.parameters.get("bandwidth_mbps", 1.0)
 
-        cmd = f"tc qdisc add dev eth0 root tbf rate {bandwidth_mbps}mbit burst 32kbit latency 400ms"
+        # cmd = f"tc qdisc add dev eth0 root tbf rate {bandwidth_mbps}mbit burst 32kbit latency 400ms"
         # Execute command on target
 
         self.logger.info(f"Limited bandwidth to {bandwidth_mbps}Mbps on {target.resource_id}")

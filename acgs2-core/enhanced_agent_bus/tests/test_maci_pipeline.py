@@ -1,6 +1,7 @@
 """Tests for MACI Verification Pipeline."""
 
 import asyncio
+import logging
 from datetime import datetime
 
 import pytest

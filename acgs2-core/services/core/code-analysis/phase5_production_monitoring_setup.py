@@ -119,8 +119,8 @@ class ProductionMonitoringSetup:
                     grafana_accessible = True
                     # Try to create a basic dashboard (would need API key in real scenario)
                     dashboard_created = True
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"Grafana dashboard creation failed: {e}")
 
             # Create dashboard configuration
             dashboard_config = {
@@ -547,7 +547,8 @@ async def main() -> None:
         else:
             sys.exit(2)  # Warning exit code
 
-    except Exception:
+    except Exception as e:
+        logger.error(f"Production monitoring setup failed: {e}")
         sys.exit(1)
 
 

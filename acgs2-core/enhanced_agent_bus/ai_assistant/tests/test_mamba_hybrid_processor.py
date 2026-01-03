@@ -56,7 +56,7 @@ class TestMambaConfig:
         assert config.d_model == 256
         assert config.num_mamba_layers == 4
         assert config.max_context_length == 1_000_000
-        assert config.use_shared_attention == False
+        assert config.use_shared_attention is False
 
 
 class TestMambaSSM:
