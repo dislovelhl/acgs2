@@ -125,7 +125,10 @@ class PagerDutyCredentials(IntegrationCredentials):
     )
     severity_mapping: Dict[str, str] = Field(
         default_factory=dict,
-        description="Custom severity to PagerDuty severity mapping (severity -> 'critical', 'error', 'warning', 'info')",
+        description=(
+            "Custom severity to PagerDuty severity mapping "
+            "(severity -> 'critical', 'error', 'warning', 'info')"
+        ),
     )
 
     # Custom event fields
@@ -187,16 +190,16 @@ class PagerDutyCredentials(IntegrationCredentials):
                 raise ValueError("api_token is required for REST API authentication")
         elif self.auth_type == PagerDutyAuthType.BOTH:
             if not self.integration_key:
-                raise ValueError("integration_key is required when using both authentication methods")
+                raise ValueError(
+                    "integration_key is required when using both authentication methods"
+                )
             if not self.api_token:
                 raise ValueError("api_token is required when using both authentication methods")
 
         # If using REST API, service_id should be provided for some operations
         if self.auth_type in (PagerDutyAuthType.REST_API, PagerDutyAuthType.BOTH):
             if not self.service_id:
-                logger.warning(
-                    "service_id not provided - some REST API operations may require it"
-                )
+                logger.warning("service_id not provided - some REST API operations may require it")
 
         return self
 
@@ -373,9 +376,7 @@ class PagerDutyAdapter(BaseIntegration):
 
                 if response.status_code == 202:
                     # Successfully authenticated with Events API
-                    logger.info(
-                        f"PagerDuty Events API authentication successful for '{self.name}'"
-                    )
+                    logger.info(f"PagerDuty Events API authentication successful for '{self.name}'")
 
                     # Immediately resolve the test incident
                     resolve_payload = {
@@ -401,8 +402,8 @@ class PagerDutyAdapter(BaseIntegration):
                     try:
                         error_data = response.json()
                         error_msg = error_data.get("message", error_msg)
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        logger.debug(f"Failed to parse error response: {e}")
 
                     logger.error(f"PagerDuty authentication failed: {error_msg}")
                     return IntegrationResult(
@@ -471,9 +472,7 @@ class PagerDutyAdapter(BaseIntegration):
                 )
 
                 if response.status_code == 200:
-                    logger.info(
-                        f"PagerDuty REST API authentication successful for '{self.name}'"
-                    )
+                    logger.info(f"PagerDuty REST API authentication successful for '{self.name}'")
                     return IntegrationResult(
                         success=True,
                         integration_name=self.name,
@@ -567,9 +566,7 @@ class PagerDutyAdapter(BaseIntegration):
                     validation_issues.append("api_token is required for REST API")
                 elif self.pd_credentials.service_id:
                     # Validate service exists and is accessible
-                    service_url = (
-                        f"{self.REST_API_URL}/services/{self.pd_credentials.service_id}"
-                    )
+                    service_url = f"{self.REST_API_URL}/services/{self.pd_credentials.service_id}"
 
                     response = await client.get(
                         service_url,
@@ -768,12 +765,14 @@ class PagerDutyAdapter(BaseIntegration):
 
         # Add event details if configured
         if self.pd_credentials.include_event_details:
-            custom_details.update({
-                "event_id": event.event_id,
-                "event_type": event.event_type,
-                "acgs2_severity": event.severity.value,
-                "timestamp": event.timestamp.isoformat(),
-            })
+            custom_details.update(
+                {
+                    "event_id": event.event_id,
+                    "event_type": event.event_type,
+                    "acgs2_severity": event.severity.value,
+                    "timestamp": event.timestamp.isoformat(),
+                }
+            )
 
             if event.policy_id:
                 custom_details["policy_id"] = event.policy_id
@@ -935,3 +934,622 @@ class PagerDutyAdapter(BaseIntegration):
                 error_code="UNKNOWN_ERROR",
                 error_message=str(e),
             )
+
+    async def get_incident(self, incident_id: str) -> IntegrationResult:
+        """
+        Get details of an existing PagerDuty incident.
+
+        Requires REST API authentication (api_token).
+
+        Args:
+            incident_id: The incident ID (e.g., PXXXXX)
+
+        Returns:
+            IntegrationResult with incident details or error
+
+        Raises:
+            AuthenticationError: If not authenticated or REST API not configured
+        """
+        if not self._authenticated:
+            raise AuthenticationError("Integration is not authenticated", self.name)
+
+        if self.pd_credentials.auth_type not in (
+            PagerDutyAuthType.REST_API,
+            PagerDutyAuthType.BOTH,
+        ):
+            raise AuthenticationError(
+                "REST API authentication required for get_incident",
+                self.name,
+            )
+
+        logger.debug(f"Fetching PagerDuty incident {incident_id}")
+
+        try:
+            client = await self.get_http_client()
+            headers = self._get_rest_api_headers()
+
+            incident_url = f"{self.REST_API_URL}/incidents/{incident_id}"
+
+            response = await client.get(
+                incident_url,
+                headers=headers,
+            )
+
+            if response.status_code == 200:
+                response_data = response.json()
+                incident = response_data.get("incident", {})
+                incident_number = incident.get("incident_number")
+                html_url = incident.get("html_url")
+
+                logger.info(f"Retrieved PagerDuty incident {incident_id}")
+
+                return IntegrationResult(
+                    success=True,
+                    integration_name=self.name,
+                    operation="get_incident",
+                    external_id=incident_number,
+                    external_url=html_url,
+                    error_details=incident,  # Using error_details to pass incident data
+                )
+
+            elif response.status_code == 404:
+                return IntegrationResult(
+                    success=False,
+                    integration_name=self.name,
+                    operation="get_incident",
+                    error_code="NOT_FOUND",
+                    error_message=f"Incident {incident_id} not found",
+                )
+
+            elif response.status_code == 401:
+                return IntegrationResult(
+                    success=False,
+                    integration_name=self.name,
+                    operation="get_incident",
+                    error_code="AUTH_FAILED",
+                    error_message="Authentication failed - check api_token",
+                )
+
+            elif response.status_code == 403:
+                return IntegrationResult(
+                    success=False,
+                    integration_name=self.name,
+                    operation="get_incident",
+                    error_code="ACCESS_DENIED",
+                    error_message="Access denied - check API token permissions",
+                )
+
+            else:
+                return IntegrationResult(
+                    success=False,
+                    integration_name=self.name,
+                    operation="get_incident",
+                    error_code=f"HTTP_{response.status_code}",
+                    error_message=f"Failed to fetch incident: HTTP {response.status_code}",
+                )
+
+        except AuthenticationError:
+            raise
+
+        except httpx.TimeoutException as e:
+            return IntegrationResult(
+                success=False,
+                integration_name=self.name,
+                operation="get_incident",
+                error_code="TIMEOUT",
+                error_message=f"Request timed out: {str(e)}",
+            )
+
+        except httpx.NetworkError as e:
+            return IntegrationResult(
+                success=False,
+                integration_name=self.name,
+                operation="get_incident",
+                error_code="NETWORK_ERROR",
+                error_message=f"Network error: {str(e)}",
+            )
+
+        except Exception as e:
+            return IntegrationResult(
+                success=False,
+                integration_name=self.name,
+                operation="get_incident",
+                error_code="ERROR",
+                error_message=str(e),
+            )
+
+    async def update_incident(
+        self,
+        incident_id: str,
+        status: Optional[str] = None,
+        priority: Optional[str] = None,
+        escalation_policy_id: Optional[str] = None,
+        assigned_to_user_ids: Optional[List[str]] = None,
+        **kwargs: Any,
+    ) -> IntegrationResult:
+        """
+        Update an existing PagerDuty incident.
+
+        Requires REST API authentication (api_token).
+
+        Args:
+            incident_id: The incident ID (e.g., PXXXXX)
+            status: New incident status (triggered, acknowledged, resolved)
+            priority: Priority reference ID
+            escalation_policy_id: Escalation policy reference ID
+            assigned_to_user_ids: List of user IDs to assign to
+            **kwargs: Additional fields to update
+
+        Returns:
+            IntegrationResult with update status or error
+
+        Raises:
+            AuthenticationError: If not authenticated or REST API not configured
+        """
+        if not self._authenticated:
+            raise AuthenticationError("Integration is not authenticated", self.name)
+
+        if self.pd_credentials.auth_type not in (
+            PagerDutyAuthType.REST_API,
+            PagerDutyAuthType.BOTH,
+        ):
+            raise AuthenticationError(
+                "REST API authentication required for update_incident",
+                self.name,
+            )
+
+        logger.debug(f"Updating PagerDuty incident {incident_id}")
+
+        try:
+            client = await self.get_http_client()
+            headers = self._get_rest_api_headers()
+
+            # Build update payload
+            update_payload: Dict[str, Any] = {}
+
+            if status:
+                update_payload["status"] = status
+
+            if priority:
+                update_payload["priority"] = {"id": priority, "type": "priority_reference"}
+
+            if escalation_policy_id:
+                update_payload["escalation_policy"] = {
+                    "id": escalation_policy_id,
+                    "type": "escalation_policy_reference",
+                }
+
+            if assigned_to_user_ids:
+                update_payload["assignments"] = [
+                    {"assignee": {"id": user_id, "type": "user_reference"}}
+                    for user_id in assigned_to_user_ids
+                ]
+
+            # Add any additional fields
+            update_payload.update(kwargs)
+
+            incident_url = f"{self.REST_API_URL}/incidents/{incident_id}"
+
+            response = await client.put(
+                incident_url,
+                headers=headers,
+                json={"incident": update_payload},
+            )
+
+            if response.status_code == 200:
+                response_data = response.json()
+                incident = response_data.get("incident", {})
+                incident_number = incident.get("incident_number")
+
+                logger.info(f"Updated PagerDuty incident {incident_id}")
+
+                return IntegrationResult(
+                    success=True,
+                    integration_name=self.name,
+                    operation="update_incident",
+                    external_id=incident_number,
+                )
+
+            elif response.status_code == 404:
+                return IntegrationResult(
+                    success=False,
+                    integration_name=self.name,
+                    operation="update_incident",
+                    error_code="NOT_FOUND",
+                    error_message=f"Incident {incident_id} not found",
+                )
+
+            elif response.status_code == 400:
+                try:
+                    error_data = response.json()
+                    error_msg = error_data.get("error", {}).get("message", "Bad request")
+                except Exception:
+                    error_msg = "Invalid request format"
+
+                return IntegrationResult(
+                    success=False,
+                    integration_name=self.name,
+                    operation="update_incident",
+                    error_code="BAD_REQUEST",
+                    error_message=f"Failed to update incident: {error_msg}",
+                )
+
+            elif response.status_code == 401:
+                return IntegrationResult(
+                    success=False,
+                    integration_name=self.name,
+                    operation="update_incident",
+                    error_code="AUTH_FAILED",
+                    error_message="Authentication failed - check api_token",
+                )
+
+            elif response.status_code == 403:
+                return IntegrationResult(
+                    success=False,
+                    integration_name=self.name,
+                    operation="update_incident",
+                    error_code="ACCESS_DENIED",
+                    error_message="Access denied - check API token permissions",
+                )
+
+            else:
+                return IntegrationResult(
+                    success=False,
+                    integration_name=self.name,
+                    operation="update_incident",
+                    error_code=f"HTTP_{response.status_code}",
+                    error_message=f"Failed to update incident: HTTP {response.status_code}",
+                )
+
+        except AuthenticationError:
+            raise
+
+        except httpx.TimeoutException as e:
+            return IntegrationResult(
+                success=False,
+                integration_name=self.name,
+                operation="update_incident",
+                error_code="TIMEOUT",
+                error_message=f"Request timed out: {str(e)}",
+            )
+
+        except httpx.NetworkError as e:
+            return IntegrationResult(
+                success=False,
+                integration_name=self.name,
+                operation="update_incident",
+                error_code="NETWORK_ERROR",
+                error_message=f"Network error: {str(e)}",
+            )
+
+        except Exception as e:
+            return IntegrationResult(
+                success=False,
+                integration_name=self.name,
+                operation="update_incident",
+                error_code="ERROR",
+                error_message=str(e),
+            )
+
+    async def resolve_incident(self, dedup_key: str) -> IntegrationResult:
+        """
+        Resolve an incident using the Events API.
+
+        Requires Events API authentication (integration_key).
+
+        Args:
+            dedup_key: The deduplication key of the incident to resolve
+
+        Returns:
+            IntegrationResult with resolution status or error
+
+        Raises:
+            AuthenticationError: If not authenticated or Events API not configured
+        """
+        if not self._authenticated:
+            raise AuthenticationError("Integration is not authenticated", self.name)
+
+        if self.pd_credentials.auth_type not in (
+            PagerDutyAuthType.EVENTS_V2,
+            PagerDutyAuthType.BOTH,
+        ):
+            raise AuthenticationError(
+                "Events API authentication required for resolve_incident",
+                self.name,
+            )
+
+        logger.debug(f"Resolving PagerDuty incident with dedup_key {dedup_key}")
+
+        try:
+            client = await self.get_http_client()
+
+            # Build the resolve payload
+            resolve_payload = {
+                "routing_key": self.pd_credentials.integration_key.get_secret_value(),
+                "event_action": "resolve",
+                "dedup_key": dedup_key,
+            }
+
+            response = await client.post(
+                self.EVENTS_API_URL,
+                headers=self._get_events_api_headers(),
+                json=resolve_payload,
+            )
+
+            # Handle rate limiting
+            if response.status_code == 429:
+                retry_after = int(response.headers.get("X-Rate-Limit-Reset", 60))
+                return IntegrationResult(
+                    success=False,
+                    integration_name=self.name,
+                    operation="resolve_incident",
+                    error_code="RATE_LIMITED",
+                    error_message=f"Rate limit exceeded (retry after {retry_after}s)",
+                    retry_after=retry_after,
+                )
+
+            # Handle success (202 Accepted)
+            if response.status_code == 202:
+                response_data = response.json()
+                status = response_data.get("status")
+                message = response_data.get("message", "")
+
+                logger.info(f"Resolved PagerDuty incident with dedup_key {dedup_key}")
+
+                return IntegrationResult(
+                    success=True,
+                    integration_name=self.name,
+                    operation="resolve_incident",
+                    external_id=dedup_key,
+                    error_details={"status": status, "message": message},
+                )
+
+            # Handle errors
+            if response.status_code == 400:
+                try:
+                    error_data = response.json()
+                    error_msg = error_data.get("message", "Bad request")
+                except Exception:
+                    error_msg = "Invalid request format"
+
+                return IntegrationResult(
+                    success=False,
+                    integration_name=self.name,
+                    operation="resolve_incident",
+                    error_code="BAD_REQUEST",
+                    error_message=f"Failed to resolve incident: {error_msg}",
+                )
+
+            elif response.status_code == 401 or response.status_code == 403:
+                return IntegrationResult(
+                    success=False,
+                    integration_name=self.name,
+                    operation="resolve_incident",
+                    error_code="AUTH_FAILED",
+                    error_message="Authentication failed - check integration_key",
+                )
+
+            else:
+                return IntegrationResult(
+                    success=False,
+                    integration_name=self.name,
+                    operation="resolve_incident",
+                    error_code=f"HTTP_{response.status_code}",
+                    error_message=f"Unexpected response: HTTP {response.status_code}",
+                )
+
+        except AuthenticationError:
+            raise
+
+        except httpx.TimeoutException as e:
+            return IntegrationResult(
+                success=False,
+                integration_name=self.name,
+                operation="resolve_incident",
+                error_code="TIMEOUT",
+                error_message=f"Request timed out: {str(e)}",
+            )
+
+        except httpx.NetworkError as e:
+            return IntegrationResult(
+                success=False,
+                integration_name=self.name,
+                operation="resolve_incident",
+                error_code="NETWORK_ERROR",
+                error_message=f"Network error: {str(e)}",
+            )
+
+        except Exception as e:
+            return IntegrationResult(
+                success=False,
+                integration_name=self.name,
+                operation="resolve_incident",
+                error_code="ERROR",
+                error_message=str(e),
+            )
+
+    async def add_note(self, incident_id: str, note: str) -> IntegrationResult:
+        """
+        Add a note to an existing PagerDuty incident.
+
+        Requires REST API authentication (api_token).
+
+        Args:
+            incident_id: The incident ID (e.g., PXXXXX)
+            note: The note text to add
+
+        Returns:
+            IntegrationResult with note addition status or error
+
+        Raises:
+            AuthenticationError: If not authenticated or REST API not configured
+        """
+        if not self._authenticated:
+            raise AuthenticationError("Integration is not authenticated", self.name)
+
+        if self.pd_credentials.auth_type not in (
+            PagerDutyAuthType.REST_API,
+            PagerDutyAuthType.BOTH,
+        ):
+            raise AuthenticationError(
+                "REST API authentication required for add_note",
+                self.name,
+            )
+
+        logger.debug(f"Adding note to PagerDuty incident {incident_id}")
+
+        try:
+            client = await self.get_http_client()
+            headers = self._get_rest_api_headers()
+
+            # Build note payload
+            note_payload = {
+                "note": {
+                    "content": note,
+                }
+            }
+
+            notes_url = f"{self.REST_API_URL}/incidents/{incident_id}/notes"
+
+            response = await client.post(
+                notes_url,
+                headers=headers,
+                json=note_payload,
+            )
+
+            if response.status_code == 201:
+                logger.info(f"Added note to PagerDuty incident {incident_id}")
+
+                return IntegrationResult(
+                    success=True,
+                    integration_name=self.name,
+                    operation="add_note",
+                    external_id=incident_id,
+                )
+
+            elif response.status_code == 404:
+                return IntegrationResult(
+                    success=False,
+                    integration_name=self.name,
+                    operation="add_note",
+                    error_code="NOT_FOUND",
+                    error_message=f"Incident {incident_id} not found",
+                )
+
+            elif response.status_code == 400:
+                try:
+                    error_data = response.json()
+                    error_msg = error_data.get("error", {}).get("message", "Bad request")
+                except Exception:
+                    error_msg = "Invalid request format"
+
+                return IntegrationResult(
+                    success=False,
+                    integration_name=self.name,
+                    operation="add_note",
+                    error_code="BAD_REQUEST",
+                    error_message=f"Failed to add note: {error_msg}",
+                )
+
+            elif response.status_code == 401:
+                return IntegrationResult(
+                    success=False,
+                    integration_name=self.name,
+                    operation="add_note",
+                    error_code="AUTH_FAILED",
+                    error_message="Authentication failed - check api_token",
+                )
+
+            elif response.status_code == 403:
+                return IntegrationResult(
+                    success=False,
+                    integration_name=self.name,
+                    operation="add_note",
+                    error_code="ACCESS_DENIED",
+                    error_message="Access denied - check API token permissions",
+                )
+
+            else:
+                return IntegrationResult(
+                    success=False,
+                    integration_name=self.name,
+                    operation="add_note",
+                    error_code=f"HTTP_{response.status_code}",
+                    error_message=f"Failed to add note: HTTP {response.status_code}",
+                )
+
+        except AuthenticationError:
+            raise
+
+        except httpx.TimeoutException as e:
+            return IntegrationResult(
+                success=False,
+                integration_name=self.name,
+                operation="add_note",
+                error_code="TIMEOUT",
+                error_message=f"Request timed out: {str(e)}",
+            )
+
+        except httpx.NetworkError as e:
+            return IntegrationResult(
+                success=False,
+                integration_name=self.name,
+                operation="add_note",
+                error_code="NETWORK_ERROR",
+                error_message=f"Network error: {str(e)}",
+            )
+
+        except Exception as e:
+            return IntegrationResult(
+                success=False,
+                integration_name=self.name,
+                operation="add_note",
+                error_code="ERROR",
+                error_message=str(e),
+            )
+
+    async def escalate_incident(
+        self, incident_id: str, escalation_policy_id: str
+    ) -> IntegrationResult:
+        """
+        Escalate an incident to a different escalation policy.
+
+        This is a convenience method that calls update_incident with the escalation_policy_id.
+        Requires REST API authentication (api_token).
+
+        Args:
+            incident_id: The incident ID (e.g., PXXXXX)
+            escalation_policy_id: The escalation policy ID to escalate to
+
+        Returns:
+            IntegrationResult with escalation status or error
+
+        Raises:
+            AuthenticationError: If not authenticated or REST API not configured
+        """
+        logger.debug(
+            f"Escalating PagerDuty incident {incident_id} to policy {escalation_policy_id}"
+        )
+
+        result = await self.update_incident(
+            incident_id,
+            escalation_policy_id=escalation_policy_id,
+        )
+
+        # Update the operation name to reflect escalation
+        if result.success:
+            logger.info(
+                f"Escalated PagerDuty incident {incident_id} to policy {escalation_policy_id}"
+            )
+
+        return IntegrationResult(
+            success=result.success,
+            integration_name=result.integration_name,
+            operation="escalate_incident",
+            external_id=result.external_id,
+            external_url=result.external_url,
+            error_code=result.error_code,
+            error_message=result.error_message,
+            error_details=result.error_details,
+            retry_after=result.retry_after,
+        )
