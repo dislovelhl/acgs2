@@ -197,6 +197,160 @@ class IntegrationResult(BaseModel):
     retry_after: Optional[int] = Field(None, description="Seconds to wait before retry")
 
 
+class BatchIntegrationResult(BaseModel):
+    """
+    Result of a batch integration operation.
+
+    Provides batch-level success/failure tracking with per-event results,
+    enabling efficient monitoring and debugging of batch event processing.
+
+    The batch is considered successful if all events succeeded, partially successful
+    if some events succeeded, or failed if all events failed.
+
+    Example:
+        ```python
+        # Send batch of events
+        results = await adapter.send_events_batch(events)
+
+        # Wrap in BatchIntegrationResult for summary
+        batch_result = BatchIntegrationResult.from_results(
+            integration_name=adapter.name,
+            operation="send_events_batch",
+            results=results
+        )
+
+        # Check overall batch status
+        if batch_result.all_succeeded:
+            logger.info(
+                f"Batch completed: "
+                f"{batch_result.successful_count}/{batch_result.total_count}"
+            )
+        elif batch_result.partial_success:
+            logger.warning(
+                f"Partial success: "
+                f"{batch_result.successful_count}/{batch_result.total_count}"
+            )
+        else:
+            logger.error(f"Batch failed: {batch_result.error_message}")
+
+        # Access individual event results
+        for i, result in enumerate(batch_result.event_results):
+            if not result.success:
+                logger.error(f"Event {i} failed: {result.error_message}")
+        ```
+    """
+
+    integration_name: str = Field(..., description="Name of the integration")
+    operation: str = Field(
+        default="send_events_batch", description="Batch operation performed"
+    )
+    timestamp: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        description="Batch operation timestamp",
+    )
+
+    # Per-event results
+    event_results: List[IntegrationResult] = Field(
+        ..., description="Individual result for each event in the batch"
+    )
+
+    # Batch-level summary statistics
+    total_count: int = Field(..., description="Total number of events in the batch")
+    successful_count: int = Field(..., description="Number of events that succeeded")
+    failed_count: int = Field(..., description="Number of events that failed")
+
+    # Batch-level status
+    all_succeeded: bool = Field(..., description="True if all events succeeded")
+    all_failed: bool = Field(..., description="True if all events failed")
+    partial_success: bool = Field(
+        ..., description="True if some (but not all) events succeeded"
+    )
+
+    # Error details (for complete failures)
+    error_code: Optional[str] = Field(None, description="Error code if batch completely failed")
+    error_message: Optional[str] = Field(
+        None, description="Error message if batch completely failed"
+    )
+    error_details: Dict[str, Any] = Field(
+        default_factory=dict, description="Additional error details"
+    )
+
+    # Retry info
+    retry_count: int = Field(0, description="Number of retry attempts for the batch")
+    should_retry: bool = Field(
+        False, description="Whether the batch operation should be retried"
+    )
+
+    @classmethod
+    def from_results(
+        cls,
+        integration_name: str,
+        operation: str,
+        results: List[IntegrationResult],
+        retry_count: int = 0,
+    ) -> "BatchIntegrationResult":
+        """
+        Create a BatchIntegrationResult from a list of IntegrationResults.
+
+        Automatically computes summary statistics and determines batch-level status.
+
+        Args:
+            integration_name: Name of the integration
+            operation: Operation performed (e.g., "send_events_batch")
+            results: List of individual event results
+            retry_count: Number of retry attempts for this batch
+
+        Returns:
+            BatchIntegrationResult with computed statistics
+        """
+        total = len(results)
+        successful = sum(1 for r in results if r.success)
+        failed = total - successful
+
+        all_succeeded = failed == 0 and total > 0
+        all_failed = successful == 0 and total > 0
+        partial_success = successful > 0 and failed > 0
+
+        # Extract error details from first failure if all failed
+        error_code = None
+        error_message = None
+        error_details = {}
+        if all_failed and results:
+            first_failure = results[0]
+            error_code = first_failure.error_code
+            error_message = first_failure.error_message
+            error_details = first_failure.error_details
+
+        return cls(
+            integration_name=integration_name,
+            operation=operation,
+            event_results=results,
+            total_count=total,
+            successful_count=successful,
+            failed_count=failed,
+            all_succeeded=all_succeeded,
+            all_failed=all_failed,
+            partial_success=partial_success,
+            error_code=error_code,
+            error_message=error_message,
+            error_details=error_details,
+            retry_count=retry_count,
+            should_retry=all_failed and any(r.should_retry for r in results),
+        )
+
+    @property
+    def success_rate(self) -> float:
+        """
+        Calculate the success rate as a percentage.
+
+        Returns:
+            Success rate from 0.0 to 100.0, or 0.0 if no events
+        """
+        if self.total_count == 0:
+            return 0.0
+        return (self.successful_count / self.total_count) * 100.0
+
+
 # Type variable for generic integration config
 ConfigT = TypeVar("ConfigT", bound=IntegrationCredentials)
 
