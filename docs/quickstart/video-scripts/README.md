@@ -9,7 +9,7 @@ This directory contains scripts and production guidelines for ACGS-2 tutorial vi
 | Video | Script | Status | Duration | Target Audience |
 |-------|--------|--------|----------|-----------------|
 | [Quickstart Walkthrough](./01-quickstart-walkthrough.md) | Complete | Pending Recording | 8-10 min | New developers |
-| Example Project Deep Dive | In Progress | Not Started | 10-12 min | Intermediate developers |
+| [Example Project Walkthrough](./02-example-project-walkthrough.md) | Complete | Pending Recording | 10-12 min | Intermediate developers |
 | Jupyter Notebook Tutorial | In Progress | Not Started | 8-10 min | Data scientists |
 
 ## Production Standards
@@ -180,6 +180,7 @@ Track video versions in this file:
 | Video | Version | ACGS-2 Version | Date | Notes |
 |-------|---------|----------------|------|-------|
 | Quickstart Walkthrough | 1.0.0 | 2.x | TBD | Initial recording |
+| Example Project Walkthrough | 1.0.0 | 2.x | TBD | Initial recording |
 
 ## Contributing
 
