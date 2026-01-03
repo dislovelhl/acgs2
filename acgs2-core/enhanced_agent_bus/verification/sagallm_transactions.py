@@ -572,13 +572,13 @@ if __name__ == "__main__":
             mock_compensate,
         )
 
-        print(f"✅ Action added: {action.action_id}")
-        print(f"✅ Actions in transaction: {len(transaction.actions)}")
+        logger.info(f"✅ Action added: {action.action_id}")
+        logger.info(f"✅ Actions in transaction: {len(transaction.actions)}")
 
         # Test transaction execution
         success = await engine.execute_transaction(transaction)
-        print(f"✅ Transaction execution: {'success' if success else 'compensated'}")
-        print(f"✅ Final state: {transaction.state.value}")
+        logger.info(f"✅ Transaction execution: {'success' if success else 'compensated'}")
+        logger.info(f"✅ Final state: {transaction.state.value}")
 
         # Test context manager
         async def test_context_manager():
@@ -593,9 +593,9 @@ if __name__ == "__main__":
                 return await engine.execute_transaction(saga)
 
         context_success = await test_context_manager()
-        print(f"✅ Context manager: {'success' if context_success else 'compensated'}")
+        logger.info(f"✅ Context manager: {'success' if context_success else 'compensated'}")
 
-        print("✅ SagaLLM Transaction Engine test completed!")
+        logger.info("✅ SagaLLM Transaction Engine test completed!")
 
     # Run test
     asyncio.run(main())
