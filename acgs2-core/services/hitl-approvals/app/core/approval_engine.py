@@ -25,8 +25,269 @@ from app.models import (
     EscalationPolicy,
     NotificationPayload,
 )
+from app.notifications.base import NotificationProvider, NotificationResult, NotificationStatus
+from app.notifications.retry import RetryableNotificationSender
 
 logger = logging.getLogger(__name__)
+
+
+# =============================================================================
+# Notification Manager
+# =============================================================================
+
+
+class NotificationManager:
+    """
+    Manages notification providers and dispatches notifications.
+
+    Handles:
+    - Provider initialization and health checking
+    - Channel-based notification routing
+    - Retry logic with exponential backoff
+    - PagerDuty integration for critical/escalated approvals
+    """
+
+    def __init__(self) -> None:
+        """Initialize the NotificationManager."""
+        self._providers: Dict[str, NotificationProvider] = {}
+        self._sender = RetryableNotificationSender()
+        self._initialized = False
+
+    async def initialize(self) -> None:
+        """
+        Initialize all configured notification providers.
+
+        Loads providers based on settings configuration and validates
+        connectivity via health checks.
+        """
+        if self._initialized:
+            return
+
+        logger.info("Initializing notification providers...")
+
+        # Import providers here to avoid circular imports
+        from app.notifications.pagerduty import PagerDutyProvider
+        from app.notifications.slack import SlackProvider
+        from app.notifications.teams import TeamsProvider
+
+        # Initialize Slack provider
+        if settings.slack_webhook_url:
+            slack = SlackProvider()
+            if await slack.initialize():
+                self._providers["slack"] = slack
+                logger.info("Slack provider initialized successfully")
+            else:
+                logger.warning("Slack provider failed to initialize")
+        else:
+            logger.info("Slack provider not configured (SLACK_WEBHOOK_URL not set)")
+
+        # Initialize Teams provider
+        if settings.ms_teams_webhook_url:
+            teams = TeamsProvider()
+            if await teams.initialize():
+                self._providers["teams"] = teams
+                logger.info("Teams provider initialized successfully")
+            else:
+                logger.warning("Teams provider failed to initialize")
+        else:
+            logger.info("Teams provider not configured (MS_TEAMS_WEBHOOK_URL not set)")
+
+        # Initialize PagerDuty provider
+        if settings.pagerduty_routing_key:
+            pagerduty = PagerDutyProvider()
+            if await pagerduty.initialize():
+                self._providers["pagerduty"] = pagerduty
+                logger.info("PagerDuty provider initialized successfully")
+            else:
+                logger.warning("PagerDuty provider failed to initialize")
+        else:
+            logger.info("PagerDuty provider not configured (PAGERDUTY_ROUTING_KEY not set)")
+
+        self._initialized = True
+        logger.info(
+            f"Notification manager initialized with {len(self._providers)} provider(s): "
+            f"{list(self._providers.keys())}"
+        )
+
+    def get_provider(self, channel: str) -> Optional[NotificationProvider]:
+        """
+        Get a provider by channel name.
+
+        Args:
+            channel: Channel name (slack, teams, pagerduty)
+
+        Returns:
+            The notification provider if available
+        """
+        return self._providers.get(channel.lower())
+
+    @property
+    def available_providers(self) -> List[str]:
+        """Get list of available provider names."""
+        return list(self._providers.keys())
+
+    @property
+    def is_initialized(self) -> bool:
+        """Check if the manager has been initialized."""
+        return self._initialized
+
+    async def send_notification(
+        self, payload: NotificationPayload
+    ) -> Dict[str, NotificationResult]:
+        """
+        Send a notification to all channels specified in the payload.
+
+        Args:
+            payload: The notification payload with target channels
+
+        Returns:
+            Dictionary mapping channel names to their results
+        """
+        if not self._initialized:
+            logger.warning("NotificationManager not initialized, initializing now...")
+            await self.initialize()
+
+        results: Dict[str, NotificationResult] = {}
+
+        # Determine which channels to notify
+        channels = payload.channels if payload.channels else ["slack"]
+
+        # Check if PagerDuty should be triggered for critical/escalated requests
+        is_critical = payload.priority == ApprovalPriority.CRITICAL
+        is_escalation = payload.metadata.get("is_escalation", False)
+
+        if (is_critical or is_escalation) and "pagerduty" not in channels:
+            if self._providers.get("pagerduty"):
+                channels = list(channels) + ["pagerduty"]
+                logger.info(
+                    f"Adding PagerDuty to channels for critical/escalated request "
+                    f"{payload.request_id}"
+                )
+
+        # Send to each channel
+        for channel in channels:
+            provider = self._providers.get(channel.lower())
+
+            if not provider:
+                logger.debug(f"Provider not available for channel: {channel}")
+                results[channel] = NotificationResult(
+                    status=NotificationStatus.INVALID_CONFIG,
+                    provider=channel,
+                    error=f"Provider not configured: {channel}",
+                )
+                continue
+
+            if not provider.is_enabled:
+                logger.warning(f"Provider {channel} is disabled, skipping")
+                results[channel] = NotificationResult(
+                    status=NotificationStatus.INVALID_CONFIG,
+                    provider=channel,
+                    error=f"Provider disabled: {channel}",
+                )
+                continue
+
+            try:
+                # Use retry sender for reliable delivery
+                result = await self._sender.send(provider, payload)
+                results[channel] = result
+
+                if result.is_success:
+                    logger.info(f"Notification sent via {channel} for request {payload.request_id}")
+                else:
+                    logger.warning(
+                        f"Notification failed via {channel} for request "
+                        f"{payload.request_id}: {result.error}"
+                    )
+
+            except Exception as e:
+                logger.error(
+                    f"Unexpected error sending notification via {channel} "
+                    f"for request {payload.request_id}: {e}"
+                )
+                results[channel] = NotificationResult(
+                    status=NotificationStatus.FAILED,
+                    provider=channel,
+                    error=str(e),
+                )
+
+        return results
+
+    async def health_check(self) -> Dict[str, bool]:
+        """
+        Check health of all providers.
+
+        Returns:
+            Dictionary mapping provider names to their health status
+        """
+        health_status: Dict[str, bool] = {}
+
+        for name, provider in self._providers.items():
+            try:
+                is_healthy = await provider.health_check()
+                health_status[name] = is_healthy
+            except Exception as e:
+                logger.error(f"Health check failed for {name}: {e}")
+                health_status[name] = False
+
+        return health_status
+
+    def get_statistics(self) -> Dict[str, Any]:
+        """
+        Get statistics about the notification manager.
+
+        Returns:
+            Dictionary of statistics
+        """
+        return {
+            "initialized": self._initialized,
+            "providers_count": len(self._providers),
+            "providers": {
+                name: {
+                    "enabled": provider.is_enabled,
+                    "healthy": provider.is_healthy,
+                }
+                for name, provider in self._providers.items()
+            },
+        }
+
+
+# Global notification manager instance
+_notification_manager: Optional[NotificationManager] = None
+
+
+def get_notification_manager() -> NotificationManager:
+    """
+    Get the global NotificationManager instance.
+
+    Returns:
+        The singleton NotificationManager instance
+    """
+    global _notification_manager
+    if _notification_manager is None:
+        _notification_manager = NotificationManager()
+    return _notification_manager
+
+
+async def initialize_notification_manager() -> NotificationManager:
+    """
+    Initialize and return the global NotificationManager.
+
+    Returns:
+        The initialized NotificationManager instance
+    """
+    manager = get_notification_manager()
+    await manager.initialize()
+    return manager
+
+
+def reset_notification_manager() -> None:
+    """
+    Reset the global NotificationManager instance.
+
+    Used primarily for test isolation.
+    """
+    global _notification_manager
+    _notification_manager = None
 
 
 class ApprovalEngineError(Exception):
@@ -821,6 +1082,68 @@ def get_approval_engine() -> ApprovalEngine:
     return _approval_engine
 
 
+async def initialize_approval_engine(
+    wire_notifications: bool = True,
+) -> ApprovalEngine:
+    """
+    Initialize and return the global ApprovalEngine with notification wiring.
+
+    This function sets up the approval engine with the notification manager
+    callback, enabling automatic notification dispatch when approvals are
+    created or escalated.
+
+    Args:
+        wire_notifications: Whether to wire the notification manager
+                           (default: True)
+
+    Returns:
+        The initialized ApprovalEngine instance
+
+    Example:
+        ```python
+        # In service startup
+        @app.on_event("startup")
+        async def startup():
+            engine = await initialize_approval_engine()
+        ```
+    """
+    global _approval_engine
+
+    # Initialize the notification manager first
+    notification_manager = get_notification_manager()
+    if wire_notifications and not notification_manager.is_initialized:
+        await notification_manager.initialize()
+
+    # Create the notification callback
+    async def notification_callback(payload: NotificationPayload) -> None:
+        """Callback to send notifications via the NotificationManager."""
+        results = await notification_manager.send_notification(payload)
+
+        # Log results summary
+        success_count = sum(1 for r in results.values() if r.is_success)
+        total_count = len(results)
+        logger.info(
+            f"Notification sent for request {payload.request_id}: "
+            f"{success_count}/{total_count} channels succeeded"
+        )
+
+    # Get or create the engine
+    if _approval_engine is None:
+        _approval_engine = ApprovalEngine(
+            notification_callback=notification_callback if wire_notifications else None
+        )
+    elif wire_notifications and _approval_engine._notification_callback is None:
+        # Update existing engine with notification callback
+        _approval_engine._notification_callback = notification_callback
+
+    logger.info(
+        f"ApprovalEngine initialized "
+        f"(notifications={'wired' if wire_notifications else 'disabled'})"
+    )
+
+    return _approval_engine
+
+
 def reset_approval_engine() -> None:
     """
     Reset the global ApprovalEngine instance.
@@ -829,3 +1152,4 @@ def reset_approval_engine() -> None:
     """
     global _approval_engine
     _approval_engine = None
+    reset_notification_manager()

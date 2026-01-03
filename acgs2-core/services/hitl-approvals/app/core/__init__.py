@@ -12,6 +12,13 @@ from app.core.approval_engine import (
     ApprovalNotFoundError,
     ApprovalStateError,
     ChainNotFoundError,
+    NotificationManager,
+    get_approval_engine,
+    get_notification_manager,
+    initialize_approval_engine,
+    initialize_notification_manager,
+    reset_approval_engine,
+    reset_notification_manager,
 )
 from app.core.escalation import (
     EscalationCallback,
@@ -69,6 +76,14 @@ __all__ = [
     "ApprovalNotFoundError",
     "ApprovalStateError",
     "ChainNotFoundError",
+    "get_approval_engine",
+    "initialize_approval_engine",
+    "reset_approval_engine",
+    # Notification Manager
+    "NotificationManager",
+    "get_notification_manager",
+    "initialize_notification_manager",
+    "reset_notification_manager",
     # Escalation Exceptions
     "EscalationTimerError",
     "RedisConnectionError",
