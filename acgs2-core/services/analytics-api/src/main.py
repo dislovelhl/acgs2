@@ -18,21 +18,13 @@ from typing import Any, Dict
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from shared.security.cors_config import get_cors_config
+
 from .routes.anomalies import router as anomalies_router
 from .routes.export import router as export_router
 from .routes.insights import router as insights_router
 from .routes.predictions import router as predictions_router
 from .routes.query import router as query_router
-
-# Centralized settings
-try:
-    from shared.config import settings
-except ImportError:
-    try:
-        from ...shared.config import settings
-    except ImportError:
-        # Fallback to minimal settings if shared module not available
-        settings = None
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -80,19 +72,8 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# CORS Configuration
-if settings:
-    cors_origins = settings.security.cors_origins
-else:
-    cors_origins = os.getenv("CORS_ORIGINS", "*").split(",")
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=cors_origins,
-    allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-    allow_headers=["Authorization", "Content-Type", "X-Request-ID"],
-)
+# CORS Configuration - uses environment-aware secure configuration
+app.add_middleware(CORSMiddleware, **get_cors_config())
 
 # Include route handlers
 app.include_router(anomalies_router)
