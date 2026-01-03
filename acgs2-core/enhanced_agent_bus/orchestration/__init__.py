@@ -6,7 +6,7 @@ Hierarchical and market-based orchestration for multi-agent systems.
 """
 
 from .hierarchical import HierarchicalOrchestrator, SupervisorNode, WorkerNode
-from .market_based import Bid, MarketBasedOrchestrator, TaskAuction
+from .market_based import MarketBasedOrchestrator, TaskAuction, Bid
 
 __all__ = [
     "HierarchicalOrchestrator",

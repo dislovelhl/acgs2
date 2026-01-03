@@ -5,6 +5,7 @@ Constitutional Hash: cdd01ef066bc6cf2
 Exports telemetry data to Datadog via API.
 """
 
+import json
 import logging
 import os
 from datetime import datetime, timezone
@@ -264,7 +265,7 @@ class DatadogExporter:
         # Datadog APM uses a different format
         # For full integration, use the Datadog APM agent
         # This is a simplified version for basic span submission
-        {
+        span = {
             "trace_id": int(trace_id, 16) if isinstance(trace_id, str) else trace_id,
             "span_id": int(span_id, 16) if isinstance(span_id, str) else span_id,
             "name": operation_name,

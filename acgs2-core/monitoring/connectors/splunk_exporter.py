@@ -54,9 +54,7 @@ class SplunkHECExporter:
             batch_size: Batch size for events
             timeout: Request timeout in seconds
         """
-        self.endpoint = endpoint or os.getenv(
-            "SPLUNK_HEC_ENDPOINT", "https://splunk.example.com:8088"
-        )
+        self.endpoint = endpoint or os.getenv("SPLUNK_HEC_ENDPOINT", "https://splunk.example.com:8088")
         self.token = token or os.getenv("SPLUNK_HEC_TOKEN", "")
         self.source = source
         self.sourcetype = sourcetype
@@ -127,7 +125,6 @@ class SplunkHECExporter:
         if len(self.event_buffer) >= self.batch_size:
             # Schedule flush (non-blocking)
             import asyncio
-
             asyncio.create_task(self.flush())
 
     async def flush(self) -> bool:

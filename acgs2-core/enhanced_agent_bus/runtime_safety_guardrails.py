@@ -252,9 +252,7 @@ class InputSanitizer(GuardrailComponent):
                         action = SafetyAction.AUDIT
                         allowed = True
                     else:
-                        action = (
-                            SafetyAction.MODIFY if self.config.sanitize_html else SafetyAction.AUDIT
-                        )
+                        action = SafetyAction.MODIFY if self.config.sanitize_html else SafetyAction.AUDIT
                         allowed = True
                         # Apply sanitization if needed
                         if action == SafetyAction.MODIFY:

@@ -16,15 +16,6 @@ from shared.logging import (
 )
 from shared.otel_config import init_otel
 
-# Structured logging configuration
-from shared.logging_config import (
-    configure_logging,
-    get_logger,
-    instrument_fastapi,
-    setup_opentelemetry,
-)
-from shared.middleware.correlation_id import add_correlation_id_middleware
-
 from .services import CacheService, CryptoService, NotificationService, PolicyService
 
 # Import secure CORS configuration
@@ -51,12 +42,9 @@ except ImportError:
     # Fallback if shared not in path
     from ...shared.config import settings
 
-# Configure structured logging with JSON output and correlation ID support
-configure_logging(service_name="policy_registry")
+# Configure logging
+init_service_logging("policy-registry", level=settings.log_level, json_format=(settings.env == "production"))
 logger = get_logger(__name__)
-
-# Initialize OpenTelemetry for distributed tracing
-setup_opentelemetry(service_name="policy_registry")
 
 # Global service instances
 crypto_service = CryptoService()
@@ -98,11 +86,11 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# Instrument FastAPI with OpenTelemetry for distributed tracing
-instrument_fastapi(app)
+# Initialize OTel tracing
+init_otel("policy-registry", app=app, export_to_console=settings.debug)
 
-# Add correlation ID middleware (MUST be before other middleware for proper context)
-add_correlation_id_middleware(app, service_name="policy_registry")
+# Add correlation ID middleware
+app.middleware("http")(create_correlation_middleware())
 
 # Add CORS middleware with secure configuration
 if SECURE_CORS_AVAILABLE:

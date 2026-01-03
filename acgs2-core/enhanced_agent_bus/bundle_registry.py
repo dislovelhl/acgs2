@@ -224,9 +224,7 @@ class BundleManifest:
                 valid_count += 1
                 logger.info(f"Valid Cosign signature found for key {sig_entry['keyid']}")
             except (InvalidSignature, ValueError) as e:
-                logger.warning(
-                    f"Cosign signature verification failed for key {sig_entry['keyid']}: {e}"
-                )
+                logger.warning(f"Cosign signature verification failed for key {sig_entry['keyid']}: {e}")
 
         return valid_count > 0
 

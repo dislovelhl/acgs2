@@ -93,6 +93,7 @@ def configure_structlog(
     logging.getLogger("urllib3").setLevel(logging.WARNING)
 
 
+
 def _add_service_context(service_name: str):
     """Add service context to all log entries."""
 
@@ -113,7 +114,6 @@ def _add_otel_trace_id(logger, method_name, event_dict):
     """Add OpenTelemetry trace ID to log entries if available."""
     try:
         from .otel_config import get_current_trace_id
-
         trace_id = get_current_trace_id()
         if trace_id:
             event_dict["trace_id"] = trace_id
@@ -189,11 +189,7 @@ def create_correlation_middleware():
 
     async def correlation_middleware(request: Request, call_next):
         # Extract or generate correlation ID
-        correlation_id = (
-            request.headers.get("x-request-id")
-            or request.headers.get("x-correlation-id")
-            or str(uuid.uuid4())
-        )
+        correlation_id = request.headers.get("x-request-id") or request.headers.get("x-correlation-id") or str(uuid.uuid4())
 
         # Set in structlog contextvars and our local contextvar
         structlog.contextvars.clear_contextvars()

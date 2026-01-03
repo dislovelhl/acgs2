@@ -117,9 +117,11 @@ show_missing = true
 precision = 2
 fail_under = 85
 
-[tool.coverage.html]
-directory = "coverage_html_report"
-title = "ACGS-2 Test Coverage Report"
-
-[tool.coverage.xml]
-output = "coverage.xml"
+[tool.bandit]
+exclude_dirs = ["tests", "venv", ".venv", "node_modules", "__pycache__", "examples"]
+skips = [
+    "B101",  # assert_used - acceptable in tests
+    "B104",  # hardcoded_bind_all_interfaces - needed for containerized services
+    "B108",  # hardcoded_tmp_directory - acceptable for temporary file handling
+    "B311",  # random - not security-critical in this context
+]

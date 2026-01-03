@@ -12,9 +12,7 @@ from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter
 
 
-def init_otel(
-    service_name: str, app: Optional[Any] = None, export_to_console: bool = False
-) -> None:
+def init_otel(service_name: str, app: Optional[Any] = None, export_to_console: bool = False) -> None:
     """
     Initialize OpenTelemetry tracing.
 

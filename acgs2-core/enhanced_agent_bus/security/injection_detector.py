@@ -69,59 +69,19 @@ class PromptInjectionDetector:
 
     # Core injection patterns (high confidence)
     CORE_PATTERNS: List[Tuple[str, InjectionType, InjectionSeverity]] = [
-        (
-            r"(?i)ignore\s+(all\s+)?previous\s+instructions",
-            InjectionType.INSTRUCTION_OVERRIDE,
-            InjectionSeverity.CRITICAL,
-        ),
-        (
-            r"(?i)system\s+prompt\s+(leak|override|reveal)",
-            InjectionType.SYSTEM_PROMPT_LEAK,
-            InjectionSeverity.CRITICAL,
-        ),
+        (r"(?i)ignore\s+(all\s+)?previous\s+instructions", InjectionType.INSTRUCTION_OVERRIDE, InjectionSeverity.CRITICAL),
+        (r"(?i)system\s+prompt\s+(leak|override|reveal)", InjectionType.SYSTEM_PROMPT_LEAK, InjectionSeverity.CRITICAL),
         (r"(?i)do\s+anything\s+now", InjectionType.JAILBREAK, InjectionSeverity.CRITICAL),  # DAN
         (r"(?i)jailbreak", InjectionType.JAILBREAK, InjectionSeverity.HIGH),
-        (
-            r"(?i)persona\s+(adoption|override)",
-            InjectionType.PERSONA_OVERRIDE,
-            InjectionSeverity.HIGH,
-        ),
-        (
-            r"(?i)\(note\s+to\s+self:\s*.*\)",
-            InjectionType.CONTEXT_POISONING,
-            InjectionSeverity.MEDIUM,
-        ),
-        (
-            r"(?i)\[INST\].*\[/INST\]",
-            InjectionType.ENCODING_BYPASS,
-            InjectionSeverity.MEDIUM,
-        ),  # LLM instruction markers
-        (
-            r"(?i)actually,\s+do\s+this\s+instead",
-            InjectionType.INSTRUCTION_OVERRIDE,
-            InjectionSeverity.HIGH,
-        ),
-        (
-            r"(?i)forget\s+everything\s+you\s+know",
-            InjectionType.INSTRUCTION_OVERRIDE,
-            InjectionSeverity.HIGH,
-        ),
-        (
-            r"(?i)bypass\s+(rules|safety|guardrails)",
-            InjectionType.JAILBREAK,
-            InjectionSeverity.HIGH,
-        ),
-        (
-            r"(?i)reveal\s+(your\s+)?system\s+instructions",
-            InjectionType.SYSTEM_PROMPT_LEAK,
-            InjectionSeverity.HIGH,
-        ),
+        (r"(?i)persona\s+(adoption|override)", InjectionType.PERSONA_OVERRIDE, InjectionSeverity.HIGH),
+        (r"(?i)\(note\s+to\s+self:\s*.*\)", InjectionType.CONTEXT_POISONING, InjectionSeverity.MEDIUM),
+        (r"(?i)\[INST\].*\[/INST\]", InjectionType.ENCODING_BYPASS, InjectionSeverity.MEDIUM),  # LLM instruction markers
+        (r"(?i)actually,\s+do\s+this\s+instead", InjectionType.INSTRUCTION_OVERRIDE, InjectionSeverity.HIGH),
+        (r"(?i)forget\s+everything\s+you\s+know", InjectionType.INSTRUCTION_OVERRIDE, InjectionSeverity.HIGH),
+        (r"(?i)bypass\s+(rules|safety|guardrails)", InjectionType.JAILBREAK, InjectionSeverity.HIGH),
+        (r"(?i)reveal\s+(your\s+)?system\s+instructions", InjectionType.SYSTEM_PROMPT_LEAK, InjectionSeverity.HIGH),
         (r"(?i)new\s+directive:", InjectionType.INSTRUCTION_OVERRIDE, InjectionSeverity.MEDIUM),
-        (
-            r"(?i)override\s+(safety|security|rules)",
-            InjectionType.JAILBREAK,
-            InjectionSeverity.HIGH,
-        ),
+        (r"(?i)override\s+(safety|security|rules)", InjectionType.JAILBREAK, InjectionSeverity.HIGH),
         (r"(?i)pretend\s+you\s+are", InjectionType.PERSONA_OVERRIDE, InjectionSeverity.MEDIUM),
         (r"(?i)roleplay\s+as", InjectionType.PERSONA_OVERRIDE, InjectionSeverity.MEDIUM),
     ]
@@ -131,11 +91,7 @@ class PromptInjectionDetector:
         (r"(?i)you\s+are\s+now", InjectionType.PERSONA_OVERRIDE, InjectionSeverity.MEDIUM),
         (r"(?i)disregard\s+previous", InjectionType.INSTRUCTION_OVERRIDE, InjectionSeverity.MEDIUM),
         (r"(?i)from\s+now\s+on", InjectionType.INSTRUCTION_OVERRIDE, InjectionSeverity.LOW),
-        (
-            r"(?i)your\s+new\s+instructions",
-            InjectionType.INSTRUCTION_OVERRIDE,
-            InjectionSeverity.MEDIUM,
-        ),
+        (r"(?i)your\s+new\s+instructions", InjectionType.INSTRUCTION_OVERRIDE, InjectionSeverity.MEDIUM),
         (r"(?i)hidden\s+instructions", InjectionType.CONTEXT_POISONING, InjectionSeverity.MEDIUM),
         (r"(?i)decode\s+this\s+base64", InjectionType.ENCODING_BYPASS, InjectionSeverity.MEDIUM),
         (r"(?i)rot13\s+decode", InjectionType.ENCODING_BYPASS, InjectionSeverity.LOW),
@@ -169,9 +125,7 @@ class PromptInjectionDetector:
             re.compile(pattern) for pattern in self.MULTI_STAGE_INDICATORS
         ]
 
-    def detect(
-        self, content: Any, context: Optional[Dict[str, Any]] = None
-    ) -> InjectionDetectionResult:
+    def detect(self, content: Any, context: Optional[Dict[str, Any]] = None) -> InjectionDetectionResult:
         """
         Detect prompt injection attempts in content.
 
@@ -187,7 +141,9 @@ class PromptInjectionDetector:
 
         if not content_str or len(content_str.strip()) == 0:
             return InjectionDetectionResult(
-                is_injection=False, confidence=0.0, metadata={"reason": "empty_content"}
+                is_injection=False,
+                confidence=0.0,
+                metadata={"reason": "empty_content"}
             )
 
         matched_patterns = []
@@ -200,9 +156,7 @@ class PromptInjectionDetector:
             if pattern.search(content_str):
                 matched_patterns.append(pattern.pattern)
                 detected_types.add(inj_type)
-                if max_severity is None or self._severity_value(severity) > self._severity_value(
-                    max_severity
-                ):
+                if max_severity is None or self._severity_value(severity) > self._severity_value(max_severity):
                     max_severity = severity
                 confidence_score += 0.3  # High confidence per match
 
@@ -212,22 +166,16 @@ class PromptInjectionDetector:
                 if pattern.search(content_str):
                     matched_patterns.append(pattern.pattern)
                     detected_types.add(inj_type)
-                    if max_severity is None or self._severity_value(
-                        severity
-                    ) > self._severity_value(max_severity):
+                    if max_severity is None or self._severity_value(severity) > self._severity_value(max_severity):
                         max_severity = severity
                     confidence_score += 0.15  # Medium confidence per match
 
         # Check for multi-stage attacks
-        multi_stage_count = sum(
-            1 for pattern in self._compiled_multi_stage if pattern.search(content_str)
-        )
+        multi_stage_count = sum(1 for pattern in self._compiled_multi_stage if pattern.search(content_str))
         if multi_stage_count >= 2:
             detected_types.add(InjectionType.MULTI_STAGE)
             confidence_score += 0.2
-            if max_severity is None or self._severity_value(
-                InjectionSeverity.MEDIUM
-            ) > self._severity_value(max_severity):
+            if max_severity is None or self._severity_value(InjectionSeverity.MEDIUM) > self._severity_value(max_severity):
                 max_severity = InjectionSeverity.MEDIUM
 
         # Determine primary injection type
@@ -247,8 +195,9 @@ class PromptInjectionDetector:
         confidence_score = min(1.0, confidence_score)
 
         # Determine if injection detected
-        is_injection = len(matched_patterns) > 0 and (
-            confidence_score >= 0.3 if self.strict_mode else confidence_score >= 0.5
+        is_injection = (
+            len(matched_patterns) > 0 and
+            (confidence_score >= 0.3 if self.strict_mode else confidence_score >= 0.5)
         )
 
         # Generate sanitized content if injection detected
@@ -270,7 +219,7 @@ class PromptInjectionDetector:
                 "content_length": len(content_str),
                 "strict_mode": self.strict_mode,
                 **(context or {}),
-            },
+            }
         )
 
         if is_injection:
@@ -289,7 +238,7 @@ class PromptInjectionDetector:
         elif isinstance(content, dict):
             # Extract text fields from dict
             text_parts = []
-            for _, value in content.items():
+            for key, value in content.items():
                 if isinstance(value, str):
                     text_parts.append(value)
                 elif isinstance(value, (dict, list)):

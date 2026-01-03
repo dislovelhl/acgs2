@@ -133,7 +133,7 @@ class SupervisorNode:
         tasks = [
             Task(
                 task_id=f"task_{i}",
-                description=f"Step {i + 1} for: {goal}",
+                description=f"Step {i+1} for: {goal}",
                 priority=len(context.get("steps", [])) - i,  # Earlier steps have higher priority
                 metadata={"goal": goal, "context": context},
             )
@@ -200,7 +200,9 @@ class SupervisorNode:
         self.status = NodeStatus.IDLE
         return delegation
 
-    async def critique_result(self, task: Task, worker_output: Dict[str, Any]) -> Dict[str, Any]:
+    async def critique_result(
+        self, task: Task, worker_output: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """
         Critique worker output and provide feedback.
 
@@ -357,12 +359,12 @@ class HierarchicalOrchestrator:
     def register_worker(self, worker: WorkerNode):
         """Register a worker with the orchestrator."""
         self.workers[worker.worker_id] = worker
-        self.supervisor.register_worker(worker.worker_id, worker.capabilities, worker.capacity)
+        self.supervisor.register_worker(
+            worker.worker_id, worker.capabilities, worker.capacity
+        )
         logger.info(f"Registered worker {worker.worker_id}")
 
-    async def execute_goal(
-        self, goal: str, context: Optional[Dict[str, Any]] = None
-    ) -> Dict[str, Any]:
+    async def execute_goal(self, goal: str, context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """
         Execute a high-level goal through hierarchical orchestration.
 
@@ -414,7 +416,9 @@ class HierarchicalOrchestrator:
 
             # Handle critique feedback
             if not critique["is_passed"]:
-                logger.warning(f"Task {task.task_id} failed critique: {critique['feedback']}")
+                logger.warning(
+                    f"Task {task.task_id} failed critique: {critique['feedback']}"
+                )
                 # Could retry or escalate here
                 if "retry" in task.metadata and task.metadata["retry"] < 3:
                     task.metadata["retry"] = task.metadata.get("retry", 0) + 1
@@ -430,12 +434,8 @@ class HierarchicalOrchestrator:
             "total_tasks": len(plan),
             "completed_tasks": len([t for t in results if t.status == "completed"]),
             "failed_tasks": len([t for t in results if t.status == "failed"]),
-            "results": [
-                {"task_id": t.task_id, "status": t.status, "result": t.result} for t in results
-            ],
+            "results": [{"task_id": t.task_id, "status": t.status, "result": t.result} for t in results],
         }
 
-        logger.info(
-            f"Goal execution completed: {summary['completed_tasks']}/{summary['total_tasks']} tasks"
-        )
+        logger.info(f"Goal execution completed: {summary['completed_tasks']}/{summary['total_tasks']} tasks")
         return summary

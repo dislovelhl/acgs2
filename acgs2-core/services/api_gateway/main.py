@@ -14,7 +14,30 @@ from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import ORJSONResponse
 from pydantic import BaseModel, Field
-from starlette.middleware.sessions import SessionMiddleware
+from shared.config import settings
+from shared.logging import (
+    create_correlation_middleware,
+    init_service_logging,
+    log_error,
+)
+from shared.otel_config import init_otel
+from shared.metrics import (
+    HTTP_REQUEST_DURATION,
+    HTTP_REQUESTS_TOTAL,
+    create_metrics_endpoint,
+    set_service_info,
+    track_request_metrics,
+)
+from shared.security.auth import (
+    AuthenticationMiddleware,
+    UserClaims,
+    get_current_user_optional,
+)
+from shared.security.rate_limiter import (
+    add_rate_limit_headers,
+    create_rate_limit_middleware,
+)
+from starlette.middleware.gzip import GZipMiddleware
 
 from routes import admin_sso_router, sso_router
 from shared.config import settings
@@ -42,12 +65,8 @@ app = FastAPI(
     default_response_class=ORJSONResponse,
 )
 
-# Initialize OpenTelemetry for distributed tracing
-setup_opentelemetry(service_name=SERVICE_NAME)
-instrument_fastapi(app)
-
-# Add correlation ID middleware (MUST be before other middleware for proper context)
-add_correlation_id_middleware(app, service_name=SERVICE_NAME)
+# Initialize OTel tracing
+init_otel("api-gateway", app=app, export_to_console=settings.debug)
 
 # Add CORS middleware
 app.add_middleware(

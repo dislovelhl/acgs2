@@ -29,10 +29,7 @@ import type {
   TrainingState,
 } from "../types.js";
 import { EventEmitter } from "events";
-import { getLogger } from "../utils/logger.js";
-
-// Module-level logger for NeuralDomainMapper
-const logger = getLogger("neural/domain-mapper");
+import logger from "../utils/logger.js";
 
 // ===== Core Types =====
 
@@ -1156,13 +1153,7 @@ export class NeuralDomainMapper extends EventEmitter {
           this.trainingConfig.earlyStoping.enabled &&
           patienceCounter >= this.trainingConfig.earlyStoping.patience
         ) {
-          logger.info("training_early_stop", {
-            epoch,
-            patience: patienceCounter,
-            patience_threshold: this.trainingConfig.earlyStoping.patience,
-            current_accuracy: currentAccuracy,
-            best_accuracy: bestAccuracy,
-          });
+          logger.info({ epoch }, `Early stopping at epoch ${epoch}`);
           break;
         }
 

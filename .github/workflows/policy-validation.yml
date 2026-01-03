@@ -37,29 +37,71 @@ jobs:
           sudo mv opa /usr/local/bin/
           opa version
 
-      - name: Validate Policy Syntax
+      - name: Validate Policy Syntax (opa check)
         run: |
-          echo "🔍 Validating policy syntax..."
-          find acgs2-core/policies -name "*.rego" -type f | while read -r file; do
-            echo "Checking $file"
-            if ! opa check "$file" --format json; then
-              echo "❌ Syntax error in $file"
-              exit 1
-            fi
-          done
+          echo "🔍 Validating policy syntax with 'opa check'..."
+          # Check all Rego files in policies directory
+          REGO_FILES=$(find acgs2-core/policies -name "*.rego" -type f)
+
+          if [ -z "$REGO_FILES" ]; then
+            echo "⚠️  No Rego files found in acgs2-core/policies/"
+            exit 0
+          fi
+
+          # Run opa check on all files
+          if ! opa check acgs2-core/policies --format json; then
+            echo "❌ Policy syntax validation failed"
+            echo "Running detailed check on individual files..."
+            echo "$REGO_FILES" | while read -r file; do
+              echo "Checking $file"
+              if ! opa check "$file" --format json 2>&1; then
+                echo "❌ Syntax error in $file"
+              fi
+            done
+            exit 1
+          fi
           echo "✅ All policy files have valid syntax"
 
-      - name: Run Policy Tests
+      - name: Run Policy Tests (opa test)
         run: |
-          echo "🧪 Running policy tests..."
-          find acgs2-core/policies -name "*_test.rego" -o -name "test_*.rego" | while read -r file; do
-            echo "Running tests in $file"
-            if ! opa test "$(dirname "$file")" --verbose; then
-              echo "❌ Tests failed in $file"
-              exit 1
+          echo "🧪 Running policy tests with 'opa test'..."
+          # Find test files
+          TEST_DIRS=$(find acgs2-core/policies -type d | sort -u)
+          TEST_FOUND=false
+
+          for dir in $TEST_DIRS; do
+            # Check if directory has test files
+            if find "$dir" -maxdepth 1 -name "*_test.rego" -o -name "test_*.rego" | grep -q .; then
+              TEST_FOUND=true
+              echo "Running tests in $dir"
+              if ! opa test "$dir" --verbose --format json; then
+                echo "❌ Tests failed in $dir"
+                exit 1
+              fi
             fi
           done
-          echo "✅ All policy tests passed"
+
+          if [ "$TEST_FOUND" = false ]; then
+            echo "⚠️  No test files found, skipping test execution"
+            echo "Consider adding *_test.rego or test_*.rego files"
+          else
+            echo "✅ All policy tests passed"
+          fi
+
+      - name: Policy Coverage Report
+        run: |
+          echo "📊 Generating policy coverage report..."
+          # Count policies and tests
+          POLICY_COUNT=$(find acgs2-core/policies -name "*.rego" ! -name "*_test.rego" ! -name "test_*.rego" | wc -l)
+          TEST_COUNT=$(find acgs2-core/policies -name "*_test.rego" -o -name "test_*.rego" | wc -l)
+
+          echo "Policy files: $POLICY_COUNT"
+          echo "Test files: $TEST_COUNT"
+
+          if [ "$POLICY_COUNT" -gt 0 ]; then
+            COVERAGE=$(echo "scale=2; $TEST_COUNT * 100 / $POLICY_COUNT" | bc)
+            echo "Test coverage: ${COVERAGE}%"
+          fi
 
       - name: Validate Bundle Manifest Schema
         run: |

@@ -67,7 +67,7 @@ async def test_pacar_verifier_multi_turn(bus_config):
         content = "Check this content"
         intent = "factual"
 
-        result = await verifier.verify(content, intent, session_id=session_id)
+        result = await verifier.verify_with_context(content, intent, session_id=session_id)
 
         assert result["is_valid"] is True
         assert verifier.manager.add_message.call_count == 3 # User, Critique, Result

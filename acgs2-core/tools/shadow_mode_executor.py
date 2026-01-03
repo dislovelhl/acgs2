@@ -10,6 +10,7 @@ import argparse
 import asyncio
 import json
 import logging
+import os
 import sys
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
@@ -279,7 +280,9 @@ class ShadowModeExecutor:
         )
 
         # Find critical differences
-        critical_differences = [r for r in self.comparison_results if r.impact_score >= 0.8]
+        critical_differences = [
+            r for r in self.comparison_results if r.impact_score >= 0.8
+        ]
 
         report = {
             "summary": {
@@ -315,22 +318,20 @@ class ShadowModeExecutor:
         print("\n" + "=" * 80)
         print("SHADOW MODE EXECUTION REPORT")
         print("=" * 80)
-        print("\nSummary:")
+        print(f"\nSummary:")
         print(f"  Total Tests: {report['summary']['total_tests']}")
         print(f"  Matches: {report['summary']['matches']}")
         print(f"  Differences: {report['summary']['differences']}")
         print(f"  Match Rate: {report['summary']['match_rate_percent']}%")
-        print("\nCritical Issues:")
+        print(f"\nCritical Issues:")
         print(f"  Allow/Deny Flips: {report['summary']['allow_deny_flips']}")
         print(f"  Performance Regressions: {report['summary']['performance_regressions']}")
         print(f"  Average Impact Score: {report['summary']['average_impact_score']}")
 
         if report["critical_differences"]:
-            print("\n⚠️  Critical Differences Found:")
+            print(f"\n⚠️  Critical Differences Found:")
             for diff in report["critical_differences"]:
-                print(
-                    f"  - {diff['test_case']}: {diff['difference_type']} (impact: {diff['impact_score']})"
-                )
+                print(f"  - {diff['test_case']}: {diff['difference_type']} (impact: {diff['impact_score']})")
         else:
             print("\n✅ No critical differences found")
 
@@ -339,7 +340,9 @@ class ShadowModeExecutor:
 
 async def main():
     """Main entry point for CLI."""
-    parser = argparse.ArgumentParser(description="ACGS-2 Shadow Mode Policy Execution Comparator")
+    parser = argparse.ArgumentParser(
+        description="ACGS-2 Shadow Mode Policy Execution Comparator"
+    )
     parser.add_argument(
         "--opa-url-current",
         default="http://localhost:8181",

@@ -34,18 +34,6 @@ export function validateConfig(): Config {
             `     💡 Fix: Adjust the value of ${path} to be within the allowed range.`
           )
         );
-      } else if (issue.code === "invalid_string" && issue.message.includes("url")) {
-        console.log(
-          chalk.blue(
-            `     💡 Fix: Ensure ${path} is a valid URL (e.g., http://localhost:8000).`
-          )
-        );
-      } else {
-        console.log(
-          chalk.blue(
-            `     💡 Fix: Check the value of ${path} in your .env file or environment variables.`
-          )
-        );
       }
     });
 

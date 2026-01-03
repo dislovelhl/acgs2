@@ -1,412 +1,590 @@
-openapi: 3.0.3
+openapi: 3.1.0
 info:
   title: ACGS-2 API
   description: |
-    ACGS-2 (Advanced Constitutional Governance System) API
+    Advanced Constitutional Governance System (ACGS-2) API Documentation
 
-    This API provides access to the ACGS-2 Enhanced Agent Bus and supporting services
-    for constitutional AI governance and compliance validation.
-  version: 1.0.0
+    ACGS-2 provides enterprise-grade AI governance with:
+    - Policy management and distribution
+    - Multi-agent orchestration
+    - Real-time security monitoring
+    - Constitutional compliance enforcement
+
+    **Constitutional Hash**: cdd01ef066bc6cf2
+  version: 2.0.0
   contact:
-    name: ACGS Team
-    email: contact@acgs2.org
+    name: ACGS-2 Support
+    email: support@acgs2.io
   license:
-    name: MIT
-    url: https://opensource.org/licenses/MIT
+    name: Proprietary
+    url: https://acgs2.io/license
 
 servers:
-  - url: http://localhost:8080
-    description: Development API Gateway
-  - url: http://localhost:8000
-    description: Agent Bus Direct
-  - url: https://api.acgs2.org
-    description: Production API
+  - url: https://api.acgs2.io/v1
+    description: Production server
+  - url: https://staging-api.acgs2.io/v1
+    description: Staging server
+  - url: http://localhost:8000/api/v1
+    description: Local development server
 
-security:
-  - bearerAuth: []
+tags:
+  - name: policies
+    description: Policy management and versioning
+  - name: bundles
+    description: Policy bundle distribution (OCI registry)
+  - name: webhooks
+    description: Git webhook integration for policy sync
+  - name: auth
+    description: Authentication and authorization
+  - name: health
+    description: Health checks and monitoring
+  - name: agents
+    description: Agent registration and management
 
 paths:
-  /health:
+  /policies:
     get:
-      summary: Health Check
-      description: Check the health status of the API Gateway
-      tags:
-        - Health
+      tags: [policies]
+      summary: List policies
+      description: List all policies with optional filtering
+      operationId: listPolicies
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [draft, active, deprecated]
+          description: Filter by policy status
+        - name: tenant_id
+          in: query
+          schema:
+            type: string
+          description: Filter by tenant ID
       responses:
         '200':
-          description: Service is healthy
+          description: List of policies
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/HealthResponse'
-        '503':
-          description: Service is unhealthy
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                type: array
+                items:
+                  $ref: '#/components/schemas/Policy'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
 
-  /services:
-    get:
-      summary: List Services
-      description: Get a list of all available services and their health status
-      tags:
-        - Services
-      responses:
-        '200':
-          description: List of services
-          content:
-            application/json:
-              schema:
-                type: object
-                additionalProperties:
-                  type: object
-                  properties:
-                    url:
-                      type: string
-                      format: uri
-                    status:
-                      type: string
-                      enum: [configured, running]
-                    health:
-                      type: string
-                      enum: [healthy, unhealthy, unreachable]
-
-  /messages:
     post:
-      summary: Send Message
-      description: Send a message to the Enhanced Agent Bus for processing
-      tags:
-        - Messages
-      security:
-        - bearerAuth: []
+      tags: [policies]
+      summary: Create policy
+      description: Create a new policy with versioning support
+      operationId: createPolicy
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/MessageRequest'
-            examples:
-              user_request:
-                summary: User Request Message
-                value:
-                  content: "Please analyze this document for compliance"
-                  message_type: user_request
-                  priority: normal
-                  sender: "user-123"
-                  tenant_id: "tenant-456"
-                  metadata:
-                    document_id: "doc-789"
-                    analysis_type: "compliance"
-              system_alert:
-                summary: System Alert Message
-                value:
-                  content: "Security alert: Unauthorized access detected"
-                  message_type: system_alert
-                  priority: high
-                  sender: "security-monitor"
-                  tenant_id: "system"
-                  metadata:
-                    alert_type: "security"
-                    severity: "high"
-                    source_ip: "192.168.1.100"
+              $ref: '#/components/schemas/PolicyCreate'
       responses:
-        '200':
-          description: Message accepted for processing
+        '201':
+          description: Policy created successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/MessageResponse'
+                $ref: '#/components/schemas/Policy'
         '400':
-          description: Invalid request data
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
+          $ref: '#/components/responses/BadRequest'
         '401':
-          description: Authentication required
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '503':
-          description: Service unavailable
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
+          $ref: '#/components/responses/Unauthorized'
 
-  /messages/{message_id}:
+  /policies/{policy_id}:
     get:
-      summary: Get Message Status
-      description: Get the processing status of a specific message
-      tags:
-        - Messages
+      tags: [policies]
+      summary: Get policy
+      description: Get policy by ID
+      operationId: getPolicy
       parameters:
-        - name: message_id
+        - name: policy_id
           in: path
           required: true
           schema:
             type: string
-          description: Unique identifier of the message
       responses:
         '200':
-          description: Message status retrieved
+          description: Policy details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Policy'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /bundles:
+    get:
+      tags: [bundles]
+      summary: List bundles
+      description: List policy bundles from local storage or OCI registry
+      operationId: listBundles
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [draft, pending_review, approved, published, deprecated]
+        - name: repository
+          in: query
+          schema:
+            type: string
+          description: OCI repository name
+      responses:
+        '200':
+          description: List of bundles
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Bundle'
+
+    post:
+      tags: [bundles]
+      summary: Upload bundle
+      description: Upload a policy bundle with optional OCI registry push
+      operationId: uploadBundle
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                repository:
+                  type: string
+                  description: OCI repository name
+                tag:
+                  type: string
+                  default: latest
+                version:
+                  type: string
+                revision:
+                  type: string
+                push_to_registry:
+                  type: boolean
+                  default: false
+      responses:
+        '201':
+          description: Bundle uploaded successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Bundle'
+
+  /bundles/{bundle_id}:
+    get:
+      tags: [bundles]
+      summary: Get bundle
+      description: Get bundle by ID, optionally from OCI registry
+      operationId: getBundle
+      parameters:
+        - name: bundle_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: repository
+          in: query
+          schema:
+            type: string
+        - name: reference
+          in: query
+          schema:
+            type: string
+          description: OCI tag or digest
+        - name: pull_from_registry
+          in: query
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: Bundle details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Bundle'
+
+  /bundles/{bundle_id}/push:
+    post:
+      tags: [bundles]
+      summary: Push bundle to registry
+      description: Push an existing bundle to OCI registry
+      operationId: pushBundleToRegistry
+      parameters:
+        - name: bundle_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: repository
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: tag
+          in: query
+          schema:
+            type: string
+            default: latest
+      responses:
+        '200':
+          description: Bundle pushed successfully
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  message_id:
-                    type: string
                   status:
                     type: string
-                    enum: [pending, processing, completed, failed]
-                  timestamp:
+                  repository:
                     type: string
-                    format: date-time
-                  result:
-                    type: object
-                    description: Processing result (if completed)
-        '404':
-          description: Message not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                  tag:
+                    type: string
+                  digest:
+                    type: string
 
-  /stats:
+  /bundles/active:
     get:
-      summary: Get Statistics
-      description: Get processing statistics and metrics
-      tags:
-        - Monitoring
+      tags: [bundles]
+      summary: Get active bundle
+      description: Get the currently active bundle for a tenant
+      operationId: getActiveBundle
+      parameters:
+        - name: tenant_id
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: repository
+          in: query
+          schema:
+            type: string
       responses:
         '200':
-          description: Statistics retrieved
+          description: Active bundle
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  total_messages:
-                    type: integer
-                    description: Total messages processed
-                  active_connections:
-                    type: integer
-                    description: Currently active connections
-                  uptime_seconds:
-                    type: integer
-                    description: Service uptime in seconds
-                  average_response_time:
-                    type: number
-                    description: Average response time in milliseconds
-                  error_rate:
-                    type: number
-                    description: Error rate percentage
-        '503':
-          description: Service unavailable
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/Bundle'
 
-  /policies/validate:
+  /webhooks/github:
     post:
-      summary: Validate Policy
-      description: Validate a policy against constitutional requirements
-      tags:
-        - Policies
-      security:
-        - bearerAuth: []
+      tags: [webhooks]
+      summary: GitHub webhook
+      description: Handle GitHub webhook events for policy synchronization
+      operationId: githubWebhook
+      parameters:
+        - name: X-GitHub-Event
+          in: header
+          required: true
+          schema:
+            type: string
+            enum: [push, pull_request, release]
+        - name: X-Hub-Signature-256
+          in: header
+          required: true
+          schema:
+            type: string
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              properties:
-                policy_name:
-                  type: string
-                  description: Name of the policy
-                rules:
-                  type: array
-                  items:
-                    type: object
-                    properties:
-                      condition:
-                        type: string
-                        description: Policy condition in Rego syntax
-                      action:
-                        type: string
-                        enum: [allow, deny]
-                        description: Action to take
-                metadata:
-                  type: object
-                  description: Additional policy metadata
-              required:
-                - policy_name
-                - rules
-            examples:
-              data_retention_policy:
-                summary: Data Retention Policy
-                value:
-                  policy_name: "data_retention_policy"
-                  rules:
-                    - condition: "data.age > 2555"  # 7 years in days
-                      action: "allow"  # Allow deletion
-                  metadata:
-                    description: "Policy for data retention compliance"
-                    category: "data_governance"
-                    version: "1.0"
+              description: GitHub webhook payload
       responses:
         '200':
-          description: Policy validation result
+          description: Webhook processed
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  valid:
-                    type: boolean
-                    description: Whether the policy is valid
-                  policy_hash:
+                  status:
                     type: string
-                    description: Constitutional hash of the validated policy
-                  validation_timestamp:
+                  event:
                     type: string
-                    format: date-time
-                  violations:
-                    type: array
-                    items:
-                      type: string
-                    description: List of validation violations (if any)
-                  recommendations:
-                    type: array
-                    items:
-                      type: string
-                    description: Suggested improvements
-        '400':
-          description: Invalid policy format
+                  message:
+                    type: string
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /auth/token:
+    post:
+      tags: [auth]
+      summary: Request token
+      description: Request an authentication token for an agent
+      operationId: requestToken
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRequest'
+      responses:
+        '200':
+          description: Token issued
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/TokenResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /health/live:
+    get:
+      tags: [health]
+      summary: Liveness check
+      description: Kubernetes liveness probe
+      operationId: livenessCheck
+      responses:
+        '200':
+          description: Service is alive
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  service:
+                    type: string
+
+  /health/ready:
+    get:
+      tags: [health]
+      summary: Readiness check
+      description: Kubernetes readiness probe
+      operationId: readinessCheck
+      responses:
+        '200':
+          description: Service is ready
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  service:
+                    type: string
 
 components:
   schemas:
-    MessageRequest:
+    Policy:
       type: object
+      required: [policy_id, name, tenant_id, status]
       properties:
-        content:
+        policy_id:
           type: string
-          description: The message content
-          example: "Please analyze this document for compliance"
-        message_type:
+          description: Unique policy identifier
+        name:
           type: string
-          enum: [user_request, system_alert, policy_update, audit_event]
-          description: Type of message
-          default: user_request
-        priority:
-          type: string
-          enum: [low, normal, high, critical]
-          description: Message processing priority
-          default: normal
-        sender:
-          type: string
-          description: Identifier of the message sender
-          example: "user-123"
-        recipient:
-          type: string
-          description: Identifier of the message recipient (optional)
-          nullable: true
+          description: Policy name
         tenant_id:
           type: string
-          description: Tenant identifier for multi-tenancy
-          example: "tenant-456"
-        metadata:
-          type: object
-          description: Additional metadata for the message
-          additionalProperties: true
-      required:
-        - content
-        - sender
-
-    MessageResponse:
-      type: object
-      properties:
-        message_id:
-          type: string
-          description: Unique identifier for the message
-          example: "msg-123456"
+          description: Tenant identifier
         status:
           type: string
-          enum: [accepted, rejected, error]
-          description: Processing status
-        timestamp:
-          type: string
-          format: date-time
-          description: When the message was processed
-        details:
-          type: object
-          description: Additional processing details
-          additionalProperties: true
-
-    HealthResponse:
-      type: object
-      properties:
-        status:
-          type: string
-          enum: [healthy, unhealthy]
-          description: Overall health status
-        service:
-          type: string
-          description: Service name
-          example: "api-gateway"
+          enum: [draft, active, deprecated]
         version:
           type: string
-          description: Service version
-          example: "1.0.0"
-        timestamp:
+          description: Current version
+        description:
+          type: string
+        format:
+          type: string
+          enum: [json, yaml, rego]
+        created_at:
           type: string
           format: date-time
-          description: Health check timestamp
+        updated_at:
+          type: string
+          format: date-time
+        constitutional_hash:
+          type: string
+          default: cdd01ef066bc6cf2
 
-    ErrorResponse:
+    PolicyCreate:
       type: object
+      required: [name, tenant_id, content]
       properties:
-        error:
+        name:
           type: string
-          description: Error type or code
-        message:
+        tenant_id:
           type: string
-          description: Human-readable error message
-        details:
+        content:
           type: object
-          description: Additional error details
+          description: Policy content (JSON/YAML/Rego)
+        format:
+          type: string
+          enum: [json, yaml, rego]
+          default: json
+        description:
+          type: string
+
+    Bundle:
+      type: object
+      required: [id, version, revision, constitutional_hash]
+      properties:
+        id:
+          type: string
+          description: Bundle identifier (digest)
+        version:
+          type: string
+          description: Semantic version
+        revision:
+          type: string
+          description: Git revision SHA
+        constitutional_hash:
+          type: string
+          default: cdd01ef066bc6cf2
+        roots:
+          type: array
+          items:
+            type: string
+          description: OPA policy root paths
+        signatures:
+          type: array
+          items:
+            $ref: '#/components/schemas/Signature'
+        size:
+          type: integer
+          description: Bundle size in bytes
+        digest:
+          type: string
+          description: SHA256 digest
+        metadata:
+          type: object
           additionalProperties: true
+
+    Signature:
+      type: object
+      required: [keyid, sig, alg]
+      properties:
+        keyid:
+          type: string
+          description: Key identifier
+        sig:
+          type: string
+          description: Base64-encoded signature
+        alg:
+          type: string
+          enum: [ed25519, rsa-pss-sha256, ecdsa-p256-sha256]
         timestamp:
           type: string
           format: date-time
-          description: Error timestamp
+        signer:
+          type: string
+        scope:
+          type: string
+          enum: [author, reviewer, approver, release]
+
+    TokenRequest:
+      type: object
+      required: [agent_id, tenant_id, capabilities]
+      properties:
+        agent_id:
+          type: string
+          minLength: 1
+          maxLength: 100
+        tenant_id:
+          type: string
+          minLength: 1
+          maxLength: 100
+        capabilities:
+          type: array
+          items:
+            type: string
+          minItems: 1
+          maxItems: 50
+
+    TokenResponse:
+      type: object
+      required: [token, expires_at]
+      properties:
+        token:
+          type: string
+          description: JWT token
+        expires_at:
+          type: string
+          format: date-time
+        agent_id:
+          type: string
+        tenant_id:
+          type: string
+
+    Error:
+      type: object
+      required: [detail]
+      properties:
+        detail:
+          type: string
+        error_code:
+          type: string
+        constitutional_hash:
+          type: string
+          default: cdd01ef066bc6cf2
+
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            detail: "Invalid request parameters"
+            error_code: "INVALID_REQUEST"
+
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            detail: "Authentication required"
+            error_code: "UNAUTHORIZED"
+
+    Forbidden:
+      description: Forbidden
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            detail: "Insufficient permissions"
+            error_code: "FORBIDDEN"
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            detail: "Resource not found"
+            error_code: "NOT_FOUND"
 
   securitySchemes:
-    bearerAuth:
+    BearerAuth:
       type: http
       scheme: bearer
       bearerFormat: JWT
-      description: |
-        JWT token for authentication. Include in Authorization header as:
-        `Authorization: Bearer <your-jwt-token>`
+      description: JWT token authentication
 
-tags:
-  - name: Health
-    description: Health check and monitoring endpoints
-  - name: Messages
-    description: Message processing and management
-  - name: Services
-    description: Service discovery and status
-  - name: Policies
-    description: Policy validation and management
-  - name: Monitoring
-    description: System monitoring and statistics
+security:
+  - BearerAuth: []

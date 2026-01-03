@@ -1,18 +1,13 @@
 #!/usr/bin/env node
 
-import { Command } from 'commander';
-import chalk from 'chalk';
-import { agentCommand } from './commands/agent';
-import { swarmCommand } from './commands/swarm';
-import { analyzeCommand } from './commands/analyze';
-import { taskCommand } from './commands/task';
-import { coordinationCommand } from './commands/coordination';
-import { validateConfigOrExit } from './config/validator';
-
-// Validate configuration at startup (fail-fast behavior)
-// This ensures all required environment variables are present and valid
-// before any business logic executes
-validateConfigOrExit(process.env as Record<string, unknown>);
+import { Command } from "commander";
+import chalk from "chalk";
+import "./config";
+import { agentCommand } from "./commands/agent";
+import { swarmCommand } from "./commands/swarm";
+import { analyzeCommand } from "./commands/analyze";
+import { taskCommand } from "./commands/task";
+import { coordinationCommand } from "./commands/coordination";
 
 const program = new Command();
 
