@@ -1,0 +1,464 @@
+{
+  "plan_version": "1.0",
+  "task_id": "057-split-large-integration-adapter-files-1000-lines-e",
+  "title": "Split Large Integration Adapter Files (>1000 lines each)",
+  "description": "Refactor 5 large files (webhooks/auth.py, integrations/ticket_mapping.py, integrations/servicenow_adapter.py, consumers/event_consumer.py, integrations/jira_adapter.py) by splitting them into smaller, focused modules following Single Responsibility Principle",
+  "phases": [
+    {
+      "phase_id": "phase_1",
+      "title": "Analysis and Preparation",
+      "description": "Analyze file dependencies, identify imports, and prepare refactoring strategy",
+      "subtasks": [
+        {
+          "subtask_id": "1.1",
+          "title": "Analyze webhooks/auth.py structure and dependencies",
+          "description": "Map out all classes, functions, and their dependencies in auth.py to plan the split",
+          "status": "completed",
+          "depends_on": [],
+          "notes": "Completed comprehensive analysis. Created auth_py_analysis.md with detailed mapping of 7 exceptions, 2 models, 1 abstract base, 3 handlers, 1 registry, and 4 factory functions. Identified single external dependency (WebhookAuthType). Proposed split into 8 modules, all under 350 lines."
+        },
+        {
+          "subtask_id": "1.2",
+          "title": "Analyze integrations/ticket_mapping.py structure",
+          "description": "Map out all classes, functions, and dependencies in ticket_mapping.py",
+          "status": "completed",
+          "depends_on": [],
+          "notes": "Completed comprehensive analysis. Created ticket_mapping_py_analysis.md with detailed mapping of 5 enums, 3 default mappings, 6 models, 1 validator class, 1 transformer registry with 10 built-in functions, 1 main mapper class, and 2 factory functions. Identified 2 external dependencies (EventSeverity, IntegrationEvent). Proposed split into 7 modules (enums, models, validators, transformers, mapper, defaults, __init__), all under 400 lines."
+        },
+        {
+          "subtask_id": "1.3",
+          "title": "Analyze adapters and consumer structure",
+          "description": "Map out structure for servicenow_adapter.py, event_consumer.py, and jira_adapter.py",
+          "status": "pending",
+          "depends_on": []
+        },
+        {
+          "subtask_id": "1.4",
+          "title": "Check test coverage and dependencies",
+          "description": "Identify all tests that import from target files and document import patterns",
+          "status": "pending",
+          "depends_on": ["1.1", "1.2", "1.3"]
+        }
+      ]
+    },
+    {
+      "phase_id": "phase_2",
+      "title": "Split webhooks/auth.py (1192 lines)",
+      "description": "Refactor auth.py into focused modules: exceptions, handlers, and specific auth implementations",
+      "subtasks": [
+        {
+          "subtask_id": "2.1",
+          "title": "Create webhooks/auth/exceptions.py",
+          "description": "Extract all exception classes (WebhookAuthError, InvalidSignatureError, etc.) into dedicated exceptions module",
+          "status": "pending",
+          "depends_on": ["1.1", "1.4"]
+        },
+        {
+          "subtask_id": "2.2",
+          "title": "Create webhooks/auth/models.py",
+          "description": "Extract AuthResult and OAuthToken models into models module",
+          "status": "pending",
+          "depends_on": ["2.1"]
+        },
+        {
+          "subtask_id": "2.3",
+          "title": "Create webhooks/auth/base.py",
+          "description": "Extract WebhookAuthHandler abstract base class and WebhookAuthRegistry into base module",
+          "status": "pending",
+          "depends_on": ["2.1", "2.2"]
+        },
+        {
+          "subtask_id": "2.4",
+          "title": "Create webhooks/auth/api_key.py",
+          "description": "Extract ApiKeyAuthHandler class into dedicated module",
+          "status": "pending",
+          "depends_on": ["2.3"]
+        },
+        {
+          "subtask_id": "2.5",
+          "title": "Create webhooks/auth/hmac.py",
+          "description": "Extract HmacAuthHandler class into dedicated module",
+          "status": "pending",
+          "depends_on": ["2.3"]
+        },
+        {
+          "subtask_id": "2.6",
+          "title": "Create webhooks/auth/oauth.py",
+          "description": "Extract OAuthBearerAuthHandler class into dedicated module",
+          "status": "pending",
+          "depends_on": ["2.3"]
+        },
+        {
+          "subtask_id": "2.7",
+          "title": "Create webhooks/auth/factory.py",
+          "description": "Extract factory functions (create_api_key_handler, create_hmac_handler, etc.) into factory module",
+          "status": "pending",
+          "depends_on": ["2.4", "2.5", "2.6"]
+        },
+        {
+          "subtask_id": "2.8",
+          "title": "Create webhooks/auth/__init__.py",
+          "description": "Create package init file with public API exports maintaining backward compatibility",
+          "status": "pending",
+          "depends_on": ["2.7"]
+        },
+        {
+          "subtask_id": "2.9",
+          "title": "Update imports in webhooks module and tests",
+          "description": "Update all imports in webhooks/config.py, webhooks/delivery.py, api/webhooks.py, and tests/webhooks/test_auth.py",
+          "status": "pending",
+          "depends_on": ["2.8"]
+        },
+        {
+          "subtask_id": "2.10",
+          "title": "Remove original webhooks/auth.py",
+          "description": "Delete the original auth.py file after verifying all functionality is preserved",
+          "status": "pending",
+          "depends_on": ["2.9"]
+        }
+      ]
+    },
+    {
+      "phase_id": "phase_3",
+      "title": "Split integrations/ticket_mapping.py (1127 lines)",
+      "description": "Refactor ticket_mapping.py into focused modules for models, validators, transformers, and mappers",
+      "subtasks": [
+        {
+          "subtask_id": "3.1",
+          "title": "Create integrations/ticket_mapping/enums.py",
+          "description": "Extract all enums (TicketingProvider, FieldMappingType, FieldValidationType, JiraPriority, ServiceNowImpactUrgency) and default mappings",
+          "status": "pending",
+          "depends_on": ["1.2", "1.4"]
+        },
+        {
+          "subtask_id": "3.2",
+          "title": "Create integrations/ticket_mapping/models.py",
+          "description": "Extract pydantic models (FieldValidationRule, FieldMapping, SeverityMapping, TicketMappingConfig, FieldMappingResult, TicketMappingResult)",
+          "status": "pending",
+          "depends_on": ["3.1"]
+        },
+        {
+          "subtask_id": "3.3",
+          "title": "Create integrations/ticket_mapping/validators.py",
+          "description": "Extract FieldValidator class with all validation logic",
+          "status": "pending",
+          "depends_on": ["3.2"]
+        },
+        {
+          "subtask_id": "3.4",
+          "title": "Create integrations/ticket_mapping/transformers.py",
+          "description": "Extract FieldTransformers class and all transformer functions (severity_to_jira_priority, format_timestamp, etc.)",
+          "status": "pending",
+          "depends_on": ["3.2"]
+        },
+        {
+          "subtask_id": "3.5",
+          "title": "Create integrations/ticket_mapping/mapper.py",
+          "description": "Extract TicketFieldMapper class with field mapping orchestration logic",
+          "status": "pending",
+          "depends_on": ["3.3", "3.4"]
+        },
+        {
+          "subtask_id": "3.6",
+          "title": "Create integrations/ticket_mapping/defaults.py",
+          "description": "Extract factory functions (create_jira_mapping_config, create_servicenow_mapping_config) for default configurations",
+          "status": "pending",
+          "depends_on": ["3.5"]
+        },
+        {
+          "subtask_id": "3.7",
+          "title": "Create integrations/ticket_mapping/__init__.py",
+          "description": "Create package init file with public API exports maintaining backward compatibility",
+          "status": "pending",
+          "depends_on": ["3.6"]
+        },
+        {
+          "subtask_id": "3.8",
+          "title": "Update imports in adapter files",
+          "description": "Update imports in jira_adapter.py and servicenow_adapter.py to use new ticket_mapping package",
+          "status": "pending",
+          "depends_on": ["3.7"]
+        },
+        {
+          "subtask_id": "3.9",
+          "title": "Remove original integrations/ticket_mapping.py",
+          "description": "Delete the original ticket_mapping.py file after verifying all functionality is preserved",
+          "status": "pending",
+          "depends_on": ["3.8"]
+        }
+      ]
+    },
+    {
+      "phase_id": "phase_4",
+      "title": "Split integrations/servicenow_adapter.py (1103 lines)",
+      "description": "Refactor servicenow_adapter.py into focused modules for credentials, client, and adapter logic",
+      "subtasks": [
+        {
+          "subtask_id": "4.1",
+          "title": "Create integrations/servicenow/enums.py",
+          "description": "Extract ServiceNowAuthType and ServiceNowIncidentState enums plus default mappings",
+          "status": "pending",
+          "depends_on": ["1.3", "1.4"]
+        },
+        {
+          "subtask_id": "4.2",
+          "title": "Create integrations/servicenow/credentials.py",
+          "description": "Extract ServiceNowCredentials model with validation logic",
+          "status": "pending",
+          "depends_on": ["4.1"]
+        },
+        {
+          "subtask_id": "4.3",
+          "title": "Create integrations/servicenow/client.py",
+          "description": "Extract HTTP client wrapper with authentication, rate limiting, and error handling",
+          "status": "pending",
+          "depends_on": ["4.2"]
+        },
+        {
+          "subtask_id": "4.4",
+          "title": "Create integrations/servicenow/incident.py",
+          "description": "Extract incident-specific operations (create, update, add_comment, close) into dedicated module",
+          "status": "pending",
+          "depends_on": ["4.3"]
+        },
+        {
+          "subtask_id": "4.5",
+          "title": "Create integrations/servicenow/adapter.py",
+          "description": "Refactor main ServiceNowAdapter class to orchestrate client and incident operations",
+          "status": "pending",
+          "depends_on": ["4.4"]
+        },
+        {
+          "subtask_id": "4.6",
+          "title": "Create integrations/servicenow/__init__.py",
+          "description": "Create package init file with public API exports maintaining backward compatibility",
+          "status": "pending",
+          "depends_on": ["4.5"]
+        },
+        {
+          "subtask_id": "4.7",
+          "title": "Update imports for ServiceNow adapter",
+          "description": "Update imports in main.py, api modules, and tests/integrations/test_servicenow.py",
+          "status": "pending",
+          "depends_on": ["4.6"]
+        },
+        {
+          "subtask_id": "4.8",
+          "title": "Remove original integrations/servicenow_adapter.py",
+          "description": "Delete the original servicenow_adapter.py file after verification",
+          "status": "pending",
+          "depends_on": ["4.7"]
+        }
+      ]
+    },
+    {
+      "phase_id": "phase_5",
+      "title": "Split consumers/event_consumer.py (1066 lines)",
+      "description": "Refactor event_consumer.py into focused modules for models, metrics, and consumer logic",
+      "subtasks": [
+        {
+          "subtask_id": "5.1",
+          "title": "Create consumers/event_consumer/enums.py",
+          "description": "Extract GovernanceEventType and EventConsumerState enums",
+          "status": "pending",
+          "depends_on": ["1.3", "1.4"]
+        },
+        {
+          "subtask_id": "5.2",
+          "title": "Create consumers/event_consumer/models.py",
+          "description": "Extract GovernanceEvent and EventConsumerConfig models",
+          "status": "pending",
+          "depends_on": ["5.1"]
+        },
+        {
+          "subtask_id": "5.3",
+          "title": "Create consumers/event_consumer/metrics.py",
+          "description": "Extract EventConsumerMetrics model and metrics collection logic",
+          "status": "pending",
+          "depends_on": ["5.2"]
+        },
+        {
+          "subtask_id": "5.4",
+          "title": "Create consumers/event_consumer/handler.py",
+          "description": "Extract event processing and routing logic from EventConsumer class",
+          "status": "pending",
+          "depends_on": ["5.2"]
+        },
+        {
+          "subtask_id": "5.5",
+          "title": "Create consumers/event_consumer/consumer.py",
+          "description": "Refactor main EventConsumer class to orchestrate Kafka consumption and event handling",
+          "status": "pending",
+          "depends_on": ["5.3", "5.4"]
+        },
+        {
+          "subtask_id": "5.6",
+          "title": "Create consumers/event_consumer/__init__.py",
+          "description": "Create package init file with public API exports maintaining backward compatibility",
+          "status": "pending",
+          "depends_on": ["5.5"]
+        },
+        {
+          "subtask_id": "5.7",
+          "title": "Update imports for event consumer",
+          "description": "Update imports in main.py and any other modules that use EventConsumer",
+          "status": "pending",
+          "depends_on": ["5.6"]
+        },
+        {
+          "subtask_id": "5.8",
+          "title": "Remove original consumers/event_consumer.py",
+          "description": "Delete the original event_consumer.py file after verification",
+          "status": "pending",
+          "depends_on": ["5.7"]
+        }
+      ]
+    },
+    {
+      "phase_id": "phase_6",
+      "title": "Split integrations/jira_adapter.py (1061 lines)",
+      "description": "Refactor jira_adapter.py into focused modules for credentials, client, and adapter logic",
+      "subtasks": [
+        {
+          "subtask_id": "6.1",
+          "title": "Create integrations/jira/enums.py",
+          "description": "Extract JiraDeploymentType enum and default priority mappings",
+          "status": "pending",
+          "depends_on": ["1.3", "1.4"]
+        },
+        {
+          "subtask_id": "6.2",
+          "title": "Create integrations/jira/credentials.py",
+          "description": "Extract JiraCredentials model with validation logic",
+          "status": "pending",
+          "depends_on": ["6.1"]
+        },
+        {
+          "subtask_id": "6.3",
+          "title": "Create integrations/jira/client.py",
+          "description": "Extract HTTP client wrapper with authentication, rate limiting, and error handling",
+          "status": "pending",
+          "depends_on": ["6.2"]
+        },
+        {
+          "subtask_id": "6.4",
+          "title": "Create integrations/jira/issue.py",
+          "description": "Extract issue-specific operations (create, update, add_comment, link) into dedicated module",
+          "status": "pending",
+          "depends_on": ["6.3"]
+        },
+        {
+          "subtask_id": "6.5",
+          "title": "Create integrations/jira/adapter.py",
+          "description": "Refactor main JiraAdapter class to orchestrate client and issue operations",
+          "status": "pending",
+          "depends_on": ["6.4"]
+        },
+        {
+          "subtask_id": "6.6",
+          "title": "Create integrations/jira/__init__.py",
+          "description": "Create package init file with public API exports maintaining backward compatibility",
+          "status": "pending",
+          "depends_on": ["6.5"]
+        },
+        {
+          "subtask_id": "6.7",
+          "title": "Update imports for Jira adapter",
+          "description": "Update imports in main.py, api modules, and tests/integrations/test_jira.py",
+          "status": "pending",
+          "depends_on": ["6.6"]
+        },
+        {
+          "subtask_id": "6.8",
+          "title": "Remove original integrations/jira_adapter.py",
+          "description": "Delete the original jira_adapter.py file after verification",
+          "status": "pending",
+          "depends_on": ["6.7"]
+        }
+      ]
+    },
+    {
+      "phase_id": "phase_7",
+      "title": "Testing and Validation",
+      "description": "Verify all tests pass and no functionality is broken after refactoring",
+      "subtasks": [
+        {
+          "subtask_id": "7.1",
+          "title": "Run webhook authentication tests",
+          "description": "Execute tests/webhooks/test_auth.py and verify all tests pass",
+          "status": "pending",
+          "depends_on": ["2.10"]
+        },
+        {
+          "subtask_id": "7.2",
+          "title": "Run ServiceNow adapter tests",
+          "description": "Execute tests/integrations/test_servicenow.py and verify all tests pass",
+          "status": "pending",
+          "depends_on": ["4.8"]
+        },
+        {
+          "subtask_id": "7.3",
+          "title": "Run Jira adapter tests",
+          "description": "Execute tests/integrations/test_jira.py and verify all tests pass",
+          "status": "pending",
+          "depends_on": ["6.8"]
+        },
+        {
+          "subtask_id": "7.4",
+          "title": "Run full integration-service test suite",
+          "description": "Execute complete test suite to catch any integration issues",
+          "status": "pending",
+          "depends_on": ["7.1", "7.2", "7.3"]
+        },
+        {
+          "subtask_id": "7.5",
+          "title": "Verify line counts for all new files",
+          "description": "Check that no new module exceeds 500 lines and document new file structure",
+          "status": "pending",
+          "depends_on": ["7.4"]
+        }
+      ]
+    },
+    {
+      "phase_id": "phase_8",
+      "title": "Documentation and Cleanup",
+      "description": "Update documentation and verify code quality",
+      "subtasks": [
+        {
+          "subtask_id": "8.1",
+          "title": "Update module docstrings",
+          "description": "Ensure all new modules have comprehensive docstrings explaining their purpose",
+          "status": "pending",
+          "depends_on": ["7.5"]
+        },
+        {
+          "subtask_id": "8.2",
+          "title": "Run linting and type checking",
+          "description": "Execute ruff, mypy, and other code quality tools to ensure standards are met",
+          "status": "pending",
+          "depends_on": ["8.1"]
+        },
+        {
+          "subtask_id": "8.3",
+          "title": "Create migration guide",
+          "description": "Document the new module structure and any breaking changes for developers",
+          "status": "pending",
+          "depends_on": ["8.2"]
+        },
+        {
+          "subtask_id": "8.4",
+          "title": "Final verification and commit",
+          "description": "Review all changes, ensure tests pass, and prepare final commit",
+          "status": "pending",
+          "depends_on": ["8.3"]
+        }
+      ]
+    }
+  ],
+  "qa_signoff": {
+    "status": "not_started",
+    "tests_passed": "",
+    "issues": ""
+  },
+  "notes": "This plan splits 5 large files (total 5549 lines) into smaller, focused modules following Single Responsibility Principle. Each file will be split into logical components (exceptions, models, handlers, clients, etc.) with careful attention to backward compatibility. The refactoring will improve maintainability, testability, and enable parallel development while reducing merge conflicts."
+}
