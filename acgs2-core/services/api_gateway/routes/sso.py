@@ -999,33 +999,64 @@ async def saml_acs(
         request.session.pop("saml_provider", None)
         request.session.pop("saml_relay_state", None)
 
-        # Store user info in session
+        # JIT Provisioning: Create or update user in database
+        # Get default role as a list (provisioner expects list of roles)
+        default_roles = None
+        if (
+            hasattr(settings.sso, "default_role_on_provision")
+            and settings.sso.default_role_on_provision
+        ):
+            default_roles = [settings.sso.default_role_on_provision]
+
+        provisioner = get_provisioner(
+            auto_provision_enabled=settings.sso.auto_provision_users,
+            default_roles=default_roles,
+            allowed_domains=settings.sso.allowed_domains if settings.sso.allowed_domains else None,
+        )
+
+        # Provision the user (creates new user or updates existing)
+        # For SAML, we use name_id as the IdP user ID and store it for SLO support
+        provisioning_result: ProvisioningResult = await provisioner.get_or_create_user(
+            email=user_info.email,
+            name=user_info.name,
+            sso_provider="saml",
+            idp_user_id=user_info.name_id,  # Use SAML NameID as IdP user identifier
+            provider_id=stored_provider or "saml",
+            roles=user_info.groups,  # Map IdP groups to roles
+            name_id=user_info.name_id,  # Store for SAML SLO
+            session_index=user_info.session_index,  # Store for SAML SLO
+        )
+
+        # Store user info in session with provisioned user data
         request.session["user"] = {
+            "id": provisioning_result.user.get("id"),
             "sub": user_info.name_id,
-            "email": user_info.email,
-            "name": user_info.name,
+            "email": provisioning_result.user.get("email"),
+            "name": provisioning_result.user.get("name"),
             "groups": user_info.groups,
+            "roles": provisioning_result.user.get("roles", []),
             "provider": stored_provider or "saml",
             "auth_type": "saml",
+            "sso_enabled": True,
             "session_index": user_info.session_index,
             "name_id": user_info.name_id,
             "name_id_format": user_info.name_id_format,
         }
 
         logger.info(
-            "SAML authentication successful",
+            "SAML authentication and provisioning successful",
             extra={
                 "provider": stored_provider,
                 "name_id": user_info.name_id[:16] + "..." if user_info.name_id else "N/A",
                 "email": user_info.email,
+                "user_created": provisioning_result.created,
+                "roles_updated": provisioning_result.roles_updated,
                 "groups_count": len(user_info.groups),
                 "constitutional_hash": CONSTITUTIONAL_HASH,
             },
         )
 
-        # Return user information
-        # Note: In a full implementation, this would trigger JIT provisioning
-        # and redirect to RelayState. For now, return user info.
+        # Return user information with provisioning details
         return {
             "name_id": user_info.name_id,
             "email": user_info.email,
@@ -1035,6 +1066,51 @@ async def saml_acs(
             "groups": user_info.groups,
             "session_index": user_info.session_index,
         }
+
+    except DomainNotAllowedError as e:
+        logger.warning(
+            "SAML user domain not allowed",
+            extra={
+                "provider": stored_provider,
+                "error": str(e),
+                "constitutional_hash": CONSTITUTIONAL_HASH,
+            },
+        )
+        raise HTTPException(
+            status_code=403,
+            detail="Your email domain is not allowed for this SSO provider.",
+        ) from e
+
+    except ProvisioningDisabledError as e:
+        logger.warning(
+            "SAML auto-provisioning disabled",
+            extra={
+                "provider": stored_provider,
+                "error": str(e),
+                "constitutional_hash": CONSTITUTIONAL_HASH,
+            },
+        )
+        raise HTTPException(
+            status_code=403,
+            detail=(
+                "Auto-provisioning is disabled. "
+                "Please contact an administrator to create your account."
+            ),
+        ) from e
+
+    except ProvisioningError as e:
+        logger.error(
+            "SAML user provisioning failed",
+            extra={
+                "provider": stored_provider,
+                "error": str(e),
+                "constitutional_hash": CONSTITUTIONAL_HASH,
+            },
+        )
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to provision user account. Please try again or contact support.",
+        ) from e
 
     except SAMLReplayError as e:
         logger.warning(
