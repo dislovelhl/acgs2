@@ -8,7 +8,10 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
 from shared.config import settings
+
+from .api import evidence_router
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -67,6 +70,10 @@ async def readiness_check():
         "status": "ready",
         "service": SERVICE_NAME,
     }
+
+
+# Include API routers
+app.include_router(evidence_router)
 
 
 if __name__ == "__main__":
