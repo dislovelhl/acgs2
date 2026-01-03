@@ -16,6 +16,12 @@ import {
   CallToolRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
 import { NeuralDomainMapper } from "./neural/NeuralDomainMapper.js";
+import { validateConfigOrExit } from "./config/validator.js";
+
+// Validate configuration at startup (fail-fast behavior)
+// This ensures all required environment variables are present and valid
+// before any business logic executes
+validateConfigOrExit(process.env as Record<string, unknown>);
 
 // Initialize the Neural Domain Mapper
 const mapper = new NeuralDomainMapper();
