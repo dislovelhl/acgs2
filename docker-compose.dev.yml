@@ -128,6 +128,52 @@ services:
     networks:
       - acgs-dev
 
+  # Analytics API Service
+  analytics-api:
+    build:
+      context: ./acgs2-core/services/analytics-api
+      dockerfile: Dockerfile.dev
+    ports:
+      - "8082:8082"
+    env_file:
+      - .env.dev
+    environment:
+      # Override container-internal URLs (use Docker network names)
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
+      - KAFKA_BOOTSTRAP=${KAFKA_BOOTSTRAP:-kafka:29092}
+      - ACGS_ENV=${ACGS_ENV:-development}
+      # Pass through centralized config
+      - CONSTITUTIONAL_HASH=${CONSTITUTIONAL_HASH:-cdd01ef066bc6cf2}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000,http://localhost:5173,*}
+      - TENANT_ID=${TENANT_ID:-acgs-dev}
+    volumes:
+      - ./acgs2-core/services/analytics-api:/app
+      - /app/__pycache__
+    depends_on:
+      - redis
+      - kafka
+    networks:
+      - acgs-dev
+
+  # Analytics Dashboard (React/Vite)
+  analytics-dashboard:
+    build:
+      context: ./analytics-dashboard
+      dockerfile: Dockerfile.dev
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_URL=${VITE_API_URL:-http://localhost:8082}
+      - VITE_ACGS_ENV=${ACGS_ENV:-development}
+    volumes:
+      - ./analytics-dashboard:/app
+      - /app/node_modules
+    depends_on:
+      - analytics-api
+    networks:
+      - acgs-dev
+
 networks:
   acgs-dev:
     driver: bridge
