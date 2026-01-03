@@ -274,6 +274,26 @@ class RedisVotingSystem:
             logger.error(f"Failed to submit vote: {e}")
             return False
 
+    async def subscribe_to_votes(self, item_id: str):
+        """
+        Subscribe to votes for a deliberation item.
+
+        Returns:
+            Redis pubsub instance
+        """
+        if not self.redis_client:
+            return None
+
+        try:
+            pubsub = self.redis_client.pubsub()
+            channel = f"acgs:votes:channel:{item_id}"
+            await pubsub.subscribe(channel)
+            logger.info(f"Subscribed to vote channel: {channel}")
+            return pubsub
+        except Exception as e:
+            logger.error(f"Failed to subscribe to votes: {e}")
+            return None
+
     async def get_votes(self, item_id: str) -> List[Dict[str, Any]]:
         """Get all votes for a deliberation item."""
         if not self.redis_client:

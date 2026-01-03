@@ -8,6 +8,8 @@ import { swarmCommand } from "./commands/swarm";
 import { analyzeCommand } from "./commands/analyze";
 import { taskCommand } from "./commands/task";
 import { coordinationCommand } from "./commands/coordination";
+import { memoryService } from "./services/memory";
+import { logger } from "./utils/logger";
 
 const program = new Command();
 
@@ -53,15 +55,27 @@ process.on("uncaughtException", (error) => {
   process.exit(1);
 });
 
-// Graceful shutdown handler for MemoryService
-const gracefulShutdown = async (signal: string): Promise<void> => {
-  if (memoryService.isConnected()) {
-    await memoryService.disconnect();
-  }
+// Handle graceful shutdown
+const shutdown = async () => {
+  logger.info("Shutting down...");
+  await memoryService.disconnect();
   process.exit(0);
 };
 
-process.on('SIGINT', () => gracefulShutdown('SIGINT'));
-process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on("SIGINT", shutdown);
+process.on("SIGTERM", shutdown);
 
-program.parse();
+async function main() {
+  try {
+    // Initialize memory service
+    await memoryService.initialize();
+
+    // Parse command line arguments
+    program.parse(process.argv);
+  } catch (error) {
+    logger.error("Initialization failed", error);
+    process.exit(1);
+  }
+}
+
+main();

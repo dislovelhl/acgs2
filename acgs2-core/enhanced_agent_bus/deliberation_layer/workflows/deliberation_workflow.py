@@ -327,61 +327,72 @@ class DefaultDeliberationActivities(DeliberationActivities):
     async def collect_votes(
         self, message_id: str, request_id: str, timeout_seconds: int
     ) -> List[Vote]:
-        """Collect votes from agents using event-driven Redis pub/sub.
-
-        PERFORMANCE: Uses EventDrivenVoteCollector for sub-5ms P99 latency.
-        Supports >6000 RPS throughput and 100+ concurrent sessions.
-
-        The collector uses Redis pub/sub for real-time vote events,
-        eliminating the need for polling-based collection.
         """
-        try:
-            from ..vote_collector import get_vote_collector, VoteEvent
+        Collect votes from agents with timeout using Kafka-based event-driven voting.
 
-            collector = get_vote_collector()
+        PERFORMANCE: Uses Kafka event-driven approach with Redis persistence to achieve
+        high throughput, low latency, and guaranteed delivery. Votes are published to
+        Kafka, processed by VoteEventConsumer, and stored in Redis. This method polls
+        Redis for election status and votes.
+        """
+        from ..redis_election_store import get_election_store
+        from ..voting_service import VotingService
+        import time
 
-            # Check if collector is connected
-            if collector.redis_client is None:
-                await collector.connect()
+        # Get election store and voting service
+        election_store = await get_election_store()
+        if not election_store:
+            logger.warning("Election store not available, returning empty votes")
+            return []
 
-            # Create vote session
-            session_id = await collector.create_vote_session(
-                message_id=message_id,
-                required_votes=3,  # Will be overridden by caller
-                consensus_threshold=0.66,
-                timeout_seconds=timeout_seconds,
-            )
+        # Find election by message_id (elections are keyed by election_id, but we have message_id)
+        # In a real scenario, we'd maintain a message_id -> election_id mapping
+        # For now, we'll scan elections and find the one matching message_id
+        election_ids = await election_store.scan_elections()
+        election_id = None
+        for eid in election_ids:
+            election_data = await election_store.get_election(eid)
+            if election_data and election_data.get("message_id") == message_id:
+                election_id = eid
+                break
 
-            # Wait for votes (event-driven, no polling)
-            result = await collector.wait_for_consensus(
-                session_id=session_id,
-                timeout_override=timeout_seconds,
-            )
+        if not election_id:
+            logger.warning(f"No election found for message {message_id}")
+            return []
 
-            # Convert VoteEvent to Vote objects
+        # Poll Redis for votes until timeout or resolution
+        start_time = time.time()
+        votes = []
+
+        while (time.time() - start_time) < timeout_seconds:
+            election_data = await election_store.get_election(election_id)
+            if not election_data:
+                break
+
+            status = election_data.get("status", "OPEN")
+
+            # Convert votes from election_data to Vote objects
+            votes_dict = election_data.get("votes", {})
             votes = []
-            for vote_data in result.get("votes", []):
-                vote = Vote(
-                    agent_id=vote_data["agent_id"],
-                    decision=vote_data["decision"],
-                    reasoning=vote_data.get("reasoning", ""),
-                    confidence=float(vote_data.get("confidence", 1.0)),
-                    weight=float(vote_data.get("weight", 1.0)),
-                )
-                votes.append(vote)
+            for agent_id, vote_data in votes_dict.items():
+                if isinstance(vote_data, dict):
+                    votes.append(Vote(
+                        agent_id=vote_data.get("agent_id", agent_id),
+                        decision=vote_data.get("decision", "ABSTAIN"),
+                        reason=vote_data.get("reason"),
+                        timestamp=datetime.fromisoformat(vote_data["timestamp"].replace("Z", "+00:00"))
+                        if isinstance(vote_data.get("timestamp"), str)
+                        else vote_data.get("timestamp", datetime.now(timezone.utc)),
+                    ))
 
-            logger.info(
-                f"Collected {len(votes)} votes for message {message_id} "
-                f"via event-driven collector"
-            )
-            return votes
+            # If election is resolved or expired, return votes
+            if status in ["CLOSED", "EXPIRED"]:
+                break
 
-        except ImportError:
-            logger.warning("EventDrivenVoteCollector not available, returning empty")
-            return []
-        except Exception as e:
-            logger.error(f"Event-driven vote collection failed: {e}")
-            return []
+            # Wait a bit before polling again
+            await asyncio.sleep(0.5)
+
+        return votes
 
     async def notify_human_reviewer(
         self, message_id: str, reviewer_id: Optional[str], notification_channel: str = "slack"

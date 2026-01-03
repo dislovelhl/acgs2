@@ -17,17 +17,32 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import Annotated, Any, Dict, List, Optional, Union
 
-from fastapi import BackgroundTasks, Depends, FastAPI, Header, HTTPException, Request, status
+from fastapi import BackgroundTasks, FastAPI, Header, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 
-# Configure structured logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='{"timestamp": "%(asctime)s", "level": "%(levelname)s", "name": "%(name)s", "message": "%(message)s"}'
-)
-logger = logging.getLogger(__name__)
+try:
+    from shared.logging import create_correlation_middleware, init_service_logging
+    # Initialize structured logging
+    logger = init_service_logging("enhanced-agent-bus", level="INFO", json_format=True)
+except ImportError:
+    # Fallback to standard logging
+    logging.basicConfig(level=logging.INFO)
+    logger = logging.getLogger(__name__)
+    create_correlation_middleware = None
+
+try:
+    from .models import AgentMessage, MessageType, Priority, MessageStatus
+    from .message_processor import MessageProcessor
+except (ImportError, ValueError):
+    from models import AgentMessage, MessageType, Priority, MessageStatus # type: ignore
+    from message_processor import MessageProcessor # type: ignore
+
+# Initialize Limiter
+limiter = Limiter(key_func=get_remote_address)
 
 # Correlation ID context for request tracing
 correlation_id_var: ContextVar[str] = ContextVar('correlation_id', default='unknown')
@@ -56,6 +71,12 @@ app = FastAPI(
     version="1.0.0",
     default_response_class=ORJSONResponse,
 )
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+# Add correlation ID middleware
+if create_correlation_middleware:
+    app.middleware("http")(create_correlation_middleware())
 
 # SECURITY: Use secure CORS configuration from shared module
 # Removed allow_origins=["*"] to prevent CORS vulnerability (OWASP A05:2021)
@@ -467,22 +488,17 @@ async def startup_event():
     """Initialize the agent bus on startup"""
     global agent_bus, message_processor
     try:
-        logger.info("agent_bus_initializing", mode="development")
-        # Simplified initialization for development
-        agent_bus = {"status": "initialized", "services": ["redis", "kafka", "opa"]}
-
-        # Initialize MessageProcessor in isolated mode (no external dependencies)
-        message_processor = MessageProcessor(isolated_mode=True)
-        logger.info("MessageProcessor initialized in isolated mode")
-
-        logger.info("Enhanced Agent Bus initialized successfully (dev mode)")
-
-        # Cache warming - pre-populate L1 and L2 caches
-        await _warm_caches()
-
+        logger.info("Initializing Enhanced Agent Bus Message Processor...")
+        # Initialize the production MessageProcessor
+        agent_bus = MessageProcessor()
+        logger.info("Enhanced Agent Bus initialized successfully")
     except Exception as e:
-        logger.error("agent_bus_initialization_failed", error=str(e), error_type=type(e).__name__)
-        raise
+        logger.error(f"Failed to initialize agent bus: {e}")
+        # Allow fallback to mock for development if needed, but in production this should fail
+        if os.environ.get("ENVIRONMENT") == "production":
+            raise
+        agent_bus = {"status": "mock_initialized", "mode": "development"}
+        logger.warning("Agent bus failed to initialize, using mock mode for development")
 
 
 async def _warm_caches():
@@ -561,128 +577,11 @@ async def health_check():
     )
 
 
-@app.get("/health/live")
-async def liveness_check():
-    """Kubernetes liveness probe endpoint."""
-    return {"status": "alive"}
-
-
-@app.get("/health/ready")
-async def readiness_check():
-    """Kubernetes readiness probe endpoint."""
-    if not agent_bus:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Agent bus not ready"
-        )
-    return {"status": "ready"}
-
-
-@app.get("/api/v1/message-types")
-async def list_message_types():
-    """List all supported message types with descriptions."""
-    return {
-        "message_types": [
-            {"type": t.value, "description": f"Message type: {t.value}"}
-            for t in MessageTypeEnum
-        ],
-        "total": len(MessageTypeEnum)
-    }
-
-
-@app.post(
-    "/api/v1/messages",
-    response_model=MessageResponse,
-    status_code=status.HTTP_202_ACCEPTED,
-    responses={
-        202: {"description": "Message accepted for processing"},
-        400: {"description": "Invalid request format"},
-        422: {"description": "Validation error"},
-        429: {"description": "Rate limit exceeded"},
-        500: {"description": "Internal server error"},
-        503: {"description": "Service unavailable"},
-    }
-)
+@app.post("/messages", response_model=MessageResponse)
+@limiter.limit("10/minute")
 async def send_message(
     request: Request,
-    message: MessageRequest,
-    background_tasks: BackgroundTasks,
-    response: Response,
-    http_request: Request,
-    rate_limit_info: Tuple[bool, float, float, str] = Depends(check_rate_limit),
-):
-    """Send a message to the agent bus with MessageProcessor integration.
-
-    Submits a message for asynchronous processing through the constitutional
-    validation pipeline. Messages are validated against governance policies
-    before being routed to target agents.
-
-    **Supported Message Types:**
-    - `command`: Execute an action on target agent
-    - `query`: Request information from target agent
-    - `response`: Reply to a previous query
-    - `event`: Notify subscribers of state change
-    - `notification`: One-way informational message
-    - `heartbeat`: Agent liveness signal
-    - `governance_request`: Policy evaluation request
-    - `governance_response`: Policy evaluation result
-    - `constitutional_validation`: Constitutional compliance check
-    - `task_request`: Task assignment to agent
-    - `task_response`: Task completion result
-    - `audit_log`: Audit trail entry
-
-    **Rate Limiting:**
-    - X-RateLimit-Limit: Maximum requests per minute (default: 100)
-    - X-RateLimit-Remaining: Remaining requests in current window
-    - X-RateLimit-Reset: Seconds until rate limit window resets
-
-    **Response Details:**
-    - details.latency_ms: Request processing latency in milliseconds
-    - details.message_type: Type of message processed
-    """
-    # Track request latency (following pattern from message_processor.py)
-    start = time.perf_counter()
-
-    # Add rate limit headers to response
-    _, remaining, reset_time, _ = rate_limit_info
-    response.headers["X-RateLimit-Limit"] = str(RATE_LIMIT_REQUESTS_PER_MINUTE)
-    response.headers["X-RateLimit-Remaining"] = str(int(remaining))
-    response.headers["X-RateLimit-Reset"] = str(int(reset_time))
-
-    if not agent_bus:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Agent bus not ready"
-        )
-    return {"status": "ready"}
-
-
-@app.get("/api/v1/message-types")
-async def list_message_types():
-    """List all supported message types with descriptions."""
-    return {
-        "message_types": [
-            {"type": t.value, "description": f"Message type: {t.value}"} for t in MessageTypeEnum
-        ],
-        "total": len(MessageTypeEnum),
-    }
-
-
-@app.post(
-    "/api/v1/messages",
-    response_model=MessageResponse,
-    status_code=status.HTTP_202_ACCEPTED,
-    responses={
-        202: {"description": "Message accepted for processing"},
-        400: {"description": "Invalid request format"},
-        422: {"description": "Validation error"},
-        429: {"description": "Rate limit exceeded"},
-        500: {"description": "Internal server error"},
-        503: {"description": "Service unavailable"},
-    },
-)
-async def send_message(
-    request: Request,
-    message: MessageRequest,
+    message_request: MessageRequest,
     background_tasks: BackgroundTasks,
     session_id: Annotated[Optional[str], Header(alias="X-Session-ID")] = None,
 ):
@@ -706,81 +605,57 @@ async def send_message(
         )
 
     try:
-        # Generate unique message ID
-        message_id = str(uuid.uuid4())
-        timestamp = datetime.now(timezone.utc)
+        from datetime import datetime, timezone
 
-        # Use session_id from request body if provided, otherwise fall back to header
-        effective_session_id = message.session_id or session_id
-
-        # Process message asynchronously based on type
-        async def process_message_async(
-            msg_id: str,
-            msg: MessageRequest,
-            corr_id: str
-        ):
-            """Process message asynchronously with type-specific handling."""
-            import hashlib
-
-            logger.info(
-                f"Processing message: id={msg_id}, type={msg.message_type.value}, "
-                f"priority={msg.priority.value}, correlation_id={corr_id}"
+        # 1. Map API request to AgentMessage model
+        try:
+            # Convert string type to enum
+            msg_type = MessageType(message_request.message_type.lower())
+        except ValueError:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Unsupported message type: {message_request.message_type}"
             )
 
-            try:
-                # Route to type-specific handler
-                handler_name = MESSAGE_HANDLERS.get(msg.message_type, "process_generic")
+        try:
+            # Convert priority string to enum
+            prio = Priority[message_request.priority.upper()]
+        except (KeyError, ValueError):
+            prio = Priority.MEDIUM
 
-                # Perform message validation and content hash
-                content_hash = hashlib.sha256(msg.content.encode()).hexdigest()[:16]
-
-                # Type-specific processing logic
-                if msg.message_type == MessageTypeEnum.GOVERNANCE_REQUEST:
-                    # Governance requests may trigger deliberation
-                    logger.info(f"Governance request {msg_id}: routing to deliberation layer")
-
-                elif msg.message_type == MessageTypeEnum.CONSTITUTIONAL_VALIDATION:
-                    # Constitutional validation requires special handling
-                    logger.info(f"Constitutional validation {msg_id}: verifying compliance")
-
-                elif msg.message_type == MessageTypeEnum.HEARTBEAT:
-                    # Heartbeats are lightweight status checks
-                    logger.debug(f"Heartbeat from {msg.sender}: acknowledged")
-
-                elif msg.message_type == MessageTypeEnum.AUDIT_LOG:
-                    # Audit logs are write-only, no response needed
-                    logger.info(f"Audit log {msg_id}: recorded from {msg.sender}")
-
-                else:
-                    # Standard message processing
-                    logger.info(f"Message {msg_id} ({msg.message_type.value}): processing with {handler_name}")
-
-                logger.info(
-                    f"Message {msg_id} processed: hash={content_hash}, "
-                    f"handler={handler_name}, correlation_id={corr_id}"
-                )
-
-            except Exception as e:
-                logger.error(f"Message processing failed for {msg_id}: {e}", exc_info=True)
-
-        # Add processing task to background
-        background_tasks.add_task(
-            process_message_async,
-            message_id,
-            message,
-            correlation_id
+        msg = AgentMessage(
+            content={"text": message_request.content},
+            message_type=msg_type,
+            priority=prio,
+            from_agent=message_request.sender,
+            to_agent=message_request.recipient or "",
+            tenant_id=message_request.tenant_id or "default",
+            payload=message_request.metadata or {},
+            conversation_id=message_request.session_id or session_id or "",
         )
 
+        # 2. Define background processing logic
+        async def process_async(message: AgentMessage):
+            try:
+                if isinstance(agent_bus, MessageProcessor):
+                    result = await agent_bus.process(message)
+                    logger.info(f"Message {message.message_id} processed: valid={result.is_valid}")
+                else:
+                    logger.warning("Agent bus is in mock mode, skipping real processing")
+            except Exception as e:
+                logger.error(f"Error in background processing for {message.message_id}: {e}")
+
+        # 3. Add to background tasks
+        background_tasks.add_task(process_async, msg)
+
+        # 4. Return immediate response
         return MessageResponse(
-            message_id=message_id,
-            status=MessageStatusEnum.ACCEPTED,
-            timestamp=timestamp.isoformat(),
-            correlation_id=correlation_id,
+            message_id=msg.message_id,
+            status="accepted",
+            timestamp=datetime.now(timezone.utc).isoformat(),
             details={
-                "message_type": message.message_type.value,
-                "priority": message.priority.value,
-                "session_id": effective_session_id,
-                "sender": message.sender,
+                "message_type": msg.message_type.value,
+                "session_id": msg.conversation_id
             },
         )
 

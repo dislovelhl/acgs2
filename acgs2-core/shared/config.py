@@ -234,7 +234,7 @@ if HAS_PYDANTIC_SETTINGS:
         quality: QualitySettings = QualitySettings()
         maci: MACISettings = MACISettings()
         vault: VaultSettings = VaultSettings()
-        smtp: SMTPSettings = SMTPSettings()
+        voting: VotingSettings = VotingSettings()
         kafka: Dict[str, Any] = Field(
             default_factory=lambda: {
                 "bootstrap_servers": os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092"),
@@ -526,32 +526,38 @@ else:
         client_key: Optional[str] = field(default_factory=lambda: os.getenv("VAULT_CLIENT_KEY"))
 
     @dataclass
-    class SMTPSettings:
-        """SMTP email delivery settings."""
+    class VotingSettings:
+        """Voting and deliberation settings for event-driven vote collection."""
 
-        host: str = field(default_factory=lambda: os.getenv("SMTP_HOST", "localhost"))
-        port: int = field(default_factory=lambda: int(os.getenv("SMTP_PORT", "587")))
-        username: Optional[str] = field(default_factory=lambda: os.getenv("SMTP_USERNAME"))
-        password: Optional[SecretStr] = field(
-            default_factory=lambda: (
-                SecretStr(os.getenv("SMTP_PASSWORD", "")) if os.getenv("SMTP_PASSWORD") else None
+        default_timeout_seconds: int = field(
+            default_factory=lambda: int(os.getenv("VOTING_DEFAULT_TIMEOUT_SECONDS", "30"))
+        )
+        vote_topic_pattern: str = field(
+            default_factory=lambda: os.getenv("VOTING_VOTE_TOPIC_PATTERN", "acgs.tenant.{tenant_id}.votes")
+        )
+        audit_topic_pattern: str = field(
+            default_factory=lambda: os.getenv(
+                "VOTING_AUDIT_TOPIC_PATTERN", "acgs.tenant.{tenant_id}.audit.votes"
             )
         )
-        use_tls: bool = field(
-            default_factory=lambda: os.getenv("SMTP_USE_TLS", "true").lower() == "true"
+        redis_election_prefix: str = field(
+            default_factory=lambda: os.getenv("VOTING_REDIS_ELECTION_PREFIX", "election:")
         )
-        use_ssl: bool = field(
-            default_factory=lambda: os.getenv("SMTP_USE_SSL", "false").lower() == "true"
+        enable_weighted_voting: bool = field(
+            default_factory=lambda: os.getenv("VOTING_ENABLE_WEIGHTED", "true").lower() == "true"
         )
-        from_email: str = field(
-            default_factory=lambda: os.getenv("SMTP_FROM_EMAIL", "noreply@acgs2.local")
+        signature_algorithm: str = field(
+            default_factory=lambda: os.getenv("VOTING_SIGNATURE_ALGORITHM", "HMAC-SHA256")
         )
-        from_name: str = field(
-            default_factory=lambda: os.getenv("SMTP_FROM_NAME", "ACGS-2 Audit Service")
+        audit_signature_key: Optional[SecretStr] = field(
+            default_factory=lambda: (
+                SecretStr(os.getenv("AUDIT_SIGNATURE_KEY", ""))
+                if os.getenv("AUDIT_SIGNATURE_KEY")
+                else None
+            )
         )
-        timeout: float = field(default_factory=lambda: float(os.getenv("SMTP_TIMEOUT", "30.0")))
-        enabled: bool = field(
-            default_factory=lambda: os.getenv("SMTP_ENABLED", "false").lower() == "true"
+        timeout_check_interval_seconds: int = field(
+            default_factory=lambda: int(os.getenv("VOTING_TIMEOUT_CHECK_INTERVAL", "5"))
         )
 
     @dataclass
@@ -575,7 +581,7 @@ else:
         quality: QualitySettings = field(default_factory=QualitySettings)
         maci: MACISettings = field(default_factory=MACISettings)
         vault: VaultSettings = field(default_factory=VaultSettings)
-        smtp: SMTPSettings = field(default_factory=SMTPSettings)
+        voting: VotingSettings = field(default_factory=VotingSettings)
         kafka: Dict[str, Any] = field(
             default_factory=lambda: {
                 "bootstrap_servers": os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092"),
