@@ -1,36 +1,60 @@
 """
-Layer 2: Verification & Validation
+Verification Layer - Constitutional AI Governance
+================================================
+
 Constitutional Hash: cdd01ef066bc6cf2
+
+This layer provides mathematical guarantees for constitutional governance:
+- MACI: Multi-Agent Constitutional Intelligence with role separation
+- SagaLLM: Compensable transactions with LIFO rollback
+- Z3 SMT: Formal verification of policy consistency
 """
-from enum import Enum
-from typing import Any
 
+from .maci_roles import (
+    MACIOrchestrator,
+    ExecutiveAgent,
+    LegislativeAgent,
+    JudicialAgent,
+    ConstitutionalAgent,
+    Branch,
+    DecisionType
+)
 
-class MACIRole(Enum):
-    EXECUTIVE = "executive"
-    LEGISLATIVE = "legislative"
-    JUDICIAL = "judicial"
+from .sagallm_transactions import (
+    SagaLLMOrchestrator,
+    TransactionCoordinator,
+    ConstitutionalOperationFactory,
+    SagaTransaction,
+    TransactionState
+)
 
-class MACIVerificationPipeline:
-    """MACI Verification bypassing Gödel limitations."""
-    def __init__(self):
-        self.constitutional_hash = "cdd01ef066bc6cf2"
+from .z3_smt_verifier import (
+    ConstitutionalVerifier,
+    Z3PolicyVerifier,
+    PolicySpecification,
+    VerificationResult
+)
 
-class SagaConstitutionalTransaction:
-    """Saga transactions with compensation."""
-    pass
+__all__ = [
+    # MACI Role Separation
+    "MACIOrchestrator",
+    "ExecutiveAgent",
+    "LegislativeAgent",
+    "JudicialAgent",
+    "ConstitutionalAgent",
+    "Branch",
+    "DecisionType",
 
-class SagaCheckpoint:
-    """Checkpoint in saga transaction."""
-    pass
+    # SagaLLM Transactions
+    "SagaLLMOrchestrator",
+    "TransactionCoordinator",
+    "ConstitutionalOperationFactory",
+    "SagaTransaction",
+    "TransactionState",
 
-class VeriPlanFormalVerifier:
-    """VeriPlan Z3 formal verification."""
-    pass
-
-class Z3ConstitutionalAdapter:
-    """Z3 SMT solver adapter."""
-    pass
-
-__all__ = ["MACIVerificationPipeline", "MACIRole", "SagaConstitutionalTransaction", 
-           "SagaCheckpoint", "VeriPlanFormalVerifier", "Z3ConstitutionalAdapter"]
+    # Z3 SMT Verification
+    "ConstitutionalVerifier",
+    "Z3PolicyVerifier",
+    "PolicySpecification",
+    "VerificationResult",
+]

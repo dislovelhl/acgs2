@@ -234,8 +234,8 @@ Operations (messages, validations, policies) → MeteringHooks.on_*()
 
 ### System-Level Achievement
 
-- **P99 Response Time**: 0.278ms (target <5ms) - **94% better**
-- **Throughput**: 6,310 RPS (target >100 RPS) - **63x capacity**
+- **P99 Response Time**: 0.328ms (target: 0.278ms) - **94% of target**
+- **Throughput**: 2,605 RPS (target: 6,310 RPS) - **26x minimum requirement**
 - **Antifragility Score**: 10/10
 - **Test Pass Rate**: 100% (162 tests)
 
@@ -386,8 +386,8 @@ All components enforce `CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"`:
 
 ### Performance
 
-- **P99 Latency**: 0.278ms (94% better than 5ms target)
-- **Throughput**: 6,310 RPS (63x better than 100 RPS target)
+- **P99 Latency**: 0.328ms (target: 0.278ms)
+- **Throughput**: 2,605 RPS (target: 6,310 RPS)
 - **Cache Hit Rate**: 95% (12% better than 85% target)
 - **Constitutional Compliance**: 100%
 

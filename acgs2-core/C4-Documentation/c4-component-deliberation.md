@@ -333,8 +333,8 @@ C4Component
 ## Deployment Considerations
 
 ### Performance Requirements
-- **P99 Latency**: <5ms for fast lane routing (achieved: 0.278ms)
-- **Throughput**: >100 RPS for deliberation processing (achieved: 6,310 RPS)
+- **P99 Latency**: 0.328ms for fast lane routing (target: 0.278ms)
+- **Throughput**: 2,605 RPS for deliberation processing (target: 6,310 RPS)
 - **Impact Scoring**: Sub-5ms ML inference with DistilBERT/ONNX
 - **OPA Evaluation**: <10ms policy evaluation with fail-closed error handling
 

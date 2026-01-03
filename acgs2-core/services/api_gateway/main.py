@@ -18,6 +18,7 @@ from shared.logging import (
     init_service_logging,
     log_error,
 )
+from shared.otel_config import init_otel
 from shared.metrics import (
     HTTP_REQUEST_DURATION,
     HTTP_REQUESTS_TOTAL,
@@ -45,6 +46,9 @@ app = FastAPI(
     version="1.0.0",
     default_response_class=ORJSONResponse,
 )
+
+# Initialize OTel tracing
+init_otel("api-gateway", app=app, export_to_console=settings.debug)
 
 # Add CORS middleware
 app.add_middleware(

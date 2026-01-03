@@ -206,7 +206,7 @@
     - `validate_tenant_isolation(message: AgentMessage) -> bool`
     - `route_message(message: AgentMessage) -> Optional[str]`
   - Features: Async processing, error handling, metrics collection, circuit breaker integration
-  - Performance: P99 latency <5ms (achieved 0.278ms)
+  - Performance: P99 latency 0.328ms (target: 0.278ms)
 
 ### Security & Compliance
 

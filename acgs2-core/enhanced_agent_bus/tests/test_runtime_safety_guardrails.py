@@ -18,6 +18,7 @@ from ..runtime_safety_guardrails import (
     RuntimeSafetyGuardrails,
     RuntimeSafetyGuardrailsConfig,
     InputSanitizer,
+    InputSanitizerConfig,
     AgentEngine,
     ToolRunnerSandbox,
     OutputVerifier,
@@ -80,10 +81,14 @@ class TestInputSanitizer:
     @pytest.mark.asyncio
     async def test_html_sanitization(self, sanitizer):
         """Test HTML sanitization."""
+        # Create sanitizer with injection detection disabled to test pure HTML sanitization
+        config = InputSanitizerConfig(detect_injection=False, sanitize_html=True)
+        html_sanitizer = InputSanitizer(config=config)
+
         data = "Normal text <script>evil()</script> and <iframe>bad</iframe>"
         context = {"trace_id": "test-trace"}
 
-        result = await sanitizer.process(data, context)
+        result = await html_sanitizer.process(data, context)
 
         assert result.allowed is True
         assert result.modified_data is not None
@@ -395,5 +400,4 @@ class TestGuardrailConfiguration:
         assert config.input_sanitizer.max_input_length == 500
         assert config.agent_engine.constitutional_validation is False
         assert config.strict_mode is True
-        assert config.timeout_ms == 10000</contents>
-</xai:function_call">Now let me run the tests to verify the runtime safety guardrails implementation works correctly.
+        assert config.timeout_ms == 10000
