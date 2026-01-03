@@ -1,0 +1,224 @@
+# Build Progress: Split Large Integration Adapter Files
+
+## Task: 057-split-large-integration-adapter-files-1000-lines-e
+
+### Overview
+Refactor 5 large files (total 5549 lines) into smaller, focused modules following Single Responsibility Principle:
+1. webhooks/auth.py (1192 lines) → webhooks/auth/ package
+2. integrations/ticket_mapping.py (1127 lines) → integrations/ticket_mapping/ package  
+3. integrations/servicenow_adapter.py (1103 lines) → integrations/servicenow/ package
+4. consumers/event_consumer.py (1066 lines) → consumers/event_consumer/ package
+5. integrations/jira_adapter.py (1061 lines) → integrations/jira/ package
+
+### Status: Phase 1 - Analysis and Preparation (In Progress)
+
+Implementation plan with 8 phases and 56 subtasks has been created.
+
+## Completed Work
+
+### ✅ Subtask 1.1: Analyze webhooks/auth.py structure and dependencies (COMPLETED)
+
+**Analysis Document:** `.auto-claude/specs/057-split-large-integration-adapter-files-1000-lines-e/auth_py_analysis.md`
+
+**Key Findings:**
+- File is 1192 lines, well-organized with clear logical sections
+- Contains 7 exception classes (lines 30-142)
+- Contains 2 model classes: AuthResult, OAuthToken (lines 144-244)
+- Contains 1 abstract base class: WebhookAuthHandler (lines 246-309)
+- Contains 3 handler implementations: ApiKeyAuthHandler, HmacAuthHandler, OAuthBearerAuthHandler (lines 316-988)
+- Contains 1 registry class: WebhookAuthRegistry (lines 990-1088)
+- Contains 4 factory functions (lines 1090-1193)
+
+**External Dependencies:**
+- Single import: `webhooks.models.WebhookAuthType` (enum)
+- Standard library: abc, hashlib, hmac, secrets, datetime, re, logging
+- Third-party: httpx (AsyncClient), pydantic (BaseModel, SecretStr, etc.)
+
+**Files Importing from auth.py:**
+- `integration-service/tests/webhooks/test_auth.py` - imports 15 symbols
+
+**Proposed Split Structure:**
+```
+webhooks/auth/
+├── __init__.py         # Public API exports (~50 lines)
+├── exceptions.py       # 7 exception classes (~120 lines)
+├── models.py          # AuthResult, OAuthToken (~110 lines)
+├── base.py            # WebhookAuthHandler + WebhookAuthRegistry (~170 lines)
+├── api_key.py         # ApiKeyAuthHandler (~130 lines)
+├── hmac.py            # HmacAuthHandler (~260 lines)
+├── oauth.py           # OAuthBearerAuthHandler (~310 lines)
+└── factory.py         # Factory functions (~115 lines)
+```
+
+**All modules will be under 350 lines each** ✓
+
+**Backward Compatibility:** Maintained via `__init__.py` re-exports
+
+### ✅ Subtask 1.2: Analyze integrations/ticket_mapping.py structure (COMPLETED)
+
+**Analysis Document:** `.auto-claude/specs/057-split-large-integration-adapter-files-1000-lines-e/ticket_mapping_py_analysis.md`
+
+**Key Findings:**
+- File is 1127 lines with clear logical separation
+- Contains 5 enums, 3 default mappings, 6 pydantic models
+- Contains 1 validator class, 1 transformer registry with 10 built-in functions
+- Contains 1 main mapper class, 2 factory functions
+
+**External Dependencies:**
+- `.base.EventSeverity`
+- `.base.IntegrationEvent`
+
+**Proposed Split Structure:**
+```
+integrations/ticket_mapping/
+├── __init__.py         # Public API exports (~70 lines)
+├── enums.py           # 5 enums + default mappings (~100 lines)
+├── models.py          # 6 pydantic models (~230 lines)
+├── validators.py      # FieldValidator class (~110 lines)
+├── transformers.py    # Registry + 10 transform functions (~170 lines)
+├── mapper.py          # TicketFieldMapper class (~380 lines)
+└── defaults.py        # 2 factory functions (~220 lines)
+```
+
+**All modules will be under 400 lines each** ✓
+
+### ✅ Subtask 1.3: Analyze adapters and consumer structure (COMPLETED)
+
+**Analysis Document:** `.auto-claude/specs/057-split-large-integration-adapter-files-1000-lines-e/adapters_consumer_analysis.md`
+
+**Files Analyzed:** 3 files totaling 3233 lines
+1. `servicenow_adapter.py` (1104 lines)
+2. `event_consumer.py` (1067 lines)
+3. `jira_adapter.py` (1062 lines)
+
+**ServiceNow Adapter:**
+- 2 enums (ServiceNowAuthType, ServiceNowIncidentState)
+- 2 default mappings (impact, urgency)
+- 1 credentials model (ServiceNowCredentials with 18 fields)
+- 1 adapter class (17 methods including OAuth token management)
+
+**Event Consumer:**
+- 2 enums (GovernanceEventType with 18 values, EventConsumerState)
+- 3 pydantic models (GovernanceEvent, EventConsumerMetrics, EventConsumerConfig)
+- 1 consumer class (25 methods with Kafka integration)
+- Extensive configuration (30+ fields) and metrics tracking
+
+**Jira Adapter:**
+- 1 enum (JiraDeploymentType)
+- 1 default mapping (priority)
+- 1 credentials model (JiraCredentials with 13 fields)
+- 1 adapter class (16 methods including ADF conversion)
+
+**Proposed Split Structures:**
+
+ServiceNow → 6 modules (all under 300 lines):
+```
+integrations/servicenow/
+├── __init__.py         (~50 lines)
+├── enums.py           (~80 lines)
+├── credentials.py     (~150 lines)
+├── client.py          (~280 lines)
+├── incident.py        (~300 lines)
+└── adapter.py         (~280 lines)
+```
+
+Event Consumer → 6 modules (all under 450 lines):
+```
+consumers/event_consumer/
+├── __init__.py         (~60 lines)
+├── enums.py           (~80 lines)
+├── models.py          (~450 lines)
+├── metrics.py         (~150 lines)
+├── handler.py         (~200 lines)
+└── consumer.py        (~350 lines)
+```
+
+Jira → 6 modules (all under 350 lines):
+```
+integrations/jira/
+├── __init__.py         (~50 lines)
+├── enums.py           (~70 lines)
+├── credentials.py     (~140 lines)
+├── client.py          (~250 lines)
+├── issue.py           (~350 lines)
+└── adapter.py         (~250 lines)
+```
+
+### ✅ Subtask 1.4: Check test coverage and dependencies (COMPLETED)
+
+**Analysis Document:** `.auto-claude/specs/057-split-large-integration-adapter-files-1000-lines-e/test_coverage_analysis.md`
+
+**Key Findings:**
+
+**Test Coverage by File:**
+1. **webhooks/auth.py** → `tests/webhooks/test_auth.py` (imports 15 symbols)
+2. **integrations/jira_adapter.py** → `tests/integrations/test_jira.py` (imports 3 symbols)
+3. **integrations/servicenow_adapter.py** → `tests/integrations/test_servicenow.py` (imports 3 symbols)
+4. **consumers/event_consumer.py** → **NO TEST FILE** (testing gap identified)
+5. **integrations/ticket_mapping.py** → **NO TEST FILE** (testing gap identified)
+
+**Import Patterns Identified:**
+
+**Pattern 1: Test-Only Imports** (webhooks/auth.py)
+- Tests import directly from module
+- No re-exports to other application code
+- Impact: Low - only tests need verification
+
+**Pattern 2: Package Re-exports** (jira_adapter, servicenow_adapter, event_consumer)
+- Parent package `__init__.py` re-exports symbols for public API
+- Used by: `src/integrations/__init__.py` and `src/consumers/__init__.py`
+- Impact: Medium - must maintain re-exports at package level
+
+**Pattern 3: Unused/Internal Module** (ticket_mapping)
+- No external imports found
+- May be unused or used internally by adapters
+- Impact: Low - verify actual usage
+
+**Backward Compatibility Requirements:**
+- **webhooks/auth:** Must export 15+ symbols from new `__init__.py`
+- **jira_adapter:** Must export 3 symbols (JiraAdapter, JiraCredentials, JiraDeploymentType)
+- **servicenow_adapter:** Must export 3+ symbols (ServiceNowAdapter, ServiceNowAuthType, ServiceNowCredentials)
+- **event_consumer:** Must export 6 symbols (EventConsumer, models, enums)
+- **ticket_mapping:** TBD based on usage verification
+
+**Testing Gaps:**
+- ⚠️ No test file for `consumers/event_consumer.py` (1066 lines, complex Kafka logic)
+- ⚠️ No test file for `integrations/ticket_mapping.py` (1127 lines, complex mapping logic)
+- Recommendation: File technical debt tickets (out of scope for this task)
+
+**Files to Update After Refactoring:**
+
+After each split, the following files need import path updates:
+1. **webhooks/auth:** `tests/webhooks/test_auth.py`
+2. **jira_adapter:** `src/integrations/__init__.py`, `tests/integrations/test_jira.py`
+3. **servicenow_adapter:** `src/integrations/__init__.py`, `tests/integrations/test_servicenow.py`
+4. **event_consumer:** `src/consumers/__init__.py`
+5. **ticket_mapping:** TBD based on usage
+
+---
+
+## Phase 1 Analysis Complete ✅
+
+All 4 subtasks in Phase 1 (Analysis and Preparation) have been completed:
+- ✅ 1.1: Analyzed webhooks/auth.py
+- ✅ 1.2: Analyzed integrations/ticket_mapping.py
+- ✅ 1.3: Analyzed adapters and consumer structure
+- ✅ 1.4: Checked test coverage and dependencies
+
+**Ready to proceed to Phase 2: Split webhooks/auth.py**
+
+### Blockers
+
+⚠️ **Pre-commit Configuration Issue**
+- File: `.pre-commit-config.yaml` lines 32-34
+- Issue: `ruff` and `ruff-format` hooks incorrectly referenced under `pre-commit-hooks` repo
+- Should be: Under `astral-sh/ruff-pre-commit` repo (already defined at lines 6-16)
+- Impact: Cannot commit changes until this is resolved
+- Resolution needed: Remove duplicate/incorrect ruff hook definitions at lines 32-34
+
+### Next Steps
+1. Fix pre-commit configuration to enable commits
+2. Begin Phase 2: Split webhooks/auth.py (10 subtasks)
+3. Begin Phase 3: Split integrations/ticket_mapping.py (9 subtasks)
+4. Begin Phase 4: Split integrations/servicenow_adapter.py (8 subtasks)
+
