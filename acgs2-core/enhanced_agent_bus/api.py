@@ -11,7 +11,7 @@ import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Dict, Any, Optional, Tuple, Type
-from fastapi import Depends, FastAPI, HTTPException, BackgroundTasks, Request
+from fastapi import Depends, FastAPI, HTTPException, BackgroundTasks, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
@@ -574,7 +574,7 @@ app.add_middleware(CORSMiddleware, **cors_config)
 
 @app.exception_handler(RateLimitExceeded)
 async def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded) -> JSONResponse:
-    """Handle rate limit exceeded errors with 429 status and Retry-After header."""
+    """Handle rate limit exceeded errors with 429 status, Retry-After, and rate limit headers."""
     status_code = 429
     response = create_error_response(
         exc,
@@ -582,10 +582,19 @@ async def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded) 
         request_id=request.headers.get("X-Request-ID"),
     )
 
-    headers = {}
+    # Calculate reset time in seconds from retry_after_ms
+    reset_seconds = exc.retry_after_ms // 1000 if exc.retry_after_ms else 60
+
+    # Add rate limit headers for consistency
+    headers = {
+        "X-RateLimit-Limit": str(RATE_LIMIT_REQUESTS_PER_MINUTE),
+        "X-RateLimit-Remaining": "0",  # Rate limit exceeded means no remaining tokens
+        "X-RateLimit-Reset": str(reset_seconds),
+    }
+
     if exc.retry_after_ms is not None:
         # Convert milliseconds to seconds for Retry-After header
-        headers["Retry-After"] = str(exc.retry_after_ms // 1000)
+        headers["Retry-After"] = str(reset_seconds)
 
     logger.warning(f"Rate limit exceeded for agent '{exc.agent_id}': {exc.message}")
     return JSONResponse(status_code=status_code, content=response, headers=headers)
@@ -802,8 +811,26 @@ async def health_check():
 
 
 @app.post("/messages", response_model=MessageResponse)
-async def send_message(request: MessageRequest, background_tasks: BackgroundTasks):
-    """Send a message to the agent bus with MessageProcessor integration"""
+async def send_message(
+    request: MessageRequest,
+    background_tasks: BackgroundTasks,
+    response: Response,
+    http_request: Request,
+    rate_limit_info: Tuple[bool, float, float, str] = Depends(check_rate_limit),
+):
+    """Send a message to the agent bus with MessageProcessor integration.
+
+    Rate limit headers are included in all responses:
+    - X-RateLimit-Limit: Maximum requests per minute
+    - X-RateLimit-Remaining: Remaining requests in current window
+    - X-RateLimit-Reset: Seconds until rate limit window resets
+    """
+    # Add rate limit headers to response
+    _, remaining, reset_time, _ = rate_limit_info
+    response.headers["X-RateLimit-Limit"] = str(RATE_LIMIT_REQUESTS_PER_MINUTE)
+    response.headers["X-RateLimit-Remaining"] = str(int(remaining))
+    response.headers["X-RateLimit-Reset"] = str(int(reset_time))
+
     if not agent_bus:
         raise HTTPException(status_code=503, detail="Agent bus not initialized")
 
