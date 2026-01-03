@@ -384,9 +384,9 @@ class DriftDetector:
                 )
 
             try:
-                # Convert to DataFrames
-                reference_df = self._to_dataframe(list(self._reference_data))
-                current_df = self._to_dataframe(list(self._current_data))
+                # Convert to DataFrames (with caching)
+                reference_df = self._to_dataframe(list(self._reference_data), data_source="reference")
+                current_df = self._to_dataframe(list(self._current_data), data_source="current")
 
                 # Ensure same columns
                 common_columns = list(set(reference_df.columns) & set(current_df.columns))
