@@ -22,10 +22,12 @@ from pydantic import SecretStr, ValidationError
 
 from src.integrations.base import (
     AuthenticationError,
+    DeliveryError,
     EventSeverity,
     IntegrationEvent,
     IntegrationStatus,
     IntegrationType,
+    RateLimitError,
 )
 from src.integrations.pagerduty_adapter import (
     PagerDutyAdapter,
@@ -880,3 +882,515 @@ class TestPagerDutyConnectionTesting:
         assert result.success is False
         assert result.error_code == "NETWORK_ERROR"
         assert "Connection refused" in result.error_message
+
+
+# ============================================================================
+# Incident Creation Tests
+# ============================================================================
+
+
+class TestPagerDutyIncidentCreation:
+    """Tests for PagerDuty incident creation with various event scenarios."""
+
+    @pytest.mark.asyncio
+    async def test_successful_incident_creation(
+        self,
+        pagerduty_adapter: PagerDutyAdapter,
+        sample_event: IntegrationEvent,
+    ):
+        """Test successful incident creation with mocked HTTP responses."""
+        pagerduty_adapter._authenticated = True
+        pagerduty_adapter._status = IntegrationStatus.ACTIVE
+
+        mock_response = MagicMock(spec=httpx.Response)
+        mock_response.status_code = 202
+        mock_response.json.return_value = {
+            "status": "success",
+            "message": "Event processed",
+            "dedup_key": "acgs2-evt-test-001",
+        }
+
+        with patch.object(pagerduty_adapter, "get_http_client") as mock_client:
+
+            async def async_post(*args, **kwargs):
+                return mock_response
+
+            mock_client.return_value.post = async_post
+
+            result = await pagerduty_adapter.send_event(sample_event)
+
+        assert result.success is True
+        assert result.external_id == "acgs2-evt-test-001"
+        assert result.operation == "send_event"
+
+    @pytest.mark.asyncio
+    async def test_incident_creation_requires_auth(
+        self,
+        pagerduty_adapter: PagerDutyAdapter,
+        sample_event: IntegrationEvent,
+    ):
+        """Test that incident creation requires authentication."""
+        with pytest.raises(AuthenticationError, match="not authenticated"):
+            await pagerduty_adapter.send_event(sample_event)
+
+    @pytest.mark.asyncio
+    async def test_incident_creation_rate_limited(
+        self,
+        pagerduty_adapter: PagerDutyAdapter,
+        sample_event: IntegrationEvent,
+    ):
+        """Test rate limit handling during incident creation (429 response)."""
+        pagerduty_adapter._authenticated = True
+        pagerduty_adapter._status = IntegrationStatus.ACTIVE
+
+        mock_response = MagicMock(spec=httpx.Response)
+        mock_response.status_code = 429
+        mock_response.headers = {"X-Rate-Limit-Reset": "120"}
+
+        with patch.object(pagerduty_adapter, "get_http_client") as mock_client:
+
+            async def async_post(*args, **kwargs):
+                return mock_response
+
+            mock_client.return_value.post = async_post
+
+            with pytest.raises(RateLimitError) as exc_info:
+                await pagerduty_adapter.send_event(sample_event)
+
+            assert exc_info.value.retry_after == 120
+
+    @pytest.mark.asyncio
+    async def test_incident_creation_bad_request(
+        self,
+        pagerduty_adapter: PagerDutyAdapter,
+        sample_event: IntegrationEvent,
+    ):
+        """Test handling of bad request error (400)."""
+        pagerduty_adapter._authenticated = True
+        pagerduty_adapter._status = IntegrationStatus.ACTIVE
+
+        mock_response = MagicMock(spec=httpx.Response)
+        mock_response.status_code = 400
+        mock_response.json.return_value = {
+            "message": "Invalid event",
+            "errors": ["routing_key is required", "summary is required"],
+        }
+
+        with patch.object(pagerduty_adapter, "get_http_client") as mock_client:
+
+            async def async_post(*args, **kwargs):
+                return mock_response
+
+            mock_client.return_value.post = async_post
+
+            with pytest.raises(DeliveryError) as exc_info:
+                await pagerduty_adapter.send_event(sample_event)
+
+            assert "routing_key is required" in str(exc_info.value)
+
+    @pytest.mark.asyncio
+    async def test_incident_creation_invalid_integration_key(
+        self,
+        pagerduty_adapter: PagerDutyAdapter,
+        sample_event: IntegrationEvent,
+    ):
+        """Test handling of invalid integration key (401)."""
+        pagerduty_adapter._authenticated = True
+        pagerduty_adapter._status = IntegrationStatus.ACTIVE
+
+        mock_response = MagicMock(spec=httpx.Response)
+        mock_response.status_code = 401
+
+        with patch.object(pagerduty_adapter, "get_http_client") as mock_client:
+
+            async def async_post(*args, **kwargs):
+                return mock_response
+
+            mock_client.return_value.post = async_post
+
+            with pytest.raises(AuthenticationError, match="check integration_key"):
+                await pagerduty_adapter.send_event(sample_event)
+
+    @pytest.mark.asyncio
+    async def test_incident_creation_access_denied(
+        self,
+        pagerduty_adapter: PagerDutyAdapter,
+        sample_event: IntegrationEvent,
+    ):
+        """Test handling of access denied error (403)."""
+        pagerduty_adapter._authenticated = True
+        pagerduty_adapter._status = IntegrationStatus.ACTIVE
+
+        mock_response = MagicMock(spec=httpx.Response)
+        mock_response.status_code = 403
+
+        with patch.object(pagerduty_adapter, "get_http_client") as mock_client:
+
+            async def async_post(*args, **kwargs):
+                return mock_response
+
+            mock_client.return_value.post = async_post
+
+            with pytest.raises(AuthenticationError, match="check integration_key"):
+                await pagerduty_adapter.send_event(sample_event)
+
+    @pytest.mark.asyncio
+    async def test_incident_creation_server_error(
+        self,
+        pagerduty_adapter: PagerDutyAdapter,
+        sample_event: IntegrationEvent,
+    ):
+        """Test handling of server error (500)."""
+        pagerduty_adapter._authenticated = True
+        pagerduty_adapter._status = IntegrationStatus.ACTIVE
+
+        mock_response = MagicMock(spec=httpx.Response)
+        mock_response.status_code = 500
+
+        with patch.object(pagerduty_adapter, "get_http_client") as mock_client:
+
+            async def async_post(*args, **kwargs):
+                return mock_response
+
+            mock_client.return_value.post = async_post
+
+            with pytest.raises(DeliveryError, match="HTTP 500"):
+                await pagerduty_adapter.send_event(sample_event)
+
+    @pytest.mark.asyncio
+    async def test_incident_creation_timeout(
+        self,
+        pagerduty_adapter: PagerDutyAdapter,
+        sample_event: IntegrationEvent,
+    ):
+        """Test handling of timeout during incident creation."""
+        pagerduty_adapter._authenticated = True
+        pagerduty_adapter._status = IntegrationStatus.ACTIVE
+
+        with patch.object(pagerduty_adapter, "get_http_client") as mock_client:
+
+            async def async_post(*args, **kwargs):
+                raise httpx.TimeoutException("Request timed out")
+
+            mock_client.return_value.post = async_post
+
+            with pytest.raises(DeliveryError, match="timed out"):
+                await pagerduty_adapter.send_event(sample_event)
+
+    @pytest.mark.asyncio
+    async def test_incident_creation_network_error(
+        self,
+        pagerduty_adapter: PagerDutyAdapter,
+        sample_event: IntegrationEvent,
+    ):
+        """Test handling of network error during incident creation."""
+        pagerduty_adapter._authenticated = True
+        pagerduty_adapter._status = IntegrationStatus.ACTIVE
+
+        with patch.object(pagerduty_adapter, "get_http_client") as mock_client:
+
+            async def async_post(*args, **kwargs):
+                raise httpx.NetworkError("Connection refused")
+
+            mock_client.return_value.post = async_post
+
+            with pytest.raises(DeliveryError, match="Network error"):
+                await pagerduty_adapter.send_event(sample_event)
+
+
+# ============================================================================
+# Incident Payload Building Tests
+# ============================================================================
+
+
+class TestPagerDutyIncidentPayload:
+    """Tests for PagerDuty incident payload structure."""
+
+    def test_payload_structure(
+        self,
+        pagerduty_adapter: PagerDutyAdapter,
+        sample_event: IntegrationEvent,
+    ):
+        """Test incident payload has correct structure."""
+        payload = pagerduty_adapter._build_incident_payload(sample_event)
+
+        assert "routing_key" in payload
+        assert "event_action" in payload
+        assert "dedup_key" in payload
+        assert "payload" in payload
+
+        assert payload["event_action"] == "trigger"
+        assert payload["routing_key"] == "test-integration-key-12345"
+
+    def test_dedup_key_generation(
+        self,
+        pagerduty_adapter: PagerDutyAdapter,
+        sample_event: IntegrationEvent,
+    ):
+        """Test dedup_key is generated correctly."""
+        payload = pagerduty_adapter._build_incident_payload(sample_event)
+
+        assert payload["dedup_key"] == "acgs2-evt-test-001"
+
+    def test_custom_dedup_key_prefix(
+        self,
+        events_api_credentials: PagerDutyCredentials,
+        sample_event: IntegrationEvent,
+    ):
+        """Test custom dedup_key prefix is used."""
+        events_api_credentials.dedup_key_prefix = "custom-prefix"
+        adapter = PagerDutyAdapter(events_api_credentials)
+
+        payload = adapter._build_incident_payload(sample_event)
+
+        assert payload["dedup_key"] == "custom-prefix-evt-test-001"
+
+    def test_payload_includes_summary(
+        self,
+        pagerduty_adapter: PagerDutyAdapter,
+        sample_event: IntegrationEvent,
+    ):
+        """Test payload includes formatted summary."""
+        payload = pagerduty_adapter._build_incident_payload(sample_event)
+
+        assert "summary" in payload["payload"]
+        assert "[ACGS-2]" in payload["payload"]["summary"]
+        assert sample_event.title in payload["payload"]["summary"]
+
+    def test_payload_includes_source(
+        self,
+        pagerduty_adapter: PagerDutyAdapter,
+        sample_event: IntegrationEvent,
+    ):
+        """Test payload includes source."""
+        payload = pagerduty_adapter._build_incident_payload(sample_event)
+
+        assert "source" in payload["payload"]
+        assert payload["payload"]["source"] == "acgs2"
+
+    def test_payload_includes_severity(
+        self,
+        pagerduty_adapter: PagerDutyAdapter,
+        sample_event: IntegrationEvent,
+    ):
+        """Test payload includes PagerDuty severity."""
+        payload = pagerduty_adapter._build_incident_payload(sample_event)
+
+        assert "severity" in payload["payload"]
+        assert payload["payload"]["severity"] in ["critical", "error", "warning", "info"]
+
+    def test_payload_includes_timestamp(
+        self,
+        pagerduty_adapter: PagerDutyAdapter,
+        sample_event: IntegrationEvent,
+    ):
+        """Test payload includes timestamp."""
+        payload = pagerduty_adapter._build_incident_payload(sample_event)
+
+        assert "timestamp" in payload["payload"]
+
+    def test_payload_includes_custom_details(
+        self,
+        pagerduty_adapter: PagerDutyAdapter,
+        sample_event: IntegrationEvent,
+    ):
+        """Test payload includes custom details with event information."""
+        payload = pagerduty_adapter._build_incident_payload(sample_event)
+
+        assert "custom_details" in payload["payload"]
+        custom_details = payload["payload"]["custom_details"]
+
+        assert custom_details["event_id"] == "evt-test-001"
+        assert custom_details["event_type"] == "policy_violation"
+        assert custom_details["acgs2_severity"] == "critical"
+        assert custom_details["policy_id"] == "POL-001"
+        assert custom_details["resource_id"] == "res-123"
+
+    def test_payload_includes_configured_custom_fields(
+        self,
+        events_api_credentials: PagerDutyCredentials,
+        sample_event: IntegrationEvent,
+    ):
+        """Test custom field inclusion from credentials configuration."""
+        events_api_credentials.custom_details = {
+            "environment": "production",
+            "team": "platform",
+        }
+        adapter = PagerDutyAdapter(events_api_credentials)
+
+        payload = adapter._build_incident_payload(sample_event)
+
+        assert "custom_details" in payload["payload"]
+        assert payload["payload"]["custom_details"]["environment"] == "production"
+        assert payload["payload"]["custom_details"]["team"] == "platform"
+
+    def test_payload_includes_optional_fields(
+        self,
+        events_api_credentials: PagerDutyCredentials,
+        sample_event: IntegrationEvent,
+    ):
+        """Test optional fields (component, group, class) are included when configured."""
+        events_api_credentials.default_component = "web-api"
+        events_api_credentials.default_group = "backend"
+        events_api_credentials.default_class = "infrastructure"
+        adapter = PagerDutyAdapter(events_api_credentials)
+
+        payload = adapter._build_incident_payload(sample_event)
+
+        assert payload["payload"]["component"] == "web-api"
+        assert payload["payload"]["group"] == "backend"
+        assert payload["payload"]["class"] == "infrastructure"
+
+    def test_summary_template_customization(
+        self,
+        events_api_credentials: PagerDutyCredentials,
+        sample_event: IntegrationEvent,
+    ):
+        """Test custom summary template is used."""
+        events_api_credentials.summary_template = "[{severity}] {title}"
+        adapter = PagerDutyAdapter(events_api_credentials)
+
+        payload = adapter._build_incident_payload(sample_event)
+
+        assert "[critical]" in payload["payload"]["summary"].lower()
+        assert sample_event.title in payload["payload"]["summary"]
+
+    def test_summary_truncation(
+        self,
+        pagerduty_adapter: PagerDutyAdapter,
+        sample_event: IntegrationEvent,
+    ):
+        """Test summary is truncated if it exceeds PagerDuty's max length."""
+        # Create a very long title
+        sample_event.title = "A" * 1100
+
+        payload = pagerduty_adapter._build_incident_payload(sample_event)
+
+        # PagerDuty max summary length is 1024
+        assert len(payload["payload"]["summary"]) <= 1024
+        assert payload["payload"]["summary"].endswith("...")
+
+
+# ============================================================================
+# Severity Mapping Tests
+# ============================================================================
+
+
+class TestPagerDutySeverityMapping:
+    """Tests for severity to PagerDuty severity/urgency mapping."""
+
+    def test_critical_severity_mapping(self, pagerduty_adapter: PagerDutyAdapter):
+        """Test CRITICAL severity maps to 'critical' PagerDuty severity."""
+        pd_severity = pagerduty_adapter._get_severity_for_event(EventSeverity.CRITICAL)
+        assert pd_severity == "critical"
+
+    def test_high_severity_mapping(self, pagerduty_adapter: PagerDutyAdapter):
+        """Test HIGH severity maps to 'error' PagerDuty severity."""
+        pd_severity = pagerduty_adapter._get_severity_for_event(EventSeverity.HIGH)
+        assert pd_severity == "error"
+
+    def test_medium_severity_mapping(self, pagerduty_adapter: PagerDutyAdapter):
+        """Test MEDIUM severity maps to 'warning' PagerDuty severity."""
+        pd_severity = pagerduty_adapter._get_severity_for_event(EventSeverity.MEDIUM)
+        assert pd_severity == "warning"
+
+    def test_low_severity_mapping(self, pagerduty_adapter: PagerDutyAdapter):
+        """Test LOW severity maps to 'warning' PagerDuty severity."""
+        pd_severity = pagerduty_adapter._get_severity_for_event(EventSeverity.LOW)
+        assert pd_severity == "warning"
+
+    def test_info_severity_mapping(self, pagerduty_adapter: PagerDutyAdapter):
+        """Test INFO severity maps to 'info' PagerDuty severity."""
+        pd_severity = pagerduty_adapter._get_severity_for_event(EventSeverity.INFO)
+        assert pd_severity == "info"
+
+    def test_custom_severity_mapping(self, events_api_credentials: PagerDutyCredentials):
+        """Test custom severity mapping overrides defaults."""
+        events_api_credentials.severity_mapping = {
+            "critical": "critical",
+            "high": "critical",
+            "medium": "error",
+        }
+        adapter = PagerDutyAdapter(events_api_credentials)
+
+        assert adapter._get_severity_for_event(EventSeverity.CRITICAL) == "critical"
+        assert adapter._get_severity_for_event(EventSeverity.HIGH) == "critical"
+        assert adapter._get_severity_for_event(EventSeverity.MEDIUM) == "error"
+        # Unmapped severities fall back to defaults
+        assert adapter._get_severity_for_event(EventSeverity.LOW) == "warning"
+
+    def test_critical_urgency_mapping(self, pagerduty_adapter: PagerDutyAdapter):
+        """Test CRITICAL severity maps to 'high' urgency."""
+        urgency = pagerduty_adapter._get_urgency_for_severity(EventSeverity.CRITICAL)
+        assert urgency == "high"
+
+    def test_high_urgency_mapping(self, pagerduty_adapter: PagerDutyAdapter):
+        """Test HIGH severity maps to 'high' urgency."""
+        urgency = pagerduty_adapter._get_urgency_for_severity(EventSeverity.HIGH)
+        assert urgency == "high"
+
+    def test_medium_urgency_mapping(self, pagerduty_adapter: PagerDutyAdapter):
+        """Test MEDIUM severity maps to 'low' urgency."""
+        urgency = pagerduty_adapter._get_urgency_for_severity(EventSeverity.MEDIUM)
+        assert urgency == "low"
+
+    def test_low_urgency_mapping(self, pagerduty_adapter: PagerDutyAdapter):
+        """Test LOW severity maps to 'low' urgency."""
+        urgency = pagerduty_adapter._get_urgency_for_severity(EventSeverity.LOW)
+        assert urgency == "low"
+
+    def test_info_urgency_mapping(self, pagerduty_adapter: PagerDutyAdapter):
+        """Test INFO severity maps to 'low' urgency."""
+        urgency = pagerduty_adapter._get_urgency_for_severity(EventSeverity.INFO)
+        assert urgency == "low"
+
+    def test_custom_urgency_mapping(self, events_api_credentials: PagerDutyCredentials):
+        """Test custom urgency mapping overrides defaults."""
+        events_api_credentials.urgency_mapping = {
+            "medium": "high",
+            "low": "high",
+        }
+        adapter = PagerDutyAdapter(events_api_credentials)
+
+        assert adapter._get_urgency_for_severity(EventSeverity.MEDIUM) == "high"
+        assert adapter._get_urgency_for_severity(EventSeverity.LOW) == "high"
+        # Unmapped severities fall back to defaults
+        assert adapter._get_urgency_for_severity(EventSeverity.CRITICAL) == "high"
+
+    @pytest.mark.asyncio
+    async def test_all_severity_levels_create_incidents(
+        self,
+        pagerduty_adapter: PagerDutyAdapter,
+    ):
+        """Test that incidents can be created with all severity levels."""
+        pagerduty_adapter._authenticated = True
+        pagerduty_adapter._status = IntegrationStatus.ACTIVE
+
+        mock_response = MagicMock(spec=httpx.Response)
+        mock_response.status_code = 202
+        mock_response.json.return_value = {
+            "status": "success",
+            "message": "Event processed",
+            "dedup_key": "test-key",
+        }
+
+        with patch.object(pagerduty_adapter, "get_http_client") as mock_client:
+
+            async def async_post(*args, **kwargs):
+                return mock_response
+
+            mock_client.return_value.post = async_post
+
+            # Test each severity level
+            for severity in EventSeverity:
+                event = IntegrationEvent(
+                    event_id=f"evt-{severity.value}",
+                    event_type="test",
+                    severity=severity,
+                    source="acgs2",
+                    title=f"Test {severity.value} event",
+                    description=f"Testing {severity.value} severity",
+                )
+
+                result = await pagerduty_adapter.send_event(event)
+                assert result.success is True
