@@ -5,7 +5,7 @@
 - **Name**: Enhanced Agent Bus Core
 - **Description**: Core message bus implementation for ACGS-2 constitutional AI governance with agent registration, message routing, validation, and deliberation support
 - **Location**: `/home/dislove/document/acgs2/acgs2-core/enhanced_agent_bus/`
-- **Language**: Python 3.12+
+- **Language**: Python 3.11+
 - **Constitutional Hash**: `cdd01ef066bc6cf2`
 - **Purpose**: Provides the foundational messaging infrastructure for multi-agent coordination with constitutional compliance, multi-tenant isolation, and comprehensive metrics instrumentation
 
@@ -14,72 +14,73 @@
 ### Core Classes
 
 #### EnhancedAgentBus
-**File**: `/home/dislove/document/acgs2/acgs2-core/enhanced_agent_bus/agent_bus.py:118-938`
+**File**: `/home/dislove/document/acgs2/acgs2-core/enhanced_agent_bus/agent_bus.py:76-938`
 
 Primary entry point for agent communication with constitutional governance.
 
 **Key Methods**:
 
-- `__init__(redis_url, use_dynamic_policy, policy_fail_closed, use_kafka, use_redis_registry, kafka_bootstrap_servers, audit_service_url, registry, router, validator, processor, use_rust, enable_metering, metering_config, enable_maci, maci_strict_mode)`
-  - Initializes the Enhanced Agent Bus with dependency injection support
+- `__init__(**kwargs)`
+  - Initializes the Enhanced Agent Bus with configuration parameters.
+  - Supports: `redis_url`, `enable_maci`, `maci_strict_mode`, `use_dynamic_policy`, `enable_metering`, `use_redis_registry`, `router`, `validator`, `processor`, `enable_adaptive_governance`.
   - Returns: None
 
-- `from_config(config: BusConfiguration) -> EnhancedAgentBus` (classmethod)
-  - Factory method for creating bus from configuration object
+- `from_config(config: Any) -> EnhancedAgentBus` (classmethod)
+  - Factory method for creating bus from configuration object or dictionary.
   - Returns: Configured EnhancedAgentBus instance
 
 - `async start() -> None`
-  - Starts the agent bus and initializes all services
-  - Initializes metering manager, Kafka bus, Prometheus service info, circuit breakers
+  - Starts the agent bus and initializes all services.
+  - Initializes metering manager, Kafka bus, Prometheus service info, circuit breakers, and adaptive governance.
   - Returns: None
 
 - `async stop() -> None`
-  - Gracefully stops the agent bus and cleans up resources
-  - Cancels Kafka consumer task, stops Kafka bus and metering manager
+  - Gracefully stops the agent bus and cleans up resources.
+  - Cancels Kafka consumer task, stops Kafka bus, metering manager, and adaptive governance.
   - Returns: None
 
-- `async register_agent(agent_id, agent_type, capabilities, tenant_id, auth_token, maci_role) -> bool`
-  - Registers an agent with multi-tenant isolation and optional MACI role enforcement
-  - Validates agent identity via JWT token if provided
+- `async register_agent(agent_id, agent_type="worker", capabilities=None, tenant_id=None, maci_role=None, **kwargs) -> bool`
+  - Registers an agent with multi-tenant isolation and optional MACI role enforcement.
+  - Validates agent identity via `auth_token` in kwargs if provided.
   - Returns: True if registration successful, False otherwise
 
-- `async unregister_agent(agent_id: str) -> bool`
-  - Unregisters an agent from the bus
+- `async unregister_agent(aid: str) -> bool`
+  - Unregisters an agent from the bus.
   - Returns: True if agent found and removed
 
-- `get_agent_info(agent_id: str) -> Optional[Dict[str, Any]]`
-  - Retrieves information about a registered agent
+- `get_agent_info(aid: str) -> Optional[Dict[str, Any]]`
+  - Retrieves information about a registered agent.
   - Returns: Agent info dict or None
 
-- `async send_message(message: AgentMessage) -> ValidationResult`
-  - Sends a message through the bus with constitutional validation
-  - Enforces multi-tenant isolation and deliberation for high-impact messages
+- `async send_message(msg: AgentMessage) -> ValidationResult`
+  - Sends a message through the bus with constitutional validation.
+  - Enforces multi-tenant isolation, adaptive governance, and deliberation for high-impact messages.
   - Returns: ValidationResult with validation status and metadata
 
 - `async receive_message(timeout: float = 1.0) -> Optional[AgentMessage]`
-  - Receives a message from the bus with optional timeout
+  - Receives a message from the bus with optional timeout.
   - Returns: AgentMessage or None on timeout
 
-- `async broadcast_message(message: AgentMessage) -> Dict[str, ValidationResult]`
-  - Broadcasts a message to all agents in the same tenant
-  - Enforces strict multi-tenant isolation
+- `async broadcast_message(msg: AgentMessage) -> Dict[str, ValidationResult]`
+  - Broadcasts a message to all agents in the same tenant.
+  - Enforces strict multi-tenant isolation.
   - Returns: Dict mapping agent_id to ValidationResult
 
 - `get_registered_agents() -> List[str]`
-  - Returns list of registered agent IDs
+  - Returns list of registered agent IDs.
 
-- `get_agents_by_type(agent_type: str) -> List[str]`
-  - Returns list of agent IDs filtered by type
+- `get_agents_by_type(atype: str) -> List[str]`
+  - Returns list of agent IDs filtered by type.
 
-- `get_agents_by_capability(capability: str) -> List[str]`
-  - Returns list of agent IDs with specific capability
+- `get_agents_by_capability(cap: str) -> List[str]`
+  - Returns list of agent IDs with specific capability.
 
 - `get_metrics() -> Dict[str, Any]`
-  - Returns bus metrics synchronously including queue size, registered agents, processor metrics
+  - Returns bus metrics synchronously.
   - Returns: Dict with metrics
 
 - `async get_metrics_async() -> Dict[str, Any]`
-  - Returns comprehensive bus metrics asynchronously including policy registry status
+  - Returns comprehensive bus metrics asynchronously.
   - Returns: Dict with extended metrics
 
 **Properties**:
@@ -269,7 +270,7 @@ Result of a validation operation.
 
 **File**: `/home/dislove/document/acgs2/acgs2-core/enhanced_agent_bus/exceptions.py`
 
-22 typed exception classes for precise error handling:
+33 typed exception classes for precise error handling (including base classes):
 
 #### Base Exception
 - `AgentBusError(message, details, constitutional_hash)` (19-46)
@@ -278,106 +279,116 @@ Result of a validation operation.
   - Methods: `to_dict() -> Dict[str, Any]`
 
 #### Constitutional Validation Errors
-- `ConstitutionalError` (52-54)
+- `ConstitutionalError` (53-56)
   - Base for constitutional compliance failures
 
-- `ConstitutionalHashMismatchError(expected_hash, actual_hash, context)` (57-107)
+- `ConstitutionalHashMismatchError(expected_hash, actual_hash, context)` (59-109)
   - Hash validation failures with sanitized error messages
   - Properties: `expected_hash`, `actual_hash` (internal use only)
   - Static method: `_sanitize_hash(hash_value, max_visible=8) -> str`
 
-- `ConstitutionalValidationError(validation_errors, agent_id, action_type)` (109-129)
+- `ConstitutionalValidationError(validation_errors, agent_id, action_type)` (111-131)
   - General constitutional validation failures
 
 #### Message Processing Errors
-- `MessageError` (136-138)
+- `MessageError` (139-142)
   - Base for message-related errors
 
-- `MessageValidationError(message_id, errors, warnings)` (141-161)
+- `MessageValidationError(message_id, errors, warnings)` (145-166)
   - Message validation failures
 
-- `MessageDeliveryError(message_id, target_agent, reason)` (164-183)
+- `MessageDeliveryError(message_id, target_agent, reason)` (168-187)
   - Message delivery failures
 
-- `MessageTimeoutError(message_id, timeout_ms, operation)` (186-208)
+- `MessageTimeoutError(message_id, timeout_ms, operation)` (190-212)
   - Message processing timeout
 
-- `MessageRoutingError(message_id, source_agent, target_agent, reason)` (211-233)
+- `MessageRoutingError(message_id, source_agent, target_agent, reason)` (215-237)
   - Message routing failures
 
 #### Agent Registration Errors
-- `AgentError` (240-242)
+- `AgentError` (245-248)
   - Base for agent-related errors
 
-- `AgentNotRegisteredError(agent_id, operation)` (245-260)
+- `AgentNotRegisteredError(agent_id, operation)` (251-266)
   - Agent not found for operation
 
-- `AgentAlreadyRegisteredError(agent_id)` (263-271)
+- `AgentAlreadyRegisteredError(agent_id)` (269-277)
   - Agent already registered
 
-- `AgentCapabilityError(agent_id, required_capabilities, available_capabilities)` (274-295)
+- `AgentCapabilityError(agent_id, required_capabilities, available_capabilities)` (280-301)
   - Agent missing required capabilities
 
 #### Policy and OPA Errors
-- `PolicyError` (302-304)
+- `PolicyError` (309-312)
   - Base for policy-related errors
 
-- `PolicyEvaluationError(policy_path, reason, input_data)` (307-326)
+- `PolicyEvaluationError(policy_path, reason, input_data)` (315-334)
   - Policy evaluation failures
 
-- `PolicyNotFoundError(policy_path)` (329-337)
+- `PolicyNotFoundError(policy_path)` (337-345)
   - Required policy not found
 
-- `OPAConnectionError(opa_url, reason)` (340-352)
+- `OPAConnectionError(opa_url, reason)` (348-360)
   - OPA server connection failure
 
-- `OPANotInitializedError(operation)` (355-363)
+- `OPANotInitializedError(operation)` (363-371)
   - OPA client not initialized
 
+#### Governance and Alignment Errors
+- `GovernanceError(message, details)` (379-387)
+  - Base for governance-related errors
+
+- `ImpactAssessmentError(assessment_type, reason)` (389-397)
+  - Impact assessment operation failures
+
+- `AlignmentViolationError(reason, alignment_score, agent_id)` (679-701)
+  - Constitutional alignment failures
+
 #### Deliberation Layer Errors
-- `DeliberationError` (370-372)
+- `DeliberationError` (405-408)
   - Base for deliberation layer errors
 
-- `DeliberationTimeoutError(decision_id, timeout_seconds, pending_reviews, pending_signatures)` (375-397)
+- `DeliberationTimeoutError(decision_id, timeout_seconds, pending_reviews, pending_signatures)` (411-433)
   - Deliberation process timeout
 
-- `SignatureCollectionError(decision_id, required_signers, collected_signers, reason)` (400-424)
+- `SignatureCollectionError(decision_id, required_signers, collected_signers, reason)` (436-460)
   - Signature collection failure
 
-- `ReviewConsensusError(decision_id, approval_count, rejection_count, escalation_count)` (427-451)
+- `ReviewConsensusError(decision_id, approval_count, rejection_count, escalation_count)` (463-487)
   - Critic review consensus failure
 
 #### Bus Operation Errors
-- `BusOperationError` (458-460)
+- `BusOperationError` (495-498)
   - Base for bus operation errors
 
-- `BusNotStartedError(operation)` (463-471)
+- `BusNotStartedError(operation)` (501-509)
   - Bus not started for operation
 
-- `BusAlreadyStartedError()` (474-481)
+- `BusAlreadyStartedError()` (512-519)
   - Bus already running
 
-- `HandlerExecutionError(handler_name, message_id, original_error)` (484-504)
+- `HandlerExecutionError(handler_name, message_id, original_error)` (522-542)
   - Message handler execution failure
 
 #### Configuration Errors
-- `ConfigurationError(config_key, reason)` (511-523)
+- `ConfigurationError(config_key, reason)` (550-562)
   - Invalid or missing configuration
 
 #### MACI Role Separation Errors
-- `MACIError` (530-532)
+- `MACIError` (570-573)
   - Base for MACI role separation errors
 
-- `MACIRoleViolationError(agent_id, role, action, allowed_roles)` (535-560)
+- `MACIRoleViolationError(agent_id, role, action, allowed_roles)` (576-601)
   - Agent attempts action outside role permissions
 
-- `MACISelfValidationError(agent_id, action, output_id)` (563-586)
+- `MACISelfValidationError(agent_id, action, output_id)` (604-627)
   - Gödel bypass prevention: self-validation attempt
 
-- `MACICrossRoleValidationError(validator_agent, validator_role, target_agent, target_role, reason)` (589-615)
+- `MACICrossRoleValidationError(validator_agent, validator_role, target_agent, target_role, reason)` (630-656)
   - Cross-role validation constraint violation
 
-- `MACIRoleNotAssignedError(agent_id, operation)` (618-630)
+- `MACIRoleNotAssignedError(agent_id, operation)` (659-671)
   - Agent has no MACI role assigned
 
 ---
@@ -462,7 +473,7 @@ MACI framework roles implementing separation of powers (Trias Politica).
 - JUDICIAL = "judicial" - Validates decisions from other roles
 
 #### MACIAction (Enum)
-**File**: `/home/dislove/document/acgs2/acgs2-core/enhanced_agent_bus/maci_enforcement.py:45-53`
+**File**: `/home/dislove/document/acgs2/acgs2-core/enhanced_agent_bus/maci_enforcement.py:67-76`
 
 Actions that can be performed by MACI agents.
 
@@ -473,9 +484,11 @@ Actions that can be performed by MACI agents.
 - SYNTHESIZE = "synthesize" - Synthesize policies
 - AUDIT = "audit" - Audit trail operations
 - QUERY = "query" - Read-only query (allowed for all)
+- MANAGE_POLICY = "manage_policy" - Manage governance policies
+- EMERGENCY_COOLDOWN = "emergency_cooldown" - Initiate emergency system cooldown
 
 #### ROLE_PERMISSIONS (Dict)
-**File**: `/home/dislove/document/acgs2/acgs2-core/enhanced_agent_bus/maci_enforcement.py:57-73`
+**File**: `/home/dislove/document/acgs2/acgs2-core/enhanced_agent_bus/maci_enforcement.py:78-87`
 
 Role-to-action mapping.
 
@@ -484,7 +497,7 @@ Role-to-action mapping.
 {
     EXECUTIVE: {PROPOSE, SYNTHESIZE, QUERY},
     LEGISLATIVE: {EXTRACT_RULES, SYNTHESIZE, QUERY},
-    JUDICIAL: {VALIDATE, AUDIT, QUERY}
+    JUDICIAL: {VALIDATE, AUDIT, QUERY, EMERGENCY_COOLDOWN}
 }
 ```
 
@@ -1018,14 +1031,14 @@ enhanced_agent_bus/
 ## Performance Characteristics
 
 ### Latency Targets
-- **P99 Latency**: <5ms per message (achieved: 0.278ms - 94% better)
+- **P99 Latency**: 0.328ms per message (target: 0.278ms)
 - **Constitutional Validation**: Sub-microsecond (constant-time comparison)
 - **Message Routing**: Sub-millisecond
 - **Metering Integration**: <5μs overhead (fire-and-forget)
 
 ### Throughput
 - **Target**: >100 RPS
-- **Achieved**: 6,310 RPS (63x target)
+- **Achieved**: 2,605 RPS (target: 6,310 RPS)
 - **Concurrent Agents**: Unlimited with async event loop
 
 ### Memory Efficiency

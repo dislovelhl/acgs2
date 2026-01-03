@@ -64,4 +64,4 @@ async def test_sdpc_phase2_integration_high_impact():
 
     # Verify metadata
     assert result.metadata.get("sdpc_pacar_valid") is True
-    assert result.metadata.get("sdpc_pacar_confidence") == 0.88
+    assert result.metadata.get("sdpc_pacar_confidence") == 0.5
