@@ -1,6 +1,6 @@
 """
-ACGS-2 Integration Tests Package
+ACGS-2 Integration Tests
 Constitutional Hash: cdd01ef066bc6cf2
 
-Integration tests for cross-service communication and end-to-end workflows.
+Integration tests for multi-tenant isolation features.
 """

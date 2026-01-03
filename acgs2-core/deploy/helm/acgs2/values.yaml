@@ -545,7 +545,93 @@ podSecurityStandards:
   warn: "restricted"
   audit: "restricted"
 
-# Node selectors, tolerations, and affinity
-nodeSelector: {}
-tolerations: []
-affinity: {}
+# Multi-Tenant Quota Configuration
+# Enables namespace-based tenant isolation with configurable resource quotas
+tenantQuotas:
+  # Enable multi-tenant quota enforcement
+  enabled: true
+
+  # Kubernetes namespace configuration
+  namespace:
+    prefix: "tenant-"
+    labels:
+      managed-by: "acgs2"
+      isolation-level: "namespace"
+
+  # Default quota limits applied to all tenants without overrides
+  defaults:
+    # CPU quota (Kubernetes format: cores or millicores)
+    cpu: "2"
+    # Memory quota (Kubernetes format: Gi, Mi)
+    memory: "4Gi"
+    # Storage quota for PersistentVolumeClaims
+    storage: "20Gi"
+    # Maximum number of PersistentVolumeClaims
+    maxPVCs: 10
+    # Maximum number of pods in tenant namespace
+    maxPods: 50
+
+  # Rate limiting configuration per tenant
+  rateLimits:
+    # Maximum requests per rate limit window
+    requestsPerWindow: 1000
+    # Rate limit window duration in seconds
+    windowSeconds: 60
+    # Algorithm: sliding_window or token_bucket
+    algorithm: "sliding_window"
+    # Burst allowance above the limit (for short spikes)
+    burstMultiplier: 1.2
+
+  # Resource quota enforcement behavior
+  enforcement:
+    # strict: Reject pods exceeding quota immediately
+    # warn: Allow pods but log warnings
+    # audit: Allow pods and record for audit only
+    mode: "strict"
+    # Graceful handling when quota checks fail
+    failOpen: false
+    # Retry attempts for transient failures
+    retryAttempts: 3
+    # Retry delay in milliseconds
+    retryDelayMs: 100
+
+  # Per-tenant quota overrides (example)
+  # Override default quotas for specific tenants
+  overrides: {}
+    # premium-tenant:
+    #   cpu: "8"
+    #   memory: "16Gi"
+    #   storage: "100Gi"
+    #   maxPVCs: 50
+    #   maxPods: 200
+    #   rateLimits:
+    #     requestsPerWindow: 10000
+    #     windowSeconds: 60
+    # basic-tenant:
+    #   cpu: "1"
+    #   memory: "2Gi"
+    #   storage: "10Gi"
+    #   maxPVCs: 5
+    #   maxPods: 20
+
+  # Network isolation settings for tenant namespaces
+  networkPolicy:
+    # Enable network policy creation for tenant isolation
+    enabled: true
+    # Deny cross-tenant network traffic by default
+    denyCrossTenant: true
+    # Allow egress to these services (cluster-wide)
+    allowedEgress:
+      - kafka
+      - redis
+      - opa
+
+  # Audit logging for quota events
+  auditLogging:
+    enabled: true
+    # Log quota usage periodically
+    usageReportingInterval: "5m"
+    # Log when usage exceeds this percentage of quota
+    usageAlertThreshold: 80
+
+# OPA Bundle ref integrated in existing opa section above
