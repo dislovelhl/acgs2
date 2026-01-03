@@ -64,9 +64,30 @@ Status Codes:
 
 from .base import BaseIntegrationServiceError
 
+# Import authentication exceptions
+from .auth import (
+    AuthenticationError,
+    InvalidApiKeyError,
+    InvalidBearerTokenError,
+    InvalidSignatureError,
+    MissingAuthHeaderError,
+    SignatureTimestampError,
+    TokenExpiredError,
+    WebhookAuthError,
+)
+
 # Export base exception
 __all__ = [
     "BaseIntegrationServiceError",
+    # Authentication exceptions
+    "AuthenticationError",
+    "InvalidApiKeyError",
+    "InvalidBearerTokenError",
+    "InvalidSignatureError",
+    "MissingAuthHeaderError",
+    "SignatureTimestampError",
+    "TokenExpiredError",
+    "WebhookAuthError",  # Backward compatibility alias
 ]
 
 # Version information
