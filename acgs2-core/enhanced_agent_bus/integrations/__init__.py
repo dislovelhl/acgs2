@@ -36,13 +36,42 @@ import os
 # Constitutional hash for governance validation
 CONSTITUTIONAL_HASH = os.environ.get("CONSTITUTIONAL_HASH", "cdd01ef066bc6cf2")
 
-# Imports will be added as integration clients are implemented
-# from .ml_governance import MLGovernanceClient, MLGovernanceConfig
+# Import ML Governance integration client
+from .ml_governance import (
+    CircuitState,
+    MLGovernanceClient,
+    MLGovernanceConfig,
+    MLGovernanceConnectionError,
+    MLGovernanceError,
+    MLGovernanceTimeoutError,
+    OutcomeReport,
+    OutcomeReportStatus,
+    OutcomeResult,
+    close_ml_governance_client,
+    get_ml_governance_client,
+    initialize_ml_governance_client,
+    report_outcome,
+)
 
 __all__ = [
     # Constants
     "CONSTITUTIONAL_HASH",
-    # Integration clients (to be added in subtask-8-2)
-    # "MLGovernanceClient",
-    # "MLGovernanceConfig",
+    # ML Governance Client
+    "MLGovernanceClient",
+    "MLGovernanceConfig",
+    "MLGovernanceError",
+    "MLGovernanceConnectionError",
+    "MLGovernanceTimeoutError",
+    # Data types
+    "OutcomeReport",
+    "OutcomeResult",
+    # Enums
+    "CircuitState",
+    "OutcomeReportStatus",
+    # Global instance functions
+    "get_ml_governance_client",
+    "initialize_ml_governance_client",
+    "close_ml_governance_client",
+    # Convenience function
+    "report_outcome",
 ]
