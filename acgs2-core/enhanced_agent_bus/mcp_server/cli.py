@@ -38,10 +38,10 @@ def main():
     server = create_mcp_server(config=config)
 
     try:
-        print(f"Starting ACGS-2 MCP Server (Transport: {args.transport})", file=sys.stderr)
+        logger.info(f"Starting ACGS-2 MCP Server (Transport: {args.transport})")
         asyncio.run(server.start())
     except KeyboardInterrupt:
-        print("\nShutdown signal received", file=sys.stderr)
+        logger.info("\nShutdown signal received")
     finally:
         # Stop is handled inside start()'s finally block or similar,
         # but we ensure it's called if we were managing the loop ourselves.
