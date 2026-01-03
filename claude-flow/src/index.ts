@@ -7,8 +7,19 @@ import { swarmCommand } from './commands/swarm';
 import { analyzeCommand } from './commands/analyze';
 import { taskCommand } from './commands/task';
 import { coordinationCommand } from './commands/coordination';
+import { getMemoryService } from './services/memory';
 
 const program = new Command();
+
+// Initialize MemoryService (non-blocking - CLI works even if Redis unavailable)
+const memoryService = getMemoryService();
+memoryService.initialize().catch((error) => {
+  // Silently continue - MemoryService will operate in degraded mode
+  // Commands that require memory will check connection state
+  if (process.env.DEBUG === 'true') {
+    process.stderr.write(chalk.yellow(`[MemoryService] Redis unavailable: ${error.message}\n`));
+  }
+});
 
 program
   .name('claude-flow')
@@ -41,5 +52,16 @@ process.on('uncaughtException', (error) => {
   console.error(chalk.red('Uncaught exception:'), error);
   process.exit(1);
 });
+
+// Graceful shutdown handler for MemoryService
+const gracefulShutdown = async (signal: string): Promise<void> => {
+  if (memoryService.isConnected()) {
+    await memoryService.disconnect();
+  }
+  process.exit(0);
+};
+
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 
 program.parse();
