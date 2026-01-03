@@ -4,36 +4,13 @@
  *
  * Displays performance and system metrics as charts.
  * Optimized with React.memo and useMemo for expensive chart data processing.
+ * Uses visx charting library (~40KB vs ~150KB recharts).
  */
 
-import { memo, useMemo, lazy, Suspense } from "react";
+import { memo, useMemo } from "react";
 import type { MetricsResponse, SystemMetrics } from "../types/api";
-
-// Lazy load Recharts components - they're heavy (~200KB)
-const LazyLineChart = lazy(() =>
-  import("recharts").then((mod) => ({ default: mod.LineChart }))
-);
-const LazyLine = lazy(() =>
-  import("recharts").then((mod) => ({ default: mod.Line }))
-);
-const LazyXAxis = lazy(() =>
-  import("recharts").then((mod) => ({ default: mod.XAxis }))
-);
-const LazyYAxis = lazy(() =>
-  import("recharts").then((mod) => ({ default: mod.YAxis }))
-);
-const LazyCartesianGrid = lazy(() =>
-  import("recharts").then((mod) => ({ default: mod.CartesianGrid }))
-);
-const LazyTooltip = lazy(() =>
-  import("recharts").then((mod) => ({ default: mod.Tooltip }))
-);
-const LazyResponsiveContainer = lazy(() =>
-  import("recharts").then((mod) => ({ default: mod.ResponsiveContainer }))
-);
-const LazyLegend = lazy(() =>
-  import("recharts").then((mod) => ({ default: mod.Legend }))
-);
+import { ResponsiveChart, LineChart } from "./charts";
+import type { LineSeries } from "./charts/types";
 
 interface MetricsChartProps {
   metrics: MetricsResponse | null;
@@ -49,28 +26,12 @@ const formatTime = (timestamp: string): string => {
   });
 };
 
-// Static tooltip style - defined outside to avoid recreation
-const tooltipStyle = {
-  backgroundColor: "white",
-  border: "1px solid #e5e7eb",
-  borderRadius: "0.375rem",
-} as const;
-
 // Loading skeleton component
 const ChartSkeleton = memo(function ChartSkeleton() {
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
       <div className="h-8 bg-gray-200 rounded w-1/4 mb-4 animate-pulse" />
       <div className="h-64 bg-gray-200 rounded animate-pulse" />
-    </div>
-  );
-});
-
-// Chart loading fallback
-const ChartLoadingFallback = memo(function ChartLoadingFallback() {
-  return (
-    <div className="h-64 flex items-center justify-center bg-gray-50 rounded-lg">
-      <div className="text-gray-500">Loading chart...</div>
     </div>
   );
 });
@@ -105,6 +66,7 @@ function MetricsChartComponent({ metrics, loading }: MetricsChartProps): JSX.Ele
     if (!metrics) return [];
 
     const data = metrics.history.map((m: SystemMetrics) => ({
+      timestamp: new Date(m.timestamp),
       time: formatTime(m.timestamp),
       cpu: m.cpu_percent,
       memory: m.memory_percent,
@@ -113,6 +75,7 @@ function MetricsChartComponent({ metrics, loading }: MetricsChartProps): JSX.Ele
 
     // Add current metrics at the end
     data.push({
+      timestamp: new Date(metrics.system.timestamp),
       time: formatTime(metrics.system.timestamp),
       cpu: metrics.system.cpu_percent,
       memory: metrics.system.memory_percent,
@@ -121,6 +84,31 @@ function MetricsChartComponent({ metrics, loading }: MetricsChartProps): JSX.Ele
 
     return data;
   }, [metrics]);
+
+  // Define line series configuration
+  const lineSeries = useMemo<LineSeries[]>(() => [
+    {
+      dataKey: 'cpu',
+      label: 'CPU',
+      stroke: '#3b82f6',
+      strokeWidth: 2,
+      type: 'monotone',
+    },
+    {
+      dataKey: 'memory',
+      label: 'Memory',
+      stroke: '#a855f7',
+      strokeWidth: 2,
+      type: 'monotone',
+    },
+    {
+      dataKey: 'disk',
+      label: 'Disk',
+      stroke: '#f97316',
+      strokeWidth: 2,
+      type: 'monotone',
+    },
+  ], []);
 
   // Memoize formatted performance values
   const performanceValues = useMemo(() => {
@@ -163,56 +151,69 @@ function MetricsChartComponent({ metrics, loading }: MetricsChartProps): JSX.Ele
         />
       </div>
 
-      {/* Metrics Chart with lazy loading */}
+      {/* Metrics Chart */}
       <div className="h-64">
         {chartData.length > 1 ? (
-          <Suspense fallback={<ChartLoadingFallback />}>
-            <LazyResponsiveContainer width="100%" height="100%">
-              <LazyLineChart data={chartData}>
-                <LazyCartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                <LazyXAxis
-                  dataKey="time"
-                  tick={{ fontSize: 12 }}
-                  stroke="#6b7280"
-                />
-                <LazyYAxis
-                  domain={[0, 100]}
-                  tick={{ fontSize: 12 }}
-                  stroke="#6b7280"
-                  unit="%"
-                />
-                <LazyTooltip contentStyle={tooltipStyle} />
-                <LazyLegend />
-                <LazyLine
-                  type="monotone"
-                  dataKey="cpu"
-                  name="CPU"
-                  stroke="#3b82f6"
-                  strokeWidth={2}
-                  dot={false}
-                  isAnimationActive={false}
-                />
-                <LazyLine
-                  type="monotone"
-                  dataKey="memory"
-                  name="Memory"
-                  stroke="#a855f7"
-                  strokeWidth={2}
-                  dot={false}
-                  isAnimationActive={false}
-                />
-                <LazyLine
-                  type="monotone"
-                  dataKey="disk"
-                  name="Disk"
-                  stroke="#f97316"
-                  strokeWidth={2}
-                  dot={false}
-                  isAnimationActive={false}
-                />
-              </LazyLineChart>
-            </LazyResponsiveContainer>
-          </Suspense>
+          <ResponsiveChart>
+            {({ width, height }) => (
+              <LineChart
+                data={chartData}
+                width={width}
+                height={height}
+                xKey="timestamp"
+                series={lineSeries}
+                xScaleType="time"
+                showGrid={true}
+                gridColor="#e5e7eb"
+                showLegend={true}
+                xAxis={{
+                  tickColor: '#6b7280',
+                  tickFontSize: 12,
+                  stroke: '#6b7280',
+                  tickFormatter: (value) => {
+                    if (value instanceof Date) {
+                      return formatTime(value.toISOString());
+                    }
+                    return String(value);
+                  },
+                }}
+                yAxis={{
+                  domain: [0, 100],
+                  tickColor: '#6b7280',
+                  tickFontSize: 12,
+                  stroke: '#6b7280',
+                  tickFormatter: (value) => `${value}%`,
+                }}
+                tooltip={(data) => (
+                  <div>
+                    <div className="text-xs font-semibold mb-1 text-gray-700">
+                      {data.time}
+                    </div>
+                    <div className="space-y-1 text-xs">
+                      <div className="flex items-center justify-between gap-4">
+                        <span className="text-gray-600">CPU:</span>
+                        <span className="font-semibold" style={{ color: '#3b82f6' }}>
+                          {typeof data.cpu === 'number' ? data.cpu.toFixed(1) : data.cpu}%
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between gap-4">
+                        <span className="text-gray-600">Memory:</span>
+                        <span className="font-semibold" style={{ color: '#a855f7' }}>
+                          {typeof data.memory === 'number' ? data.memory.toFixed(1) : data.memory}%
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between gap-4">
+                        <span className="text-gray-600">Disk:</span>
+                        <span className="font-semibold" style={{ color: '#f97316' }}>
+                          {typeof data.disk === 'number' ? data.disk.toFixed(1) : data.disk}%
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              />
+            )}
+          </ResponsiveChart>
         ) : (
           <div className="flex items-center justify-center h-full text-gray-500">
             Collecting metrics data...
