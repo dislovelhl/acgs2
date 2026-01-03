@@ -134,11 +134,13 @@ class SolanaClient:
 
         if self.live:
             logger.info(
-                f"[{CONSTITUTIONAL_HASH}] Initializing Solana client in LIVE mode for {self.network}"
+                f"[{CONSTITUTIONAL_HASH}] Initializing Solana client in LIVE "
+                f"mode for {self.network}"
             )
         else:
             logger.info(
-                f"[{CONSTITUTIONAL_HASH}] Initializing Solana client in MOCK mode for {self.network}"
+                f"[{CONSTITUTIONAL_HASH}] Initializing Solana client in MOCK "
+                f"mode for {self.network}"
             )
 
     async def _load_wallet(self) -> bool:
@@ -200,21 +202,23 @@ class SolanaClient:
                 if len(self.rpc_clients) > 1:
                     self.current_rpc_index = (self.current_rpc_index + 1) % len(self.rpc_clients)
                     self.failover_count += 1
+                    current_url = self.rpc_urls[self.current_rpc_index]
                     logger.warning(
-                        f"[{CONSTITUTIONAL_HASH}] RPC Failover: Switching to {self.rpc_urls[self.current_rpc_index]} "
+                        f"[{CONSTITUTIONAL_HASH}] RPC Failover: Switching to {current_url} "
                         f"due to error: {e}"
                     )
 
                 if i < self.retry_count:
                     wait_time = self.retry_delay * (2**i)
                     logger.warning(
-                        f"[{CONSTITUTIONAL_HASH}] Solana RPC call '{func_name}' failed (attempt {i + 1}): {e}. "
-                        f"Retrying in {wait_time:.1f}s..."
+                        f"[{CONSTITUTIONAL_HASH}] Solana RPC call '{func_name}' "
+                        f"failed (attempt {i + 1}): {e}. Retrying in {wait_time:.1f}s..."
                     )
                     await asyncio.sleep(wait_time)
                 else:
                     logger.error(
-                        f"[{CONSTITUTIONAL_HASH}] Solana RPC call '{func_name}' failed after {self.retry_count} retries: {e}"
+                        f"[{CONSTITUTIONAL_HASH}] Solana RPC call '{func_name}' "
+                        f"failed after {self.retry_count} retries: {e}"
                     )
 
         raise last_exception if last_exception else Exception("Unknown RPC error")
@@ -268,7 +272,8 @@ class SolanaClient:
             await asyncio.sleep(0.1)
             tx_signature = f"sol_mock_sig_{int(time.time())}_{batch_data['batch_id']}"
             logger.info(
-                f"[{CONSTITUTIONAL_HASH}] MOCK: Submitted audit batch {batch_data['batch_id']} to Solana"
+                f"[{CONSTITUTIONAL_HASH}] MOCK: Submitted audit batch "
+                f"{batch_data['batch_id']} to Solana"
             )
             return tx_signature
 
@@ -315,7 +320,8 @@ class SolanaClient:
             if resp and resp.value:
                 tx_sig = str(resp.value)
                 logger.info(
-                    f"[{CONSTITUTIONAL_HASH}] Transaction sent for batch {batch_data['batch_id']}. SIG: {tx_sig}"
+                    f"[{CONSTITUTIONAL_HASH}] Transaction sent for batch "
+                    f"{batch_data['batch_id']}. SIG: {tx_sig}"
                 )
 
                 # 5. 等待确认 (Phase 5)
@@ -328,7 +334,8 @@ class SolanaClient:
                         return None
 
                 logger.info(
-                    f"[{CONSTITUTIONAL_HASH}] Audit batch {batch_data['batch_id']} confirmed on Solana {self.network}."
+                    f"[{CONSTITUTIONAL_HASH}] Audit batch {batch_data['batch_id']} "
+                    f"confirmed on Solana {self.network}."
                 )
                 return tx_sig
 
@@ -411,8 +418,8 @@ class SolanaClient:
                             else "unknown"
                         )
                         logger.info(
-                            f"[{CONSTITUTIONAL_HASH}] Transaction {signature} confirmation status: {confirmation_status} "
-                            f"({status.confirmations} confirmations)"
+                            f"[{CONSTITUTIONAL_HASH}] Transaction {signature} confirmation status: "
+                            f"{confirmation_status} ({status.confirmations} confirmations)"
                         )
                         # 如果达到所要求的确认级别 (默认 confirmed)
                         if confirmation_status in ("confirmed", "finalized"):
@@ -421,7 +428,8 @@ class SolanaClient:
                 await asyncio.sleep(delay)
             except Exception as e:
                 logger.warning(
-                    f"[{CONSTITUTIONAL_HASH}] Error checking signature status (attempt {i + 1}): {e}"
+                    f"[{CONSTITUTIONAL_HASH}] Error checking signature status "
+                    f"(attempt {i + 1}): {e}"
                 )
                 await asyncio.sleep(delay)
 
