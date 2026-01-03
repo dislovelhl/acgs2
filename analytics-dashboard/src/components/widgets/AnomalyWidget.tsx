@@ -146,6 +146,17 @@ function formatAffectedMetrics(
  * - Displays anomalies grouped by severity
  * - Supports severity filtering
  * - Shows affected metrics for each anomaly
+ *
+ * @memoization Component wrapped with React.memo (see export below).
+ * Performance benefits:
+ * - Widget has no props, so it only re-renders when internal state changes
+ * - Prevents unnecessary re-renders when parent dashboard updates other widgets
+ * - Reduces cost of re-rendering potentially large anomaly lists
+ *
+ * Memoization strategy:
+ * - Component level: React.memo prevents re-renders from parent
+ * - API calls: useCallback stabilizes fetchAnomalies with severityFilter dependency
+ * - Filter interactions: Severity filter triggers intentional re-fetches
  */
 function AnomalyWidgetComponent(): JSX.Element {
   const [data, setData] = useState<AnomaliesResponse | null>(null);
@@ -155,6 +166,13 @@ function AnomalyWidgetComponent(): JSX.Element {
 
   /**
    * Fetches anomaly data from the API
+   *
+   * @memoization Wrapped with useCallback to maintain stable function reference.
+   * Performance benefits:
+   * - Prevents useEffect from re-fetching on every render
+   * - Dependency on severityFilter ensures re-fetch only when filter changes
+   * - Allows useEffect to properly track when API calls are needed
+   * - Reduces unnecessary API calls and network traffic
    */
   const fetchAnomalies = useCallback(async () => {
     setLoadingState("loading");
@@ -470,7 +488,21 @@ function AnomalyWidgetComponent(): JSX.Element {
 
 /**
  * Memoized AnomalyWidget to prevent unnecessary re-renders
+ *
+ * @memoization Wrapped with React.memo for performance optimization.
  * The component has no props, so it will only re-render when its internal state changes
+ * (data, loadingState, error, severityFilter).
+ *
+ * Performance benefits:
+ * - Prevents re-renders when sibling widgets update in the dashboard
+ * - Isolates state changes to only this widget's data
+ * - Particularly important for lists with multiple anomaly items
+ * - Each anomaly card contains formatted metrics and color calculations
+ *
+ * Future maintainers:
+ * - If props are added, add custom comparison function to memo()
+ * - Consider memoizing individual anomaly cards if list becomes very large (50+ items)
+ * - Current filter buttons are intentionally not memoized (minimal overhead)
  */
 export const AnomalyWidget = memo(AnomalyWidgetComponent);
 AnomalyWidget.displayName = "AnomalyWidget";
