@@ -16,7 +16,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 from starlette.middleware.sessions import SessionMiddleware
 
-from routes import sso_router
+from routes import admin_sso_router, sso_router
 from shared.config import settings
 
 # Configure logging
@@ -213,6 +213,9 @@ async def list_services():
 
 # Include SSO router for OIDC/SAML authentication
 app.include_router(sso_router, prefix="/sso")
+
+# Include Admin SSO router for SSO provider configuration
+app.include_router(admin_sso_router, prefix="/admin/sso")
 
 
 # Proxy to Agent Bus (catch-all route - must be last)
