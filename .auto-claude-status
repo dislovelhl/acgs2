@@ -1,25 +1,25 @@
 {
   "active": true,
-  "spec": "002-multi-turn-api-support-for-pacar-verifier",
-  "state": "building",
+  "spec": "001-llm-based-intent-classification-for-high-ambiguity",
+  "state": "complete",
   "subtasks": {
-    "completed": 3,
-    "total": 18,
-    "in_progress": 1,
+    "completed": 16,
+    "total": 16,
+    "in_progress": 0,
     "failed": 0
   },
   "phase": {
-    "current": "Multi-Turn Verification Logic",
-    "id": null,
-    "total": 4
+    "current": "Performance and Security Validation",
+    "id": 5,
+    "total": 3
   },
   "workers": {
     "active": 0,
     "max": 1
   },
   "session": {
-    "number": 4,
-    "started_at": "2026-01-02T09:39:59.299414"
+    "number": 1,
+    "started_at": "2026-01-03T04:37:46.363519"
   },
-  "last_update": "2026-01-02T09:47:58.251031"
+  "last_update": "2026-01-03T04:55:58.036267"
 }

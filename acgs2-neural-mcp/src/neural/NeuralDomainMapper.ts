@@ -1,3 +1,7 @@
+import { getLogger } from '../../../../../sdk/typescript/src/utils/logger';
+const logger = getLogger('NeuralDomainMapper');
+
+
 /**
  * Neural Domain Mapper - GNN-style Domain Relationship Mapping
  *
@@ -1145,7 +1149,7 @@ export class NeuralDomainMapper extends EventEmitter {
         }
 
         // Early stopping
-        if (
+          logger.info(`Early stopping at epoch ${epoch}`;
           this.trainingConfig.earlyStoping.enabled &&
           patienceCounter >= this.trainingConfig.earlyStoping.patience
         ) {

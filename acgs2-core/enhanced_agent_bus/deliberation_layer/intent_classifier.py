@@ -157,20 +157,8 @@ class IntentClassifier:
     # Default max tokens for Anthropic (required parameter)
     DEFAULT_ANTHROPIC_MAX_TOKENS: int = 100
 
-    # LLM prompt template for intent classification
-    LLM_CLASSIFICATION_PROMPT: str = """You are an intent classification expert. Classify the following user input into one of these categories:
-- factual: Question about facts, data, history, or specific entities.
-- creative: Request for story, poem, song, or creative writing.
-- reasoning: Complex logical problem, math, or step-by-step analysis.
-- general: Simple greeting, conversational filler, or ambiguous request.
-
-User input: {content}
-
-Respond with ONLY the category name in lowercase."""
-
     def __init__(
         self,
-        config=None,
         model_name: str = "distilbert-base-uncased",
         llm_enabled: bool = True,
         llm_model_version: str = "openai/gpt-4o-mini",
@@ -182,7 +170,6 @@ Respond with ONLY the category name in lowercase."""
         """Initialize the IntentClassifier with optional LLM support.
 
         Args:
-            config: BusConfiguration object to extract settings from (preferred)
             model_name: Name of the classification model (for logging/metadata).
             llm_enabled: Whether to enable LLM-based classification for ambiguous cases.
             llm_model_version: LLM model with provider prefix (e.g., "openai/gpt-4o-mini").
@@ -191,29 +178,13 @@ Respond with ONLY the category name in lowercase."""
             llm_max_tokens: Maximum tokens for LLM response (required for Anthropic).
             redis_url: Redis URL for caching (e.g., "redis://localhost:6379/0").
         """
-        # Extract settings from config if provided
-        if config is not None:
-            # Extract LLM settings from config
-            self.model_name = getattr(config, "model_name", model_name)
-            self.llm_enabled = getattr(config, "llm_enabled", llm_enabled)
-            self.llm_model_version = getattr(config, "llm_model_version", llm_model_version)
-            self.llm_cache_ttl = getattr(config, "llm_cache_ttl", llm_cache_ttl)
-            self.llm_confidence_threshold = getattr(
-                config, "llm_confidence_threshold", llm_confidence_threshold
-            )
-            self.llm_max_tokens = getattr(config, "llm_max_tokens", llm_max_tokens)
-            self.redis_url = getattr(config, "redis_url", redis_url) or os.environ.get(
-                "REDIS_URL", "redis://localhost:6379/0"
-            )
-        else:
-            # Use direct parameters
-            self.model_name = model_name
-            self.llm_enabled = llm_enabled
-            self.llm_model_version = llm_model_version
-            self.llm_cache_ttl = llm_cache_ttl
-            self.llm_confidence_threshold = llm_confidence_threshold
-            self.llm_max_tokens = llm_max_tokens
-            self.redis_url = redis_url or os.environ.get("REDIS_URL", "redis://localhost:6379/0")
+        self.model_name = model_name
+        self.llm_enabled = llm_enabled
+        self.llm_model_version = llm_model_version
+        self.llm_cache_ttl = llm_cache_ttl
+        self.llm_confidence_threshold = llm_confidence_threshold
+        self.llm_max_tokens = llm_max_tokens
+        self.redis_url = redis_url or os.environ.get("REDIS_URL", "redis://localhost:6379/0")
 
         # LLM client state
         self._llm_client_initialized = False
@@ -313,7 +284,7 @@ Respond with ONLY the category name in lowercase."""
             )
         except Exception as e:
             logger.warning(
-                f"Failed to initialize LiteLLM Redis cache: {e}. Proceeding without caching."
+                f"Failed to initialize LiteLLM Redis cache: {e}. " "Proceeding without caching."
             )
             self._cache_initialized = False
 
@@ -451,101 +422,301 @@ Respond with ONLY the category name in lowercase."""
         # Default to general with lower confidence
         return IntentType.GENERAL, self._calculate_confidence(0, is_default=True)
 
-    async def classify_with_result(self, content: str) -> ClassificationResult:
-        """
-        Performs hybrid intent classification with optional LLM fallback.
+    # LLM prompt template for intent classification
+    LLM_CLASSIFICATION_PROMPT: str = """You are an intent classifier for a governance system. Classify the user's input into exactly one of these categories:
 
-        Uses rule-based classification first for speed. If confidence is below
-        the threshold and LLM is available, uses LLM for the final decision.
+- FACTUAL: Questions seeking specific facts, data, historical information, or verifiable answers.
+  Examples: "What is the capital of France?", "When did World War 2 end?", "How many users are in the system?"
+
+- CREATIVE: Requests for creative content, storytelling, imagination, or artistic output.
+  Examples: "Write a poem about spring", "Tell me a joke", "Create a story about a robot"
+
+- REASONING: Complex analytical tasks requiring step-by-step logic, calculations, or problem-solving.
+  Examples: "Calculate the derivative of x^2", "Explain why the sky is blue step by step", "Analyze this data"
+
+- GENERAL: Conversational inputs, greetings, or anything that doesn't fit the above categories.
+  Examples: "Hello", "How are you?", "Thanks for your help"
+
+User input: {content}
+
+Respond with ONLY a JSON object in this exact format:
+{{"intent": "FACTUAL|CREATIVE|REASONING|GENERAL", "confidence": 0.0-1.0, "reasoning": "brief explanation"}}"""
+
+    # Maximum content length to send to LLM (to control costs)
+    MAX_CONTENT_LENGTH: int = 2000
+
+    async def _invoke_llm_classification(self, content: str) -> Optional[Dict[str, Any]]:
+        """Invoke LLM for intent classification.
 
         Args:
-            content: User input text to classify.
+            content: The user input to classify.
 
         Returns:
-            ClassificationResult with intent, confidence, and routing metadata.
+            Dict with intent, confidence, and reasoning, or None on failure.
         """
-        start_time = time.time()
+        if not self.is_llm_available():
+            return None
 
-        # Handle empty input
-        if not content or not content.strip():
-            latency_ms = (time.time() - start_time) * 1000
-            return ClassificationResult(
-                intent=IntentType.GENERAL,
-                confidence=self.DEFAULT_CONFIDENCE,
-                routing_path=RoutingPath.EMPTY_INPUT,
-                latency_ms=latency_ms,
-            )
-
-        # Rule-based classification
-        rule_intent, rule_confidence = self.classify_with_confidence(content)
-
-        # Check if LLM fallback is needed
-        if rule_confidence < self.llm_confidence_threshold and self.is_llm_available():
-            llm_intent, llm_confidence, llm_reasoning = await self._classify_with_llm(content)
-
-            latency_ms = (time.time() - start_time) * 1000
-            return ClassificationResult(
-                intent=llm_intent,
-                confidence=llm_confidence,
-                routing_path=RoutingPath.LLM,
-                latency_ms=latency_ms,
-                rule_based_intent=rule_intent,
-                rule_based_confidence=rule_confidence,
-                llm_intent=llm_intent,
-                llm_confidence=llm_confidence,
-                llm_reasoning=llm_reasoning,
-            )
-
-        # Return rule-based result
-        latency_ms = (time.time() - start_time) * 1000
-        return ClassificationResult(
-            intent=rule_intent,
-            confidence=rule_confidence,
-            routing_path=RoutingPath.RULE_BASED,
-            latency_ms=latency_ms,
+        # Truncate content if too long
+        truncated_content = (
+            content[: self.MAX_CONTENT_LENGTH]
+            if len(content) > self.MAX_CONTENT_LENGTH
+            else content
         )
 
-    async def _classify_with_llm(self, content: str) -> Tuple[IntentType, float, Optional[str]]:
-        """
-        Use LLM for intent classification with error handling.
-
-        Args:
-            content: User input text to classify.
-
-        Returns:
-            Tuple of (IntentType, confidence, reasoning).
-        """
         try:
-            prompt = self.LLM_CLASSIFICATION_PROMPT.format(content=content)
+            # Prepare the prompt
+            prompt = self.LLM_CLASSIFICATION_PROMPT.format(content=truncated_content)
+
+            # Get LLM parameters
             params = self._get_llm_params()
-            params["messages"] = [{"role": "user", "content": prompt}]
 
-            response = await litellm.acompletion(**params)
-
-            # Parse response
-            response_text = (
-                response.get("choices", [{}])[0]
-                .get("message", {})
-                .get("content", "")
-                .lower()
-                .strip()
+            # Call LiteLLM acompletion
+            response = await litellm.acompletion(
+                messages=[{"role": "user", "content": prompt}],
+                **params,
             )
 
-            # Map response to IntentType
-            for intent_type in IntentType:
-                if intent_type.value in response_text:
-                    return intent_type, 0.9, response_text
+            # Extract response content
+            if not response or not response.get("choices"):
+                logger.warning("Empty LLM response received")
+                return None
 
-            # Fallback to general if parsing fails
-            return IntentType.GENERAL, 0.5, response_text
+            response_content = response["choices"][0]["message"]["content"]
+
+            # Parse JSON response
+            try:
+                result = json.loads(response_content.strip())
+                return result
+            except json.JSONDecodeError as e:
+                logger.warning(f"Failed to parse LLM response as JSON: {e}")
+                # Try to extract intent from plain text response
+                response_upper = response_content.upper()
+                for intent_type in IntentType:
+                    if intent_type.name in response_upper:
+                        return {
+                            "intent": intent_type.name,
+                            "confidence": 0.7,
+                            "reasoning": "Extracted from text",
+                        }
+                return None
 
         except Exception as e:
-            logger.warning(f"LLM classification failed: {e}. Falling back to rule-based.")
-            return IntentType.GENERAL, 0.5, None
+            logger.error(f"LLM classification failed: {e}")
+            return None
+
+    def _parse_llm_intent(self, llm_result: Dict[str, Any]) -> Optional[IntentType]:
+        """Parse LLM result to extract IntentType.
+
+        Args:
+            llm_result: Dict containing intent classification from LLM.
+
+        Returns:
+            IntentType if valid intent found, None otherwise.
+        """
+        intent_str = llm_result.get("intent", "").upper()
+
+        # Map string to IntentType enum
+        intent_map = {
+            "FACTUAL": IntentType.FACTUAL,
+            "CREATIVE": IntentType.CREATIVE,
+            "REASONING": IntentType.REASONING,
+            "GENERAL": IntentType.GENERAL,
+        }
+
+        return intent_map.get(intent_str)
 
     async def classify_async(
         self, content: str, context: Optional[Dict[str, Any]] = None
     ) -> IntentType:
-        """Asynchronous classification with optional context/LLM fallback."""
-        result = await self.classify_with_result(content)
-        return result.intent
+        """Asynchronous classification with optional context/LLM fallback.
+
+        Uses hybrid classification strategy:
+        1. First attempts rule-based classification with confidence scoring
+        2. If confidence is below threshold and LLM is available, invokes LLM
+        3. Falls back to rule-based result on LLM failure
+
+        Args:
+            content: The user input to classify.
+            context: Optional context dict (reserved for future use).
+
+        Returns:
+            IntentType classification result.
+        """
+        # Handle empty/whitespace input - return GENERAL without invoking LLM
+        if not content or not content.strip():
+            logger.debug("Empty input received, returning GENERAL intent")
+            return IntentType.GENERAL
+
+        # Step 1: Get rule-based classification with confidence
+        rule_based_intent, confidence = self.classify_with_confidence(content)
+
+        # Step 2: Check if LLM should be invoked (low confidence + LLM available)
+        if confidence >= self.llm_confidence_threshold:
+            # High confidence - use rule-based result (fast path)
+            logger.debug(
+                f"High confidence ({confidence:.2f}) rule-based classification: {rule_based_intent.value}"
+            )
+            return rule_based_intent
+
+        # Step 3: Low confidence - try LLM classification if available
+        if not self.is_llm_available():
+            logger.debug(
+                f"LLM not available, using rule-based result with low confidence ({confidence:.2f})"
+            )
+            return rule_based_intent
+
+        logger.debug(f"Low confidence ({confidence:.2f}), invoking LLM classification")
+
+        # Step 4: Invoke LLM
+        llm_result = await self._invoke_llm_classification(content)
+
+        if llm_result:
+            # Parse LLM result
+            llm_intent = self._parse_llm_intent(llm_result)
+            if llm_intent:
+                llm_confidence = llm_result.get("confidence", 0.8)
+                logger.info(
+                    f"LLM classification: {llm_intent.value} "
+                    f"(confidence: {llm_confidence:.2f}, reasoning: {llm_result.get('reasoning', 'N/A')})"
+                )
+                return llm_intent
+
+        # Step 5: Fallback to rule-based on LLM failure
+        logger.warning(
+            f"LLM classification failed, falling back to rule-based: {rule_based_intent.value}"
+        )
+        return rule_based_intent
+
+    async def classify_async_with_metadata(
+        self, content: str, context: Optional[Dict[str, Any]] = None
+    ) -> ClassificationResult:
+        """Asynchronous classification with full routing metadata.
+
+        Provides detailed information about the classification decision,
+        including which routing path was used, timing, and confidence scores.
+        This method is useful for monitoring, debugging, and A/B testing.
+
+        Uses hybrid classification strategy:
+        1. First attempts rule-based classification with confidence scoring
+        2. If confidence is below threshold and LLM is available, invokes LLM
+        3. Falls back to rule-based result on LLM failure
+
+        Args:
+            content: The user input to classify.
+            context: Optional context dict (reserved for future use).
+
+        Returns:
+            ClassificationResult with intent, confidence, routing path, and timing.
+        """
+        start_time = time.perf_counter()
+
+        # Handle empty/whitespace input - return GENERAL without invoking LLM
+        if not content or not content.strip():
+            latency_ms = (time.perf_counter() - start_time) * 1000
+            logger.debug(
+                f"[ROUTING] Empty input -> GENERAL (path=empty_input, latency={latency_ms:.3f}ms)"
+            )
+            return ClassificationResult(
+                intent=IntentType.GENERAL,
+                confidence=1.0,
+                routing_path=RoutingPath.EMPTY_INPUT,
+                latency_ms=latency_ms,
+            )
+
+        # Step 1: Get rule-based classification with confidence
+        rule_start = time.perf_counter()
+        rule_based_intent, rule_confidence = self.classify_with_confidence(content)
+        rule_latency_ms = (time.perf_counter() - rule_start) * 1000
+
+        # Step 2: Check if LLM should be invoked (low confidence + LLM available)
+        if rule_confidence >= self.llm_confidence_threshold:
+            # High confidence - use rule-based result (fast path)
+            latency_ms = (time.perf_counter() - start_time) * 1000
+            logger.info(
+                f"[ROUTING] High confidence rule-based -> {rule_based_intent.value} "
+                f"(path=rule_based, confidence={rule_confidence:.2f}, latency={latency_ms:.3f}ms)"
+            )
+            return ClassificationResult(
+                intent=rule_based_intent,
+                confidence=rule_confidence,
+                routing_path=RoutingPath.RULE_BASED,
+                latency_ms=latency_ms,
+                rule_based_intent=rule_based_intent,
+                rule_based_confidence=rule_confidence,
+            )
+
+        # Step 3: Low confidence - try LLM classification if available
+        if not self.is_llm_available():
+            latency_ms = (time.perf_counter() - start_time) * 1000
+            logger.info(
+                f"[ROUTING] LLM unavailable, using rule-based -> {rule_based_intent.value} "
+                f"(path=rule_based, confidence={rule_confidence:.2f}, latency={latency_ms:.3f}ms)"
+            )
+            return ClassificationResult(
+                intent=rule_based_intent,
+                confidence=rule_confidence,
+                routing_path=RoutingPath.RULE_BASED,
+                latency_ms=latency_ms,
+                rule_based_intent=rule_based_intent,
+                rule_based_confidence=rule_confidence,
+            )
+
+        logger.debug(
+            f"[ROUTING] Low confidence ({rule_confidence:.2f}), invoking LLM "
+            f"(rule_based={rule_based_intent.value}, latency_so_far={rule_latency_ms:.3f}ms)"
+        )
+
+        # Step 4: Invoke LLM
+        llm_start = time.perf_counter()
+        llm_result = await self._invoke_llm_classification(content)
+        llm_latency_ms = (time.perf_counter() - llm_start) * 1000
+
+        if llm_result:
+            # Parse LLM result
+            llm_intent = self._parse_llm_intent(llm_result)
+            if llm_intent:
+                llm_confidence = llm_result.get("confidence", 0.8)
+                llm_reasoning = llm_result.get("reasoning", "N/A")
+                latency_ms = (time.perf_counter() - start_time) * 1000
+
+                # Determine if this was a cache hit (very fast LLM response)
+                # Typically cache hits are <10ms, uncached calls are >100ms
+                is_cached = llm_latency_ms < 50
+
+                logger.info(
+                    f"[ROUTING] LLM classification -> {llm_intent.value} "
+                    f"(path=llm, confidence={llm_confidence:.2f}, "
+                    f"latency={latency_ms:.3f}ms, llm_latency={llm_latency_ms:.3f}ms, "
+                    f"cached={is_cached}, reasoning='{llm_reasoning}')"
+                )
+
+                return ClassificationResult(
+                    intent=llm_intent,
+                    confidence=llm_confidence,
+                    routing_path=RoutingPath.LLM,
+                    latency_ms=latency_ms,
+                    rule_based_intent=rule_based_intent,
+                    rule_based_confidence=rule_confidence,
+                    llm_intent=llm_intent,
+                    llm_confidence=llm_confidence,
+                    llm_reasoning=llm_reasoning,
+                    cached=is_cached,
+                )
+
+        # Step 5: Fallback to rule-based on LLM failure
+        latency_ms = (time.perf_counter() - start_time) * 1000
+        logger.warning(
+            f"[ROUTING] LLM failed, fallback to rule-based -> {rule_based_intent.value} "
+            f"(path=llm_fallback, confidence={rule_confidence:.2f}, "
+            f"latency={latency_ms:.3f}ms, llm_latency={llm_latency_ms:.3f}ms)"
+        )
+
+        return ClassificationResult(
+            intent=rule_based_intent,
+            confidence=rule_confidence,
+            routing_path=RoutingPath.LLM_FALLBACK,
+            latency_ms=latency_ms,
+            rule_based_intent=rule_based_intent,
+            rule_based_confidence=rule_confidence,
+        )

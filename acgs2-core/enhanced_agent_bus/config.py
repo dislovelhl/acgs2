@@ -92,7 +92,6 @@ class BusConfiguration:
     llm_cache_ttl: int = 3600  # seconds
     llm_confidence_threshold: float = 0.7  # Below this, use LLM
     llm_max_tokens: int = 100  # Required for Anthropic models
-    llm_use_cache: bool = True
 
     # A/B testing settings for LLM vs rule-based comparison
     enable_ab_testing: bool = False
@@ -159,37 +158,59 @@ class BusConfiguration:
             USE_REDIS_REGISTRY: Use Redis registry (true/false)
             USE_RUST_BACKEND: Enable Rust backend (true/false)
             METERING_ENABLED: Enable metering (true/false)
-            MACI_ENABLED: Enable MACI (true/false)
-            MACI_STRICT_MODE: MACI strict mode (true/false)
             LLM_ENABLED: Enable LLM classification (true/false)
             LLM_MODEL_VERSION: LLM model version (e.g., openai/gpt-4o-mini)
             LLM_CACHE_TTL: LLM cache TTL in seconds
             LLM_CONFIDENCE_THRESHOLD: Confidence threshold for LLM fallback (0.0-1.0)
             LLM_MAX_TOKENS: Maximum tokens for LLM response
-            LLM_USE_CACHE: Enable LLM response caching (true/false)
             ENABLE_AB_TESTING: Enable A/B testing (true/false)
             AB_TEST_LLM_PERCENTAGE: Percentage of ambiguous cases for LLM (0-100)
         """
-        config = cls(
-            redis_url=os.getenv("REDIS_URL", DEFAULT_REDIS_URL),
-            kafka_bootstrap_servers=os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092"),
-            audit_service_url=os.getenv("AUDIT_SERVICE_URL", "http://localhost:8001"),
-            use_dynamic_policy=cls._parse_bool(os.getenv("USE_DYNAMIC_POLICY", "false")),
-            policy_fail_closed=cls._parse_bool(os.getenv("POLICY_FAIL_CLOSED", "true")),
-            use_kafka=cls._parse_bool(os.getenv("USE_KAFKA", "false")),
-            use_redis_registry=cls._parse_bool(os.getenv("USE_REDIS_REGISTRY", "false")),
-            use_rust=cls._parse_bool(os.getenv("USE_RUST", "true")),
-            enable_metering=cls._parse_bool(os.getenv("ENABLE_METERING", "true")),
-            enable_maci=cls._parse_bool(os.getenv("ENABLE_MACI", "true")),
-            maci_strict_mode=cls._parse_bool(os.getenv("MACI_STRICT_MODE", "true")),
-            llm_enabled=cls._parse_bool(os.getenv("LLM_ENABLED", "true")),
-            llm_model_version=os.getenv("LLM_MODEL_VERSION", "openai/gpt-4o-mini"),
-            llm_cache_ttl=cls._parse_int(os.getenv("LLM_CACHE_TTL"), 3600),
-            llm_confidence_threshold=cls._parse_float(os.getenv("LLM_CONFIDENCE_THRESHOLD"), 0.7),
-            llm_max_tokens=cls._parse_int(os.getenv("LLM_MAX_TOKENS"), 100),
-            llm_use_cache=cls._parse_bool(os.getenv("LLM_USE_CACHE", "true")),
-            enable_ab_testing=cls._parse_bool(os.getenv("ENABLE_AB_TESTING", "false")),
-            ab_test_llm_percentage=cls._parse_int(os.getenv("AB_TEST_LLM_PERCENTAGE"), 20),
+        import os
+
+        def _parse_bool(value: Optional[str], default: bool = False) -> bool:
+            if value is None:
+                return default
+            return value.lower() in ("true", "1", "yes", "on")
+
+        def _parse_int(value: Optional[str], default: int) -> int:
+            if value is None:
+                return default
+            try:
+                return int(value)
+            except ValueError:
+                return default
+
+        def _parse_float(value: Optional[str], default: float) -> float:
+            if value is None:
+                return default
+            try:
+                return float(value)
+            except ValueError:
+                return default
+
+        return cls(
+            redis_url=os.environ.get("REDIS_URL", DEFAULT_REDIS_URL),
+            kafka_bootstrap_servers=os.environ.get("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092"),
+            audit_service_url=os.environ.get("AUDIT_SERVICE_URL", "http://localhost:8001"),
+            use_dynamic_policy=_parse_bool(os.environ.get("USE_DYNAMIC_POLICY"), False),
+            policy_fail_closed=_parse_bool(os.environ.get("POLICY_FAIL_CLOSED"), False),
+            use_kafka=_parse_bool(os.environ.get("USE_KAFKA"), False),
+            use_redis_registry=_parse_bool(os.environ.get("USE_REDIS_REGISTRY"), False),
+            use_rust=_parse_bool(os.environ.get("USE_RUST_BACKEND"), True),
+            enable_metering=_parse_bool(os.environ.get("METERING_ENABLED"), True),
+            # SECURITY FIX: Default to True per audit finding 2025-12
+            enable_maci=_parse_bool(os.environ.get("MACI_ENABLED"), True),
+            maci_strict_mode=_parse_bool(os.environ.get("MACI_STRICT_MODE"), True),
+            # LLM classification settings
+            llm_enabled=_parse_bool(os.environ.get("LLM_ENABLED"), True),
+            llm_model_version=os.environ.get("LLM_MODEL_VERSION", "openai/gpt-4o-mini"),
+            llm_cache_ttl=_parse_int(os.environ.get("LLM_CACHE_TTL"), 3600),
+            llm_confidence_threshold=_parse_float(os.environ.get("LLM_CONFIDENCE_THRESHOLD"), 0.7),
+            llm_max_tokens=_parse_int(os.environ.get("LLM_MAX_TOKENS"), 100),
+            # A/B testing settings
+            enable_ab_testing=_parse_bool(os.environ.get("ENABLE_AB_TESTING"), False),
+            ab_test_llm_percentage=_parse_int(os.environ.get("AB_TEST_LLM_PERCENTAGE"), 20),
         )
 
         # Initialize LiteLLM Cache if enabled
@@ -227,8 +248,8 @@ class BusConfiguration:
             enable_metering=False,
             enable_maci=False,
             maci_strict_mode=False,
+            # Disable LLM for testing to avoid external API calls
             llm_enabled=False,
-            llm_use_cache=False,
             enable_ab_testing=False,
         )
 
@@ -247,9 +268,9 @@ class BusConfiguration:
             enable_metering=True,
             enable_maci=True,
             maci_strict_mode=True,
+            # Enable LLM classification for production
             llm_enabled=True,
             llm_confidence_threshold=0.7,
-            llm_use_cache=True,
             enable_ab_testing=False,
         )
 
@@ -284,14 +305,16 @@ class BusConfiguration:
             "enable_maci": self.enable_maci,
             "maci_strict_mode": self.maci_strict_mode,
             "constitutional_hash": self.constitutional_hash,
+            # LLM classification settings
             "llm_enabled": self.llm_enabled,
             "llm_model_version": self.llm_model_version,
             "llm_cache_ttl": self.llm_cache_ttl,
             "llm_confidence_threshold": self.llm_confidence_threshold,
             "llm_max_tokens": self.llm_max_tokens,
-            "llm_use_cache": self.llm_use_cache,
+            # A/B testing settings
             "enable_ab_testing": self.enable_ab_testing,
             "ab_test_llm_percentage": self.ab_test_llm_percentage,
+            # Dependency injection status
             "has_custom_registry": self.registry is not None,
             "has_custom_router": self.router is not None,
             "has_custom_validator": self.validator is not None,
