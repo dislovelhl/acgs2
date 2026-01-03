@@ -187,7 +187,7 @@ import { GovernanceService } from './services/governance';
 import { HITLApprovalsService } from './services/hitl-approvals';
 import { MLGovernanceService } from './services/ml-governance';
 import { CONSTITUTIONAL_HASH } from './types';
-import { createLogger, silentLogger, Logger } from './utils';
+import { createLogger, silentLogger } from './utils';
 
 /**
  * ACGS-2 SDK instance with all services pre-configured
@@ -246,7 +246,7 @@ export interface ACGS2SDK {
  * ```
  */
 export function createACGS2SDK(config: ClientConfig): ACGS2SDK {
-  const logger = config.logger ?? (process.env.NODE_ENV === 'development' ? createLogger() : silentLogger);
+  const logger = config.logger ?? (process.env['NODE_ENV'] === 'development' ? createLogger() : silentLogger);
   const client = new ACGS2Client({ ...config, logger });
 
   return {

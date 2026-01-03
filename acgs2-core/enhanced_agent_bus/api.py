@@ -237,5 +237,9 @@ if __name__ == "__main__":
         host="0.0.0.0",
         port=8000,
         reload=False,  # Disable reload to avoid import issues in containers
-        log_level="info",
+        log_level="warning",  # Reduce logging overhead for performance
+        workers=4,  # Multiple workers for better CPU utilization
+        loop="uvloop",  # Use uvloop for better async performance
+        http="httptools",  # Use httptools for better HTTP parsing performance
+        access_log=False,  # Disable access logging for performance
     )
