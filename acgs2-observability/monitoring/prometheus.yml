@@ -29,6 +29,34 @@ scrape_configs:
     scrape_interval: 10s
     metrics_path: "/metrics"
 
+  # ACGS-2 Tiered Cache Metrics (L1/L2/L3)
+  # Dedicated scrape configuration for tiered cache observability
+  # Metrics exported:
+  #   - tiered_cache_hits_total{tier="L1|L2|L3"} - Cache hits by tier
+  #   - tiered_cache_misses_total{tier="L1|L2|L3"} - Cache misses by tier
+  #   - cache_operation_duration_l1_seconds - L1 latency (<0.1ms target)
+  #   - cache_operation_duration_l2_seconds - L2 latency (1-100ms range)
+  #   - cache_operation_duration_l3_seconds - L3 latency (10-1000ms range)
+  #   - tiered_cache_promotions_total - Tier promotions (hot data to L1)
+  #   - tiered_cache_demotions_total - Tier demotions (cold data to L3)
+  #   - tiered_cache_evictions_total - Cache evictions by tier
+  #   - tiered_cache_tier_health - Tier health status (1=healthy, 0=unhealthy)
+  #   - tiered_cache_fallback_total - Fallback events (Redis unavailable)
+  #   - tiered_cache_warming_keys_loaded_total - Cache warming metrics
+  - job_name: "acgs2-core-tiered-cache"
+    static_configs:
+      - targets: ["enhanced-agent-bus:8000"]
+        labels:
+          service: "acgs2-core"
+          component: "tiered-cache"
+    scrape_interval: 5s
+    metrics_path: "/metrics"
+    metric_relabel_configs:
+      # Keep only tiered cache related metrics for this job
+      - source_labels: [__name__]
+        regex: "(tiered_cache_.*|cache_operation_duration_l[123]_seconds.*)"
+        action: keep
+
   - job_name: "acgs2-core-services"
     static_configs:
       - targets:
