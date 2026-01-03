@@ -593,17 +593,84 @@ class SafetyBoundsChecker:
                 except (AttributeError, TypeError):
                     current_accuracy = 0.0
 
-            # FAILURE MODE 1: FAILED_ACCURACY
+            # FAILURE MODE 1: FAILED_ACCURACY (Absolute Threshold Violation)
             #
             # Check if accuracy is below absolute threshold
             # This catches overall model performance degradation
             #
-            # Why accuracy_threshold=0.85 for governance?
-            # - Governance systems require high accuracy (access control is safety-critical)
-            # - 85% balances precision/recall for typical imbalanced governance data
-            # - Lower than 85% means too many false positives (denied access) or
-            #   false negatives (improper access granted)
-            # - Conservative threshold appropriate for compliance requirements
+            # ACCURACY THRESHOLD SELECTION: Why accuracy_threshold=0.85 for governance?
+            # =========================================================================
+            #
+            # The 0.85 threshold represents a carefully chosen balance between safety,
+            # adaptability, and operational feasibility for governance systems.
+            #
+            # 1. GOVERNANCE-SPECIFIC FALSE POSITIVE/NEGATIVE TRADE-OFFS:
+            #    In access control and governance systems:
+            #    - False Positive (FP): Granting access that should be denied
+            #      * CRITICAL SEVERITY: Security breach, compliance violation
+            #      * Exposes sensitive data to unauthorized users
+            #      * Legal/financial consequences (GDPR fines, audit failures)
+            #    - False Negative (FN): Denying access that should be granted
+            #      * MODERATE SEVERITY: User inconvenience, productivity impact
+            #      * Can be mitigated with human review/override
+            #      * Reversible with minimal long-term damage
+            #    Traditional ML often optimizes for balanced FP/FN, but governance
+            #    systems prioritize minimizing FP even at cost of higher FN.
+            #
+            # 2. WHY 85% SPECIFICALLY?
+            #    - Maximum 15% combined error rate (FP + FN)
+            #    - Typical governance model tuning:
+            #      * Optimize for high precision (minimize FP): ~5-8% FP rate
+            #      * Accept lower recall (higher FN): ~7-10% FN rate
+            #      * Overall accuracy: 85-90% range
+            #    - Lower threshold (e.g., 80%):
+            #      * 20% error rate unacceptable for compliance
+            #      * Too many false positives (data breaches)
+            #      * Undermines trust in automated governance
+            #    - Higher threshold (e.g., 90%):
+            #      * Too strict for concept drift in governance domain
+            #      * Would frequently trigger circuit breaker (excessive pausing)
+            #      * Reduces adaptability to evolving policies/roles
+            #      * Governance data often imbalanced (rare access patterns)
+            #
+            # 3. ABSOLUTE THRESHOLD IS CRITICAL FOR SAFETY:
+            #    Unlike relative checks (degradation_threshold), absolute threshold
+            #    provides a hard safety floor that model MUST maintain.
+            #    - Prevents "boiling frog" gradual degradation
+            #    - Example: Model improving from 70% → 75% → 80%
+            #      * Positive trend (improving), but 80% < 85% (REJECTED)
+            #      * Relative improvement doesn't matter if baseline is unsafe
+            #      * Must reach minimum safety level before production use
+            #    - Ensures model quality never drops below acceptable minimum
+            #    - No exceptions for "improving but still below threshold" scenarios
+            #
+            # 4. DEFENSE-IN-DEPTH WITH DEGRADATION CHECK:
+            #    Absolute threshold (0.85) + Relative degradation check (0.05) provide
+            #    comprehensive protection:
+            #    - Scenario 1: Model at 90% drops to 84%
+            #      * Fails absolute threshold (84% < 85%): FAILED_ACCURACY
+            #      * Also fails degradation check (6% > 5%): FAILED_DEGRADATION
+            #      * Both checks catch this dangerous regression
+            #    - Scenario 2: Model at 92% drops to 87%
+            #      * Passes absolute threshold (87% > 85%)
+            #      * Fails degradation check (5% ≥ 5%): FAILED_DEGRADATION
+            #      * Relative check catches regression even when above threshold
+            #    - Scenario 3: Model at 80% improves to 82%
+            #      * Fails absolute threshold (82% < 85%): FAILED_ACCURACY
+            #      * Relative check N/A (improving, not degrading)
+            #      * Absolute check prevents low-quality model deployment
+            #
+            # 5. STATISTICAL INTERPRETATION:
+            #    With min_samples_for_check=100:
+            #    - Standard Error (SE) ≈ sqrt(p(1-p)/n) = sqrt(0.85*0.15/100) ≈ 0.036
+            #    - 95% Confidence Interval: 0.85 ± 1.96*0.036 ≈ [0.78, 0.92]
+            #    - Measured 85% accuracy likely represents true 78-92% range
+            #    - Provides buffer above critical safety level (~80%)
+            #    - Reduces false alarms from statistical noise
+            #
+            # This absolute threshold acts as the primary safety net. Combined with
+            # consecutive failure tracking (circuit breaker), it prevents deployment
+            # of unsafe models while tolerating transient noise.
             if current_accuracy < self.accuracy_threshold:
                 # CIRCUIT BREAKER: Increment failure counter
                 # May transition OK → WARNING or WARNING → CRITICAL/PAUSED
@@ -668,7 +735,69 @@ class SafetyBoundsChecker:
             self._total_checks += 1
             self._last_check_time = time.time()
 
-            # Check accuracy threshold
+            # ABSOLUTE ACCURACY THRESHOLD CHECK
+            #
+            # Why accuracy_threshold=0.85 for governance?
+            # ============================================
+            #
+            # Governance systems make high-stakes decisions about data access, permissions,
+            # and policy enforcement. The 0.85 threshold is chosen based on several factors:
+            #
+            # 1. SAFETY-CRITICAL CONTEXT:
+            #    - False Negatives (FN): Model predicts "deny" but should "grant"
+            #      * Blocks legitimate user access to critical systems
+            #      * Disrupts business operations and productivity
+            #      * Lower severity than false positives in most cases
+            #    - False Positives (FP): Model predicts "grant" but should "deny"
+            #      * Exposes sensitive data to unauthorized users
+            #      * Violates compliance regulations (GDPR, HIPAA, SOC2)
+            #      * Security breach with legal/financial consequences
+            #      * Higher severity - unacceptable in governance context
+            #
+            # 2. ACCURACY THRESHOLD SELECTION RATIONALE:
+            #    - With 85% accuracy threshold:
+            #      * Maximum 15% error rate (FP + FN combined)
+            #      * Assuming balanced precision/recall: ~7.5% FP, ~7.5% FN
+            #      * In practice: Can tune model to minimize FP at cost of higher FN
+            #    - Why not higher (e.g., 90%)?
+            #      * Governance data is often imbalanced (rare access patterns)
+            #      * Concept drift is common (policies/roles change frequently)
+            #      * Setting threshold too high causes excessive false alarms
+            #      * Would frequently pause learning, reducing adaptability
+            #    - Why not lower (e.g., 80%)?
+            #      * 20% error rate too high for compliance/security requirements
+            #      * Unacceptable false positive rate (potential data breaches)
+            #      * Undermines trust in ML-based governance system
+            #
+            # 3. ABSOLUTE VS. RELATIVE THRESHOLDS:
+            #    - Absolute threshold (0.85) provides hard safety floor
+            #    - Model MUST maintain minimum quality regardless of trend
+            #    - Prevents gradual degradation ("boiling frog" problem)
+            #    - Example: Model improving from 75% → 80% is STILL rejected
+            #      * Even though accuracy is increasing (positive trend)
+            #      * 80% < 85% absolute threshold (unsafe for production)
+            #      * Relative improvement doesn't matter if baseline is too low
+            #    - Contrast with degradation_threshold (relative check):
+            #      * Catches regression: 90% → 85% is 5% drop (triggers FAILED_DEGRADATION)
+            #      * But 85% still passes absolute threshold (borderline safe)
+            #      * Both checks provide defense-in-depth
+            #
+            # 4. DOMAIN-SPECIFIC GOVERNANCE CONSIDERATIONS:
+            #    - Access control decisions are binary (grant/deny) and irreversible
+            #    - Audit logs require high accuracy for compliance investigations
+            #    - Model errors can cascade (wrong permissions lead to more wrong decisions)
+            #    - Human review is expensive - can't manually verify all predictions
+            #    - Must maintain user trust while adapting to policy changes
+            #
+            # 5. STATISTICAL INTERPRETATION:
+            #    - With n=100 samples: SE ≈ sqrt(0.85 * 0.15 / 100) ≈ 0.036 (3.6%)
+            #    - 95% CI: [81.4%, 88.6%] - reasonable confidence bounds
+            #    - Measured accuracy of 0.85 likely represents true range 82-88%
+            #    - Provides buffer above critical safety level (~80%)
+            #
+            # This absolute threshold acts as a safety net - the circuit breaker will
+            # pause learning before accuracy drops to dangerous levels. Combined with
+            # degradation_threshold (relative check), it provides comprehensive safety.
             if accuracy < self.accuracy_threshold:
                 return self._handle_failure(
                     CheckResult.FAILED_ACCURACY,
