@@ -530,7 +530,7 @@ AuditClient.get_stats() -> Dict[str, Any]
 - **Configuration lookup**: <10 microseconds (LRU cached)
 
 ### Throughput
-- **HTTP Request Processing**: >6,310 RPS (achieved with all middleware)
+- **HTTP Request Processing**: 2,605 RPS achieved (target: 6,310 RPS)
 - **Message Processing**: >100 RPS minimum (non-negotiable)
 - **Metric Updates**: Non-blocking, does not impact throughput
 
