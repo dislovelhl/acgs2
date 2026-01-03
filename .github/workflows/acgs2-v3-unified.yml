@@ -67,9 +67,27 @@ jobs:
         run: |
           cd acgs2-core/enhanced_agent_bus/rust && cargo test
 
+  test-adaptive-learning:
+    name: Adaptive Learning Engine Tests (3.12)
+    needs: security-audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+      - name: Install dependencies
+        run: |
+          pip install -e "adaptive-learning-engine/[dev]"
+      - name: Run Tests
+        run: |
+          cd adaptive-learning-engine && pytest tests/ -v --tb=short
+
   build-and-scan:
     name: Build and Trivy Scan
-    needs: [test-python, test-rust]
+    needs: [test-python, test-rust, test-adaptive-learning]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
