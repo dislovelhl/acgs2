@@ -49,7 +49,9 @@ if __name__ == "__main__":
         context_safe = SagaContext(
             saga_id=saga_id_safe,
             step_results={
-                "llm_reasoning": "I am following all constitutional principles to provide a helpful response."
+                "llm_reasoning": (
+                    "I am following all constitutional principles to provide a helpful response."
+                )
             },
         )
         result_safe = await saga_safe.execute(context_safe)

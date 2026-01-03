@@ -36,7 +36,7 @@ class Governor:
         self.client = create_client(self.config)
         self._local_audit_queue = []
 
-    async def verify(self, ai_output: str, context: dict[str, Any] | None = None) -> str:
+    async def verify(self, ai_output: str, _context: dict[str, Any] | None = None) -> str:
         """
         Verify an AI output against the Constitutional substrate.
 

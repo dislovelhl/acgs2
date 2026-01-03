@@ -128,7 +128,7 @@ async def record_validation(result: Dict[str, Any]):
         raise HTTPException(
             status_code=500,
             detail="Audit service error. Please contact support if the problem persists.",
-        )
+        ) from e
 
 
 @app.post("/verify")
