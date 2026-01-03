@@ -9,12 +9,6 @@ import logging
 import os
 import sys
 
-# Configure structured logging
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
-logger = logging.getLogger(__name__)
-
 # 添加路径
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))))
 
@@ -22,6 +16,12 @@ from constraint_generator import ConstraintGenerator, GenerationRequest
 from language_constraints import LanguageConstraints
 from quality_scorer import QualityScorer
 from unit_test_generator import UnitTestGenerator
+
+# Configure structured logging
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
+logger = logging.getLogger(__name__)
 
 
 async def demo_python_generation():
