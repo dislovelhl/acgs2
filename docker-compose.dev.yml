@@ -128,6 +128,34 @@ services:
     networks:
       - acgs-dev
 
+  # Policy Marketplace Service
+  policy-marketplace:
+    build:
+      context: ./acgs2-core/services/policy_marketplace
+      dockerfile: Dockerfile.dev
+    ports:
+      - "8003:8003"
+    env_file:
+      - .env.dev
+    environment:
+      # Database connection
+      - MARKETPLACE_DATABASE_URL=${MARKETPLACE_DATABASE_URL:-postgresql+asyncpg://acgs2_user:acgs2_pass@postgres:5432/acgs2_marketplace}
+      - ACGS_ENV=${ACGS_ENV:-development}
+      # Pass through centralized config
+      - CONSTITUTIONAL_HASH=${CONSTITUTIONAL_HASH:-cdd01ef066bc6cf2}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:5173,http://localhost:3000,*}
+      # Marketplace-specific config
+      - MARKETPLACE_MAX_FILE_SIZE=${MARKETPLACE_MAX_FILE_SIZE:-10485760}
+      - MARKETPLACE_UPLOAD_DIR=${MARKETPLACE_UPLOAD_DIR:-/tmp/marketplace-uploads}
+    volumes:
+      - ./acgs2-core/services/policy_marketplace:/app
+      - /app/__pycache__
+    depends_on:
+      - redis
+    networks:
+      - acgs-dev
+
 networks:
   acgs-dev:
     driver: bridge
