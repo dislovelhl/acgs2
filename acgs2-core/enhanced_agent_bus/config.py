@@ -77,13 +77,18 @@ class BusConfiguration:
     enable_maci: bool = True
     maci_strict_mode: bool = True
 
-    # LLM Configuration for high-ambiguity intent classification
-    # Added for Spec 001
-    llm_model: str = "anthropic/claude-3-5-sonnet-20240620"
-    llm_cache_ttl: int = 3600
+    # LLM classification settings
+    # Controls hybrid intent classification with LLM fallback for ambiguous cases
+    llm_enabled: bool = True
+    llm_model_version: str = "openai/gpt-4o-mini"
+    llm_cache_ttl: int = 3600  # seconds
     llm_confidence_threshold: float = 0.8
     llm_max_tokens: int = 100
     llm_use_cache: bool = True
+
+    # A/B testing settings for LLM vs rule-based comparison
+    enable_ab_testing: bool = False
+    ab_test_llm_percentage: int = 20  # Percentage of ambiguous cases routed to LLM
 
     # Optional dependency injections (set to None for defaults)
     # Note: These are typed as Any to avoid circular imports at runtime
@@ -112,9 +117,51 @@ class BusConfiguration:
         s = str(value).lower()
         return s in ("true", "1", "yes", "on", "y", "t")
 
+    @staticmethod
+    def _parse_int(value: Optional[str], default: int) -> int:
+        """Parse integer value with fallback to default."""
+        if value is None:
+            return default
+        try:
+            return int(value)
+        except ValueError:
+            return default
+
+    @staticmethod
+    def _parse_float(value: Optional[str], default: float) -> float:
+        """Parse float value with fallback to default."""
+        if value is None:
+            return default
+        try:
+            return float(value)
+        except ValueError:
+            return default
+
     @classmethod
     def from_environment(cls) -> "BusConfiguration":
-        """Load configuration from environment variables."""
+        """Load configuration from environment variables.
+
+        Environment variables:
+            REDIS_URL: Redis connection URL
+            KAFKA_BOOTSTRAP_SERVERS: Kafka servers
+            AUDIT_SERVICE_URL: Audit service endpoint
+            USE_DYNAMIC_POLICY: Enable dynamic policy (true/false)
+            POLICY_FAIL_CLOSED: Fail closed mode (true/false)
+            USE_KAFKA: Enable Kafka (true/false)
+            USE_REDIS_REGISTRY: Use Redis registry (true/false)
+            USE_RUST_BACKEND: Enable Rust backend (true/false)
+            METERING_ENABLED: Enable metering (true/false)
+            MACI_ENABLED: Enable MACI (true/false)
+            MACI_STRICT_MODE: MACI strict mode (true/false)
+            LLM_ENABLED: Enable LLM classification (true/false)
+            LLM_MODEL_VERSION: LLM model version (e.g., openai/gpt-4o-mini)
+            LLM_CACHE_TTL: LLM cache TTL in seconds
+            LLM_CONFIDENCE_THRESHOLD: Confidence threshold for LLM fallback (0.0-1.0)
+            LLM_MAX_TOKENS: Maximum tokens for LLM response
+            LLM_USE_CACHE: Enable LLM response caching (true/false)
+            ENABLE_AB_TESTING: Enable A/B testing (true/false)
+            AB_TEST_LLM_PERCENTAGE: Percentage of ambiguous cases for LLM (0-100)
+        """
         config = cls(
             redis_url=os.getenv("REDIS_URL", DEFAULT_REDIS_URL),
             kafka_bootstrap_servers=os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092"),
@@ -127,11 +174,14 @@ class BusConfiguration:
             enable_metering=cls._parse_bool(os.getenv("ENABLE_METERING", "true")),
             enable_maci=cls._parse_bool(os.getenv("ENABLE_MACI", "true")),
             maci_strict_mode=cls._parse_bool(os.getenv("MACI_STRICT_MODE", "true")),
-            llm_model=os.getenv("LLM_MODEL", "anthropic/claude-3-5-sonnet-20240620"),
-            llm_cache_ttl=int(os.getenv("LLM_CACHE_TTL", "3600")),
-            llm_confidence_threshold=float(os.getenv("LLM_CONFIDENCE_THRESHOLD", "0.8")),
-            llm_max_tokens=int(os.getenv("LLM_MAX_TOKENS", "100")),
+            llm_enabled=cls._parse_bool(os.getenv("LLM_ENABLED", "true")),
+            llm_model_version=os.getenv("LLM_MODEL_VERSION", "openai/gpt-4o-mini"),
+            llm_cache_ttl=cls._parse_int(os.getenv("LLM_CACHE_TTL"), 3600),
+            llm_confidence_threshold=cls._parse_float(os.getenv("LLM_CONFIDENCE_THRESHOLD"), 0.8),
+            llm_max_tokens=cls._parse_int(os.getenv("LLM_MAX_TOKENS"), 100),
             llm_use_cache=cls._parse_bool(os.getenv("LLM_USE_CACHE", "true")),
+            enable_ab_testing=cls._parse_bool(os.getenv("ENABLE_AB_TESTING", "false")),
+            ab_test_llm_percentage=cls._parse_int(os.getenv("AB_TEST_LLM_PERCENTAGE"), 20),
         )
 
         # Initialize LiteLLM Cache if enabled
@@ -165,6 +215,9 @@ class BusConfiguration:
             enable_metering=False,
             enable_maci=False,
             maci_strict_mode=False,
+            llm_enabled=False,
+            llm_use_cache=False,
+            enable_ab_testing=False,
         )
 
     @classmethod
@@ -182,6 +235,10 @@ class BusConfiguration:
             enable_metering=True,
             enable_maci=True,
             maci_strict_mode=True,
+            llm_enabled=True,
+            llm_confidence_threshold=0.8,
+            llm_use_cache=True,
+            enable_ab_testing=False,
         )
 
     def with_registry(self, registry: Any) -> "BusConfiguration":
@@ -215,6 +272,14 @@ class BusConfiguration:
             "enable_maci": self.enable_maci,
             "maci_strict_mode": self.maci_strict_mode,
             "constitutional_hash": self.constitutional_hash,
+            "llm_enabled": self.llm_enabled,
+            "llm_model_version": self.llm_model_version,
+            "llm_cache_ttl": self.llm_cache_ttl,
+            "llm_confidence_threshold": self.llm_confidence_threshold,
+            "llm_max_tokens": self.llm_max_tokens,
+            "llm_use_cache": self.llm_use_cache,
+            "enable_ab_testing": self.enable_ab_testing,
+            "ab_test_llm_percentage": self.ab_test_llm_percentage,
             "has_custom_registry": self.registry is not None,
             "has_custom_router": self.router is not None,
             "has_custom_validator": self.validator is not None,

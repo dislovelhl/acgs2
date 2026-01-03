@@ -232,6 +232,16 @@ class MessageProcessor:
         if cached:
             return cached
 
+        # Extract session_id for multi-turn PACAR context tracking
+        # Priority: headers > content > payload (for flexibility)
+        session_id: Optional[str] = None
+        if hasattr(msg, "headers") and msg.headers:
+            session_id = msg.headers.get("X-Session-ID") or msg.headers.get("x-session-id")
+        if not session_id and hasattr(msg, "content") and isinstance(msg.content, dict):
+            session_id = msg.content.get("session_id")
+        if not session_id and hasattr(msg, "payload") and isinstance(msg.payload, dict):
+            session_id = msg.payload.get("session_id")
+
         # SDPC Logic (Phase 2/3)
         sdpc_metadata = {}
         content_str = str(msg.content)
@@ -258,9 +268,18 @@ class MessageProcessor:
             verifications["graph"] = sdpc_metadata["sdpc_graph_grounded"]
 
         if impact_score > 0.8 or msg.message_type == MessageType.TASK_REQUEST:
-            pacar_res = await self.pacar_verifier.verify(
-                content_str, intent.value, session_id=msg.conversation_id
-            )
+            # Use multi-turn context tracking when session_id is present
+            # Prefer session_id extracted above, fall back to msg.conversation_id
+            effective_session_id = session_id or getattr(msg, "conversation_id", None)
+            if effective_session_id:
+                pacar_res = await self.pacar_verifier.verify_with_context(
+                    content_str,
+                    intent.value,
+                    session_id=effective_session_id,
+                    tenant_id=getattr(msg, "tenant_id", "default"),
+                )
+            else:
+                pacar_res = await self.pacar_verifier.verify(content_str, intent.value)
             sdpc_metadata["sdpc_pacar_valid"] = pacar_res.get("is_valid", False)
             sdpc_metadata["sdpc_pacar_confidence"] = pacar_res.get("confidence", 0.0)
             verifications["pacar"] = sdpc_metadata["sdpc_pacar_valid"]

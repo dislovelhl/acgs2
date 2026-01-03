@@ -11,6 +11,8 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Dict, List, Optional, Union
 
+from pydantic import BaseModel, Field
+
 try:
     from .exceptions import MessageValidationError
 except ImportError:
@@ -277,6 +279,61 @@ class DecisionLog:
         }
 
 
+class ConversationMessage(BaseModel):
+    """Single message in a multi-turn conversation.
+
+    Used by PACAR verifier to track conversation history for
+    governance policy enforcement across conversation threads.
+
+    Constitutional Hash: cdd01ef066bc6cf2
+    """
+
+    role: str = Field(..., description="Message role: 'user' or 'assistant'")
+    content: str = Field(..., description="Message content text")
+    timestamp: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        description="When the message was created",
+    )
+    intent: Optional[str] = Field(default=None, description="Detected intent of the message")
+    verification_result: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="PACAR verification result including is_valid, confidence, critique",
+    )
+
+    model_config = {"from_attributes": True}
+
+
+class ConversationState(BaseModel):
+    """Conversation state for multi-turn context tracking.
+
+    Stores the full conversation history and metadata for a session,
+    enabling PACAR verifier to enforce governance policies across
+    multiple turns of a conversation.
+
+    Constitutional Hash: cdd01ef066bc6cf2
+    """
+
+    session_id: str = Field(..., description="Unique session identifier")
+    tenant_id: str = Field(..., description="Tenant identifier for multi-tenant isolation")
+    messages: List[ConversationMessage] = Field(
+        default_factory=list, description="Ordered list of conversation messages"
+    )
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        description="When the conversation was created",
+    )
+    updated_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        description="When the conversation was last updated",
+    )
+    constitutional_hash: str = Field(
+        default=CONSTITUTIONAL_HASH,
+        description="Constitutional hash for compliance verification",
+    )
+
+    model_config = {"from_attributes": True}
+
+
 __all__ = [
     # Type aliases
     "MessageContent",
@@ -296,6 +353,9 @@ __all__ = [
     "RoutingContext",
     "AgentMessage",
     "DecisionLog",
+    # Pydantic models for multi-turn conversation support
+    "ConversationMessage",
+    "ConversationState",
     # Utility functions
     "get_enum_value",
 ]

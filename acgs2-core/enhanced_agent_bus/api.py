@@ -6,8 +6,8 @@ Constitutional Hash: cdd01ef066bc6cf2
 
 import asyncio
 import logging
-from typing import Dict, Any, Optional
-from fastapi import FastAPI, HTTPException, BackgroundTasks
+from typing import Annotated, Any, Dict, Optional
+from fastapi import BackgroundTasks, FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 import os
@@ -74,6 +74,9 @@ class MessageRequest(BaseModel):
     recipient: Optional[str] = Field(default=None, description="Recipient identifier")
     tenant_id: Optional[str] = Field(default=None, description="Tenant identifier")
     metadata: Optional[Dict[str, Any]] = Field(default=None, description="Additional metadata")
+    session_id: Optional[str] = Field(
+        default=None, description="Session identifier for multi-turn conversations"
+    )
 
 
 class MessageResponse(BaseModel):
@@ -132,8 +135,12 @@ async def health_check():
 
 
 @app.post("/messages", response_model=MessageResponse)
-async def send_message(request: MessageRequest, background_tasks: BackgroundTasks):
-    """Send a message to the agent bus"""
+async def send_message(
+    request: MessageRequest,
+    background_tasks: BackgroundTasks,
+    session_id: Annotated[Optional[str], Header(alias="X-Session-ID")] = None,
+):
+    """Send a message to the agent bus with optional session tracking"""
     if not agent_bus:
         raise HTTPException(status_code=503, detail="Agent bus not initialized")
 
@@ -160,16 +167,19 @@ async def send_message(request: MessageRequest, background_tasks: BackgroundTask
 
         background_tasks.add_task(process_message, message_id, request.content)
 
+        # Use session_id from request body if provided, otherwise fall back to header
+        effective_session_id = request.session_id or session_id
+
         return MessageResponse(
             message_id=message_id,
             status="accepted",
             timestamp=timestamp.isoformat(),
-            details={"message_type": request.message_type},
+            details={"message_type": request.message_type, "session_id": effective_session_id},
         )
 
     except Exception as e:
         logger.error(f"Error sending message: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @app.get("/messages/{message_id}")
@@ -188,7 +198,7 @@ async def get_message_status(message_id: str):
         }
     except Exception as e:
         logger.error(f"Error getting message status: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @app.get("/stats")
@@ -207,7 +217,7 @@ async def get_stats():
         }
     except Exception as e:
         logger.error(f"Error getting stats: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @app.post("/policies/validate")
@@ -226,7 +236,7 @@ async def validate_policy(policy_data: Dict[str, Any]):
         }
     except Exception as e:
         logger.error(f"Error validating policy: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 if __name__ == "__main__":
