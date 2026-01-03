@@ -1,31 +1,101 @@
 /**
- * useAnomalies Hook
+ * Analytics Dashboard - Anomaly Detection Hook
  *
- * React hook for fetching anomaly detection data from the analytics API.
- * Follows the UseDataResult<T> pattern for consistent data-fetching behavior.
+ * Custom React hook for fetching and managing anomaly detection data from the analytics API.
+ * Follows the UseDataResult<T> pattern for consistent data-fetching behavior across the application.
+ *
+ * @module hooks/useAnomalies
  */
 
 import { useState, useEffect, useCallback } from "react";
 import type { AnomaliesResponse } from "../types/anomalies";
 import type { UseDataResult } from "./types";
 
-/** API URL from environment */
+/**
+ * API base URL configured from environment variables.
+ * Defaults to localhost:8080 if VITE_ANALYTICS_API_URL is not set.
+ */
 const API_BASE_URL =
   import.meta.env.VITE_ANALYTICS_API_URL || "http://localhost:8080";
 
 /**
- * Hook for fetching anomaly detection data
+ * Custom hook for fetching anomaly detection data from the analytics API.
  *
- * @param severityFilter - Optional severity level to filter anomalies (critical, high, medium, low)
- * @returns UseDataResult with anomaly data, loading state, error, and refetch function
+ * This hook provides a simple interface for fetching anomaly data with optional severity filtering.
+ * It automatically fetches data on mount and provides a refetch function for manual updates.
+ * The hook manages loading states, error handling, and data caching internally.
+ *
+ * @param {string | null} [severityFilter] - Optional severity level to filter anomalies.
+ *   Valid values: "critical", "high", "medium", "low"
+ *   Pass null or undefined to fetch all anomalies regardless of severity.
+ *
+ * @returns {UseDataResult<AnomaliesResponse>} Object containing:
+ *   - data: The anomalies response data, or null if not yet loaded
+ *   - loading: Boolean indicating if data is currently being fetched
+ *   - error: Error object if fetch failed, or null if no error
+ *   - refetch: Async function to manually trigger a data refresh
  *
  * @example
  * ```tsx
  * // Fetch all anomalies
- * const { data, loading, error, refetch } = useAnomalies();
+ * function AllAnomaliesView() {
+ *   const { data, loading, error, refetch } = useAnomalies();
  *
+ *   if (loading) return <div>Loading anomalies...</div>;
+ *   if (error) return <div>Error: {error.message}</div>;
+ *   if (!data) return null;
+ *
+ *   return (
+ *     <div>
+ *       <h2>Total Anomalies: {data.total_anomalies}</h2>
+ *       <button onClick={refetch}>Refresh</button>
+ *       <AnomalyList items={data.anomalies} />
+ *     </div>
+ *   );
+ * }
+ * ```
+ *
+ * @example
+ * ```tsx
  * // Fetch only critical anomalies
- * const { data, loading, error, refetch } = useAnomalies("critical");
+ * function CriticalAnomaliesWidget() {
+ *   const { data, loading, error } = useAnomalies("critical");
+ *
+ *   return (
+ *     <Widget title="Critical Anomalies">
+ *       {loading && <Spinner />}
+ *       {error && <ErrorMessage error={error} />}
+ *       {data && (
+ *         <div>
+ *           <Badge count={data.total_anomalies} severity="critical" />
+ *           <AnomalyList items={data.anomalies} />
+ *         </div>
+ *       )}
+ *     </Widget>
+ *   );
+ * }
+ * ```
+ *
+ * @example
+ * ```tsx
+ * // Dynamic severity filtering with state
+ * function AnomalyDashboard() {
+ *   const [severity, setSeverity] = useState<string | null>("high");
+ *   const { data, loading, error, refetch } = useAnomalies(severity);
+ *
+ *   const handleSeverityChange = (newSeverity: string | null) => {
+ *     setSeverity(newSeverity);
+ *     // Hook automatically refetches when severityFilter changes
+ *   };
+ *
+ *   return (
+ *     <div>
+ *       <SeverityFilter value={severity} onChange={handleSeverityChange} />
+ *       <RefreshButton onClick={refetch} disabled={loading} />
+ *       {data && <AnomalyGrid anomalies={data.anomalies} />}
+ *     </div>
+ *   );
+ * }
  * ```
  */
 export function useAnomalies(
