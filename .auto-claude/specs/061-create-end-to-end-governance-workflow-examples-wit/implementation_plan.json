@@ -140,7 +140,7 @@
           "subtask_id": "3.1",
           "title": "Create constitutional policy definition",
           "description": "Write Rego policy defining constitutional principles and constraints for AI agent actions",
-          "status": "pending",
+          "status": "completed",
           "dependencies": ["2.1"],
           "files": [
             "./examples/04-end-to-end-governance-workflow/policies/constitutional.rego"
@@ -150,7 +150,9 @@
             "Defines core principles",
             "Handles edge cases",
             "Well documented with comments"
-          ]
+          ],
+          "completed_at": "2026-01-03T10:30:00Z",
+          "notes": "Completed constitutional policy implementation. Created comprehensive constitutional.rego (324 lines, 9.7KB) with: constitutional hash validation (cdd01ef066bc6cf2), 6 constitutional principles (Transparency, Accountability, Privacy Protection, Data Minimization, Human Oversight, Fairness), comprehensive denial reasons for debugging, edge case handling (missing fields, invalid purposes, unauthorized access), well-documented with inline comments, follows patterns from Examples 01-03. Policy validates actions against constitutional constraints as the first step in the governance workflow. All acceptance criteria met: validates against constitutional hash, defines core principles, handles edge cases, well documented with comments. Committed to git."
         },
         {
           "subtask_id": "3.2",
