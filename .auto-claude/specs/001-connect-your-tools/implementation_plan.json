@@ -1,0 +1,650 @@
+{
+  "spec_id": "001-connect-your-tools",
+  "spec_name": "Linear Integration for ACGS2",
+  "workflow_type": "feature",
+  "description": "Implement Linear integration into the ACGS2 integration-service to enable bidirectional synchronization between Linear issues and external tools (GitHub, GitLab, Slack). This will make Linear the source of truth for product development workflows by automatically syncing issue states, comments, and metadata across platforms.",
+  "created_at": "2026-01-03T21:08:19.581Z",
+  "updated_at": "2026-01-03T21:25:23.352Z",
+  "status": "in_progress",
+  "planStatus": "in_progress",
+  "total_estimated_hours": 80,
+  "phases": [
+    {
+      "phase_id": "phase_1",
+      "phase_name": "Foundation & Setup",
+      "description": "Verify packages, set up dependencies, configuration, and Linear GraphQL client",
+      "estimated_hours": 16,
+      "status": "pending",
+      "subtasks": [
+        {
+          "id": "1.1",
+          "description": "Verify all package names and versions on PyPI (gql, PyGithub, python-gitlab, slack-sdk)",
+          "status": "completed",
+          "dependencies": [],
+          "estimated_hours": 2,
+          "notes": "\u2705 All packages verified on PyPI: gql 4.0.0 (req: >=3.5.0), PyGithub 2.8.1 (req: >=2.1.0), python-gitlab 7.1.0 (req: >=4.4.0), slack-sdk 3.39.0 (req: >=3.33.0). The gql[all] extra is confirmed available. Verification report created at pypi-package-verification.md.",
+          "files_to_modify": [],
+          "updated_at": "2026-01-03T21:32:36.696713+00:00"
+        },
+        {
+          "id": "1.2",
+          "description": "Verify Linear GraphQL API documentation and authentication methods",
+          "status": "pending",
+          "dependencies": [],
+          "estimated_hours": 2,
+          "notes": "Review official Linear API docs to confirm: GraphQL endpoint, authentication (Bearer token), rate limits, webhook signature verification methods",
+          "files_to_modify": []
+        },
+        {
+          "id": "1.3",
+          "description": "Verify GitHub, GitLab, and Slack API documentation",
+          "status": "pending",
+          "dependencies": [],
+          "estimated_hours": 2,
+          "notes": "Confirm current API patterns for: GitHub REST/GraphQL API, GitLab API endpoints, Slack Block Kit and Webhooks API",
+          "files_to_modify": []
+        },
+        {
+          "id": "1.4",
+          "description": "Add Linear dependencies to requirements.txt",
+          "status": "pending",
+          "dependencies": [
+            "1.1"
+          ],
+          "estimated_hours": 1,
+          "notes": "Add: gql[all]>=3.5.0, PyGithub>=2.1.0, python-gitlab>=4.4.0, slack-sdk>=3.33.0",
+          "files_to_modify": [
+            "integration-service/requirements.txt"
+          ]
+        },
+        {
+          "id": "1.5",
+          "description": "Update .env.example with Linear environment variables",
+          "status": "pending",
+          "dependencies": [
+            "1.2"
+          ],
+          "estimated_hours": 1,
+          "notes": "Add: LINEAR_API_KEY, LINEAR_WEBHOOK_SECRET, LINEAR_TEAM_ID, LINEAR_PROJECT_ID, SLACK_BOT_TOKEN, SLACK_SIGNING_SECRET, SLACK_DEFAULT_CHANNEL",
+          "files_to_modify": [
+            "integration-service/.env.example"
+          ]
+        },
+        {
+          "id": "1.6",
+          "description": "Create Linear configuration class using pydantic-settings",
+          "status": "pending",
+          "dependencies": [
+            "1.5"
+          ],
+          "estimated_hours": 2,
+          "notes": "Create src/config.py if doesn't exist. Add LinearConfig class with environment variable validation. Use sensitive=True for API keys.",
+          "files_to_modify": [
+            "integration-service/src/config.py"
+          ]
+        },
+        {
+          "id": "1.7",
+          "description": "Implement Linear GraphQL client with async support",
+          "status": "pending",
+          "dependencies": [
+            "1.2",
+            "1.4",
+            "1.6"
+          ],
+          "estimated_hours": 4,
+          "notes": "Create src/integrations/linear/client.py. Use AIOHTTPTransport for async FastAPI compatibility. Implement: create_issue, get_issue, update_issue, list_issues, add_comment methods.",
+          "files_to_modify": [
+            "integration-service/src/integrations/linear/client.py"
+          ]
+        },
+        {
+          "id": "1.8",
+          "description": "Write unit tests for Linear GraphQL client",
+          "status": "pending",
+          "dependencies": [
+            "1.7"
+          ],
+          "estimated_hours": 2,
+          "notes": "Create tests/integrations/test_linear_client.py. Mock GraphQL responses. Test: create_issue, query_issues, update_issue, error handling, pagination.",
+          "files_to_modify": [
+            "tests/integrations/test_linear_client.py"
+          ]
+        }
+      ]
+    },
+    {
+      "phase_id": "phase_2",
+      "phase_name": "Webhook Infrastructure",
+      "description": "Implement Linear webhook endpoint, signature verification, and Redis state tracking",
+      "estimated_hours": 16,
+      "status": "pending",
+      "subtasks": [
+        {
+          "id": "2.1",
+          "description": "Create Pydantic models for Linear webhook payloads",
+          "status": "pending",
+          "dependencies": [
+            "1.2"
+          ],
+          "estimated_hours": 3,
+          "notes": "Create src/integrations/linear/models.py. Define models for: IssueEvent, CommentEvent, StatusChangeEvent. Include all webhook payload fields.",
+          "files_to_modify": [
+            "integration-service/src/integrations/linear/models.py"
+          ]
+        },
+        {
+          "id": "2.2",
+          "description": "Implement webhook signature verification middleware",
+          "status": "pending",
+          "dependencies": [
+            "1.6",
+            "2.1"
+          ],
+          "estimated_hours": 3,
+          "notes": "Create src/integrations/linear/webhook_auth.py. Implement HMAC-SHA256 signature verification using LINEAR_WEBHOOK_SECRET. Follow existing webhook security patterns.",
+          "files_to_modify": [
+            "integration-service/src/integrations/linear/webhook_auth.py"
+          ]
+        },
+        {
+          "id": "2.3",
+          "description": "Create Linear webhook endpoint handler",
+          "status": "pending",
+          "dependencies": [
+            "2.1",
+            "2.2"
+          ],
+          "estimated_hours": 4,
+          "notes": "Create src/api/linear_webhooks.py. Implement POST /webhooks/linear endpoint. Verify signature, parse payload, return 200 OK within 3 seconds, queue processing.",
+          "files_to_modify": [
+            "integration-service/src/api/linear_webhooks.py"
+          ]
+        },
+        {
+          "id": "2.4",
+          "description": "Set up Redis state tracking for sync operations",
+          "status": "pending",
+          "dependencies": [
+            "1.6"
+          ],
+          "estimated_hours": 3,
+          "notes": "Create src/integrations/linear/state.py. Implement Redis-backed state tracking: last_synced_at, sync_source, event_id for deduplication. Use existing Redis client.",
+          "files_to_modify": [
+            "integration-service/src/integrations/linear/state.py"
+          ]
+        },
+        {
+          "id": "2.5",
+          "description": "Write unit tests for webhook handler and signature verification",
+          "status": "pending",
+          "dependencies": [
+            "2.2",
+            "2.3"
+          ],
+          "estimated_hours": 3,
+          "notes": "Create tests/api/test_linear_webhooks.py. Test: valid signature acceptance, invalid signature rejection, payload parsing, malformed payload handling.",
+          "files_to_modify": [
+            "tests/api/test_linear_webhooks.py"
+          ]
+        }
+      ]
+    },
+    {
+      "phase_id": "phase_3",
+      "phase_name": "GitHub & GitLab Sync",
+      "description": "Implement bidirectional sync between Linear and GitHub/GitLab with deduplication and conflict resolution",
+      "estimated_hours": 24,
+      "status": "pending",
+      "subtasks": [
+        {
+          "id": "3.1",
+          "description": "Implement deduplication logic with Redis",
+          "status": "pending",
+          "dependencies": [
+            "2.4"
+          ],
+          "estimated_hours": 3,
+          "notes": "Create src/integrations/linear/deduplication.py. Track event IDs in Redis, check before processing. Prevent infinite sync loops using event source tracking.",
+          "files_to_modify": [
+            "integration-service/src/integrations/linear/deduplication.py"
+          ]
+        },
+        {
+          "id": "3.2",
+          "description": "Implement conflict resolution (last-write-wins) logic",
+          "status": "pending",
+          "dependencies": [
+            "2.4"
+          ],
+          "estimated_hours": 3,
+          "notes": "Create src/integrations/linear/conflict_resolution.py. Use timestamp tracking in Redis. Implement last-write-wins strategy with proper logging.",
+          "files_to_modify": [
+            "integration-service/src/integrations/linear/conflict_resolution.py"
+          ]
+        },
+        {
+          "id": "3.3",
+          "description": "Build GitHub sync manager for Linear \u2194 GitHub bidirectional sync",
+          "status": "pending",
+          "dependencies": [
+            "1.7",
+            "1.8",
+            "3.1",
+            "3.2"
+          ],
+          "estimated_hours": 6,
+          "notes": "Create src/integrations/linear/github_sync.py. Use PyGithub library. Implement: issue creation sync, status sync, comment sync, PR status to Linear. Handle rate limiting with tenacity.",
+          "files_to_modify": [
+            "integration-service/src/integrations/linear/github_sync.py"
+          ]
+        },
+        {
+          "id": "3.4",
+          "description": "Build GitLab sync manager for Linear \u2194 GitLab bidirectional sync",
+          "status": "pending",
+          "dependencies": [
+            "1.7",
+            "1.8",
+            "3.1",
+            "3.2"
+          ],
+          "estimated_hours": 6,
+          "notes": "Create src/integrations/linear/gitlab_sync.py. Use python-gitlab library. Implement: issue creation sync, status sync, comment sync, MR status to Linear. Handle rate limiting.",
+          "files_to_modify": [
+            "integration-service/src/integrations/linear/gitlab_sync.py"
+          ]
+        },
+        {
+          "id": "3.5",
+          "description": "Write unit tests for GitHub sync manager",
+          "status": "pending",
+          "dependencies": [
+            "3.3"
+          ],
+          "estimated_hours": 3,
+          "notes": "Create tests/sync/test_github_linear_sync.py. Mock GitHub API. Test: issue creation, status updates, comment sync, deduplication, error handling.",
+          "files_to_modify": [
+            "tests/sync/test_github_linear_sync.py"
+          ]
+        },
+        {
+          "id": "3.6",
+          "description": "Write unit tests for GitLab sync manager",
+          "status": "pending",
+          "dependencies": [
+            "3.4"
+          ],
+          "estimated_hours": 3,
+          "notes": "Create tests/sync/test_gitlab_linear_sync.py. Mock GitLab API. Test: issue creation, status updates, comment sync, deduplication, error handling.",
+          "files_to_modify": [
+            "tests/sync/test_gitlab_linear_sync.py"
+          ]
+        }
+      ]
+    },
+    {
+      "phase_id": "phase_4",
+      "phase_name": "Slack Integration",
+      "description": "Implement Slack notifications for Linear issue updates",
+      "estimated_hours": 8,
+      "status": "pending",
+      "subtasks": [
+        {
+          "id": "4.1",
+          "description": "Create Slack notification service using slack-sdk",
+          "status": "pending",
+          "dependencies": [
+            "1.4",
+            "1.6"
+          ],
+          "estimated_hours": 3,
+          "notes": "Create src/integrations/linear/slack_notifier.py. Use slack-sdk WebClient. Implement: post_issue_created, post_status_changed with async support.",
+          "files_to_modify": [
+            "integration-service/src/integrations/linear/slack_notifier.py"
+          ]
+        },
+        {
+          "id": "4.2",
+          "description": "Create Slack message templates using Block Kit",
+          "status": "pending",
+          "dependencies": [
+            "4.1"
+          ],
+          "estimated_hours": 2,
+          "notes": "Create src/integrations/linear/slack_templates.py. Design Block Kit templates for: issue created, status changed, comment added. Include issue title, description, assignee, status, link.",
+          "files_to_modify": [
+            "integration-service/src/integrations/linear/slack_templates.py"
+          ]
+        },
+        {
+          "id": "4.3",
+          "description": "Wire Slack notifier into sync engine",
+          "status": "pending",
+          "dependencies": [
+            "2.3",
+            "4.1",
+            "4.2"
+          ],
+          "estimated_hours": 2,
+          "notes": "Update webhook handler and sync managers to trigger Slack notifications. Handle graceful degradation if SLACK_BOT_TOKEN not configured.",
+          "files_to_modify": [
+            "integration-service/src/api/linear_webhooks.py",
+            "integration-service/src/integrations/linear/github_sync.py",
+            "integration-service/src/integrations/linear/gitlab_sync.py"
+          ]
+        },
+        {
+          "id": "4.4",
+          "description": "Write unit tests for Slack notifier",
+          "status": "pending",
+          "dependencies": [
+            "4.1",
+            "4.2"
+          ],
+          "estimated_hours": 1,
+          "notes": "Create tests/notifications/test_slack.py. Mock Slack WebClient. Test: message formatting, Block Kit structure, error handling, missing credentials.",
+          "files_to_modify": [
+            "tests/notifications/test_slack.py"
+          ]
+        }
+      ]
+    },
+    {
+      "phase_id": "phase_5",
+      "phase_name": "Testing & Documentation",
+      "description": "Comprehensive testing, documentation, and final integration",
+      "estimated_hours": 16,
+      "status": "pending",
+      "subtasks": [
+        {
+          "id": "5.1",
+          "description": "Register Linear routes in main.py",
+          "status": "pending",
+          "dependencies": [
+            "2.3"
+          ],
+          "estimated_hours": 1,
+          "notes": "Update src/main.py to include Linear webhook router and any additional API endpoints. Follow existing route registration patterns.",
+          "files_to_modify": [
+            "integration-service/src/main.py"
+          ]
+        },
+        {
+          "id": "5.2",
+          "description": "Write integration tests for Linear \u2192 GitHub sync flow",
+          "status": "pending",
+          "dependencies": [
+            "3.3",
+            "3.5"
+          ],
+          "estimated_hours": 2,
+          "notes": "Create tests/integration/test_linear_github_integration.py. Test full flow: Linear webhook \u2192 GitHub issue creation \u2192 GitHub update \u2192 Linear update. Verify no infinite loops.",
+          "files_to_modify": [
+            "tests/integration/test_linear_github_integration.py"
+          ]
+        },
+        {
+          "id": "5.3",
+          "description": "Write integration tests for Linear \u2192 GitLab sync flow",
+          "status": "pending",
+          "dependencies": [
+            "3.4",
+            "3.6"
+          ],
+          "estimated_hours": 2,
+          "notes": "Create tests/integration/test_linear_gitlab_integration.py. Test full flow: Linear webhook \u2192 GitLab issue creation \u2192 GitLab update \u2192 Linear update. Verify deduplication.",
+          "files_to_modify": [
+            "tests/integration/test_linear_gitlab_integration.py"
+          ]
+        },
+        {
+          "id": "5.4",
+          "description": "Write integration test for Linear \u2192 Slack notification flow",
+          "status": "pending",
+          "dependencies": [
+            "4.3",
+            "4.4"
+          ],
+          "estimated_hours": 1,
+          "notes": "Create tests/integration/test_linear_slack_integration.py. Test: Linear webhook triggers Slack notification with correct formatting.",
+          "files_to_modify": [
+            "tests/integration/test_linear_slack_integration.py"
+          ]
+        },
+        {
+          "id": "5.5",
+          "description": "Write end-to-end test for complete sync flow",
+          "status": "pending",
+          "dependencies": [
+            "5.2",
+            "5.3",
+            "5.4"
+          ],
+          "estimated_hours": 3,
+          "notes": "Create tests/e2e/test_linear_integration.py. Test complete flow: Linear issue \u2192 GitHub + GitLab + Slack. Verify all services receive correct updates.",
+          "files_to_modify": [
+            "tests/e2e/test_linear_integration.py"
+          ]
+        },
+        {
+          "id": "5.6",
+          "description": "Write tests for deduplication logic",
+          "status": "pending",
+          "dependencies": [
+            "3.1"
+          ],
+          "estimated_hours": 2,
+          "notes": "Create tests/sync/test_deduplication.py. Test: duplicate event filtering, Redis state tracking, event source tracking to prevent loops.",
+          "files_to_modify": [
+            "tests/sync/test_deduplication.py"
+          ]
+        },
+        {
+          "id": "5.7",
+          "description": "Write tests for conflict resolution",
+          "status": "pending",
+          "dependencies": [
+            "3.2"
+          ],
+          "estimated_hours": 2,
+          "notes": "Create tests/sync/test_conflict_resolution.py. Test: last-write-wins logic, timestamp tracking, concurrent update handling.",
+          "files_to_modify": [
+            "tests/sync/test_conflict_resolution.py"
+          ]
+        },
+        {
+          "id": "5.8",
+          "description": "Run full test suite and ensure existing tests still pass",
+          "status": "pending",
+          "dependencies": [
+            "5.5",
+            "5.6",
+            "5.7"
+          ],
+          "estimated_hours": 1,
+          "notes": "Run pytest with coverage. Ensure \u226580% coverage. Verify no regressions in JIRA/ServiceNow integrations. Fix any failing tests.",
+          "files_to_modify": []
+        },
+        {
+          "id": "5.9",
+          "description": "Update API documentation and verify /docs endpoint",
+          "status": "pending",
+          "dependencies": [
+            "5.1"
+          ],
+          "estimated_hours": 1,
+          "notes": "Ensure all Linear endpoints are documented with proper OpenAPI schemas. Test http://localhost:8000/docs shows Linear webhook and sync endpoints.",
+          "files_to_modify": []
+        },
+        {
+          "id": "5.10",
+          "description": "Create init.sh for environment setup",
+          "status": "pending",
+          "dependencies": [
+            "1.4",
+            "1.5"
+          ],
+          "estimated_hours": 1,
+          "notes": "Create .auto-claude/specs/001-connect-your-tools/init.sh. Script to: install dependencies, set up Redis, verify environment variables, run initial tests.",
+          "files_to_modify": [
+            ".auto-claude/specs/001-connect-your-tools/init.sh"
+          ]
+        }
+      ]
+    }
+  ],
+  "qa_checklist": {
+    "unit_tests": [
+      {
+        "test": "test_linear_client_create_issue",
+        "file": "tests/integrations/test_linear_client.py",
+        "verified": false
+      },
+      {
+        "test": "test_linear_client_query_issues",
+        "file": "tests/integrations/test_linear_client.py",
+        "verified": false
+      },
+      {
+        "test": "test_linear_webhook_signature_verification",
+        "file": "tests/api/test_linear_webhooks.py",
+        "verified": false
+      },
+      {
+        "test": "test_linear_webhook_event_parsing",
+        "file": "tests/api/test_linear_webhooks.py",
+        "verified": false
+      },
+      {
+        "test": "test_github_sync_manager",
+        "file": "tests/sync/test_github_linear_sync.py",
+        "verified": false
+      },
+      {
+        "test": "test_gitlab_sync_manager",
+        "file": "tests/sync/test_gitlab_linear_sync.py",
+        "verified": false
+      },
+      {
+        "test": "test_slack_notifier",
+        "file": "tests/notifications/test_slack.py",
+        "verified": false
+      },
+      {
+        "test": "test_deduplication_logic",
+        "file": "tests/sync/test_deduplication.py",
+        "verified": false
+      },
+      {
+        "test": "test_conflict_resolution",
+        "file": "tests/sync/test_conflict_resolution.py",
+        "verified": false
+      }
+    ],
+    "integration_tests": [
+      {
+        "test": "test_linear_to_github_sync",
+        "services": "Linear (mocked) \u2194 GitHub (mocked)",
+        "verified": false
+      },
+      {
+        "test": "test_github_to_linear_sync",
+        "services": "GitHub (mocked) \u2194 Linear (mocked)",
+        "verified": false
+      },
+      {
+        "test": "test_linear_to_gitlab_sync",
+        "services": "Linear (mocked) \u2194 GitLab (mocked)",
+        "verified": false
+      },
+      {
+        "test": "test_linear_to_slack_notification",
+        "services": "Linear (mocked) \u2192 Slack (mocked)",
+        "verified": false
+      },
+      {
+        "test": "test_bidirectional_sync_no_loop",
+        "services": "Linear \u2194 GitHub",
+        "verified": false
+      }
+    ],
+    "api_verification": [
+      {
+        "endpoint": "Linear webhook receiver",
+        "method": "POST",
+        "url": "http://localhost:8000/webhooks/linear",
+        "verified": false
+      },
+      {
+        "endpoint": "Get Linear sync status",
+        "method": "GET",
+        "url": "http://localhost:8000/integrations/linear/status",
+        "verified": false
+      },
+      {
+        "endpoint": "Trigger manual sync",
+        "method": "POST",
+        "url": "http://localhost:8000/integrations/linear/sync",
+        "verified": false
+      }
+    ],
+    "configuration_verification": [
+      {
+        "check": "Dependencies installed",
+        "command": "pip list | grep -E '(gql|PyGithub|python-gitlab|slack-sdk)'",
+        "verified": false
+      },
+      {
+        "check": "Environment variables",
+        "command": "cat .env.example | grep LINEAR_",
+        "verified": false
+      },
+      {
+        "check": "Redis state tracking",
+        "command": "redis-cli KEYS \"linear:sync:*\"",
+        "verified": false
+      }
+    ],
+    "sign_off_requirements": [
+      "All unit tests pass (pytest coverage \u2265 80%)",
+      "All integration tests pass with mocked external services",
+      "End-to-end test demonstrates full Linear \u2192 GitHub \u2192 Slack flow",
+      "Webhook signature verification rejects tampered payloads",
+      "API documentation generated and accessible at /docs",
+      "No regressions in existing JIRA/ServiceNow integrations",
+      "Code follows existing FastAPI patterns (async, Pydantic models, APIRouter)",
+      "No security vulnerabilities (credentials encrypted, no secrets in logs)",
+      "Rate limiting tested (handles 429 responses gracefully)",
+      "Deduplication logic prevents infinite sync loops",
+      "Error handling tested (partial failures, network errors, invalid payloads)",
+      "Environment variables documented and .env.example updated"
+    ]
+  },
+  "success_criteria": [
+    "Linear API client can create/read/update issues via GraphQL",
+    "Webhook endpoint receives and validates Linear events",
+    "GitHub issue creation triggers Linear issue creation and vice versa",
+    "GitLab issue creation triggers Linear issue creation and vice versa",
+    "Linear status changes sync to GitHub/GitLab issue states",
+    "Slack receives notifications when Linear issues are created/updated",
+    "No infinite sync loops occur (deduplication logic works)",
+    "All integration tests pass (Linear \u2194 GitHub, Linear \u2194 GitLab, Linear \u2192 Slack)",
+    "No console errors or unhandled exceptions",
+    "Existing tests still pass",
+    "API documentation includes Linear endpoints",
+    "Environment variables documented in .env.example"
+  ],
+  "critical_notes": [
+    "\u26a0\ufe0f CRITICAL: All package names, versions, and API patterns must be verified against live documentation before implementation",
+    "Follow existing integration patterns from JIRA and ServiceNow implementations",
+    "Use async/await patterns throughout for FastAPI compatibility",
+    "Implement comprehensive error handling and logging",
+    "Respect rate limits for all external APIs (use tenacity for retry logic)",
+    "Encrypt all credentials before storing in Redis using existing CREDENTIAL_ENCRYPTION_KEY",
+    "Return webhook responses within 3 seconds (use background processing for long-running tasks)",
+    "Implement proper deduplication to prevent infinite sync loops",
+    "Use Redis locks to prevent race conditions during bidirectional sync"
+  ],
+  "last_updated": "2026-01-03T21:32:36.696719+00:00"
+}
