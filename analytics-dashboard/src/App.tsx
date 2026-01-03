@@ -6,10 +6,15 @@
  * with localStorage persistence.
  */
 
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { DashboardGrid } from "./layouts/DashboardGrid";
 import { QueryInterface } from "./components/QueryInterface";
+import { ImportDataPage } from "./pages/ImportDataPage";
 
-function App(): JSX.Element {
+/**
+ * DashboardPage - Main dashboard view
+ */
+function DashboardPage(): JSX.Element {
   return (
     <div className="min-h-screen bg-gray-100">
       <header className="bg-white shadow">
@@ -32,6 +37,20 @@ function App(): JSX.Element {
         <DashboardGrid />
       </main>
     </div>
+  );
+}
+
+/**
+ * App - Root application component with routing
+ */
+function App(): JSX.Element {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<DashboardPage />} />
+        <Route path="/import" element={<ImportDataPage />} />
+      </Routes>
+    </BrowserRouter>
   );
 }
 
