@@ -15,6 +15,7 @@ from fastapi import Depends, FastAPI, HTTPException, BackgroundTasks, Request, R
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
+from enum import Enum as PyEnum
 import os
 
 # Import MessageProcessor, models, validators, and exceptions with fallback handling
@@ -848,11 +849,37 @@ message_processor: Optional[MessageProcessor] = None
 
 
 # Request/Response Models
+class MessageTypeAPI(str, PyEnum):
+    """API-level MessageType enum for OpenAPI documentation.
+
+    Maps to MessageType from models.py - all 12 message types supported.
+    Constitutional Hash: cdd01ef066bc6cf2
+    """
+
+    COMMAND = "command"
+    QUERY = "query"
+    RESPONSE = "response"
+    EVENT = "event"
+    NOTIFICATION = "notification"
+    HEARTBEAT = "heartbeat"
+    GOVERNANCE_REQUEST = "governance_request"
+    GOVERNANCE_RESPONSE = "governance_response"
+    CONSTITUTIONAL_VALIDATION = "constitutional_validation"
+    TASK_REQUEST = "task_request"
+    TASK_RESPONSE = "task_response"
+    AUDIT_LOG = "audit_log"
+
+
 class MessageRequest(BaseModel):
     """Request model for sending messages"""
 
     content: str = Field(..., description="Message content")
-    message_type: str = Field(default="user_request", description="Type of message")
+    message_type: MessageTypeAPI = Field(
+        default=MessageTypeAPI.COMMAND,
+        description="Type of message (12 types: command, query, response, event, notification, "
+        "heartbeat, governance_request, governance_response, constitutional_validation, "
+        "task_request, task_response, audit_log)",
+    )
     priority: str = Field(default="normal", description="Message priority")
     sender: str = Field(..., description="Sender identifier")
     recipient: Optional[str] = Field(default=None, description="Recipient identifier")
@@ -955,16 +982,28 @@ async def send_message(
         message_id = str(uuid.uuid4())
         timestamp = datetime.now(timezone.utc)
 
-        # Map request message_type to MessageType enum
+        # Map request message_type to MessageType enum (all 12 types)
         message_type_map = {
-            "user_request": MessageType.COMMAND,
             "command": MessageType.COMMAND,
             "query": MessageType.QUERY,
+            "response": MessageType.RESPONSE,
             "event": MessageType.EVENT,
             "notification": MessageType.NOTIFICATION,
+            "heartbeat": MessageType.HEARTBEAT,
+            "governance_request": MessageType.GOVERNANCE_REQUEST,
+            "governance_response": MessageType.GOVERNANCE_RESPONSE,
+            "constitutional_validation": MessageType.CONSTITUTIONAL_VALIDATION,
             "task_request": MessageType.TASK_REQUEST,
+            "task_response": MessageType.TASK_RESPONSE,
+            "audit_log": MessageType.AUDIT_LOG,
         }
-        msg_type = message_type_map.get(request.message_type.lower(), MessageType.COMMAND)
+        # Get the value from the enum if it's an enum, otherwise use the string directly
+        msg_type_str = (
+            request.message_type.value
+            if isinstance(request.message_type, MessageTypeAPI)
+            else request.message_type
+        )
+        msg_type = message_type_map.get(msg_type_str.lower(), MessageType.COMMAND)
 
         # Map request priority to Priority enum
         priority_map = {
@@ -1014,7 +1053,7 @@ async def send_message(
             message_id=message_id,
             status="accepted",
             timestamp=timestamp.isoformat(),
-            details={"message_type": request.message_type, "latency_ms": round(latency_ms, 3)},
+            details={"message_type": msg_type_str, "latency_ms": round(latency_ms, 3)},
         )
 
     except Exception as e:
