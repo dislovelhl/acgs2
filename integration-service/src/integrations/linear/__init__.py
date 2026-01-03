@@ -48,6 +48,18 @@ from .slack_notifier import (
     get_slack_notifier,
     reset_slack_notifier,
 )
+from .slack_templates import (
+    build_comment_added_template,
+    build_issue_assigned_template,
+    build_issue_created_template,
+    build_priority_changed_template,
+    build_status_changed_template,
+    get_comment_added_fallback,
+    get_issue_assigned_fallback,
+    get_issue_created_fallback,
+    get_priority_changed_fallback,
+    get_status_changed_fallback,
+)
 from .state import (
     LinearStateConnectionError,
     LinearStateError,
@@ -112,6 +124,17 @@ __all__ = [
     "SlackNotConfiguredError",
     "get_slack_notifier",
     "reset_slack_notifier",
+    # Slack Templates
+    "build_issue_created_template",
+    "build_status_changed_template",
+    "build_comment_added_template",
+    "build_issue_assigned_template",
+    "build_priority_changed_template",
+    "get_issue_created_fallback",
+    "get_status_changed_fallback",
+    "get_comment_added_fallback",
+    "get_issue_assigned_fallback",
+    "get_priority_changed_fallback",
     # Webhook Auth
     "LinearWebhookAuthError",
     "get_linear_webhook_handler",
