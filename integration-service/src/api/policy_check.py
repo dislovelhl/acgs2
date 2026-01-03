@@ -661,12 +661,19 @@ async def validate_policies(
 async def list_policies(
     resource_type: Optional[str] = None,
     enabled_only: bool = True,
+    current_user: UserClaims = Depends(get_current_user),
 ) -> PoliciesListResponse:
     """
     List available governance policies.
 
     Optionally filter by resource type and enabled status.
     """
+    # Log the request with user/tenant context for audit trail
+    logger.info(
+        f"List policies request: resource_type={resource_type}, enabled_only={enabled_only}, "
+        f"user={current_user.sub}, tenant={current_user.tenant_id}"
+    )
+
     # Check if OPA is available
     opa_available = await check_opa_health()
 
@@ -704,6 +711,11 @@ async def list_policies(
                     if enabled_only:
                         policies = [p for p in policies if p.enabled]
 
+                    logger.info(
+                        f"List policies complete: returned {len(policies)} policies from OPA, "
+                        f"user={current_user.sub}, tenant={current_user.tenant_id}"
+                    )
+
                     return PoliciesListResponse(policies=policies, total=len(policies))
         except Exception as e:
             logger.warning(f"Failed to get policies from OPA: {e}")
@@ -718,6 +730,11 @@ async def list_policies(
     # Filter by enabled status
     if enabled_only:
         policies = [p for p in policies if p.enabled]
+
+    logger.info(
+        f"List policies complete: returned {len(policies)} policies, "
+        f"user={current_user.sub}, tenant={current_user.tenant_id}"
+    )
 
     return PoliciesListResponse(policies=policies, total=len(policies))
 
