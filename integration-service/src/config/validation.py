@@ -11,6 +11,8 @@ from typing import Any, Dict, List, Optional, Type, Union
 
 from pydantic import ValidationError as PydanticValidationError
 
+from exceptions.validation import ConfigValidationError
+
 from .models import (
     BaseIntegrationConfig,
     GitHubActionsConfig,
@@ -25,27 +27,12 @@ from .models import (
 logger = logging.getLogger(__name__)
 
 
-class ConfigValidationError(Exception):
-    """Raised when configuration validation fails."""
-
-    def __init__(
-        self,
-        message: str,
-        field: Optional[str] = None,
-        details: Optional[Dict[str, Any]] = None,
-    ):
-        self.message = message
-        self.field = field
-        self.details = details or {}
-        super().__init__(self.message)
-
-    def to_dict(self) -> Dict[str, Any]:
-        """Convert error to dictionary representation."""
-        return {
-            "error": self.message,
-            "field": self.field,
-            "details": self.details,
-        }
+# Public API exports - make exceptions and validators available for import from this module
+__all__ = [
+    "ConfigValidationError",
+    "ValidationResult",
+    "ConfigValidator",
+]
 
 
 class ValidationResult:
