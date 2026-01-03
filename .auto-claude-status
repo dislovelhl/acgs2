@@ -1,0 +1,25 @@
+{
+  "active": true,
+  "spec": "008-enhanced-ml-adaptive-governance-with-feedback-loop",
+  "state": "building",
+  "subtasks": {
+    "completed": 26,
+    "total": 28,
+    "in_progress": 1,
+    "failed": 0
+  },
+  "phase": {
+    "current": "End-to-End Integration and Verification",
+    "id": null,
+    "total": 3
+  },
+  "workers": {
+    "active": 0,
+    "max": 1
+  },
+  "session": {
+    "number": 407,
+    "started_at": "2026-01-03T08:53:52.881915"
+  },
+  "last_update": "2026-01-03T11:20:14.620299"
+}
