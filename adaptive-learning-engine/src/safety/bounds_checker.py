@@ -680,26 +680,247 @@ class SafetyBoundsChecker:
                     f"Accuracy {current_accuracy:.3f} below threshold {self.accuracy_threshold:.3f}",
                 )
 
-            # FAILURE MODE 2: FAILED_DEGRADATION
+            # FAILURE MODE 2: FAILED_DEGRADATION (Relative Regression Detection)
             #
-            # Check for significant accuracy drop from previous check
-            # This catches sudden performance regression even if still above threshold
+            # DEGRADATION DETECTION ALGORITHM: Detecting Sudden Performance Regression
+            # =========================================================================
             #
-            # Why degradation_threshold=0.05 (5% drop)?
-            # - Detects sudden model degradation that could indicate:
-            #   * Bad training batch (corrupted data)
-            #   * Distribution shift (concept drift)
-            #   * Model corruption (numerical instability)
-            # - 5% is statistically significant for n=100+ samples (SE ≈ 5%)
-            # - Prevents slow model rot by catching relative degradation
-            # - More sensitive than absolute threshold for detecting regressions
+            # This check detects significant accuracy drops from the previous safety check,
+            # catching sudden performance regressions that might be missed by absolute
+            # thresholds alone. It provides defense-in-depth by monitoring model stability
+            # over time, not just absolute performance.
             #
-            # Example: Model at 90% accuracy drops to 84%
-            # - Still above threshold (84% > 85% is false, so FAILED_ACCURACY too)
-            # - But 6% drop exceeds degradation_threshold (6% > 5%)
-            # - FAILED_DEGRADATION catches this regression
+            # ALGORITHM: Relative Accuracy Comparison
+            # ----------------------------------------
+            #
+            # 1. Compare current accuracy to previous check's accuracy (if available)
+            #    - Only triggers if we have history (_last_accuracy is not None)
+            #    - First check after initialization doesn't have previous baseline
+            #
+            # 2. Calculate accuracy drop: accuracy_drop = previous_accuracy - current_accuracy
+            #    - Direction matters: positive drop means degradation (accuracy decreased)
+            #    - Negative drop means improvement (accuracy increased) - not a failure
+            #
+            #    Mathematical Calculation:
+            #      accuracy_drop = self._last_accuracy - current_accuracy
+            #
+            #    Examples:
+            #      - Previous: 0.90, Current: 0.84 → drop = 0.90 - 0.84 = 0.06 (6% degradation)
+            #      - Previous: 0.85, Current: 0.88 → drop = 0.85 - 0.88 = -0.03 (3% improvement)
+            #      - Previous: 0.92, Current: 0.92 → drop = 0.92 - 0.92 = 0.00 (stable)
+            #
+            # 3. Compare drop to degradation_threshold (default 0.05 = 5%)
+            #    - If accuracy_drop > degradation_threshold: FAILED_DEGRADATION
+            #    - If accuracy_drop ≤ degradation_threshold: Continue to PASSED
+            #
+            # WHY DEGRADATION_THRESHOLD = 0.05 (5% Drop)?
+            # ---------------------------------------------
+            #
+            # The 5% threshold is carefully chosen to balance sensitivity to real issues
+            # vs. robustness to statistical noise in governance applications.
+            #
+            # 1. STATISTICAL SIGNIFICANCE:
+            #    With min_samples_for_check=100 and typical accuracy ~0.85:
+            #    - Standard Error (SE) ≈ sqrt(0.85 * 0.15 / 100) ≈ 0.036 (3.6%)
+            #    - 95% Confidence Interval: ± 1.96 * 0.036 ≈ ± 0.07 (7%)
+            #    - Observed 5% drop could be noise OR real degradation
+            #    - But 5% threshold is ~1.4 standard errors (about 84th percentile)
+            #    - This means ~16% chance of false alarm from noise alone
+            #    - Consecutive failure requirement (3 strikes) reduces noise:
+            #      * Probability of 3 consecutive false alarms: 0.16^3 ≈ 0.4% (very unlikely)
+            #      * Circuit breaker pattern filters transient noise while catching real issues
+            #
+            # 2. SUDDEN VS. GRADUAL DEGRADATION:
+            #    The degradation check serves a different purpose than absolute threshold:
+            #
+            #    Absolute Threshold (FAILED_ACCURACY):
+            #      - Catches: Gradual decay, models that never reach production quality
+            #      - Example: Model slowly degrades 88% → 86% → 84% → 82%
+            #      - Each step is small (2% drop < 5% threshold), but crosses 85% floor
+            #      - FAILED_ACCURACY catches when it hits 84% < 85%
+            #
+            #    Relative Threshold (FAILED_DEGRADATION):
+            #      - Catches: Sudden crashes, acute model failures
+            #      - Example: Model suddenly crashes 92% → 86%
+            #      - 6% drop > 5% threshold (FAILED_DEGRADATION)
+            #      - Still above 85% floor (passes absolute threshold)
+            #      - Relative check catches this acute regression
+            #
+            #    Defense-in-Depth: Both checks together provide comprehensive safety:
+            #      - Scenario A: 92% → 86% (6% drop, above floor)
+            #        * FAILED_DEGRADATION catches acute crash
+            #        * Passes absolute threshold (86% > 85%)
+            #      - Scenario B: 86% → 84% (2% drop, below floor)
+            #        * Passes degradation threshold (2% < 5%)
+            #        * FAILED_ACCURACY catches floor violation (84% < 85%)
+            #      - Scenario C: 90% → 83% (7% drop, below floor)
+            #        * Both checks fail (defense-in-depth confirmation)
+            #
+            # 3. WHAT CAUSES SUDDEN DEGRADATION?
+            #    A 5%+ drop typically indicates systematic issues requiring investigation:
+            #
+            #    a) Bad Training Batch (Data Quality):
+            #       - Corrupted features (missing values, encoding errors)
+            #       - Label noise (incorrect ground truth in feedback)
+            #       - Outlier batch (adversarial samples, edge cases)
+            #       Example: Governance model trained on batch with flipped labels
+            #                (grant/deny swapped) → learns incorrect policy
+            #
+            #    b) Distribution Shift (Concept Drift):
+            #       - Sudden change in data distribution (policy update, org restructure)
+            #       - Covariate shift (feature distributions change but label mapping stays same)
+            #       - Prior probability shift (class balance changes dramatically)
+            #       Example: Company acquires new division with different access patterns
+            #
+            #    c) Model Corruption (Numerical Instability):
+            #       - Gradient explosion (learning_rate too high, unstable SGD)
+            #       - Weight overflow (numerical precision issues)
+            #       - Catastrophic forgetting (new data overwrites previous knowledge)
+            #       Example: Learning rate spike causes weights to diverge
+            #
+            #    d) Infrastructure Issues:
+            #       - Feature extraction pipeline broken (wrong features fed to model)
+            #       - Preprocessing bug (scaling, normalization errors)
+            #       - Model deserialization error (loaded wrong model version)
+            #       Example: StandardScaler reset during deployment, features no longer normalized
+            #
+            # 4. WHY NOT LOWER (e.g., 3%) OR HIGHER (e.g., 10%) THRESHOLD?
+            #
+            #    Lower Threshold (3%):
+            #      - Too sensitive to statistical noise (SE ≈ 3.6%)
+            #      - Would trigger false alarms on normal variance
+            #      - Excessive alerts lead to "alert fatigue" (operators ignore warnings)
+            #      - Circuit breaker would open too frequently (reduced adaptability)
+            #      - Better handled by consecutive failure filtering (not threshold tuning)
+            #
+            #    Higher Threshold (10%):
+            #      - Too slow to detect acute issues (92% → 82% is catastrophic)
+            #      - By the time 10% drop detected, model may be unsafe (82% < 85%)
+            #      - Absolute threshold would catch it anyway (redundant)
+            #      - Misses moderate regressions (88% → 81% is 7% drop, below 10%)
+            #      - Defeats purpose of early warning system
+            #
+            #    Optimal 5% Threshold:
+            #      - Statistically significant (~1.4 SE) but not excessive false alarms
+            #      - Catches acute issues before absolute threshold violation
+            #      - Combined with consecutive failures (3 strikes) filters noise
+            #      - Provides early warning for intervention before critical failure
+            #      - Balances sensitivity (catch real issues) vs. specificity (avoid false alarms)
+            #
+            # 5. GOVERNANCE-SPECIFIC CONSIDERATIONS:
+            #
+            #    Why degradation detection is critical for access control/governance:
+            #
+            #    a) Cascading Impact:
+            #       - Degraded model grants improper permissions
+            #       - Bad permissions propagate to downstream systems
+            #       - Audit logs filled with incorrect decisions
+            #       - Compliance violations accumulate over time
+            #       - Early detection (5% drop) prevents cascade
+            #
+            #    b) Feedback Loop Risk:
+            #       - Model learns from its own predictions (online learning)
+            #       - Degraded model makes bad predictions
+            #       - Bad predictions become training labels (feedback loop)
+            #       - Further degrades model (positive feedback, exponential decay)
+            #       - Circuit breaker halts loop before irreversible corruption
+            #
+            #    c) Auditability Requirements:
+            #       - Compliance requires explaining why decisions changed
+            #       - Sudden 5%+ drop is auditable event (clear threshold crossed)
+            #       - Gradual 1-2% drifts harder to detect and explain
+            #       - Degradation detection provides audit trail for investigations
+            #
+            #    d) User Trust:
+            #       - Users notice when access patterns change suddenly
+            #       - 5%+ regression means ~1 in 20 users sees different behavior
+            #       - Early detection maintains consistent user experience
+            #       - Prevents "why did this suddenly get denied?" support tickets
+            #
+            # 6. DIRECTION OF CALCULATION (Why previous - current, not current - previous):
+            #
+            #    Mathematical Calculation:
+            #      accuracy_drop = self._last_accuracy - current_accuracy
+            #
+            #    Why This Direction?
+            #      - Positive value = degradation (accuracy decreased, bad)
+            #      - Negative value = improvement (accuracy increased, good)
+            #      - Natural interpretation: "drop" means going down
+            #
+            #    Example:
+            #      Previous: 0.90, Current: 0.84
+            #      accuracy_drop = 0.90 - 0.84 = +0.06 (6% drop, positive means degradation)
+            #
+            #    Alternative (Wrong Direction):
+            #      accuracy_drop_wrong = current_accuracy - self._last_accuracy
+            #      = 0.84 - 0.90 = -0.06 (negative value, confusing)
+            #      Would need: if accuracy_drop_wrong < -self.degradation_threshold (awkward)
+            #
+            #    Our Direction Benefits:
+            #      - Intuitive: positive drop = degradation (matches English semantics)
+            #      - Simple comparison: accuracy_drop > threshold (no negation needed)
+            #      - Consistent with "accuracy drop" terminology throughout codebase
+            #      - Improvement (negative drop) naturally ignored (< 0, fails > threshold check)
+            #
+            # 7. INTEGRATION WITH CIRCUIT BREAKER:
+            #
+            #    When degradation detected:
+            #      - Increments consecutive_failures counter (same as FAILED_ACCURACY)
+            #      - Both failure modes contribute equally to circuit breaker
+            #      - After 3 consecutive degradation failures: circuit opens (PAUSED)
+            #      - Prevents continued learning from degraded model
+            #      - Requires investigation and manual intervention (force_resume)
+            #
+            #    State Transitions on Degradation Failure:
+            #      - 1st degradation: OK → WARNING (1/3 failures, alert sent)
+            #      - 2nd degradation: WARNING → WARNING (2/3 failures, concern growing)
+            #      - 3rd degradation: WARNING → CRITICAL → PAUSED (circuit opens)
+            #      - Manual fix + passing check: PAUSED → OK (circuit closes)
+            #
+            # Example Scenarios with Concrete Numbers:
+            # -----------------------------------------
+            #
+            # Scenario 1: Acute Regression (Caught by Degradation)
+            #   Check 1: 92% accuracy (baseline established)
+            #   Check 2: 86% accuracy
+            #     → drop = 92% - 86% = 6% > 5% threshold
+            #     → FAILED_DEGRADATION (1/3 failures, WARNING)
+            #     → Still above 85% absolute threshold (passes FAILED_ACCURACY check)
+            #     → Degradation check provides early warning
+            #
+            # Scenario 2: Gradual Decay (Caught by Absolute Threshold)
+            #   Check 1: 88% accuracy (baseline)
+            #   Check 2: 86% accuracy (drop = 2% < 5%, passes degradation)
+            #   Check 3: 84% accuracy (drop = 2% < 5%, passes degradation)
+            #     → But 84% < 85% absolute threshold
+            #     → FAILED_ACCURACY catches gradual decay
+            #     → Degradation check alone would miss this pattern
+            #
+            # Scenario 3: Catastrophic Failure (Both Checks Fail)
+            #   Check 1: 90% accuracy (baseline)
+            #   Check 2: 82% accuracy
+            #     → drop = 90% - 82% = 8% > 5% threshold (FAILED_DEGRADATION)
+            #     → 82% < 85% absolute threshold (FAILED_ACCURACY)
+            #     → Both checks fail (defense-in-depth confirmation)
+            #     → High confidence this is real issue, not noise
+            #
+            # Scenario 4: Improvement (No Failure)
+            #   Check 1: 85% accuracy (baseline)
+            #   Check 2: 88% accuracy
+            #     → drop = 85% - 88% = -3% < 5% threshold (improvement, ignored)
+            #     → 88% > 85% absolute threshold (passes)
+            #     → PASSED, consecutive_failures reset to 0
+            #     → Circuit closes if was previously open
+            #
+            # This degradation detection algorithm provides critical safety by catching
+            # sudden model failures that absolute thresholds might miss, enabling early
+            # intervention before cascading failures occur in production governance systems.
             if self._last_accuracy is not None:
+                # Calculate accuracy drop from previous check
+                # Direction: previous - current makes positive = degradation (intuitive)
                 accuracy_drop = self._last_accuracy - current_accuracy
+
+                # Check if drop exceeds 5% threshold (statistically significant regression)
                 if accuracy_drop > self.degradation_threshold:
                     # CIRCUIT BREAKER: Increment failure counter
                     # Provides metadata about previous accuracy and drop magnitude
@@ -805,10 +1026,27 @@ class SafetyBoundsChecker:
                     f"Accuracy {accuracy:.3f} below threshold {self.accuracy_threshold:.3f}",
                 )
 
-            # Check for significant degradation
+            # DEGRADATION CHECK (Relative Regression Detection)
+            #
+            # Check for significant accuracy drop from previous check.
+            # See check_model() DEGRADATION DETECTION ALGORITHM section for full explanation.
+            #
+            # Quick Summary:
+            # - Detects sudden performance regression (acute failures)
+            # - Complements absolute threshold (catches gradual decay)
+            # - accuracy_drop = previous - current (positive = degradation)
+            # - degradation_threshold = 0.05 (5% drop triggers failure)
+            # - Balances sensitivity to real issues vs. statistical noise
+            # - Integrates with circuit breaker (contributes to consecutive failures)
             if self._last_accuracy is not None:
+                # Calculate accuracy drop from previous check
+                # Direction: previous - current makes positive = degradation (intuitive)
                 accuracy_drop = self._last_accuracy - accuracy
+
+                # Check if drop exceeds 5% threshold (statistically significant regression)
                 if accuracy_drop > self.degradation_threshold:
+                    # CIRCUIT BREAKER: Increment failure counter
+                    # Provides metadata about previous accuracy and drop magnitude
                     return self._handle_failure(
                         CheckResult.FAILED_DEGRADATION,
                         accuracy,
