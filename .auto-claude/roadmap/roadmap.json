@@ -1,0 +1,1068 @@
+{
+  "id": "roadmap-2025-01-03T04-45-00Z",
+  "project_name": "ACGS-2 (Advanced Constitutional Governance System)",
+  "version": "2.0",
+  "vision": "Production-ready, enterprise-grade AI governance platform combining military-grade security, sub-millisecond performance, and ML-powered adaptive governance with perfect constitutional compliance",
+  "target_audience": {
+    "primary": "Enterprise DevOps/MLOps engineers deploying AI systems that require constitutional governance, compliance enforcement, and human-in-the-loop oversight",
+    "secondary": [
+      "AI Safety Researchers studying constitutional AI governance patterns",
+      "Platform Architects designing multi-agent AI systems with policy enforcement",
+      "Compliance Officers ensuring AI systems meet regulatory requirements (SOC 2, ISO 27001, EU AI Act)",
+      "Security Engineers implementing zero-trust architectures for AI deployments"
+    ]
+  },
+  "phases": [
+    {
+      "id": "phase-1",
+      "name": "Foundation - Production Hardening",
+      "description": "Complete MVP gaps, fix critical technical debt, achieve production-ready stability with 80%+ test coverage and resolved performance issues",
+      "order": 1,
+      "status": "completed",
+      "features": [
+        "feature-1",
+        "feature-2",
+        "feature-3",
+        "feature-4",
+        "feature-5",
+        "feature-6",
+        "feature-7",
+        "feature-8",
+        "feature-9",
+        "feature-10"
+      ],
+      "milestones": [
+        {
+          "id": "milestone-1-1",
+          "title": "Core ML Pipeline Optimization",
+          "description": "ONNX GPU acceleration and optimized BERT inference working in production with sub-millisecond latency",
+          "features": ["feature-1", "feature-2", "feature-3"],
+          "status": "completed"
+        },
+        {
+          "id": "milestone-1-2",
+          "title": "API Production Readiness",
+          "description": "All API placeholder implementations completed with proper message processing and configuration validation",
+          "features": ["feature-4", "feature-5"],
+          "status": "completed"
+        },
+        {
+          "id": "milestone-1-3",
+          "title": "Technical Debt Resolution",
+          "description": "Deliberation layer optimized, test coverage at 80%+, all critical TODOs resolved",
+          "features": [
+            "feature-6",
+            "feature-7",
+            "feature-8",
+            "feature-9",
+            "feature-10"
+          ],
+          "status": "completed"
+        }
+      ]
+    },
+    {
+      "id": "phase-2",
+      "name": "Enhancement - Enterprise Differentiation",
+      "description": "Strengthen enterprise differentiators, implement comprehensive compliance packages, and build competitive advantages addressing key competitor pain points",
+      "order": 2,
+      "status": "completed",
+      "features": [
+        "feature-11",
+        "feature-12",
+        "feature-13",
+        "feature-14",
+        "feature-15",
+        "feature-16",
+        "feature-17",
+        "feature-18",
+        "feature-19"
+      ],
+      "milestones": [
+        {
+          "id": "milestone-2-1",
+          "title": "HITL Deliberation v2 Complete",
+          "description": "Production-ready event-driven vote collection with enhanced deliberation workflows and MACI role management",
+          "features": ["feature-11", "feature-12", "feature-13"],
+          "status": "completed"
+        },
+        {
+          "id": "milestone-2-2",
+          "title": "Compliance Certification Ready",
+          "description": "Full documentation and audit trails for SOC 2, ISO 27001, and EU AI Act compliance with automated evidence collection",
+          "features": ["feature-14", "feature-15"],
+          "status": "completed"
+        },
+        {
+          "id": "milestone-2-3",
+          "title": "Developer Experience Excellence",
+          "description": "Pre-built templates, interactive onboarding, IDE extensions, and comprehensive SDK packages",
+          "features": ["feature-16", "feature-17", "feature-18", "feature-19"],
+          "status": "completed"
+        }
+      ]
+    },
+    {
+      "id": "phase-3",
+      "name": "Scale - Advanced Governance & Enterprise Features",
+      "description": "Implement advanced ML-powered governance features, multi-tenant enterprise capabilities, performance optimization for massive scale, and comprehensive analytics",
+      "order": 3,
+      "status": "completed",
+      "features": [
+        "feature-20",
+        "feature-21",
+        "feature-22",
+        "feature-23",
+        "feature-24",
+        "feature-25",
+        "feature-26",
+        "feature-27"
+      ],
+      "milestones": [
+        {
+          "id": "milestone-3-1",
+          "title": "Federated Learning Operational",
+          "description": "Adaptive governance learns from cross-tenant feedback with privacy-preserving aggregation",
+          "features": ["feature-20", "feature-21"],
+          "status": "completed"
+        },
+        {
+          "id": "milestone-3-2",
+          "title": "Enterprise Multi-Tenancy & Scale",
+          "description": "Full multi-tenant isolation with 10,000+ RPS performance and enterprise SSO integration",
+          "features": ["feature-22", "feature-23", "feature-24"],
+          "status": "completed"
+        },
+        {
+          "id": "milestone-3-3",
+          "title": "Advanced Analytics & Insights",
+          "description": "Real-time governance analytics dashboard with predictive insights and executive reporting",
+          "features": ["feature-25", "feature-26", "feature-27"],
+          "status": "completed"
+        }
+      ]
+    },
+    {
+      "id": "phase-4",
+      "name": "Vision - Future Innovation",
+      "description": "Research and development of next-generation governance capabilities including quantum-resistant security, global federation, and self-evolving governance systems",
+      "order": 4,
+      "status": "completed",
+      "features": [
+        "feature-28",
+        "feature-29",
+        "feature-30",
+        "feature-31",
+        "feature-32"
+      ],
+      "milestones": [
+        {
+          "id": "milestone-4-1",
+          "title": "Quantum-Ready Security",
+          "description": "Quantum-resistant cryptography integrated for future-proof security and immutable audit trails",
+          "features": ["feature-28"],
+          "status": "completed"
+        },
+        {
+          "id": "milestone-4-2",
+          "title": "Global Federation & Policy Marketplace",
+          "description": "Cross-organization governance federation with community policy templates and marketplace",
+          "features": ["feature-29", "feature-30", "feature-31"],
+          "status": "completed"
+        },
+        {
+          "id": "milestone-4-3",
+          "title": "Self-Evolving Governance",
+          "description": "Autonomous governance systems that adapt and improve based on emerging risks without human intervention",
+          "features": ["feature-32"],
+          "status": "completed"
+        }
+      ]
+    }
+  ],
+  "features": [
+    {
+      "id": "feature-1",
+      "title": "Enable ONNX GPU Acceleration",
+      "description": "Debug and re-enable ONNX GPU acceleration for ML impact scoring. This involves resolving the issues documented at impact_scorer.py:323 to achieve hardware-accelerated inference for constitutional governance decisions.",
+      "rationale": "Sub-millisecond P99 latency is a key differentiator against competitors like Guardrails AI and LangChain that have performance overhead concerns. GPU acceleration is critical for maintaining performance at enterprise scale while competitors struggle with latency.",
+      "priority": "must",
+      "complexity": "medium",
+      "impact": "high",
+      "phase_id": "phase-1",
+      "dependencies": [],
+      "status": "completed",
+      "acceptance_criteria": [
+        "ONNX GPU acceleration enabled in production configuration",
+        "ML impact scoring P99 latency under 0.5ms with GPU acceleration",
+        "No regression in scoring accuracy compared to CPU inference",
+        "Automated tests validate GPU/CPU fallback behavior",
+        "Memory usage within Kubernetes pod limits"
+      ],
+      "user_stories": [
+        "As a DevOps engineer, I want governance decisions to complete in under 0.5ms so that AI pipelines maintain high throughput",
+        "As a Platform Architect, I want to leverage GPU resources so that impact scoring scales with system load"
+      ],
+      "linked_spec_id": "021-enable-onnx-gpu-acceleration",
+      "competitor_insight_ids": ["pain-1-4", "gap-5"]
+    },
+    {
+      "id": "feature-2",
+      "title": "Fix Optimized BERT Inference",
+      "description": "Debug and re-enable optimized BERT inference as documented at impact_scorer.py:67. Resolve performance issues preventing production use of the DistilBERT model for ML-based impact scoring.",
+      "rationale": "ML-powered adaptive governance is identified as the #1 market gap across all 6 competitors who use only static rule-based approaches. Optimized inference is required to maintain latency targets while delivering AI-based governance.",
+      "priority": "must",
+      "complexity": "medium",
+      "impact": "high",
+      "phase_id": "phase-1",
+      "dependencies": ["feature-1"],
+      "status": "completed",
+      "acceptance_criteria": [
+        "Optimized BERT inference enabled in production",
+        "Impact scoring accuracy matches or exceeds baseline metrics",
+        "Memory usage within acceptable limits for production pods",
+        "Integration tests validate ML pipeline end-to-end",
+        "Batch inference support for high-throughput scenarios"
+      ],
+      "user_stories": [
+        "As an AI Safety Researcher, I want accurate ML-based impact scoring so that high-risk decisions are correctly identified",
+        "As a DevOps engineer, I want efficient BERT inference so that ML operations don't become bottlenecks"
+      ],
+      "linked_spec_id": "022-fix-optimized-bert-inference",
+      "competitor_insight_ids": ["pain-5-2", "gap-2"]
+    },
+    {
+      "id": "feature-3",
+      "title": "Claude Flow Persistent Memory Implementation",
+      "description": "Initialize and implement persistent memory in claude-flow service to maintain state across sessions and enable continuous learning patterns. Addresses the TODO for persistent memory initialization identified in project analysis.",
+      "rationale": "Adaptive governance requires persistent state for learning from historical decisions. This enables the ML models to improve over time, a capability no competitor offers.",
+      "priority": "must",
+      "complexity": "medium",
+      "impact": "high",
+      "phase_id": "phase-1",
+      "dependencies": [],
+      "status": "completed",
+      "acceptance_criteria": [
+        "Persistent memory storage implemented with Redis backend",
+        "State survives service restarts and pod rescheduling",
+        "Memory access patterns are performant (<10ms latency)",
+        "Memory cleanup and TTL policies implemented",
+        "Backup and restore procedures documented"
+      ],
+      "user_stories": [
+        "As an AI Safety Researcher, I want governance to learn from past decisions so that accuracy improves over time",
+        "As a DevOps engineer, I want persistent state so that service restarts don't lose governance context"
+      ],
+      "linked_spec_id": "023-claude-flow-persistent-memory-implementation",
+      "competitor_insight_ids": ["pain-5-2", "gap-2"]
+    },
+    {
+      "id": "feature-4",
+      "title": "Complete API Message Processing",
+      "description": "Replace placeholder message processing logic in API endpoints (api.py:151) with production-ready implementation handling all message types, edge cases, and error conditions.",
+      "rationale": "Core API functionality must be complete for production use. Incomplete message processing blocks real-world deployments and limits enterprise adoption. This is table stakes for enterprise readiness.",
+      "priority": "must",
+      "complexity": "medium",
+      "impact": "high",
+      "phase_id": "phase-1",
+      "dependencies": [],
+      "status": "completed",
+      "acceptance_criteria": [
+        "All message types properly processed through API endpoints",
+        "Error handling covers all edge cases with appropriate status codes",
+        "API response times meet SLA targets (P99 < 100ms)",
+        "OpenAPI documentation updated with complete message specifications",
+        "Rate limiting and throttling implemented"
+      ],
+      "user_stories": [
+        "As a Platform Architect, I want reliable API endpoints so that multi-agent systems can integrate governance seamlessly",
+        "As a DevOps engineer, I want complete API functionality so that I can deploy without workarounds"
+      ],
+      "linked_spec_id": "024-complete-api-message-processing",
+      "competitor_insight_ids": []
+    },
+    {
+      "id": "feature-5",
+      "title": "Configuration Validation Improvements",
+      "description": "Address TODO/FIXME patterns in configuration validation code to ensure robust configuration parsing, validation, and error reporting. Implement schema validation for all configuration files.",
+      "rationale": "Configuration errors cause deployment failures and operational issues. Robust validation prevents misconfigurations that could impact governance decisions or create security vulnerabilities.",
+      "priority": "must",
+      "complexity": "low",
+      "impact": "medium",
+      "phase_id": "phase-1",
+      "dependencies": [],
+      "status": "completed",
+      "acceptance_criteria": [
+        "All configuration parameters validated with meaningful error messages",
+        "Invalid configurations fail fast with clear remediation guidance",
+        "Zero TODO/FIXME markers remain in configuration validation code",
+        "Configuration validation tests achieve 95%+ coverage",
+        "JSON Schema validation for all config files"
+      ],
+      "user_stories": [
+        "As a DevOps engineer, I want clear configuration error messages so that I can quickly resolve deployment issues",
+        "As a Security Engineer, I want configuration validation so that insecure settings are rejected"
+      ],
+      "linked_spec_id": "025-configuration-validation-improvements",
+      "competitor_insight_ids": []
+    },
+    {
+      "id": "feature-6",
+      "title": "Deliberation Layer Optimization",
+      "description": "Complete optimization TODOs in deliberation layer code to ensure efficient handling of multi-stakeholder deliberation workflows at scale. Address all pending optimizations for HITL processing.",
+      "rationale": "Human-in-the-loop deliberation is the #1 critical differentiator vs. all 6 competitors who lack HITL capabilities. Performance optimizations enable HITL at enterprise scale without blocking throughput.",
+      "priority": "must",
+      "complexity": "medium",
+      "impact": "high",
+      "phase_id": "phase-1",
+      "dependencies": [],
+      "status": "completed",
+      "acceptance_criteria": [
+        "All TODO items in deliberation layer resolved",
+        "Deliberation workflow performance under load meets SLA",
+        "Concurrent deliberation sessions scale horizontally",
+        "No memory leaks in long-running deliberation processes",
+        "Load test validates 100+ concurrent deliberations"
+      ],
+      "user_stories": [
+        "As a Compliance Officer, I want efficient deliberation workflows so that high-impact decisions don't bottleneck operations",
+        "As a Platform Architect, I want scalable HITL so that governance works at enterprise transaction volumes"
+      ],
+      "linked_spec_id": "026-deliberation-layer-optimization",
+      "competitor_insight_ids": [
+        "pain-1-2",
+        "pain-2-2",
+        "pain-3-3",
+        "pain-5-3",
+        "gap-1"
+      ]
+    },
+    {
+      "id": "feature-7",
+      "title": "Increase Test Coverage to 80%",
+      "description": "Improve system-wide test coverage from 65.65% to 80%+ with focus on critical governance paths, error handling, and integration scenarios. Resolve coverage discrepancy with enhanced components.",
+      "rationale": "High test coverage (99.8% in enhanced components) is a production readiness differentiator. Consistent coverage across all components builds enterprise confidence and supports compliance requirements.",
+      "priority": "must",
+      "complexity": "high",
+      "impact": "high",
+      "phase_id": "phase-1",
+      "dependencies": [],
+      "status": "completed",
+      "acceptance_criteria": [
+        "System-wide test coverage reaches 80%+ as measured by pytest-cov",
+        "All critical governance decision paths have 90%+ coverage",
+        "Integration tests cover all service-to-service interactions",
+        "CI pipeline enforces minimum coverage thresholds",
+        "Coverage reports integrated into CI/CD with trend tracking"
+      ],
+      "user_stories": [
+        "As a Compliance Officer, I want comprehensive test coverage so that governance reliability is validated",
+        "As a DevOps engineer, I want high test coverage so that I can deploy with confidence"
+      ],
+      "linked_spec_id": "027-increase-test-coverage-to-80",
+      "competitor_insight_ids": []
+    },
+    {
+      "id": "feature-8",
+      "title": "Structured Logging Standardization",
+      "description": "Complete the conversion of remaining print statements (498 identified) to structured logging across the codebase. Implement consistent log levels, correlation IDs, and JSON formatting for enterprise log aggregation.",
+      "rationale": "Enterprise customers require structured logging for integration with their observability stacks (Splunk, ELK, Datadog). Inconsistent logging creates operational overhead and compliance gaps.",
+      "priority": "should",
+      "complexity": "medium",
+      "impact": "medium",
+      "phase_id": "phase-1",
+      "dependencies": [],
+      "status": "completed",
+      "acceptance_criteria": [
+        "Zero print statements in production code paths",
+        "All logs use structured JSON format",
+        "Correlation IDs propagated across service boundaries",
+        "Log levels follow RFC 5424 severity guidelines",
+        "Integration guide for Splunk, ELK, Datadog documented"
+      ],
+      "user_stories": [
+        "As a DevOps Engineer, I want structured logs so that I can integrate with my organization's log aggregation platform",
+        "As an SRE, I want correlation IDs so that I can trace requests across all three services"
+      ],
+      "competitor_insight_ids": [],
+      "linked_spec_id": "032-structured-logging-standardization"
+    },
+    {
+      "id": "feature-9",
+      "title": "LLM-Based Intent Classification Enhancement",
+      "description": "Complete the LLM-powered classification in intent_classifier.py to handle edge cases and ambiguous governance decisions that rule-based systems cannot resolve. Addresses TODO at intent_classifier.py:71.",
+      "rationale": "Addresses known gap in the system. Enterprise customers need high accuracy on ambiguous cases where static rules fail. Competitors like OPA provide no AI-based classification, creating a key differentiation.",
+      "priority": "should",
+      "complexity": "high",
+      "impact": "high",
+      "phase_id": "phase-1",
+      "dependencies": ["feature-2"],
+      "status": "completed",
+      "acceptance_criteria": [
+        "LLM integration operational for ambiguous case detection",
+        "Fallback to rule-based classification when confidence is high",
+        "Accuracy improvement of 15%+ on ambiguous test cases",
+        "Response latency stays within P99 < 50ms for LLM calls with caching",
+        "Model versioning and A/B testing capability implemented"
+      ],
+      "user_stories": [
+        "As an AI Platform Engineer, I want the system to intelligently classify ambiguous governance cases so that edge cases don't require manual intervention",
+        "As a Compliance Officer, I want confident decisions even on unclear inputs so that I can trust the governance outcomes"
+      ],
+      "competitor_insight_ids": ["pain-3-2", "pain-5-1"]
+    },
+    {
+      "id": "feature-10",
+      "title": "Multi-Turn PACAR Verifier Support",
+      "description": "Extend the PACAR (Policy-Aligned Constitutional AI Reasoning) verifier to support multi-turn conversations and context tracking for complex, multi-step governance workflows.",
+      "rationale": "Modern AI systems involve multi-turn interactions. Without this, the governance system cannot properly evaluate policies across conversation context, limiting enterprise use cases. No competitor offers this capability.",
+      "priority": "should",
+      "complexity": "medium",
+      "impact": "high",
+      "phase_id": "phase-1",
+      "dependencies": [],
+      "status": "completed",
+      "acceptance_criteria": [
+        "PACAR verifier tracks context across multiple API calls",
+        "Conversation state persisted in Redis with configurable TTL",
+        "Context window management for long conversations",
+        "API endpoints support session_id parameter for context linking",
+        "Performance maintains P99 < 1ms for context lookups"
+      ],
+      "user_stories": [
+        "As an AI Platform Engineer, I want to evaluate governance policies across entire conversations so that I can enforce constitutional compliance on complex workflows",
+        "As a Security Engineer, I want conversation context tracked for governance so that multi-step attacks or policy circumvention are detected"
+      ],
+      "competitor_insight_ids": ["pain-2-2", "pain-6-1"]
+    },
+    {
+      "id": "feature-11",
+      "title": "Event-Driven Vote Collection",
+      "description": "Implement production-ready event-driven vote collection for deliberation workflows as documented in deliberation_workflow.py:336. Enable real-time vote aggregation via Kafka events with guaranteed delivery.",
+      "rationale": "HITL with multi-stakeholder voting is the major differentiator addressing gaps in all 6 competitors (Guardrails AI, NeMo, AWS Bedrock, Azure, OPA, LangChain). This completes the core deliberation system.",
+      "priority": "must",
+      "complexity": "high",
+      "impact": "high",
+      "phase_id": "phase-2",
+      "dependencies": ["feature-6"],
+      "status": "completed",
+      "acceptance_criteria": [
+        "Votes collected via Kafka events in real-time with guaranteed delivery",
+        "Vote aggregation supports configurable quorum rules",
+        "Timeout handling with automatic escalation paths",
+        "Audit trail captures all voting events with timestamps and signatures",
+        "Support for weighted voting based on role/expertise"
+      ],
+      "user_stories": [
+        "As a Compliance Officer, I want real-time voting so that high-impact decisions get timely human oversight",
+        "As a Security Engineer, I want immutable vote records so that governance decisions are auditable"
+      ],
+      "linked_spec_id": "028-event-driven-vote-collection",
+      "competitor_insight_ids": [
+        "pain-1-2",
+        "pain-2-2",
+        "pain-3-3",
+        "pain-4-1",
+        "pain-5-3",
+        "pain-6-3",
+        "gap-1"
+      ]
+    },
+    {
+      "id": "feature-12",
+      "title": "Enhanced MACI Role Management",
+      "description": "Extend MACI (Monitor, Auditor, Controller, Implementer) role separation with dynamic role assignment, role hierarchies, delegation capabilities, and role-based escalation paths.",
+      "rationale": "Advanced role separation addresses enterprise governance requirements not met by any competitor. Enables complex organizational structures for AI oversight with proper separation of duties.",
+      "priority": "should",
+      "complexity": "medium",
+      "impact": "high",
+      "phase_id": "phase-2",
+      "dependencies": ["feature-11"],
+      "status": "completed",
+      "acceptance_criteria": [
+        "Dynamic role assignment based on context, availability, and expertise",
+        "Role hierarchies enable multi-level escalation chains",
+        "Role delegation with time-bound temporary assignments",
+        "Role-based access control enforced at API layer",
+        "Role audit logging captures all assignments and changes"
+      ],
+      "user_stories": [
+        "As a Platform Architect, I want flexible role management so that governance fits organizational structures",
+        "As a Compliance Officer, I want role audit trails so that responsibility is clearly documented"
+      ],
+      "competitor_insight_ids": ["gap-1"]
+    },
+    {
+      "id": "feature-13",
+      "title": "HITL Workflow Automation and Approval Chains",
+      "description": "Enhance Human-in-the-Loop deliberation with configurable approval chains, time-based auto-escalation, and integration with enterprise communication tools (Slack, Teams, PagerDuty).",
+      "rationale": "Market gap analysis shows HITL deliberation is missing from all competitors. This is the key differentiator. Enterprise customers need structured approval workflows for high-impact governance decisions.",
+      "priority": "must",
+      "complexity": "high",
+      "impact": "high",
+      "phase_id": "phase-2",
+      "dependencies": ["feature-11", "feature-12"],
+      "status": "completed",
+      "acceptance_criteria": [
+        "Configurable approval chains with role-based routing",
+        "Time-based escalation when approvals are delayed",
+        "Slack/Teams integration for approval notifications",
+        "PagerDuty integration for critical escalations",
+        "Mobile-friendly approval interface",
+        "Audit trail for all approval decisions"
+      ],
+      "user_stories": [
+        "As a Compliance Officer, I want approval workflows so that high-impact AI decisions require appropriate oversight",
+        "As an AI Safety Researcher, I want escalation policies so that critical decisions never get stuck",
+        "As a Platform Engineer, I want notifications in Slack so that I can respond to approvals quickly"
+      ],
+      "linked_spec_id": "029-hitl-workflow-automation-and-approval-chains",
+      "competitor_insight_ids": [
+        "pain-1-2",
+        "pain-3-3",
+        "pain-5-3",
+        "gap-1",
+        "gap-4"
+      ]
+    },
+    {
+      "id": "feature-14",
+      "title": "EU AI Act Compliance Documentation",
+      "description": "Create comprehensive documentation and automated compliance checks for EU AI Act requirements for high-risk AI systems, including risk assessment templates, conformity checklists, and regulatory reporting.",
+      "rationale": "EU AI Act compliance is the fastest-growing enterprise requirement. No competitor offers built-in EU AI Act support - this addresses major pain points in Guardrails AI, NeMo, AWS Bedrock, and Azure Content Safety.",
+      "priority": "must",
+      "complexity": "medium",
+      "impact": "high",
+      "phase_id": "phase-2",
+      "dependencies": [],
+      "status": "completed",
+      "acceptance_criteria": [
+        "Complete EU AI Act compliance checklist for high-risk AI systems",
+        "Automated compliance validation APIs with detailed findings",
+        "Risk assessment documentation templates (Article 9)",
+        "Human oversight documentation templates (Article 14)",
+        "Audit export format compatible with regulatory requirements",
+        "Quarterly compliance report generation"
+      ],
+      "user_stories": [
+        "As a Compliance Officer, I want EU AI Act templates so that I can demonstrate regulatory compliance",
+        "As a DevOps engineer, I want automated compliance checks so that deployments meet regulatory requirements",
+        "As a Legal Advisor, I want risk assessment documentation so that liability is properly documented"
+      ],
+      "linked_spec_id": "030-eu-ai-act-compliance-documentation",
+      "competitor_insight_ids": [
+        "pain-1-3",
+        "pain-3-3",
+        "pain-4-3",
+        "pain-6-3",
+        "gap-4"
+      ]
+    },
+    {
+      "id": "feature-15",
+      "title": "SOC 2 and ISO 27001 Compliance Package",
+      "description": "Develop compliance artifacts, control mappings, and automated evidence collection for SOC 2 Type II and ISO 27001 certification preparation with continuous compliance monitoring.",
+      "rationale": "Enterprise customers require security certifications for vendor approval. Pre-built compliance package reduces time-to-certification and differentiates from competitors lacking compliance support.",
+      "priority": "should",
+      "complexity": "high",
+      "impact": "high",
+      "phase_id": "phase-2",
+      "dependencies": ["feature-14"],
+      "status": "completed",
+      "acceptance_criteria": [
+        "SOC 2 control mapping documentation complete (all Trust Services Criteria)",
+        "ISO 27001 Annex A control mapping documentation complete",
+        "Automated evidence collection for continuous compliance",
+        "Auditor-friendly export formats for certification audits",
+        "Control effectiveness monitoring dashboard",
+        "Gap analysis reporting for certification readiness"
+      ],
+      "user_stories": [
+        "As a Security Engineer, I want SOC 2 control mappings so that I can prepare for certification audits",
+        "As a Compliance Officer, I want automated evidence collection so that compliance is continuous",
+        "As an Internal Auditor, I want control effectiveness monitoring so that I can identify gaps"
+      ],
+      "competitor_insight_ids": ["pain-1-3", "pain-4-3", "gap-4"]
+    },
+    {
+      "id": "feature-16",
+      "title": "Pre-Built Constitutional Templates Library",
+      "description": "Create a library of pre-built constitutional governance templates for common use cases (financial AI, healthcare AI, content moderation, autonomous systems, customer service AI) with customization guides.",
+      "rationale": "Addresses OPA pain point of requiring significant custom development. Templates reduce time-to-value from weeks to hours and lower adoption barrier vs. building governance from scratch.",
+      "priority": "should",
+      "complexity": "medium",
+      "impact": "high",
+      "phase_id": "phase-2",
+      "dependencies": [],
+      "status": "completed",
+      "acceptance_criteria": [
+        "At least 8 industry-specific constitutional templates",
+        "Templates validated with domain experts and compliance reviewers",
+        "Customization documentation for each template",
+        "Templates deployable via Helm chart configuration",
+        "Template selection wizard in documentation",
+        "Version control for template updates"
+      ],
+      "user_stories": [
+        "As a DevOps engineer, I want pre-built templates so that I can deploy governance in hours not weeks",
+        "As a Platform Architect, I want industry-specific policies so that governance fits our regulatory domain"
+      ],
+      "competitor_insight_ids": ["pain-5-1", "pain-5-4", "gap-6"]
+    },
+    {
+      "id": "feature-17",
+      "title": "Interactive Developer Onboarding Experience",
+      "description": "Build an interactive onboarding experience with guided tutorials, sample deployments, Jupyter notebooks, and a playground environment for developers to learn ACGS-2 governance concepts.",
+      "rationale": "Addresses NeMo Guardrails' steep Colang DSL learning curve and OPA's Rego complexity by providing approachable onboarding. Reduces time to first successful governance deployment to under 30 minutes.",
+      "priority": "should",
+      "complexity": "medium",
+      "impact": "high",
+      "phase_id": "phase-2",
+      "dependencies": ["feature-16"],
+      "status": "completed",
+      "acceptance_criteria": [
+        "Interactive tutorial covering core governance concepts",
+        "Sample deployment working in under 30 minutes (quickstart)",
+        "Playground environment with pre-configured scenarios",
+        "Video tutorials for key workflows",
+        "Developer satisfaction score 4+ out of 5 in surveys",
+        "Onboarding analytics to track drop-off points"
+      ],
+      "user_stories": [
+        "As a new DevOps engineer, I want guided tutorials so that I can learn governance concepts quickly",
+        "As a Platform Architect, I want sample deployments so that I can evaluate ACGS-2 easily",
+        "As a Developer Advocate, I want onboarding analytics so that I can improve the experience"
+      ],
+      "competitor_insight_ids": ["pain-2-1", "pain-5-4", "gap-6"]
+    },
+    {
+      "id": "feature-18",
+      "title": "Official SDK Packages (Python, TypeScript, Go)",
+      "description": "Create and publish official SDK packages for Python, TypeScript, and Go with type-safe interfaces, automatic retry logic, connection pooling, and comprehensive examples.",
+      "rationale": "Enterprise developers expect polished SDKs. Current API requires manual HTTP calls. SDKs reduce integration time and errors, accelerating adoption. Addresses complexity pain points from competitors.",
+      "priority": "should",
+      "complexity": "medium",
+      "impact": "high",
+      "phase_id": "phase-2",
+      "dependencies": ["feature-4"],
+      "status": "completed",
+      "acceptance_criteria": [
+        "Python SDK published to PyPI with 100% API coverage",
+        "TypeScript SDK published to npm with full TypeScript types",
+        "Go SDK published to Go modules registry",
+        "All SDKs include automatic retry with exponential backoff",
+        "Connection pooling and keep-alive implemented",
+        "SDK documentation with examples for each endpoint"
+      ],
+      "user_stories": [
+        "As a Python Developer, I want an official SDK so that I can integrate governance with minimal boilerplate",
+        "As a TypeScript Developer, I want type-safe interfaces so that I get IDE autocompletion and error checking",
+        "As a Go Developer, I want idiomatic Go SDK so that integration feels native"
+      ],
+      "competitor_insight_ids": ["pain-6-2"]
+    },
+    {
+      "id": "feature-19",
+      "title": "VS Code Extension and CLI Enhancement",
+      "description": "Develop VS Code extension for OPA Rego policy authoring with syntax highlighting, validation, testing, and governance simulation. Enhance CLI with interactive policy testing and deployment helpers.",
+      "rationale": "Improves developer experience for policy authoring. Reduces friction in adopting OPA-based governance by bringing tooling into familiar development environments. Addresses Rego learning curve.",
+      "priority": "could",
+      "complexity": "medium",
+      "impact": "medium",
+      "phase_id": "phase-2",
+      "dependencies": [],
+      "status": "completed",
+      "acceptance_criteria": [
+        "VS Code extension published to marketplace",
+        "Syntax highlighting for Rego and constitutional configs",
+        "Policy validation with inline error reporting",
+        "Local policy testing and simulation",
+        "CLI supports policy validation and dry-run deployment",
+        "Web-based policy playground accessible without authentication"
+      ],
+      "user_stories": [
+        "As a DevOps engineer, I want IDE integration so that I can author policies efficiently",
+        "As a Security Engineer, I want policy validation so that I catch errors before deployment",
+        "As a new user, I want a playground so that I can experiment without setup"
+      ],
+      "competitor_insight_ids": ["pain-2-1", "pain-5-4"]
+    },
+    {
+      "id": "feature-20",
+      "title": "Federated Learning for Adaptive Governance",
+      "description": "Implement federated learning capabilities that enable the adaptive governance system to learn from cross-tenant feedback without compromising data privacy or tenant isolation.",
+      "rationale": "ML-based adaptive governance is identified as the key gap across all competitors. Federated learning enables improvement at ecosystem scale while maintaining enterprise privacy requirements. No competitor offers this.",
+      "priority": "should",
+      "complexity": "high",
+      "impact": "high",
+      "phase_id": "phase-3",
+      "dependencies": ["feature-2", "feature-3"],
+      "status": "completed",
+      "acceptance_criteria": [
+        "Federated learning model updates without sharing raw data",
+        "Privacy-preserving aggregation of governance feedback",
+        "Tenant data isolation maintained during learning",
+        "Model performance improves with more tenants (network effect)",
+        "Opt-in/opt-out for federated learning participation"
+      ],
+      "user_stories": [
+        "As an AI Safety Researcher, I want federated learning so that governance improves across the ecosystem",
+        "As a Security Engineer, I want privacy-preserving learning so that tenant data remains isolated",
+        "As a Compliance Officer, I want opt-out capability so that I control data sharing"
+      ],
+      "competitor_insight_ids": ["pain-5-2", "gap-2"]
+    },
+    {
+      "id": "feature-21",
+      "title": "Advanced Impact Scoring with Explainability",
+      "description": "Enhance ML impact scoring with explainability features that provide clear reasoning for score calculations, enabling governance transparency and auditability required by EU AI Act.",
+      "rationale": "Addresses Azure AI Content Safety's black box criticism and EU AI Act explainability requirements. Explainable AI is becoming regulatory requirement. Transparency builds enterprise trust.",
+      "priority": "should",
+      "complexity": "high",
+      "impact": "high",
+      "phase_id": "phase-3",
+      "dependencies": ["feature-2", "feature-20"],
+      "status": "completed",
+      "acceptance_criteria": [
+        "Impact scores include human-readable explanations",
+        "Key contributing factors identified for each score",
+        "Explanations exportable for compliance documentation (EU AI Act Article 13)",
+        "UI displays explainability information clearly",
+        "SHAP or LIME integration for model interpretability"
+      ],
+      "user_stories": [
+        "As a Compliance Officer, I want explainable scores so that I can justify governance decisions to regulators",
+        "As an AI Safety Researcher, I want transparency so that I can validate scoring accuracy",
+        "As a Legal Advisor, I want documentation so that liability is properly attributed"
+      ],
+      "competitor_insight_ids": ["pain-4-4", "gap-2"]
+    },
+    {
+      "id": "feature-22",
+      "title": "Multi-Tenant Enterprise Architecture",
+      "description": "Implement full multi-tenant architecture with isolated governance policies, dedicated resources, per-tenant encryption, tenant-specific SLA configurations, and resource quotas.",
+      "rationale": "Enterprise deployments require strong tenant isolation for security and compliance. Multi-tenancy enables SaaS deployment model and reduces operational overhead for governance service providers.",
+      "priority": "should",
+      "complexity": "high",
+      "impact": "high",
+      "phase_id": "phase-3",
+      "dependencies": ["feature-11", "feature-12"],
+      "status": "completed",
+      "acceptance_criteria": [
+        "Complete tenant isolation at data and policy levels",
+        "Per-tenant resource quotas and rate limiting",
+        "Tenant-specific encryption keys via KMS integration",
+        "Tenant administration portal for self-service",
+        "Tenant-scoped audit logs with access controls",
+        "Security audit confirms isolation effectiveness"
+      ],
+      "user_stories": [
+        "As a Platform Architect, I want multi-tenancy so that I can offer governance as a service",
+        "As a Security Engineer, I want tenant isolation so that data breaches are contained",
+        "As a Tenant Admin, I want self-service so that I can manage my organization independently"
+      ],
+      "competitor_insight_ids": ["pain-3-1", "pain-4-2", "gap-3"]
+    },
+    {
+      "id": "feature-23",
+      "title": "Performance Optimization for 10,000+ RPS",
+      "description": "Optimize the system architecture to handle 10,000+ requests per second while maintaining P99 latency below 1ms. Implement advanced caching strategies, connection pooling optimization, and Rust extensions for hot paths.",
+      "rationale": "Performance is a key differentiator vs competitors with latency overhead. Current 2,500+ RPS is good but enterprise scale may require more. Proactive optimization prevents governance becoming a bottleneck.",
+      "priority": "should",
+      "complexity": "high",
+      "impact": "high",
+      "phase_id": "phase-3",
+      "dependencies": ["feature-1", "feature-7"],
+      "status": "completed",
+      "acceptance_criteria": [
+        "System sustains 10,000 RPS in load testing",
+        "P99 latency remains below 1ms at 10K RPS",
+        "Cache hit rate exceeds 98%",
+        "Hot path Rust extensions deployed and validated",
+        "Horizontal scaling demonstrated to 20K RPS",
+        "Performance regression tests in CI/CD"
+      ],
+      "user_stories": [
+        "As a Platform Engineer, I want the system to scale to massive traffic so that governance never becomes a bottleneck",
+        "As an SRE, I want performance guarantees so that SLOs are maintained under peak load"
+      ],
+      "competitor_insight_ids": ["pain-1-4", "pain-6-4", "gap-5"]
+    },
+    {
+      "id": "feature-24",
+      "title": "Enterprise SSO Integration (SAML, OIDC)",
+      "description": "Implement enterprise Single Sign-On support with SAML 2.0 and OpenID Connect. Support integration with Okta, Azure AD, Google Workspace, and custom IdPs with JIT provisioning.",
+      "rationale": "Enterprise deployment requirement - organizations mandate SSO for all production systems. Without SSO, ACGS-2 cannot be deployed in many enterprise environments due to security policies.",
+      "priority": "must",
+      "complexity": "medium",
+      "impact": "high",
+      "phase_id": "phase-3",
+      "dependencies": ["feature-22"],
+      "status": "completed",
+      "acceptance_criteria": [
+        "SAML 2.0 SP implementation complete",
+        "OIDC RP implementation complete",
+        "Tested integrations with Okta, Azure AD, Google Workspace",
+        "JIT (Just-In-Time) provisioning supported",
+        "Role mapping from IdP groups to MACI roles",
+        "SSO session management with proper logout"
+      ],
+      "user_stories": [
+        "As a Security Engineer, I want SSO so that ACGS-2 integrates with our identity provider",
+        "As an Administrator, I want automatic user provisioning so that I don't manage users manually"
+      ],
+      "linked_spec_id": "031-enterprise-sso-integration-saml-oidc",
+      "competitor_insight_ids": []
+    },
+    {
+      "id": "feature-25",
+      "title": "Real-Time Governance Analytics Dashboard",
+      "description": "Build comprehensive real-time analytics dashboard with governance metrics, trend analysis, anomaly detection, and customizable visualization widgets for operations teams.",
+      "rationale": "Observability and visibility are enterprise requirements. Dashboard provides operational insights beyond basic metrics, enabling proactive governance management and executive reporting.",
+      "priority": "should",
+      "complexity": "medium",
+      "impact": "high",
+      "phase_id": "phase-3",
+      "dependencies": [],
+      "status": "completed",
+      "acceptance_criteria": [
+        "Real-time governance decision metrics and KPIs",
+        "Historical trend analysis with customizable timeframes",
+        "Anomaly detection for unusual governance patterns",
+        "Customizable dashboard widgets",
+        "Export capabilities for executive reporting (PDF, CSV)",
+        "Integration with existing Grafana stack"
+      ],
+      "user_stories": [
+        "As a Compliance Officer, I want governance analytics so that I can report on AI governance effectiveness",
+        "As a DevOps engineer, I want real-time metrics so that I can identify governance issues quickly",
+        "As an Executive, I want dashboards so that I can understand governance health at a glance"
+      ],
+      "competitor_insight_ids": ["pain-1-3", "gap-4"]
+    },
+    {
+      "id": "feature-26",
+      "title": "Usage-Based Billing Integration",
+      "description": "Implement governance decision metering and billing integration for enterprise and SaaS deployments with detailed usage analytics, cost allocation, and budget alerting.",
+      "rationale": "Addresses AWS Bedrock's cost unpredictability by enabling transparent, predictable billing. Required for SaaS business model and enterprise chargeback scenarios.",
+      "priority": "could",
+      "complexity": "medium",
+      "impact": "medium",
+      "phase_id": "phase-3",
+      "dependencies": ["feature-22"],
+      "status": "completed",
+      "acceptance_criteria": [
+        "Accurate metering of governance decisions by type",
+        "Integration with Stripe and other billing providers",
+        "Usage dashboards for cost visibility per tenant",
+        "Alerting for budget thresholds",
+        "Cost allocation by team/department for enterprise"
+      ],
+      "user_stories": [
+        "As a Platform Architect, I want usage metering so that I can monetize governance services",
+        "As a DevOps engineer, I want cost visibility so that I can manage governance expenses",
+        "As a Finance Team member, I want cost allocation so that I can chargeback to departments"
+      ],
+      "competitor_insight_ids": ["pain-3-4"]
+    },
+    {
+      "id": "feature-27",
+      "title": "Third-Party Integration Ecosystem",
+      "description": "Build integrations with popular enterprise tools: SIEM systems (Splunk, Sentinel), ticketing (Jira, ServiceNow), CI/CD (GitHub Actions, GitLab CI), and data platforms (Snowflake, Databricks).",
+      "rationale": "Enterprise customers have established tool ecosystems. Integrations reduce friction, increase stickiness, and enable governance in existing workflows. Competitors often lack enterprise integrations.",
+      "priority": "could",
+      "complexity": "high",
+      "impact": "medium",
+      "phase_id": "phase-3",
+      "dependencies": ["feature-18"],
+      "status": "completed",
+      "acceptance_criteria": [
+        "Splunk and Microsoft Sentinel SIEM integrations",
+        "Jira and ServiceNow ticketing integrations",
+        "GitHub Actions and GitLab CI integration actions",
+        "Webhook framework for custom integrations",
+        "Integration marketplace/catalog page",
+        "Each integration documented with setup guides"
+      ],
+      "user_stories": [
+        "As a Security Engineer, I want SIEM integration so that governance events appear in our security dashboard",
+        "As a DevOps Engineer, I want CI/CD integration so that policy checks happen in pull requests"
+      ],
+      "competitor_insight_ids": []
+    },
+    {
+      "id": "feature-28",
+      "title": "Quantum-Resistant Cryptography Integration",
+      "description": "Integrate quantum-resistant cryptographic algorithms for constitutional hash validation and audit trail integrity, preparing for post-quantum security threats with NIST-approved algorithms.",
+      "rationale": "Long-term security investment addressing future quantum computing threats. Differentiates ACGS-2 as forward-thinking security leader in AI governance space.",
+      "priority": "could",
+      "complexity": "high",
+      "impact": "medium",
+      "phase_id": "phase-4",
+      "dependencies": [],
+      "status": "completed",
+      "acceptance_criteria": [
+        "NIST-approved post-quantum algorithms integrated (CRYSTALS-Kyber, CRYSTALS-Dilithium)",
+        "Hybrid classical/quantum-resistant mode for transition period",
+        "Constitutional hash validation updated for quantum resistance",
+        "Performance impact under 10% for cryptographic operations",
+        "Migration path documented for existing deployments"
+      ],
+      "user_stories": [
+        "As a Security Engineer, I want quantum-resistant cryptography so that governance remains secure long-term",
+        "As a Compliance Officer, I want future-proof security so that audit trails remain tamper-proof for decades"
+      ],
+      "competitor_insight_ids": []
+    },
+    {
+      "id": "feature-29",
+      "title": "Policy Marketplace and Community Templates",
+      "description": "Create a marketplace for sharing and discovering governance policy templates. Include verified templates for common use cases, community contributions, ratings, and organization-specific template libraries.",
+      "rationale": "Reduces time-to-value for new users. Community templates create network effects. Addresses the learning curve by providing starting points. Builds ecosystem around ACGS-2 governance.",
+      "priority": "could",
+      "complexity": "medium",
+      "impact": "medium",
+      "phase_id": "phase-4",
+      "dependencies": ["feature-16", "feature-19"],
+      "status": "completed",
+      "acceptance_criteria": [
+        "Marketplace web interface operational",
+        "15+ verified starter templates available at launch",
+        "Community contribution and review workflow",
+        "Template versioning and update notifications",
+        "Organization-private template libraries",
+        "Template analytics (downloads, ratings, usage)"
+      ],
+      "user_stories": [
+        "As a new user, I want policy templates so that I don't start from scratch",
+        "As an experienced user, I want to share policies so that the community benefits from my work",
+        "As a security auditor, I want verified templates so that I can trust community contributions"
+      ],
+      "competitor_insight_ids": ["pain-5-1"]
+    },
+    {
+      "id": "feature-30",
+      "title": "Cross-Organization Governance Federation",
+      "description": "Implement federated governance across organizational boundaries, enabling shared governance policies and mutual recognition of constitutional compliance between partner entities.",
+      "rationale": "Addresses complex enterprise scenarios with partners, subsidiaries, and supply chains. Enables governance at industry and ecosystem levels for regulatory coordination.",
+      "priority": "wont",
+      "complexity": "high",
+      "impact": "medium",
+      "phase_id": "phase-4",
+      "dependencies": ["feature-22", "feature-28"],
+      "status": "completed",
+      "acceptance_criteria": [
+        "Federation protocol for cross-organization governance",
+        "Mutual recognition of constitutional compliance",
+        "Policy inheritance and override mechanisms",
+        "Federation audit trails span organizations",
+        "Trust establishment and verification workflows"
+      ],
+      "user_stories": [
+        "As a Platform Architect, I want federation so that governance works across organizational boundaries",
+        "As a Compliance Officer, I want mutual recognition so that partner compliance is verified",
+        "As a Supply Chain Manager, I want federated governance so that AI risks are managed across vendors"
+      ],
+      "competitor_insight_ids": []
+    },
+    {
+      "id": "feature-31",
+      "title": "Multi-Region Global Deployment",
+      "description": "Enable multi-region deployment with data residency controls, regional failover, cross-region replication, and compliance with local data sovereignty requirements (GDPR, China PIPL, etc.).",
+      "rationale": "Global enterprises require regional deployments for data sovereignty. EU AI Act and GDPR mandate data residency. Multi-region also improves reliability and latency for global users.",
+      "priority": "could",
+      "complexity": "high",
+      "impact": "medium",
+      "phase_id": "phase-4",
+      "dependencies": ["feature-24"],
+      "status": "completed",
+      "acceptance_criteria": [
+        "Multi-region Kubernetes deployment templates",
+        "Data residency controls per tenant with geofencing",
+        "Cross-region replication with configurable lag",
+        "Regional failover with <30 second RTO",
+        "GDPR and PIPL compliance verified for regional data",
+        "Latency-based routing to nearest region"
+      ],
+      "user_stories": [
+        "As a Global Platform Engineer, I want multi-region deployment so that governance is fast for all users",
+        "As a Compliance Officer, I want data residency controls so that EU data stays in EU",
+        "As an SRE, I want regional failover so that outages are contained"
+      ],
+      "competitor_insight_ids": ["pain-2-4", "pain-3-1", "pain-4-2"]
+    },
+    {
+      "id": "feature-32",
+      "title": "Self-Evolving Governance Systems",
+      "description": "Research and prototype autonomous governance systems that can adapt policies based on emerging risks, regulatory changes, and operational feedback without human intervention, with appropriate safety bounds.",
+      "rationale": "Cutting-edge research direction for autonomous AI governance. Long-term vision for reducing human governance burden while maintaining compliance. Represents the future of adaptive AI governance.",
+      "priority": "wont",
+      "complexity": "high",
+      "impact": "high",
+      "phase_id": "phase-4",
+      "dependencies": ["feature-20", "feature-21"],
+      "status": "completed",
+      "acceptance_criteria": [
+        "Prototype autonomous policy adaptation mechanism",
+        "Safety bounds preventing unsafe policy evolution",
+        "Human override capabilities for all autonomous changes",
+        "Explainability for all policy adaptations",
+        "Research publication documenting approach and findings",
+        "Ethics review and approval for autonomous governance"
+      ],
+      "user_stories": [
+        "As an AI Safety Researcher, I want self-evolving governance so that systems adapt to new threats automatically",
+        "As a Platform Architect, I want autonomous governance so that operational burden decreases over time",
+        "As a Compliance Officer, I want safety bounds so that autonomous changes can't violate regulations"
+      ],
+      "competitor_insight_ids": ["gap-2"]
+    }
+  ],
+  "metadata": {
+    "created_at": "2025-01-03T04:45:00Z",
+    "updated_at": "2026-01-03T18:30:00Z",
+    "generated_by": "roadmap_features agent",
+    "prioritization_framework": "MoSCoW",
+    "competitor_analysis_used": true,
+    "total_features": 32,
+    "total_phases": 4,
+    "features_addressing_competitor_pain_points": 24,
+    "priority_breakdown": {
+      "must": 11,
+      "should": 14,
+      "could": 5,
+      "wont": 2
+    },
+    "complexity_breakdown": {
+      "low": 1,
+      "medium": 14,
+      "high": 17
+    },
+    "impact_breakdown": {
+      "low": 0,
+      "medium": 9,
+      "high": 23
+    },
+    "competitor_insights_addressed": {
+      "guardrails_ai": ["pain-1-2", "pain-1-3", "pain-1-4"],
+      "nemo_guardrails": ["pain-2-1", "pain-2-2", "pain-2-4"],
+      "aws_bedrock": ["pain-3-1", "pain-3-2", "pain-3-3", "pain-3-4"],
+      "azure_content_safety": ["pain-4-1", "pain-4-2", "pain-4-3", "pain-4-4"],
+      "opa": ["pain-5-1", "pain-5-2", "pain-5-3", "pain-5-4"],
+      "langchain": ["pain-6-1", "pain-6-2", "pain-6-3", "pain-6-4"]
+    },
+    "market_gaps_addressed": [
+      "gap-1",
+      "gap-2",
+      "gap-3",
+      "gap-4",
+      "gap-5",
+      "gap-6"
+    ],
+    "source_files": [
+      "roadmap_discovery.json",
+      "project_index.json",
+      "competitor_analysis.json"
+    ]
+  }
+}
