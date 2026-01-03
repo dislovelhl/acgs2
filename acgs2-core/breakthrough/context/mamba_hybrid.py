@@ -15,12 +15,13 @@ Design Decisions:
 - Single shared attention reduces parameters while maintaining quality
 """
 
-import hashlib
-import logging
-import time
+import asyncio
 from dataclasses import dataclass, field
-from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple
+from enum import Enum
+import hashlib
+import time
+import logging
 
 from .. import CONSTITUTIONAL_HASH, MAX_CONTEXT_LENGTH
 
@@ -29,7 +30,6 @@ logger = logging.getLogger(__name__)
 
 class ProcessingMode(Enum):
     """Processing modes for the hybrid processor."""
-
     FAST = "fast"  # Mamba-only for speed
     PRECISE = "precise"  # Include attention for accuracy
     BALANCED = "balanced"  # Adaptive selection
@@ -38,7 +38,6 @@ class ProcessingMode(Enum):
 @dataclass
 class MambaConfig:
     """Configuration for Mamba-2 layers."""
-
     d_model: int = 512
     d_state: int = 128
     d_conv: int = 4
@@ -53,7 +52,6 @@ class MambaConfig:
 @dataclass
 class AttentionConfig:
     """Configuration for shared attention layer."""
-
     d_model: int = 512
     num_heads: int = 8
     dropout: float = 0.1
@@ -63,7 +61,6 @@ class AttentionConfig:
 @dataclass
 class ProcessingResult:
     """Result from hybrid processing."""
-
     output: Any
     processing_time_ms: float
     mode_used: ProcessingMode
@@ -104,7 +101,11 @@ class MambaLayer:
 
         logger.debug(f"Initialized MambaLayer {layer_idx} with d_model={self.d_model}")
 
-    async def forward(self, x: Any, state: Optional[Any] = None) -> Tuple[Any, Any]:
+    async def forward(
+        self,
+        x: Any,
+        state: Optional[Any] = None
+    ) -> Tuple[Any, Any]:
         """
         Forward pass through Mamba layer.
 
@@ -119,6 +120,7 @@ class MambaLayer:
         # In production, this would use mamba_ssm library
 
         batch_size = 1  # Simplified
+        seq_len = len(x) if isinstance(x, list) else 1
 
         # Discretize continuous parameters
         # A_discrete = exp(dt * A)
@@ -175,7 +177,10 @@ class SharedAttentionLayer:
         logger.debug(f"Initialized SharedAttentionLayer with {self.num_heads} heads")
 
     async def forward(
-        self, x: Any, mask: Optional[Any] = None, critical_positions: Optional[List[int]] = None
+        self,
+        x: Any,
+        mask: Optional[Any] = None,
+        critical_positions: Optional[List[int]] = None
     ) -> Any:
         """
         Forward pass through attention layer.
@@ -209,7 +214,11 @@ class SharedAttentionLayer:
 
         return x
 
-    async def _focused_attention(self, x: Any, critical_positions: List[int]) -> Any:
+    async def _focused_attention(
+        self,
+        x: Any,
+        critical_positions: List[int]
+    ) -> Any:
         """Apply focused attention to critical positions."""
         # Boost attention weights for critical positions
         return x
@@ -232,7 +241,7 @@ class ConstitutionalMambaHybrid:
         self,
         mamba_config: Optional[MambaConfig] = None,
         attention_config: Optional[AttentionConfig] = None,
-        mode: ProcessingMode = ProcessingMode.BALANCED,
+        mode: ProcessingMode = ProcessingMode.BALANCED
     ):
         """
         Initialize the Constitutional Mamba Hybrid processor.
@@ -249,7 +258,8 @@ class ConstitutionalMambaHybrid:
 
         # Initialize Mamba layers (6:1 ratio as per Zamba paper)
         self.mamba_layers: List[MambaLayer] = [
-            MambaLayer(self.mamba_config, i) for i in range(self.mamba_config.num_layers)
+            MambaLayer(self.mamba_config, i)
+            for i in range(self.mamba_config.num_layers)
         ]
 
         # Single shared attention layer
@@ -277,7 +287,7 @@ class ConstitutionalMambaHybrid:
         self,
         x: Any,
         critical_positions: Optional[List[int]] = None,
-        mode: Optional[ProcessingMode] = None,
+        mode: Optional[ProcessingMode] = None
     ) -> ProcessingResult:
         """
         Process input through the hybrid architecture.
@@ -320,14 +330,16 @@ class ConstitutionalMambaHybrid:
             # Interleave attention at strategic points (after layers 2, 4)
             if effective_mode != ProcessingMode.FAST and i in [2, 4]:
                 current = await self.shared_attention.forward(
-                    current, critical_positions=critical_positions
+                    current,
+                    critical_positions=critical_positions
                 )
 
         # Final attention pass for precise mode
         attention_applied = False
         if effective_mode == ProcessingMode.PRECISE:
             current = await self.shared_attention.forward(
-                current, critical_positions=critical_positions
+                current,
+                critical_positions=critical_positions
             )
             attention_applied = True
             self._stats["attention_applied"] += 1
@@ -353,7 +365,11 @@ class ConstitutionalMambaHybrid:
             },
         )
 
-    async def _prepare_jrt_context(self, x: Any, critical_positions: Optional[List[int]]) -> Any:
+    async def _prepare_jrt_context(
+        self,
+        x: Any,
+        critical_positions: Optional[List[int]]
+    ) -> Any:
         """
         JRT-style context preparation.
 
@@ -369,7 +385,7 @@ class ConstitutionalMambaHybrid:
 
     def _compute_cache_key(self, x: Any) -> str:
         """Compute cache key for input."""
-        content = str(x).encode("utf-8")
+        content = str(x).encode('utf-8')
         return hashlib.sha256(content).hexdigest()[:16]
 
     def _get_context_length(self, x: Any) -> int:
@@ -426,10 +442,16 @@ class MambaHybridFactory:
     def create_high_performance() -> ConstitutionalMambaHybrid:
         """Create high-performance configuration (less accurate)."""
         config = MambaConfig(d_model=256, num_layers=4)
-        return ConstitutionalMambaHybrid(mamba_config=config, mode=ProcessingMode.FAST)
+        return ConstitutionalMambaHybrid(
+            mamba_config=config,
+            mode=ProcessingMode.FAST
+        )
 
     @staticmethod
     def create_high_accuracy() -> ConstitutionalMambaHybrid:
         """Create high-accuracy configuration (slower)."""
         config = MambaConfig(d_model=1024, num_layers=8)
-        return ConstitutionalMambaHybrid(mamba_config=config, mode=ProcessingMode.PRECISE)
+        return ConstitutionalMambaHybrid(
+            mamba_config=config,
+            mode=ProcessingMode.PRECISE
+        )

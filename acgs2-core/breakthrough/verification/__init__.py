@@ -1,56 +1,29 @@
 """
-Verification Layer - Constitutional AI Governance
-================================================
+Layer 2: Verification & Validation
+===================================
 
 Constitutional Hash: cdd01ef066bc6cf2
 
-This layer provides mathematical guarantees for constitutional governance:
-- MACI: Multi-Agent Constitutional Intelligence with role separation
-- SagaLLM: Compensable transactions with LIFO rollback
-- Z3 SMT: Formal verification of policy consistency
+Implements integrated verification bypassing Gödel limitations with:
+- MACI: Role separation (Executive/Legislative/Judicial)
+- SagaLLM: Transaction guarantees with compensation
+- VeriPlan: Formal LTL verification via Z3
+
+References:
+- MACI: Multi-Agent Collaborative Intelligence (arXiv:2501.16689)
+- SagaLLM: Transaction Guarantees (arXiv:2503.11951)
+- VeriPlan: Formal Verification (arXiv:2502.17898)
 """
 
-from .maci_roles import (
-    Branch,
-    ConstitutionalAgent,
-    DecisionType,
-    ExecutiveAgent,
-    JudicialAgent,
-    LegislativeAgent,
-    MACIOrchestrator,
-)
-from .sagallm_transactions import (
-    ConstitutionalOperationFactory,
-    SagaLLMOrchestrator,
-    SagaTransaction,
-    TransactionCoordinator,
-    TransactionState,
-)
-from .z3_smt_verifier import (
-    ConstitutionalVerifier,
-    PolicySpecification,
-    VerificationResult,
-    Z3PolicyVerifier,
-)
+from .maci_verifier import MACIVerificationPipeline, MACIRole
+from .saga_transactions import SagaConstitutionalTransaction, SagaCheckpoint
+from .veriplan_z3 import VeriPlanFormalVerifier, Z3ConstitutionalAdapter
 
 __all__ = [
-    # MACI Role Separation
-    "MACIOrchestrator",
-    "ExecutiveAgent",
-    "LegislativeAgent",
-    "JudicialAgent",
-    "ConstitutionalAgent",
-    "Branch",
-    "DecisionType",
-    # SagaLLM Transactions
-    "SagaLLMOrchestrator",
-    "TransactionCoordinator",
-    "ConstitutionalOperationFactory",
-    "SagaTransaction",
-    "TransactionState",
-    # Z3 SMT Verification
-    "ConstitutionalVerifier",
-    "Z3PolicyVerifier",
-    "PolicySpecification",
-    "VerificationResult",
+    "MACIVerificationPipeline",
+    "MACIRole",
+    "SagaConstitutionalTransaction",
+    "SagaCheckpoint",
+    "VeriPlanFormalVerifier",
+    "Z3ConstitutionalAdapter",
 ]

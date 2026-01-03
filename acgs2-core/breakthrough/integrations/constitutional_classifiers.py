@@ -17,13 +17,13 @@ References:
 """
 
 import asyncio
+from dataclasses import dataclass, field
+from datetime import datetime
+from typing import Any, Dict, List, Optional, Tuple
+from enum import Enum
 import hashlib
 import logging
 import uuid
-from dataclasses import dataclass, field
-from datetime import datetime
-from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple
 
 from .. import CONSTITUTIONAL_HASH, JAILBREAK_PREVENTION_TARGET
 
@@ -32,7 +32,6 @@ logger = logging.getLogger(__name__)
 
 class ComplianceLevel(Enum):
     """Compliance levels for classification."""
-
     COMPLIANT = "compliant"
     UNCERTAIN = "uncertain"
     VIOLATION = "violation"
@@ -42,7 +41,6 @@ class ComplianceLevel(Enum):
 @dataclass
 class ComplianceResult:
     """Result from constitutional classification."""
-
     result_id: str
     compliant: bool
     level: ComplianceLevel
@@ -66,7 +64,6 @@ class ComplianceResult:
 @dataclass
 class AgentAction:
     """An action to be classified."""
-
     action_id: str
     action_type: str
     content: str
@@ -127,7 +124,9 @@ class JailbreakDetector:
         self._detection_count = 0
 
     async def detect(
-        self, content: str, context: Optional[Dict[str, Any]] = None
+        self,
+        content: str,
+        context: Optional[Dict[str, Any]] = None
     ) -> Tuple[bool, float, List[str]]:
         """
         Detect jailbreak attempt in content.
@@ -177,7 +176,7 @@ class ConstitutionalEmbedder:
         content = f"{action.action_type}:{action.content}:{action.actor}"
         hash_bytes = hashlib.sha256(content.encode()).digest()
 
-        return [b / 255.0 for b in hash_bytes[: self.embedding_dim]]
+        return [b / 255.0 for b in hash_bytes[:self.embedding_dim]]
 
 
 class ConstitutionalClassifier:
@@ -196,7 +195,10 @@ class ConstitutionalClassifier:
     """
 
     def __init__(
-        self, threshold: float = 0.7, jailbreak_sensitivity: float = 0.8, embedding_dim: int = 128
+        self,
+        threshold: float = 0.7,
+        jailbreak_sensitivity: float = 0.8,
+        embedding_dim: int = 128
     ):
         """
         Initialize constitutional classifier.
@@ -221,9 +223,14 @@ class ConstitutionalClassifier:
             "compliant_actions": 0,
         }
 
-        logger.info(f"Initialized ConstitutionalClassifier threshold={threshold}")
+        logger.info(
+            f"Initialized ConstitutionalClassifier threshold={threshold}"
+        )
 
-    async def classify(self, action: AgentAction) -> ComplianceResult:
+    async def classify(
+        self,
+        action: AgentAction
+    ) -> ComplianceResult:
         """
         Classify an agent action for constitutional compliance.
 
@@ -236,7 +243,6 @@ class ConstitutionalClassifier:
             ComplianceResult with classification
         """
         import time
-
         start_time = time.perf_counter()
 
         result_id = f"class-{uuid.uuid4().hex[:8]}"
@@ -245,7 +251,8 @@ class ConstitutionalClassifier:
 
         # Step 1: Quick jailbreak detection
         is_jailbreak, jb_confidence, patterns = await self.jailbreak_detector.detect(
-            action.content, action.context
+            action.content,
+            action.context
         )
 
         if is_jailbreak:
@@ -291,7 +298,9 @@ class ConstitutionalClassifier:
         )
 
     async def _compute_constitutional_score(
-        self, embedding: List[float], action: AgentAction
+        self,
+        embedding: List[float],
+        action: AgentAction
     ) -> float:
         """
         Compute constitutional compliance score.
@@ -320,7 +329,10 @@ class ConstitutionalClassifier:
 
         return max(0.0, min(1.0, base_score))
 
-    async def batch_classify(self, actions: List[AgentAction]) -> List[ComplianceResult]:
+    async def batch_classify(
+        self,
+        actions: List[AgentAction]
+    ) -> List[ComplianceResult]:
         """
         Classify multiple actions in batch.
 
@@ -346,6 +358,8 @@ class ConstitutionalClassifier:
         }
 
 
-def create_classifier(threshold: float = 0.7) -> ConstitutionalClassifier:
+def create_classifier(
+    threshold: float = 0.7
+) -> ConstitutionalClassifier:
     """Factory function to create constitutional classifier."""
     return ConstitutionalClassifier(threshold=threshold)

@@ -16,21 +16,20 @@ References:
 """
 
 import asyncio
-import logging
-import uuid
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timedelta
+from typing import Any, Callable, Dict, List, Optional, Set
 from enum import Enum
-from typing import Any, Dict, List, Optional, Set
+import uuid
+import logging
 
-from .. import CONSENSUS_THRESHOLD, CONSTITUTIONAL_HASH
+from .. import CONSTITUTIONAL_HASH, CONSENSUS_THRESHOLD
 
 logger = logging.getLogger(__name__)
 
 
 class DeliberationStatus(Enum):
     """Status of a deliberation process."""
-
     PENDING = "pending"
     ACTIVE = "active"
     CONSENSUS_REACHED = "consensus_reached"
@@ -40,7 +39,6 @@ class DeliberationStatus(Enum):
 
 class StatementVote(Enum):
     """Vote options for statements."""
-
     AGREE = "agree"
     DISAGREE = "disagree"
     PASS = "pass"
@@ -49,7 +47,6 @@ class StatementVote(Enum):
 @dataclass
 class Stakeholder:
     """A stakeholder participating in deliberation."""
-
     stakeholder_id: str
     role: str
     group: Optional[str] = None
@@ -69,7 +66,6 @@ class Stakeholder:
 @dataclass
 class Statement:
     """A statement in the deliberation."""
-
     statement_id: str
     content: str
     author_id: str
@@ -101,7 +97,6 @@ class Statement:
 @dataclass
 class OpinionGroup:
     """A group of stakeholders with similar opinions."""
-
     group_id: str
     name: str
     member_ids: Set[str]
@@ -113,15 +108,14 @@ class OpinionGroup:
             return 0.0
 
         agrees = sum(
-            1
-            for member_id in self.member_ids
+            1 for member_id in self.member_ids
             if statement.votes.get(member_id) == StatementVote.AGREE
         )
 
         total = sum(
-            1
-            for member_id in self.member_ids
-            if member_id in statement.votes and statement.votes[member_id] != StatementVote.PASS
+            1 for member_id in self.member_ids
+            if member_id in statement.votes
+            and statement.votes[member_id] != StatementVote.PASS
         )
 
         return agrees / max(total, 1)
@@ -138,7 +132,6 @@ class OpinionGroup:
 @dataclass
 class Deliberation:
     """A deliberation session."""
-
     deliberation_id: str
     topic: str
     status: DeliberationStatus
@@ -166,7 +159,6 @@ class Deliberation:
 @dataclass
 class ConstitutionalProposal:
     """A proposal for constitutional change."""
-
     proposal_id: str
     title: str
     description: str
@@ -190,7 +182,6 @@ class ConstitutionalProposal:
 @dataclass
 class DeliberationResult:
     """Result of a deliberation process."""
-
     deliberation_id: str
     approved: bool
     consensus_principles: List[str]
@@ -218,7 +209,6 @@ class DeliberationResult:
 @dataclass
 class ConstitutionalAmendment:
     """A constitutional amendment resulting from deliberation."""
-
     amendment_id: str
     approved_principles: List[str]
     pending_review: List[str]
@@ -242,7 +232,6 @@ class ConstitutionalAmendment:
 @dataclass
 class Decision:
     """A governance decision requiring validation."""
-
     decision_id: str
     action: str
     context: Dict[str, Any]
@@ -253,7 +242,6 @@ class Decision:
 @dataclass
 class HybridDecision:
     """A decision with both immediate and reviewed components."""
-
     decision_id: str
     immediate_result: Dict[str, Any]
     review_pending: bool
@@ -283,7 +271,11 @@ class PolisClient:
 
         logger.info("Initialized PolisClient")
 
-    async def create_deliberation(self, topic: str, initial_statements: List[str]) -> str:
+    async def create_deliberation(
+        self,
+        topic: str,
+        initial_statements: List[str]
+    ) -> str:
         """Create a new deliberation session."""
         deliberation_id = f"delib-{uuid.uuid4().hex[:8]}"
 
@@ -315,7 +307,7 @@ class PolisClient:
         topic: str,
         initial_statements: List[str],
         participant_criteria: Dict[str, Any],
-        duration_hours: int = 24,
+        duration_hours: int = 24
     ) -> Deliberation:
         """
         Run a full deliberation process.
@@ -327,21 +319,20 @@ class PolisClient:
 
         # Simulate participant recruitment
         min_participants = participant_criteria.get("min_participants", 100)
-        deliberation.participants = [f"participant-{i}" for i in range(min_participants)]
+        deliberation.participants = [
+            f"participant-{i}" for i in range(min_participants)
+        ]
 
         # Simulate voting on statements
         for statement in deliberation.statements:
             for participant_id in deliberation.participants:
                 # Random vote simulation (in production, real votes)
                 import random
-
-                vote = random.choice(
-                    [
-                        StatementVote.AGREE,
-                        StatementVote.DISAGREE,
-                        StatementVote.PASS,
-                    ]
-                )
+                vote = random.choice([
+                    StatementVote.AGREE,
+                    StatementVote.DISAGREE,
+                    StatementVote.PASS,
+                ])
                 statement.votes[participant_id] = vote
 
         # Simulate opinion group clustering
@@ -353,35 +344,29 @@ class PolisClient:
 
         return deliberation
 
-    async def _cluster_opinions(self, deliberation: Deliberation) -> List[OpinionGroup]:
+    async def _cluster_opinions(
+        self,
+        deliberation: Deliberation
+    ) -> List[OpinionGroup]:
         """Cluster participants into opinion groups."""
         # Simplified clustering - in production would use actual clustering
         groups = [
             OpinionGroup(
                 group_id="group-progressive",
                 name="Progressive",
-                member_ids=set(deliberation.participants[: len(deliberation.participants) // 3]),
+                member_ids=set(deliberation.participants[:len(deliberation.participants)//3]),
                 characteristic_statements=["innovation", "change"],
             ),
             OpinionGroup(
                 group_id="group-conservative",
                 name="Conservative",
-                member_ids=set(
-                    deliberation.participants[
-                        len(deliberation.participants)
-                        // 3 : 2
-                        * len(deliberation.participants)
-                        // 3
-                    ]
-                ),
+                member_ids=set(deliberation.participants[len(deliberation.participants)//3:2*len(deliberation.participants)//3]),
                 characteristic_statements=["stability", "tradition"],
             ),
             OpinionGroup(
                 group_id="group-moderate",
                 name="Moderate",
-                member_ids=set(
-                    deliberation.participants[2 * len(deliberation.participants) // 3 :]
-                ),
+                member_ids=set(deliberation.participants[2*len(deliberation.participants)//3:]),
                 characteristic_statements=["balance", "pragmatism"],
             ),
         ]
@@ -404,7 +389,11 @@ class ConstitutionalValidator:
 
         return True
 
-    async def fast_validate(self, decision: Decision, time_budget_ms: int) -> Dict[str, Any]:
+    async def fast_validate(
+        self,
+        decision: Decision,
+        time_budget_ms: int
+    ) -> Dict[str, Any]:
         """Fast validation within time budget."""
         # Quick constitutional check
         return {
@@ -429,7 +418,7 @@ class DemocraticConstitutionalGovernance:
     def __init__(
         self,
         polis_client: Optional[PolisClient] = None,
-        consensus_threshold: float = CONSENSUS_THRESHOLD,
+        consensus_threshold: float = CONSENSUS_THRESHOLD
     ):
         """
         Initialize democratic governance.
@@ -450,11 +439,15 @@ class DemocraticConstitutionalGovernance:
         }
 
         logger.info(
-            f"Initialized DemocraticConstitutionalGovernance threshold={consensus_threshold}"
+            f"Initialized DemocraticConstitutionalGovernance "
+            f"threshold={consensus_threshold}"
         )
 
     async def evolve_constitution(
-        self, topic: str, current_principles: List[str], min_participants: int = 1000
+        self,
+        topic: str,
+        current_principles: List[str],
+        min_participants: int = 1000
     ) -> ConstitutionalAmendment:
         """
         Evolve constitutional principles through democratic deliberation.
@@ -525,7 +518,9 @@ class DemocraticConstitutionalGovernance:
         return amendment
 
     def _has_cross_group_consensus(
-        self, statement: Statement, opinion_groups: List[OpinionGroup]
+        self,
+        statement: Statement,
+        opinion_groups: List[OpinionGroup]
     ) -> bool:
         """Check if statement has consensus across all opinion groups."""
         if not opinion_groups:
@@ -537,7 +532,11 @@ class DemocraticConstitutionalGovernance:
 
         return True
 
-    async def fast_govern(self, decision: Decision, time_budget_ms: int = 100) -> HybridDecision:
+    async def fast_govern(
+        self,
+        decision: Decision,
+        time_budget_ms: int = 100
+    ) -> HybridDecision:
         """
         Performance-legitimacy balanced decision making.
 
@@ -559,7 +558,9 @@ class DemocraticConstitutionalGovernance:
 
         # Queue for async human review
         review_task_id = f"review-{uuid.uuid4().hex[:8]}"
-        review_task = asyncio.create_task(self._queue_human_review(decision, review_task_id))
+        review_task = asyncio.create_task(
+            self._queue_human_review(decision, review_task_id)
+        )
         self._pending_reviews[review_task_id] = review_task
 
         return HybridDecision(
@@ -569,7 +570,11 @@ class DemocraticConstitutionalGovernance:
             review_task_id=review_task_id,
         )
 
-    async def _queue_human_review(self, decision: Decision, review_task_id: str) -> Dict[str, Any]:
+    async def _queue_human_review(
+        self,
+        decision: Decision,
+        review_task_id: str
+    ) -> Dict[str, Any]:
         """Queue decision for human review."""
         # In production, would integrate with review system
         # Simulate async review
@@ -582,7 +587,10 @@ class DemocraticConstitutionalGovernance:
             "timestamp": datetime.utcnow().isoformat(),
         }
 
-    async def get_review_status(self, review_task_id: str) -> Optional[Dict[str, Any]]:
+    async def get_review_status(
+        self,
+        review_task_id: str
+    ) -> Optional[Dict[str, Any]]:
         """Get status of a pending review."""
         if review_task_id not in self._pending_reviews:
             return None

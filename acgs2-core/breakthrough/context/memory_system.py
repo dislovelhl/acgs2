@@ -15,13 +15,14 @@ References:
 - MongoDB LangGraph Store patterns
 """
 
+import asyncio
+from dataclasses import dataclass, field
+from datetime import datetime, timedelta
+from typing import Any, Dict, List, Optional, Tuple
+from enum import Enum
 import hashlib
 import json
 import logging
-from dataclasses import dataclass, field
-from datetime import datetime, timedelta
-from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple
 
 from .. import CONSTITUTIONAL_HASH
 
@@ -30,16 +31,14 @@ logger = logging.getLogger(__name__)
 
 class MemoryType(Enum):
     """Types of memory in the system."""
-
     EPISODIC = "episodic"  # Past decisions/events
     SEMANTIC = "semantic"  # Principles/knowledge
-    WORKING = "working"  # Current context
+    WORKING = "working"    # Current context
 
 
 @dataclass
 class MemoryEntry:
     """A single memory entry."""
-
     id: str
     content: Any
     memory_type: MemoryType
@@ -64,7 +63,6 @@ class MemoryEntry:
 @dataclass
 class Precedent:
     """A governance precedent from episodic memory."""
-
     case_id: str
     description: str
     decision: str
@@ -88,7 +86,6 @@ class Precedent:
 @dataclass
 class GovernanceCase:
     """A current governance case to evaluate."""
-
     case_id: str
     description: str
     context: Dict[str, Any]
@@ -107,7 +104,6 @@ class GovernanceCase:
 @dataclass
 class GovernanceDecision:
     """A governance decision to be stored."""
-
     decision_id: str
     case: GovernanceCase
     decision: str
@@ -162,7 +158,7 @@ class EpisodicMemory:
             metadata={
                 "case_id": decision.case.case_id,
                 "decision_type": "governance",
-            },
+            }
         )
 
         # Evict if at capacity
@@ -180,7 +176,7 @@ class EpisodicMemory:
         self,
         query_embedding: List[float],
         top_k: int = 10,
-        filter_criteria: Optional[Dict[str, Any]] = None,
+        filter_criteria: Optional[Dict[str, Any]] = None
     ) -> List[MemoryEntry]:
         """
         Search episodic memory by similarity.
@@ -234,14 +230,18 @@ class EpisodicMemory:
         """Compute cosine similarity between two vectors."""
         if len(a) != len(b):
             return 0.0
-        dot_product = sum(x * y for x, y in zip(a, b, strict=False))
+        dot_product = sum(x * y for x, y in zip(a, b))
         norm_a = sum(x * x for x in a) ** 0.5
         norm_b = sum(x * x for x in b) ** 0.5
         if norm_a == 0 or norm_b == 0:
             return 0.0
         return dot_product / (norm_a * norm_b)
 
-    def _matches_filter(self, entry: MemoryEntry, filter_criteria: Dict[str, Any]) -> bool:
+    def _matches_filter(
+        self,
+        entry: MemoryEntry,
+        filter_criteria: Dict[str, Any]
+    ) -> bool:
         """Check if entry matches filter criteria."""
         for key, value in filter_criteria.items():
             if key == "constitutional_hash":
@@ -258,7 +258,10 @@ class EpisodicMemory:
             return
 
         # Find entry with lowest importance
-        min_entry_id = min(self._entries.keys(), key=lambda k: self._entries[k].importance)
+        min_entry_id = min(
+            self._entries.keys(),
+            key=lambda k: self._entries[k].importance
+        )
 
         del self._entries[min_entry_id]
         if min_entry_id in self._embeddings_index:
@@ -286,7 +289,7 @@ class SemanticMemory:
         principle_id: str,
         content: str,
         importance: float = 1.0,
-        metadata: Optional[Dict[str, Any]] = None,
+        metadata: Optional[Dict[str, Any]] = None
     ) -> str:
         """Store a constitutional principle."""
         entry = MemoryEntry(
@@ -295,7 +298,7 @@ class SemanticMemory:
             memory_type=MemoryType.SEMANTIC,
             timestamp=datetime.utcnow(),
             importance=importance,
-            metadata=metadata or {},
+            metadata=metadata or {}
         )
 
         self._principles[principle_id] = entry
@@ -311,7 +314,11 @@ class SemanticMemory:
         return list(self._principles.values())
 
     async def store_knowledge(
-        self, knowledge_id: str, content: Any, category: str, importance: float = 0.5
+        self,
+        knowledge_id: str,
+        content: Any,
+        category: str,
+        importance: float = 0.5
     ) -> str:
         """Store general knowledge."""
         entry = MemoryEntry(
@@ -320,14 +327,16 @@ class SemanticMemory:
             memory_type=MemoryType.SEMANTIC,
             timestamp=datetime.utcnow(),
             importance=importance,
-            metadata={"category": category},
+            metadata={"category": category}
         )
 
         self._knowledge[knowledge_id] = entry
         return knowledge_id
 
     async def search_knowledge(
-        self, query: str, category: Optional[str] = None
+        self,
+        query: str,
+        category: Optional[str] = None
     ) -> List[MemoryEntry]:
         """Search knowledge base."""
         results = []
@@ -354,7 +363,12 @@ class WorkingMemory:
 
         logger.info(f"Initialized WorkingMemory with TTL={default_ttl_seconds}s")
 
-    async def store(self, key: str, content: Any, ttl_seconds: Optional[int] = None) -> str:
+    async def store(
+        self,
+        key: str,
+        content: Any,
+        ttl_seconds: Optional[int] = None
+    ) -> str:
         """Store content in working memory with TTL."""
         ttl = timedelta(seconds=ttl_seconds) if ttl_seconds else self.default_ttl
         expiry = datetime.utcnow() + ttl
@@ -398,7 +412,10 @@ class WorkingMemory:
     async def _cleanup_expired(self) -> None:
         """Remove expired entries."""
         now = datetime.utcnow()
-        expired = [key for key, (_, expiry) in self._entries.items() if now > expiry]
+        expired = [
+            key for key, (_, expiry) in self._entries.items()
+            if now > expiry
+        ]
         for key in expired:
             del self._entries[key]
 
@@ -411,7 +428,11 @@ class ConstitutionalMemorySystem:
     multi-day autonomous governance with precedent retrieval.
     """
 
-    def __init__(self, episodic_max_entries: int = 10000, working_ttl_seconds: int = 3600):
+    def __init__(
+        self,
+        episodic_max_entries: int = 10000,
+        working_ttl_seconds: int = 3600
+    ):
         """
         Initialize the Constitutional Memory System.
 
@@ -433,7 +454,9 @@ class ConstitutionalMemorySystem:
         logger.info("Initialized ConstitutionalMemorySystem")
 
     async def recall_relevant_precedents(
-        self, current_case: GovernanceCase, top_k: int = 10
+        self,
+        current_case: GovernanceCase,
+        top_k: int = 10
     ) -> List[Precedent]:
         """
         Retrieve relevant past governance decisions.
@@ -455,7 +478,7 @@ class ConstitutionalMemorySystem:
         similar_entries = await self.episodic.search(
             query_embedding=query_embedding,
             top_k=top_k,
-            filter_criteria={"constitutional_hash": CONSTITUTIONAL_HASH},
+            filter_criteria={"constitutional_hash": CONSTITUTIONAL_HASH}
         )
 
         # Convert to precedents
@@ -503,7 +526,12 @@ class ConstitutionalMemorySystem:
         """Get all stored constitutional principles."""
         return await self.semantic.get_all_principles()
 
-    async def store_context(self, key: str, content: Any, ttl_seconds: Optional[int] = None) -> str:
+    async def store_context(
+        self,
+        key: str,
+        content: Any,
+        ttl_seconds: Optional[int] = None
+    ) -> str:
         """Store context in working memory."""
         return await self.working.store(key, content, ttl_seconds)
 
@@ -512,7 +540,9 @@ class ConstitutionalMemorySystem:
         return await self.working.get(key)
 
     def _rank_precedents(
-        self, precedents: List[Precedent], current_case: GovernanceCase
+        self,
+        precedents: List[Precedent],
+        current_case: GovernanceCase
     ) -> List[Precedent]:
         """
         Rank precedents by relevance and recency.
@@ -535,7 +565,10 @@ class ConstitutionalMemorySystem:
         precedents.sort(key=lambda p: p.relevance_score, reverse=True)
         return precedents
 
-    async def _create_case_embedding(self, case: GovernanceCase) -> List[float]:
+    async def _create_case_embedding(
+        self,
+        case: GovernanceCase
+    ) -> List[float]:
         """Create embedding from governance case."""
         content = json.dumps(case.to_dict(), sort_keys=True)
         hash_bytes = hashlib.sha256(content.encode()).digest()
@@ -543,14 +576,12 @@ class ConstitutionalMemorySystem:
 
     async def _record_audit(self, decision: GovernanceDecision) -> None:
         """Record decision in audit log."""
-        self._audit_log.append(
-            {
-                "timestamp": datetime.utcnow().isoformat(),
-                "decision_id": decision.decision_id,
-                "case_id": decision.case.case_id,
-                "constitutional_hash": decision.constitutional_hash,
-            }
-        )
+        self._audit_log.append({
+            "timestamp": datetime.utcnow().isoformat(),
+            "decision_id": decision.decision_id,
+            "case_id": decision.case.case_id,
+            "constitutional_hash": decision.constitutional_hash,
+        })
 
     def get_stats(self) -> Dict[str, Any]:
         """Get memory system statistics."""

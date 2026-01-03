@@ -16,8 +16,8 @@ References:
 - JRT Context Preparation (+11% recall improvement)
 """
 
-from .jrt_context import JRTContextPreparator
 from .mamba_hybrid import ConstitutionalMambaHybrid
+from .jrt_context import JRTContextPreparator
 from .memory_system import ConstitutionalMemorySystem
 
 __all__ = [

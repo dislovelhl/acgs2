@@ -1095,55 +1095,6 @@ class ImpactScorer:
             self._keyword_embeddings = np.zeros((len(self.high_impact_keywords), 768))
             return self._keyword_embeddings
 
-    def score_batch(
-        self, texts: List[str], reference_texts: Optional[List[str]] = None
-    ) -> List[float]:
-        """
-        Process multiple texts efficiently with batching.
-
-        Args:
-            texts: List of texts to score
-            reference_texts: Optional reference texts (uses keywords if None)
-
-        Returns:
-            List of impact scores
-        """
-        self._ensure_model_loaded()
-
-        # Use batch tokenization if Transformers available
-        if self._bert_enabled and self.tokenizer is not None and self.model is not None:
-            try:
-                import torch
-
-                # Batch tokenization
-                inputs = self.tokenizer(
-                    texts,
-                    max_length=512,
-                    truncation=True,
-                    padding="max_length",
-                    return_tensors="pt",
-                )
-
-                # Batch inference
-                with torch.no_grad():
-                    outputs = self.model(**inputs)
-                    embeddings = outputs.last_hidden_state[:, 0, :].numpy()
-
-                # Compute similarities against keyword embeddings
-                kw_emb = self._get_keyword_embeddings()
-                from sklearn.metrics.pairwise import cosine_similarity
-
-                sims = cosine_similarity(embeddings, kw_emb)
-
-                # Return max similarity as score
-                return [float(np.max(sim)) for sim in sims]
-
-            except Exception as e:
-                logger.warning(f"Batch inference failed: {e}")
-
-        # Fallback to sequential processing
-        return [self._calculate_semantic_score({"content": text}) for text in texts]
-
 
 def cosine_similarity_fallback(a: Any, b: Any) -> float:
     try:
