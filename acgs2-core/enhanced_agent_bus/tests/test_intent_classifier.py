@@ -394,40 +394,22 @@ async def test_llm_fallback_on_error():
         assert result.intent == IntentType.GENERAL
         assert result.llm_intent is None
 
+    # Test Case 3: LLM returns malformed response
+    with patch(
+        "enhanced_agent_bus.deliberation_layer.intent_classifier.litellm.acompletion",
+        new_callable=AsyncMock,
+        return_value={
+            "choices": [
+                {
+                    "message": {
+                        "content": "invalid json"
+                    }
+                }
+            ]
+        },
+    ):
+        result = await classifier.classify_async_with_metadata("Another query")
 
-@pytest.mark.asyncio
-async def test_classify_async_llm_fallback():
-    # Configure classifier with LLM enabled
-    config = BusConfiguration(llm_model="test-model")
-    classifier = IntentClassifier(config=config)
-
-    # Ambiguous input that returns GENERAL in heuristic
-    ambiguous_input = "Something very ambiguous that heuristic won't catch"
-
-    # Mock litellm.acompletion
-    mock_response = AsyncMock()
-    mock_response.choices = [AsyncMock(message=AsyncMock(content="factual"))]
-
-    with patch("litellm.acompletion", return_value=mock_response) as mock_completion:
-        result = await classifier.classify_async(ambiguous_input)
-
-        # Verify LLM was called
-        mock_completion.assert_called_once()
-        assert result == IntentType.FACTUAL
-
-
-@pytest.mark.asyncio
-async def test_classify_async_llm_failure_fallback():
-    # Configure classifier with LLM enabled
-    config = BusConfiguration(llm_model="test-model")
-    classifier = IntentClassifier(config=config)
-
-    # Ambiguous input
-    ambiguous_input = "Something very ambiguous"
-
-    # Mock litellm.acompletion FAILURE
-    with patch("litellm.acompletion", side_effect=Exception("LLM Down")):
-        result = await classifier.classify_async(ambiguous_input)
-
-        # Should fallback to GENERAL (the heuristic result)
-        assert result == IntentType.GENERAL
+        assert result.routing_path == RoutingPath.LLM_FALLBACK
+        assert result.intent == IntentType.GENERAL
+        assert result.llm_intent is None

@@ -30,7 +30,7 @@ exclude_lines =
 
 show_missing = True
 precision = 2
-fail_under = 40
+fail_under = 80
 
 [html]
 directory = coverage_html_report

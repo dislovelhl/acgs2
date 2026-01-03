@@ -22,6 +22,12 @@ try:
 except ImportError:
     TRANSFORMERS_AVAILABLE = False
 
+try:
+    import onnxruntime as ort
+    ONNX_AVAILABLE = True
+except ImportError:
+    ONNX_AVAILABLE = False
+
 PROFILING_AVAILABLE = False
 
 
@@ -58,14 +64,46 @@ class ImpactScorer:
         self.config = config or ScoringConfig()
         self.model_name = model_name
         self.use_onnx = use_onnx
-        self._onnx_enabled = use_onnx if TRANSFORMERS_AVAILABLE else False
+        self._onnx_enabled = use_onnx if ONNX_AVAILABLE else False
         self._bert_enabled = False
+        self.session = None
+
         if TRANSFORMERS_AVAILABLE:
             try:
                 self.tokenizer = AutoTokenizer.from_pretrained(model_name)
-                if use_onnx:
-                    self.session = None
-                else:
+                if self._onnx_enabled:
+                    import pathlib
+                    import os
+
+                    # Path to the optimized ONNX model
+                    model_dir = pathlib.Path(__file__).parent / "optimized_models"
+                    onnx_path = model_dir / f"{model_name.replace('-', '_')}.onnx"
+
+                    if onnx_path.exists():
+                        # Create ONNX session with GPU if available
+                        providers = ["CUDAExecutionProvider", "CPUExecutionProvider"]
+                        try:
+                            self.session = ort.InferenceSession(str(onnx_path), providers=providers)
+
+                            # Verify actual provider
+                            active_providers = self.session.get_providers()
+                            logger.info(f"ONNX Runtime active providers: {active_providers}")
+
+                            if "CUDAExecutionProvider" in active_providers:
+                                logger.info("GPU acceleration ENABLED ✓")
+                            else:
+                                logger.warning("GPU acceleration DISABLED - running on CPU fallback")
+
+                            self._bert_enabled = True
+                        except Exception as e:
+                            logger.error(f"Failed to initialize ONNX session: {e}")
+                            self._onnx_enabled = False
+                    else:
+                        logger.warning(f"ONNX model not found at {onnx_path}, falling back to CPU")
+                        self._onnx_enabled = False
+
+                if not self._onnx_enabled:
+                    # Fallback to standard BERT if ONNX disabled or failed
                     self.model = AutoModel.from_pretrained(model_name).eval()
                     self._bert_enabled = True
             except Exception as e:
@@ -291,7 +329,11 @@ class ImpactScorer:
         elif hasattr(message, "from_agent"):
             agent_id = getattr(message, "from_agent", "anonymous")
 
-        semantic = self._calculate_semantic_score(message)
+        # Use pre-computed semantic score if provided in context
+        if context and "semantic_override" in context:
+            semantic = context["semantic_override"]
+        else:
+            semantic = self._calculate_semantic_score(message)
 
         scores = {
             "semantic": semantic,
@@ -315,15 +357,122 @@ class ImpactScorer:
             message.impact_score = final
         return final
 
+    def score_batch(self, messages: list) -> list[float]:
+        """Process multiple messages efficiently with batching."""
+        if not messages:
+            return []
+
+        # Extract text content for all messages
+        texts = [self._extract_text_content(m).strip().lower() for m in messages]
+
+        # If ML is disabled, fallback to sequential
+        if not self._bert_enabled:
+            return [self.calculate_impact_score(m) for m in messages]
+
+        try:
+            # Batch tokenization
+            inputs = self.tokenizer(
+                texts, return_tensors="np" if self._onnx_enabled else "pt",
+                padding=True, truncation=True, max_length=512
+            )
+
+            if self._onnx_enabled and self.session:
+                onnx_inputs = {k: v for k, v in inputs.items()}
+                outputs = self.session.run(None, onnx_inputs)
+                embeddings = outputs[0][:, 0, :]
+            else:
+                import torch
+                with torch.no_grad():
+                    outputs = self.model(**inputs)
+                    embeddings = outputs.last_hidden_state[:, 0, :].cpu().numpy()
+
+            # For each message, calculate its semantic score using the embedding
+            kw_emb = self._get_keyword_embeddings()
+
+            results = []
+            for i, message in enumerate(messages):
+                emb = embeddings[i : i + 1]
+
+                # Semantic score calculation (max similarity to keywords)
+                if TRANSFORMERS_AVAILABLE:
+                    from sklearn.metrics.pairwise import cosine_similarity
+                    sim = cosine_similarity(emb, kw_emb)
+                    embedding_score = float(np.max(sim))
+                else:
+                    sims = [cosine_similarity_fallback(emb, kw) for kw in kw_emb]
+                    embedding_score = max(sims) if sims else 0.0
+
+                # Keyword-based scoring (already in calculate_impact_score, but we want to avoid re-embedding)
+                # We'll just call calculate_impact_score but override the semantic part
+                # Actually, better to refactor calculate_impact_score to accept an optional semantic score
+                results.append(self._calculate_impact_with_semantic(message, embedding_score))
+
+            return results
+        except Exception as e:
+            logger.error(f"Batch scoring failed: {e}")
+            return [self.calculate_impact_score(m) for m in messages]
+
+    def _calculate_impact_with_semantic(self, message: Any, semantic_score: float) -> float:
+        """Helper to calculate impact score with a pre-computed semantic score."""
+        # This is a simplified version of calculate_impact_score logic
+        # For production, we should probably refactor calculate_impact_score to avoid duplication
+
+        # Re-use the keyword hits logic for the semantic part
+        text = self._extract_text_content(message).strip().lower()
+        hits = sum(1 for k in self.high_impact_keywords if k in text)
+        keyword_score = 0.1
+        if hits >= 5:
+            keyword_score = 1.0
+        elif hits >= 3:
+            keyword_score = 0.8
+        elif hits > 0:
+            keyword_score = 0.5
+
+        final_semantic = max(keyword_score, semantic_score)
+
+        # For the rest of the factors, we'll just call the individual methods
+        # To avoid code duplication, in a real scenario I'd refactor calculate_impact_score
+        # But here I'll just use the existing one for now as a fallback if this gets complex
+        return self.calculate_impact_score(message, context={"semantic_override": final_semantic})
+
     async def calculate_impact(self, message: AgentMessage) -> float:
         return self.calculate_impact_score(message)
 
     def _get_embeddings(self, text: str) -> np.ndarray:
-        return np.zeros((1, 768))
+        if not self._bert_enabled:
+            return np.zeros((1, 768))
+
+        try:
+            inputs = self.tokenizer(
+                text, return_tensors="np" if self._onnx_enabled else "pt",
+                padding=True, truncation=True, max_length=512
+            )
+
+            if self._onnx_enabled and self.session:
+                # Prepare inputs for ONNX
+                onnx_inputs = {k: v for k, v in inputs.items()}
+                outputs = self.session.run(None, onnx_inputs)
+                # DistilBERT output is [last_hidden_state]
+                return outputs[0][:, 0, :]  # CLS token
+            else:
+                # Standard PyTorch BERT
+                import torch
+                with torch.no_grad():
+                    outputs = self.model(**inputs)
+                    return outputs.last_hidden_state[:, 0, :].cpu().numpy()
+        except Exception as e:
+            logger.error(f"Embedding generation failed: {e}")
+            return np.zeros((1, 768))
 
     def _get_keyword_embeddings(self) -> np.ndarray:
         if self._keyword_embeddings is None:
-            self._keyword_embeddings = np.zeros((len(self.high_impact_keywords), 768))
+            if not self._bert_enabled:
+                self._keyword_embeddings = np.zeros((len(self.high_impact_keywords), 768))
+            else:
+                embs = []
+                for kw in self.high_impact_keywords:
+                    embs.append(self._get_embeddings(kw))
+                self._keyword_embeddings = np.vstack(embs)
         return self._keyword_embeddings
 
 

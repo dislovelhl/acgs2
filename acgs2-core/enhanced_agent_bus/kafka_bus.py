@@ -56,6 +56,7 @@ class KafkaEventBus:
             client_id=self.client_id,
             value_serializer=lambda v: json.dumps(v, default=str).encode("utf-8"),
             acks="all",  # Ensure durability for production
+            enable_idempotence=True,  # Prevent duplicate votes
             retry_backoff_ms=500,
             security_protocol=settings.kafka.get("security_protocol", "PLAINTEXT"),
             ssl_context=self._ssl_context,
@@ -98,6 +99,24 @@ class KafkaEventBus:
         """
         safe_tenant = tenant_id.replace(".", "_") if tenant_id else "default"
         return f"acgs.tenant.{safe_tenant}.{message_type.lower()}"
+
+    def _get_vote_topic(self, tenant_id: str) -> str:
+        """
+        Get vote topic name for a tenant.
+        Format: acgs.tenant.{tenant_id}.votes
+        """
+        safe_tenant = tenant_id.replace(".", "_") if tenant_id else "default"
+        pattern = settings.voting.vote_topic_pattern
+        return pattern.format(tenant_id=safe_tenant)
+
+    def _get_audit_topic(self, tenant_id: str) -> str:
+        """
+        Get audit topic name for a tenant.
+        Format: acgs.tenant.{tenant_id}.audit.votes
+        """
+        safe_tenant = tenant_id.replace(".", "_") if tenant_id else "default"
+        pattern = settings.voting.audit_topic_pattern
+        return pattern.format(tenant_id=safe_tenant)
 
     async def send_message(self, message: AgentMessage) -> bool:
         """Send a message to the appropriate Kafka topic."""
@@ -172,6 +191,69 @@ class KafkaEventBus:
         error_msg = re.sub(r"bootstrap_servers='[^']+'", "bootstrap_servers='REDACTED'", error_msg)
         error_msg = re.sub(r"password='[^']+'", "password='REDACTED'", error_msg)
         return error_msg
+
+    async def publish_vote_event(self, tenant_id: str, vote_event: Dict[str, Any]) -> bool:
+        """
+        Publish a vote event to Kafka vote topic with guaranteed delivery.
+
+        Args:
+            tenant_id: Tenant identifier for topic isolation
+            vote_event: VoteEvent dictionary (must include election_id)
+
+        Returns:
+            True if published successfully, False otherwise
+        """
+        if not self.producer or not self._running:
+            logger.error("Kafka producer not started, cannot publish vote event")
+            return False
+
+        topic = self._get_vote_topic(tenant_id)
+        election_id = vote_event.get("election_id", "")
+
+        # Use election_id as partition key to ensure all votes for one election
+        # go to the same partition (maintains ordering)
+        key = election_id.encode("utf-8") if election_id else None
+
+        try:
+            await self.producer.send_and_wait(topic, value=vote_event, key=key)
+            logger.debug(f"Vote event published to topic {topic} for election {election_id}")
+            return True
+        except Exception as e:
+            logger.error(
+                f"Failed to publish vote event to Kafka (topic={topic}): {self._sanitize_error(e)}"
+            )
+            return False
+
+    async def publish_audit_record(self, tenant_id: str, audit_record: Dict[str, Any]) -> bool:
+        """
+        Publish an audit record to Kafka audit topic (compacted).
+
+        Args:
+            tenant_id: Tenant identifier for topic isolation
+            audit_record: AuditRecord dictionary with signature
+
+        Returns:
+            True if published successfully, False otherwise
+        """
+        if not self.producer or not self._running:
+            logger.error("Kafka producer not started, cannot publish audit record")
+            return False
+
+        topic = self._get_audit_topic(tenant_id)
+        election_id = audit_record.get("election_id", "")
+
+        # Use election_id as partition key for audit records too
+        key = election_id.encode("utf-8") if election_id else None
+
+        try:
+            await self.producer.send_and_wait(topic, value=audit_record, key=key)
+            logger.debug(f"Audit record published to topic {topic} for election {election_id}")
+            return True
+        except Exception as e:
+            logger.error(
+                f"Failed to publish audit record to Kafka (topic={topic}): {self._sanitize_error(e)}"
+            )
+            return False
 
 
 class Orchestrator:

@@ -149,8 +149,10 @@ class ConfigValidator:
         },
         Environment.PRODUCTION: {
             "REDIS_URL",
+            "REDIS_PASSWORD",
             "OPA_URL",
             "KAFKA_BOOTSTRAP_SERVERS",
+            "KAFKA_PASSWORD",
             "JWT_SECRET",
             "API_KEY_INTERNAL",
         },

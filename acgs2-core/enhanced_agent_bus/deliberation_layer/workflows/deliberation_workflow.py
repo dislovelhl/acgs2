@@ -327,15 +327,72 @@ class DefaultDeliberationActivities(DeliberationActivities):
     async def collect_votes(
         self, message_id: str, request_id: str, timeout_seconds: int
     ) -> List[Vote]:
-        """Collect votes from agents with timeout.
-
-        PERFORMANCE: Removed simulated delay (asyncio.sleep) to achieve
-        >6000 RPS throughput target. In production, this would use event-driven
-        vote collection via Redis pub/sub or message queue callbacks.
         """
-        # TODO: Implement event-driven vote collection for production
-        # For now, return empty list immediately (no simulated delay)
-        return []
+        Collect votes from agents with timeout using Kafka-based event-driven voting.
+
+        PERFORMANCE: Uses Kafka event-driven approach with Redis persistence to achieve
+        high throughput, low latency, and guaranteed delivery. Votes are published to
+        Kafka, processed by VoteEventConsumer, and stored in Redis. This method polls
+        Redis for election status and votes.
+        """
+        from ..redis_election_store import get_election_store
+        from ..voting_service import VotingService
+        import time
+
+        # Get election store and voting service
+        election_store = await get_election_store()
+        if not election_store:
+            logger.warning("Election store not available, returning empty votes")
+            return []
+
+        # Find election by message_id (elections are keyed by election_id, but we have message_id)
+        # In a real scenario, we'd maintain a message_id -> election_id mapping
+        # For now, we'll scan elections and find the one matching message_id
+        election_ids = await election_store.scan_elections()
+        election_id = None
+        for eid in election_ids:
+            election_data = await election_store.get_election(eid)
+            if election_data and election_data.get("message_id") == message_id:
+                election_id = eid
+                break
+
+        if not election_id:
+            logger.warning(f"No election found for message {message_id}")
+            return []
+
+        # Poll Redis for votes until timeout or resolution
+        start_time = time.time()
+        votes = []
+
+        while (time.time() - start_time) < timeout_seconds:
+            election_data = await election_store.get_election(election_id)
+            if not election_data:
+                break
+
+            status = election_data.get("status", "OPEN")
+
+            # Convert votes from election_data to Vote objects
+            votes_dict = election_data.get("votes", {})
+            votes = []
+            for agent_id, vote_data in votes_dict.items():
+                if isinstance(vote_data, dict):
+                    votes.append(Vote(
+                        agent_id=vote_data.get("agent_id", agent_id),
+                        decision=vote_data.get("decision", "ABSTAIN"),
+                        reason=vote_data.get("reason"),
+                        timestamp=datetime.fromisoformat(vote_data["timestamp"].replace("Z", "+00:00"))
+                        if isinstance(vote_data.get("timestamp"), str)
+                        else vote_data.get("timestamp", datetime.now(timezone.utc)),
+                    ))
+
+            # If election is resolved or expired, return votes
+            if status in ["CLOSED", "EXPIRED"]:
+                break
+
+            # Wait a bit before polling again
+            await asyncio.sleep(0.5)
+
+        return votes
 
     async def notify_human_reviewer(
         self, message_id: str, reviewer_id: Optional[str], notification_channel: str = "slack"

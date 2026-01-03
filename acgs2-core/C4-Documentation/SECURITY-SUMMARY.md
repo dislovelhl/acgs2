@@ -343,7 +343,7 @@ scoped = scoper.scope_permissions_for_task(
 
 ### P99 Latency Targets
 - Target: < 5ms
-- Achieved: 0.278ms (94% better than target)
+- Achieved: 0.328ms (target: 0.278ms)
 
 ---
 
@@ -468,7 +468,7 @@ AgentBusError (base)
 - Security overhead: < 2ms per request
 - Rate limit checks: O(log n) operations
 - JWT validation: < 0.5ms
-- P99 latency: 0.278ms (94% better than target)
+- P99 latency: 0.328ms (target: 0.278ms)
 
 ### Security Metrics
 - Roles: 6 defined

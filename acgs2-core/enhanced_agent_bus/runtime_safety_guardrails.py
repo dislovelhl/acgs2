@@ -213,13 +213,16 @@ class InputSanitizer(GuardrailComponent):
             else:
                 input_text = str(data)
 
+            # Store original text for injection detection before sanitization
+            original_text = input_text
+
             # HTML sanitization
             if self.config.sanitize_html:
                 input_text = self._sanitize_html(input_text)
 
-            # Injection detection
+            # Injection detection (on original text)
             if self.config.detect_injection:
-                injection_violations = self._detect_injection(input_text)
+                injection_violations = self._detect_injection(original_text)
                 violations.extend(injection_violations)
 
             # PII detection
@@ -235,11 +238,17 @@ class InputSanitizer(GuardrailComponent):
                     action = SafetyAction.BLOCK
                     allowed = False
                 else:
-                    action = SafetyAction.MODIFY if self.config.sanitize_html else SafetyAction.AUDIT
-                    allowed = True
-                    # Apply sanitization if needed
-                    if action == SafetyAction.MODIFY:
-                        input_text = self._apply_sanitization(input_text, violations)
+                    # PII detection should result in AUDIT (flag but allow)
+                    pii_violations = [v for v in violations if v.violation_type == "pii_detected"]
+                    if pii_violations:
+                        action = SafetyAction.AUDIT
+                        allowed = True
+                    else:
+                        action = SafetyAction.MODIFY if self.config.sanitize_html else SafetyAction.AUDIT
+                        allowed = True
+                        # Apply sanitization if needed
+                        if action == SafetyAction.MODIFY:
+                            input_text = self._apply_sanitization(input_text, violations)
             else:
                 action = SafetyAction.ALLOW
                 allowed = True
@@ -966,5 +975,4 @@ class RuntimeSafetyGuardrails:
 
     def get_layer(self, layer_type: GuardrailLayer) -> Optional[GuardrailComponent]:
         """Get a specific guardrail layer component."""
-        return self.layers.get(layer_type)</contents>
-</xai:function_call">Now let me test the runtime safety guardrails implementation.
+        return self.layers.get(layer_type)

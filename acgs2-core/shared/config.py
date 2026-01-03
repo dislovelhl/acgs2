@@ -220,6 +220,7 @@ if HAS_PYDANTIC_SETTINGS:
         quality: QualitySettings = QualitySettings()
         maci: MACISettings = MACISettings()
         vault: VaultSettings = VaultSettings()
+        voting: VotingSettings = VotingSettings()
         kafka: Dict[str, Any] = Field(
             default_factory=lambda: {
                 "bootstrap_servers": os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092"),
@@ -511,6 +512,41 @@ else:
         client_key: Optional[str] = field(default_factory=lambda: os.getenv("VAULT_CLIENT_KEY"))
 
     @dataclass
+    class VotingSettings:
+        """Voting and deliberation settings for event-driven vote collection."""
+
+        default_timeout_seconds: int = field(
+            default_factory=lambda: int(os.getenv("VOTING_DEFAULT_TIMEOUT_SECONDS", "30"))
+        )
+        vote_topic_pattern: str = field(
+            default_factory=lambda: os.getenv("VOTING_VOTE_TOPIC_PATTERN", "acgs.tenant.{tenant_id}.votes")
+        )
+        audit_topic_pattern: str = field(
+            default_factory=lambda: os.getenv(
+                "VOTING_AUDIT_TOPIC_PATTERN", "acgs.tenant.{tenant_id}.audit.votes"
+            )
+        )
+        redis_election_prefix: str = field(
+            default_factory=lambda: os.getenv("VOTING_REDIS_ELECTION_PREFIX", "election:")
+        )
+        enable_weighted_voting: bool = field(
+            default_factory=lambda: os.getenv("VOTING_ENABLE_WEIGHTED", "true").lower() == "true"
+        )
+        signature_algorithm: str = field(
+            default_factory=lambda: os.getenv("VOTING_SIGNATURE_ALGORITHM", "HMAC-SHA256")
+        )
+        audit_signature_key: Optional[SecretStr] = field(
+            default_factory=lambda: (
+                SecretStr(os.getenv("AUDIT_SIGNATURE_KEY", ""))
+                if os.getenv("AUDIT_SIGNATURE_KEY")
+                else None
+            )
+        )
+        timeout_check_interval_seconds: int = field(
+            default_factory=lambda: int(os.getenv("VOTING_TIMEOUT_CHECK_INTERVAL", "5"))
+        )
+
+    @dataclass
     class Settings:
         env: str = field(default_factory=lambda: os.getenv("APP_ENV", "development"))
         debug: bool = field(
@@ -531,6 +567,7 @@ else:
         quality: QualitySettings = field(default_factory=QualitySettings)
         maci: MACISettings = field(default_factory=MACISettings)
         vault: VaultSettings = field(default_factory=VaultSettings)
+        voting: VotingSettings = field(default_factory=VotingSettings)
         kafka: Dict[str, Any] = field(
             default_factory=lambda: {
                 "bootstrap_servers": os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092"),
@@ -547,3 +584,8 @@ else:
 def get_settings() -> Settings:
     """Get cached application settings singleton."""
     return Settings()
+
+
+# Singleton instance for backwards compatibility
+# Use get_settings() for dependency injection patterns
+settings = get_settings()

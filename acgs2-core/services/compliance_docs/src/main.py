@@ -88,6 +88,13 @@ async def readiness_check():
     }
 
 
+# Import API routers
+try:
+    from .api.euaiact_routes import router as euaiact_router
+    app.include_router(euaiact_router)
+except ImportError as e:
+    logger.warning(f"Failed to import EU AI Act routes: {e}")
+
 # API v1 router will be added here
 @app.get("/")
 @track_request_metrics("compliance-docs", "/")
@@ -97,7 +104,12 @@ async def root():
         "service": "compliance-docs-service",
         "version": "1.0.0",
         "description": "Enterprise compliance documentation and evidence export service",
-        "endpoints": {"health": "/health", "ready": "/ready", "api": "/api/v1/"},
+        "endpoints": {
+            "health": "/health",
+            "ready": "/ready",
+            "api": "/api/v1/",
+            "euaiact": "/api/v1/euaiact/",
+        },
     }
 
 

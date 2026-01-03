@@ -91,6 +91,10 @@ spec:
               value: "{{ .Values.maci.enabled | quote }}"
             - name: MACI_STRICT_MODE
               value: "{{ .Values.maci.strictMode | quote }}"
+            - name: CUDA_VISIBLE_DEVICES
+              value: "0"
+            - name: ORT_CUDA_UNAVAILABLE
+              value: "0"
             {{- if .Values.enhancedAgentBus.extraEnvVars }}
             {{- toYaml .Values.enhancedAgentBus.extraEnvVars | nindent 12 }}
             {{- end }}

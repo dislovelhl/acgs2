@@ -8,19 +8,44 @@ import logging
 import os
 from typing import Annotated, Any, Dict, Optional
 
-from fastapi import BackgroundTasks, FastAPI, Header, HTTPException
+from fastapi import BackgroundTasks, FastAPI, Header, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+try:
+    from shared.logging import create_correlation_middleware, init_service_logging
+    # Initialize structured logging
+    logger = init_service_logging("enhanced-agent-bus", level="INFO", json_format=True)
+except ImportError:
+    # Fallback to standard logging
+    logging.basicConfig(level=logging.INFO)
+    logger = logging.getLogger(__name__)
+    create_correlation_middleware = None
+
+try:
+    from .models import AgentMessage, MessageType, Priority, MessageStatus
+    from .message_processor import MessageProcessor
+except (ImportError, ValueError):
+    from models import AgentMessage, MessageType, Priority, MessageStatus # type: ignore
+    from message_processor import MessageProcessor # type: ignore
+
+# Initialize Limiter
+limiter = Limiter(key_func=get_remote_address)
 
 app = FastAPI(
     title="ACGS-2 Enhanced Agent Bus API",
     description="API for the ACGS-2 Enhanced Agent Bus with Constitutional Compliance",
     version="1.0.0",
 )
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+# Add correlation ID middleware
+if create_correlation_middleware:
+    app.middleware("http")(create_correlation_middleware())
 
 # SECURITY: Use secure CORS configuration from shared module
 # Removed allow_origins=["*"] to prevent CORS vulnerability (OWASP A05:2021)
@@ -104,13 +129,17 @@ async def startup_event():
     """Initialize the agent bus on startup"""
     global agent_bus
     try:
-        logger.info("Initializing Enhanced Agent Bus (simplified for development)...")
-        # Simplified initialization for development
-        agent_bus = {"status": "initialized", "services": ["redis", "kafka", "opa"]}
-        logger.info("Enhanced Agent Bus initialized successfully (dev mode)")
+        logger.info("Initializing Enhanced Agent Bus Message Processor...")
+        # Initialize the production MessageProcessor
+        agent_bus = MessageProcessor()
+        logger.info("Enhanced Agent Bus initialized successfully")
     except Exception as e:
         logger.error(f"Failed to initialize agent bus: {e}")
-        raise
+        # Allow fallback to mock for development if needed, but in production this should fail
+        if os.environ.get("ENVIRONMENT") == "production":
+            raise
+        agent_bus = {"status": "mock_initialized", "mode": "development"}
+        logger.warning("Agent bus failed to initialize, using mock mode for development")
 
 
 # Shutdown event
@@ -136,8 +165,10 @@ async def health_check():
 
 
 @app.post("/messages", response_model=MessageResponse)
+@limiter.limit("10/minute")
 async def send_message(
-    request: MessageRequest,
+    request: Request,
+    message_request: MessageRequest,
     background_tasks: BackgroundTasks,
     session_id: Annotated[Optional[str], Header(alias="X-Session-ID")] = None,
 ):
@@ -146,38 +177,62 @@ async def send_message(
         raise HTTPException(status_code=503, detail="Agent bus not initialized")
 
     try:
-        import uuid
         from datetime import datetime, timezone
 
-        # Create simplified message response
-        message_id = str(uuid.uuid4())
-        timestamp = datetime.now(timezone.utc)
+        # 1. Map API request to AgentMessage model
+        try:
+            # Convert string type to enum
+            msg_type = MessageType(message_request.message_type.lower())
+        except ValueError:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Unsupported message type: {message_request.message_type}"
+            )
 
-        # Process message asynchronously with real logic
-        async def process_message(msg_id: str, content: str):
-            logger.info(f"Processing message {msg_id}: {content[:50]}...")
-            # TODO: Implement actual message processing logic
-            # This could involve validation, routing, or delegation to message processor
-            # For now, use a lightweight placeholder that doesn't block
-            import hashlib
+        try:
+            # Convert priority string to enum
+            prio = Priority[message_request.priority.upper()]
+        except (KeyError, ValueError):
+            prio = Priority.MEDIUM
 
-            # Perform lightweight validation hash to simulate processing
-            content_hash = hashlib.sha256(content.encode()).hexdigest()[:16]
-            logger.info(f"Message {msg_id} validated (hash: {content_hash})")
-            logger.info(f"Message {msg_id} processed successfully")
-
-        background_tasks.add_task(process_message, message_id, request.content)
-
-        # Use session_id from request body if provided, otherwise fall back to header
-        effective_session_id = request.session_id or session_id
-
-        return MessageResponse(
-            message_id=message_id,
-            status="accepted",
-            timestamp=timestamp.isoformat(),
-            details={"message_type": request.message_type, "session_id": effective_session_id},
+        msg = AgentMessage(
+            content={"text": message_request.content},
+            message_type=msg_type,
+            priority=prio,
+            from_agent=message_request.sender,
+            to_agent=message_request.recipient or "",
+            tenant_id=message_request.tenant_id or "default",
+            payload=message_request.metadata or {},
+            conversation_id=message_request.session_id or session_id or "",
         )
 
+        # 2. Define background processing logic
+        async def process_async(message: AgentMessage):
+            try:
+                if isinstance(agent_bus, MessageProcessor):
+                    result = await agent_bus.process(message)
+                    logger.info(f"Message {message.message_id} processed: valid={result.is_valid}")
+                else:
+                    logger.warning("Agent bus is in mock mode, skipping real processing")
+            except Exception as e:
+                logger.error(f"Error in background processing for {message.message_id}: {e}")
+
+        # 3. Add to background tasks
+        background_tasks.add_task(process_async, msg)
+
+        # 4. Return immediate response
+        return MessageResponse(
+            message_id=msg.message_id,
+            status="accepted",
+            timestamp=datetime.now(timezone.utc).isoformat(),
+            details={
+                "message_type": msg.message_type.value,
+                "session_id": msg.conversation_id
+            },
+        )
+
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error sending message: {e}")
         raise HTTPException(status_code=500, detail=str(e)) from e
