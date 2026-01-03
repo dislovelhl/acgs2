@@ -3,13 +3,13 @@
   "spec": "027-increase-test-coverage-to-80",
   "state": "building",
   "subtasks": {
-    "completed": 1,
+    "completed": 10,
     "total": 30,
-    "in_progress": 0,
+    "in_progress": 1,
     "failed": 0
   },
   "phase": {
-    "current": "Coverage Gap Analysis",
+    "current": "Governance Path Tests (90% Target)",
     "id": null,
     "total": 3
   },
@@ -18,8 +18,8 @@
     "max": 1
   },
   "session": {
-    "number": 1,
-    "started_at": "2026-01-03T04:51:54.594241"
+    "number": 404,
+    "started_at": "2026-01-03T08:54:17.949972"
   },
-  "last_update": "2026-01-03T04:56:41.542813"
+  "last_update": "2026-01-03T11:20:14.615972"
 }
