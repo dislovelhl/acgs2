@@ -905,6 +905,181 @@ class HealthResponse(BaseModel):
     agent_bus_status: str
 
 
+# =============================================================================
+# Error Response Models for OpenAPI Documentation
+# =============================================================================
+
+
+class ErrorDetail(BaseModel):
+    """Error detail schema for OpenAPI documentation.
+
+    Provides a standardized error format across all API endpoints.
+    Constitutional Hash: cdd01ef066bc6cf2
+    """
+
+    type: str = Field(
+        ...,
+        description="Exception type name (e.g., 'MessageValidationError', 'RateLimitExceeded')",
+        examples=["MessageValidationError"],
+    )
+    message: str = Field(
+        ...,
+        description="Human-readable error message describing what went wrong",
+        examples=["Message content failed validation: missing required field 'sender'"],
+    )
+    status_code: int = Field(
+        ...,
+        description="HTTP status code (mirrors response status)",
+        examples=[400],
+    )
+    timestamp: str = Field(
+        ...,
+        description="ISO 8601 timestamp when the error occurred",
+        examples=["2024-01-15T12:30:45.123456+00:00"],
+    )
+    request_id: Optional[str] = Field(
+        default=None,
+        description="Request ID for tracing (from X-Request-ID header if provided)",
+        examples=["req-12345-abcde"],
+    )
+    details: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="Additional error context (exception-specific details)",
+        examples=[{"field": "content", "constraint": "min_length"}],
+    )
+    constitutional_hash: Optional[str] = Field(
+        default=None,
+        description="Constitutional hash for governance tracing",
+        examples=["cdd01ef066bc6cf2"],
+    )
+
+
+class ErrorResponse(BaseModel):
+    """Standard error response wrapper for OpenAPI documentation.
+
+    All error responses follow this format for consistency.
+    See: RFC 7807 Problem Details for HTTP APIs
+    """
+
+    error: ErrorDetail = Field(
+        ...,
+        description="Error details object containing type, message, and context",
+    )
+
+
+class ValidationErrorItem(BaseModel):
+    """Individual validation error detail (Pydantic format)."""
+
+    loc: list = Field(
+        ...,
+        description="Location of the error (field path)",
+        examples=[["body", "content"]],
+    )
+    msg: str = Field(
+        ...,
+        description="Validation error message",
+        examples=["Field required"],
+    )
+    type: str = Field(
+        ...,
+        description="Error type identifier",
+        examples=["missing"],
+    )
+
+
+class ValidationErrorResponse(BaseModel):
+    """Pydantic validation error response (422 Unprocessable Entity).
+
+    FastAPI auto-generates this format for request validation failures.
+    """
+
+    detail: list[ValidationErrorItem] = Field(
+        ...,
+        description="List of validation errors",
+    )
+
+
+class RateLimitErrorResponse(BaseModel):
+    """Rate limit exceeded error response (429 Too Many Requests).
+
+    Includes Retry-After and X-RateLimit-* headers for client guidance.
+    """
+
+    error: ErrorDetail = Field(
+        ...,
+        description="Error details with rate limit context",
+        examples=[
+            {
+                "type": "RateLimitExceeded",
+                "message": "Rate limit exceeded for agent 'test-agent': 100/minute limit reached",
+                "status_code": 429,
+                "timestamp": "2024-01-15T12:30:45.123456+00:00",
+                "details": {
+                    "agent_id": "test-agent",
+                    "limit": 100,
+                    "window_seconds": 60,
+                    "retry_after_ms": 5000,
+                },
+            }
+        ],
+    )
+
+
+class ServiceUnavailableResponse(BaseModel):
+    """Service unavailable error response (503 Service Unavailable).
+
+    Returned when the agent bus or dependent services are not ready.
+    """
+
+    error: ErrorDetail = Field(
+        ...,
+        description="Error details with service status context",
+        examples=[
+            {
+                "type": "BusNotStartedError",
+                "message": "Agent bus not initialized - service starting up",
+                "status_code": 503,
+                "timestamp": "2024-01-15T12:30:45.123456+00:00",
+                "details": {"operation": "send_message", "required_state": "running"},
+            }
+        ],
+    )
+
+
+# =============================================================================
+# OpenAPI Response Documentation
+# =============================================================================
+
+# Standard error responses for endpoint documentation
+ERROR_RESPONSES: Dict[int, Dict[str, Any]] = {
+    400: {
+        "model": ErrorResponse,
+        "description": "Bad Request - Client-side validation error (malformed request, "
+        "constitutional hash mismatch, invalid message format)",
+    },
+    422: {
+        "model": ValidationErrorResponse,
+        "description": "Unprocessable Entity - Semantic validation failure (missing required "
+        "fields, invalid message type, routing errors, capability mismatches)",
+    },
+    429: {
+        "model": RateLimitErrorResponse,
+        "description": "Too Many Requests - Rate limit exceeded. Check X-RateLimit-* headers "
+        "and Retry-After header for retry guidance.",
+    },
+    500: {
+        "model": ErrorResponse,
+        "description": "Internal Server Error - Server-side processing failure (handler "
+        "execution error, message delivery failure, unexpected exception)",
+    },
+    503: {
+        "model": ServiceUnavailableResponse,
+        "description": "Service Unavailable - Agent bus or dependent service not ready "
+        "(bus not started, OPA connection error, circuit breaker open)",
+    },
+}
+
+
 # Startup event
 @app.on_event("startup")
 async def startup_event():
@@ -934,9 +1109,30 @@ async def shutdown_event():
 
 
 # API Endpoints
-@app.get("/health", response_model=HealthResponse)
+@app.get(
+    "/health",
+    response_model=HealthResponse,
+    responses={
+        503: {
+            "model": ServiceUnavailableResponse,
+            "description": "Service Unavailable - Agent bus is unhealthy or not initialized",
+        },
+    },
+    summary="Health check",
+    tags=["Health"],
+)
 async def health_check():
-    """Health check endpoint"""
+    """Health check endpoint.
+
+    Returns the health status of the Enhanced Agent Bus service.
+    Checks the initialization state of the agent bus and dependent services.
+
+    **Response:**
+    - status: Overall health status ('healthy' or 'unhealthy')
+    - service: Service identifier
+    - version: API version
+    - agent_bus_status: Agent bus component status
+    """
     agent_bus_status = "healthy" if agent_bus else "unhealthy"
 
     return HealthResponse(
@@ -947,7 +1143,21 @@ async def health_check():
     )
 
 
-@app.post("/messages", response_model=MessageResponse)
+@app.post(
+    "/messages",
+    response_model=MessageResponse,
+    status_code=202,
+    responses={
+        202: {
+            "model": MessageResponse,
+            "description": "Accepted - Message queued for processing. "
+            "Background processing will complete asynchronously.",
+        },
+        **ERROR_RESPONSES,
+    },
+    summary="Send message to agent bus",
+    tags=["Messages"],
+)
 async def send_message(
     request: MessageRequest,
     background_tasks: BackgroundTasks,
@@ -957,13 +1167,32 @@ async def send_message(
 ):
     """Send a message to the agent bus with MessageProcessor integration.
 
-    Rate limit headers are included in all responses:
-    - X-RateLimit-Limit: Maximum requests per minute
+    Submits a message for asynchronous processing through the constitutional
+    validation pipeline. Messages are validated against governance policies
+    before being routed to target agents.
+
+    **Supported Message Types:**
+    - `command`: Execute an action on target agent
+    - `query`: Request information from target agent
+    - `response`: Reply to a previous query
+    - `event`: Notify subscribers of state change
+    - `notification`: One-way informational message
+    - `heartbeat`: Agent liveness signal
+    - `governance_request`: Policy evaluation request
+    - `governance_response`: Policy evaluation result
+    - `constitutional_validation`: Constitutional compliance check
+    - `task_request`: Task assignment to agent
+    - `task_response`: Task completion result
+    - `audit_log`: Audit trail entry
+
+    **Rate Limiting:**
+    - X-RateLimit-Limit: Maximum requests per minute (default: 100)
     - X-RateLimit-Remaining: Remaining requests in current window
     - X-RateLimit-Reset: Seconds until rate limit window resets
 
-    Latency tracking is included in response details:
+    **Response Details:**
     - details.latency_ms: Request processing latency in milliseconds
+    - details.message_type: Type of message processed
     """
     # Track request latency (following pattern from message_processor.py)
     start = time.perf_counter()
@@ -1061,9 +1290,41 @@ async def send_message(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get("/messages/{message_id}")
+@app.get(
+    "/messages/{message_id}",
+    response_model=MessageResponse,
+    responses={
+        404: {
+            "model": ErrorResponse,
+            "description": "Not Found - Message with specified ID not found",
+        },
+        500: {
+            "model": ErrorResponse,
+            "description": "Internal Server Error - Failed to retrieve message status",
+        },
+        503: {
+            "model": ServiceUnavailableResponse,
+            "description": "Service Unavailable - Agent bus not initialized",
+        },
+    },
+    summary="Get message status",
+    tags=["Messages"],
+)
 async def get_message_status(message_id: str):
-    """Get message status"""
+    """Get the status of a previously submitted message.
+
+    Retrieves the current processing status and details for a message
+    identified by its unique message_id.
+
+    **Path Parameters:**
+    - message_id: Unique identifier of the message (UUID format)
+
+    **Response:**
+    - message_id: Unique message identifier
+    - status: Processing status ('pending', 'processing', 'processed', 'failed')
+    - timestamp: Last status update timestamp (ISO 8601)
+    - details: Additional status context
+    """
     if not agent_bus:
         raise HTTPException(status_code=503, detail="Agent bus not initialized")
 
@@ -1080,25 +1341,42 @@ async def get_message_status(message_id: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get("/stats")
+@app.get(
+    "/stats",
+    responses={
+        500: {
+            "model": ErrorResponse,
+            "description": "Internal Server Error - Failed to calculate statistics",
+        },
+        503: {
+            "model": ServiceUnavailableResponse,
+            "description": "Service Unavailable - Agent bus not initialized",
+        },
+    },
+    summary="Get agent bus statistics",
+    tags=["Statistics"],
+)
 async def get_stats():
     """Get agent bus statistics including P99/P95/P50 latency metrics.
 
     Returns latency percentiles calculated from a sliding window of recent requests.
     Configure window size via LATENCY_WINDOW_SIZE environment variable (default: 1000).
 
-    Response fields:
+    **Performance Metrics:**
+    - latency_p50_ms: 50th percentile (median) latency
+    - latency_p95_ms: 95th percentile latency
+    - latency_p99_ms: 99th percentile latency (SLA target: <100ms)
+    - latency_min_ms/latency_max_ms: Range of latencies
+    - latency_mean_ms: Average latency
+
+    **Message Statistics:**
     - total_messages: Total messages processed (all time)
-    - latency_p50_ms: 50th percentile (median) latency in milliseconds
-    - latency_p95_ms: 95th percentile latency in milliseconds
-    - latency_p99_ms: 99th percentile latency in milliseconds
-    - latency_min_ms: Minimum latency in the window
-    - latency_max_ms: Maximum latency in the window
-    - latency_mean_ms: Mean latency in the window
-    - latency_sample_count: Number of samples in the current window
-    - latency_window_size: Maximum samples retained for calculations
+    - latency_sample_count: Samples in current window
+    - latency_window_size: Maximum samples retained
+
+    **SLA Compliance:**
     - sla_p99_target_ms: P99 latency SLA target (100ms)
-    - sla_p99_met: Whether P99 latency meets SLA target
+    - sla_p99_met: Boolean indicating if P99 meets target
     """
     if not agent_bus:
         raise HTTPException(status_code=503, detail="Agent bus not initialized")
@@ -1132,9 +1410,49 @@ async def get_stats():
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.post("/policies/validate")
+@app.post(
+    "/policies/validate",
+    responses={
+        400: {
+            "model": ErrorResponse,
+            "description": "Bad Request - Invalid policy format or constitutional hash mismatch",
+        },
+        422: {
+            "model": ValidationErrorResponse,
+            "description": "Unprocessable Entity - Policy validation failed "
+            "against governance rules",
+        },
+        500: {
+            "model": ErrorResponse,
+            "description": "Internal Server Error - Policy validation processing failed",
+        },
+        503: {
+            "model": ServiceUnavailableResponse,
+            "description": "Service Unavailable - Agent bus or OPA service not initialized",
+        },
+    },
+    summary="Validate policy",
+    tags=["Policies"],
+)
 async def validate_policy(policy_data: Dict[str, Any]):
-    """Validate a policy against constitutional requirements"""
+    """Validate a policy against constitutional requirements.
+
+    Evaluates the provided policy data against the constitutional governance
+    framework to ensure compliance with ACGS-2 principles.
+
+    **Request Body:**
+    - policy_data: Policy definition to validate (structure depends on policy type)
+
+    **Response:**
+    - valid: Boolean indicating if policy passes validation
+    - policy_hash: Hash of the validated policy
+    - validation_timestamp: When validation was performed (ISO 8601)
+
+    **Validation Checks:**
+    - Constitutional hash verification
+    - MACI role separation compliance
+    - Governance alignment verification
+    """
     if not agent_bus:
         raise HTTPException(status_code=503, detail="Agent bus not initialized")
 
