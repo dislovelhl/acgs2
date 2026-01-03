@@ -12,3 +12,24 @@ This module contains:
 - ImpactFeatures: Feature extraction for ML impact scoring
 - GovernanceDecision: Decision output from governance evaluation
 """
+
+from enum import Enum
+
+
+class GovernanceMode(Enum):
+    """Adaptive governance modes."""
+
+    STRICT = "strict"  # Fixed constitutional thresholds
+    ADAPTIVE = "adaptive"  # ML-adjusted thresholds
+    EVOLVING = "evolving"  # Self-learning governance
+    DEGRADED = "degraded"  # Fallback mode
+
+
+class ImpactLevel(Enum):
+    """Impact assessment levels."""
+
+    NEGLIGIBLE = "negligible"
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+    CRITICAL = "critical"
