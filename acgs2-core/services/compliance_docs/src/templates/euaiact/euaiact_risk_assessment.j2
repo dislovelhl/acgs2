@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>EU AI Act Risk Assessment - {{ system_name }}</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; line-height: 1.6; }
+        h1 { color: #1a1a1a; border-bottom: 3px solid #0066cc; padding-bottom: 10px; }
+        h2 { color: #333; margin-top: 30px; }
+        .metadata { background: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        .metadata p { margin: 5px 0; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background-color: #0066cc; color: white; }
+        tr:nth-child(even) { background-color: #f9f9f9; }
+        .risk-high { color: #d32f2f; font-weight: bold; }
+        .risk-limited { color: #f57c00; font-weight: bold; }
+        .risk-minimal { color: #388e3c; font-weight: bold; }
+        .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 0.9em; color: #666; }
+    </style>
+</head>
+<body>
+    <h1>EU AI Act Risk Assessment</h1>
+    <h2>Article 9 Compliance</h2>
+
+    <div class="metadata">
+        <p><strong>System Name:</strong> {{ system_name }}</p>
+        <p><strong>System Version:</strong> {{ system_version }}</p>
+        <p><strong>Organization:</strong> {{ organization_name }}</p>
+        <p><strong>Assessment Date:</strong> {{ assessment_date }}</p>
+        <p><strong>Assessor:</strong> {{ assessor_name }}</p>
+        <p><strong>Assessor Qualifications:</strong> {{ assessor_qualifications }}</p>
+        <p><strong>High-Risk Category:</strong> {{ high_risk_category }}</p>
+    </div>
+
+    <h2>System Description</h2>
+    <p>{{ system_description }}</p>
+
+    <h2>Intended Purpose</h2>
+    <p>{{ intended_purpose }}</p>
+
+    <h2>Risk Factors</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Category</th>
+                <th>Description</th>
+                <th>Likelihood</th>
+                <th>Impact</th>
+                <th>Risk Level</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for factor in risk_factors %}
+            <tr>
+                <td>{{ factor.category }}</td>
+                <td>{{ factor.description }}</td>
+                <td>{{ factor.likelihood }}</td>
+                <td>{{ factor.impact }}</td>
+                <td class="risk-{{ factor.risk_level.lower() }}">{{ factor.risk_level }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <h2>Overall Risk Level</h2>
+    <p class="risk-{{ overall_risk_level.lower() }}"><strong>{{ overall_risk_level }}</strong></p>
+
+    <h2>Mitigation Measures</h2>
+    <ol>
+        {% for measure in mitigation_measures %}
+        <li>{{ measure }}</li>
+        {% endfor %}
+    </ol>
+
+    {% if residual_risks %}
+    <h2>Residual Risks</h2>
+    <ul>
+        {% for risk in residual_risks %}
+        <li>{{ risk }}</li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+
+    {% if review_date %}
+    <h2>Planned Review Date</h2>
+    <p>{{ review_date }}</p>
+    {% endif %}
+
+    <div class="footer">
+        <p>Generated on {{ "now"|date }} - EU AI Act Compliance Documentation System</p>
+        <p>Constitutional Hash: cdd01ef066bc6cf2</p>
+    </div>
+</body>
+</html>

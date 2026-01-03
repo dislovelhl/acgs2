@@ -8,6 +8,7 @@ Includes correlation IDs, service context, and JSON formatting for observability
 
 import logging
 import sys
+from contextvars import ContextVar
 from typing import Any, Dict, Optional
 
 try:
@@ -54,52 +55,38 @@ def configure_structlog(
 
     # Configure structlog
     shared_processors = [
-        structlog.stdlib.filter_by_level,
-        structlog.stdlib.add_logger_name,
-        structlog.stdlib.add_log_level,
-        structlog.stdlib.PositionalArgumentsFormatter(),
+        structlog.processors.add_log_level,
+        structlog.processors.TimeStamper(fmt="iso", utc=True),
+        structlog.processors.StackInfoRenderer(),
+        structlog.processors.format_exc_info,
     ]
 
     if include_service_context:
         shared_processors.append(_add_service_context(service_name))
 
+    # Configure structlog
+    processors = shared_processors.copy()
     if include_correlation_id:
-        shared_processors.append(_add_correlation_id)
+        processors.append(structlog.contextvars.merge_contextvars)
+        processors.append(_add_otel_trace_id)
 
     if json_format:
-        # JSON formatter for production/log aggregation
-        shared_processors.extend(
-            [
-                structlog.stdlib.ProcessorFormatter.wrap_for_formatter,
-            ]
-        )
-        formatter = structlog.writeasjson.JsonFormatter()
+        processors.append(structlog.processors.JSONRenderer())
     else:
-        # Human-readable formatter for development
-        shared_processors.extend(
-            [
-                structlog.stdlib.ProcessorFormatter.wrap_for_formatter,
-            ]
-        )
-        formatter = structlog.dev.ConsoleRenderer(colors=True)
+        processors.append(structlog.dev.ConsoleRenderer(colors=True))
 
     structlog.configure(
-        processors=shared_processors
-        + [
-            structlog.stdlib.ProcessorFormatter.wrap_for_formatter,
-        ],
-        logger_factory=structlog.stdlib.LoggerFactory(),
-        wrapper_class=structlog.stdlib.BoundLogger,
+        processors=processors,
+        logger_factory=structlog.PrintLoggerFactory(),
         cache_logger_on_first_use=True,
     )
 
-    # Configure standard library
-    handler = logging.StreamHandler(sys.stdout)
-    handler.setFormatter(formatter)
-
-    logger = logging.getLogger()
-    logger.setLevel(getattr(logging, level.upper(), logging.INFO))
-    logger.addHandler(handler)
+    # If you still need standard logging intercepted:
+    logging.basicConfig(
+        format="%(message)s",
+        stream=sys.stdout,
+        level=getattr(logging, level.upper(), logging.INFO),
+    )
 
     # Suppress noisy loggers
     logging.getLogger("httpx").setLevel(logging.WARNING)
@@ -122,18 +109,16 @@ def _add_service_context(service_name: str):
     return processor
 
 
-def _add_correlation_id(logger, method_name, event_dict):
-    """Add correlation ID to log entries if available in context."""
-    from .context import get_correlation_id
-
+def _add_otel_trace_id(logger, method_name, event_dict):
+    """Add OpenTelemetry trace ID to log entries if available."""
     try:
-        correlation_id = get_correlation_id()
-        if correlation_id:
-            event_dict["correlation_id"] = correlation_id
-    except (ImportError, AttributeError):
-        # Context module not available or correlation ID not set
-        pass
+        from .otel_config import get_current_trace_id
 
+        trace_id = get_current_trace_id()
+        if trace_id:
+            event_dict["trace_id"] = trace_id
+    except (ImportError, AttributeError):
+        pass
     return event_dict
 
 
@@ -162,30 +147,25 @@ def get_logger(name: str) -> logging.Logger:
 # Context Management for Correlation IDs
 # ============================================================================
 
-# Simple context storage for correlation IDs
-# In production, consider using contextvars for async safety
-_correlation_id_context = {}
+# contextvars-based context storage for async-safe correlation ID binding
+_correlation_id_context: ContextVar[Optional[str]] = ContextVar("correlation_id", default=None)
 
 
 def set_correlation_id(correlation_id: str) -> None:
     """Set correlation ID for the current request context."""
-    import threading
-
-    _correlation_id_context[threading.get_ident()] = correlation_id
+    _correlation_id_context.set(correlation_id)
+    if HAS_STRUCTLOG:
+        structlog.contextvars.bind_contextvars(correlation_id=correlation_id)
 
 
 def get_correlation_id() -> Optional[str]:
     """Get correlation ID for the current request context."""
-    import threading
-
-    return _correlation_id_context.get(threading.get_ident())
+    return _correlation_id_context.get()
 
 
 def clear_correlation_id() -> None:
     """Clear correlation ID for the current request context."""
-    import threading
-
-    _correlation_id_context.pop(threading.get_ident(), None)
+    _correlation_id_context.set(None)
 
 
 # ============================================================================
@@ -208,18 +188,25 @@ def create_correlation_middleware():
     from fastapi import Request
 
     async def correlation_middleware(request: Request, call_next):
-        # Generate or extract correlation ID
-        correlation_id = request.headers.get("x-correlation-id", str(uuid.uuid4()))
+        # Extract or generate correlation ID
+        correlation_id = (
+            request.headers.get("x-request-id")
+            or request.headers.get("x-correlation-id")
+            or str(uuid.uuid4())
+        )
 
-        # Set in context
+        # Set in structlog contextvars and our local contextvar
+        structlog.contextvars.clear_contextvars()
+        structlog.contextvars.bind_contextvars(correlation_id=correlation_id)
         set_correlation_id(correlation_id)
 
         # Add to response headers
         response = await call_next(request)
-        response.headers["x-correlation-id"] = correlation_id
+        response.headers["x-request-id"] = correlation_id
 
         # Clean up
         clear_correlation_id()
+        structlog.contextvars.clear_contextvars()
 
         return response
 

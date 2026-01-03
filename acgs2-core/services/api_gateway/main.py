@@ -25,6 +25,7 @@ from shared.metrics import (
     set_service_info,
     track_request_metrics,
 )
+from shared.otel_config import init_otel
 from shared.security.auth import (
     AuthenticationMiddleware,
     UserClaims,
@@ -45,6 +46,9 @@ app = FastAPI(
     version="1.0.0",
     default_response_class=ORJSONResponse,
 )
+
+# Initialize OTel tracing
+init_otel("api-gateway", app=app, export_to_console=settings.debug)
 
 # Add CORS middleware
 app.add_middleware(
@@ -203,7 +207,7 @@ async def get_feedback_stats(user: UserClaims = Depends(get_current_user_optiona
                     categories[cat] = categories.get(cat, 0) + 1
                     if rating in ratings:
                         ratings[rating] += 1
-            except Exception:
+            except Exception:  # nosec B112 - skip malformed feedback entries
                 continue
 
         return {

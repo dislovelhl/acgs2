@@ -1,0 +1,98 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  batch:
+    timeout: 10s
+    send_batch_size: 1000
+    send_batch_max_size: 2000
+
+  attributes:
+    actions:
+      - key: constitutional_hash
+        value: cdd01ef066bc6cf2
+        action: upsert
+      - key: service.name
+        from_attribute: service.name
+        action: insert
+      - key: tenant_id
+        from_attribute: tenant_id
+        action: insert
+
+  resource:
+    attributes:
+      - key: acgs2.version
+        value: "2.0.0"
+        action: upsert
+      - key: acgs2.constitutional_hash
+        value: "cdd01ef066bc6cf2"
+        action: upsert
+
+  memory_limiter:
+    limit_mib: 512
+    spike_limit_mib: 128
+    check_interval: 5s
+
+exporters:
+  prometheus:
+    endpoint: 0.0.0.0:8889
+    namespace: acgs2
+    const_labels:
+      constitutional_hash: cdd01ef066bc6cf2
+
+  jaeger:
+    endpoint: jaeger:14250
+    tls:
+      insecure: true
+
+  otlp:
+    endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT}
+    tls:
+      insecure: ${OTEL_EXPORTER_OTLP_INSECURE:-false}
+
+  logging:
+    loglevel: info
+
+  # Splunk HEC exporter
+  splunkhec:
+    endpoint: ${SPLUNK_HEC_ENDPOINT:-https://splunk.example.com:8088}
+    token: ${SPLUNK_HEC_TOKEN}
+    source: acgs2
+    sourcetype: acgs2:governance
+    index: acgs2_governance
+    tls:
+      insecure_skip_verify: ${SPLUNK_TLS_INSECURE:-false}
+
+  # Datadog exporter
+  datadog:
+    api:
+      key: ${DATADOG_API_KEY}
+      site: ${DATADOG_SITE:-datadoghq.com}
+    tags:
+      - constitutional_hash:cdd01ef066bc6cf2
+      - env:${ENVIRONMENT:-production}
+    service: acgs2-governance
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, attributes, batch]
+      exporters: [jaeger, otlp, logging]
+
+    metrics:
+      receivers: [otlp]
+      processors: [memory_limiter, attributes, batch]
+      exporters: [prometheus, otlp, datadog, logging]
+
+    logs:
+      receivers: [otlp]
+      processors: [memory_limiter, attributes, batch]
+      exporters: [splunkhec, otlp, logging]
+
+  extensions: []

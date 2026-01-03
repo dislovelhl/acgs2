@@ -25,6 +25,7 @@ import type {
   TrainingState,
 } from "../types.js";
 import { EventEmitter } from "events";
+import logger from "../utils/logger.js";
 
 // ===== Core Types =====
 
@@ -254,7 +255,9 @@ export interface TrainingConfig {
 /**
  * Neural network input type - can be an object with features or raw feature array
  */
-export type NeuralInput = { features: number[]; id?: string; label?: number | string } | number[];
+export type NeuralInput =
+  | { features: number[]; id?: string; label?: number | string }
+  | number[];
 
 /**
  * Neural network target type
@@ -1146,7 +1149,7 @@ export class NeuralDomainMapper extends EventEmitter {
           this.trainingConfig.earlyStoping.enabled &&
           patienceCounter >= this.trainingConfig.earlyStoping.patience
         ) {
-          console.log(`Early stopping at epoch ${epoch}`);
+          logger.info({ epoch }, `Early stopping at epoch ${epoch}`);
           break;
         }
 
@@ -1498,7 +1501,10 @@ export class NeuralDomainMapper extends EventEmitter {
     }
   }
 
-  private calculateLoss(predictions: number[][], targets: NeuralTarget[]): number {
+  private calculateLoss(
+    predictions: number[][],
+    targets: NeuralTarget[]
+  ): number {
     let totalLoss = 0;
 
     for (let i = 0; i < predictions.length; i++) {
@@ -1515,7 +1521,10 @@ export class NeuralDomainMapper extends EventEmitter {
     return totalLoss / predictions.length;
   }
 
-  private calculateAccuracy(predictions: number[][], targets: NeuralTarget[]): number {
+  private calculateAccuracy(
+    predictions: number[][],
+    targets: NeuralTarget[]
+  ): number {
     let correct = 0;
 
     for (let i = 0; i < predictions.length; i++) {
@@ -1796,7 +1805,9 @@ export class NeuralDomainMapper extends EventEmitter {
     if (factors.semantic < 0.5) {
       suggestions.push("Strengthen semantic relationships");
     }
-    return suggestions.length > 0 ? suggestions : ["No immediate improvements needed"];
+    return suggestions.length > 0
+      ? suggestions
+      : ["No immediate improvements needed"];
   }
 
   private identifyWeaknessReason(
@@ -1912,7 +1923,9 @@ export class NeuralDomainMapper extends EventEmitter {
     // This is a stub - real implementation would detect repeated patterns
   }
 
-  private calculateOptimizationScore(proposals: BoundaryOptimization["proposals"]): number {
+  private calculateOptimizationScore(
+    proposals: BoundaryOptimization["proposals"]
+  ): number {
     return proposals.reduce((score, p) => score + p.confidence * 0.1, 0);
   }
 

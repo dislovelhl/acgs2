@@ -2,7 +2,6 @@
 Policy Registry Service - Main FastAPI Application
 """
 
-import logging
 from contextlib import asynccontextmanager
 from typing import Any, Dict
 
@@ -10,6 +9,12 @@ from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from shared.audit_client import AuditClient
+from shared.logging import (
+    create_correlation_middleware,
+    get_logger,
+    init_service_logging,
+)
+from shared.otel_config import init_otel
 
 from .services import CacheService, CryptoService, NotificationService, PolicyService
 
@@ -38,8 +43,10 @@ except ImportError:
     from ...shared.config import settings
 
 # Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+init_service_logging(
+    "policy-registry", level=settings.log_level, json_format=(settings.env == "production")
+)
+logger = get_logger(__name__)
 
 # Global service instances
 crypto_service = CryptoService()
@@ -80,6 +87,12 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan,
 )
+
+# Initialize OTel tracing
+init_otel("policy-registry", app=app, export_to_console=settings.debug)
+
+# Add correlation ID middleware
+app.middleware("http")(create_correlation_middleware())
 
 # Add CORS middleware with secure configuration
 if SECURE_CORS_AVAILABLE:

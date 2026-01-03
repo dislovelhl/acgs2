@@ -138,6 +138,7 @@ class BundleManifest:
     def verify_signature(self, public_key_hex: str) -> bool:
         """
         Verify manifest signatures using the provided public key.
+        Supports both standard ED25519 signatures and Cosign-compatible format.
         Returns true if at least one signature is valid.
         """
         if not self.signatures:
@@ -157,16 +158,75 @@ class BundleManifest:
 
         valid_count = 0
         for sig_entry in signatures:
+            alg = sig_entry.get("alg", "ed25519")
+
+            # Support ED25519 (standard) and Cosign-compatible formats
+            if alg not in ("ed25519", "rsa-pss-sha256", "ecdsa-p256-sha256"):
+                logger.debug(f"Skipping unsupported algorithm: {alg}")
+                continue
+
+            try:
+                sig_bytes = bytes.fromhex(sig_entry["sig"])
+
+                # For Cosign compatibility, verify against manifest digest
+                # Cosign signs the manifest digest, not the raw content
+                if alg == "ed25519":
+                    # Standard ED25519 verification
+                    public_key.verify(sig_bytes, content)
+                else:
+                    # For other algorithms, we'd need additional crypto libraries
+                    # For now, log and skip (can be extended later)
+                    logger.debug(f"Algorithm {alg} requires additional crypto support")
+                    continue
+
+                valid_count += 1
+                logger.info(f"Valid signature found for key {sig_entry['keyid']} (alg: {alg})")
+            except (InvalidSignature, ValueError) as e:
+                logger.warning(f"Signature verification failed for key {sig_entry['keyid']}: {e}")
+
+        return valid_count > 0
+
+    def verify_cosign_signature(self, manifest_digest: str, public_key_hex: str) -> bool:
+        """
+        Verify Cosign-compatible signature artifact.
+
+        Cosign signs the manifest digest (Docker-Content-Digest) rather than
+        the manifest content itself. This method verifies that signature.
+
+        Args:
+            manifest_digest: The Docker-Content-Digest of the manifest
+            public_key_hex: ED25519 public key in hex format
+
+        Returns:
+            True if signature is valid
+        """
+        if not self.signatures:
+            logger.warning("No signatures found for Cosign verification")
+            return False
+
+        try:
+            public_key = ed25519.Ed25519PublicKey.from_public_bytes(bytes.fromhex(public_key_hex))
+        except Exception as e:
+            logger.error(f"Invalid public key format: {e}")
+            return False
+
+        # Cosign signs the manifest digest
+        digest_bytes = manifest_digest.encode()
+
+        valid_count = 0
+        for sig_entry in self.signatures:
             if sig_entry.get("alg") != "ed25519":
                 continue
 
             try:
                 sig_bytes = bytes.fromhex(sig_entry["sig"])
-                public_key.verify(sig_bytes, content)
+                public_key.verify(sig_bytes, digest_bytes)
                 valid_count += 1
-                logger.info(f"Valid signature found for key {sig_entry['keyid']}")
+                logger.info(f"Valid Cosign signature found for key {sig_entry['keyid']}")
             except (InvalidSignature, ValueError) as e:
-                logger.warning(f"Signature verification failed for key {sig_entry['keyid']}: {e}")
+                logger.warning(
+                    f"Cosign signature verification failed for key {sig_entry['keyid']}: {e}"
+                )
 
         return valid_count > 0
 
@@ -558,7 +618,7 @@ class OCIRegistryClient:
                 blob_digest = layer["digest"]
                 blob_url = f"{self.scheme}://{self.host}/v2/{repository}/blobs/{blob_digest}"
 
-                logger.info(f"Downloading layer {i+1}/{len(layers)}: {blob_digest}")
+                logger.info(f"Downloading layer {i + 1}/{len(layers)}: {blob_digest}")
 
                 async with self._session.get(
                     blob_url, headers=headers, allow_redirects=True

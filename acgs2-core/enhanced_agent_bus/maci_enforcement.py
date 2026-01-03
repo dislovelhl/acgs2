@@ -49,11 +49,7 @@ except ImportError:
             MACIRoleViolationError,
             MACISelfValidationError,
         )
-        from models import (  # type: ignore
-            CONSTITUTIONAL_HASH,
-            AgentMessage,
-            MessageType,
-        )
+        from models import CONSTITUTIONAL_HASH, AgentMessage, MessageType  # type: ignore
 
 logger = logging.getLogger(__name__)
 
@@ -62,6 +58,10 @@ class MACIRole(Enum):
     EXECUTIVE = "executive"
     LEGISLATIVE = "legislative"
     JUDICIAL = "judicial"
+    MONITOR = "monitor"
+    AUDITOR = "auditor"
+    CONTROLLER = "controller"
+    IMPLEMENTER = "implementer"
 
 
 class MACIAction(Enum):
@@ -73,6 +73,8 @@ class MACIAction(Enum):
     QUERY = "query"
     MANAGE_POLICY = "manage_policy"
     EMERGENCY_COOLDOWN = "emergency_cooldown"
+    MONITOR_ACTIVITY = "monitor_activity"
+    ENFORCE_CONTROL = "enforce_control"
 
 
 ROLE_PERMISSIONS = {
@@ -84,9 +86,26 @@ ROLE_PERMISSIONS = {
         MACIAction.QUERY,
         MACIAction.EMERGENCY_COOLDOWN,
     },
+    MACIRole.MONITOR: {MACIAction.MONITOR_ACTIVITY, MACIAction.QUERY},
+    MACIRole.AUDITOR: {MACIAction.AUDIT, MACIAction.QUERY},
+    MACIRole.CONTROLLER: {MACIAction.ENFORCE_CONTROL, MACIAction.QUERY},
+    MACIRole.IMPLEMENTER: {MACIAction.SYNTHESIZE, MACIAction.QUERY},
 }
 
-VALIDATION_CONSTRAINTS = {MACIRole.JUDICIAL: {MACIRole.EXECUTIVE, MACIRole.LEGISLATIVE}}
+VALIDATION_CONSTRAINTS = {
+    MACIRole.JUDICIAL: {MACIRole.EXECUTIVE, MACIRole.LEGISLATIVE, MACIRole.IMPLEMENTER},
+    MACIRole.AUDITOR: {MACIRole.MONITOR, MACIRole.CONTROLLER, MACIRole.IMPLEMENTER},
+}
+
+ROLE_HIERARCHY = {
+    MACIRole.JUDICIAL: 100,
+    MACIRole.AUDITOR: 90,
+    MACIRole.LEGISLATIVE: 80,
+    MACIRole.EXECUTIVE: 70,
+    MACIRole.CONTROLLER: 60,
+    MACIRole.MONITOR: 50,
+    MACIRole.IMPLEMENTER: 40,
+}
 
 
 @dataclass
@@ -229,6 +248,10 @@ class MACIAgentRecord:
 
     def validate_role(self, role: MACIRole) -> bool:
         return self.role == role
+
+    def has_sufficient_privilege(self, required_role: MACIRole) -> bool:
+        """Check if agent has sufficient privilege compared to required role."""
+        return ROLE_HIERARCHY.get(self.role, 0) >= ROLE_HIERARCHY.get(required_role, 0)
 
 
 @dataclass

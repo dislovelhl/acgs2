@@ -1,28 +1,78 @@
 """
-Layer 4: Policy - PSV-Verus Verified Policy Generation
-=======================================================
+Policy Layer - Constitutional Governance & Self-Improvement
+===========================================================
 
 Constitutional Hash: cdd01ef066bc6cf2
 
-Implements verified policy generation with:
-- DafnyPro annotation generation (86% success)
-- AlphaVerus self-improving translation
-- Propose-Solve-Verify self-play loop
-- Rego → Dafny → Z3 verification pipeline
+This layer provides democratic governance and continuous improvement:
+- CCAI Framework: Polis-style deliberation with cross-group consensus
+- Verified Policy Generator: PSV-Verus with 86% proof success rate
+- PSV Self-Play: Continuous improvement through self-play loops
 
-References:
-- PSV-Verus: Self-Play Verification (arXiv:2512.18160)
-- DafnyPro: LLM-Assisted Proofs (POPL 2026)
+Design Principles:
+- Democratic legitimacy through stakeholder consensus
+- Mathematical verifiability of all policies
+- Self-improving through iterative policy generation
+- Constitutional compliance as invariant
 """
 
+from .ccai_framework import (
+    CCAIFramework,
+    ConsensusLevel,
+    DeliberationPhase,
+    DeliberationSession,
+    Proposal,
+    Stakeholder,
+    StakeholderGroup,
+    VotingCluster,
+)
+from .psv_self_play import (
+    DifficultyLevel,
+    PSVAgent,
+    PSVSelfPlay,
+    SelfPlayChallenge,
+    SelfPlayMode,
+    SelfPlayRound,
+)
 from .verified_policy_generator import (
+    DafnyAnnotation,
+    DafnyProAnnotator,
+    DafnyVerifier,
+    LLMProposer,
+    LLMSolver,
+    PolicyLanguage,
     PolicyVerificationError,
+    VerificationAttempt,
     VerifiedPolicy,
     VerifiedPolicyGenerator,
 )
 
 __all__ = [
+    # CCAI Framework
+    "CCAIFramework",
+    "Stakeholder",
+    "Proposal",
+    "VotingCluster",
+    "DeliberationSession",
+    "ConsensusLevel",
+    "StakeholderGroup",
+    "DeliberationPhase",
+    # Verified Policy Generator
     "VerifiedPolicyGenerator",
     "VerifiedPolicy",
     "PolicyVerificationError",
+    "PolicyLanguage",
+    "DafnyAnnotation",
+    "VerificationAttempt",
+    "LLMProposer",
+    "LLMSolver",
+    "DafnyProAnnotator",
+    "DafnyVerifier",
+    # PSV Self-Play
+    "PSVSelfPlay",
+    "SelfPlayChallenge",
+    "SelfPlayRound",
+    "PSVAgent",
+    "SelfPlayMode",
+    "DifficultyLevel",
 ]

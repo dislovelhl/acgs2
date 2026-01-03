@@ -8,15 +8,8 @@ from datetime import datetime, timezone
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from shared.logging import (
-    create_correlation_middleware,
-    init_service_logging,
-)
-from shared.metrics import (
-    create_metrics_endpoint,
-    set_service_info,
-    track_request_metrics,
-)
+from shared.logging import create_correlation_middleware, init_service_logging
+from shared.metrics import create_metrics_endpoint, set_service_info, track_request_metrics
 
 # Initialize structured logging
 logger = init_service_logging("compliance-docs")
@@ -89,6 +82,17 @@ async def readiness_check():
 
 
 # API v1 router will be added here
+try:
+    from .api.euaiact_routes import router as euaiact_router
+
+    app.include_router(euaiact_router)
+    from .api.compliance_routes import router as compliance_router
+
+    app.include_router(compliance_router)
+except ImportError as e:
+    logger.error(f"Failed to import routes: {e}")
+
+
 @app.get("/")
 @track_request_metrics("compliance-docs", "/")
 async def root():
@@ -97,7 +101,13 @@ async def root():
         "service": "compliance-docs-service",
         "version": "1.0.0",
         "description": "Enterprise compliance documentation and evidence export service",
-        "endpoints": {"health": "/health", "ready": "/ready", "api": "/api/v1/"},
+        "endpoints": {
+            "health": "/health",
+            "ready": "/ready",
+            "api": "/api/v1/",
+            "euaiact": "/api/v1/euaiact",
+            "compliance": "/api/v1/compliance",
+        },
     }
 
 

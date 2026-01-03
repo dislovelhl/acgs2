@@ -14,7 +14,7 @@ from ..core.approval_chain import approval_engine
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
-templates = Jinja2Templates(directory="templates")
+templates = Jinja2Templates(directory="app/templates")
 
 
 @router.get("/approve/{request_id}", response_class=HTMLResponse)

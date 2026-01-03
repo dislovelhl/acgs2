@@ -9,13 +9,124 @@ Supports per-user, per-IP, and per-endpoint rate limits.
 import asyncio
 import time
 from dataclasses import dataclass, field
-from typing import Dict, Tuple
+from datetime import datetime, timezone
+from enum import Enum
+from typing import Dict, List, Optional, Tuple
 
 from fastapi import HTTPException, Request
 from fastapi.responses import JSONResponse
 from shared.logging import get_logger
 
 logger = get_logger(__name__)
+
+# Constitutional hash for integrity verification
+CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
+
+# Check for Redis availability
+try:
+    import redis
+
+    REDIS_AVAILABLE = True
+except ImportError:
+    REDIS_AVAILABLE = False
+
+
+class RateLimitScope(str, Enum):
+    """Scope for rate limiting."""
+
+    USER = "user"
+    IP = "ip"
+    ENDPOINT = "endpoint"
+    GLOBAL = "global"
+    TENANT = "tenant"
+
+
+class RateLimitAlgorithm(str, Enum):
+    """Rate limiting algorithms."""
+
+    TOKEN_BUCKET = "token_bucket"  # nosec B105 - not a password, algorithm name
+    SLIDING_WINDOW = "sliding_window"
+    FIXED_WINDOW = "fixed_window"
+
+
+@dataclass
+class RateLimitRule:
+    """Rate limit rule configuration."""
+
+    requests: int  # Number of requests allowed
+    window_seconds: int = 60  # Time window in seconds
+    scope: RateLimitScope = RateLimitScope.IP  # Default to IP-based limiting
+    endpoints: Optional[List[str]] = None  # Optional endpoint patterns
+    burst_multiplier: float = 1.5  # Burst allowance multiplier
+    algorithm: RateLimitAlgorithm = RateLimitAlgorithm.SLIDING_WINDOW
+
+    # Backwards compatibility alias
+    @property
+    def limit(self) -> int:
+        return self.requests
+
+    @property
+    def burst_limit(self) -> int:
+        return int(self.requests * self.burst_multiplier)
+
+    @property
+    def key_prefix(self) -> str:
+        """Generate cache key prefix for this rule."""
+        return f"ratelimit:{self.scope.value}"
+
+
+@dataclass
+class RateLimitResult:
+    """Result of a rate limit check."""
+
+    allowed: bool
+    limit: int
+    remaining: int
+    reset_at: datetime
+    retry_after: Optional[int] = None
+
+
+@dataclass
+class RateLimitConfig:
+    """Rate limiting configuration."""
+
+    rules: List[RateLimitRule] = field(default_factory=list)
+    redis_url: Optional[str] = None
+    fallback_to_memory: bool = True
+    enabled: bool = True
+    algorithm: RateLimitAlgorithm = RateLimitAlgorithm.SLIDING_WINDOW
+    exempt_paths: List[str] = field(
+        default_factory=lambda: ["/health", "/metrics", "/ready", "/live"]
+    )
+    fail_open: bool = True  # Continue processing if rate limiter fails
+
+    @classmethod
+    def from_env(cls) -> "RateLimitConfig":
+        """Create configuration from environment variables."""
+        import os
+
+        enabled = os.getenv("RATE_LIMIT_ENABLED", "true").lower() == "true"
+        requests_per_minute = int(os.getenv("RATE_LIMIT_REQUESTS_PER_MINUTE", "60"))
+        burst_limit = int(os.getenv("RATE_LIMIT_BURST_LIMIT", "10"))
+        redis_url = os.getenv("REDIS_URL")
+
+        rules = []
+        if enabled:
+            rules.append(
+                RateLimitRule(
+                    requests=requests_per_minute,
+                    window_seconds=60,
+                    burst_multiplier=burst_limit / requests_per_minute
+                    if requests_per_minute > 0
+                    else 1.5,
+                )
+            )
+
+        return cls(
+            rules=rules,
+            redis_url=redis_url,
+            enabled=enabled,
+        )
 
 
 @dataclass
@@ -71,6 +182,97 @@ class TokenBucket:
 
         tokens_needed = self.capacity - self.tokens
         return tokens_needed / self.refill_rate
+
+
+class SlidingWindowRateLimiter:
+    """
+    Sliding window rate limiter implementation.
+
+    Uses a sliding window algorithm to provide smooth rate limiting
+    that doesn't suffer from boundary issues like fixed windows.
+    """
+
+    def __init__(self, redis_client=None, fallback_to_memory: bool = True):
+        self.redis_client = redis_client
+        self.fallback_to_memory = fallback_to_memory
+        self.local_windows: Dict[str, List[float]] = {}
+        self._lock = asyncio.Lock()
+
+    async def is_allowed(
+        self,
+        key: str,
+        limit: int,
+        window_seconds: int = 60,
+    ) -> RateLimitResult:
+        """Check if request is allowed and record it."""
+        now = time.time()
+        window_start = now - window_seconds
+
+        async with self._lock:
+            # Clean old entries and count current window
+            if key not in self.local_windows:
+                self.local_windows[key] = []
+
+            # Remove entries outside the window
+            self.local_windows[key] = [ts for ts in self.local_windows[key] if ts > window_start]
+
+            current_count = len(self.local_windows[key])
+            allowed = current_count < limit
+
+            if allowed:
+                self.local_windows[key].append(now)
+                current_count += 1
+
+            remaining = max(0, limit - current_count)
+            reset_at = datetime.fromtimestamp(now + window_seconds, tz=timezone.utc)
+            retry_after = None if allowed else window_seconds
+
+            return RateLimitResult(
+                allowed=allowed,
+                limit=limit,
+                remaining=remaining,
+                reset_at=reset_at,
+                retry_after=retry_after,
+            )
+
+
+class RateLimitMiddleware:
+    """
+    ASGI middleware for rate limiting.
+
+    Can be added to FastAPI/Starlette apps for automatic rate limiting.
+    """
+
+    def __init__(self, app, config: Optional[RateLimitConfig] = None):
+        self.app = app
+        self.config = config or RateLimitConfig()
+        self.limiter = SlidingWindowRateLimiter()
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
+        # Default rate limiting
+        client = scope.get("client", ("unknown", 0))
+        client_ip = client[0] if client else "unknown"
+        path = scope.get("path", "/")
+
+        key = f"ip:{client_ip}:{path}"
+        result = await self.limiter.is_allowed(key, limit=60, window_seconds=60)
+
+        if not result.allowed:
+            response = JSONResponse(
+                status_code=429,
+                content={
+                    "error": "Too Many Requests",
+                    "retry_after": result.retry_after,
+                },
+            )
+            await response(scope, receive, send)
+            return
+
+        await self.app(scope, receive, send)
 
 
 class RateLimiter:
@@ -159,34 +361,55 @@ rate_limiter = RateLimiter()
 # ============================================================================
 
 
-def create_rate_limit_middleware(requests_per_minute: int = 60, burst_limit: int = 10):
+def create_rate_limit_middleware(
+    requests_per_minute: int = 60,
+    burst_limit: int = 10,
+    burst_multiplier: float = 1.5,
+    fail_open: bool = True,
+):
     """
     Create FastAPI middleware for rate limiting.
 
     Args:
         requests_per_minute: Base rate limit
         burst_limit: Burst capacity
+        burst_multiplier: Multiplier for burst capacity
+        fail_open: Whether to allow requests if rate limiter fails
 
     Returns:
         Middleware function
     """
     refill_rate = requests_per_minute / 60.0  # Convert to per second
+    effective_burst = int(burst_limit * burst_multiplier)
 
     async def rate_limit_middleware(request: Request, call_next):
         # Extract identifiers
         client_ip = request.client.host if request.client else "unknown"
+        tenant_id = getattr(request.state, "tenant_id", None)
         user_id = getattr(request.state, "user_id", None) or client_ip
         endpoint = request.url.path
 
         # Check rate limits (in order of specificity)
-        limits_to_check = [
-            # Per-user limits (most specific)
-            ("user", user_id, requests_per_minute * 2, refill_rate * 2, endpoint),
-            # Per-IP limits
-            ("ip", client_ip, requests_per_minute, refill_rate, endpoint),
-            # Per-endpoint limits
-            ("endpoint", endpoint, requests_per_minute * 3, refill_rate * 3, ""),
-        ]
+        limits_to_check = []
+
+        # Per-user limits (most specific)
+        limits_to_check.append(
+            ("user", user_id, requests_per_minute * 2, refill_rate * 2, endpoint)
+        )
+
+        # Per-tenant limits
+        if tenant_id:
+            # Load tenant specific limits if configured, otherwise use default
+            # For this task, we use default requests_per_minute * 5 for tenants
+            limits_to_check.append(
+                ("tenant", tenant_id, requests_per_minute * 5, refill_rate * 5, "")
+            )
+
+        # Per-IP limits
+        limits_to_check.append(("ip", client_ip, requests_per_minute, refill_rate, endpoint))
+
+        # Per-endpoint limits
+        limits_to_check.append(("endpoint", endpoint, requests_per_minute * 3, refill_rate * 3, ""))
 
         for limit_type, identifier, capacity, refill, endpoint_key in limits_to_check:
             allowed, remaining, reset_time = await rate_limiter.is_allowed(
@@ -353,10 +576,7 @@ def configure_rate_limits(
 # Monitoring Integration
 # ============================================================================
 
-from shared.metrics import (
-    _get_or_create_counter,
-    _get_or_create_gauge,
-)
+from shared.metrics import _get_or_create_counter, _get_or_create_gauge
 
 # Rate limiting metrics
 RATE_LIMIT_EXCEEDED = _get_or_create_counter(
@@ -424,8 +644,20 @@ rate_limiter.is_allowed = is_allowed_with_metrics.__get__(rate_limiter, RateLimi
 
 
 __all__ = [
+    # Constants
+    "CONSTITUTIONAL_HASH",
+    "REDIS_AVAILABLE",
+    # Enums
+    "RateLimitScope",
+    "RateLimitAlgorithm",
+    # Dataclasses
+    "RateLimitRule",
+    "RateLimitResult",
+    "RateLimitConfig",
     # Core classes
     "RateLimiter",
+    "SlidingWindowRateLimiter",
+    "RateLimitMiddleware",
     "TokenBucket",
     # Global instance
     "rate_limiter",

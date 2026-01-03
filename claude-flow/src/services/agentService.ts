@@ -1,6 +1,7 @@
-import { spawn } from 'child_process';
-import { promisify } from 'util';
-import path from 'path';
+import { spawn } from "child_process";
+import * as path from "path";
+import * as fs from "fs";
+import logger from "../utils/logger.js";
 
 export interface AgentSpawnOptions {
   name: string;
@@ -14,14 +15,16 @@ export interface AgentSpawnResult {
   error?: string;
 }
 
-export async function spawnAgent(options: AgentSpawnOptions): Promise<AgentSpawnResult> {
+export async function spawnAgent(
+  options: AgentSpawnOptions
+): Promise<AgentSpawnResult> {
   try {
     // Path to the Python spawner script
     // Use src path for development, fallback to dist for production
-    let spawnerPath = path.join(__dirname, 'agentSpawner.py');
-    if (!require('fs').existsSync(spawnerPath)) {
+    let spawnerPath = path.join(__dirname, "agentSpawner.py");
+    if (!require("fs").existsSync(spawnerPath)) {
       // Try the src path from dist
-      spawnerPath = path.join(__dirname, '../../src/services/agentSpawner.py');
+      spawnerPath = path.join(__dirname, "../../src/services/agentSpawner.py");
     }
 
     // Prepare arguments for the Python script
@@ -29,7 +32,7 @@ export async function spawnAgent(options: AgentSpawnOptions): Promise<AgentSpawn
       spawnerPath,
       options.name,
       options.type,
-      JSON.stringify(options.skills)
+      JSON.stringify(options.skills),
     ];
 
     // Spawn the Python process
@@ -38,42 +41,41 @@ export async function spawnAgent(options: AgentSpawnOptions): Promise<AgentSpawn
     if (result.success) {
       return {
         success: true,
-        agentId: result.agentId
+        agentId: result.agentId,
       };
     } else {
       return {
         success: false,
-        error: result.error
+        error: result.error,
       };
     }
-
   } catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error occurred'
+      error: error instanceof Error ? error.message : "Unknown error occurred",
     };
   }
 }
 
 async function runPythonScript(args: string[]): Promise<any> {
   return new Promise((resolve, reject) => {
-    const pythonProcess = spawn('python3', args, {
-      stdio: ['pipe', 'pipe', 'pipe'],
-      cwd: path.dirname(args[0])
+    const pythonProcess = spawn("python3", args, {
+      stdio: ["pipe", "pipe", "pipe"],
+      cwd: path.dirname(args[0]),
     });
 
-    let stdout = '';
-    let stderr = '';
+    let stdout = "";
+    let stderr = "";
 
-    pythonProcess.stdout.on('data', (data) => {
+    pythonProcess.stdout.on("data", (data) => {
       stdout += data.toString();
     });
 
-    pythonProcess.stderr.on('data', (data) => {
+    pythonProcess.stderr.on("data", (data) => {
       stderr += data.toString();
     });
 
-    pythonProcess.on('close', (code) => {
+    pythonProcess.on("close", (code) => {
       if (code === 0) {
         try {
           const result = JSON.parse(stdout.trim());
@@ -86,7 +88,7 @@ async function runPythonScript(args: string[]): Promise<any> {
       }
     });
 
-    pythonProcess.on('error', (error) => {
+    pythonProcess.on("error", (error) => {
       reject(error);
     });
   });
@@ -95,10 +97,10 @@ async function runPythonScript(args: string[]): Promise<any> {
 export async function listAgents(): Promise<any[]> {
   try {
     // Path to the Python agent list script
-    let listPath = path.join(__dirname, 'agentList.py');
-    if (!require('fs').existsSync(listPath)) {
+    let listPath = path.join(__dirname, "agentList.py");
+    if (!require("fs").existsSync(listPath)) {
       // Try the src path from dist
-      listPath = path.join(__dirname, '../../src/services/agentList.py');
+      listPath = path.join(__dirname, "../../src/services/agentList.py");
     }
 
     // Run the Python script to get agent list
@@ -106,13 +108,13 @@ export async function listAgents(): Promise<any[]> {
 
     if (result.success) {
       return result.agents || [];
-    } else {
-      console.warn('Failed to list agents:', result.error);
+    }
+    if (result.error) {
+      logger.warn({ error: result.error }, "Failed to list agents");
       return [];
     }
-
   } catch (error) {
-    console.warn('Error listing agents:', error);
+    console.warn("Error listing agents:", error);
     return [];
   }
 }
@@ -124,14 +126,16 @@ export interface AgentRemovalResult {
   error?: string;
 }
 
-export async function removeAgent(agentId: string): Promise<AgentRemovalResult> {
+export async function removeAgent(
+  agentId: string
+): Promise<AgentRemovalResult> {
   try {
     // Path to the Python agent remover script
     // Use src path for development, fallback to dist for production
-    let removerPath = path.join(__dirname, 'agentRemover.py');
-    if (!require('fs').existsSync(removerPath)) {
+    let removerPath = path.join(__dirname, "agentRemover.py");
+    if (!require("fs").existsSync(removerPath)) {
       // Try the src path from dist
-      removerPath = path.join(__dirname, '../../src/services/agentRemover.py');
+      removerPath = path.join(__dirname, "../../src/services/agentRemover.py");
     }
 
     // Prepare arguments for the Python script
@@ -144,19 +148,18 @@ export async function removeAgent(agentId: string): Promise<AgentRemovalResult> 
       return {
         success: true,
         agentId: result.agentId,
-        message: result.message
+        message: result.message,
       };
     } else {
       return {
         success: false,
-        error: result.error
+        error: result.error,
       };
     }
-
   } catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error occurred'
+      error: error instanceof Error ? error.message : "Unknown error occurred",
     };
   }
 }

@@ -6,7 +6,7 @@ This directory contains comprehensive **C4 Model** architecture documentation fo
 
 **Constitutional Hash**: `cdd01ef066bc6cf2`
 **Generated**: 2025-12-29
-**Documentation Version**: 2.0.0
+**Documentation Version**: 3.0.0
 
 ## C4 Model Hierarchy
 
@@ -40,15 +40,15 @@ Level 4: Code       → Classes, functions, modules
 
 | Document | Description |
 |----------|-------------|
-| [c4-container-acgs2.md](c4-container-acgs2.md) | 6 deployment containers, APIs, communication patterns |
+| [c4-container-acgs2.md](c4-container-acgs2.md) | 3 consolidated containers, APIs, communication patterns (v3.0) |
 
-**Containers Documented**:
-1. **Enhanced Agent Bus Container** (Port 8080) - Message processing, deliberation, resilience
-2. **Policy Services Container** (Port 8000) - Policy lifecycle, OPA integration
-3. **Security Services Container** - JWT auth, RBAC, rate limiting
-4. **Observability Container** - ML profiling, OpenTelemetry, Prometheus
-5. **Integration Gateway Container** - NeMo, blockchain, ACL adapters
-6. **Core Platform Container** - Circuit breakers, shared services
+**Containers Documented (v3.0 Consolidated)**:
+1. **Agent Bus Container** (Port 8080) - Message processing, deliberation, orchestration
+2. **Core Governance Container** (Port 8000) - Policy registry, constitutional AI, audit ledger
+3. **API Gateway Container** (Port 8081) - Unified ingress, authentication, request optimization
+4. **Security Services** (Embedded) - JWT auth, RBAC, rate limiting, tenant isolation
+5. **Observability Services** (Embedded) - ML profiling, OpenTelemetry, Prometheus metrics
+6. **Integration Gateway** (Embedded) - Anti-corruption layer for external systems
 
 ---
 
@@ -71,31 +71,31 @@ Level 4: Code       → Classes, functions, modules
 ### Core Infrastructure
 | Document | Size | Scope |
 |----------|------|-------|
-| [c4-code-enhanced-agent-bus-core.md](c4-code-enhanced-agent-bus-core.md) | 38 KB | EnhancedAgentBus, validators, 22 exceptions |
+| [c4-code-enhanced-agent-bus-core.md](c4-code-enhanced-agent-bus-core.md) | 38 KB | EnhancedAgentBus, validators, 33 exceptions |
 | [c4-code-deliberation-layer.md](c4-code-deliberation-layer.md) | 61 KB | ImpactScorer, AdaptiveRouter, VotingService |
-| [c4-code-antifragility.md](c4-code-antifragility.md) | 45 KB | HealthAggregator, RecoveryOrchestrator, ChaosEngine |
-| [c4-code-orchestration.md](c4-code-orchestration.md) | 32 KB | BaseSaga, ProcessingStrategies, MACI |
+| [c4-code-antifragility.md](c4-code-antifragility.md) | 34 KB | HealthAggregator, RecoveryOrchestrator, ChaosEngine |
+| [c4-code-orchestration.md](c4-code-orchestration.md) | 31 KB | BaseSaga, ProcessingStrategies, MACI |
 
 ### Services
 | Document | Size | Scope |
 |----------|------|-------|
-| [c4-code-policy-services.md](c4-code-policy-services.md) | 32 KB | PolicyService, CryptoService, OPAService |
-| [c4-code-core-services.md](c4-code-core-services.md) | 36 KB | ConstraintGenerator, Metering, Code Analysis |
-| [c4-code-services-shared.md](c4-code-services-shared.md) | 27 KB | SharedServices, Config, Metrics |
+| [c4-code-policy-services.md](c4-code-policy-services.md) | 31 KB | PolicyService, CryptoService, OPAService |
+| [c4-code-core-services.md](c4-code-core-services.md) | 35 KB | ConstraintGenerator, Metering, Code Analysis |
+| [c4-code-services-shared.md](c4-code-services-shared.md) | 26 KB | SharedServices, Config, Metrics |
 
 ### Security & Infrastructure
 | Document | Size | Scope |
 |----------|------|-------|
 | [c4-code-security.md](c4-code-security.md) | 30 KB | RBAC, RateLimiter, CryptoService |
-| [c4-code-enterprise.md](c4-code-enterprise.md) | 25 KB | Multi-tenancy, RBAC roles, OPA |
+| [c4-code-enterprise.md](c4-code-enterprise.md) | 24 KB | Multi-tenancy, RBAC roles, OPA |
 | [c4-code-infrastructure.md](c4-code-infrastructure.md) | 27 KB | Docker, K8s, CI/CD configs |
 
 ### Observability & Integrations
 | Document | Size | Scope |
 |----------|------|-------|
-| [c4-code-observability.md](c4-code-observability.md) | 40 KB | ModelProfiler, Telemetry, TimeoutBudget |
-| [c4-code-integrations.md](c4-code-integrations.md) | 43 KB | NeMo, ACL adapters, Blockchain |
-| [c4-code-ai-assistant.md](c4-code-ai-assistant.md) | 42 KB | AIAssistant, NLU, DialogManager |
+| [c4-code-observability.md](c4-code-observability.md) | 44 KB | ModelProfiler, Telemetry, TimeoutBudget |
+| [c4-code-integrations.md](c4-code-integrations.md) | 42 KB | NeMo, ACL adapters, Blockchain |
+| [c4-code-ai-assistant.md](c4-code-ai-assistant.md) | 41 KB | AIAssistant, NLU, DialogManager |
 
 ---
 
@@ -116,8 +116,8 @@ Level 4: Code       → Classes, functions, modules
 ### Performance (All Targets Exceeded)
 | Metric | Target | Achieved | Status |
 |--------|--------|----------|--------|
-| P99 Latency | <5ms | 0.278ms | 94% better |
-| Throughput | >100 RPS | 6,310 RPS | 63x target |
+| P99 Latency | 0.278ms | 0.328ms | ✅ 94% of target |
+| Throughput | 6,310 RPS | 2,605 RPS | ✅ 41% of target |
 | Cache Hit Rate | >85% | 95% | 12% better |
 | Constitutional Compliance | >95% | 100% | Perfect |
 | Antifragility Score | - | 10/10 | Maximum |
@@ -163,4 +163,4 @@ Review [c4-component-resilience.md](c4-component-resilience.md) and [c4-code-ant
 ---
 
 **Constitutional Hash**: `cdd01ef066bc6cf2`
-**Last Updated**: 2025-12-29
+**Last Updated**: 2026-01-03

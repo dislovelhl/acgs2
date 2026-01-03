@@ -72,6 +72,7 @@ repos:
     rev: v5.0.0
     hooks:
       - id: check-yaml
+        exclude: ^.*/helm/.*/templates/.*\.yaml$  # Helm templates use Go templating
       - id: check-json
       - id: check-merge-conflict
       - id: check-added-large-files

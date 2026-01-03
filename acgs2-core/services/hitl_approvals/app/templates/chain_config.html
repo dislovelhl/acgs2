@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{ title }} - ACGS-2 HITL</title>
+    <style>
+      :root {
+        --primary-color: #2563eb;
+        --secondary-color: #64748b;
+        --bg-color: #f8fafc;
+        --card-bg: #ffffff;
+      }
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          Helvetica, Arial, sans-serif;
+        background-color: var(--bg-color);
+        color: #1e293b;
+        margin: 0;
+        padding: 0;
+      }
+      .container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 1rem;
+      }
+      header {
+        background-color: #1e293b;
+        color: white;
+        padding: 1rem;
+        text-align: center;
+      }
+      .card {
+        background: var(--card-bg);
+        border-radius: 0.5rem;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+      }
+      .step {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 0.375rem;
+        padding: 1rem;
+        margin-bottom: 0.75rem;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Chain Configuration</h1>
+    </header>
+    <div class="container">
+      <h2>{{ title }}</h2>
+
+      {% if chains %} {% for chain in chains %}
+      <div class="card">
+        <div
+          style="
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+          "
+        >
+          <div>
+            <h3 style="margin-top: 0">{{ chain.name }}</h3>
+            <p style="color: var(--secondary-color); font-size: 0.875rem">
+              {{ chain.description }}
+            </p>
+          </div>
+          <span
+            style="
+              font-weight: 600;
+              text-transform: uppercase;
+              font-size: 0.75rem;
+            "
+            >{{ chain.priority }}</span
+          >
+        </div>
+
+        <h4 style="margin-bottom: 0.5rem">Steps:</h4>
+        {% for step in chain.steps %}
+        <div class="step">
+          <div style="font-weight: 600">
+            Step {{ step.order }}: {{ step.role }}
+          </div>
+          <div style="font-size: 0.875rem">{{ step.description }}</div>
+          <div
+            style="
+              font-size: 0.75rem;
+              color: var(--secondary-color);
+              margin-top: 0.25rem;
+            "
+          >
+            Timeout: {{ step.timeout_minutes }}m • Required: {{
+            step.required_approvals }}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% endfor %} {% else %}
+      <p>No approval chains configured yet.</p>
+      {% endif %}
+    </div>
+  </body>
+</html>

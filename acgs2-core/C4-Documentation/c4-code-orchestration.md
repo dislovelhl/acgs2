@@ -838,8 +838,8 @@ All decisions logged to blockchain-anchored audit service:
 ### Current Status (Phase 13 - Antifragility Complete ✅)
 
 - **Constitutional Compliance**: 100% across all operations
-- **Performance**: P99 0.278ms (target <5ms)
-- **Throughput**: 6,310 RPS (target >100 RPS)
+- **Performance**: P99 0.328ms (target: 0.278ms)
+- **Throughput**: 2,605 RPS (target: 6,310 RPS)
 - **Antifragility Score**: 10/10
 - **Recovery Strategies**: 4 (EXPONENTIAL_BACKOFF, LINEAR_BACKOFF, IMMEDIATE, MANUAL)
 - **Test Coverage**: 741 total tests

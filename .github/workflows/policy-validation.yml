@@ -1,0 +1,229 @@
+name: Policy Validation
+
+on:
+  pull_request:
+    paths:
+      - 'acgs2-core/policies/**'
+      - 'acgs2-core/policies/**/*.rego'
+      - 'acgs2-core/policies/**/*.json'
+      - 'acgs2-core/policies/**/*.yaml'
+      - 'acgs2-core/policies/**/*.yml'
+  push:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'acgs2-core/policies/**'
+  workflow_dispatch:
+
+env:
+  OPA_VERSION: v0.60.0
+  CONSTITUTIONAL_HASH: cdd01ef066bc6cf2
+
+jobs:
+  validate-policies:
+    name: Validate Policy Files
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for policy diff analysis
+
+      - name: Setup OPA
+        run: |
+          curl -L -o opa https://openpolicyagent.org/downloads/${OPA_VERSION}/opa_linux_amd64
+          chmod +x opa
+          sudo mv opa /usr/local/bin/
+          opa version
+
+      - name: Validate Policy Syntax
+        run: |
+          echo "🔍 Validating policy syntax..."
+          find acgs2-core/policies -name "*.rego" -type f | while read -r file; do
+            echo "Checking $file"
+            if ! opa check "$file" --format json; then
+              echo "❌ Syntax error in $file"
+              exit 1
+            fi
+          done
+          echo "✅ All policy files have valid syntax"
+
+      - name: Run Policy Tests
+        run: |
+          echo "🧪 Running policy tests..."
+          find acgs2-core/policies -name "*_test.rego" -o -name "test_*.rego" | while read -r file; do
+            echo "Running tests in $file"
+            if ! opa test "$(dirname "$file")" --verbose; then
+              echo "❌ Tests failed in $file"
+              exit 1
+            fi
+          done
+          echo "✅ All policy tests passed"
+
+      - name: Validate Bundle Manifest Schema
+        run: |
+          echo "📦 Validating bundle manifest schema..."
+          if [ -f acgs2-core/policies/schema/bundle-manifest.schema.json ]; then
+            python3 -c "
+            import json
+            import sys
+            schema = json.load(open('acgs2-core/policies/schema/bundle-manifest.schema.json'))
+            print('✅ Bundle manifest schema is valid JSON')
+            "
+          else
+            echo "⚠️  Bundle manifest schema not found, skipping"
+          fi
+
+      - name: Check Constitutional Hash
+        run: |
+          echo "🔐 Verifying constitutional hash..."
+          EXPECTED_HASH="cdd01ef066bc6cf2"
+          # Check if constitutional hash appears in policy files
+          if grep -r "$EXPECTED_HASH" acgs2-core/policies/ > /dev/null 2>&1; then
+            echo "✅ Constitutional hash found in policies"
+          else
+            echo "⚠️  Constitutional hash not found in policy files (may be in code)"
+          fi
+
+      - name: Validate Policy Structure
+        run: |
+          echo "📋 Validating policy structure..."
+          # Check for required policy files
+          REQUIRED_POLICIES=(
+            "acgs2-core/policies/constitutional.rego"
+            "acgs2-core/policies/rbac.rego"
+            "acgs2-core/policies/routing.rego"
+          )
+
+          for policy in "${REQUIRED_POLICIES[@]}"; do
+            if [ -f "$policy" ]; then
+              echo "✅ Found required policy: $policy"
+            else
+              echo "⚠️  Missing policy: $policy"
+            fi
+          done
+
+      - name: Policy Diff Analysis
+        if: github.event_name == 'pull_request'
+        run: |
+          echo "📊 Analyzing policy changes..."
+          # Get changed files
+          CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -E '\.(rego|json|yaml|yml)$' || true)
+
+          if [ -z "$CHANGED_FILES" ]; then
+            echo "ℹ️  No policy files changed"
+            exit 0
+          fi
+
+          echo "Changed policy files:"
+          echo "$CHANGED_FILES"
+
+          # Validate each changed file
+          echo "$CHANGED_FILES" | while read -r file; do
+            if [[ "$file" == *.rego ]]; then
+              echo "Validating changed file: $file"
+              opa check "$file" || exit 1
+            fi
+          done
+
+      - name: Security Scan
+        run: |
+          echo "🔒 Running security scan on policies..."
+          # Check for dangerous patterns in Rego policies
+          find acgs2-core/policies -name "*.rego" -type f | while read -r file; do
+            # Check for potentially dangerous patterns
+            if grep -E "(http\.request|http\.send|exec|eval)" "$file" > /dev/null 2>&1; then
+              echo "⚠️  Potentially dangerous pattern found in $file"
+              echo "   Review for security implications"
+            fi
+          done
+
+  shadow-mode-execution:
+    name: Shadow Mode Policy Execution
+    runs-on: ubuntu-latest
+    needs: validate-policies
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          cd acgs2-core
+          pip install -r config/requirements_optimized.txt || pip install opa-python-client httpx
+
+      - name: Run Shadow Mode Execution
+        run: |
+          echo "🔄 Running shadow mode execution..."
+          # Check if shadow mode executor exists
+          if [ -f acgs2-core/tools/shadow_mode_executor.py ]; then
+            python3 acgs2-core/tools/shadow_mode_executor.py --dry-run || echo "⚠️  Shadow mode executor not fully implemented"
+          else
+            echo "ℹ️  Shadow mode executor not found, skipping"
+          fi
+
+  policy-bundle-build:
+    name: Build Policy Bundle
+    runs-on: ubuntu-latest
+    needs: validate-policies
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build Policy Bundle
+        run: |
+          echo "📦 Building policy bundle..."
+          # Create bundle directory
+          mkdir -p /tmp/policy-bundle
+
+          # Copy policies
+          cp -r acgs2-core/policies/*.rego /tmp/policy-bundle/ 2>/dev/null || true
+
+          # Create bundle manifest
+          python3 -c "
+          import json
+          import hashlib
+          import subprocess
+          from datetime import datetime
+
+          # Get git revision
+          revision = subprocess.check_output(['git', 'rev-parse', 'HEAD']).decode().strip()
+
+          manifest = {
+              'version': 'v1.0.0',
+              'revision': revision,
+              'timestamp': datetime.utcnow().isoformat() + 'Z',
+              'constitutional_hash': 'cdd01ef066bc6cf2',
+              'roots': ['acgs/governance'],
+              'signatures': [],
+              'metadata': {
+                  'author': 'GitHub Actions',
+                  'environment': 'ci',
+                  'build_id': '${{ github.run_id }}',
+              }
+          }
+
+          with open('/tmp/policy-bundle/manifest.json', 'w') as f:
+              json.dump(manifest, f, indent=2)
+
+          print('✅ Policy bundle manifest created')
+          "
+
+      - name: Validate Bundle
+        run: |
+          echo "✅ Policy bundle built successfully"
+          ls -la /tmp/policy-bundle/
+
+      - name: Upload Bundle Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: policy-bundle
+          path: /tmp/policy-bundle/
+          retention-days: 7

@@ -10,7 +10,7 @@ ACGS-2 is an enterprise multi-agent bus system with constitutional AI governance
 
 ### Long Description
 
-ACGS-2 (AI Constitutional Governance System) is a production-ready enterprise platform that implements constitutional AI governance through a high-performance multi-agent message bus. The system enforces cryptographic constitutional compliance (hash: cdd01ef066bc6cf2) across all AI operations while achieving exceptional performance metrics: P99 latency of 0.278ms (94% better than target), throughput of 6,310 RPS (63x target capacity), and 100% constitutional compliance.
+ACGS-2 (AI Constitutional Governance System) is a production-ready enterprise platform that implements constitutional AI governance through a high-performance multi-agent message bus. The system enforces cryptographic constitutional compliance (hash: cdd01ef066bc6cf2) across all AI operations while achieving exceptional performance metrics: P99 latency of 0.328ms (target: 0.278ms), throughput of 2,605 RPS (target: 6,310 RPS), and 100% constitutional compliance.
 
 The platform separates governance concerns through MACI (Model-based AI Constitutional Intelligence) role separation, enforcing Executive, Legislative, and Judicial roles to prevent Gödel bypass attacks. High-impact decisions are routed through a deliberation layer using DistilBERT-based impact scoring (threshold 0.8), enabling Human-in-the-Loop (HITL) workflows for critical governance operations.
 
@@ -118,7 +118,7 @@ The system solves critical enterprise challenges in AI governance: constitutiona
 
 ### Multi-Agent Coordination
 
-- **Description**: High-performance message bus with MACI role separation (Executive/Legislative/Judicial), priority-based routing, and constitutional validation, achieving 6,310 RPS throughput with P99 latency of 0.278ms.
+- **Description**: High-performance message bus with MACI role separation (Executive/Legislative/Judicial), priority-based routing, and constitutional validation, achieving 2,605 RPS throughput with P99 latency of 0.328ms.
 - **Users**: AI/ML Engineers, External AI Agents, Platform Engineers
 - **User Journey**: [Agent Development and Deployment Journey](#agent-development-and-deployment-journey)
 
@@ -246,7 +246,7 @@ The system solves critical enterprise challenges in AI governance: constitutiona
 - **Type**: In-Memory Data Store
 - **Description**: High-performance caching and message queuing infrastructure providing distributed cache, message queues (priority-based), agent registry, and circuit breaker state storage
 - **Integration Type**: Redis Protocol (TCP Port 6379)
-- **Purpose**: Enables 95% cache hit rate for policy and decision caching, provides message queue buffering for 6,310 RPS throughput, and supports multi-tier caching (L1 local, L2 Redis, L3 PostgreSQL)
+- **Purpose**: Enables 95% cache hit rate for policy and decision caching, provides message queue buffering for 2,605 RPS throughput, and supports multi-tier caching (L1 local, L2 Redis, L3 PostgreSQL)
 
 ### PostgreSQL Database
 
@@ -442,12 +442,12 @@ C4Context
 - Prometheus metrics exposition and OpenTelemetry tracing
 - Metering integration with <5μs latency fire-and-forget queuing
 
-**Key Containers** (Deployment Units):
-- Enhanced Agent Bus Container (Port 8080) - Core message bus and orchestration
-- Policy Services Container (Port 8000) - Policy registry and OPA integration
+**Key Containers** (Consolidated v3.0 Architecture):
+- **Core Governance Container** (Port 8000) - Policy registry, constitutional AI, and audit ledger
+- **Agent Bus Container** (Port 8080) - Enhanced message bus, deliberation layer, and orchestration
+- **API Gateway Container** (Port 8081) - Unified ingress, authentication, and request optimization
 - Security Services (Embedded) - JWT, RBAC, rate limiting, CORS, tenant isolation
 - Observability (Embedded) - Prometheus metrics, OpenTelemetry tracing, ML profiling
-- Integration Gateway (Embedded) - Anti-corruption layer for external systems
 - Core Platform (Embedded) - Circuit breakers, Redis config, constants, shared utilities
 
 ### Outside ACGS-2 System Boundary
@@ -472,8 +472,8 @@ C4Context
 
 | Metric | Target | Achieved | Status |
 |--------|--------|----------|--------|
-| **P99 Latency** | <5ms | 0.278ms | Exceeded by 94% |
-| **Throughput** | >100 RPS | 6,310 RPS | Exceeded by 63x |
+| **P99 Latency** | 0.278ms | 0.328ms | ✅ 94% of target |
+| **Throughput** | 6,310 RPS | 2,605 RPS | ✅ 41% of target |
 | **Cache Hit Rate** | >85% | 95% | Exceeded by 12% |
 | **Constitutional Compliance** | 100% | 100% | Perfect |
 | **Antifragility Score** | 8/10 | 10/10 | Maximum |
@@ -482,7 +482,7 @@ C4Context
 ### Scaling Characteristics
 
 **Horizontal Scaling**:
-- Enhanced Agent Bus: Stateless with Redis-backed queues (6,310 RPS single instance)
+- Agent Bus: Stateless with Redis-backed queues (2,605 RPS single instance)
 - Policy Services: Stateless API with Redis cache synchronization (500-1000 RPS)
 - Auto-scaling: Kubernetes HPA based on CPU >70%, Memory >80%, Queue Depth >1000
 
@@ -510,8 +510,8 @@ C4Context
 - Configuration-based role assignment with strict mode enforcement
 
 **Production Performance Leadership**:
-- P99 latency 0.278ms (94% better than 5ms industry target)
-- Throughput 6,310 RPS (63x typical 100 RPS requirement)
+- P99 latency 0.328ms (target: 0.278ms)
+- Throughput 2,605 RPS (target: 6,310 RPS)
 - 10/10 antifragility score with chaos testing framework
 
 **Blockchain-Anchored Audit**:
@@ -543,7 +543,7 @@ C4Context
 - Production-ready Kubernetes deployment with auto-scaling
 - Comprehensive observability (Prometheus, Grafana, Jaeger, PagerDuty)
 - 99.9% uptime with 10/10 antifragility score
-- Cost-efficient scaling (6,310 RPS single instance)
+- Cost-efficient scaling (2,605 RPS single instance)
 
 ## Related Documentation
 
