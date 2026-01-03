@@ -500,6 +500,120 @@ class BaseIntegration(abc.ABC):
         """
         pass
 
+    async def send_events_batch(
+        self,
+        events: List[IntegrationEvent],
+    ) -> List[IntegrationResult]:
+        """
+        Send multiple governance events to the external service in a batch.
+
+        Optimizes delivery by sending multiple events in a single API call where
+        supported, reducing network overhead and improving throughput for high-volume
+        governance event scenarios.
+
+        For adapters that don't support native batch operations, this method will
+        automatically fall back to sending events one-by-one using send_event().
+
+        Args:
+            events: List of governance events to send
+
+        Returns:
+            List of IntegrationResults, one for each input event. Results are returned
+            in the same order as the input events.
+
+        Raises:
+            AuthenticationError: If not authenticated
+            DeliveryError: If batch delivery fails after retries
+            RateLimitError: If rate limited by the external service
+
+        Example:
+            ```python
+            events = [event1, event2, event3]
+            results = await adapter.send_events_batch(events)
+
+            for event, result in zip(events, results):
+                if result.success:
+                    logger.info(f"Event {event.event_id} sent successfully")
+                else:
+                    logger.error(f"Event {event.event_id} failed: {result.error_message}")
+            ```
+
+        Note:
+            Batch semantics depend on the adapter implementation:
+            - Some adapters use all-or-nothing semantics (e.g., Splunk HEC)
+            - Others may support partial success
+            - Default fallback sends events individually, allowing mixed results
+        """
+        pass
+
+    async def _do_send_events_batch(
+        self,
+        events: List[IntegrationEvent],
+    ) -> List[IntegrationResult]:
+        """
+        Perform the actual batch event delivery.
+
+        Subclasses should override this method to implement adapter-specific batch
+        delivery logic when the external service supports batch operations.
+
+        If not overridden, the base implementation will automatically fall back to
+        sending events one-by-one using _do_send_event(), allowing all adapters to
+        support batch operations transparently.
+
+        Args:
+            events: List of governance events to send
+
+        Returns:
+            List of IntegrationResults for each event, in the same order as input.
+            Each result indicates success or failure for the corresponding event.
+
+        Note:
+            Subclass implementations should:
+            - Format events according to the external service's batch API
+            - Respect any batch size limits (e.g., max events, max payload size)
+            - Handle all-or-nothing vs partial success semantics appropriately
+            - Raise RateLimitError with retry_after if rate limited
+            - Return one IntegrationResult per input event
+
+        Example Implementation:
+            ```python
+            async def _do_send_events_batch(
+                self,
+                events: List[IntegrationEvent]
+            ) -> List[IntegrationResult]:
+                # Format events for service's batch API
+                batch_payload = self._format_batch_payload(events)
+
+                # Send batch request
+                response = await self.client.post("/batch", json=batch_payload)
+
+                if response.status_code == 200:
+                    # All events succeeded
+                    return [
+                        IntegrationResult(
+                            success=True,
+                            integration_name=self.name,
+                            operation="send_event",
+                            external_id=event.event_id,
+                        )
+                        for event in events
+                    ]
+                else:
+                    # All events failed
+                    return [
+                        IntegrationResult(
+                            success=False,
+                            integration_name=self.name,
+                            operation="send_event",
+                            error_code="BATCH_FAILED",
+                            error_message=response.text,
+                        )
+                        for _ in events
+                    ]
+            ```
+        """
+        pass
+
     async def test_connection(self) -> IntegrationResult:
         """
         Test the connection to the external service without fully authenticating.
