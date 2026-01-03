@@ -1160,3 +1160,139 @@ def create_servicenow_mapping_config(
             "assignment_group": assignment_group,
         },
     )
+
+
+def create_pagerduty_mapping_config(
+    name: str = "Default PagerDuty Mapping",
+    routing_key: Optional[str] = None,
+    event_action: str = "trigger",
+    summary_template: str = "[ACGS-2] {title}",
+    severity_mapping: Optional[Dict[str, str]] = None,
+    source: str = "ACGS-2",
+    client: Optional[str] = None,
+    client_url: Optional[str] = None,
+    additional_fields: Optional[Dict[str, Any]] = None,
+) -> TicketMappingConfig:
+    """
+    Create a default PagerDuty incident mapping configuration.
+
+    Args:
+        name: Configuration name
+        routing_key: PagerDuty integration/routing key (can be set later)
+        event_action: Event action (trigger, acknowledge, resolve)
+        summary_template: Template for incident summary
+        severity_mapping: Custom severity to PagerDuty severity mapping
+        source: Source identifier for events
+        client: Name of monitoring client
+        client_url: URL to link back to monitoring client
+        additional_fields: Additional custom_details fields
+
+    Returns:
+        TicketMappingConfig for PagerDuty
+    """
+    field_mappings = [
+        FieldMapping(
+            target_field="summary",
+            mapping_type=FieldMappingType.TEMPLATE,
+            template=summary_template,
+            required=True,
+            validation_rules=[
+                FieldValidationRule(
+                    validation_type=FieldValidationType.MAX_LENGTH,
+                    value=1024,
+                    error_message="PagerDuty summary must be 1024 characters or less",
+                ),
+            ],
+        ),
+        FieldMapping(
+            target_field="severity",
+            mapping_type=FieldMappingType.TRANSFORM,
+            transform_name="severity_to_pagerduty_urgency",
+            transform_params={"mapping": severity_mapping or {}},
+            required=True,
+        ),
+        FieldMapping(
+            target_field="source",
+            mapping_type=FieldMappingType.STATIC,
+            static_value=source,
+            required=True,
+            validation_rules=[
+                FieldValidationRule(
+                    validation_type=FieldValidationType.MAX_LENGTH,
+                    value=255,
+                    error_message="PagerDuty source must be 255 characters or less",
+                ),
+            ],
+        ),
+        FieldMapping(
+            target_field="timestamp",
+            mapping_type=FieldMappingType.EVENT_FIELD,
+            source_field="timestamp",
+        ),
+    ]
+
+    # Add event action if specified
+    if event_action:
+        field_mappings.append(
+            FieldMapping(
+                target_field="event_action",
+                mapping_type=FieldMappingType.STATIC,
+                static_value=event_action,
+                required=True,
+                validation_rules=[
+                    FieldValidationRule(
+                        validation_type=FieldValidationType.ALLOWED_VALUES,
+                        value=["trigger", "acknowledge", "resolve"],
+                        error_message="event_action must be 'trigger', 'acknowledge', or 'resolve'",
+                    ),
+                ],
+            )
+        )
+
+    # Add routing key if specified
+    if routing_key:
+        field_mappings.append(
+            FieldMapping(
+                target_field="routing_key",
+                mapping_type=FieldMappingType.STATIC,
+                static_value=routing_key,
+                required=True,
+            )
+        )
+
+    # Add client information if specified
+    if client:
+        field_mappings.append(
+            FieldMapping(
+                target_field="client",
+                mapping_type=FieldMappingType.STATIC,
+                static_value=client,
+            )
+        )
+
+    if client_url:
+        field_mappings.append(
+            FieldMapping(
+                target_field="client_url",
+                mapping_type=FieldMappingType.STATIC,
+                static_value=client_url,
+            )
+        )
+
+    # Add additional custom_details field mappings
+    if additional_fields:
+        for field_name, value in additional_fields.items():
+            field_mappings.append(
+                FieldMapping(
+                    target_field=f"custom_details.{field_name}",
+                    mapping_type=FieldMappingType.STATIC,
+                    static_value=value,
+                )
+            )
+
+    return TicketMappingConfig(
+        name=name,
+        provider=TicketingProvider.PAGERDUTY,
+        summary_template=summary_template,
+        field_mappings=field_mappings,
+    )
