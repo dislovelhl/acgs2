@@ -697,7 +697,18 @@ class DriftDetector:
 
                 if result.drift_detected:
                     self._drift_detections += 1
+
+                    # CIRCUIT BREAKER PATTERN: Increment consecutive drift counter
+                    # ============================================================
+                    # This counter tracks how many drift checks in a row have detected drift.
+                    # It forms part of a circuit breaker pattern that escalates alert severity
+                    # when drift persists across multiple consecutive checks.
+                    #
+                    # The circuit breaker prevents transient drift from triggering critical
+                    # alerts while ensuring persistent drift (systematic issues) gets
+                    # escalated attention. See _trigger_alert() for the severity logic.
                     self._consecutive_drift_count += 1
+
                     self._last_drift_time = timestamp
                     self._current_status = DriftStatus.DRIFT_DETECTED
 
@@ -713,6 +724,12 @@ class DriftDetector:
                         },
                     )
                 else:
+                    # CIRCUIT BREAKER PATTERN: Reset consecutive drift counter
+                    # =========================================================
+                    # When no drift is detected, reset the consecutive counter to 0.
+                    # This "closes" the circuit breaker, preventing previous drift
+                    # detections from affecting future alerts. Only sustained,
+                    # consecutive drift will escalate to critical severity.
                     self._consecutive_drift_count = 0
                     self._current_status = DriftStatus.NO_DRIFT
 
@@ -1038,12 +1055,114 @@ class DriftDetector:
         )
 
     def _trigger_alert(self, result: DriftResult) -> None:
-        """Trigger drift alert callbacks.
+        """Trigger drift alert callbacks with circuit breaker severity escalation.
+
+        CIRCUIT BREAKER PATTERN FOR CONSECUTIVE DRIFT DETECTION
+        ========================================================
+
+        This method implements a circuit breaker pattern to distinguish between
+        transient drift (temporary fluctuations) and persistent drift (systematic
+        issues requiring immediate attention).
+
+        PATTERN OVERVIEW:
+        -----------------
+        The circuit breaker monitors consecutive drift detections and "trips" to
+        a critical state when drift persists across multiple consecutive checks.
+        This prevents alert fatigue from transient drift while ensuring persistent
+        problems get escalated attention.
+
+        CIRCUIT BREAKER STATES:
+        -----------------------
+        1. CLOSED (Normal Operation):
+           - Severity: "warning"
+           - Condition: consecutive_drift_count < 3
+           - Meaning: Drift detected, but not yet persistent
+           - Action: Monitor, investigate if needed
+           - Transition: Remains closed until 3 consecutive drift detections
+
+        2. OPEN (Tripped/Critical):
+           - Severity: "critical"
+           - Condition: consecutive_drift_count >= 3
+           - Meaning: Sustained drift detected (systematic issue)
+           - Action: Immediate response required (model rollback, retraining)
+           - Transition: Remains open until drift stops
+
+        3. RESET (Recovery):
+           - Trigger: No drift detected in check_drift()
+           - Action: consecutive_drift_count reset to 0 → severity returns to "warning"
+           - Effect: Circuit breaker "closes" again
+
+        THRESHOLD JUSTIFICATION:
+        ------------------------
+        Why 3 consecutive detections?
+        - 1 detection: Could be noise, outlier batch, or temporary anomaly
+        - 2 detections: Possible pattern, but still could be coincidence
+        - 3+ detections: High confidence of persistent drift (systematic change)
+
+        With default check_interval_seconds=300 (5 minutes):
+        - 1 detection:  0 minutes (single check)
+        - 2 detections: 5 minutes (possible transient spike)
+        - 3 detections: 10 minutes (confirmed persistent drift) → CRITICAL
+
+        This 10-minute threshold balances:
+        ✓ Fast enough to catch real issues before significant impact
+        ✓ Slow enough to avoid false alarms from temporary fluctuations
+        ✓ Aligned with typical model monitoring cadences (5-15 min checks)
+
+        COMPARISON TO TRADITIONAL CIRCUIT BREAKERS:
+        -------------------------------------------
+        Traditional circuit breakers (e.g., for API calls):
+        - Monitor failure rate over time window
+        - Open on high failure rate (e.g., >50% failures in 1 minute)
+        - Prevent cascading failures by short-circuiting requests
+
+        This drift circuit breaker:
+        - Monitors consecutive drift detections (sequential, not rate-based)
+        - Opens on sustained drift (3+ consecutive detections)
+        - Prevents alert fatigue while escalating persistent issues
+
+        Both patterns share core goals:
+        - Distinguish between transient vs. persistent failures
+        - Escalate only when problem is confirmed
+        - Provide automatic recovery when issue resolves
+
+        PRACTICAL EXAMPLE:
+        ------------------
+        Scenario: Model serving predictions, checked every 5 minutes
+
+        Check 1 (t=0):   Drift detected (score=0.55) → warning, count=1
+        Check 2 (t=5):   Drift detected (score=0.58) → warning, count=2
+        Check 3 (t=10):  Drift detected (score=0.62) → CRITICAL, count=3 ← Circuit trips!
+        Check 4 (t=15):  Drift detected (score=0.60) → CRITICAL, count=4
+        Check 5 (t=20):  No drift (score=0.15) → warning, count=0 ← Circuit resets!
+        Check 6 (t=25):  Drift detected (score=0.52) → warning, count=1
+
+        Response actions by severity:
+        - "warning": Log, monitor dashboard, investigate if recurring
+        - "critical": Page on-call engineer, trigger auto-rollback, halt new deployments
+
+        GOVERNANCE IMPLICATIONS:
+        ------------------------
+        For model governance and compliance:
+        - Warning alerts: Documented in model monitoring log (audit trail)
+        - Critical alerts: Require incident response and root cause analysis
+        - Threshold (3): Conservative enough for regulatory scrutiny
+        - Transparency: Consecutive count exposed in DriftMetrics for explainability
 
         Args:
             result: Drift result that triggered the alert.
         """
-        # Determine severity
+        # CIRCUIT BREAKER THRESHOLD: Trip to critical severity after 3 consecutive drifts
+        # ================================================================================
+        # This is the core circuit breaker logic that escalates severity when drift
+        # becomes persistent. The threshold of 3 consecutive detections balances:
+        # - Sensitivity: Fast enough to catch real issues (10 min at 5-min intervals)
+        # - Specificity: Avoids false alarms from transient drift (filters noise)
+        #
+        # Tuning this threshold:
+        # - Increase (e.g., 5): More tolerant of transient drift, slower critical escalation
+        # - Decrease (e.g., 2): More aggressive, faster critical alerts (higher false positive rate)
+        # - Default (3): Industry best practice for model monitoring (conservative governance)
         severity = "critical" if self._consecutive_drift_count >= 3 else "warning"
 
         alert = DriftAlert(
