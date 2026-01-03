@@ -13,7 +13,10 @@ This module contains:
 - GovernanceDecision: Decision output from governance evaluation
 """
 
+from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from enum import Enum
+from typing import List, Optional
 
 
 class GovernanceMode(Enum):
@@ -33,3 +36,66 @@ class ImpactLevel(Enum):
     MEDIUM = "medium"
     HIGH = "high"
     CRITICAL = "critical"
+
+
+@dataclass
+class GovernanceMetrics:
+    """Real-time governance performance metrics."""
+
+    constitutional_compliance_rate: float = 0.0
+    false_positive_rate: float = 0.0
+    false_negative_rate: float = 0.0
+    average_response_time: float = 0.0
+    throughput_rps: float = 0.0
+    human_override_rate: float = 0.0
+
+    # Historical trends
+    compliance_trend: List[float] = field(default_factory=list)
+    accuracy_trend: List[float] = field(default_factory=list)
+    performance_trend: List[float] = field(default_factory=list)
+
+
+@dataclass
+class ImpactFeatures:
+    """Features for ML-based impact assessment."""
+
+    message_length: int
+    agent_count: int
+    tenant_complexity: float
+    temporal_patterns: List[float]
+    semantic_similarity: float
+    historical_precedence: int
+    resource_utilization: float
+    network_isolation: float
+
+    # Derived features
+    risk_score: float = 0.0
+    confidence_level: float = 0.0
+
+
+@dataclass
+class GovernanceDecision:
+    """ML-enhanced governance decision."""
+
+    action_allowed: bool
+    impact_level: ImpactLevel
+    confidence_score: float
+    reasoning: str
+    recommended_threshold: float
+    features_used: ImpactFeatures
+    timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    decision_id: str = field(
+        default_factory=lambda: f"gov-{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S%f')}"
+    )
+    # A/B testing cohort assignment (champion or candidate)
+    cohort: Optional[str] = None
+    model_version: Optional[int] = None
+
+
+__all__ = [
+    "GovernanceMode",
+    "ImpactLevel",
+    "GovernanceMetrics",
+    "ImpactFeatures",
+    "GovernanceDecision",
+]
