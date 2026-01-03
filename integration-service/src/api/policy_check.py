@@ -577,7 +577,33 @@ def generate_recommendations(
     response_model=PolicyValidationResponse,
     status_code=status.HTTP_200_OK,
     summary="Validate resources against policies",
-    description="Validate resources against governance policies for CI/CD integration",
+    description=(
+        "Validate resources against governance policies for CI/CD integration. "
+        "**Requires JWT authentication.** Include a valid JWT token in the "
+        "Authorization header as `Bearer <token>`."
+    ),
+    responses={
+        200: {
+            "description": "Validation completed successfully",
+            "model": PolicyValidationResponse,
+        },
+        401: {
+            "description": "Unauthorized - Invalid or missing authentication token",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Authentication required"}
+                }
+            },
+        },
+        500: {
+            "description": "Internal server error during validation",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Policy validation failed: <error message>"}
+                }
+            },
+        },
+    },
 )
 async def validate_policies(
     request: PolicyValidationRequest,
@@ -695,7 +721,26 @@ async def validate_policies(
     "/policies",
     response_model=PoliciesListResponse,
     summary="List available policies",
-    description="List all available governance policies",
+    description=(
+        "List all available governance policies. "
+        "**Requires JWT authentication.** Include a valid JWT token in the "
+        "Authorization header as `Bearer <token>`. "
+        "Optionally filter by resource type and enabled status."
+    ),
+    responses={
+        200: {
+            "description": "Policies retrieved successfully",
+            "model": PoliciesListResponse,
+        },
+        401: {
+            "description": "Unauthorized - Invalid or missing authentication token",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Authentication required"}
+                }
+            },
+        },
+    },
 )
 async def list_policies(
     resource_type: Optional[str] = None,
@@ -794,7 +839,33 @@ async def list_policies(
     "/policies/{policy_id}",
     response_model=PolicyResponse,
     summary="Get policy details",
-    description="Get details of a specific policy",
+    description=(
+        "Get details of a specific policy by its ID. "
+        "**Requires JWT authentication.** Include a valid JWT token in the "
+        "Authorization header as `Bearer <token>`."
+    ),
+    responses={
+        200: {
+            "description": "Policy details retrieved successfully",
+            "model": PolicyResponse,
+        },
+        401: {
+            "description": "Unauthorized - Invalid or missing authentication token",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Authentication required"}
+                }
+            },
+        },
+        404: {
+            "description": "Policy not found",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Policy not found: <policy_id>"}
+                }
+            },
+        },
+    },
 )
 async def get_policy(
     policy_id: str,
@@ -865,7 +936,41 @@ async def get_policy(
 @router.get(
     "/health",
     summary="Policy validation health check",
-    description="Check if policy validation is available",
+    description=(
+        "Check if policy validation service is available and healthy. "
+        "**Requires JWT authentication** to prevent system reconnaissance. "
+        "Include a valid JWT token in the Authorization header as `Bearer <token>`."
+    ),
+    responses={
+        200: {
+            "description": "Health check completed successfully",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "status": "healthy",
+                        "opa_available": True,
+                        "opa_url": "http://localhost:8181",
+                        "builtin_policies": 6,
+                        "timestamp": "2026-01-03T12:00:00Z",
+                        "audit_context": {
+                            "user_id": "user-123",
+                            "tenant_id": "tenant-456",
+                            "timestamp": "2026-01-03T12:00:00Z",
+                            "request_id": "req-789",
+                        },
+                    }
+                }
+            },
+        },
+        401: {
+            "description": "Unauthorized - Invalid or missing authentication token",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Authentication required"}
+                }
+            },
+        },
+    },
 )
 async def policy_health(
     current_user: UserClaims = Depends(get_current_user),

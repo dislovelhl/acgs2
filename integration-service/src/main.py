@@ -68,6 +68,27 @@ app = FastAPI(
     docs_url="/docs",
     redoc_url="/redoc",
     lifespan=lifespan,
+    # OpenAPI security scheme configuration
+    swagger_ui_init_oauth={
+        "usePkceWithAuthorizationCodeGrant": True,
+    },
+    openapi_tags=[
+        {
+            "name": "Health",
+            "description": "Health check endpoints for service monitoring",
+        },
+        {
+            "name": "Policy Validation",
+            "description": (
+                "Policy validation endpoints for CI/CD integration. "
+                "**Requires JWT authentication.**"
+            ),
+        },
+        {
+            "name": "Webhooks",
+            "description": "Webhook management endpoints for event notifications",
+        },
+    ],
 )
 
 # Add CORS middleware
@@ -78,6 +99,76 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Customize OpenAPI schema to include security scheme
+def custom_openapi():
+    """Customize OpenAPI schema with security definitions."""
+    if app.openapi_schema:
+        return app.openapi_schema
+
+    from fastapi.openapi.utils import get_openapi
+
+    openapi_schema = get_openapi(
+        title=app.title,
+        version=app.version,
+        description=app.description,
+        routes=app.routes,
+        tags=app.openapi_tags,
+    )
+
+    # Add security scheme for JWT Bearer authentication
+    openapi_schema["components"] = openapi_schema.get("components", {})
+    openapi_schema["components"]["securitySchemes"] = {
+        "BearerAuth": {
+            "type": "http",
+            "scheme": "bearer",
+            "bearerFormat": "JWT",
+            "description": (
+                "JWT authentication token. "
+                "Include the token in the Authorization header as: `Bearer <token>`"
+            ),
+        }
+    }
+
+    # Add security requirement to all policy validation endpoints
+    for path, path_item in openapi_schema.get("paths", {}).items():
+        if path.startswith("/api/policy"):
+            for operation in path_item.values():
+                # Check if this is an operation dict (not tags, summary, etc.)
+                is_operation = isinstance(operation, dict) and (
+                    "parameters" in operation
+                    or "requestBody" in operation
+                    or "responses" in operation
+                )
+                if is_operation:
+                    # Add security requirement
+                    operation["security"] = [{"BearerAuth": []}]
+
+                    # Add 401 response if not present
+                    operation.setdefault("responses", {})
+                    if "401" not in operation["responses"]:
+                        operation["responses"]["401"] = {
+                            "description": "Unauthorized - Invalid or missing authentication token",
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "type": "object",
+                                        "properties": {
+                                            "detail": {
+                                                "type": "string",
+                                                "example": "Authentication required"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+    app.openapi_schema = openapi_schema
+    return app.openapi_schema
+
+
+app.openapi = custom_openapi
 
 # Include routers
 app.include_router(health_router)
