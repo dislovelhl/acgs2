@@ -719,6 +719,20 @@ class DriftDetector:
         self._last_report_cache = None
         self._report_cache_checksum = None
 
+    def _clear_reference_cache(self) -> None:
+        """Clear reference data cache and related report cache.
+
+        Should be called whenever the reference data deque is modified.
+        Clears both the DataFrame cache and the report result cache,
+        since they depend on the reference data.
+        """
+        self._reference_df_cache = None
+        self._reference_checksum = None
+        # Report cache depends on both reference and current data,
+        # so invalidate it when reference data changes
+        self._last_report_cache = None
+        self._report_cache_checksum = None
+
     def _to_dataframe(
         self, data: List[Dict[str, Any]], data_source: Optional[str] = None
     ) -> pd.DataFrame:
