@@ -350,6 +350,116 @@ class RateLimiterStore:
 _rate_limiter_store = RateLimiterStore()
 
 
+# =============================================================================
+# Latency Metrics Tracker
+# =============================================================================
+
+# Latency tracking configuration from environment
+LATENCY_WINDOW_SIZE = int(os.getenv("LATENCY_WINDOW_SIZE", "1000"))
+
+
+@dataclass
+class LatencyMetrics:
+    """Latency metrics with P50, P95, P99 percentiles.
+
+    Stores calculated percentile values for quick access.
+    """
+
+    p50_ms: float
+    p95_ms: float
+    p99_ms: float
+    min_ms: float
+    max_ms: float
+    mean_ms: float
+    sample_count: int
+    window_size: int
+
+
+class LatencyTracker:
+    """Sliding window latency tracker for P99/P95/P50 metrics.
+
+    Maintains a fixed-size buffer of recent latencies for percentile calculations.
+    Thread-safe using asyncio.Lock for concurrent access.
+    """
+
+    def __init__(self, window_size: int = 1000) -> None:
+        """Initialize the latency tracker.
+
+        Args:
+            window_size: Maximum number of latency samples to retain
+        """
+        self._latencies: list[float] = []
+        self._window_size = window_size
+        self._lock = asyncio.Lock()
+        self._total_messages: int = 0
+
+    async def record(self, latency_ms: float) -> None:
+        """Record a latency measurement.
+
+        Args:
+            latency_ms: Latency in milliseconds
+        """
+        async with self._lock:
+            self._latencies.append(latency_ms)
+            self._total_messages += 1
+
+            # Trim to window size (sliding window)
+            if len(self._latencies) > self._window_size:
+                self._latencies = self._latencies[-self._window_size :]
+
+    async def get_metrics(self) -> LatencyMetrics:
+        """Calculate and return latency metrics.
+
+        Returns:
+            LatencyMetrics with P50, P95, P99 percentiles and stats
+        """
+        async with self._lock:
+            if not self._latencies:
+                return LatencyMetrics(
+                    p50_ms=0.0,
+                    p95_ms=0.0,
+                    p99_ms=0.0,
+                    min_ms=0.0,
+                    max_ms=0.0,
+                    mean_ms=0.0,
+                    sample_count=0,
+                    window_size=self._window_size,
+                )
+
+            # Sort for percentile calculation
+            sorted_latencies = sorted(self._latencies)
+            n = len(sorted_latencies)
+
+            def percentile(p: float) -> float:
+                """Calculate percentile value."""
+                if n == 0:
+                    return 0.0
+                k = (n - 1) * (p / 100.0)
+                f = int(k)
+                c = f + 1 if f + 1 < n else f
+                return sorted_latencies[f] + (k - f) * (sorted_latencies[c] - sorted_latencies[f])
+
+            return LatencyMetrics(
+                p50_ms=round(percentile(50), 3),
+                p95_ms=round(percentile(95), 3),
+                p99_ms=round(percentile(99), 3),
+                min_ms=round(min(sorted_latencies), 3),
+                max_ms=round(max(sorted_latencies), 3),
+                mean_ms=round(sum(sorted_latencies) / n, 3),
+                sample_count=n,
+                window_size=self._window_size,
+            )
+
+    async def get_total_messages(self) -> int:
+        """Get total number of messages processed (all time)."""
+        async with self._lock:
+            return self._total_messages
+
+
+# Global latency tracker instance
+_latency_tracker = LatencyTracker(window_size=LATENCY_WINDOW_SIZE)
+
+
 async def check_rate_limit(request: Request) -> Tuple[bool, float, float, str]:
     """
     FastAPI dependency for token bucket rate limiting.
@@ -897,6 +1007,9 @@ async def send_message(
         # Calculate request latency in milliseconds (following pattern from message_processor.py)
         latency_ms = (time.perf_counter() - start) * 1000
 
+        # Record latency for P99/P95/P50 metrics
+        await _latency_tracker.record(latency_ms)
+
         return MessageResponse(
             message_id=message_id,
             status="accepted",
@@ -930,17 +1043,50 @@ async def get_message_status(message_id: str):
 
 @app.get("/stats")
 async def get_stats():
-    """Get agent bus statistics"""
+    """Get agent bus statistics including P99/P95/P50 latency metrics.
+
+    Returns latency percentiles calculated from a sliding window of recent requests.
+    Configure window size via LATENCY_WINDOW_SIZE environment variable (default: 1000).
+
+    Response fields:
+    - total_messages: Total messages processed (all time)
+    - latency_p50_ms: 50th percentile (median) latency in milliseconds
+    - latency_p95_ms: 95th percentile latency in milliseconds
+    - latency_p99_ms: 99th percentile latency in milliseconds
+    - latency_min_ms: Minimum latency in the window
+    - latency_max_ms: Maximum latency in the window
+    - latency_mean_ms: Mean latency in the window
+    - latency_sample_count: Number of samples in the current window
+    - latency_window_size: Maximum samples retained for calculations
+    - sla_p99_target_ms: P99 latency SLA target (100ms)
+    - sla_p99_met: Whether P99 latency meets SLA target
+    """
     if not agent_bus:
         raise HTTPException(status_code=503, detail="Agent bus not initialized")
 
     try:
-        # Simplified stats for development
+        # Get latency metrics from tracker
+        metrics = await _latency_tracker.get_metrics()
+        total_messages = await _latency_tracker.get_total_messages()
+
+        # P99 SLA target from spec: <100ms
+        sla_p99_target_ms = 100.0
+        sla_p99_met = metrics.p99_ms < sla_p99_target_ms or metrics.sample_count == 0
+
         return {
-            "total_messages": 42,
-            "active_connections": 3,
-            "uptime_seconds": 3600,
-            "note": "Development mode - mock statistics",
+            "total_messages": total_messages,
+            "latency_p50_ms": metrics.p50_ms,
+            "latency_p95_ms": metrics.p95_ms,
+            "latency_p99_ms": metrics.p99_ms,
+            "latency_min_ms": metrics.min_ms,
+            "latency_max_ms": metrics.max_ms,
+            "latency_mean_ms": metrics.mean_ms,
+            "latency_sample_count": metrics.sample_count,
+            "latency_window_size": metrics.window_size,
+            "sla_p99_target_ms": sla_p99_target_ms,
+            "sla_p99_met": sla_p99_met,
+            "active_connections": 0,  # Placeholder for future connection tracking
+            "uptime_seconds": 0,  # Placeholder for future uptime tracking
         }
     except Exception as e:
         logger.error(f"Error getting stats: {e}")
