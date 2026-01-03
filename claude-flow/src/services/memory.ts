@@ -63,6 +63,22 @@ export class MemoryService implements IMemoryService {
   }
 
   /**
+   * Redact sensitive information from log messages
+   * Covers: password=xxx, REDIS_PASSWORD=xxx, redis://:password@host, and password in error messages
+   */
+  private redactSensitiveInfo(message: string): string {
+    // Redact password=xxx or password:xxx patterns (case-insensitive)
+    message = message.replace(/password[=:]\s*\S+/gi, 'password=[REDACTED]');
+    // Redact REDIS_PASSWORD=xxx patterns
+    message = message.replace(/REDIS_PASSWORD[=:]\s*\S+/gi, 'REDIS_PASSWORD=[REDACTED]');
+    // Redact URL-embedded passwords: redis://:password@host or rediss://:password@host
+    message = message.replace(/(rediss?:\/\/):([^@]+)@/gi, '$1:[REDACTED]@');
+    // Redact auth password in connection strings
+    message = message.replace(/auth\s+\S+/gi, 'auth [REDACTED]');
+    return message;
+  }
+
+  /**
    * Default logger implementation
    */
   private defaultLogger(message: string, level: 'info' | 'warn' | 'error' | 'debug'): void {
@@ -71,19 +87,23 @@ export class MemoryService implements IMemoryService {
     const prefix = `[MemoryService]`;
     switch (level) {
       case 'error':
-        // Avoid logging sensitive information
-        if (message.includes('password') || message.includes('PASSWORD')) {
-          message = message.replace(/password[=:]\S+/gi, 'password=[REDACTED]');
-        }
+        // Redact sensitive information from error messages
+        message = this.redactSensitiveInfo(message);
         process.stderr.write(`${prefix} ERROR: ${message}\n`);
         break;
       case 'warn':
+        // Redact sensitive information from warning messages
+        message = this.redactSensitiveInfo(message);
         process.stderr.write(`${prefix} WARN: ${message}\n`);
         break;
       case 'info':
+        // Redact sensitive information from info messages (in case of verbose mode)
+        message = this.redactSensitiveInfo(message);
         process.stdout.write(`${prefix} ${message}\n`);
         break;
       case 'debug':
+        // Redact sensitive information from debug messages (most verbose, highest risk)
+        message = this.redactSensitiveInfo(message);
         process.stdout.write(`${prefix} DEBUG: ${message}\n`);
         break;
     }
