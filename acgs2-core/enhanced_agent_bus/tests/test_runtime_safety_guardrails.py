@@ -11,28 +11,22 @@ Tests the OWASP-compliant 5-layer guardrail system:
 Constitutional Hash: cdd01ef066bc6cf2
 """
 
-from unittest.mock import AsyncMock, MagicMock
-
 import pytest
+from unittest.mock import AsyncMock, MagicMock
 
 from ..runtime_safety_guardrails import (
     RuntimeSafetyGuardrails,
     RuntimeSafetyGuardrailsConfig,
     InputSanitizer,
-    InputSanitizerConfig,
     AgentEngine,
+    ToolRunnerSandbox,
+    OutputVerifier,
     AuditLog,
     GuardrailLayer,
-    GuardrailResult,
-    InputSanitizer,
-    InputSanitizerConfig,
-    OutputVerifier,
-    RuntimeSafetyGuardrails,
-    RuntimeSafetyGuardrailsConfig,
     SafetyAction,
-    ToolRunnerSandbox,
-    Violation,
     ViolationSeverity,
+    Violation,
+    GuardrailResult,
 )
 
 
@@ -86,14 +80,10 @@ class TestInputSanitizer:
     @pytest.mark.asyncio
     async def test_html_sanitization(self, sanitizer):
         """Test HTML sanitization."""
-        # Create sanitizer with injection detection disabled to test pure HTML sanitization
-        config = InputSanitizerConfig(detect_injection=False, sanitize_html=True)
-        html_sanitizer = InputSanitizer(config=config)
-
         data = "Normal text <script>evil()</script> and <iframe>bad</iframe>"
         context = {"trace_id": "test-trace"}
 
-        result = await html_sanitizer.process(data, context)
+        result = await sanitizer.process(data, context)
 
         assert result.allowed is True
         assert result.modified_data is not None
@@ -125,13 +115,11 @@ class TestAgentEngine:
     async def test_constitutional_validation_failure(self, engine):
         """Test constitutional validation failure."""
         # Mock the constitutional validation to fail
-        engine._validate_constitutional = AsyncMock(
-            return_value={
-                "compliant": False,
-                "confidence": 0.9,
-                "reason": "Violates privacy principles",
-            }
-        )
+        engine._validate_constitutional = AsyncMock(return_value={
+            "compliant": False,
+            "confidence": 0.9,
+            "reason": "Violates privacy principles"
+        })
 
         data = {"action": "access_private_data"}
         context = {"trace_id": "test-trace"}
@@ -168,9 +156,10 @@ class TestToolRunnerSandbox:
     async def test_sandbox_execution_failure(self, sandbox):
         """Test sandbox execution failure."""
         # Mock sandbox execution to fail
-        sandbox._execute_in_sandbox = AsyncMock(
-            return_value={"success": False, "error": "Command not allowed"}
-        )
+        sandbox._execute_in_sandbox = AsyncMock(return_value={
+            "success": False,
+            "error": "Command not allowed"
+        })
 
         data = {"tool": "dangerous_command"}
         context = {"trace_id": "test-trace"}
@@ -249,7 +238,7 @@ class TestAuditLog:
             "allowed": True,
             "violations": [],
             "processing_time_ms": 50.0,
-            "metadata": {"test": "data"},
+            "metadata": {"test": "data"}
         }
 
         result = await audit_log.process(None, context)
@@ -267,34 +256,26 @@ class TestAuditLog:
     async def test_audit_metrics(self, audit_log):
         """Test audit log metrics."""
         # Add some test entries
-        await audit_log.process(
-            None,
-            {
-                "trace_id": "trace1",
-                "action": SafetyAction.ALLOW,
-                "allowed": True,
-                "violations": [],
-                "processing_time_ms": 10.0,
-            },
-        )
+        await audit_log.process(None, {
+            "trace_id": "trace1",
+            "action": SafetyAction.ALLOW,
+            "allowed": True,
+            "violations": [],
+            "processing_time_ms": 10.0
+        })
 
-        await audit_log.process(
-            None,
-            {
-                "trace_id": "trace2",
-                "action": SafetyAction.BLOCK,
-                "allowed": False,
-                "violations": [
-                    Violation(
-                        layer=GuardrailLayer.INPUT_SANITIZER,
-                        violation_type="test",
-                        severity=ViolationSeverity.LOW,
-                        message="test violation",
-                    )
-                ],
-                "processing_time_ms": 20.0,
-            },
-        )
+        await audit_log.process(None, {
+            "trace_id": "trace2",
+            "action": SafetyAction.BLOCK,
+            "allowed": False,
+            "violations": [Violation(
+                layer=GuardrailLayer.INPUT_SANITIZER,
+                violation_type="test",
+                severity=ViolationSeverity.LOW,
+                message="test violation"
+            )],
+            "processing_time_ms": 20.0
+        })
 
         metrics = await audit_log.get_metrics()
 
@@ -397,11 +378,11 @@ class TestGuardrailConfiguration:
     def test_custom_configuration(self):
         """Test custom configuration."""
         from ..runtime_safety_guardrails import (
-            AgentEngineConfig,
-            AuditLogConfig,
             InputSanitizerConfig,
-            OutputVerifierConfig,
+            AgentEngineConfig,
             SandboxConfig,
+            OutputVerifierConfig,
+            AuditLogConfig,
         )
 
         config = RuntimeSafetyGuardrailsConfig(
@@ -414,4 +395,5 @@ class TestGuardrailConfiguration:
         assert config.input_sanitizer.max_input_length == 500
         assert config.agent_engine.constitutional_validation is False
         assert config.strict_mode is True
-        assert config.timeout_ms == 10000
+        assert config.timeout_ms == 10000</contents>
+</xai:function_call">Now let me run the tests to verify the runtime safety guardrails implementation works correctly.

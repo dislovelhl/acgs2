@@ -22,7 +22,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Protocol, Union
 
 logger = logging.getLogger(__name__)
 
@@ -131,9 +131,7 @@ class InputSanitizerConfig:
 
     enabled: bool = True
     max_input_length: int = 1000000  # 1MB
-    allowed_content_types: List[str] = field(
-        default_factory=lambda: ["text/plain", "application/json"]
-    )
+    allowed_content_types: List[str] = field(default_factory=lambda: ["text/plain", "application/json"])
     sanitize_html: bool = True
     detect_injection: bool = True
     pii_detection: bool = True
@@ -188,28 +186,24 @@ class InputSanitizer(GuardrailComponent):
         try:
             # Size validation
             if isinstance(data, str) and len(data) > self.config.max_input_length:
-                violations.append(
-                    Violation(
-                        layer=self.get_layer(),
-                        violation_type="input_too_large",
-                        severity=ViolationSeverity.HIGH,
-                        message=f"Input size {len(data)} exceeds maximum {self.config.max_input_length}",
-                        trace_id=trace_id,
-                    )
-                )
+                violations.append(Violation(
+                    layer=self.get_layer(),
+                    violation_type="input_too_large",
+                    severity=ViolationSeverity.HIGH,
+                    message=f"Input size {len(data)} exceeds maximum {self.config.max_input_length}",
+                    trace_id=trace_id,
+                ))
 
             # Content type validation
             content_type = context.get("content_type", "text/plain")
             if content_type not in self.config.allowed_content_types:
-                violations.append(
-                    Violation(
-                        layer=self.get_layer(),
-                        violation_type="invalid_content_type",
-                        severity=ViolationSeverity.MEDIUM,
-                        message=f"Content type {content_type} not allowed",
-                        trace_id=trace_id,
-                    )
-                )
+                violations.append(Violation(
+                    layer=self.get_layer(),
+                    violation_type="invalid_content_type",
+                    severity=ViolationSeverity.MEDIUM,
+                    message=f"Content type {content_type} not allowed",
+                    trace_id=trace_id,
+                ))
 
             # Convert to string for processing
             if isinstance(data, dict):
@@ -219,16 +213,13 @@ class InputSanitizer(GuardrailComponent):
             else:
                 input_text = str(data)
 
-            # Store original text for injection detection before sanitization
-            original_text = input_text
-
             # HTML sanitization
             if self.config.sanitize_html:
                 input_text = self._sanitize_html(input_text)
 
-            # Injection detection (on original text)
+            # Injection detection
             if self.config.detect_injection:
-                injection_violations = self._detect_injection(original_text)
+                injection_violations = self._detect_injection(input_text)
                 violations.extend(injection_violations)
 
             # PII detection
@@ -239,39 +230,29 @@ class InputSanitizer(GuardrailComponent):
             # Determine action
             if violations:
                 # Check if any violations are critical
-                critical_violations = [
-                    v for v in violations if v.severity == ViolationSeverity.CRITICAL
-                ]
+                critical_violations = [v for v in violations if v.severity == ViolationSeverity.CRITICAL]
                 if critical_violations:
                     action = SafetyAction.BLOCK
                     allowed = False
                 else:
-                    # PII detection should result in AUDIT (flag but allow)
-                    pii_violations = [v for v in violations if v.violation_type == "pii_detected"]
-                    if pii_violations:
-                        action = SafetyAction.AUDIT
-                        allowed = True
-                    else:
-                        action = SafetyAction.MODIFY if self.config.sanitize_html else SafetyAction.AUDIT
-                        allowed = True
-                        # Apply sanitization if needed
-                        if action == SafetyAction.MODIFY:
-                            input_text = self._apply_sanitization(input_text, violations)
+                    action = SafetyAction.MODIFY if self.config.sanitize_html else SafetyAction.AUDIT
+                    allowed = True
+                    # Apply sanitization if needed
+                    if action == SafetyAction.MODIFY:
+                        input_text = self._apply_sanitization(input_text, violations)
             else:
                 action = SafetyAction.ALLOW
                 allowed = True
 
         except Exception as e:
             logger.error(f"Input sanitizer error: {e}")
-            violations.append(
-                Violation(
-                    layer=self.get_layer(),
-                    violation_type="processing_error",
-                    severity=ViolationSeverity.HIGH,
-                    message=f"Input processing failed: {str(e)}",
-                    trace_id=trace_id,
-                )
-            )
+            violations.append(Violation(
+                layer=self.get_layer(),
+                violation_type="processing_error",
+                severity=ViolationSeverity.HIGH,
+                message=f"Input processing failed: {str(e)}",
+                trace_id=trace_id,
+            ))
             action = SafetyAction.BLOCK
             allowed = False
             input_text = ""
@@ -291,11 +272,11 @@ class InputSanitizer(GuardrailComponent):
     def _sanitize_html(self, text: str) -> str:
         """Basic HTML sanitization."""
         # Remove script tags and their contents
-        text = re.sub(r"<script[^>]*>.*?</script>", "", text, flags=re.IGNORECASE | re.DOTALL)
+        text = re.sub(r'<script[^>]*>.*?</script>', '', text, flags=re.IGNORECASE | re.DOTALL)
         # Remove other dangerous tags
-        dangerous_tags = ["iframe", "object", "embed", "form", "input", "button"]
+        dangerous_tags = ['iframe', 'object', 'embed', 'form', 'input', 'button']
         for tag in dangerous_tags:
-            text = re.sub(f"<{tag}[^>]*>.*?</{tag}>", "", text, flags=re.IGNORECASE | re.DOTALL)
+            text = re.sub(f'<{tag}[^>]*>.*?</{tag}>', '', text, flags=re.IGNORECASE | re.DOTALL)
         return text
 
     def _detect_injection(self, text: str) -> List[Violation]:
@@ -303,16 +284,14 @@ class InputSanitizer(GuardrailComponent):
         violations = []
         for i, pattern in enumerate(self._injection_patterns):
             if pattern.search(text):
-                violations.append(
-                    Violation(
-                        layer=self.get_layer(),
-                        violation_type="injection_attack",
-                        severity=ViolationSeverity.CRITICAL,
-                        message=f"Potential injection attack detected (pattern {i})",
-                        details={"pattern_index": i},
-                        trace_id="",
-                    )
-                )
+                violations.append(Violation(
+                    layer=self.get_layer(),
+                    violation_type="injection_attack",
+                    severity=ViolationSeverity.CRITICAL,
+                    message=f"Potential injection attack detected (pattern {i})",
+                    details={"pattern_index": i},
+                    trace_id="",
+                ))
         return violations
 
     def _detect_pii(self, text: str) -> List[Violation]:
@@ -321,16 +300,14 @@ class InputSanitizer(GuardrailComponent):
         for i, pattern in enumerate(self._pii_patterns):
             matches = pattern.findall(text)
             if matches:
-                violations.append(
-                    Violation(
-                        layer=self.get_layer(),
-                        violation_type="pii_detected",
-                        severity=ViolationSeverity.HIGH,
-                        message=f"PII detected: {len(matches)} potential matches (pattern {i})",
-                        details={"pattern_index": i, "match_count": len(matches)},
-                        trace_id="",
-                    )
-                )
+                violations.append(Violation(
+                    layer=self.get_layer(),
+                    violation_type="pii_detected",
+                    severity=ViolationSeverity.HIGH,
+                    message=f"PII detected: {len(matches)} potential matches (pattern {i})",
+                    details={"pattern_index": i, "match_count": len(matches)},
+                    trace_id="",
+                ))
         return violations
 
     def _apply_sanitization(self, text: str, violations: List[Violation]) -> str:
@@ -382,31 +359,27 @@ class AgentEngine(GuardrailComponent):
             if self.config.constitutional_validation:
                 constitutional_result = await self._validate_constitutional(data, context)
                 if not constitutional_result["compliant"]:
-                    violations.append(
-                        Violation(
-                            layer=self.get_layer(),
-                            violation_type="constitutional_violation",
-                            severity=ViolationSeverity.HIGH,
-                            message="Request violates constitutional principles",
-                            details=constitutional_result,
-                            trace_id=trace_id,
-                        )
-                    )
+                    violations.append(Violation(
+                        layer=self.get_layer(),
+                        violation_type="constitutional_violation",
+                        severity=ViolationSeverity.HIGH,
+                        message="Request violates constitutional principles",
+                        details=constitutional_result,
+                        trace_id=trace_id,
+                    ))
 
             # Impact scoring
             if self.config.impact_scoring:
                 impact_score = await self._calculate_impact_score(data, context)
                 if impact_score > self.config.deliberation_required_threshold:
-                    violations.append(
-                        Violation(
-                            layer=self.get_layer(),
-                            violation_type="high_impact",
-                            severity=ViolationSeverity.MEDIUM,
-                            message=f"High impact action requires deliberation (score: {impact_score})",
-                            details={"impact_score": impact_score},
-                            trace_id=trace_id,
-                        )
-                    )
+                    violations.append(Violation(
+                        layer=self.get_layer(),
+                        violation_type="high_impact",
+                        severity=ViolationSeverity.MEDIUM,
+                        message=f"High impact action requires deliberation (score: {impact_score})",
+                        details={"impact_score": impact_score},
+                        trace_id=trace_id,
+                    ))
 
             # Determine action
             if violations:
@@ -418,15 +391,13 @@ class AgentEngine(GuardrailComponent):
 
         except Exception as e:
             logger.error(f"Agent engine error: {e}")
-            violations.append(
-                Violation(
-                    layer=self.get_layer(),
-                    violation_type="processing_error",
-                    severity=ViolationSeverity.HIGH,
-                    message=f"Agent engine processing failed: {str(e)}",
-                    trace_id=trace_id,
-                )
-            )
+            violations.append(Violation(
+                layer=self.get_layer(),
+                violation_type="processing_error",
+                severity=ViolationSeverity.HIGH,
+                message=f"Agent engine processing failed: {str(e)}",
+                trace_id=trace_id,
+            ))
             action = SafetyAction.BLOCK
             allowed = False
 
@@ -503,30 +474,26 @@ class ToolRunnerSandbox(GuardrailComponent):
                 action = SafetyAction.ALLOW
                 allowed = True
             else:
-                violations.append(
-                    Violation(
-                        layer=self.get_layer(),
-                        violation_type="sandbox_execution_failed",
-                        severity=ViolationSeverity.HIGH,
-                        message=f"Sandbox execution failed: {sandbox_result.get('error', 'Unknown error')}",
-                        details=sandbox_result,
-                        trace_id=trace_id,
-                    )
-                )
+                violations.append(Violation(
+                    layer=self.get_layer(),
+                    violation_type="sandbox_execution_failed",
+                    severity=ViolationSeverity.HIGH,
+                    message=f"Sandbox execution failed: {sandbox_result.get('error', 'Unknown error')}",
+                    details=sandbox_result,
+                    trace_id=trace_id,
+                ))
                 action = SafetyAction.BLOCK
                 allowed = False
 
         except Exception as e:
             logger.error(f"Sandbox error: {e}")
-            violations.append(
-                Violation(
-                    layer=self.get_layer(),
-                    violation_type="sandbox_error",
-                    severity=ViolationSeverity.CRITICAL,
-                    message=f"Sandbox execution error: {str(e)}",
-                    trace_id=trace_id,
-                )
-            )
+            violations.append(Violation(
+                layer=self.get_layer(),
+                violation_type="sandbox_error",
+                severity=ViolationSeverity.CRITICAL,
+                message=f"Sandbox execution error: {str(e)}",
+                trace_id=trace_id,
+            ))
             action = SafetyAction.BLOCK
             allowed = False
 
@@ -622,9 +589,7 @@ class OutputVerifier(GuardrailComponent):
             # Determine action
             if violations:
                 # Check for critical violations
-                critical_violations = [
-                    v for v in violations if v.severity == ViolationSeverity.CRITICAL
-                ]
+                critical_violations = [v for v in violations if v.severity == ViolationSeverity.CRITICAL]
                 if critical_violations:
                     action = SafetyAction.BLOCK
                     allowed = False
@@ -637,15 +602,13 @@ class OutputVerifier(GuardrailComponent):
 
         except Exception as e:
             logger.error(f"Output verifier error: {e}")
-            violations.append(
-                Violation(
-                    layer=self.get_layer(),
-                    violation_type="processing_error",
-                    severity=ViolationSeverity.HIGH,
-                    message=f"Output verification failed: {str(e)}",
-                    trace_id=trace_id,
-                )
-            )
+            violations.append(Violation(
+                layer=self.get_layer(),
+                violation_type="processing_error",
+                severity=ViolationSeverity.HIGH,
+                message=f"Output verification failed: {str(e)}",
+                trace_id=trace_id,
+            ))
             action = SafetyAction.BLOCK
             allowed = False
 
@@ -672,15 +635,13 @@ class OutputVerifier(GuardrailComponent):
 
         for pattern in harmful_patterns:
             if re.search(pattern, text, re.IGNORECASE):
-                violations.append(
-                    Violation(
-                        layer=self.get_layer(),
-                        violation_type="harmful_content",
-                        severity=ViolationSeverity.CRITICAL,
-                        message="Output contains potentially harmful instructions",
-                        trace_id="",
-                    )
-                )
+                violations.append(Violation(
+                    layer=self.get_layer(),
+                    violation_type="harmful_content",
+                    severity=ViolationSeverity.CRITICAL,
+                    message="Output contains potentially harmful instructions",
+                    trace_id="",
+                ))
                 break  # Only report once
 
         return violations
@@ -691,16 +652,14 @@ class OutputVerifier(GuardrailComponent):
 
         for i, pattern in enumerate(self._toxicity_patterns):
             if pattern.search(text):
-                violations.append(
-                    Violation(
-                        layer=self.get_layer(),
-                        violation_type="toxicity_detected",
-                        severity=ViolationSeverity.HIGH,
-                        message=f"Toxic content detected (pattern {i})",
-                        details={"pattern_index": i},
-                        trace_id="",
-                    )
-                )
+                violations.append(Violation(
+                    layer=self.get_layer(),
+                    violation_type="toxicity_detected",
+                    severity=ViolationSeverity.HIGH,
+                    message=f"Toxic content detected (pattern {i})",
+                    details={"pattern_index": i},
+                    trace_id="",
+                ))
 
         return violations
 
@@ -720,16 +679,14 @@ class OutputVerifier(GuardrailComponent):
             compiled = re.compile(pattern, re.IGNORECASE)
             matches = compiled.findall(text)
             if matches:
-                violations.append(
-                    Violation(
-                        layer=self.get_layer(),
-                        violation_type="pii_leak",
-                        severity=ViolationSeverity.HIGH,
-                        message=f"PII detected in output: {len(matches)} instances",
-                        details={"match_count": len(matches)},
-                        trace_id="",
-                    )
-                )
+                violations.append(Violation(
+                    layer=self.get_layer(),
+                    violation_type="pii_leak",
+                    severity=ViolationSeverity.HIGH,
+                    message=f"PII detected in output: {len(matches)} instances",
+                    details={"match_count": len(matches)},
+                    trace_id="",
+                ))
                 redacted = compiled.sub("[REDACTED]", redacted)
 
         return redacted, violations
@@ -816,10 +773,7 @@ class AuditLog(GuardrailComponent):
             "blocked_count": total_entries - allowed_count,
             "allowed_rate": allowed_count / total_entries,
             "violation_rate": violation_count / total_entries,
-            "avg_processing_time_ms": sum(
-                entry.get("processing_time_ms", 0) for entry in self._audit_entries
-            )
-            / total_entries,
+            "avg_processing_time_ms": sum(entry.get("processing_time_ms", 0) for entry in self._audit_entries) / total_entries,
         }
 
     def get_entries(self, trace_id: Optional[str] = None) -> List[Dict[str, Any]]:
@@ -871,7 +825,9 @@ class RuntimeSafetyGuardrails:
         }
 
     async def process_request(
-        self, request_data: Any, context: Optional[Dict[str, Any]] = None
+        self,
+        request_data: Any,
+        context: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
         """
         Process a request through all guardrail layers.
@@ -916,21 +872,19 @@ class RuntimeSafetyGuardrails:
                 try:
                     result = await asyncio.wait_for(
                         layer.process(current_data, layer_context),
-                        timeout=self.config.timeout_ms / 1000,
+                        timeout=self.config.timeout_ms / 1000
                     )
                 except asyncio.TimeoutError:
                     result = GuardrailResult(
                         action=SafetyAction.BLOCK,
                         allowed=False,
-                        violations=[
-                            Violation(
-                                layer=layer_type,
-                                violation_type="timeout",
-                                severity=ViolationSeverity.CRITICAL,
-                                message=f"Layer {layer_type.value} timed out",
-                                trace_id=trace_id,
-                            )
-                        ],
+                        violations=[Violation(
+                            layer=layer_type,
+                            violation_type="timeout",
+                            severity=ViolationSeverity.CRITICAL,
+                            message=f"Layer {layer_type.value} timed out",
+                            trace_id=trace_id,
+                        )]
                     )
 
                 layer_results[layer_type.value] = result.to_dict()
@@ -951,29 +905,25 @@ class RuntimeSafetyGuardrails:
             # Always log to audit (final layer)
             audit_layer = self.layers[GuardrailLayer.AUDIT_LOG]
             audit_context = context.copy()
-            audit_context.update(
-                {
-                    "action": SafetyAction.ALLOW if final_allowed else SafetyAction.BLOCK,
-                    "allowed": final_allowed,
-                    "violations": all_violations,
-                    "processing_time_ms": (time.time() - start_time) * 1000,
-                }
-            )
+            audit_context.update({
+                "action": SafetyAction.ALLOW if final_allowed else SafetyAction.BLOCK,
+                "allowed": final_allowed,
+                "violations": all_violations,
+                "processing_time_ms": (time.time() - start_time) * 1000,
+            })
 
             await audit_layer.process(current_data, audit_context)
 
         except Exception as e:
             logger.error(f"Guardrails processing error: {e}")
             final_allowed = False
-            all_violations.append(
-                Violation(
-                    layer=GuardrailLayer.AUDIT_LOG,  # Generic error
-                    violation_type="system_error",
-                    severity=ViolationSeverity.CRITICAL,
-                    message=f"Guardrails system error: {str(e)}",
-                    trace_id=trace_id,
-                )
-            )
+            all_violations.append(Violation(
+                layer=GuardrailLayer.AUDIT_LOG,  # Generic error
+                violation_type="system_error",
+                severity=ViolationSeverity.CRITICAL,
+                message=f"Guardrails system error: {str(e)}",
+                trace_id=trace_id,
+            ))
 
         total_time = (time.time() - start_time) * 1000
 
@@ -998,11 +948,8 @@ class RuntimeSafetyGuardrails:
         metrics = {
             "system": {
                 "constitutional_hash": CONSTITUTIONAL_HASH,
-                "layers_enabled": [
-                    layer.value
-                    for layer, component in self.layers.items()
-                    if getattr(component.config, "enabled", True)
-                ],
+                "layers_enabled": [layer.value for layer, component in self.layers.items()
+                                 if getattr(component.config, 'enabled', True)],
             }
         }
 
@@ -1019,4 +966,5 @@ class RuntimeSafetyGuardrails:
 
     def get_layer(self, layer_type: GuardrailLayer) -> Optional[GuardrailComponent]:
         """Get a specific guardrail layer component."""
-        return self.layers.get(layer_type)
+        return self.layers.get(layer_type)</contents>
+</xai:function_call">Now let me test the runtime safety guardrails implementation.
