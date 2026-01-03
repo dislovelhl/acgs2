@@ -21,6 +21,12 @@ from tenacity import (
     wait_exponential,
 )
 
+from exceptions.retry import (
+    MaxRetriesExceededError,
+    NonRetryableError,
+    RetryableError,
+)
+
 from .config import WebhookRetryPolicy
 
 logger = logging.getLogger(__name__)
@@ -30,49 +36,9 @@ logger = logging.getLogger(__name__)
 T = TypeVar("T")
 
 
-class WebhookRetryError(Exception):
-    """Raised when a webhook delivery fails after all retries."""
-
-    def __init__(
-        self,
-        message: str,
-        attempts: int,
-        last_error: Optional[Exception] = None,
-        last_status_code: Optional[int] = None,
-    ):
-        self.message = message
-        self.attempts = attempts
-        self.last_error = last_error
-        self.last_status_code = last_status_code
-        super().__init__(self.message)
-
-
-class RetryableError(Exception):
-    """Indicates an error that should trigger a retry."""
-
-    def __init__(
-        self,
-        message: str,
-        status_code: Optional[int] = None,
-        retry_after: Optional[float] = None,
-    ):
-        self.message = message
-        self.status_code = status_code
-        self.retry_after = retry_after
-        super().__init__(self.message)
-
-
-class NonRetryableError(Exception):
-    """Indicates an error that should NOT trigger a retry."""
-
-    def __init__(
-        self,
-        message: str,
-        status_code: Optional[int] = None,
-    ):
-        self.message = message
-        self.status_code = status_code
-        super().__init__(self.message)
+# Backward compatibility aliases
+# These maintain API compatibility for existing code that imports from webhooks.retry
+WebhookRetryError = MaxRetriesExceededError
 
 
 class ExponentialBackoff:
