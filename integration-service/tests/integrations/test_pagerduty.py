@@ -786,3 +786,97 @@ class TestPagerDutyValidation:
 
         # Events API validation should succeed without making HTTP calls
         assert result.success is True
+
+
+# ============================================================================
+# Connection Testing Tests
+# ============================================================================
+
+
+class TestPagerDutyConnectionTesting:
+    """Tests for PagerDuty connection testing with mocked HTTP responses."""
+
+    @pytest.mark.asyncio
+    async def test_connection_test_success(self, pagerduty_adapter: PagerDutyAdapter):
+        """Test successful connection test."""
+        mock_response = MagicMock(spec=httpx.Response)
+        mock_response.status_code = 200
+
+        with patch.object(pagerduty_adapter, "get_http_client") as mock_client:
+
+            async def async_get(*args, **kwargs):
+                return mock_response
+
+            mock_client.return_value.get = async_get
+
+            result = await pagerduty_adapter.test_connection()
+
+        assert result.success is True
+        assert result.operation == "test_connection"
+
+    @pytest.mark.asyncio
+    async def test_connection_test_client_error(self, pagerduty_adapter: PagerDutyAdapter):
+        """Test connection test with client error (4xx) is still successful."""
+        mock_response = MagicMock(spec=httpx.Response)
+        mock_response.status_code = 404  # Any 4xx should be ok (service is reachable)
+
+        with patch.object(pagerduty_adapter, "get_http_client") as mock_client:
+
+            async def async_get(*args, **kwargs):
+                return mock_response
+
+            mock_client.return_value.get = async_get
+
+            result = await pagerduty_adapter.test_connection()
+
+        assert result.success is True
+
+    @pytest.mark.asyncio
+    async def test_connection_test_server_error(self, pagerduty_adapter: PagerDutyAdapter):
+        """Test connection test with server error (5xx) fails."""
+        mock_response = MagicMock(spec=httpx.Response)
+        mock_response.status_code = 503
+
+        with patch.object(pagerduty_adapter, "get_http_client") as mock_client:
+
+            async def async_get(*args, **kwargs):
+                return mock_response
+
+            mock_client.return_value.get = async_get
+
+            result = await pagerduty_adapter.test_connection()
+
+        assert result.success is False
+        assert result.error_code == "HTTP_503"
+
+    @pytest.mark.asyncio
+    async def test_connection_test_timeout(self, pagerduty_adapter: PagerDutyAdapter):
+        """Test connection test handles timeout."""
+        with patch.object(pagerduty_adapter, "get_http_client") as mock_client:
+
+            async def async_get(*args, **kwargs):
+                raise httpx.TimeoutException("Connection timed out")
+
+            mock_client.return_value.get = async_get
+
+            result = await pagerduty_adapter.test_connection()
+
+        assert result.success is False
+        assert result.error_code == "TIMEOUT"
+        assert "timed out" in result.error_message
+
+    @pytest.mark.asyncio
+    async def test_connection_test_network_error(self, pagerduty_adapter: PagerDutyAdapter):
+        """Test connection test handles network errors."""
+        with patch.object(pagerduty_adapter, "get_http_client") as mock_client:
+
+            async def async_get(*args, **kwargs):
+                raise httpx.NetworkError("Connection refused")
+
+            mock_client.return_value.get = async_get
+
+            result = await pagerduty_adapter.test_connection()
+
+        assert result.success is False
+        assert result.error_code == "NETWORK_ERROR"
+        assert "Connection refused" in result.error_message
