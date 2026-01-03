@@ -5,6 +5,13 @@ Provides GraphQL client and integration components for Linear.app
 """
 
 from .client import LinearClient
+from .conflict_resolution import (
+    ConflictResolutionError,
+    ConflictResolutionManager,
+    ConflictTimestampError,
+    get_conflict_manager,
+    reset_conflict_manager,
+)
 from .deduplication import (
     DeduplicationError,
     DuplicateEventError,
@@ -46,6 +53,12 @@ __all__ = [
     "SyncLoopDetectedError",
     "get_dedup_manager",
     "reset_dedup_manager",
+    # Conflict Resolution
+    "ConflictResolutionManager",
+    "ConflictResolutionError",
+    "ConflictTimestampError",
+    "get_conflict_manager",
+    "reset_conflict_manager",
     # Webhook Auth
     "LinearWebhookAuthError",
     "get_linear_webhook_handler",
