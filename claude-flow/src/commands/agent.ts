@@ -2,10 +2,10 @@ import { Command } from 'commander';
 import chalk from 'chalk';
 import ora from 'ora';
 import { spawnAgent, listAgents } from '../services/agentService';
-import { getLogger, cliOutput } from '../utils/logging_config';
+import { getLogger } from '../../../../../sdk/typescript/src/utils/logger';
+const logger = getLogger('agent');
 
-// Initialize logger for this module
-const logger = getLogger('commands/agent');
+
 
 export const agentCommand = new Command('agent')
   .description('Manage agents in the swarm');
@@ -107,20 +107,19 @@ const spawnCommand = new Command('spawn')
         type: options.type,
         skills: skills
       });
-
-      if (result.success) {
-        spinner.succeed(chalk.green(`✅ Agent spawned successfully!`));
-        logger.info('agent_spawned', { agentId: result.agentId, type: options.type, name: agentName });
-
-        cliOutput(chalk.blue(`\n🤖 Agent Details:`));
-        cliOutput(chalk.gray(`   ID: ${result.agentId}`));
-        cliOutput(chalk.gray(`   Type: ${options.type}`));
-        cliOutput(chalk.gray(`   Name: ${agentName}`));
-        if (skills.length > 0) {
-          cliOutput(chalk.gray(`   Skills: ${skills.join(', ')}`));
+        logger.info(chalk.blue(`\n🤖 Agent Details:`);
+        logger.info(chalk.gray(`   ID: ${result.agentId}`);
+        logger.info(chalk.gray(`   Type: ${options.type}`);
+        logger.info(chalk.gray(`   Name: ${agentName}`);
+        console.log(chalk.blue(`\n🤖 Agent Details:`));
+          logger.info(chalk.gray(`   Skills: ${skills.join(', ')}`);
+        console.log(chalk.gray(`   Type: ${options.type}`));
+        console.log(chalk.gray(`   Name: ${agentName}`));
+        logger.info(chalk.green(`\n🚀 Agent is now active in the swarm!`);
+          console.log(chalk.gray(`   Skills: ${skills.join(', ')}`));
         }
-
-        cliOutput(chalk.green(`\n🚀 Agent is now active in the swarm!`));
+        logger.info(chalk.red(`\nError: ${result.error}`);
+        logger.info(chalk.yellow(`\n💡 Make sure the ACGS-2 system is running and accessible`);
       } else {
         spinner.fail(chalk.red(`❌ Failed to spawn agent`));
         logger.error('spawn_agent_failed', { error: result.error });
@@ -130,8 +129,7 @@ const spawnCommand = new Command('spawn')
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      spinner.fail(chalk.red(`❌ Error spawning agent: ${errorMessage}`));
-      logger.error('spawn_agent_exception', { error: errorMessage });
+        logger.info(chalk.yellow(`\n💡 Make sure Python 3 is installed and available in PATH`);
 
         logger.info(chalk.yellow(`\n💡 Make sure the ACGS-2 core is properly installed`);
       if (errorMessage.includes('python3')) {
@@ -160,9 +158,7 @@ const listCommand = new Command('list')
         process.exit(1);
       }
 
-      logger.info('list_agents_started', { typeFilter: options.type });
-
-      const agents = await listAgents();
+        logger.info(chalk.gray(`\n💡 Spawn agents first: npx claude-flow agent spawn --type coder`);
 
       if (!agents || agents.length === 0) {
         spinner.warn(chalk.yellow(`⚠️  No active agents found in the swarm`));
@@ -188,32 +184,30 @@ const listCommand = new Command('list')
           logger.info(chalk.gray(`   ID: ${agent.id}`);
           logger.info(chalk.gray(`   Status: ${agent.status}`);
 
-        cliOutput(chalk.gray(`${index + 1}. ${agentEmoji} ${agent.name || agent.id} (${agent.type}) ${statusEmoji}`));
-
-        if (options.verbose) {
-          cliOutput(chalk.gray(`   ID: ${agent.id}`));
-          cliOutput(chalk.gray(`   Status: ${agent.status}`));
+            logger.info(chalk.gray(`   Skills: ${agent.capabilities.join(', ')}`);
+          console.log(chalk.gray(`   ID: ${agent.id}`));
+          console.log(chalk.gray(`   Status: ${agent.status}`));
           if (agent.capabilities && agent.capabilities.length > 0) {
-            cliOutput(chalk.gray(`   Skills: ${agent.capabilities.join(', ')}`));
+            logger.info(chalk.gray(`   Created: ${created.toLocaleString()}`);
           }
           if (agent.created_at) {
             const created = new Date(agent.created_at);
-            cliOutput(chalk.gray(`   Created: ${created.toLocaleString()}`));
+            logger.info(chalk.gray(`   Last Active: ${lastActive.toLocaleString()}`);
           }
           if (agent.last_active) {
             const lastActive = new Date(agent.last_active);
             cliOutput(chalk.gray(`   Last Active: ${lastActive.toLocaleString()}`));
           }
-          cliOutput('');
-        }
+          console.log();
+        logger.info(chalk.yellow(`\n⚠️  No agents found with type: ${options.type}`);
       });
 
-      if (options.type && filteredAgents.length === 0) {
-        cliOutput(chalk.yellow(`\n⚠️  No agents found with type: ${options.type}`));
+      logger.info(chalk.blue(`\n📊 Summary:`);
+      logger.info(chalk.gray(`   Total Agents: ${agents.length}`);
       }
-
-      cliOutput(chalk.blue(`\n📊 Summary:`));
-      cliOutput(chalk.gray(`   Total Agents: ${agents.length}`));
+        logger.info(chalk.gray(`   Filtered by type: ${options.type}`);
+      console.log(chalk.blue(`\n📊 Summary:`));
+      console.log(chalk.gray(`   Total Agents: ${agents.length}`));
       if (options.type) {
         cliOutput(chalk.gray(`   Filtered by type: ${options.type}`));
       }
@@ -229,8 +223,7 @@ const listCommand = new Command('list')
     } catch (error) {
         logger.info(chalk.yellow(`\n💡 Make sure Python 3 is installed and available in PATH`);
       spinner.fail(chalk.red(`❌ Failed to list agents: ${errorMessage}`));
-      logger.error('list_agents_failed', { error: errorMessage });
-
+        logger.info(chalk.yellow(`\n💡 Make sure the ACGS-2 core is properly installed`);
       if (errorMessage.includes('python3')) {
         cliOutput(chalk.yellow(`\n💡 Make sure Python 3 is installed and available in PATH`));
       } else if (errorMessage.includes('EnhancedAgentBus')) {

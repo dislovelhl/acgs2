@@ -1,0 +1,132 @@
+# Codecov Configuration for ACGS2 Unified Coverage Reporting
+# =============================================================
+# Configures unified coverage reporting across Python and TypeScript services
+# See: https://docs.codecov.com/docs/codecovyml-reference
+
+codecov:
+  require_ci_to_pass: true
+  notify:
+    wait_for_ci: true
+  # Disable bot comments for now, can enable later
+  bot: null
+
+coverage:
+  precision: 2
+  round: down
+  range: "70...100"
+
+  status:
+    # Project-level coverage thresholds
+    project:
+      default:
+        target: 85%
+        threshold: 1%
+        informational: false
+        if_ci_failed: error
+        only_pulls: false
+
+      # Service-specific targets
+      acgs2-core:
+        target: 85%
+        threshold: 1%
+        flags:
+          - acgs2-core
+        paths:
+          - "acgs2-core/**"
+
+      claude-flow:
+        target: 85%
+        threshold: 1%
+        flags:
+          - claude-flow
+        paths:
+          - "claude-flow/**"
+
+      neural-mcp:
+        target: 85%
+        threshold: 1%
+        flags:
+          - neural-mcp
+        paths:
+          - "acgs2-neural-mcp/**"
+
+    # Patch coverage for PRs
+    patch:
+      default:
+        target: 80%
+        threshold: 1%
+        informational: false
+        if_ci_failed: error
+        only_pulls: true
+
+# Flag definitions for multi-service coverage
+flag_management:
+  default_rules:
+    carryforward: true
+    statuses:
+      - type: project
+        target: 85%
+      - type: patch
+        target: 80%
+
+  individual_flags:
+    - name: acgs2-core
+      paths:
+        - acgs2-core/
+      carryforward: true
+      after_n_builds: 1
+
+    - name: claude-flow
+      paths:
+        - claude-flow/
+      carryforward: true
+      after_n_builds: 1
+
+    - name: neural-mcp
+      paths:
+        - acgs2-neural-mcp/
+      carryforward: true
+      after_n_builds: 1
+
+# Ignore patterns - files that should not be included in coverage
+ignore:
+  - "**/tests/**"
+  - "**/test_*.py"
+  - "**/__tests__/**"
+  - "**/*.test.ts"
+  - "**/*.spec.ts"
+  - "**/node_modules/**"
+  - "**/dist/**"
+  - "**/build/**"
+  - "**/coverage/**"
+  - "**/__pycache__/**"
+  - "**/.venv/**"
+  - "**/venv/**"
+  - "**/*.d.ts"
+  - "**/conftest.py"
+  - "**/migrations/**"
+  - "scripts/**"
+
+# Path remapping for consistent coverage across environments
+fixes:
+  - "acgs2-core/src/::acgs2-core/src/"
+  - "claude-flow/src/::claude-flow/src/"
+  - "acgs2-neural-mcp/src/::acgs2-neural-mcp/src/"
+
+# Comment configuration for PRs
+comment:
+  layout: "reach,diff,flags,files"
+  behavior: default
+  require_changes: true
+  require_base: false
+  require_head: true
+  hide_project_coverage: false
+
+# Parsers configuration
+parsers:
+  gcov:
+    branch_detection:
+      conditional: true
+      loop: true
+      method: false
+      macro: false

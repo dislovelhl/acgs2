@@ -2,10 +2,10 @@ import { Command } from 'commander';
 import chalk from 'chalk';
 import ora from 'ora';
 import { orchestrateTask } from '../services/taskService';
-import { getLogger, cliOutput } from '../utils/logging_config';
+import { getLogger } from '../../../../../sdk/typescript/src/utils/logger';
+const logger = getLogger('task');
 
-// Initialize logger for this module
-const logger = getLogger('commands/task');
+
 
 export const taskCommand = new Command('task')
   .description('Manage task orchestration across the swarm');
@@ -34,30 +34,28 @@ const orchestrateCommand = new Command('orchestrate')
   .action(async (options) => {
     const spinner = ora('Validating orchestration parameters...').start();
 
-    try {
-      // Validate strategy
-      if (!validateStrategy(options.strategy)) {
-        spinner.fail(chalk.red(`❌ Invalid orchestration strategy: ${options.strategy}`));
-        logger.warn('invalid_orchestration_strategy', { strategy: options.strategy });
-        cliOutput(chalk.yellow(`\n📋 Valid strategies: ${VALID_STRATEGIES.join(', ')}`));
-        cliOutput(chalk.gray(`\n  sequential: Tasks executed one after another`));
-        cliOutput(chalk.gray(`  parallel: Tasks executed simultaneously`));
-        cliOutput(chalk.gray(`  hierarchical: Coordinator oversees specialized agents`));
-        cliOutput(chalk.gray(`  consensus: Multiple agents vote on approach`));
-        cliOutput(chalk.gray(`\nExample: npx claude-flow task orchestrate --task "Implement authentication" --strategy parallel`));
+        logger.info(chalk.yellow(`\n📋 Valid strategies: ${VALID_STRATEGIES.join(', ')}`);
+        logger.info(chalk.gray(`\n  sequential: Tasks executed one after another`);
+        logger.info(chalk.gray(`  parallel: Tasks executed simultaneously`);
+        logger.info(chalk.gray(`  hierarchical: Coordinator oversees specialized agents`);
+        logger.info(chalk.gray(`  consensus: Multiple agents vote on approach`);
+        logger.info(chalk.gray(`\nExample: npx claude-flow task orchestrate --task "Implement authentication" --strategy parallel`);
+        console.log(chalk.gray(`  parallel: Tasks executed simultaneously`));
+        console.log(chalk.gray(`  hierarchical: Coordinator oversees specialized agents`));
+        console.log(chalk.gray(`  consensus: Multiple agents vote on approach`));
+        console.log(chalk.gray(`\nExample: npx claude-flow task orchestrate --task "Implement authentication" --strategy parallel`));
         process.exit(1);
       }
-
-      // Validate priority
-      if (!validatePriority(options.priority)) {
-        spinner.fail(chalk.red(`❌ Invalid priority level: ${options.priority}`));
-        logger.warn('invalid_priority_level', { priority: options.priority });
-        cliOutput(chalk.yellow(`\n📋 Valid priorities: ${VALID_PRIORITIES.join(', ')}`));
-        cliOutput(chalk.gray(`\n  low: Standard processing time`));
-        cliOutput(chalk.gray(`  medium: Moderate priority (default)`));
-        cliOutput(chalk.gray(`  high: Expedited processing`));
-        cliOutput(chalk.gray(`  critical: Immediate attention required`));
-        cliOutput(chalk.gray(`\nExample: npx claude-flow task orchestrate --task "Fix production bug" --priority critical`));
+        logger.info(chalk.yellow(`\n📋 Valid priorities: ${VALID_PRIORITIES.join(', ')}`);
+        logger.info(chalk.gray(`\n  low: Standard processing time`);
+        logger.info(chalk.gray(`  medium: Moderate priority (default)`);
+        logger.info(chalk.gray(`  high: Expedited processing`);
+        logger.info(chalk.gray(`  critical: Immediate attention required`);
+        logger.info(chalk.gray(`\nExample: npx claude-flow task orchestrate --task "Fix production bug" --priority critical`);
+        console.log(chalk.gray(`  medium: Moderate priority (default)`));
+        console.log(chalk.gray(`  high: Expedited processing`));
+        console.log(chalk.gray(`  critical: Immediate attention required`));
+        console.log(chalk.gray(`\nExample: npx claude-flow task orchestrate --task "Fix production bug" --priority critical`));
         process.exit(1);
       }
         logger.info(chalk.yellow(`\n💡 Provide a clear, actionable task description`);
@@ -94,30 +92,29 @@ const orchestrateCommand = new Command('orchestrate')
         strategy: options.strategy,
         priority: options.priority
       });
+        logger.info(chalk.blue(`\n📋 Task Details:`);
+        logger.info(chalk.gray(`   Task ID: ${result.taskId}`);
+        logger.info(chalk.gray(`   Workflow ID: ${result.workflowId}`);
+        logger.info(chalk.gray(`   Strategy: ${options.strategy}`);
+        logger.info(chalk.gray(`   Priority: ${options.priority}`);
+        logger.info(chalk.gray(`   Description: ${options.task}`);
+        console.log(chalk.gray(`   Workflow ID: ${result.workflowId}`));
+        logger.info(chalk.green(`\n🚀 Task submitted to swarm for orchestration!`);
+        console.log(chalk.gray(`   Priority: ${options.priority}`));
+        console.log(chalk.gray(`   Description: ${options.task}`));
 
-      if (result.success) {
-        spinner.succeed(chalk.green(`✅ Task orchestration initiated successfully!`));
-        logger.info('orchestrate_task_completed', { taskId: result.taskId, workflowId: result.workflowId });
-
-        cliOutput(chalk.blue(`\n📋 Task Details:`));
-        cliOutput(chalk.gray(`   Task ID: ${result.taskId}`));
-        cliOutput(chalk.gray(`   Workflow ID: ${result.workflowId}`));
-        cliOutput(chalk.gray(`   Strategy: ${options.strategy}`));
-        cliOutput(chalk.gray(`   Priority: ${options.priority}`));
-        cliOutput(chalk.gray(`   Description: ${options.task}`));
-
-        cliOutput(chalk.green(`\n🚀 Task submitted to swarm for orchestration!`));
-
+        console.log(chalk.green(`\n🚀 Task submitted to swarm for orchestration!`));
+            logger.info(chalk.cyan(`\n🔄 Sequential Strategy: Tasks will be executed one after another`);
         // Show strategy-specific information
         switch (options.strategy) {
-          case 'sequential':
-            cliOutput(chalk.cyan(`\n🔄 Sequential Strategy: Tasks will be executed one after another`));
+            logger.info(chalk.cyan(`\n🔄 Parallel Strategy: Tasks will be executed simultaneously`);
+            console.log(chalk.cyan(`\n🔄 Sequential Strategy: Tasks will be executed one after another`));
             break;
-          case 'parallel':
-            cliOutput(chalk.cyan(`\n🔄 Parallel Strategy: Tasks will be executed simultaneously`));
+            logger.info(chalk.cyan(`\n🔄 Hierarchical Strategy: Coordinator will oversee specialized agents`);
+            console.log(chalk.cyan(`\n🔄 Parallel Strategy: Tasks will be executed simultaneously`));
             break;
-          case 'hierarchical':
-            cliOutput(chalk.cyan(`\n🔄 Hierarchical Strategy: Coordinator will oversee specialized agents`));
+            logger.info(chalk.cyan(`\n🔄 Consensus Strategy: Multiple agents will collaborate and vote`);
+            console.log(chalk.cyan(`\n🔄 Hierarchical Strategy: Coordinator will oversee specialized agents`));
             break;
           case 'consensus':
             cliOutput(chalk.cyan(`\n🔄 Consensus Strategy: Multiple agents will collaborate and vote`));
@@ -133,8 +130,7 @@ const orchestrateCommand = new Command('orchestrate')
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      spinner.fail(chalk.red(`❌ Error orchestrating task: ${errorMessage}`));
-      logger.error('orchestrate_task_exception', { error: errorMessage });
+        logger.info(chalk.yellow(`\n💡 Make sure Python 3 is installed and available in PATH`);
 
         logger.info(chalk.yellow(`\n💡 Make sure the ACGS-2 core is properly installed`);
       if (errorMessage.includes('python3')) {

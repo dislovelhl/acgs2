@@ -300,20 +300,67 @@ kubectl port-forward svc/acgs2-prometheus 9090:9090 -n acgs2-monitoring
 
 ## 🧪 Testing & Validation
 
-### Automated Test Suites
+> **Coverage Threshold**: 85% minimum (95% for critical paths) | [Testing Guide](./docs/testing-guide.md)
+
+### Coverage Requirements
+
+| Metric | Threshold | CI Enforcement |
+|--------|-----------|----------------|
+| **System-wide** | 85% | Build fails below threshold |
+| **Critical Paths** | 95% | Policy, auth, persistence modules |
+| **Branch Coverage** | 85% | Enabled via `--cov-branch` |
+| **Patch Coverage** | 80% | PR coverage check |
+
+### Running Tests
 
 ```bash
-# Run complete test suite
-python -m pytest acgs2-core/ -v --cov=acgs2-core --cov-report=html
+# Run unified test suite with parallel execution and coverage
+python scripts/run_unified_tests.py --run --coverage --parallel
 
-# Run performance benchmarks
-python acgs2-core/scripts/performance_benchmark.py
+# Run with pytest directly (parallel execution)
+cd acgs2-core
+pytest -n auto --cov=acgs2_core --cov-branch --cov-report=term-missing --cov-fail-under=85
 
-# Run chaos engineering tests
-python -m pytest acgs2-core/enhanced_agent_bus/tests/test_chaos_framework.py -v
+# Run integration tests (requires services running)
+SKIP_LIVE_TESTS=false pytest tests/integration/ -v -m integration
 
-# Run security tests
-python -m pytest acgs2-core/tests/test_security/ -v
+# Run by marker
+pytest -m constitutional      # Constitutional compliance tests
+pytest -m integration         # Integration tests
+pytest -m "not slow"          # Skip slow tests
+```
+
+### Test Types
+
+| Type | Command | Purpose |
+|------|---------|---------|
+| **Unit** | `pytest tests/unit/ -v` | Isolated component testing |
+| **Integration** | `pytest tests/integration/ -v -m integration` | Cross-service API testing |
+| **Constitutional** | `pytest -m constitutional -v` | Governance compliance validation |
+| **Performance** | `python scripts/performance_benchmark.py` | Latency and throughput validation |
+| **Chaos** | `pytest tests/test_chaos_framework.py -v` | Failure injection testing |
+
+### Coverage Reports
+
+```bash
+# Terminal report with missing lines
+coverage report --precision=2 --show-missing
+
+# HTML report (local viewing)
+coverage html && open htmlcov/index.html
+
+# Codecov dashboard
+# https://codecov.io/gh/ACGS-Project/ACGS-2
+```
+
+### TypeScript Testing
+
+```bash
+# claude-flow
+cd claude-flow && npm test -- --coverage
+
+# acgs2-neural-mcp
+cd acgs2-neural-mcp && npm test -- --coverage
 ```
 
 ### Performance Validation
@@ -327,6 +374,8 @@ python performance_benchmark.py --comprehensive --report
 # Expected: P99 <0.328ms, Throughput >2,605 RPS
 ```
 
+For comprehensive testing documentation, see the [Testing Guide](./docs/testing-guide.md).
+
 ## 📚 Documentation & Resources
 
 ### 📖 Complete Documentation Portal
@@ -334,6 +383,7 @@ python performance_benchmark.py --comprehensive --report
 - **[🏠 Main Documentation](./acgs2-core/README.md)**: Comprehensive system overview
 - **[🚀 Getting Started](./docs/getting-started.md)**: Step-by-step setup guides
 - **[🔧 Deployment Guide](./acgs2-infra/deploy/README.md)**: Production deployment instructions
+- **[🧪 Testing Guide](./docs/testing-guide.md)**: Coverage requirements, testing patterns, CI/CD integration
 - **[📊 Performance Guide](./acgs2-core/scripts/README_performance.md)**: Benchmarking and optimization
 - **[🔒 Security Guide](./docs/security/README.md)**: Enterprise security implementation
 - **[🤖 Adaptive Governance](./acgs2-core/enhanced_agent_bus/docs/ADAPTIVE_GOVERNANCE.md)**: ML governance documentation
@@ -510,6 +560,7 @@ Agent → EnhancedAgentBus → Constitutional Validation (hash: cdd01ef066bc6cf2
 | ---------------------- | ---------------------------------------------------------------- |
 | C4 Architecture        | [`acgs2-core/C4-Documentation/`](./acgs2-core/C4-Documentation/) |
 | Development Guide      | [`acgs2-core/CLAUDE.md`](./acgs2-core/CLAUDE.md)                 |
+| Testing Guide          | [`docs/testing-guide.md`](./docs/testing-guide.md)               |
 | API Documentation      | [`docs/api/`](./docs/api/)                                       |
 | Architecture Decisions | [`docs/adr/`](./docs/adr/)                                       |
 
@@ -527,8 +578,14 @@ Copyright 2024-2025 ACGS-2 Contributors.
 
 ## Coverage Metrics
 
-**System-wide Coverage:** 65.65% (Enhanced Agent Bus core components)
-**Module Coverage:** 82.43% (Agent Bus), 62.34% (Message Processor), 52.17% (Core Services)
+**Coverage Thresholds** (enforced in CI/CD):
+- **System-wide**: 85% minimum (fail build below threshold)
+- **Critical Paths**: 95% minimum (policy, auth, persistence modules)
+- **Branch Coverage**: Enabled via `--cov-branch`
 
-The system-wide coverage represents the actual test coverage across all source files,
-while module coverage shows the average coverage of individual components.
+**Coverage Tools**:
+- **Python**: pytest-cov with pytest-xdist parallel execution
+- **TypeScript**: Jest with cobertura reporter
+- **Unified Dashboard**: [Codecov](https://codecov.io) with service-level breakdown
+
+See [Testing Guide](./docs/testing-guide.md) for complete coverage documentation.

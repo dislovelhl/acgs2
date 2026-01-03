@@ -57,17 +57,16 @@ export const analyzeCommand = new Command('analyze')
     const spinner = ora('Initializing analysis...').start();
 
     try {
-      // Validate focus
-      const validFocuses = ['quality', 'security', 'performance', 'architecture'];
-      if (!validFocuses.includes(options.focus)) {
-        spinner.fail(chalk.red(`❌ Invalid focus: ${options.focus}`));
-        logger.warn('invalid_focus', { focus: options.focus, validFocuses });
-        cliOutput(chalk.yellow(`\n📋 Valid focuses: ${validFocuses.join(', ')}`));
-        cliOutput(chalk.gray(`\n💡 Choose based on your analysis needs:`));
-        cliOutput(chalk.gray(`   • quality: Code maintainability and best practices`));
-        cliOutput(chalk.gray(`   • security: Vulnerability and security issues`));
-        cliOutput(chalk.gray(`   • performance: Performance bottlenecks and optimizations`));
-        cliOutput(chalk.gray(`   • architecture: Design patterns and structural issues`));
+        logger.info(chalk.yellow(`\n📋 Valid focuses: ${validFocuses.join(', ')}`);
+        logger.info(chalk.gray(`\n💡 Choose based on your analysis needs:`);
+        logger.info(chalk.gray(`   • quality: Code maintainability and best practices`);
+        logger.info(chalk.gray(`   • security: Vulnerability and security issues`);
+        logger.info(chalk.gray(`   • performance: Performance bottlenecks and optimizations`);
+        logger.info(chalk.gray(`   • architecture: Design patterns and structural issues`);
+        console.log(chalk.gray(`   • quality: Code maintainability and best practices`));
+        console.log(chalk.gray(`   • security: Vulnerability and security issues`));
+        console.log(chalk.gray(`   • performance: Performance bottlenecks and optimizations`));
+        console.log(chalk.gray(`   • architecture: Design patterns and structural issues`));
         process.exit(1);
       }
 
@@ -106,8 +105,7 @@ export const analyzeCommand = new Command('analyze')
         excludePatterns
       });
 
-      spinner.succeed(chalk.green(`✅ Analysis completed!`));
-      logger.info('analysis_completed', { target, focus: options.focus, findingsCount: result.findings?.length || 0 });
+        logger.info(JSON.stringify(result, null, 2);
 
       // Display results based on format
       if (options.format === 'json') {
@@ -123,15 +121,15 @@ export const analyzeCommand = new Command('analyze')
       spinner.fail(chalk.red(`❌ Analysis failed: ${errorMessage}`));
       logger.error('analysis_failed', { error: errorMessage, target });
       process.exit(1);
-    }
-  });
-
-function displayTextFormat(result: AnalysisResult): void {
-  cliOutput(chalk.blue(`\n📊 Analysis Results - ${result.focus.toUpperCase()} Focus`));
-  cliOutput(chalk.gray(`Target: ${result.target}`));
-  cliOutput(chalk.gray(`Files analyzed: ${result.summary.filesAnalyzed}`));
-  cliOutput(chalk.gray(`Analysis depth: ${result.depth}`));
-  cliOutput(chalk.gray(`Generated: ${new Date().toISOString()}`));
+  logger.info(chalk.blue(`\n📊 Analysis Results - ${result.focus.toUpperCase()} Focus`);
+  logger.info(chalk.gray(`Target: ${result.target}`);
+  logger.info(chalk.gray(`Files analyzed: ${result.summary.filesAnalyzed}`);
+  logger.info(chalk.gray(`Analysis depth: ${result.depth}`);
+  logger.info(chalk.gray(`Generated: ${new Date().toISOString()}`);
+  console.log(chalk.gray(`Target: ${result.target}`));
+  console.log(chalk.gray(`Files analyzed: ${result.summary.filesAnalyzed}`));
+    logger.info(chalk.yellow(`\n⚠️  Findings (${result.findings.length}):`);
+  console.log(chalk.gray(`Generated: ${new Date().toISOString()}`));
 
   if (result.findings && result.findings.length > 0) {
     cliOutput(chalk.yellow(`\n⚠️  Findings (${result.findings.length}):`));
@@ -149,13 +147,13 @@ function displayTextFormat(result: AnalysisResult): void {
         logger.info(severityColorFn(`\n${severity.toUpperCase()} (${bySeverity[severity].length}):`);
     severityLevels.forEach(severity => {
       if (bySeverity[severity] && bySeverity[severity].length > 0) {
-        const severityColorFn = getSeverityColor(severity);
-        cliOutput(severityColorFn(`\n${severity.toUpperCase()} (${bySeverity[severity].length}):`));
-
+          logger.info(chalk.gray(`  • ${finding.message}`);
+        console.log(severityColorFn(`\n${severity.toUpperCase()} (${bySeverity[severity].length}):`));
+            logger.info(chalk.gray(`    📁 ${finding.file}${finding.line ? `:${finding.line}` : ''}`);
         bySeverity[severity].forEach((finding) => {
-          cliOutput(chalk.gray(`  • ${finding.message}`));
-          if (finding.file) {
-            cliOutput(chalk.gray(`    📁 ${finding.file}${finding.line ? `:${finding.line}` : ''}`));
+          console.log(chalk.gray(`  • ${finding.message}`));
+            logger.info(chalk.gray(`    💡 ${finding.recommendation}`);
+            console.log(chalk.gray(`    📁 ${finding.file}${finding.line ? `:${finding.line}` : ''}`));
           }
           if (finding.recommendation) {
             cliOutput(chalk.gray(`    💡 ${finding.recommendation}`));
@@ -166,11 +164,11 @@ function displayTextFormat(result: AnalysisResult): void {
   }
       logger.info(chalk.gray(`  ${index + 1}. ${rec.description}`);
   if (result.recommendations && result.recommendations.length > 0) {
-    cliOutput(chalk.green(`\n🚀 Recommendations:`));
+        logger.info(chalk.gray(`     Priority: ${rec.priority}`);
     result.recommendations.forEach((rec, index) => {
-      cliOutput(chalk.gray(`  ${index + 1}. ${rec.description}`));
-      if (rec.priority) {
-        cliOutput(chalk.gray(`     Priority: ${rec.priority}`));
+      console.log(chalk.gray(`  ${index + 1}. ${rec.description}`));
+        logger.info(chalk.gray(`     Effort: ${rec.estimatedEffort}`);
+        console.log(chalk.gray(`     Priority: ${rec.priority}`));
       }
       if (rec.estimatedEffort) {
         cliOutput(chalk.gray(`     Effort: ${rec.estimatedEffort}`));
@@ -186,17 +184,17 @@ function displayTextFormat(result: AnalysisResult): void {
   logger.info(chalk.blue(`\n📋 Analysis Report - ${result.focus.toUpperCase()} Focus`);
   logger.info('='.repeat(60);
 
-function displayReportFormat(result: AnalysisResult): void {
-  cliOutput(chalk.blue(`\n📋 Analysis Report - ${result.focus.toUpperCase()} Focus`));
-  cliOutput('='.repeat(60));
-
-  cliOutput(chalk.bold('\nEXECUTIVE SUMMARY'));
-  cliOutput(`Analysis performed on: ${result.target}`);
-  cliOutput(`Focus area: ${result.focus}`);
-  cliOutput(`Analysis depth: ${result.depth}`);
-  cliOutput(`Files analyzed: ${result.summary.filesAnalyzed}`);
-  cliOutput(`Total findings: ${result.findings?.length || 0}`);
-  cliOutput(`Generated: ${new Date().toISOString()}`);
+  logger.info(chalk.bold('\nEXECUTIVE SUMMARY');
+  logger.info(`Analysis performed on: ${result.target}`;
+  logger.info(`Focus area: ${result.focus}`;
+  logger.info(`Analysis depth: ${result.depth}`;
+  logger.info(`Files analyzed: ${result.summary.filesAnalyzed}`;
+  logger.info(`Total findings: ${result.findings?.length || 0}`;
+  logger.info(`Generated: ${new Date().toISOString()}`;
+  console.log(`Analysis depth: ${result.depth}`);
+  console.log(`Files analyzed: ${result.summary.filesAnalyzed}`);
+    logger.info(chalk.bold('\nFINDINGS BY SEVERITY');
+  console.log(`Generated: ${new Date().toISOString()}`);
 
   if (result.findings && result.findings.length > 0) {
     cliOutput(chalk.bold('\nFINDINGS BY SEVERITY'));
@@ -210,33 +208,33 @@ function displayReportFormat(result: AnalysisResult): void {
       logger.info(colorFn(`• ${severity.toUpperCase()}: ${count}`);
 
     Object.entries(severityStats).forEach(([severity, count]) => {
-      const colorFn = getSeverityColor(severity);
-      cliOutput(colorFn(`• ${severity.toUpperCase()}: ${count}`));
+    logger.info(chalk.bold('\nDETAILED FINDINGS');
+      console.log(colorFn(`• ${severity.toUpperCase()}: ${count}`));
     });
-
-    cliOutput(chalk.bold('\nDETAILED FINDINGS'));
+      logger.info(colorFn(`\n${index + 1}. ${finding.message}`);
+      logger.info(`   Severity: ${finding.severity.toUpperCase()}`;
     result.findings.forEach((finding, index) => {
-      const colorFn = getSeverityColor(finding.severity);
-      cliOutput(colorFn(`\n${index + 1}. ${finding.message}`));
-      cliOutput(`   Severity: ${finding.severity.toUpperCase()}`);
-      if (finding.file) {
-        cliOutput(`   Location: ${finding.file}${finding.line ? `:${finding.line}` : ''}`);
+        logger.info(`   Location: ${finding.file}${finding.line ? `:${finding.line}` : ''}`;
+      console.log(colorFn(`\n${index + 1}. ${finding.message}`));
+      console.log(`   Severity: ${finding.severity.toUpperCase()}`);
+        logger.info(`   Category: ${finding.category}`;
+        console.log(`   Location: ${finding.file}${finding.line ? `:${finding.line}` : ''}`);
       }
-      if (finding.category) {
-        cliOutput(`   Category: ${finding.category}`);
+        logger.info(`   Recommendation: ${finding.recommendation}`;
+        console.log(`   Category: ${finding.category}`);
       }
       if (finding.recommendation) {
         cliOutput(`   Recommendation: ${finding.recommendation}`);
       }
     logger.info(chalk.bold('\nRECOMMENDATIONS');
   }
-
-  if (result.recommendations && result.recommendations.length > 0) {
-    cliOutput(chalk.bold('\nRECOMMENDATIONS'));
+      logger.info(`\n${index + 1}. ${rec.description}`;
+      logger.info(`   Priority: ${rec.priority || 'Medium'}`;
+      logger.info(`   Estimated Effort: ${rec.estimatedEffort || 'Unknown'}`;
     result.recommendations.forEach((rec, index) => {
-      cliOutput(`\n${index + 1}. ${rec.description}`);
-      cliOutput(`   Priority: ${rec.priority || 'Medium'}`);
-      cliOutput(`   Estimated Effort: ${rec.estimatedEffort || 'Unknown'}`);
+        logger.info(`   Benefits: ${rec.benefits}`;
+      console.log(`   Priority: ${rec.priority || 'Medium'}`);
+      console.log(`   Estimated Effort: ${rec.estimatedEffort || 'Unknown'}`);
       if (rec.benefits) {
         cliOutput(`   Benefits: ${rec.benefits}`);
       }
@@ -246,8 +244,8 @@ function displayReportFormat(result: AnalysisResult): void {
   if (result.metrics) {
     cliOutput(chalk.bold('\nMETRICS'));
     Object.entries(result.metrics).forEach(([key, value]) => {
-      cliOutput(`• ${key}: ${value}`);
-    });
+  logger.info('\n' + '='.repeat(60);
+  logger.info(chalk.green('Report generated successfully');
   }
 
   cliOutput('\n' + '='.repeat(60));

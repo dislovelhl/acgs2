@@ -49,13 +49,14 @@ target-version = ['py312']
 # NOTE: This configuration is for individual component testing only.
 # For running all tests across components, use: ./scripts/run_all_tests.sh
 # This avoids pytest configuration conflicts between root and component-specific configs.
-addopts = "-q --maxfail=3 --cov --cov-report=term-missing --cov-report=html --cov-report=xml"
-asyncio_mode = "auto"
+# pytest-xdist: -n auto enables parallel execution, --dist=loadscope reuses fixtures across workers
+# To disable parallel execution, override with: pytest -n 0
+addopts = "-q --maxfail=3 -n auto --dist=loadscope"
 markers = [
     "constitutional: marks tests as related to constitutional compliance",
     "integration: marks tests as integration tests requiring external services",
-    "slow: marks tests as slow running",
-    "governance: marks tests as critical governance path tests (90%+ coverage required)",
+    "asyncio: marks tests as async tests using pytest-asyncio",
+    "slow: marks tests as slow-running tests",
 ]
 # Only run tests in the immediate directory to avoid conflicts
 testpaths = ["."]
@@ -69,35 +70,37 @@ pythonpath = [
 ]
 
 [tool.coverage.run]
+# Migrated from acgs2-core/.coveragerc - Constitutional Hash: cdd01ef066bc6cf2
 branch = true
+parallel = true
 source = ["acgs2-core", "acgs2-observability", "acgs2-research", "acgs2-infra", "acgs2-neural-mcp"]
-omit = ["*/tests/*", "*/venv/*", ".venv/*", "*/node_modules/*", "*/__pycache__/*"]
+omit = [
+    "*/tests/*",
+    "*/__pycache__/*",
+    "*/venv/*",
+    "*/.venv/*",
+    "*/node_modules/*",
+    "*/migrations/*",
+    "*/conftest.py",
+]
 
 [tool.coverage.report]
 exclude_lines = [
     "pragma: no cover",
     "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
     "if __name__ == .__main__.:",
     "if TYPE_CHECKING:",
-    "raise NotImplementedError",
-    "except ImportError:",
+    "@abstractmethod",
 ]
-# Enforce 80% minimum coverage (spec 027)
-fail_under = 80
 show_missing = true
-skip_covered = false
+precision = 2
+fail_under = 85
 
 [tool.coverage.html]
-directory = "htmlcov"
+directory = "coverage_html_report"
+title = "ACGS-2 Test Coverage Report"
 
 [tool.coverage.xml]
 output = "coverage.xml"
-
-[tool.bandit]
-exclude_dirs = ["tests", "venv", ".venv", "node_modules", "__pycache__", "examples"]
-skips = [
-    "B101",  # assert_used - acceptable in tests
-    "B104",  # hardcoded_bind_all_interfaces - needed for containerized services
-    "B108",  # hardcoded_tmp_directory - acceptable for temporary file handling
-    "B311",  # random - not security-critical in this context
-]

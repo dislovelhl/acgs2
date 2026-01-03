@@ -133,36 +133,101 @@ Types: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`
 
 ## 🧪 Testing
 
+> For comprehensive testing documentation, see the [Testing Guide](./docs/testing-guide.md).
+
+### Coverage Requirements
+
+**ACGS-2 enforces strict coverage thresholds:**
+
+| Metric | Minimum | CI Enforcement |
+|--------|---------|----------------|
+| **System-wide** | 85% | Build fails below threshold |
+| **Critical Paths** | 95% | Policy, auth, persistence |
+| **Branch Coverage** | 85% | Enabled via `--cov-branch` |
+| **Patch Coverage** | 80% | PR coverage check |
+
 ### Test Structure
 ```
-tests/
-├── unit/           # Unit tests
-├── integration/    # Integration tests
+acgs2-core/tests/
+├── unit/           # Unit tests (isolated components)
+├── integration/    # Integration tests (cross-service)
+│   ├── conftest.py       # Integration fixtures
+│   ├── test_agent_bus.py # Agent Bus API tests
+│   ├── test_opa.py       # OPA policy tests
+│   ├── test_redis.py     # Redis cache tests
+│   └── test_kafka.py     # Kafka messaging tests
 ├── e2e/           # End-to-end tests
 └── fixtures/      # Test data and fixtures
 ```
 
 ### Running Tests
+
 ```bash
-# All tests
-./scripts/run-tests.sh
+# Run unified test suite with parallel execution
+python scripts/run_unified_tests.py --run --coverage --parallel
+
+# Run with pytest directly (parallel execution with coverage)
+cd acgs2-core
+pytest -n auto --cov=acgs2_core --cov-branch --cov-report=term-missing --cov-fail-under=85
 
 # Unit tests only
-docker-compose -f docker-compose.dev.yml exec agent-bus python -m pytest tests/unit/ -v
+pytest tests/unit/ -v
 
-# Integration tests
-docker-compose -f docker-compose.dev.yml exec agent-bus python -m pytest tests/integration/ -v
+# Integration tests (mock-based, no services required)
+pytest tests/integration/ -v -m integration
 
-# With coverage
-docker-compose -f docker-compose.dev.yml exec agent-bus python -m pytest --cov=. --cov-report=html
+# Integration tests with live services
+SKIP_LIVE_TESTS=false pytest tests/integration/ -v -m integration
+
+# By marker
+pytest -m constitutional   # Constitutional compliance tests
+pytest -m "not slow"       # Skip slow tests
+```
+
+### Coverage Commands
+
+```bash
+# Terminal report with missing lines
+coverage report --precision=2 --show-missing
+
+# HTML report (opens in browser)
+coverage html && open htmlcov/index.html
+
+# Check critical path coverage
+coverage report --include="**/opa_*.py,**/policy_*.py,**/kafka_bus.py,**/redis_*.py"
+```
+
+### TypeScript Testing
+
+```bash
+# claude-flow
+cd claude-flow
+npm test -- --coverage
+
+# acgs2-neural-mcp
+cd acgs2-neural-mcp
+npm test -- --coverage
 ```
 
 ### Test Guidelines
-- Write tests for all new functionality
-- Aim for >80% code coverage
-- Use descriptive test names
-- Test both success and failure cases
-- Use fixtures for reusable test data
+
+- **Coverage Enforcement**: All new code must meet 85% coverage threshold
+- **Critical Paths**: Auth, policy, and persistence code requires 95% coverage
+- **Write tests first**: Use TDD for complex features
+- **Descriptive names**: `test_agent_bus_returns_error_when_policy_validation_fails`
+- **One assertion per test**: Focus on single behavior
+- **Use fixtures**: Share setup code via pytest fixtures
+- **Test edge cases**: Include error conditions and boundary cases
+- **Branch coverage**: Ensure all code paths are tested
+
+### Test Markers
+
+| Marker | Description | Usage |
+|--------|-------------|-------|
+| `@pytest.mark.constitutional` | Constitutional compliance tests | Required for governance code |
+| `@pytest.mark.integration` | Integration tests | Cross-service testing |
+| `@pytest.mark.asyncio` | Async test functions | Async code testing |
+| `@pytest.mark.slow` | Slow-running tests | Can be skipped in quick runs |
 
 ## 🔒 Security Considerations
 
@@ -197,7 +262,8 @@ docker-compose -f docker-compose.dev.yml exec agent-bus python -m pytest --cov=.
 ## 🤝 Code Review Process
 
 ### Pull Request Requirements
-- [ ] Tests pass (`./scripts/run-tests.sh`)
+- [ ] Tests pass (`python scripts/run_unified_tests.py --run --coverage`)
+- [ ] Code coverage meets thresholds (85% system-wide, 95% critical paths)
 - [ ] Code style checks pass (Ruff, Black)
 - [ ] Documentation updated
 - [ ] No security vulnerabilities
@@ -206,6 +272,7 @@ docker-compose -f docker-compose.dev.yml exec agent-bus python -m pytest --cov=.
 ### Review Checklist
 - [ ] Code is readable and well-documented
 - [ ] Tests are comprehensive and passing
+- [ ] Coverage thresholds met (check Codecov PR comment)
 - [ ] No breaking changes without migration plan
 - [ ] Performance impact assessed
 - [ ] Security implications reviewed
