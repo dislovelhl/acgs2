@@ -22,8 +22,7 @@ import { http, HttpResponse } from "msw";
 import { server } from "../../test/mocks/server";
 import { errorHandlers } from "../../test/mocks/handlers";
 import { QueryInterface } from "../QueryInterface";
-
-const API_BASE_URL = "http://localhost:8080";
+import { API_BASE_URL } from "../../lib";
 
 describe("QueryInterface", () => {
   describe("Initial Render", () => {
