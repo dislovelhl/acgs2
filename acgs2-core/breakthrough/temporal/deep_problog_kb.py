@@ -97,10 +97,8 @@ class ProbabilisticFact:
 
     def __post_init__(self):
         if not self.fact_id:
-            self.fact_id = hashlib.sha256(
-                f"{self.predicate}_{'_'.join(str(arg) for arg in self.arguments)}_"
-                f"{self.probability}".encode()
-            ).hexdigest()[:16]
+            fact_str = f"{self.predicate}_{'_'.join(str(arg) for arg in self.arguments)}_{self.probability}"
+            self.fact_id = hashlib.sha256(fact_str.encode()).hexdigest()[:16]
 
     @property
     def certainty_level(self) -> CertaintyLevel:

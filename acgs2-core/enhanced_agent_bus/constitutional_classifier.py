@@ -188,7 +188,7 @@ class ConstitutionalClassifierService:
         import hashlib
 
         key_components = f"{tenant_id or 'global'}:{text}"
-        return hashlib.md5(key_components.encode()).hexdigest()
+        return hashlib.md5(key_components.encode(), usedforsecurity=False).hexdigest()
 
     def get_metrics(self) -> Dict[str, Any]:
         """Get classifier metrics."""

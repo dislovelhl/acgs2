@@ -280,7 +280,7 @@ class NetworkChaosInjector(BaseChaosInjector):
         """Inject network partition"""
         target_ip = failure.parameters.get("target_ip")
 
-        cmd = f"iptables -A INPUT -s {target_ip} -j DROP"
+        # cmd = f"iptables -A INPUT -s {target_ip} -j DROP"
         # Execute command on target
 
         self.logger.info(f"Created network partition from {target.resource_id} to {target_ip}")

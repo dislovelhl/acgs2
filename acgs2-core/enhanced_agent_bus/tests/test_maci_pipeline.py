@@ -5,6 +5,10 @@ import logging
 from datetime import datetime
 
 import pytest
+
+# Configure logging for tests
+logger = logging.getLogger(__name__)
+
 from enhanced_agent_bus.verification.maci_pipeline import (
     CONSTITUTIONAL_HASH,
     AgentRole,
