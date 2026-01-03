@@ -47,6 +47,15 @@ try:
     except ImportError:
         _online_learning = None  # River/numpy may not be installed
 
+    # Import ab_testing module for A/B testing tests
+    try:
+        import enhanced_agent_bus.ab_testing as _ab_testing
+
+        sys.modules["ab_testing"] = _ab_testing
+        sys.modules["enhanced_agent_bus.ab_testing"] = _ab_testing
+    except ImportError:
+        _ab_testing = None  # NumPy may not be installed
+
     # Patch sys.models to point flat names to package-qualified modules
     sys.modules["audit_client"] = _audit_client
     sys.modules["models"] = _models
@@ -81,6 +90,15 @@ except ImportError:
             sys.modules["enhanced_agent_bus.online_learning"] = _online_learning
         except ImportError:
             _online_learning = None  # River/numpy may not be installed
+
+        # Import ab_testing module for A/B testing tests (fallback)
+        try:
+            import ab_testing as _ab_testing
+
+            sys.modules["ab_testing"] = _ab_testing
+            sys.modules["enhanced_agent_bus.ab_testing"] = _ab_testing
+        except ImportError:
+            _ab_testing = None  # NumPy may not be installed
 
         # Patch package names to point to flat modules
         sys.modules["audit_client"] = _audit_client
