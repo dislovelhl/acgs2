@@ -2,6 +2,10 @@ import { Command } from 'commander';
 import chalk from 'chalk';
 import ora from 'ora';
 import { performAnalysis } from '../services/analysisService';
+import { getLogger, cliOutput } from '../utils/logging_config';
+
+// Initialize logger for this module
+const logger = getLogger('commands/analyze');
 
 // Type definitions for analysis results
 import { getLogger } from '../../../../../sdk/typescript/src/utils/logger';
@@ -53,16 +57,17 @@ export const analyzeCommand = new Command('analyze')
     const spinner = ora('Initializing analysis...').start();
 
     try {
-        logger.info(chalk.yellow(`\n📋 Valid focuses: ${validFocuses.join(', ')}`);
-        logger.info(chalk.gray(`\n💡 Choose based on your analysis needs:`);
-        logger.info(chalk.gray(`   • quality: Code maintainability and best practices`);
-        logger.info(chalk.gray(`   • security: Vulnerability and security issues`);
-        logger.info(chalk.gray(`   • performance: Performance bottlenecks and optimizations`);
-        logger.info(chalk.gray(`   • architecture: Design patterns and structural issues`);
-        console.log(chalk.gray(`   • quality: Code maintainability and best practices`));
-        console.log(chalk.gray(`   • security: Vulnerability and security issues`));
-        console.log(chalk.gray(`   • performance: Performance bottlenecks and optimizations`));
-        console.log(chalk.gray(`   • architecture: Design patterns and structural issues`));
+      // Validate focus
+      const validFocuses = ['quality', 'security', 'performance', 'architecture'];
+      if (!validFocuses.includes(options.focus)) {
+        spinner.fail(chalk.red(`❌ Invalid focus: ${options.focus}`));
+        logger.warn('invalid_focus', { focus: options.focus, validFocuses });
+        cliOutput(chalk.yellow(`\n📋 Valid focuses: ${validFocuses.join(', ')}`));
+        cliOutput(chalk.gray(`\n💡 Choose based on your analysis needs:`));
+        cliOutput(chalk.gray(`   • quality: Code maintainability and best practices`));
+        cliOutput(chalk.gray(`   • security: Vulnerability and security issues`));
+        cliOutput(chalk.gray(`   • performance: Performance bottlenecks and optimizations`));
+        cliOutput(chalk.gray(`   • architecture: Design patterns and structural issues`));
         process.exit(1);
       }
 
@@ -70,7 +75,8 @@ export const analyzeCommand = new Command('analyze')
       const validDepths = ['quick', 'deep'];
       if (!validDepths.includes(options.depth)) {
         spinner.fail(chalk.red(`❌ Invalid depth: ${options.depth}`));
-        console.log(chalk.yellow(`\n📋 Valid depths: ${validDepths.join(', ')}`));
+        logger.warn('invalid_depth', { depth: options.depth, validDepths });
+        cliOutput(chalk.yellow(`\n📋 Valid depths: ${validDepths.join(', ')}`));
         process.exit(1);
       }
 
@@ -78,7 +84,8 @@ export const analyzeCommand = new Command('analyze')
       const validFormats = ['text', 'json', 'report'];
       if (!validFormats.includes(options.format)) {
         spinner.fail(chalk.red(`❌ Invalid format: ${options.format}`));
-        console.log(chalk.yellow(`\n📋 Valid formats: ${validFormats.join(', ')}`));
+        logger.warn('invalid_format', { format: options.format, validFormats });
+        cliOutput(chalk.yellow(`\n📋 Valid formats: ${validFormats.join(', ')}`));
         process.exit(1);
       }
 
@@ -87,6 +94,7 @@ export const analyzeCommand = new Command('analyze')
       const excludePatterns = options.excludePatterns.split(',').map((p: string) => p.trim());
 
       spinner.text = `Analyzing ${target} with ${options.focus} focus (${options.depth} depth)...`;
+      logger.info('analysis_started', { target, focus: options.focus, depth: options.depth });
 
       // Perform the analysis
       const result = await performAnalysis({
@@ -98,11 +106,12 @@ export const analyzeCommand = new Command('analyze')
         excludePatterns
       });
 
-        logger.info(JSON.stringify(result, null, 2);
+      spinner.succeed(chalk.green(`✅ Analysis completed!`));
+      logger.info('analysis_completed', { target, focus: options.focus, findingsCount: result.findings?.length || 0 });
 
       // Display results based on format
       if (options.format === 'json') {
-        console.log(JSON.stringify(result, null, 2));
+        cliOutput(JSON.stringify(result, null, 2));
       } else if (options.format === 'report') {
         displayReportFormat(result);
       } else {
@@ -112,19 +121,20 @@ export const analyzeCommand = new Command('analyze')
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       spinner.fail(chalk.red(`❌ Analysis failed: ${errorMessage}`));
+      logger.error('analysis_failed', { error: errorMessage, target });
       process.exit(1);
-  logger.info(chalk.blue(`\n📊 Analysis Results - ${result.focus.toUpperCase()} Focus`);
-  logger.info(chalk.gray(`Target: ${result.target}`);
-  logger.info(chalk.gray(`Files analyzed: ${result.summary.filesAnalyzed}`);
-  logger.info(chalk.gray(`Analysis depth: ${result.depth}`);
-  logger.info(chalk.gray(`Generated: ${new Date().toISOString()}`);
-  console.log(chalk.gray(`Target: ${result.target}`));
-  console.log(chalk.gray(`Files analyzed: ${result.summary.filesAnalyzed}`));
-    logger.info(chalk.yellow(`\n⚠️  Findings (${result.findings.length}):`);
-  console.log(chalk.gray(`Generated: ${new Date().toISOString()}`));
+    }
+  });
+
+function displayTextFormat(result: AnalysisResult): void {
+  cliOutput(chalk.blue(`\n📊 Analysis Results - ${result.focus.toUpperCase()} Focus`));
+  cliOutput(chalk.gray(`Target: ${result.target}`));
+  cliOutput(chalk.gray(`Files analyzed: ${result.summary.filesAnalyzed}`));
+  cliOutput(chalk.gray(`Analysis depth: ${result.depth}`));
+  cliOutput(chalk.gray(`Generated: ${new Date().toISOString()}`));
 
   if (result.findings && result.findings.length > 0) {
-    console.log(chalk.yellow(`\n⚠️  Findings (${result.findings.length}):`));
+    cliOutput(chalk.yellow(`\n⚠️  Findings (${result.findings.length}):`));
 
     // Group by severity
     const bySeverity = result.findings.reduce<Record<SeverityLevel, AnalysisFinding[]>>(
@@ -139,16 +149,16 @@ export const analyzeCommand = new Command('analyze')
         logger.info(severityColorFn(`\n${severity.toUpperCase()} (${bySeverity[severity].length}):`);
     severityLevels.forEach(severity => {
       if (bySeverity[severity] && bySeverity[severity].length > 0) {
-          logger.info(chalk.gray(`  • ${finding.message}`);
-        console.log(severityColorFn(`\n${severity.toUpperCase()} (${bySeverity[severity].length}):`));
-            logger.info(chalk.gray(`    📁 ${finding.file}${finding.line ? `:${finding.line}` : ''}`);
+        const severityColorFn = getSeverityColor(severity);
+        cliOutput(severityColorFn(`\n${severity.toUpperCase()} (${bySeverity[severity].length}):`));
+
         bySeverity[severity].forEach((finding) => {
-          console.log(chalk.gray(`  • ${finding.message}`));
-            logger.info(chalk.gray(`    💡 ${finding.recommendation}`);
-            console.log(chalk.gray(`    📁 ${finding.file}${finding.line ? `:${finding.line}` : ''}`));
+          cliOutput(chalk.gray(`  • ${finding.message}`));
+          if (finding.file) {
+            cliOutput(chalk.gray(`    📁 ${finding.file}${finding.line ? `:${finding.line}` : ''}`));
           }
           if (finding.recommendation) {
-            console.log(chalk.gray(`    💡 ${finding.recommendation}`));
+            cliOutput(chalk.gray(`    💡 ${finding.recommendation}`));
           }
         });
       }
@@ -156,40 +166,40 @@ export const analyzeCommand = new Command('analyze')
   }
       logger.info(chalk.gray(`  ${index + 1}. ${rec.description}`);
   if (result.recommendations && result.recommendations.length > 0) {
-        logger.info(chalk.gray(`     Priority: ${rec.priority}`);
+    cliOutput(chalk.green(`\n🚀 Recommendations:`));
     result.recommendations.forEach((rec, index) => {
-      console.log(chalk.gray(`  ${index + 1}. ${rec.description}`));
-        logger.info(chalk.gray(`     Effort: ${rec.estimatedEffort}`);
-        console.log(chalk.gray(`     Priority: ${rec.priority}`));
+      cliOutput(chalk.gray(`  ${index + 1}. ${rec.description}`));
+      if (rec.priority) {
+        cliOutput(chalk.gray(`     Priority: ${rec.priority}`));
       }
       if (rec.estimatedEffort) {
-        console.log(chalk.gray(`     Effort: ${rec.estimatedEffort}`));
+        cliOutput(chalk.gray(`     Effort: ${rec.estimatedEffort}`));
       }
     logger.info(chalk.blue(`\n📈 Metrics:`);
   }
       logger.info(chalk.gray(`  • ${key}: ${value}`);
   if (result.metrics) {
-    console.log(chalk.blue(`\n📈 Metrics:`));
+    cliOutput(chalk.blue(`\n📈 Metrics:`));
     Object.entries(result.metrics).forEach(([key, value]) => {
-      console.log(chalk.gray(`  • ${key}: ${value}`));
+      cliOutput(chalk.gray(`  • ${key}: ${value}`));
     });
   logger.info(chalk.blue(`\n📋 Analysis Report - ${result.focus.toUpperCase()} Focus`);
   logger.info('='.repeat(60);
 
-  logger.info(chalk.bold('\nEXECUTIVE SUMMARY');
-  logger.info(`Analysis performed on: ${result.target}`;
-  logger.info(`Focus area: ${result.focus}`;
-  logger.info(`Analysis depth: ${result.depth}`;
-  logger.info(`Files analyzed: ${result.summary.filesAnalyzed}`;
-  logger.info(`Total findings: ${result.findings?.length || 0}`;
-  logger.info(`Generated: ${new Date().toISOString()}`;
-  console.log(`Analysis depth: ${result.depth}`);
-  console.log(`Files analyzed: ${result.summary.filesAnalyzed}`);
-    logger.info(chalk.bold('\nFINDINGS BY SEVERITY');
-  console.log(`Generated: ${new Date().toISOString()}`);
+function displayReportFormat(result: AnalysisResult): void {
+  cliOutput(chalk.blue(`\n📋 Analysis Report - ${result.focus.toUpperCase()} Focus`));
+  cliOutput('='.repeat(60));
+
+  cliOutput(chalk.bold('\nEXECUTIVE SUMMARY'));
+  cliOutput(`Analysis performed on: ${result.target}`);
+  cliOutput(`Focus area: ${result.focus}`);
+  cliOutput(`Analysis depth: ${result.depth}`);
+  cliOutput(`Files analyzed: ${result.summary.filesAnalyzed}`);
+  cliOutput(`Total findings: ${result.findings?.length || 0}`);
+  cliOutput(`Generated: ${new Date().toISOString()}`);
 
   if (result.findings && result.findings.length > 0) {
-    console.log(chalk.bold('\nFINDINGS BY SEVERITY'));
+    cliOutput(chalk.bold('\nFINDINGS BY SEVERITY'));
 
     const severityStats = result.findings.reduce<Record<string, number>>(
       (acc, finding) => {
@@ -200,48 +210,48 @@ export const analyzeCommand = new Command('analyze')
       logger.info(colorFn(`• ${severity.toUpperCase()}: ${count}`);
 
     Object.entries(severityStats).forEach(([severity, count]) => {
-    logger.info(chalk.bold('\nDETAILED FINDINGS');
-      console.log(colorFn(`• ${severity.toUpperCase()}: ${count}`));
+      const colorFn = getSeverityColor(severity);
+      cliOutput(colorFn(`• ${severity.toUpperCase()}: ${count}`));
     });
-      logger.info(colorFn(`\n${index + 1}. ${finding.message}`);
-      logger.info(`   Severity: ${finding.severity.toUpperCase()}`;
+
+    cliOutput(chalk.bold('\nDETAILED FINDINGS'));
     result.findings.forEach((finding, index) => {
-        logger.info(`   Location: ${finding.file}${finding.line ? `:${finding.line}` : ''}`;
-      console.log(colorFn(`\n${index + 1}. ${finding.message}`));
-      console.log(`   Severity: ${finding.severity.toUpperCase()}`);
-        logger.info(`   Category: ${finding.category}`;
-        console.log(`   Location: ${finding.file}${finding.line ? `:${finding.line}` : ''}`);
+      const colorFn = getSeverityColor(finding.severity);
+      cliOutput(colorFn(`\n${index + 1}. ${finding.message}`));
+      cliOutput(`   Severity: ${finding.severity.toUpperCase()}`);
+      if (finding.file) {
+        cliOutput(`   Location: ${finding.file}${finding.line ? `:${finding.line}` : ''}`);
       }
-        logger.info(`   Recommendation: ${finding.recommendation}`;
-        console.log(`   Category: ${finding.category}`);
+      if (finding.category) {
+        cliOutput(`   Category: ${finding.category}`);
       }
       if (finding.recommendation) {
-        console.log(`   Recommendation: ${finding.recommendation}`);
+        cliOutput(`   Recommendation: ${finding.recommendation}`);
       }
     logger.info(chalk.bold('\nRECOMMENDATIONS');
   }
-      logger.info(`\n${index + 1}. ${rec.description}`;
-      logger.info(`   Priority: ${rec.priority || 'Medium'}`;
-      logger.info(`   Estimated Effort: ${rec.estimatedEffort || 'Unknown'}`;
+
+  if (result.recommendations && result.recommendations.length > 0) {
+    cliOutput(chalk.bold('\nRECOMMENDATIONS'));
     result.recommendations.forEach((rec, index) => {
-        logger.info(`   Benefits: ${rec.benefits}`;
-      console.log(`   Priority: ${rec.priority || 'Medium'}`);
-      console.log(`   Estimated Effort: ${rec.estimatedEffort || 'Unknown'}`);
+      cliOutput(`\n${index + 1}. ${rec.description}`);
+      cliOutput(`   Priority: ${rec.priority || 'Medium'}`);
+      cliOutput(`   Estimated Effort: ${rec.estimatedEffort || 'Unknown'}`);
       if (rec.benefits) {
-        console.log(`   Benefits: ${rec.benefits}`);
+        cliOutput(`   Benefits: ${rec.benefits}`);
       }
     logger.info(chalk.bold('\nMETRICS');
   }
       logger.info(`• ${key}: ${value}`;
   if (result.metrics) {
-    console.log(chalk.bold('\nMETRICS'));
+    cliOutput(chalk.bold('\nMETRICS'));
     Object.entries(result.metrics).forEach(([key, value]) => {
-  logger.info('\n' + '='.repeat(60);
-  logger.info(chalk.green('Report generated successfully');
+      cliOutput(`• ${key}: ${value}`);
+    });
   }
 
-  console.log('\n' + '='.repeat(60));
-  console.log(chalk.green('Report generated successfully'));
+  cliOutput('\n' + '='.repeat(60));
+  cliOutput(chalk.green('Report generated successfully'));
 }
 
 function getSeverityColor(severity: string): (text: string) => string {

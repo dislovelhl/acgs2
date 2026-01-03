@@ -13,32 +13,22 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import ORJSONResponse
 from pydantic import BaseModel, Field
 from shared.config import settings
-from shared.logging import (
-    create_correlation_middleware,
-    init_service_logging,
-    log_error,
+from shared.logging_config import (
+    configure_logging,
+    get_logger,
+    instrument_fastapi,
+    setup_opentelemetry,
 )
-from shared.metrics import (
-    HTTP_REQUEST_DURATION,
-    HTTP_REQUESTS_TOTAL,
-    create_metrics_endpoint,
-    set_service_info,
-    track_request_metrics,
-)
-from shared.otel_config import init_otel
-from shared.security.auth import (
-    AuthenticationMiddleware,
-    UserClaims,
-    get_current_user_optional,
-)
-from shared.security.rate_limiter import (
-    add_rate_limit_headers,
-    create_rate_limit_middleware,
-)
-from starlette.middleware.gzip import GZipMiddleware
+from shared.middleware.correlation_id import add_correlation_id_middleware
 
-# Initialize structured logging
-logger = init_service_logging("api-gateway")
+# Service name for logging and tracing
+SERVICE_NAME = "api_gateway"
+
+# Configure structured logging (MUST be called before any logging)
+configure_logging(service_name=SERVICE_NAME)
+
+# Get structured logger
+logger = get_logger(__name__)
 
 app = FastAPI(
     title="ACGS-2 API Gateway",
@@ -47,8 +37,12 @@ app = FastAPI(
     default_response_class=ORJSONResponse,
 )
 
-# Initialize OTel tracing
-init_otel("api-gateway", app=app, export_to_console=settings.debug)
+# Initialize OpenTelemetry for distributed tracing
+setup_opentelemetry(service_name=SERVICE_NAME)
+instrument_fastapi(app)
+
+# Add correlation ID middleware (MUST be before other middleware for proper context)
+add_correlation_id_middleware(app, service_name=SERVICE_NAME)
 
 # Add CORS middleware
 app.add_middleware(
@@ -157,7 +151,7 @@ async def submit_feedback(
         # Save feedback asynchronously
         background_tasks.add_task(save_feedback_to_file, feedback_record)
 
-        logger.info(f"Feedback submitted: {feedback_id} - {feedback.category}")
+        logger.info("feedback_submitted", feedback_id=feedback_id, category=feedback.category)
 
         return FeedbackResponse(
             feedback_id=feedback_id,
@@ -167,11 +161,11 @@ async def submit_feedback(
         )
 
     except Exception as e:
-        log_error(
-            logger,
-            e,
-            context={"operation": "feedback_submission", "user_id": feedback.user_id},
-            category=feedback.category,
+        logger.error(
+            "feedback_processing_failed",
+            error_type=type(e).__name__,
+            error_message=str(e),
+            exc_info=True,
         )
         raise HTTPException(status_code=500, detail="Failed to process feedback") from e
 
@@ -222,7 +216,12 @@ async def get_feedback_stats(user: UserClaims = Depends(get_current_user_optiona
         }
 
     except Exception as e:
-        logger.error(f"Error getting feedback stats: {e}")
+        logger.error(
+            "feedback_stats_retrieval_failed",
+            error_type=type(e).__name__,
+            error_message=str(e),
+            exc_info=True,
+        )
         raise HTTPException(status_code=500, detail="Failed to retrieve feedback statistics") from e
 
 
@@ -245,8 +244,7 @@ async def list_services():
                     service_info["health"] = (
                         "healthy" if response.status_code == 200 else "unhealthy"
                     )
-            except (httpx.RequestError, httpx.TimeoutException, Exception) as e:
-                logger.warning(f"Health check failed for {service_name}: {e}")
+            except Exception:
                 service_info["health"] = "unreachable"
 
     return services
@@ -296,25 +294,22 @@ async def proxy_to_agent_bus(request: Request, path: str):
             )
 
     except httpx.RequestError as e:
-        logger.error(f"Request error: {e}")
-        status_code = 502
+        logger.error(
+            "proxy_request_failed",
+            target_url=target_url,
+            error_type=type(e).__name__,
+            error_message=str(e),
+        )
         raise HTTPException(status_code=502, detail="Service unavailable") from e
     except Exception as e:
-        logger.error(f"Unexpected error: {e}")
-        status_code = 500
+        logger.error(
+            "proxy_unexpected_error",
+            target_url=target_url,
+            error_type=type(e).__name__,
+            error_message=str(e),
+            exc_info=True,
+        )
         raise HTTPException(status_code=500, detail="Internal server error") from e
-    finally:
-        # Track proxy request metrics
-        duration = time.perf_counter() - start_time
-        HTTP_REQUEST_DURATION.labels(
-            method=request.method, endpoint=f"/proxy/{path}", service="api-gateway"
-        ).observe(duration)
-        HTTP_REQUESTS_TOTAL.labels(
-            method=request.method,
-            endpoint=f"/proxy/{path}",
-            service="api-gateway",
-            status=str(status_code),
-        ).inc()
 
 
 async def save_feedback_to_file(feedback_record: dict):
@@ -326,9 +321,15 @@ async def save_feedback_to_file(feedback_record: dict):
         with open(file_path, "w") as f:
             json.dump(feedback_record, f, indent=2)
 
-        logger.info(f"Feedback saved: {feedback_id}")
+        logger.info("feedback_saved", feedback_id=feedback_id)
     except Exception as e:
-        logger.error(f"Error saving feedback {feedback_record.get('feedback_id')}: {e}")
+        logger.error(
+            "feedback_save_failed",
+            feedback_id=feedback_record.get("feedback_id"),
+            error_type=type(e).__name__,
+            error_message=str(e),
+            exc_info=True,
+        )
 
 
 if __name__ == "__main__":

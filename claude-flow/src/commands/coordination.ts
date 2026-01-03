@@ -2,10 +2,10 @@ import { Command } from 'commander';
 import chalk from 'chalk';
 import ora from 'ora';
 import { listCoordinationTasks, executeCoordinationTask, getCoordinationStatus, generateCoordinationReport } from '../services/coordinationService';
-import { getLogger } from '../../../../../sdk/typescript/src/utils/logger';
-const logger = getLogger('coordination');
+import { getLogger, cliOutput } from '../utils/logging_config';
 
-
+// Initialize logger for this module
+const logger = getLogger('commands/coordination');
 
 export const coordinationCommand = new Command('coordination')
   .description('Manage ACGS-2 coordination tasks and actionable recommendations');
@@ -49,21 +49,26 @@ const listCommand = new Command('list')
       // Validate filters if provided
       if (options.priority && !validatePriority(options.priority)) {
         spinner.fail(chalk.red(`❌ Invalid priority filter: ${options.priority}`));
-        console.log(chalk.yellow(`\n📋 Valid priorities: ${VALID_PRIORITIES.join(', ')}`));
+        logger.warn('invalid_priority_filter', { priority: options.priority });
+        cliOutput(chalk.yellow(`\n📋 Valid priorities: ${VALID_PRIORITIES.join(', ')}`));
         process.exit(1);
         logger.info(chalk.yellow(`\n📋 Valid agent types: ${VALID_AGENT_TYPES.join(', ')}`);
 
       if (options.agentType && !validateAgentType(options.agentType)) {
         spinner.fail(chalk.red(`❌ Invalid agent type filter: ${options.agentType}`));
-        console.log(chalk.yellow(`\n📋 Valid agent types: ${VALID_AGENT_TYPES.join(', ')}`));
+        logger.warn('invalid_agent_type_filter', { agentType: options.agentType });
+        cliOutput(chalk.yellow(`\n📋 Valid agent types: ${VALID_AGENT_TYPES.join(', ')}`));
         process.exit(1);
         logger.info(chalk.yellow(`\n📋 Valid statuses: ${VALID_STATUSES.join(', ')}`);
 
       if (options.status && !validateStatus(options.status)) {
         spinner.fail(chalk.red(`❌ Invalid status filter: ${options.status}`));
-        console.log(chalk.yellow(`\n📋 Valid statuses: ${VALID_STATUSES.join(', ')}`));
+        logger.warn('invalid_status_filter', { status: options.status });
+        cliOutput(chalk.yellow(`\n📋 Valid statuses: ${VALID_STATUSES.join(', ')}`));
         process.exit(1);
       }
+
+      logger.info('list_coordination_tasks', { priority: options.priority, agentType: options.agentType, status: options.status });
 
       const tasks = await listCoordinationTasks({
         priority: options.priority,
@@ -73,10 +78,12 @@ const listCommand = new Command('list')
 
       if (!tasks || tasks.length === 0) {
         spinner.warn(chalk.yellow(`⚠️  No coordination tasks found matching criteria`));
+        logger.info('no_tasks_found', { filters: options });
         return;
       }
 
       spinner.succeed(chalk.green(`✅ Found ${tasks.length} coordination task${tasks.length !== 1 ? 's' : ''}`));
+      logger.info('tasks_found', { count: tasks.length });
 
       // Group tasks by priority
       const criticalTasks = tasks.filter(t => t.priority === 'critical');
@@ -87,25 +94,26 @@ const listCommand = new Command('list')
       // Display tasks by priority
       displayTasksByPriority('CRITICAL', criticalTasks, '🚨');
       displayTasksByPriority('HIGH', highTasks, '⚠️');
-      logger.info(chalk.blue(`\n📊 Summary:`);
-      logger.info(chalk.gray(`   Total Tasks: ${tasks.length}`);
-      logger.info(chalk.gray(`   Critical: ${criticalTasks.length}`);
-      logger.info(chalk.gray(`   High: ${highTasks.length}`);
-      logger.info(chalk.gray(`   Medium: ${mediumTasks.length}`);
-      logger.info(chalk.gray(`   Low: ${lowTasks.length}`);
-      console.log(chalk.gray(`   Critical: ${criticalTasks.length}`));
-      console.log(chalk.gray(`   High: ${highTasks.length}`));
-      console.log(chalk.gray(`   Medium: ${mediumTasks.length}`));
-      console.log(chalk.gray(`   Low: ${lowTasks.length}`));
+      displayTasksByPriority('MEDIUM', mediumTasks, '📋');
+      displayTasksByPriority('LOW', lowTasks, '📝');
+
+      // Summary
+      cliOutput(chalk.blue(`\n📊 Summary:`));
+      cliOutput(chalk.gray(`   Total Tasks: ${tasks.length}`));
+      cliOutput(chalk.gray(`   Critical: ${criticalTasks.length}`));
+      cliOutput(chalk.gray(`   High: ${highTasks.length}`));
+      cliOutput(chalk.gray(`   Medium: ${mediumTasks.length}`));
+      cliOutput(chalk.gray(`   Low: ${lowTasks.length}`));
 
     } catch (error) {
         logger.info(chalk.yellow(`\n💡 Make sure Python 3 is installed and available in PATH`);
       spinner.fail(chalk.red(`❌ Failed to list coordination tasks: ${errorMessage}`));
-        logger.info(chalk.yellow(`\n💡 Make sure the ACGS-2 core is properly installed`);
+      logger.error('list_tasks_failed', { error: errorMessage });
+
       if (errorMessage.includes('python3')) {
-        console.log(chalk.yellow(`\n💡 Make sure Python 3 is installed and available in PATH`));
+        cliOutput(chalk.yellow(`\n💡 Make sure Python 3 is installed and available in PATH`));
       } else if (errorMessage.includes('ACGS-2')) {
-        console.log(chalk.yellow(`\n💡 Make sure the ACGS-2 core is properly installed`));
+        cliOutput(chalk.yellow(`\n💡 Make sure the ACGS-2 core is properly installed`));
       }
     }
   });
@@ -120,19 +128,19 @@ function displayTasksByPriority(title: string, tasks: any[], emoji: string) {
     'LOW': chalk.gray
   };
 
-  console.log(chalk.blue(`\n${emoji} ${title} PRIORITY TASKS:`));
+  cliOutput(chalk.blue(`\n${emoji} ${title} PRIORITY TASKS:`));
 
-    logger.info(color(`${index + 1}. ${task.id}: ${task.task}`);
-    logger.info(chalk.gray(`   Agent: ${task.agent_type} (${task.skills.join(', ')})`);
-    logger.info(chalk.gray(`   Effort: ${task.estimated_effort}`);
-    logger.info(chalk.gray(`   Impact: ${task.impact}`);
-    logger.info(chalk.gray(`   Status: ${statusEmoji} ${task.status}`);
-    logger.info(chalk.gray(`   → ${task.description}`);
-    console.log(chalk.gray(`   Effort: ${task.estimated_effort}`));
-    console.log(chalk.gray(`   Impact: ${task.impact}`));
-    console.log(chalk.gray(`   Status: ${statusEmoji} ${task.status}`));
-    console.log(chalk.gray(`   → ${task.description}`));
-    console.log();
+  tasks.forEach((task, index) => {
+    const color = priorityColors[title as keyof typeof priorityColors] || chalk.gray;
+    const statusEmoji = getStatusEmoji(task.status);
+
+    cliOutput(color(`${index + 1}. ${task.id}: ${task.task}`));
+    cliOutput(chalk.gray(`   Agent: ${task.agent_type} (${task.skills.join(', ')})`));
+    cliOutput(chalk.gray(`   Effort: ${task.estimated_effort}`));
+    cliOutput(chalk.gray(`   Impact: ${task.impact}`));
+    cliOutput(chalk.gray(`   Status: ${statusEmoji} ${task.status}`));
+    cliOutput(chalk.gray(`   → ${task.description}`));
+    cliOutput('');
   });
 }
 
@@ -156,6 +164,8 @@ const executeCommand = new Command('execute')
     const spinner = ora(`${options.dryRun ? 'Analyzing' : 'Executing'} coordination task ${taskId}...`).start();
 
     try {
+      logger.info('execute_task_started', { taskId, dryRun: options.dryRun, force: options.force });
+
       const result = await executeCoordinationTask({
         taskId,
         dryRun: options.dryRun,
@@ -166,33 +176,35 @@ const executeCommand = new Command('execute')
       if (result.success) {
         if (options.dryRun) {
           spinner.succeed(chalk.green(`✅ Dry run completed for task ${taskId}`));
-        logger.info(chalk.blue(`\n📋 Execution Details:`);
-        logger.info(chalk.gray(`   Task ID: ${result.taskId}`);
-        logger.info(chalk.gray(`   Status: ${result.status}`);
+        } else {
+          spinner.succeed(chalk.green(`✅ Task ${taskId} executed successfully`));
+        }
+        logger.info('execute_task_completed', { taskId, status: result.status });
 
-          logger.info(chalk.gray(`   Execution Time: ${result.executionTime}`);
-        console.log(chalk.gray(`   Task ID: ${result.taskId}`));
-        console.log(chalk.gray(`   Status: ${result.status}`));
-          logger.info(chalk.gray(`   Agent Assigned: ${result.agentAssigned}`);
-          console.log(chalk.gray(`   Execution Time: ${result.executionTime}`));
+        cliOutput(chalk.blue(`\n📋 Execution Details:`));
+        cliOutput(chalk.gray(`   Task ID: ${result.taskId}`));
+        cliOutput(chalk.gray(`   Status: ${result.status}`));
+        if (result.executionTime) {
+          cliOutput(chalk.gray(`   Execution Time: ${result.executionTime}`));
         }
         if (result.agentAssigned) {
-          logger.info(chalk.yellow(`\n🔍 Dry Run Results:`);
-          logger.info(chalk.gray(`   ${result.details || 'No additional details available'}`);
+          cliOutput(chalk.gray(`   Agent Assigned: ${result.agentAssigned}`));
+        }
 
-          logger.info(chalk.green(`\n🚀 Task completed successfully!`);
-          console.log(chalk.yellow(`\n🔍 Dry Run Results:`));
-          console.log(chalk.gray(`   ${result.details || 'No additional details available'}`));
+        if (options.dryRun) {
+          cliOutput(chalk.yellow(`\n🔍 Dry Run Results:`));
+          cliOutput(chalk.gray(`   ${result.details || 'No additional details available'}`));
         } else {
-          console.log(chalk.green(`\n🚀 Task completed successfully!`));
-        logger.info(chalk.red(`\nError: ${result.error}`);
+          cliOutput(chalk.green(`\n🚀 Task completed successfully!`));
+        }
 
       } else {
-          logger.info(chalk.yellow(`\n💡 Details: ${result.details}`);
-        console.log(chalk.red(`\nError: ${result.error}`));
+        spinner.fail(chalk.red(`❌ Failed to execute task ${taskId}`));
+        logger.error('execute_task_failed', { taskId, error: result.error });
+        cliOutput(chalk.red(`\nError: ${result.error}`));
 
         if (result.details) {
-          console.log(chalk.yellow(`\n💡 Details: ${result.details}`));
+          cliOutput(chalk.yellow(`\n💡 Details: ${result.details}`));
         }
 
         process.exit(1);
@@ -200,11 +212,12 @@ const executeCommand = new Command('execute')
     } catch (error) {
         logger.info(chalk.yellow(`\n💡 Make sure Python 3 is installed and available in PATH`);
       spinner.fail(chalk.red(`❌ Error executing coordination task: ${errorMessage}`));
-        logger.info(chalk.yellow(`\n💡 Make sure the ACGS-2 core is properly installed`);
+      logger.error('execute_task_exception', { taskId, error: errorMessage });
+
       if (errorMessage.includes('python3')) {
-        console.log(chalk.yellow(`\n💡 Make sure Python 3 is installed and available in PATH`));
+        cliOutput(chalk.yellow(`\n💡 Make sure Python 3 is installed and available in PATH`));
       } else if (errorMessage.includes('ACGS-2')) {
-        console.log(chalk.yellow(`\n💡 Make sure the ACGS-2 core is properly installed`));
+        cliOutput(chalk.yellow(`\n💡 Make sure the ACGS-2 core is properly installed`));
       }
 
       process.exit(1);
@@ -220,6 +233,8 @@ const statusCommand = new Command('status')
     const spinner = ora('Checking coordination status...').start();
 
     try {
+      logger.info('check_status_started', { taskId: options.taskId });
+
       const status = await getCoordinationStatus({
         taskId: options.taskId,
         verbose: options.verbose,
@@ -228,10 +243,12 @@ const statusCommand = new Command('status')
 
       if (!status || (Array.isArray(status) && status.length === 0)) {
         spinner.warn(chalk.yellow(`⚠️  No coordination tasks found`));
+        logger.info('no_status_found');
         return;
       }
 
       spinner.succeed(chalk.green(`✅ Coordination status retrieved`));
+      logger.info('status_retrieved', { isArray: Array.isArray(status) });
 
       if (Array.isArray(status)) {
         // Multiple tasks status
@@ -244,76 +261,77 @@ const statusCommand = new Command('status')
     } catch (error) {
         logger.info(chalk.yellow(`\n💡 Make sure Python 3 is installed and available in PATH`);
       spinner.fail(chalk.red(`❌ Failed to get coordination status: ${errorMessage}`));
-        logger.info(chalk.yellow(`\n💡 Make sure the ACGS-2 core is properly installed`);
+      logger.error('check_status_failed', { error: errorMessage });
+
       if (errorMessage.includes('python3')) {
-        console.log(chalk.yellow(`\n💡 Make sure Python 3 is installed and available in PATH`));
+        cliOutput(chalk.yellow(`\n💡 Make sure Python 3 is installed and available in PATH`));
       } else if (errorMessage.includes('ACGS-2')) {
-        console.log(chalk.yellow(`\n💡 Make sure the ACGS-2 core is properly installed`));
+        cliOutput(chalk.yellow(`\n💡 Make sure the ACGS-2 core is properly installed`));
       }
   logger.info(chalk.blue(`\n📊 Coordination Tasks Status:`);
   });
 
 function displayMultipleTasksStatus(tasks: any[], verbose: boolean, showProgress: boolean) {
-  console.log(chalk.blue(`\n📊 Coordination Tasks Status:`));
+  cliOutput(chalk.blue(`\n📊 Coordination Tasks Status:`));
 
   const statusCounts = tasks.reduce((acc, task) => {
   logger.info(chalk.gray(`\n📈 Overview:`);
   logger.info(chalk.gray(`   Total Tasks: ${tasks.length}`);
   }, {});
 
-    logger.info(chalk.gray(`   ${emoji} ${status}: ${count}`);
-  console.log(chalk.gray(`   Total Tasks: ${tasks.length}`));
+  cliOutput(chalk.gray(`\n📈 Overview:`));
+  cliOutput(chalk.gray(`   Total Tasks: ${tasks.length}`));
   Object.entries(statusCounts).forEach(([status, count]) => {
     const emoji = getStatusEmoji(status);
-    console.log(chalk.gray(`   ${emoji} ${status}: ${count}`));
+    cliOutput(chalk.gray(`   ${emoji} ${status}: ${count}`));
   });
     logger.info(chalk.gray(`   📊 Progress: ${progress}% (${completed}/${tasks.length} completed)`);
   if (showProgress) {
     const completed = statusCounts.completed || 0;
     const progress = Math.round((completed / tasks.length) * 100);
-    logger.info(chalk.blue(`\n📋 Detailed Status:`);
+    cliOutput(chalk.gray(`   📊 Progress: ${progress}% (${completed}/${tasks.length} completed)`));
   }
 
   if (verbose) {
-    console.log(chalk.blue(`\n📋 Detailed Status:`));
-      logger.info(color(`${index + 1}. ${task.id}: ${statusEmoji} ${task.status}`);
+    cliOutput(chalk.blue(`\n📋 Detailed Status:`));
+    tasks.forEach((task, index) => {
       const statusEmoji = getStatusEmoji(task.status);
         logger.info(chalk.gray(`   Last Updated: ${new Date(task.lastUpdated).toLocaleString()}`);
 
-      console.log(color(`${index + 1}. ${task.id}: ${statusEmoji} ${task.status}`));
-        logger.info(chalk.gray(`   Progress: ${task.progress}%`);
-        console.log(chalk.gray(`   Last Updated: ${new Date(task.lastUpdated).toLocaleString()}`));
+      cliOutput(color(`${index + 1}. ${task.id}: ${statusEmoji} ${task.status}`));
+      if (task.lastUpdated) {
+        cliOutput(chalk.gray(`   Last Updated: ${new Date(task.lastUpdated).toLocaleString()}`));
       }
       if (task.progress) {
-        console.log(chalk.gray(`   Progress: ${task.progress}%`));
+        cliOutput(chalk.gray(`   Progress: ${task.progress}%`));
       }
     });
   logger.info(chalk.blue(`\n📋 Task Status:`);
 }
 
 function displaySingleTaskStatus(task: any, verbose: boolean) {
-  console.log(chalk.blue(`\n📋 Task Status:`));
-  logger.info(color(`Task ID: ${task.id}`);
-  logger.info(color(`Status: ${statusEmoji} ${task.status}`);
-  logger.info(chalk.gray(`Description: ${task.description}`);
+  cliOutput(chalk.blue(`\n📋 Task Status:`));
 
-  console.log(color(`Task ID: ${task.id}`));
-    logger.info(chalk.gray(`Last Updated: ${new Date(task.lastUpdated).toLocaleString()}`);
-  console.log(chalk.gray(`Description: ${task.description}`));
+  const statusEmoji = getStatusEmoji(task.status);
+  const color = getStatusColor(task.status);
+
+  cliOutput(color(`Task ID: ${task.id}`));
+  cliOutput(color(`Status: ${statusEmoji} ${task.status}`));
+  cliOutput(chalk.gray(`Description: ${task.description}`));
 
   if (task.lastUpdated) {
-    console.log(chalk.gray(`Last Updated: ${new Date(task.lastUpdated).toLocaleString()}`));
-    logger.info(chalk.gray(`Progress: ${progressBar} ${task.progress}%`);
+    cliOutput(chalk.gray(`Last Updated: ${new Date(task.lastUpdated).toLocaleString()}`));
+  }
 
   if (task.progress !== undefined) {
     const progressBar = createProgressBar(task.progress);
-    logger.info(chalk.blue(`\n📊 Detailed Information:`);
+    cliOutput(chalk.gray(`Progress: ${progressBar} ${task.progress}%`));
   }
       logger.info(chalk.gray(`   ${key}: ${value}`);
   if (verbose && task.details) {
-    console.log(chalk.blue(`\n📊 Detailed Information:`));
+    cliOutput(chalk.blue(`\n📊 Detailed Information:`));
     Object.entries(task.details).forEach(([key, value]) => {
-      console.log(chalk.gray(`   ${key}: ${value}`));
+      cliOutput(chalk.gray(`   ${key}: ${value}`));
     });
   }
 }
@@ -347,7 +365,8 @@ const reportCommand = new Command('report')
       // Validate format
       if (!validateFormat(options.format)) {
         spinner.fail(chalk.red(`❌ Invalid format: ${options.format}`));
-        console.log(chalk.yellow(`\n📋 Valid formats: ${VALID_FORMATS.join(', ')}`));
+        logger.warn('invalid_report_format', { format: options.format });
+        cliOutput(chalk.yellow(`\n📋 Valid formats: ${VALID_FORMATS.join(', ')}`));
         process.exit(1);
       }
 
@@ -355,8 +374,11 @@ const reportCommand = new Command('report')
       const period = parseInt(options.period, 10);
       if (isNaN(period) || period < 1) {
         spinner.fail(chalk.red(`❌ Invalid period: ${options.period}. Must be a positive number.`));
+        logger.warn('invalid_report_period', { period: options.period });
         process.exit(1);
       }
+
+      logger.info('generate_report_started', { format: options.format, period, includeCompleted: options.includeCompleted });
 
       const report = await generateCoordinationReport({
         format: options.format,
@@ -365,23 +387,25 @@ const reportCommand = new Command('report')
       });
         logger.info(JSON.stringify(report, null, 2);
       spinner.succeed(chalk.green(`✅ Coordination report generated`));
-        logger.info(generateMarkdownReport(report);
+      logger.info('report_generated', { format: options.format });
+
       if (options.format === 'json') {
-        logger.info(generateTextReport(report);
+        cliOutput(JSON.stringify(report, null, 2));
       } else if (options.format === 'markdown') {
-        console.log(generateMarkdownReport(report));
+        cliOutput(generateMarkdownReport(report));
       } else {
-        console.log(generateTextReport(report));
+        cliOutput(generateTextReport(report));
       }
 
     } catch (error) {
         logger.info(chalk.yellow(`\n💡 Make sure Python 3 is installed and available in PATH`);
       spinner.fail(chalk.red(`❌ Failed to generate coordination report: ${errorMessage}`));
-        logger.info(chalk.yellow(`\n💡 Make sure the ACGS-2 core is properly installed`);
+      logger.error('generate_report_failed', { error: errorMessage });
+
       if (errorMessage.includes('python3')) {
-        console.log(chalk.yellow(`\n💡 Make sure Python 3 is installed and available in PATH`));
+        cliOutput(chalk.yellow(`\n💡 Make sure Python 3 is installed and available in PATH`));
       } else if (errorMessage.includes('ACGS-2')) {
-        console.log(chalk.yellow(`\n💡 Make sure the ACGS-2 core is properly installed`));
+        cliOutput(chalk.yellow(`\n💡 Make sure the ACGS-2 core is properly installed`));
       }
     }
   });

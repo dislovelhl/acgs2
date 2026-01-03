@@ -1,8 +1,8 @@
 /**
- * ACGS-2 Neural MCP Structured Logging Configuration
+ * ACGS-2 Claude Flow Structured Logging Configuration
  *
  * Enterprise-grade structured logging with JSON formatting, correlation ID support,
- * and RFC 5424 severity levels for MCP server operations.
+ * and RFC 5424 severity levels for CLI operations.
  *
  * This module provides:
  *   - JSON-formatted log output for enterprise observability (Splunk, ELK, Datadog)
@@ -12,17 +12,17 @@
  *   - Convenience functions for structured logging
  *
  * Usage:
- *   import { getLogger, configureLogging, LogLevel } from './utils/logger.js';
+ *   import { getLogger, configureLogging, LogLevel } from './utils/logging_config';
  *
  *   // Configure logging at startup (optional - uses defaults)
- *   configureLogging({ serviceName: 'acgs2-neural-mcp', logLevel: 'info' });
+ *   configureLogging({ serviceName: 'claude-flow', logLevel: 'info' });
  *
  *   // Get a logger instance
- *   const logger = getLogger('neural/mapper');
- *   logger.info('domain_loaded', { domainId: 'abc123', nodeCount: 15 });
+ *   const logger = getLogger('commands/agent');
+ *   logger.info('agent_spawned', { agentId: 'abc123', type: 'coder' });
  *
  * Example output (JSON format):
- *   {"timestamp":"2024-01-02T15:00:00.000Z","level":"info","service":"acgs2-neural-mcp","logger":"neural/mapper","message":"domain_loaded","domainId":"abc123","nodeCount":15}
+ *   {"timestamp":"2024-01-02T15:00:00.000Z","level":"info","service":"claude-flow","logger":"commands/agent","message":"agent_spawned","agentId":"abc123","type":"coder"}
  */
 
 import winston from 'winston';
@@ -40,7 +40,7 @@ export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
  * Configuration options for logging setup
  */
 export interface LoggingConfig {
-  /** Service name for log identification (default: 'acgs2-neural-mcp') */
+  /** Service name for log identification (default: 'claude-flow') */
   serviceName?: string;
   /** Minimum log level to output (default: 'info') */
   logLevel?: LogLevel;
@@ -68,7 +68,7 @@ export interface StructuredLogger {
 // ============================================================================
 
 let _configured = false;
-let _serviceName = 'acgs2-neural-mcp';
+let _serviceName = 'claude-flow';
 let _baseLogger: winston.Logger | null = null;
 let _correlationId: string | null = null;
 
@@ -90,7 +90,7 @@ const _loggerCache = new Map<string, StructuredLogger>();
  * @example
  * // Configure with custom settings
  * configureLogging({
- *   serviceName: 'acgs2-neural-mcp',
+ *   serviceName: 'claude-flow',
  *   logLevel: 'debug',
  *   jsonFormat: true
  * });
@@ -101,7 +101,7 @@ export function configureLogging(config: LoggingConfig = {}): void {
   }
 
   const {
-    serviceName = process.env.SERVICE_NAME || 'acgs2-neural-mcp',
+    serviceName = process.env.SERVICE_NAME || 'claude-flow',
     logLevel = (process.env.LOG_LEVEL?.toLowerCase() as LogLevel) || 'info',
     jsonFormat = process.env.LOG_FORMAT !== 'console',
     timestamps = true,
@@ -174,8 +174,8 @@ export function configureLogging(config: LoggingConfig = {}): void {
  * @returns Configured logger instance
  *
  * @example
- * const logger = getLogger('neural/mapper');
- * logger.info('domain_loaded', { domainId: 'abc123', nodeCount: 15 });
+ * const logger = getLogger('commands/agent');
+ * logger.info('agent_spawned', { agentId: 'abc123', type: 'coder' });
  */
 export function getLogger(name: string): StructuredLogger {
   // Auto-configure if not done yet
@@ -246,13 +246,13 @@ function createLoggerWrapper(winstonLogger: winston.Logger): StructuredLogger {
 /**
  * Bind a correlation ID to the current context.
  *
- * For MCP operations, this can be used to track a specific request execution.
+ * For CLI operations, this can be used to track a specific command execution.
  *
  * @param correlationId - Unique identifier for the operation
  *
  * @example
  * bindCorrelationId(crypto.randomUUID());
- * logger.info('tool_called', { tool: 'neural_train' });
+ * logger.info('command_started', { command: 'agent spawn' });
  */
 export function bindCorrelationId(correlationId: string): void {
   _correlationId = correlationId;
@@ -288,9 +288,9 @@ export function clearCorrelationId(): void {
  *
  * @example
  * try {
- *   await mapper.train(data);
+ *   await spawnAgent(options);
  * } catch (error) {
- *   logError(logger, 'training_failed', error, { epochs: 100 });
+ *   logError(logger, 'agent_spawn_failed', error, { agentType: 'coder' });
  * }
  */
 export function logError(
@@ -322,7 +322,7 @@ export function logError(
  * @param context - Additional context fields
  *
  * @example
- * logSuccess(logger, 'domains_loaded', { nodeCount: 15, edgeCount: 20 });
+ * logSuccess(logger, 'agent_spawned', { agentId: 'abc123', type: 'coder' });
  */
 export function logSuccess(logger: StructuredLogger, event: string, context?: Record<string, unknown>): void {
   logger.info(event, { success: true, ...context });
@@ -336,81 +336,81 @@ export function logSuccess(logger: StructuredLogger, event: string, context?: Re
  * @param context - Additional context fields
  *
  * @example
- * logWarning(logger, 'low_accuracy', { accuracy: 0.65, threshold: 0.8 });
+ * logWarning(logger, 'rate_limit_approaching', { currentRate: 95, limit: 100 });
  */
 export function logWarning(logger: StructuredLogger, event: string, context?: Record<string, unknown>): void {
   logger.warn(event, context);
 }
 
 // ============================================================================
-// MCP-Specific Utilities
+// CLI-Specific Utilities
 // ============================================================================
 
 /**
- * Create a logger for MCP tool execution.
+ * Create a logger for CLI command execution.
  *
- * Automatically binds a correlation ID for the request session.
+ * Automatically binds a correlation ID for the command session.
  *
- * @param toolName - Name of the MCP tool being executed
- * @returns Logger configured for the tool
+ * @param commandName - Name of the CLI command being executed
+ * @returns Logger configured for the command
  *
  * @example
- * const logger = createToolLogger('neural_train');
- * logger.info('tool_started');
- * // ... execute tool
- * logger.info('tool_completed', { duration_ms: 150 });
+ * const logger = createCommandLogger('agent spawn');
+ * logger.info('command_started');
+ * // ... execute command
+ * logger.info('command_completed', { duration_ms: 150 });
  */
-export function createToolLogger(toolName: string): StructuredLogger {
-  // Generate correlation ID for this tool execution
-  const correlationId = `tool-${Date.now().toString(36)}-${Math.random().toString(36).substr(2, 9)}`;
+export function createCommandLogger(commandName: string): StructuredLogger {
+  // Generate correlation ID for this command execution
+  const correlationId = `cmd-${Date.now().toString(36)}-${Math.random().toString(36).substr(2, 9)}`;
   bindCorrelationId(correlationId);
 
-  const logger = getLogger(`tools/${toolName.replace(/\s+/g, '-')}`);
-  return logger.child({ tool: toolName, correlation_id: correlationId });
+  const logger = getLogger(`command/${commandName.replace(/\s+/g, '-')}`);
+  return logger.child({ command: commandName, correlation_id: correlationId });
 }
 
 /**
- * Log the start of an MCP tool call.
+ * Log the start of a CLI command.
  *
  * @param logger - Logger instance
- * @param args - Tool arguments
+ * @param args - Command arguments
  *
  * @example
- * logToolStart(logger, { epochs: 100, learningRate: 0.001 });
+ * logCommandStart(logger, { type: 'coder', name: 'my-agent' });
  */
-export function logToolStart(logger: StructuredLogger, args?: Record<string, unknown>): void {
-  logger.info('tool_started', { args });
+export function logCommandStart(logger: StructuredLogger, args?: Record<string, unknown>): void {
+  logger.info('command_started', { args });
 }
 
 /**
- * Log the completion of an MCP tool call.
+ * Log the completion of a CLI command.
  *
  * @param logger - Logger instance
- * @param durationMs - Duration of tool execution in milliseconds
+ * @param durationMs - Duration of command execution in milliseconds
  * @param result - Result context
  *
  * @example
- * logToolComplete(logger, 150, { accuracy: 0.95 });
+ * logCommandComplete(logger, 150, { agentId: 'abc123' });
  */
-export function logToolComplete(
+export function logCommandComplete(
   logger: StructuredLogger,
   durationMs: number,
   result?: Record<string, unknown>
 ): void {
-  logger.info('tool_completed', { duration_ms: durationMs, success: true, ...result });
+  logger.info('command_completed', { duration_ms: durationMs, success: true, ...result });
 }
 
 /**
- * Log the failure of an MCP tool call.
+ * Log the failure of a CLI command.
  *
  * @param logger - Logger instance
- * @param durationMs - Duration of tool execution in milliseconds
+ * @param durationMs - Duration of command execution in milliseconds
  * @param error - Error that caused the failure
  *
  * @example
- * logToolFailure(logger, 50, new Error('Invalid domain configuration'));
+ * logCommandFailure(logger, 50, new Error('Connection refused'));
  */
-export function logToolFailure(logger: StructuredLogger, durationMs: number, error?: Error | unknown): void {
+export function logCommandFailure(logger: StructuredLogger, durationMs: number, error?: Error | unknown): void {
   const context: Record<string, unknown> = { duration_ms: durationMs, success: false };
 
   if (error instanceof Error) {
@@ -420,49 +420,36 @@ export function logToolFailure(logger: StructuredLogger, durationMs: number, err
     context.error_message = String(error);
   }
 
-  logger.error('tool_failed', context);
+  logger.error('command_failed', context);
+}
+
+// ============================================================================
+// CLI Output Utilities
+// ============================================================================
+
+/**
+ * Write formatted output to stdout for CLI display.
+ *
+ * This function is used for user-facing CLI output (formatted messages,
+ * results, help text) as opposed to structured logging events.
+ *
+ * @param message - The formatted message to display
+ *
+ * @example
+ * cliOutput(chalk.blue('Results:'));
+ * cliOutput(chalk.gray('  - Item 1'));
+ */
+export function cliOutput(message: string): void {
+  process.stdout.write(message + '\n');
 }
 
 /**
- * Create a logger for MCP server lifecycle events.
+ * Write raw output to stdout without newline (for special formatting).
  *
- * @param serverName - Name of the MCP server
- * @returns Logger configured for server events
- *
- * @example
- * const logger = createServerLogger('acgs2-neural-mcp');
- * logger.info('server_started', { version: '2.0.0' });
+ * @param message - The message to display
  */
-export function createServerLogger(serverName: string): StructuredLogger {
-  return getLogger(`server/${serverName}`);
-}
-
-/**
- * Log server startup event.
- *
- * @param logger - Logger instance
- * @param version - Server version
- * @param context - Additional context fields
- *
- * @example
- * logServerStart(logger, '2.0.0', { transport: 'stdio' });
- */
-export function logServerStart(logger: StructuredLogger, version: string, context?: Record<string, unknown>): void {
-  logger.info('server_started', { version, ...context });
-}
-
-/**
- * Log server shutdown event.
- *
- * @param logger - Logger instance
- * @param reason - Reason for shutdown
- * @param context - Additional context fields
- *
- * @example
- * logServerShutdown(logger, 'signal', { signal: 'SIGTERM' });
- */
-export function logServerShutdown(logger: StructuredLogger, reason: string, context?: Record<string, unknown>): void {
-  logger.info('server_shutdown', { reason, ...context });
+export function cliOutputRaw(message: string): void {
+  process.stdout.write(message);
 }
 
 // ============================================================================
@@ -478,11 +465,10 @@ export default {
   logError,
   logSuccess,
   logWarning,
-  createToolLogger,
-  logToolStart,
-  logToolComplete,
-  logToolFailure,
-  createServerLogger,
-  logServerStart,
-  logServerShutdown,
+  createCommandLogger,
+  logCommandStart,
+  logCommandComplete,
+  logCommandFailure,
+  cliOutput,
+  cliOutputRaw,
 };

@@ -9,15 +9,13 @@ from typing import Any, Dict, List
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from shared.logging import (
-    create_correlation_middleware,
-    init_service_logging,
+from shared.logging_config import (
+    configure_logging,
+    get_logger,
+    instrument_fastapi,
+    setup_opentelemetry,
 )
-from shared.metrics import (
-    create_metrics_endpoint,
-    set_service_info,
-    track_request_metrics,
-)
+from shared.middleware.correlation_id import add_correlation_id_middleware
 
 from ..core.audit_ledger import AuditLedger
 
@@ -28,8 +26,12 @@ except ImportError:
     # Fallback if shared not in path
     from ....shared.config import settings
 
-# Initialize structured logging
-logger = init_service_logging("audit-service")
+# Configure structured logging with JSON output and correlation ID support
+configure_logging(service_name="audit_service")
+logger = get_logger(__name__)
+
+# Initialize OpenTelemetry for distributed tracing
+setup_opentelemetry(service_name="audit_service")
 
 # Global ledger instance
 ledger = AuditLedger()
@@ -39,16 +41,16 @@ ledger = AuditLedger()
 async def lifespan(app: FastAPI):
     """Application lifespan manager"""
     # Startup
-    logger.info("Starting Audit Service")
+    logger.info("service_starting", service="audit_service")
     await ledger.start()
-    logger.info("Audit Service started")
+    logger.info("service_started", service="audit_service")
 
     yield
 
     # Shutdown
-    logger.info("Shutting down Audit Service")
+    logger.info("service_stopping", service="audit_service")
     await ledger.stop()
-    logger.info("Audit Service stopped")
+    logger.info("service_stopped", service="audit_service")
 
 
 app = FastAPI(
@@ -57,6 +59,12 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan,
 )
+
+# Instrument FastAPI with OpenTelemetry for distributed tracing
+instrument_fastapi(app)
+
+# Add correlation ID middleware (MUST be before other middleware for proper context)
+add_correlation_id_middleware(app, service_name="audit_service")
 
 # Add CORS middleware
 app.add_middleware(
@@ -123,12 +131,17 @@ async def record_validation(result: Dict[str, Any]):
             "timestamp": datetime.now(timezone.utc).isoformat(),
         }
     except Exception as e:
-        logger.error(f"Failed to record validation: {e}")
+        logger.error(
+            "validation_record_failed",
+            error_type=type(e).__name__,
+            error_message=str(e),
+            exc_info=True,
+        )
         # Improved error handling - don't leak internal details
         raise HTTPException(
             status_code=500,
             detail="Audit service error. Please contact support if the problem persists.",
-        ) from e
+        ) from None
 
 
 @app.post("/verify")

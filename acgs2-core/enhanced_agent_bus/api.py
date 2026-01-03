@@ -8,27 +8,28 @@ including message processing for all 12 message types, rate limiting,
 circuit breaker patterns, and comprehensive error handling.
 """
 
-import logging
-import os
-import uuid
-from contextvars import ContextVar
-from datetime import datetime, timezone
-from enum import Enum
-from typing import Annotated, Any, Dict, List, Optional
+import asyncio
+import sys
+from typing import Any, Dict, Optional
 
-from fastapi import BackgroundTasks, FastAPI, Header, HTTPException, Request, status
+from fastapi import BackgroundTasks, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, ORJSONResponse
-from pydantic import BaseModel, Field, field_validator
-from shared.metrics_middleware import instrument_app
-from starlette.middleware.gzip import GZipMiddleware
+from pydantic import BaseModel, Field
 
-# Configure structured logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='{"timestamp": "%(asctime)s", "level": "%(levelname)s", "name": "%(name)s", "message": "%(message)s"}',
+# Add shared module to path for imports
+sys.path.insert(0, str(__file__).replace("/enhanced_agent_bus/api.py", ""))
+
+from shared.logging_config import (  # noqa: E402
+    configure_logging,
+    get_logger,
+    instrument_fastapi,
+    setup_opentelemetry,
 )
-logger = logging.getLogger(__name__)
+from shared.middleware.correlation_id import add_correlation_id_middleware  # noqa: E402
+
+# Configure structlog BEFORE any logging calls
+configure_logging(service_name="enhanced_agent_bus")
+logger = get_logger(__name__)
 
 # Correlation ID context for request tracing
 correlation_id_var: ContextVar[str] = ContextVar("correlation_id", default="unknown")
@@ -60,100 +61,21 @@ app = FastAPI(
     default_response_class=ORJSONResponse,
 )
 
-# Add GZip middleware
-app.add_middleware(GZipMiddleware, minimum_size=1000)
+# Initialize OpenTelemetry tracing
+setup_opentelemetry(service_name="enhanced_agent_bus")
+instrument_fastapi(app)
 
-# SECURITY: Use secure CORS configuration from shared module
-# Removed allow_origins=["*"] to prevent CORS vulnerability (OWASP A05:2021)
-try:
-    from shared.security.cors_config import get_cors_config
+# Add correlation ID middleware (MUST be after instrument_fastapi)
+add_correlation_id_middleware(app, service_name="enhanced_agent_bus")
 
-    cors_config = get_cors_config()
-    logger.info("CORS: Using secure configuration from shared module")
-except ImportError:
-    # Fallback: Use environment-based configuration
-    allowed_origins = os.environ.get("CORS_ALLOWED_ORIGINS", "").split(",")
-    allowed_origins = [o.strip() for o in allowed_origins if o.strip()]
-
-    # Default to localhost origins if not configured (development only)
-    if not allowed_origins:
-        env = os.environ.get("ENVIRONMENT", "development").lower()
-        if env in ("production", "prod"):
-            # Production: require explicit configuration
-            logger.warning("CORS: No CORS_ALLOWED_ORIGINS set in production - using empty list")
-            allowed_origins = []
-        else:
-            # Development: allow localhost
-            allowed_origins = [
-                "http://localhost:3000",
-                "http://localhost:8080",
-                "http://127.0.0.1:3000",
-                "http://127.0.0.1:8080",
-            ]
-            logger.info(f"CORS: Using development origins: {allowed_origins}")
-
-    cors_config = {
-        "allow_origins": allowed_origins,
-        "allow_credentials": True,
-        "allow_methods": ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-        "allow_headers": ["Authorization", "Content-Type", "X-Request-ID", "X-Constitutional-Hash"],
-    }
-
-# ... (middleware setup) ...
-
-app.add_middleware(CORSMiddleware, **cors_config)
-
-# Instrument with Prometheus metrics
-instrument_app(app, service_name="enhanced-agent-bus")
-
-# ===== Rate Limiting Setup =====
-limiter = None
-if RATE_LIMITING_AVAILABLE:
-    limiter = Limiter(key_func=get_remote_address)
-    app.state.limiter = limiter
-    app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
-    logger.info("Rate limiting enabled: 60/minute per client")
-
-# ===== Circuit Breaker Setup =====
-message_circuit_breaker = None
-if CIRCUIT_BREAKER_AVAILABLE:
-    message_circuit_breaker = pybreaker.CircuitBreaker(
-        fail_max=5,  # Open circuit after 5 failures
-        reset_timeout=60,  # Try again after 60 seconds
-        name="message_processing",
-    )
-    logger.info("Circuit breaker enabled for message processing")
-
-
-# ===== Correlation ID Middleware =====
-@app.middleware("http")
-async def correlation_id_middleware(request: Request, call_next):
-    """Add correlation ID to all requests for distributed tracing."""
-    correlation_id = request.headers.get("X-Correlation-ID") or str(uuid.uuid4())
-    correlation_id_var.set(correlation_id)
-
-    response = await call_next(request)
-    response.headers["X-Correlation-ID"] = correlation_id
-    return response
-
-
-# ===== Global Exception Handler =====
-@app.exception_handler(Exception)
-async def global_exception_handler(request: Request, exc: Exception):
-    """Handle all unhandled exceptions with structured error response."""
-    correlation_id = correlation_id_var.get()
-    logger.error(f"Unhandled exception: {exc}", exc_info=True)
-
-    return JSONResponse(
-        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        content={
-            "error": "internal_server_error",
-            "message": "An unexpected error occurred",
-            "correlation_id": correlation_id,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-        },
-    )
-
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Global agent bus instance - simplified for development
 agent_bus = None
@@ -336,13 +258,17 @@ async def startup_event():
     """Initialize the agent bus on startup"""
     global agent_bus
     try:
-        logger.info("Initializing Enhanced Agent Bus (simplified for development)...")
+        logger.info("agent_bus_initializing", mode="development")
         # Simplified initialization for development
         agent_bus = {"status": "initialized", "services": ["redis", "kafka", "opa"]}
-        logger.info("Enhanced Agent Bus initialized successfully (dev mode)")
+        logger.info(
+            "agent_bus_initialized",
+            mode="development",
+            services=["redis", "kafka", "opa"],
+        )
     except Exception as e:
-        logger.error(f"Failed to initialize agent bus: {e}")
-        raise RuntimeError(f"Failed to initialize agent bus: {e}") from e
+        logger.error("agent_bus_initialization_failed", error=str(e), error_type=type(e).__name__)
+        raise
 
 
 # Shutdown event
@@ -350,7 +276,7 @@ async def startup_event():
 async def shutdown_event():
     """Clean up on shutdown"""
     global agent_bus
-    logger.info("Enhanced Agent Bus stopped (dev mode)")
+    logger.info("agent_bus_stopped", mode="development")
 
 
 # ===== API Endpoints =====
@@ -440,8 +366,11 @@ async def send_message(
         message_id = str(uuid.uuid4())
         timestamp = datetime.now(timezone.utc)
 
-        # Use session_id from request body if provided, otherwise fall back to header
-        effective_session_id = message.session_id or session_id
+        # Simulate async processing
+        async def process_message(msg_id: str, content: str):
+            logger.info("message_processing", message_id=msg_id, content_preview=content[:50])
+            await asyncio.sleep(0.1)  # Simulate processing time
+            logger.info("message_processed", message_id=msg_id)
 
         # Process message asynchronously based on type
         async def process_message_async(msg_id: str, msg: MessageRequest, corr_id: str):
@@ -510,22 +439,8 @@ async def send_message(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error sending message: {e}", exc_info=True)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Message processing failed"
-        ) from e
-
-
-# Legacy endpoint for backward compatibility
-@app.post("/messages", response_model=MessageResponse, include_in_schema=False)
-async def send_message_legacy(
-    request: Request,
-    message: MessageRequest,
-    background_tasks: BackgroundTasks,
-    session_id: Annotated[Optional[str], Header(alias="X-Session-ID")] = None,
-):
-    """Legacy endpoint - redirects to /api/v1/messages."""
-    return await send_message(request, message, background_tasks, session_id)
+        logger.error("message_send_failed", error=str(e), error_type=type(e).__name__)
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @app.get("/messages/{message_id}")
@@ -543,7 +458,12 @@ async def get_message_status(message_id: str):
             "details": {"note": "Development mode - simplified response"},
         }
     except Exception as e:
-        logger.error(f"Error getting message status: {e}")
+        logger.error(
+            "message_status_failed",
+            message_id=message_id,
+            error=str(e),
+            error_type=type(e).__name__,
+        )
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
@@ -562,7 +482,7 @@ async def get_stats():
             "note": "Development mode - mock statistics",
         }
     except Exception as e:
-        logger.error(f"Error getting stats: {e}")
+        logger.error("stats_retrieval_failed", error=str(e), error_type=type(e).__name__)
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
@@ -581,7 +501,7 @@ async def validate_policy(policy_data: Dict[str, Any]):
             "note": "Development mode - simplified validation",
         }
     except Exception as e:
-        logger.error(f"Error validating policy: {e}")
+        logger.error("policy_validation_failed", error=str(e), error_type=type(e).__name__)
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 

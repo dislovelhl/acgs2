@@ -16,6 +16,15 @@ from shared.logging import (
 )
 from shared.otel_config import init_otel
 
+# Structured logging configuration
+from shared.logging_config import (
+    configure_logging,
+    get_logger,
+    instrument_fastapi,
+    setup_opentelemetry,
+)
+from shared.middleware.correlation_id import add_correlation_id_middleware
+
 from .services import CacheService, CryptoService, NotificationService, PolicyService
 
 # Import secure CORS configuration
@@ -42,11 +51,12 @@ except ImportError:
     # Fallback if shared not in path
     from ...shared.config import settings
 
-# Configure logging
-init_service_logging(
-    "policy-registry", level=settings.log_level, json_format=(settings.env == "production")
-)
+# Configure structured logging with JSON output and correlation ID support
+configure_logging(service_name="policy_registry")
 logger = get_logger(__name__)
+
+# Initialize OpenTelemetry for distributed tracing
+setup_opentelemetry(service_name="policy_registry")
 
 # Global service instances
 crypto_service = CryptoService()
@@ -62,22 +72,22 @@ policy_service = PolicyService(
 async def lifespan(app: FastAPI):
     """Application lifespan manager"""
     # Startup
-    logger.info("Starting Policy Registry Service")
+    logger.info("service_starting", service="policy_registry")
 
     await cache_service.initialize()
     await notification_service.initialize()
 
-    logger.info("Policy Registry Service started")
+    logger.info("service_started", service="policy_registry")
 
     yield
 
     # Shutdown
-    logger.info("Shutting down Policy Registry Service")
+    logger.info("service_stopping", service="policy_registry")
 
     await notification_service.shutdown()
     await cache_service.close()
 
-    logger.info("Policy Registry Service stopped")
+    logger.info("service_stopped", service="policy_registry")
 
 
 # Create FastAPI app
@@ -88,18 +98,20 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# Initialize OTel tracing
-init_otel("policy-registry", app=app, export_to_console=settings.debug)
+# Instrument FastAPI with OpenTelemetry for distributed tracing
+instrument_fastapi(app)
 
-# Add correlation ID middleware
-app.middleware("http")(create_correlation_middleware())
+# Add correlation ID middleware (MUST be before other middleware for proper context)
+add_correlation_id_middleware(app, service_name="policy_registry")
 
 # Add CORS middleware with secure configuration
 if SECURE_CORS_AVAILABLE:
     # Use secure CORS configuration from shared module
     cors_config = get_cors_config()
     logger.info(
-        f"Using secure CORS configuration with {len(cors_config.get('allow_origins', []))} origins"
+        "cors_configured",
+        source="shared.security",
+        origins_count=len(cors_config.get("allow_origins", [])),
     )
 else:
     # Fallback to settings-based configuration
@@ -109,7 +121,7 @@ else:
         "allow_methods": ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
         "allow_headers": ["Authorization", "Content-Type", "X-Request-ID", "X-Constitutional-Hash"],
     }
-    logger.warning("Using fallback CORS configuration - shared.security module not available")
+    logger.warning("cors_fallback_config", reason="shared.security module not available")
 
 app.add_middleware(CORSMiddleware, **cors_config)
 
@@ -118,11 +130,11 @@ if RATE_LIMIT_AVAILABLE:
     rate_limit_config = RateLimitConfig.from_env()
     if rate_limit_config.enabled:
         app.add_middleware(RateLimitMiddleware, config=rate_limit_config)
-        logger.info(f"Rate limiting enabled with {len(rate_limit_config.rules)} rules")
+        logger.info("rate_limiting_enabled", rules_count=len(rate_limit_config.rules))
     else:
-        logger.info("Rate limiting is disabled via configuration")
+        logger.info("rate_limiting_disabled", reason="configuration")
 else:
-    logger.warning("Rate limiting not available - shared.security.rate_limiter not found")
+    logger.warning("rate_limiting_unavailable", reason="shared.security.rate_limiter not found")
 
 
 @app.middleware("http")
@@ -176,8 +188,8 @@ async def liveness_check():
 
 @app.get("/health/ready", response_model=Dict[str, Any])
 async def readiness_check(
-    cache_svc: CacheService = Depends(get_cache_service),
-    notification_svc: NotificationService = Depends(get_notification_service),
+    cache_svc: CacheService = Depends(get_cache_service),  # noqa: B008
+    notification_svc: NotificationService = Depends(get_notification_service),  # noqa: B008
 ):
     """Kubernetes readiness probe"""
     cache_stats = await cache_svc.get_cache_stats()
@@ -193,9 +205,9 @@ async def readiness_check(
 
 @app.get("/health/details", response_model=Dict[str, Any])
 async def detailed_health_check(
-    policy_svc: PolicyService = Depends(get_policy_service),
-    cache_svc: CacheService = Depends(get_cache_service),
-    notification_svc: NotificationService = Depends(get_notification_service),
+    policy_svc: PolicyService = Depends(get_policy_service),  # noqa: B008
+    cache_svc: CacheService = Depends(get_cache_service),  # noqa: B008
+    notification_svc: NotificationService = Depends(get_notification_service),  # noqa: B008
 ):
     """Detailed health check for monitoring"""
     policies = await policy_svc.list_policies()
@@ -213,7 +225,14 @@ async def detailed_health_check(
 @app.exception_handler(Exception)
 async def global_exception_handler(request, exc):
     """Global exception handler"""
-    logger.error(f"Unhandled exception: {exc}", exc_info=True)
+    logger.error(
+        "unhandled_exception",
+        error_type=type(exc).__name__,
+        error_message=str(exc),
+        path=str(request.url.path),
+        method=request.method,
+        exc_info=True,
+    )
     return JSONResponse(status_code=500, content={"detail": "Internal server error"})
 
 
