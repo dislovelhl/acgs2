@@ -165,6 +165,15 @@ class DriftDetector:
         # Column tracking
         self._known_columns: set = set()
 
+        # Caching infrastructure
+        self._cache_enabled = True  # Enable caching by default
+        self._reference_df_cache: Optional[pd.DataFrame] = None
+        self._current_df_cache: Optional[pd.DataFrame] = None
+        self._reference_checksum: Optional[str] = None
+        self._current_checksum: Optional[str] = None
+        self._last_report_cache: Optional[DriftResult] = None
+        self._report_cache_checksum: Optional[str] = None
+
         logger.info(
             "DriftDetector initialized",
             extra={
