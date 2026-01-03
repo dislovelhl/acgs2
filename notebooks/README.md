@@ -258,4 +258,55 @@ When adding new notebooks:
 
 ## Video Tutorial
 
-> Coming soon: A video walkthrough of the Jupyter notebooks demonstrating interactive policy experimentation.
+Learn to use the Jupyter notebooks with our step-by-step video tutorial.
+
+### Available Video
+
+| Video | Duration | Description |
+|-------|----------|-------------|
+| [Interactive Policy Experimentation](#video-placeholder) | 8-10 min | Complete walkthrough of both notebooks |
+
+<!-- VIDEO_PLACEHOLDER: Replace with actual video embed after recording
+<iframe width="560" height="315" src="https://www.youtube.com/embed/VIDEO_ID"
+        title="ACGS-2 Jupyter Notebooks Tutorial" frameborder="0"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allowfullscreen></iframe>
+-->
+
+### What You'll Learn
+
+1. **Starting Jupyter** - Launch notebooks via Docker Compose
+2. **Policy Queries** - Query OPA policies interactively from Python
+3. **Debugging** - Use denial reasons to troubleshoot policy issues
+4. **Visualization** - Create heatmaps and dashboards of governance data
+5. **Experimentation** - Modify inputs and see results in real-time
+6. **Best Practices** - Memory management and Docker compatibility
+
+### Video Production Status
+
+| Video | Script | Status |
+|-------|--------|--------|
+| Jupyter Notebook Tutorial | [View Script](../docs/quickstart/video-scripts/03-jupyter-notebook-tutorial.md) | Pending Recording |
+
+> **Note**: The video script is complete and ready. Actual recording requires screen capture, voiceover, and post-production. See the [Video Production Guide](../docs/quickstart/video-scripts/README.md) for recording instructions.
+
+### Quick Preview
+
+While the video is being produced, here's what to expect:
+
+```python
+# Query OPA policies interactively
+result = evaluate_policy("hello/allow", {
+    "user": {"role": "admin"},
+    "action": "delete",
+    "resource": "policy"
+})
+print(f"Decision: {'ALLOWED' if result.get('result') else 'DENIED'}")
+
+# Visualize policy decisions with matplotlib
+fig, ax = plt.subplots()
+sns.heatmap(policy_matrix, annot=True, cmap="RdYlGn", ax=ax)
+ax.set_title("Role vs Action Access Matrix")
+plt.show()
+plt.close(fig)  # Always close to prevent memory leaks!
+```
