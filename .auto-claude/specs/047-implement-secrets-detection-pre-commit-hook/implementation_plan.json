@@ -116,7 +116,9 @@
           "subtask_id": "3.1",
           "title": "Create custom secrets detection script",
           "description": "Build scripts/check-secrets-pre-commit.py using patterns from secrets_manager.py",
-          "status": "pending",
+          "status": "completed",
+          "completed_at": "2026-01-03T23:08:00.000Z",
+          "notes": "Successfully created scripts/check-secrets-pre-commit.py. Script imports CREDENTIAL_PATTERNS directly from secrets_manager.py, validates against 8 patterns, distinguishes placeholders using 5-category detection (dev-*, test-*, your-*, etc.), provides actionable error messages with remediation steps, scans only staged files for performance, and exits with code 0 (pass) or 1 (fail). Includes file exclusions (.env.example, test fixtures), binary file skipping, and category-based risk reporting. All pre-commit hooks pass (ruff, bandit, gitleaks). Commit: a72fec167",
           "acceptance_criteria": [
             "Script validates credentials against CREDENTIAL_PATTERNS",
             "Script distinguishes between placeholder and real secrets",

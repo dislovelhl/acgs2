@@ -6,6 +6,10 @@ Constitutional Hash: cdd01ef066bc6cf2
 Pre-commit hook to detect ACGS-2-specific secrets using patterns from secrets_manager.py.
 Complements gitleaks with project-specific credential validation.
 
+Configuration:
+    - Patterns: acgs2-core/shared/secrets_manager.py (CREDENTIAL_PATTERNS)
+    - Allow-list: .secrets-allowlist.yaml (placeholder patterns, safe values)
+
 Usage:
     # Automatically via pre-commit framework
     # Or manually:
@@ -20,11 +24,18 @@ import sys
 from pathlib import Path
 from typing import Dict, List, Tuple
 
+try:
+    import yaml
+except ImportError:
+    print("❌ ERROR: PyYAML not installed. Run: pip install pyyaml")  # noqa: T201
+    sys.exit(1)
+
 # Add project root to path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root / "acgs2-core"))
 
 CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
+ALLOWLIST_CONFIG_PATH = project_root / ".secrets-allowlist.yaml"
 
 # Import patterns from secrets_manager.py (single source of truth)
 try:
@@ -34,66 +45,134 @@ except ImportError:
     print("   Ensure acgs2-core/shared/secrets_manager.py exists")  # noqa: T201
     sys.exit(1)
 
-# File extensions to skip (binary/media files)
-SKIP_EXTENSIONS = {
-    ".png",
-    ".jpg",
-    ".jpeg",
-    ".gif",
-    ".pdf",
-    ".zip",
-    ".tar",
-    ".gz",
-    ".woff",
-    ".woff2",
-    ".ttf",
-    ".eot",
-    ".ico",
-    ".svg",
-    ".mp4",
-    ".webm",
-    ".pyc",
-    ".pyo",
-    ".so",
-    ".dylib",
-    ".dll",
-    ".exe",
-    ".bin",
-}
 
-# Paths to exclude from scanning
-EXCLUDE_PATHS = {
-    "node_modules/",
-    ".venv/",
-    "venv/",
-    "__pycache__/",
-    "dist/",
-    "build/",
-    ".git/",
-    "tests/fixtures/",
-    "__fixtures__/",
-    ".pytest_cache/",
-    ".mypy_cache/",
-}
+def load_allowlist_config(config_path: Path) -> Dict:
+    """
+    Load allow-list configuration from YAML file.
 
-# File patterns that should be excluded
-EXCLUDE_FILE_PATTERNS = {".env.example", ".env.template", ".example.", ".template."}
+    Args:
+        config_path: Path to .secrets-allowlist.yaml
 
-# Placeholder patterns that indicate safe/fake secrets
-PLACEHOLDER_PREFIXES = {"dev-", "test-", "your-", "placeholder-", "example-", "sample-"}
-PLACEHOLDER_MARKERS = {"<", ">", "xxx", "***", "[redacted]", "<hidden>", "example", "template"}
+    Returns:
+        Dictionary with configuration, or default config if file not found
+    """
+    if not config_path.exists():
+        print(f"⚠️  WARNING: Allow-list config not found: {config_path}")  # noqa: T201
+        print("   Using default hardcoded allow-list")  # noqa: T201
+        return get_default_config()
 
-# Known safe development values (from .env.dev, .env.example)
-KNOWN_SAFE_VALUES = {
-    "dev-jwt-secret-min-32-chars-required",
-    "dev_password",
-    "mlflow_password",
-    "password",
-    "acgs2_pass",
-    "changeme",
-    "secret",
-    "test-secret",
-}
+    try:
+        with open(config_path, encoding="utf-8") as f:
+            config = yaml.safe_load(f)
+        return config
+    except Exception as e:
+        print(f"❌ ERROR: Failed to load allow-list config: {e}")  # noqa: T201
+        print("   Using default hardcoded allow-list")  # noqa: T201
+        return get_default_config()
+
+
+def get_default_config() -> Dict:
+    """
+    Get default allow-list configuration as fallback.
+
+    Returns:
+        Dictionary with default configuration
+    """
+    return {
+        "placeholder_patterns": {
+            "prefixes": ["dev-", "test-", "your-", "placeholder-", "example-", "sample-"],
+            "markers": ["<", ">", "xxx", "***", "[redacted]", "<hidden>", "example", "template"],
+            "redaction_patterns": [r"^[X*\-._]+$"],
+        },
+        "excluded_paths": {
+            "directories": [
+                "node_modules/",
+                ".venv/",
+                "venv/",
+                "__pycache__/",
+                "dist/",
+                "build/",
+                ".git/",
+                ".pytest_cache/",
+                ".mypy_cache/",
+            ],
+            "test_paths": ["tests/fixtures/", "__fixtures__/"],
+            "file_patterns": [".env.example", ".env.template", ".example.", ".template."],
+        },
+        "known_safe_values": {
+            "development": [
+                {"value": "dev-jwt-secret-min-32-chars-required"},
+                {"value": "dev_password"},
+                {"value": "mlflow_password"},
+            ],
+            "generic": [
+                {"value": "password"},
+                {"value": "acgs2_pass"},
+                {"value": "changeme"},
+                {"value": "secret"},
+                {"value": "test-secret"},
+            ],
+            "empty_values": ["", "null", "None", "nil", "undefined"],
+        },
+        "skip_extensions": [
+            ".png",
+            ".jpg",
+            ".jpeg",
+            ".gif",
+            ".pdf",
+            ".zip",
+            ".tar",
+            ".gz",
+            ".woff",
+            ".woff2",
+            ".ttf",
+            ".eot",
+            ".ico",
+            ".svg",
+            ".mp4",
+            ".webm",
+            ".pyc",
+            ".pyo",
+            ".so",
+            ".dylib",
+            ".dll",
+            ".exe",
+            ".bin",
+        ],
+    }
+
+
+# Load configuration from file
+ALLOWLIST_CONFIG = load_allowlist_config(ALLOWLIST_CONFIG_PATH)
+
+# Extract configuration into module-level variables for backward compatibility
+SKIP_EXTENSIONS = set(ALLOWLIST_CONFIG.get("skip_extensions", []))
+
+EXCLUDE_PATHS = set(
+    ALLOWLIST_CONFIG.get("excluded_paths", {}).get("directories", [])
+    + ALLOWLIST_CONFIG.get("excluded_paths", {}).get("test_paths", [])
+)
+
+EXCLUDE_FILE_PATTERNS = set(ALLOWLIST_CONFIG.get("excluded_paths", {}).get("file_patterns", []))
+
+PLACEHOLDER_PREFIXES = set(ALLOWLIST_CONFIG.get("placeholder_patterns", {}).get("prefixes", []))
+
+PLACEHOLDER_MARKERS = set(ALLOWLIST_CONFIG.get("placeholder_patterns", {}).get("markers", []))
+
+REDACTION_PATTERNS = [
+    re.compile(pattern)
+    for pattern in ALLOWLIST_CONFIG.get("placeholder_patterns", {}).get("redaction_patterns", [])
+]
+
+# Build known safe values set from configuration
+KNOWN_SAFE_VALUES = set()
+for category in ["development", "generic", "empty_values", "test_fixtures"]:
+    values = ALLOWLIST_CONFIG.get("known_safe_values", {}).get(category, [])
+    for item in values:
+        if isinstance(item, dict):
+            KNOWN_SAFE_VALUES.add(item.get("value", ""))
+        else:
+            KNOWN_SAFE_VALUES.add(item)
 
 
 def get_secret_category(secret_name: str) -> str:
@@ -146,8 +225,9 @@ def is_placeholder(value: str, file_path: str) -> bool:
         return True
 
     # Category 5: Redacted examples (XXX, ***, etc.)
-    if re.match(r"^[X*\-._]+$", value):
-        return True
+    for pattern in REDACTION_PATTERNS:
+        if pattern.match(value):
+            return True
 
     return False
 
@@ -336,6 +416,7 @@ def report_findings(
     print()  # noqa: T201
     print("📚 Documentation: docs/SECRETS_DETECTION.md")  # noqa: T201
     print("🔧 Pattern source: acgs2-core/shared/secrets_manager.py")  # noqa: T201
+    print("⚙️  Allow-list config: .secrets-allowlist.yaml")  # noqa: T201
     print(f"🏛️  Constitutional Hash: {CONSTITUTIONAL_HASH}")  # noqa: T201
     print()  # noqa: T201
 
@@ -351,6 +432,8 @@ def main():
         print("🔐 ACGS-2 Custom Secrets Detection")  # noqa: T201
         print(f"   Constitutional Hash: {CONSTITUTIONAL_HASH}")  # noqa: T201
         print("   Patterns from: secrets_manager.py")  # noqa: T201
+        print(f"   Allow-list from: {ALLOWLIST_CONFIG_PATH.name}")  # noqa: T201
+        print(f"   Config loaded: {'✅' if ALLOWLIST_CONFIG_PATH.exists() else '⚠️ Using defaults'}")  # noqa: T201
         print()  # noqa: T201
 
     # Get files to scan

@@ -152,10 +152,43 @@ All subtasks in Phase 2 completed successfully. Gitleaks is now integrated as a 
 
 ---
 
+## Current Status: Phase 3 - Custom ACGS-2 Secrets Hook (In Progress)
+
+### Completed Subtasks:
+
+#### ✅ Subtask 3.1 - Create custom secrets detection script (2026-01-03)
+- Successfully created `scripts/check-secrets-pre-commit.py` (388 lines)
+- Imports CREDENTIAL_PATTERNS directly from secrets_manager.py (single source of truth)
+- Validates credentials against 8 defined patterns with regex matching
+- Distinguishes placeholders from real secrets using 5-category detection:
+  * Prefix-based: dev-*, test-*, your-*, placeholder-*, example-*, sample-*
+  * Instructional markers: <, >, xxx, ***, [redacted], <hidden>, example, template
+  * Known safe values: dev_password, mlflow_password, dev-jwt-secret-min-32-chars-required
+  * File-specific exceptions: .env.example, .env.dev, .env.template
+  * Redacted patterns: XXX, ***, etc.
+- Scans only staged files from git for performance
+- File exclusions: .env.example, .env.template, test fixtures, node_modules, binary files
+- Provides actionable error messages with 3 remediation options:
+  * Option 1: Use environment variables + secrets_manager
+  * Option 2: Use safe placeholder prefixes
+  * Option 3: Add to .gitleaksignore with justification
+- Exits with code 0 (pass) or 1 (fail) for pre-commit integration
+- Category-based risk reporting: ai_providers, security, infrastructure, cloud
+- Comprehensive pattern matching for multiple formats: ENV=value, "key": "value", key = "value"
+- All pre-commit hooks pass: ruff, ruff-no-print, bandit, gitleaks
+- Commit: a72fec167
+
+**Acceptance Criteria Met:**
+- ✅ Script validates credentials against CREDENTIAL_PATTERNS (8 patterns)
+- ✅ Script distinguishes between placeholder and real secrets (5-category system)
+- ✅ Script provides clear error messages with remediation steps (3 options)
+- ✅ Script exits with appropriate codes (0=pass, 1=fail)
+
+---
+
 ## Next Steps:
-1. Begin Phase 3: Custom ACGS-2 Secrets Hook
-2. Implement subtask 3.1: Create custom secrets detection script
-3. Implement subtask 3.2: Add allow-list for development secrets
+1. Implement subtask 3.2: Add allow-list for development secrets
+2. Implement subtask 3.3: Integrate custom hook into pre-commit
 
 ## Blockers:
 None
