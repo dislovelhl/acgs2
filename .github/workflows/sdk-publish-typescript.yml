@@ -1,0 +1,106 @@
+name: Publish TypeScript SDK
+
+on:
+  release:
+    types: [published]
+    tags:
+      - 'sdk/typescript/v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'SDK version to publish'
+        required: true
+        type: string
+
+env:
+  NODE_VERSION: '20'
+  REGISTRY: ghcr.io
+
+permissions:
+  contents: read
+  packages: write
+  id-token: write
+
+jobs:
+  publish-typescript-sdk:
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          registry-url: 'https://registry.npmjs.org'
+          cache: 'npm'
+          cache-dependency-path: acgs2-core/sdk/typescript/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ./acgs2-core/sdk/typescript
+        run: npm ci
+
+      - name: Run tests
+        working-directory: ./acgs2-core/sdk/typescript
+        run: npm test
+
+      - name: Build TypeScript SDK
+        working-directory: ./acgs2-core/sdk/typescript
+        run: npm run build
+
+      - name: Check package
+        working-directory: ./acgs2-core/sdk/typescript
+        run: npm pack --dry-run
+
+      - name: Publish to npm
+        if: github.event_name == 'release' || github.event_name == 'workflow_dispatch'
+        working-directory: ./acgs2-core/sdk/typescript
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish --access public
+
+      - name: Create GitHub Release Notes
+        if: github.event_name == 'release'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+
+            // Read SDK changelog or generate release notes
+            const changelogPath = path.join(process.cwd(), 'acgs2-core', 'sdk', 'typescript', 'CHANGELOG.md');
+            let releaseNotes = '## TypeScript SDK Release\n\n';
+
+            if (fs.existsSync(changelogPath)) {
+              const changelog = fs.readFileSync(changelogPath, 'utf8');
+              const lines = changelog.split('\n');
+              let collecting = false;
+
+              for (const line of lines) {
+                if (line.startsWith('## ')) {
+                  if (collecting) break;
+                  if (line.includes(context.payload.release.tag_name.replace('sdk/typescript/v', ''))) {
+                    collecting = true;
+                  }
+                } else if (collecting && line.trim()) {
+                  releaseNotes += line + '\n';
+                }
+              }
+            } else {
+              releaseNotes += `- Published version ${context.payload.release.tag_name}\n`;
+              releaseNotes += '- Includes latest API updates and bug fixes\n';
+              releaseNotes += '- Full TypeScript support with Zod validation\n';
+            }
+
+            github.rest.repos.createRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag_name: context.payload.release.tag_name,
+              name: `TypeScript SDK ${context.payload.release.tag_name}`,
+              body: releaseNotes,
+              prerelease: context.payload.release.prerelease
+            });

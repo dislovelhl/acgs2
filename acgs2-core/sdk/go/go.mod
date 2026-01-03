@@ -1,3 +1,3 @@
-module github.com/acgs/sdk-go
+module acgs2-sdk-go
 
-go 1.23.10
+go 1.21

@@ -113,7 +113,7 @@ def add_numbers(a, b):
 async def test_quality_scoring():
     """测试质量评分"""
     scorer = QualityScorer(enable_local_analysis=False)
-    good_code = 'def hello(): print("world")'
+    logger.info("world")
     score = await scorer.score_code(good_code, "python")
     assert score is not None
     assert 0 <= score <= 10

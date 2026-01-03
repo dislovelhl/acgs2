@@ -1,3 +1,7 @@
+import { getLogger } from 'utils/logger';
+const logger = getLogger('index');
+
+
 /**
  * ACGS-2 Enterprise TypeScript SDK
  * Constitutional AI Governance Platform
@@ -174,7 +178,7 @@ export const CONSTITUTIONAL_HASH = 'cdd01ef066bc6cf2';
  *   retryAttempts: 5,
  *   enableMetrics: true,
  *   enableTracing: true,
- *   environment: 'production',
+ *   logger.info('ACGS-2 SDK ready!';
  * });
  *
  * client.on('ready', () => {

@@ -50,7 +50,7 @@ console.log('Compliant:', result.status === 'compliant');
 
 - **Type-Safe**: Full TypeScript support with Zod runtime validation
 - **Constitutional Compliance**: Built-in constitutional hash validation
-- **Comprehensive Services**: Policy, Agent, Compliance, Audit, and Governance
+- **Comprehensive Services**: Policy Registry, API Gateway, Agent, Compliance, Audit, and Governance
 - **Error Handling**: Detailed error types for different failure scenarios
 - **Retry Logic**: Automatic retry with exponential backoff
 - **Real-time Support**: WebSocket subscriptions for agent messaging
