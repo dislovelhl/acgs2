@@ -1,0 +1,25 @@
+{
+  "active": true,
+  "spec": "027-increase-test-coverage-to-80",
+  "state": "building",
+  "subtasks": {
+    "completed": 1,
+    "total": 30,
+    "in_progress": 0,
+    "failed": 0
+  },
+  "phase": {
+    "current": "Coverage Gap Analysis",
+    "id": null,
+    "total": 3
+  },
+  "workers": {
+    "active": 0,
+    "max": 1
+  },
+  "session": {
+    "number": 1,
+    "started_at": "2026-01-03T04:51:54.594241"
+  },
+  "last_update": "2026-01-03T04:56:41.542813"
+}
