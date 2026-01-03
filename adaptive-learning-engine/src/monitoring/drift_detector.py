@@ -239,6 +239,11 @@ class DriftDetector:
             if not self._reference_locked:
                 self._reference_data.append(record)
 
+            # Invalidate caches after data changes
+            self._invalidate_current_cache()  # Current data always changes
+            if not self._reference_locked:
+                self._clear_reference_cache()  # Reference data changes if not locked
+
     def add_batch(
         self,
         data_points: List[Dict[str, Any]],
