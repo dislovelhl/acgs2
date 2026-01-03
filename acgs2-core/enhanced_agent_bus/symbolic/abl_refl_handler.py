@@ -16,8 +16,9 @@ import asyncio
 import logging
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional, Tuple, Protocol
 from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple
+import math
 
 # Import centralized constitutional hash
 try:
@@ -30,14 +31,12 @@ logger = logging.getLogger(__name__)
 
 class CognitiveSystem(Enum):
     """Dual-process cognitive systems."""
-
     SYSTEM_1 = "system_1"  # Fast, intuitive, neural
     SYSTEM_2 = "system_2"  # Slow, deliberate, symbolic
 
 
 class ReflectionTrigger(Enum):
     """Triggers for System 1 → System 2 reflection."""
-
     UNCERTAINTY_THRESHOLD = "uncertainty_threshold"
     CONTRADICTION_DETECTED = "contradiction_detected"
     DOMAIN_SHIFT = "domain_shift"
@@ -48,7 +47,6 @@ class ReflectionTrigger(Enum):
 @dataclass
 class ConstitutionalPrinciple:
     """A constitutional principle in the knowledge base."""
-
     principle_id: str
     description: str
     formal_logic: str  # DeepProbLog representation
@@ -77,7 +75,6 @@ class ConstitutionalPrinciple:
 @dataclass
 class CognitiveReflection:
     """A System 1 → System 2 cognitive reflection."""
-
     reflection_id: str
     trigger: ReflectionTrigger
     system1_prediction: Any
@@ -112,7 +109,6 @@ class CognitiveReflection:
 @dataclass
 class EdgeCaseAnalysis:
     """Analysis result for edge case handling."""
-
     input_data: Dict[str, Any]
     system1_result: Dict[str, Any]
     reflection_triggered: bool
@@ -166,8 +162,8 @@ class DeepProbLogKB:
                 domain="governance",
                 examples=[
                     {"action": "policy_update", "outcome": "improved_compliance", "benefit": 0.8},
-                    {"action": "access_grant", "outcome": "security_breach", "harm": 0.9},
-                ],
+                    {"action": "access_grant", "outcome": "security_breach", "harm": 0.9}
+                ]
             ),
             ConstitutionalPrinciple(
                 principle_id="transparency_accountability",
@@ -176,13 +172,8 @@ class DeepProbLogKB:
                 confidence=0.90,
                 domain="policy",
                 examples=[
-                    {
-                        "action": "decision_making",
-                        "auditable": True,
-                        "transparent": True,
-                        "accountable": True,
-                    }
-                ],
+                    {"action": "decision_making", "auditable": True, "transparent": True, "accountable": True}
+                ]
             ),
             ConstitutionalPrinciple(
                 principle_id="constitutional_integrity",
@@ -191,12 +182,8 @@ class DeepProbLogKB:
                 confidence=0.98,
                 domain="validation",
                 counterexamples=[
-                    {
-                        "action": "unconstitutional_decision",
-                        "violates_constitution": True,
-                        "valid": False,
-                    }
-                ],
+                    {"action": "unconstitutional_decision", "violates_constitution": True, "valid": False}
+                ]
             ),
             ConstitutionalPrinciple(
                 principle_id="stakeholder_rights",
@@ -205,13 +192,9 @@ class DeepProbLogKB:
                 confidence=0.85,
                 domain="governance",
                 examples=[
-                    {
-                        "action": "policy_change",
-                        "stakeholders_consulted": True,
-                        "rights_respected": True,
-                    }
-                ],
-            ),
+                    {"action": "policy_change", "stakeholders_consulted": True, "rights_respected": True}
+                ]
+            )
         ]
 
         for principle in core_principles:
@@ -286,7 +269,7 @@ class AbductionEngine:
         system1_prediction: Any,
         violated_rules: List[str],
         focused_space: List[str],
-        max_hypotheses: int = 5,
+        max_hypotheses: int = 5
     ) -> Dict[str, Any]:
         """
         Use abductive reasoning to correct System 1 predictions.
@@ -312,13 +295,11 @@ class AbductionEngine:
         evaluated_hypotheses = []
         for hypothesis in hypotheses:
             evaluation = await self._evaluate_hypothesis(hypothesis, input_data)
-            evaluated_hypotheses.append(
-                {
-                    "hypothesis": hypothesis,
-                    "evaluation": evaluation,
-                    "score": evaluation.get("plausibility", 0),
-                }
-            )
+            evaluated_hypotheses.append({
+                "hypothesis": hypothesis,
+                "evaluation": evaluation,
+                "score": evaluation.get("plausibility", 0)
+            })
 
         # Sort by plausibility
         evaluated_hypotheses.sort(key=lambda x: x["score"], reverse=True)
@@ -353,7 +334,7 @@ class AbductionEngine:
             "processing_stats": {
                 "hypotheses_evaluated": len(evaluated_hypotheses),
                 "best_score": best_hypothesis["score"] if best_hypothesis else 0,
-            },
+            }
         }
 
     async def _generate_hypotheses(
@@ -362,74 +343,60 @@ class AbductionEngine:
         system1_prediction: Any,
         violated_rules: List[str],
         focused_space: List[str],
-        max_hypotheses: int,
+        max_hypotheses: int
     ) -> List[Dict[str, Any]]:
         """Generate hypotheses that could explain the violations."""
         hypotheses = []
 
         # Hypothesis 1: Domain mismatch
         if "domain" in focused_space:
-            hypotheses.append(
-                {
-                    "type": "domain_mismatch",
-                    "description": "Input data is from different domain than expected",
-                    "corrected_prediction": self._adjust_for_domain(input_data, system1_prediction),
-                    "evidence": ["unusual_patterns", "domain_shift_indicators"],
-                }
-            )
+            hypotheses.append({
+                "type": "domain_mismatch",
+                "description": "Input data is from different domain than expected",
+                "corrected_prediction": self._adjust_for_domain(input_data, system1_prediction),
+                "evidence": ["unusual_patterns", "domain_shift_indicators"]
+            })
 
         # Hypothesis 2: Missing context
         if "context" in focused_space:
-            hypotheses.append(
-                {
-                    "type": "missing_context",
-                    "description": "Critical context information is missing",
-                    "corrected_prediction": self._add_missing_context(
-                        input_data, system1_prediction
-                    ),
-                    "evidence": ["incomplete_data", "context_dependencies"],
-                }
-            )
+            hypotheses.append({
+                "type": "missing_context",
+                "description": "Critical context information is missing",
+                "corrected_prediction": self._add_missing_context(input_data, system1_prediction),
+                "evidence": ["incomplete_data", "context_dependencies"]
+            })
 
         # Hypothesis 3: Rule interpretation error
         if violated_rules:
-            hypotheses.append(
-                {
-                    "type": "rule_interpretation",
-                    "description": f"Misinterpretation of rules: {', '.join(violated_rules)}",
-                    "corrected_prediction": self._reinterpret_rules(
-                        input_data, system1_prediction, violated_rules
-                    ),
-                    "evidence": violated_rules,
-                }
-            )
+            hypotheses.append({
+                "type": "rule_interpretation",
+                "description": f"Misinterpretation of rules: {', '.join(violated_rules)}",
+                "corrected_prediction": self._reinterpret_rules(input_data, system1_prediction, violated_rules),
+                "evidence": violated_rules
+            })
 
         # Hypothesis 4: Edge case pattern
-        hypotheses.append(
-            {
-                "type": "edge_case",
-                "description": "This is a rare edge case requiring special handling",
-                "corrected_prediction": self._handle_edge_case(input_data, system1_prediction),
-                "evidence": ["statistical_outlier", "pattern_anomaly"],
-            }
-        )
+        hypotheses.append({
+            "type": "edge_case",
+            "description": "This is a rare edge case requiring special handling",
+            "corrected_prediction": self._handle_edge_case(input_data, system1_prediction),
+            "evidence": ["statistical_outlier", "pattern_anomaly"]
+        })
 
         # Hypothesis 5: Constitutional principle violation
-        hypotheses.append(
-            {
-                "type": "constitutional_violation",
-                "description": "Original prediction violates constitutional principles",
-                "corrected_prediction": self._ensure_constitutional_compliance(
-                    input_data, system1_prediction
-                ),
-                "evidence": ["principle_violation", "constitutional_conflict"],
-            }
-        )
+        hypotheses.append({
+            "type": "constitutional_violation",
+            "description": "Original prediction violates constitutional principles",
+            "corrected_prediction": self._ensure_constitutional_compliance(input_data, system1_prediction),
+            "evidence": ["principle_violation", "constitutional_conflict"]
+        })
 
         return hypotheses[:max_hypotheses]
 
     async def _evaluate_hypothesis(
-        self, hypothesis: Dict[str, Any], input_data: Dict[str, Any]
+        self,
+        hypothesis: Dict[str, Any],
+        input_data: Dict[str, Any]
     ) -> Dict[str, Any]:
         """Evaluate the plausibility of a hypothesis."""
         hypothesis_type = hypothesis.get("type", "")
@@ -453,7 +420,7 @@ class AbductionEngine:
             "plausibility": plausibility,
             "evidence_strength": len(evidence),
             "hypothesis_type": hypothesis_type,
-            "evaluation_method": "evidence_weighted_scoring",
+            "evaluation_method": "evidence_weighted_scoring"
         }
 
     def _adjust_for_domain(self, input_data: Dict[str, Any], prediction: Any) -> Any:
@@ -466,9 +433,7 @@ class AbductionEngine:
         # Simplified context addition
         return f"context_enhanced_{prediction}"
 
-    def _reinterpret_rules(
-        self, input_data: Dict[str, Any], prediction: Any, violated_rules: List[str]
-    ) -> Any:
+    def _reinterpret_rules(self, input_data: Dict[str, Any], prediction: Any, violated_rules: List[str]) -> Any:
         """Reinterpret rules for better prediction."""
         # Simplified rule reinterpretation
         return f"rule_corrected_{prediction}"
@@ -512,15 +477,12 @@ class ConstitutionalEdgeCaseHandler:
 
     def _initialize_neural_classifier(self):
         """Initialize the neural classifier for System 1."""
-
         # Placeholder for actual neural model
         class MockNeuralClassifier:
             async def predict(self, input_data: Dict[str, Any]) -> Tuple[Any, float]:
                 """Mock neural prediction with confidence."""
                 # Simulate neural prediction
-                prediction = (
-                    "compliant" if input_data.get("expected_compliant", True) else "non_compliant"
-                )
+                prediction = "compliant" if input_data.get("expected_compliant", True) else "non_compliant"
                 confidence = 0.8 if input_data.get("clear_case", True) else 0.6
                 return prediction, confidence
 
@@ -540,16 +502,14 @@ class ConstitutionalEdgeCaseHandler:
         system1_result = {
             "prediction": system1_prediction,
             "confidence": system1_confidence,
-            "processing_time_ms": (datetime.now(timezone.utc) - start_time).total_seconds() * 1000,
+            "processing_time_ms": (datetime.now(timezone.utc) - start_time).total_seconds() * 1000
         }
 
         # Compute reflection vector from domain knowledge
         reflection_vector = await self._compute_reflection_vector(input_data, system1_prediction)
 
         # Check if reflection triggers System 2
-        reflection_triggered = reflection_vector["error_probability"] > (
-            1 - self.reflection_threshold
-        )
+        reflection_triggered = reflection_vector["error_probability"] > (1 - self.reflection_threshold)
 
         system2_result = None
         abductive_trace = []
@@ -565,22 +525,20 @@ class ConstitutionalEdgeCaseHandler:
                 input_data=input_data,
                 system1_prediction=system1_prediction,
                 violated_rules=violated_rules,
-                focused_space=focused_space,
+                focused_space=focused_space
             )
 
             system2_prediction = abduction_result["corrected_prediction"]
             system2_confidence = abduction_result["confidence"]
             abductive_trace = abduction_result["abductive_reasoning"]
 
-            system2_processing_time = (
-                datetime.now(timezone.utc) - system2_start
-            ).total_seconds() * 1000
+            system2_processing_time = (datetime.now(timezone.utc) - system2_start).total_seconds() * 1000
 
             system2_result = {
                 "prediction": system2_prediction,
                 "confidence": system2_confidence,
                 "abductive_reasoning": abduction_result["abductive_reasoning"],
-                "processing_time_ms": system2_processing_time,
+                "processing_time_ms": system2_processing_time
             }
 
             # Record reflection
@@ -594,7 +552,7 @@ class ConstitutionalEdgeCaseHandler:
                 system2_confidence=system2_confidence,
                 abductive_reasoning=abductive_trace,
                 attention_focus=focused_space,
-                processing_time_ms=system2_processing_time,
+                processing_time_ms=system2_processing_time
             )
             self.reflection_history.append(reflection)
 
@@ -613,7 +571,7 @@ class ConstitutionalEdgeCaseHandler:
             "system1_time_ms": system1_result["processing_time_ms"],
             "system2_time_ms": system2_result["processing_time_ms"] if system2_result else 0,
             "reflection_triggered": reflection_triggered,
-            "cognitive_system_used": "system_2" if reflection_triggered else "system_1",
+            "cognitive_system_used": "system_2" if reflection_triggered else "system_1"
         }
 
         analysis = EdgeCaseAnalysis(
@@ -624,33 +582,27 @@ class ConstitutionalEdgeCaseHandler:
             final_prediction=final_prediction,
             confidence=confidence,
             abductive_trace=abductive_trace,
-            processing_stats=processing_stats,
+            processing_stats=processing_stats
         )
 
-        logger.debug(
-            f"ABL-Refl classification: reflection={'triggered' if reflection_triggered else 'not triggered'}, "
-            f"confidence={confidence:.2f}"
-        )
+        logger.debug(f"ABL-Refl classification: reflection={'triggered' if reflection_triggered else 'not triggered'}, "
+                    f"confidence={confidence:.2f}")
 
         return analysis
 
-    async def _compute_reflection_vector(
-        self, input_data: Dict[str, Any], prediction: Any
-    ) -> Dict[str, Any]:
+    async def _compute_reflection_vector(self, input_data: Dict[str, Any], prediction: Any) -> Dict[str, Any]:
         """Compute reflection vector from domain knowledge."""
         reflection_vector = {
             "error_probability": 0.0,
             "violated_rules": [],
             "attention_focus": [],
             "trigger": None,
-            "evidence": [],
+            "evidence": []
         }
 
         # Check against constitutional principles
         for principle in self.knowledge_base.principles.values():
-            relevance = await self.knowledge_base.query_principle(
-                principle.principle_id, input_data
-            )
+            relevance = await self.knowledge_base.query_principle(principle.principle_id, input_data)
             if relevance and relevance < 0.7:  # Principle not satisfied
                 reflection_vector["violated_rules"].append(principle.principle_id)
                 reflection_vector["error_probability"] += (1 - relevance) * principle.confidence
@@ -699,18 +651,13 @@ class ConstitutionalEdgeCaseHandler:
                 "system2_abductive_reasoning": True,
                 "deepproblog_integration": True,
                 "cognitive_reflection": True,
-                "error_space_attention": True,
+                "error_space_attention": True
             },
             "constitutional_hash": CONSTITUTIONAL_HASH,
             "performance_stats": {
-                "average_reflection_time_ms": sum(r.processing_time_ms for r in recent_reflections)
-                / max(1, len(recent_reflections)),
-                "reflection_trigger_rate": (
-                    len(recent_reflections) / max(1, len(self.reflection_history))
-                    if self.reflection_history
-                    else 0
-                ),
-            },
+                "average_reflection_time_ms": sum(r.processing_time_ms for r in recent_reflections) / max(1, len(recent_reflections)),
+                "reflection_trigger_rate": len(recent_reflections) / max(1, len(self.reflection_history)) if self.reflection_history else 0,
+            }
         }
 
 
@@ -736,31 +683,27 @@ async def classify_with_reflection(input_data: Dict[str, Any]) -> EdgeCaseAnalys
 if __name__ == "__main__":
     # Example usage and testing
     async def main():
-        logger.info("Testing ABL-Refl Constitutional Edge Case Handler...")
+        print("Testing ABL-Refl Constitutional Edge Case Handler...")
 
         handler = ConstitutionalEdgeCaseHandler(reflection_threshold=0.7)
 
         # Test handler status
         status = await handler.get_handler_status()
-        logger.info(f"✅ Handler status: {status['status']}")
-        logger.info(f"✅ System 1→2 reflection: {status['capabilities']['cognitive_reflection']}")
-        logger.info(f"✅ Knowledge base principles: {status['knowledge_base_principles']}")
+        print(f"✅ Handler status: {status['status']}")
+        print(f"✅ System 1→2 reflection: {status['capabilities']['cognitive_reflection']}")
+        print(f"✅ Knowledge base principles: {status['knowledge_base_principles']}")
 
         # Test normal case (should not trigger reflection)
         normal_input = {
             "action": "policy_update",
             "expected_compliant": True,
             "clear_case": True,
-            "domain": "policy",
+            "domain": "policy"
         }
 
         normal_result = await handler.classify(normal_input)
-        logger.info(
-            f"✅ Normal case: reflection={'triggered' if normal_result.reflection_triggered else 'not triggered'}"
-        )
-        logger.info(
-            f"   Prediction: {normal_result.final_prediction}, Confidence: {normal_result.confidence:.2f}"
-        )
+        print(f"✅ Normal case: reflection={'triggered' if normal_result.reflection_triggered else 'not triggered'}")
+        print(f"   Prediction: {normal_result.final_prediction}, Confidence: {normal_result.confidence:.2f}")
 
         # Test edge case (should trigger reflection)
         edge_input = {
@@ -769,32 +712,26 @@ if __name__ == "__main__":
             "clear_case": False,
             "domain": "unknown",
             "contradictory_evidence": True,
-            "novel_pattern": True,
+            "novel_pattern": True
         }
 
         edge_result = await handler.classify(edge_input)
-        logger.info(
-            f"✅ Edge case: reflection={'triggered' if edge_result.reflection_triggered else 'not triggered'}"
-        )
-        logger.info(
-            f"   Prediction: {edge_result.final_prediction}, Confidence: {edge_result.confidence:.2f}"
-        )
-        logger.info(f"   Abductive reasoning steps: {len(edge_result.abductive_trace)}")
+        print(f"✅ Edge case: reflection={'triggered' if edge_result.reflection_triggered else 'not triggered'}")
+        print(f"   Prediction: {edge_result.final_prediction}, Confidence: {edge_result.confidence:.2f}")
+        print(f"   Abductive reasoning steps: {len(edge_result.abductive_trace)}")
 
         # Test knowledge base
         kb = handler.knowledge_base
         principles = kb.get_principles_by_domain("governance")
-        logger.info(f"✅ Governance principles: {len(principles)}")
+        print(f"✅ Governance principles: {len(principles)}")
 
         # Test principle querying
         test_principle = kb.get_principle("maximize_beneficial_impact")
         if test_principle:
-            confidence = await kb.query_principle(
-                "maximize_beneficial_impact", {"action": "good_policy"}
-            )
-            logger.info(f"✅ Principle confidence: {confidence:.2f}")
+            confidence = await kb.query_principle("maximize_beneficial_impact", {"action": "good_policy"})
+            print(f"✅ Principle confidence: {confidence:.2f}")
 
-        logger.info("✅ ABL-Refl Constitutional Edge Case Handler test completed!")
+        print("✅ ABL-Refl Constitutional Edge Case Handler test completed!")
 
     # Run test
     asyncio.run(main())

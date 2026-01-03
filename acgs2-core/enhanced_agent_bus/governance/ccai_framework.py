@@ -14,12 +14,12 @@ legitimate governance through democratic deliberation.
 
 import asyncio
 import logging
-import statistics
-import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional, Set, Protocol
 from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple
+import statistics
+import uuid
 
 # Import centralized constitutional hash
 try:
@@ -32,7 +32,6 @@ logger = logging.getLogger(__name__)
 
 class DeliberationPhase(Enum):
     """Phases of democratic deliberation."""
-
     PROPOSAL = "proposal"
     DISCUSSION = "discussion"
     CLUSTERING = "clustering"
@@ -43,7 +42,6 @@ class DeliberationPhase(Enum):
 
 class StakeholderGroup(Enum):
     """Types of stakeholder groups for balanced representation."""
-
     TECHNICAL_EXPERTS = "technical_experts"
     ETHICS_REVIEWERS = "ethics_reviewers"
     END_USERS = "end_users"
@@ -56,7 +54,6 @@ class StakeholderGroup(Enum):
 @dataclass
 class Stakeholder:
     """A stakeholder participant in deliberation."""
-
     stakeholder_id: str
     name: str
     group: StakeholderGroup
@@ -87,7 +84,6 @@ class Stakeholder:
 @dataclass
 class DeliberationStatement:
     """A statement in the deliberation process."""
-
     statement_id: str
     content: str
     author_id: str
@@ -122,7 +118,6 @@ class DeliberationStatement:
 @dataclass
 class OpinionCluster:
     """A cluster of similar opinions identified through Polis-style clustering."""
-
     cluster_id: str
     name: str
     description: str
@@ -155,7 +150,6 @@ class OpinionCluster:
 @dataclass
 class ConstitutionalProposal:
     """A proposal for constitutional change."""
-
     proposal_id: str
     title: str
     description: str
@@ -192,7 +186,6 @@ class ConstitutionalProposal:
 @dataclass
 class DeliberationResult:
     """Results of a democratic deliberation."""
-
     deliberation_id: str
     proposal: ConstitutionalProposal
     total_participants: int
@@ -243,7 +236,11 @@ class PolisDeliberationEngine:
         self.clusters: Dict[str, OpinionCluster] = {}
         self.voting_matrix: Dict[str, Dict[str, int]] = {}  # statement_id -> {stakeholder_id: vote}
 
-    async def submit_statement(self, content: str, author: Stakeholder) -> DeliberationStatement:
+    async def submit_statement(
+        self,
+        content: str,
+        author: Stakeholder
+    ) -> DeliberationStatement:
         """Submit a statement to the deliberation."""
         statement = DeliberationStatement(
             statement_id=str(uuid.uuid4()),
@@ -262,7 +259,7 @@ class PolisDeliberationEngine:
         self,
         statement_id: str,
         stakeholder: Stakeholder,
-        vote: int,  # -1 (disagree), 0 (skip), 1 (agree)
+        vote: int  # -1 (disagree), 0 (skip), 1 (agree)
     ) -> bool:
         """Vote on a statement."""
         if statement_id not in self.statements:
@@ -330,9 +327,9 @@ class PolisDeliberationEngine:
                     name=f"Opinion Cluster {pattern}",
                     description=f"Statements with {pattern} agreement pattern",
                     representative_statements=statement_ids[:5],  # Top 5 statements
-                    member_stakeholders=list(
-                        set(self.statements[sid].author_id for sid in statement_ids)
-                    ),
+                    member_stakeholders=list(set(
+                        self.statements[sid].author_id for sid in statement_ids
+                    )),
                     size=len(statement_ids),
                 )
 
@@ -342,9 +339,7 @@ class PolisDeliberationEngine:
                     if sid in self.statements:
                         cluster_consensus.append(self.statements[sid].consensus_potential)
 
-                cluster.consensus_score = (
-                    statistics.mean(cluster_consensus) if cluster_consensus else 0
-                )
+                cluster.consensus_score = statistics.mean(cluster_consensus) if cluster_consensus else 0
 
                 clusters.append(cluster)
                 self.clusters[cluster.cluster_id] = cluster
@@ -352,13 +347,16 @@ class PolisDeliberationEngine:
         logger.info(f"Identified {len(clusters)} opinion clusters")
         return clusters
 
-    async def analyze_cross_group_consensus(self, clusters: List[OpinionCluster]) -> Dict[str, Any]:
+    async def analyze_cross_group_consensus(
+        self,
+        clusters: List[OpinionCluster]
+    ) -> Dict[str, Any]:
         """
         Analyze consensus across different stakeholder groups.
 
         This prevents polarization by ensuring consensus exists across diverse groups.
         """
-        _group_consensus = {}  # noqa: F841
+        group_consensus = {}
 
         for cluster in clusters:
             group_votes = {}
@@ -396,15 +394,11 @@ class PolisDeliberationEngine:
         return {
             "total_clusters": total_clusters,
             "high_consensus_clusters": high_consensus_clusters,
-            "consensus_ratio": (
-                high_consensus_clusters / total_clusters if total_clusters > 0 else 0
-            ),
-            "average_cross_group_consensus": (
-                statistics.mean([c.consensus_score for c in clusters]) if clusters else 0
-            ),
-            "polarization_risk": (
-                "low" if high_consensus_clusters > total_clusters * 0.5 else "high"
-            ),
+            "consensus_ratio": high_consensus_clusters / total_clusters if total_clusters > 0 else 0,
+            "average_cross_group_consensus": statistics.mean(
+                [c.consensus_score for c in clusters]
+            ) if clusters else 0,
+            "polarization_risk": "low" if high_consensus_clusters > total_clusters * 0.5 else "high"
         }
 
 
@@ -438,7 +432,10 @@ class DemocraticConstitutionalGovernance:
         logger.info(f"Consensus threshold: {consensus_threshold}")
 
     async def register_stakeholder(
-        self, name: str, group: StakeholderGroup, expertise_areas: List[str]
+        self,
+        name: str,
+        group: StakeholderGroup,
+        expertise_areas: List[str]
     ) -> Stakeholder:
         """Register a new stakeholder."""
         stakeholder = Stakeholder(
@@ -481,7 +478,7 @@ class DemocraticConstitutionalGovernance:
         self,
         proposal: ConstitutionalProposal,
         stakeholders: List[Stakeholder],
-        duration_hours: int = 72,
+        duration_hours: int = 72
     ) -> DeliberationResult:
         """
         Run a full democratic deliberation process.
@@ -541,40 +538,44 @@ class DemocraticConstitutionalGovernance:
                 "duration_hours": duration_hours,
                 "start_time": start_time.isoformat(),
                 "participation_rate": len(statements) / max(1, len(stakeholders)),
-            },
+            }
         )
 
         self.deliberations[deliberation_id] = result
         proposal.deliberation_results = result.to_dict()
         proposal.status = "approved" if consensus_reached else "rejected"
 
-        logger.info(
-            f"Deliberation completed: consensus={'reached' if consensus_reached else 'not reached'}"
-        )
+        logger.info(f"Deliberation completed: consensus={'reached' if consensus_reached else 'not reached'}")
         return result
 
     async def _collect_statements(
-        self, proposal: ConstitutionalProposal, stakeholders: List[Stakeholder]
+        self,
+        proposal: ConstitutionalProposal,
+        stakeholders: List[Stakeholder]
     ) -> List[DeliberationStatement]:
         """Collect statements from stakeholders."""
         statements = []
 
         # In practice, this would be an interactive process
         # For simulation, generate representative statements
-        for stakeholder in stakeholders[: min(20, len(stakeholders))]:  # Limit for simulation
+        for stakeholder in stakeholders[:min(20, len(stakeholders))]:  # Limit for simulation
             # Generate a statement based on stakeholder group
             statement_content = await self._generate_statement_for_stakeholder(
                 proposal, stakeholder
             )
 
-            statement = await self.polis_engine.submit_statement(statement_content, stakeholder)
+            statement = await self.polis_engine.submit_statement(
+                statement_content, stakeholder
+            )
             statements.append(statement)
 
         logger.debug(f"Collected {len(statements)} statements")
         return statements
 
     async def _generate_statement_for_stakeholder(
-        self, proposal: ConstitutionalProposal, stakeholder: Stakeholder
+        self,
+        proposal: ConstitutionalProposal,
+        stakeholder: Stakeholder
     ) -> str:
         """Generate a representative statement for a stakeholder."""
         # Simplified statement generation based on group
@@ -582,50 +583,49 @@ class DemocraticConstitutionalGovernance:
             StakeholderGroup.TECHNICAL_EXPERTS: [
                 "The proposed changes should maintain system performance and reliability.",
                 "Technical implementation must be feasible within current architecture.",
-                "Security implications need careful evaluation.",
+                "Security implications need careful evaluation."
             ],
             StakeholderGroup.ETHICS_REVIEWERS: [
                 "Changes must align with ethical principles and human rights.",
                 "Potential biases in the system should be addressed.",
-                "Transparency and accountability are essential.",
+                "Transparency and accountability are essential."
             ],
             StakeholderGroup.END_USERS: [
                 "The changes should improve user experience and accessibility.",
                 "User privacy and data protection must be prioritized.",
-                "System reliability affects user trust.",
+                "System reliability affects user trust."
             ],
             StakeholderGroup.LEGAL_EXPERTS: [
                 "Changes must comply with relevant regulations and laws.",
                 "Legal implications need thorough review.",
-                "Compliance requirements should be clearly defined.",
-            ],
+                "Compliance requirements should be clearly defined."
+            ]
         }
 
-        statements = group_statements.get(
-            stakeholder.group,
-            ["The proposal needs careful consideration of all stakeholder interests."],
-        )
+        statements = group_statements.get(stakeholder.group, [
+            "The proposal needs careful consideration of all stakeholder interests."
+        ])
 
         # Return a random statement (simplified)
         return statements[hash(stakeholder.stakeholder_id) % len(statements)]
 
     async def _conduct_voting(
-        self, statements: List[DeliberationStatement], stakeholders: List[Stakeholder]
+        self,
+        statements: List[DeliberationStatement],
+        stakeholders: List[Stakeholder]
     ):
         """Conduct voting on statements."""
         # Simulate voting process
         for statement in statements:
             # Each stakeholder votes on a subset of statements
-            voters = stakeholders[: min(10, len(stakeholders))]
+            voters = stakeholders[:min(10, len(stakeholders))]
 
             for stakeholder in voters:
                 # Simplified voting logic
-                vote = (
-                    1
-                    if hash(f"{statement.statement_id}_{stakeholder.stakeholder_id}") % 3 != 0
-                    else -1
+                vote = 1 if hash(f"{statement.statement_id}_{stakeholder.stakeholder_id}") % 3 != 0 else -1
+                await self.polis_engine.vote_on_statement(
+                    statement.statement_id, stakeholder, vote
                 )
-                await self.polis_engine.vote_on_statement(statement.statement_id, stakeholder, vote)
 
         logger.debug("Voting phase completed")
 
@@ -633,7 +633,7 @@ class DemocraticConstitutionalGovernance:
         self,
         proposal: ConstitutionalProposal,
         clusters: List[OpinionCluster],
-        cross_group_analysis: Dict[str, Any],
+        cross_group_analysis: Dict[str, Any]
     ) -> Tuple[bool, List[Dict[str, Any]], List[Dict[str, Any]]]:
         """Determine if consensus is reached and what amendments are approved."""
         consensus_reached = False
@@ -652,25 +652,21 @@ class DemocraticConstitutionalGovernance:
                     for statement_id in cluster.representative_statements:
                         if statement_id in self.polis_engine.statements:
                             statement = self.polis_engine.statements[statement_id]
-                            approved_amendments.append(
-                                {
-                                    "statement_id": statement_id,
-                                    "content": statement.content,
-                                    "consensus_score": statement.consensus_potential,
-                                    "cluster": cluster.cluster_id,
-                                }
-                            )
+                            approved_amendments.append({
+                                "statement_id": statement_id,
+                                "content": statement.content,
+                                "consensus_score": statement.consensus_potential,
+                                "cluster": cluster.cluster_id,
+                            })
 
         # Identify rejected items (low consensus statements)
         for statement in self.polis_engine.statements.values():
             if statement.consensus_potential < 0.3:  # Low consensus threshold
-                rejected_items.append(
-                    {
-                        "statement_id": statement.statement_id,
-                        "content": statement.content,
-                        "consensus_score": statement.consensus_potential,
-                    }
-                )
+                rejected_items.append({
+                    "statement_id": statement.statement_id,
+                    "content": statement.content,
+                    "consensus_score": statement.consensus_potential,
+                })
 
         return consensus_reached, approved_amendments, rejected_items
 
@@ -694,17 +690,15 @@ class DemocraticConstitutionalGovernance:
             "approved": True,  # Simplified - assume compliant
             "confidence": 0.8,
             "method": "automated_check",
-            "processing_time_ms": (datetime.now(timezone.utc) - start_time).total_seconds() * 1000,
+            "processing_time_ms": (datetime.now(timezone.utc) - start_time).total_seconds() * 1000
         }
 
         # Record fast decision
-        self.fast_decisions.append(
-            {
-                "decision": decision,
-                "result": fast_decision,
-                "timestamp": datetime.now(timezone.utc).isoformat(),
-            }
-        )
+        self.fast_decisions.append({
+            "decision": decision,
+            "result": fast_decision,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        })
 
         # Async deliberation for legitimacy
         deliberation_task = None
@@ -745,9 +739,7 @@ class DemocraticConstitutionalGovernance:
             "framework": "CCAI Democratic Constitutional Governance",
             "status": "operational",
             "registered_stakeholders": len(self.stakeholders),
-            "active_proposals": len(
-                [p for p in self.proposals.values() if p.status == "deliberating"]
-            ),
+            "active_proposals": len([p for p in self.proposals.values() if p.status == "deliberating"]),
             "completed_deliberations": len(self.deliberations),
             "fast_decisions": len(self.fast_decisions),
             "deliberated_decisions": len(self.deliberated_decisions),
@@ -790,7 +782,9 @@ async def deliberate_on_proposal(
     for group in stakeholder_groups:
         for i in range(max(5, min_participants // len(stakeholder_groups))):
             stakeholder = await governance.register_stakeholder(
-                name=f"{group.value}_{i}", group=group, expertise_areas=[group.value]
+                name=f"{group.value}_{i}",
+                group=group,
+                expertise_areas=[group.value]
             )
             stakeholders.append(stakeholder)
 
@@ -813,14 +807,14 @@ async def deliberate_on_proposal(
 if __name__ == "__main__":
     # Example usage and testing
     async def main():
-        logger.info("Testing CCAI Democratic Constitutional Governance...")
+        print("Testing CCAI Democratic Constitutional Governance...")
 
         governance = DemocraticConstitutionalGovernance()
 
         # Test status
         status = await governance.get_governance_status()
-        logger.info(f"✅ Governance status: {status['status']}")
-        logger.info("✅ Capabilities: Polis deliberation enabled")
+        print(f"✅ Governance status: {status['status']}")
+        print(f"✅ Capabilities: Polis deliberation enabled")
 
         # Register stakeholders
         tech_expert = await governance.register_stakeholder(
@@ -834,7 +828,7 @@ if __name__ == "__main__":
         )
 
         stakeholders = [tech_expert, ethicist, end_user]
-        logger.info(f"✅ Registered {len(stakeholders)} stakeholders")
+        print(f"✅ Registered {len(stakeholders)} stakeholders")
 
         # Create proposal
         proposal = await governance.propose_constitutional_change(
@@ -843,35 +837,35 @@ if __name__ == "__main__":
             proposed_changes={
                 "transparency": "mandatory",
                 "explanation_depth": "detailed",
-                "audit_trail": "comprehensive",
+                "audit_trail": "comprehensive"
             },
             proposer=tech_expert,
         )
 
-        logger.info(f"✅ Created proposal: {proposal.title}")
+        print(f"✅ Created proposal: {proposal.title}")
 
         # Run deliberation
         result = await governance.run_deliberation(proposal, stakeholders, duration_hours=24)
 
-        logger.info("✅ Deliberation completed")
-        logger.info(f"   Participants: {result.total_participants}")
-        logger.info(f"   Statements: {result.statements_submitted}")
-        logger.info(f"   Clusters: {result.clusters_identified}")
-        logger.info(f"   Consensus reached: {result.consensus_reached}")
-        logger.info(f"   Approved amendments: {len(result.approved_amendments)}")
+        print(f"✅ Deliberation completed")
+        print(f"   Participants: {result.total_participants}")
+        print(f"   Statements: {result.statements_submitted}")
+        print(f"   Clusters: {result.clusters_identified}")
+        print(f"   Consensus reached: {result.consensus_reached}")
+        print(f"   Approved amendments: {len(result.approved_amendments)}")
 
         # Test fast governance
         test_decision = {
             "id": "test_decision_001",
             "description": "Approve routine maintenance",
-            "type": "maintenance",
+            "type": "maintenance"
         }
 
         fast_result = await governance.fast_govern(test_decision, 1000, stakeholders)
-        logger.info(f"✅ Fast governance: approved={fast_result['immediate_decision']['approved']}")
-        logger.info(f"   Deliberation pending: {fast_result['deliberation_pending']}")
+        print(f"✅ Fast governance: approved={fast_result['immediate_decision']['approved']}")
+        print(f"   Deliberation pending: {fast_result['deliberation_pending']}")
 
-        logger.info("✅ CCAI Democratic Governance test completed!")
+        print("✅ CCAI Democratic Governance test completed!")
 
     # Run test
     asyncio.run(main())

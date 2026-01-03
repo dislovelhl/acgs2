@@ -14,12 +14,12 @@ by ensuring governance decisions maintain state consistency.
 
 import asyncio
 import logging
-import uuid
-from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional, Callable, Awaitable, Protocol
 from enum import Enum
-from typing import Any, Awaitable, Callable, Dict, List, Optional
+from contextlib import asynccontextmanager
+import uuid
 
 # Import centralized constitutional hash
 try:
@@ -32,7 +32,6 @@ logger = logging.getLogger(__name__)
 
 class TransactionState(Enum):
     """States of a SagaLLM transaction."""
-
     INITIALIZED = "initialized"
     ACTIVE = "active"
     COMPENSATING = "compensating"
@@ -44,7 +43,6 @@ class TransactionState(Enum):
 
 class TransactionAction(Enum):
     """Types of actions in a transaction."""
-
     GOVERNANCE_DECISION = "governance_decision"
     POLICY_VALIDATION = "policy_validation"
     ACCESS_CONTROL = "access_control"
@@ -56,7 +54,6 @@ class TransactionAction(Enum):
 @dataclass
 class SagaAction:
     """An action in a SagaLLM transaction."""
-
     action_id: str
     action_type: TransactionAction
     description: str
@@ -91,7 +88,6 @@ class SagaAction:
 @dataclass
 class TransactionCheckpoint:
     """A checkpoint in the transaction execution."""
-
     checkpoint_id: str
     checkpoint_name: str
     state_before: Dict[str, Any]
@@ -116,7 +112,6 @@ class TransactionCheckpoint:
 @dataclass
 class SagaTransaction:
     """A SagaLLM transaction with compensable actions."""
-
     transaction_id: str
     description: str
     actions: List[SagaAction] = field(default_factory=list)
@@ -179,7 +174,9 @@ class SagaLLMEngine:
         logger.info(f"Constitutional Hash: {CONSTITUTIONAL_HASH}")
 
     def create_transaction(
-        self, description: str, metadata: Optional[Dict[str, Any]] = None
+        self,
+        description: str,
+        metadata: Optional[Dict[str, Any]] = None
     ) -> SagaTransaction:
         """Create a new SagaLLM transaction."""
         transaction = SagaTransaction(
@@ -206,9 +203,7 @@ class SagaLLMEngine:
     ) -> SagaAction:
         """Add an action to a transaction."""
         if transaction.state != TransactionState.INITIALIZED:
-            raise ValueError(
-                f"Cannot add actions to transaction in state: {transaction.state.value}"
-            )
+            raise ValueError(f"Cannot add actions to transaction in state: {transaction.state.value}")
 
         action = SagaAction(
             action_id=str(uuid.uuid4()),
@@ -223,9 +218,7 @@ class SagaLLMEngine:
 
         transaction.actions.append(action)
 
-        logger.debug(
-            f"Added action to transaction {transaction.transaction_id}: {action.action_id}"
-        )
+        logger.debug(f"Added action to transaction {transaction.transaction_id}: {action.action_id}")
         return action
 
     def add_checkpoint(
@@ -246,9 +239,7 @@ class SagaLLMEngine:
 
         transaction.checkpoints.append(checkpoint)
 
-        logger.debug(
-            f"Added checkpoint to transaction {transaction.transaction_id}: {checkpoint.checkpoint_name}"
-        )
+        logger.debug(f"Added checkpoint to transaction {transaction.transaction_id}: {checkpoint.checkpoint_name}")
         return checkpoint
 
     async def execute_transaction(self, transaction: SagaTransaction) -> bool:
@@ -271,9 +262,7 @@ class SagaLLMEngine:
                 success = await self._execute_action_with_retry(transaction, action, i)
                 if not success:
                     # Action failed - start compensation
-                    logger.warning(
-                        f"Action failed, starting compensation for transaction: {transaction.transaction_id}"
-                    )
+                    logger.warning(f"Action failed, starting compensation for transaction: {transaction.transaction_id}")
                     await self._compensate_transaction(transaction)
                     return False
 
@@ -304,7 +293,10 @@ class SagaLLMEngine:
             return False
 
     async def _execute_action_with_retry(
-        self, transaction: SagaTransaction, action: SagaAction, action_index: int
+        self,
+        transaction: SagaTransaction,
+        action: SagaAction,
+        action_index: int
     ) -> bool:
         """Execute an action with retry logic."""
         for attempt in range(action.max_retries + 1):
@@ -312,15 +304,16 @@ class SagaLLMEngine:
                 action.retry_count = attempt
 
                 # Execute with timeout
-                result = await asyncio.wait_for(action.execute_func(), timeout=action.timeout_s)
+                result = await asyncio.wait_for(
+                    action.execute_func(),
+                    timeout=action.timeout_s
+                )
 
                 # Success
                 action.executed_at = datetime.now(timezone.utc)
                 action.execution_result = result
 
-                logger.debug(
-                    f"Action executed successfully: {action.action_id} (attempt {attempt + 1})"
-                )
+                logger.debug(f"Action executed successfully: {action.action_id} (attempt {attempt + 1})")
                 return True
 
             except asyncio.TimeoutError:
@@ -334,7 +327,7 @@ class SagaLLMEngine:
                     return False
 
             # Wait before retry (exponential backoff)
-            await asyncio.sleep(0.1 * (2**attempt))
+            await asyncio.sleep(0.1 * (2 ** attempt))
 
         return False
 
@@ -352,45 +345,40 @@ class SagaLLMEngine:
                 try:
                     # Execute compensation with timeout
                     result = await asyncio.wait_for(
-                        action.compensate_func(), timeout=self.compensation_timeout
+                        action.compensate_func(),
+                        timeout=self.compensation_timeout
                     )
 
                     action.compensated_at = datetime.now(timezone.utc)
                     action.compensation_result = result
 
-                    compensation_log.append(
-                        {
-                            "action_id": action.action_id,
-                            "status": "compensated",
-                            "result": str(result),
-                            "timestamp": datetime.now(timezone.utc).isoformat(),
-                        }
-                    )
+                    compensation_log.append({
+                        "action_id": action.action_id,
+                        "status": "compensated",
+                        "result": str(result),
+                        "timestamp": datetime.now(timezone.utc).isoformat(),
+                    })
 
                     logger.debug(f"Compensation executed: {action.action_id}")
 
                 except Exception as e:
-                    compensation_log.append(
-                        {
-                            "action_id": action.action_id,
-                            "status": "compensation_failed",
-                            "error": str(e),
-                            "timestamp": datetime.now(timezone.utc).isoformat(),
-                        }
-                    )
+                    compensation_log.append({
+                        "action_id": action.action_id,
+                        "status": "compensation_failed",
+                        "error": str(e),
+                        "timestamp": datetime.now(timezone.utc).isoformat(),
+                    })
 
                     logger.error(f"Compensation failed: {action.action_id} - {e}")
 
             elif action.executed_at and not action.compensate_func:
                 # Action executed but no compensation function
-                compensation_log.append(
-                    {
-                        "action_id": action.action_id,
-                        "status": "no_compensation",
-                        "warning": "Action executed but no compensation function provided",
-                        "timestamp": datetime.now(timezone.utc).isoformat(),
-                    }
-                )
+                compensation_log.append({
+                    "action_id": action.action_id,
+                    "status": "no_compensation",
+                    "warning": "Action executed but no compensation function provided",
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                })
 
                 logger.warning(f"No compensation for executed action: {action.action_id}")
 
@@ -455,9 +443,7 @@ async def saga_transaction(
         # Execute the transaction
         success = await engine.execute_transaction(transaction)
         if not success:
-            raise RuntimeError(
-                f"SagaLLM transaction failed and was compensated: {transaction.transaction_id}"
-            )
+            raise RuntimeError(f"SagaLLM transaction failed and was compensated: {transaction.transaction_id}")
 
     except Exception as e:
         logger.error(f"SagaLLM transaction context failed: {e}")
@@ -476,7 +462,7 @@ async def create_governance_transaction(
     """
     transaction = engine.create_transaction(
         f"Governance Decision: {decision_description}",
-        {"type": "governance", "decision": decision_description},
+        {"type": "governance", "decision": decision_description}
     )
 
     # Add standard governance actions (these would be implemented by the caller)
@@ -543,19 +529,19 @@ def get_saga_engine() -> SagaLLMEngine:
 if __name__ == "__main__":
     # Example usage and testing
     async def main():
-        logger.info("Testing SagaLLM Transaction Engine...")
+        print("Testing SagaLLM Transaction Engine...")
 
         engine = SagaLLMEngine()
 
         # Test engine status
         status = await engine.get_engine_status()
-        logger.info(f"✅ Engine status: {status['status']}")
-        logger.info(f"✅ Constitutional hash: {status['constitutional_hash']}")
+        print(f"✅ Engine status: {status['status']}")
+        print(f"✅ Constitutional hash: {status['constitutional_hash']}")
 
         # Test transaction creation
         transaction = engine.create_transaction("Test governance decision")
-        logger.info(f"✅ Transaction created: {transaction.transaction_id}")
-        logger.info(f"✅ Initial state: {transaction.state.value}")
+        print(f"✅ Transaction created: {transaction.transaction_id}")
+        print(f"✅ Initial state: {transaction.state.value}")
 
         # Test adding actions
         async def mock_execute():
@@ -572,13 +558,13 @@ if __name__ == "__main__":
             mock_compensate,
         )
 
-        logger.info(f"✅ Action added: {action.action_id}")
-        logger.info(f"✅ Actions in transaction: {len(transaction.actions)}")
+        print(f"✅ Action added: {action.action_id}")
+        print(f"✅ Actions in transaction: {len(transaction.actions)}")
 
         # Test transaction execution
         success = await engine.execute_transaction(transaction)
-        logger.info(f"✅ Transaction execution: {'success' if success else 'compensated'}")
-        logger.info(f"✅ Final state: {transaction.state.value}")
+        print(f"✅ Transaction execution: {'success' if success else 'compensated'}")
+        print(f"✅ Final state: {transaction.state.value}")
 
         # Test context manager
         async def test_context_manager():
@@ -593,9 +579,9 @@ if __name__ == "__main__":
                 return await engine.execute_transaction(saga)
 
         context_success = await test_context_manager()
-        logger.info(f"✅ Context manager: {'success' if context_success else 'compensated'}")
+        print(f"✅ Context manager: {'success' if context_success else 'compensated'}")
 
-        logger.info("✅ SagaLLM Transaction Engine test completed!")
+        print("✅ SagaLLM Transaction Engine test completed!")
 
     # Run test
     asyncio.run(main())

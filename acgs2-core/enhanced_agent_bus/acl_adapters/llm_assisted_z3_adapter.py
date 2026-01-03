@@ -13,10 +13,11 @@ import asyncio
 import logging
 import re
 from dataclasses import dataclass, field
+from typing import Any, Dict, List, Optional, Tuple, Union
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional, Tuple
 
-from .z3_adapter import Z3Adapter, Z3AdapterConfig, Z3Request, Z3Response
+from .z3_adapter import Z3Adapter, Z3Request, Z3Response, Z3AdapterConfig
+from .base import AdapterResult
 
 # Import centralized constitutional hash
 try:
@@ -33,27 +34,25 @@ class LLMAssistedZ3Config:
 
     # LLM settings
     llm_model: str = "gpt-4-turbo"  # Model for constraint generation
-    llm_temperature: float = 0.1  # Low temperature for deterministic outputs
-    llm_max_tokens: int = 2000  # Sufficient for SMT generation
+    llm_temperature: float = 0.1   # Low temperature for deterministic outputs
+    llm_max_tokens: int = 2000     # Sufficient for SMT generation
 
     # Generation settings
     max_refinement_iterations: int = 5  # Maximum attempts to fix constraints
-    refinement_timeout_s: float = 30.0  # Timeout per refinement attempt
+    refinement_timeout_s: float = 30.0   # Timeout per refinement attempt
 
     # Validation settings
     validate_generated_constraints: bool = True
     fallback_to_manual: bool = False  # Whether to fallback to manual constraints
 
     # Domain knowledge
-    constitutional_principles: List[str] = field(
-        default_factory=lambda: [
-            "Maximize beneficial impact while minimizing harm",
-            "Ensure transparency and accountability",
-            "Maintain constitutional integrity",
-            "Respect stakeholder rights and interests",
-            "Enable adaptive governance",
-        ]
-    )
+    constitutional_principles: List[str] = field(default_factory=lambda: [
+        "Maximize beneficial impact while minimizing harm",
+        "Ensure transparency and accountability",
+        "Maintain constitutional integrity",
+        "Respect stakeholder rights and interests",
+        "Enable adaptive governance"
+    ])
 
     # Z3 integration
     z3_config: Z3AdapterConfig = field(default_factory=Z3AdapterConfig)
@@ -122,12 +121,9 @@ class SMTGenerationPrompts:
     def get_constraint_generation_prompt(constraint: NaturalLanguageConstraint) -> str:
         """Generate prompt for SMT constraint creation."""
         return f"""
-You are an expert formal methods engineer specializing in SMT
-(Satisfiability Modulo Theories) constraint generation for constitutional
-AI governance systems.
+You are an expert formal methods engineer specializing in SMT (Satisfiability Modulo Theories) constraint generation for constitutional AI governance systems.
 
-Given the natural language constraint, generate a valid SMT-LIB2 formula
-that captures its formal semantics.
+Given the natural language constraint, generate a valid SMT-LIB2 formula that captures its formal semantics.
 
 **Natural Language Constraint:**
 {constraint.description}
@@ -174,15 +170,13 @@ Generate the SMT-LIB2 formula for the given constraint:
         original_constraint: str,
         smt_formula: str,
         z3_error: str,
-        refinement_history: List[Dict[str, Any]],
+        refinement_history: List[Dict[str, Any]]
     ) -> str:
         """Generate prompt for SMT constraint refinement."""
-        history_text = "\n".join(
-            [
-                f"Attempt {i + 1}: {h.get('error', 'Unknown error')}"
-                for i, h in enumerate(refinement_history)
-            ]
-        )
+        history_text = "\n".join([
+            f"Attempt {i+1}: {h.get('error', 'Unknown error')}"
+            for i, h in enumerate(refinement_history)
+        ])
 
         return f"""
 You are debugging an SMT-LIB2 formula that failed Z3 validation. Fix the syntax and logical errors.
@@ -241,7 +235,6 @@ class LLMAssistedZ3Adapter:
 
     def _initialize_llm_client(self):
         """Initialize LLM client for constraint generation."""
-
         # Placeholder for LLM client initialization
         # In practice, this would connect to OpenAI, Anthropic, etc.
         class MockLLMClient:
@@ -282,7 +275,8 @@ class LLMAssistedZ3Adapter:
         return MockLLMClient()
 
     async def natural_language_to_smt(
-        self, constraint: NaturalLanguageConstraint
+        self,
+        constraint: NaturalLanguageConstraint
     ) -> SMTConstraintResult:
         """
         Convert natural language constraint to validated SMT formula.
@@ -322,7 +316,7 @@ class LLMAssistedZ3Adapter:
                         "constraint_domain": constraint.domain,
                         "constraint_criticality": constraint.criticality,
                         "final_iteration": iteration + 1,
-                    },
+                    }
                 )
 
             else:
@@ -337,13 +331,13 @@ class LLMAssistedZ3Adapter:
                     constraint.description,
                     smt_formula,
                     error_msg,
-                    [{"error": e} for e in errors[:-1]],  # Previous errors
+                    [{"error": e} for e in errors[:-1]]  # Previous errors
                 )
 
                 try:
                     smt_formula = await asyncio.wait_for(
                         self.llm_client.generate_constraint(refinement_prompt),
-                        timeout=self.config.refinement_timeout_s,
+                        timeout=self.config.refinement_timeout_s
                     )
                     generation_attempts += 1
 
@@ -368,7 +362,7 @@ class LLMAssistedZ3Adapter:
                 "constraint_domain": constraint.domain,
                 "constraint_criticality": constraint.criticality,
                 "max_iterations_reached": True,
-            },
+            }
         )
 
     async def _generate_initial_smt(self, constraint: NaturalLanguageConstraint) -> str:
@@ -378,7 +372,7 @@ class LLMAssistedZ3Adapter:
         try:
             smt_formula = await asyncio.wait_for(
                 self.llm_client.generate_constraint(prompt),
-                timeout=self.config.refinement_timeout_s,
+                timeout=self.config.refinement_timeout_s
             )
             return smt_formula.strip()
         except Exception as e:
@@ -390,15 +384,12 @@ class LLMAssistedZ3Adapter:
 (assert fallback_constraint)
 """
 
-    async def _validate_smt_formula(
-        self, smt_formula: str
-    ) -> Tuple[bool, Optional[Z3Response], Optional[str]]:
+    async def _validate_smt_formula(self, smt_formula: str) -> Tuple[bool, Optional[Z3Response], Optional[str]]:
         """
         Validate SMT formula with Z3.
 
         Returns (success, response, error_message)
         """
-
         @dataclass
         class ValidationResult:
             success: bool
@@ -415,11 +406,7 @@ class LLMAssistedZ3Adapter:
 
             if result.success and result.response:
                 # Check if Z3 processed successfully (no syntax errors)
-                if hasattr(result.response, "result") and result.response.result in [
-                    "sat",
-                    "unsat",
-                    "unknown",
-                ]:
+                if hasattr(result.response, 'result') and result.response.result in ['sat', 'unsat', 'unknown']:
                     return ValidationResult(True, result.response, None)
                 else:
                     return ValidationResult(False, result.response, "Z3 processing failed")
@@ -433,11 +420,11 @@ class LLMAssistedZ3Adapter:
     def _clean_smt_formula(self, formula: str) -> str:
         """Clean and validate SMT formula syntax."""
         # Remove markdown code blocks if present
-        formula = re.sub(r"```\w*\n?", "", formula)
+        formula = re.sub(r'```\w*\n?', '', formula)
         formula = formula.strip()
 
         # Basic syntax validation
-        if not formula.startswith("(") and not formula.startswith(";"):
+        if not formula.startswith('(') and not formula.startswith(';'):
             # Wrap in assert if it's just a constraint
             formula = f"(assert {formula})"
 
@@ -459,7 +446,7 @@ class LLMAssistedZ3Adapter:
                 "total_generations": 0,  # Would track in real implementation
                 "successful_validations": 0,
                 "average_refinements": 0.0,
-            },
+            }
         }
 
 
@@ -509,42 +496,41 @@ async def validate_policy_constraint(
 if __name__ == "__main__":
     # Example usage and testing
     async def main():
-        logger.info("Testing LLM-Assisted Z3 Adapter...")
+        print("Testing LLM-Assisted Z3 Adapter...")
 
         adapter = LLMAssistedZ3Adapter()
 
         # Test status
         status = await adapter.get_adapter_status()
-        logger.info(f"✅ Adapter status: {status['status']}")
-        logger.info("✅ Capabilities: LLM + Z3 integration enabled")
+        print(f"✅ Adapter status: {status['status']}")
+        print(f"✅ Capabilities: LLM + Z3 integration enabled")
 
         # Test constraint generation
         test_constraint = NaturalLanguageConstraint(
-            description="Users must have admin level access and be authenticated "
-            "to modify system policies",
+            description="Users must have admin level access and be authenticated to modify system policies",
             context={"system_type": "governance", "access_level": "admin"},
             domain="access_control",
-            criticality="critical",
+            criticality="critical"
         )
 
         result = await adapter.natural_language_to_smt(test_constraint)
 
-        logger.info(f"✅ SMT generation: {result.generation_attempts} attempts")
-        logger.info(f"✅ Refinements needed: {result.refinement_iterations}")
-        logger.info(f"✅ Constraint valid: {result.is_valid}")
-        logger.info(f"✅ SMT formula length: {len(result.smt_formula)} chars")
+        print(f"✅ SMT generation: {result.generation_attempts} attempts")
+        print(f"✅ Refinements needed: {result.refinement_iterations}")
+        print(f"✅ Constraint valid: {result.is_valid}")
+        print(f"✅ SMT formula length: {len(result.smt_formula)} chars")
 
         if result.errors:
-            logger.info(f"⚠️  Errors encountered: {len(result.errors)}")
+            print(f"⚠️  Errors encountered: {len(result.errors)}")
 
         # Test convenience function
         policy_result = await validate_policy_constraint(
             "Policies must not violate constitutional principles and must be auditable"
         )
 
-        logger.info(f"✅ Policy validation: valid={policy_result.is_valid}")
+        print(f"✅ Policy validation: valid={policy_result.is_valid}")
 
-        logger.info("✅ LLM-Assisted Z3 Adapter test completed!")
+        print("✅ LLM-Assisted Z3 Adapter test completed!")
 
     # Run test
     asyncio.run(main())

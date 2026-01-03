@@ -13,12 +13,13 @@ by making policy generation mathematically verifiable.
 """
 
 import asyncio
-import hashlib
 import logging
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional, Tuple, Protocol
 from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple
+import re
+import hashlib
 
 # Import centralized constitutional hash
 try:
@@ -31,16 +32,14 @@ logger = logging.getLogger(__name__)
 
 class PolicyLanguage(Enum):
     """Supported policy languages."""
-
-    REGO = "rego"  # Open Policy Agent Rego
-    DAFNY = "dafny"  # Dafny formal verification
-    SMT = "smt"  # SMT-LIB2 format
+    REGO = "rego"      # Open Policy Agent Rego
+    DAFNY = "dafny"    # Dafny formal verification
+    SMT = "smt"        # SMT-LIB2 format
     NATURAL = "natural"  # Natural language
 
 
 class VerificationStatus(Enum):
     """Status of policy verification."""
-
     UNVERIFIED = "unverified"
     VERIFYING = "verifying"
     VERIFIED = "verified"
@@ -51,7 +50,6 @@ class VerificationStatus(Enum):
 @dataclass
 class PolicySpecification:
     """A policy specification in natural language."""
-
     spec_id: str
     natural_language: str
     domain: str  # e.g., "access_control", "resource_allocation", "audit"
@@ -76,11 +74,10 @@ class PolicySpecification:
 @dataclass
 class VerifiedPolicy:
     """A formally verified policy with multiple representations."""
-
     policy_id: str
     specification: PolicySpecification
     rego_policy: str  # OPA Rego format
-    dafny_spec: str  # Dafny formal specification
+    dafny_spec: str   # Dafny formal specification
     smt_formulation: str  # SMT-LIB2 format
     verification_result: Dict[str, Any]
     generation_metadata: Dict[str, Any]
@@ -111,12 +108,11 @@ class VerifiedPolicy:
 @dataclass
 class PSVIteration:
     """A single Propose-Solve-Verify iteration."""
-
     iteration_id: str
     specification: PolicySpecification
     proposed_policy: str  # Initial policy proposal
-    solved_rego: str  # Rego translation
-    verified_dafny: str  # Dafny verification
+    solved_rego: str      # Rego translation
+    verified_dafny: str   # Dafny verification
     z3_result: Dict[str, Any]  # Z3 verification result
     success: bool
     error_message: Optional[str]
@@ -209,10 +205,15 @@ method shouldLog(level: LogLevel) returns (log: bool)
 {{
     log := requiresAudit(level);
 }}
-""",
+"""
         }
 
-    async def annotate(self, rego_policy: str, natural_spec: str, domain: str = "general") -> str:
+    async def annotate(
+        self,
+        rego_policy: str,
+        natural_spec: str,
+        domain: str = "general"
+    ) -> str:
         """
         Generate Dafny annotations for a Rego policy.
 
@@ -224,9 +225,7 @@ method shouldLog(level: LogLevel) returns (log: bool)
         concepts = self._extract_concepts_from_rego(rego_policy)
 
         # Get appropriate template
-        template = self.annotation_templates.get(
-            domain, self.annotation_templates.get("access_control", "")
-        )
+        template = self.annotation_templates.get(domain, self.annotation_templates.get("access_control", ""))
 
         # Customize template based on extracted concepts
         dafny_spec = self._customize_template(template, concepts, natural_spec)
@@ -238,7 +237,10 @@ method shouldLog(level: LogLevel) returns (log: bool)
         return dafny_spec
 
     async def refine(
-        self, dafny_spec: str, verification_errors: List[str], iteration_count: int
+        self,
+        dafny_spec: str,
+        verification_errors: List[str],
+        iteration_count: int
     ) -> str:
         """
         Refine Dafny specification based on verification errors.
@@ -266,7 +268,12 @@ method shouldLog(level: LogLevel) returns (log: bool)
 
     def _extract_concepts_from_rego(self, rego_policy: str) -> Dict[str, List[str]]:
         """Extract key concepts from Rego policy."""
-        concepts = {"permissions": [], "resources": [], "conditions": [], "actions": []}
+        concepts = {
+            "permissions": [],
+            "resources": [],
+            "conditions": [],
+            "actions": []
+        }
 
         # Simple pattern extraction (in practice, would use AST parsing)
         if "allow" in rego_policy:
@@ -281,7 +288,10 @@ method shouldLog(level: LogLevel) returns (log: bool)
         return concepts
 
     def _customize_template(
-        self, template: str, concepts: Dict[str, List[str]], natural_spec: str
+        self,
+        template: str,
+        concepts: Dict[str, List[str]],
+        natural_spec: str
     ) -> str:
         """Customize Dafny template based on extracted concepts."""
         customized = template
@@ -299,7 +309,7 @@ method shouldLog(level: LogLevel) returns (log: bool)
     async def _apply_learned_improvements(self, dafny_spec: str, natural_spec: str) -> str:
         """Apply learned improvements from previous successful verifications."""
         # Look for similar successful patterns
-        spec_hash = hashlib.md5(natural_spec.encode(), usedforsecurity=False).hexdigest()[:8]
+        spec_hash = hashlib.md5(natural_spec.encode()).hexdigest()[:8]
 
         improvements = self.success_patterns.get(spec_hash, [])
 
@@ -312,16 +322,17 @@ method shouldLog(level: LogLevel) returns (log: bool)
         return improved_spec
 
     async def _learn_from_refinement(
-        self, original_spec: str, refined_spec: str, errors: List[str]
+        self,
+        original_spec: str,
+        refined_spec: str,
+        errors: List[str]
     ):
         """Learn patterns from successful refinements."""
         # Extract successful patterns
         for error in errors:
             error_pattern = self._extract_error_pattern(error)
             if error_pattern:
-                spec_hash = hashlib.md5(original_spec.encode(), usedforsecurity=False).hexdigest()[
-                    :8
-                ]
+                spec_hash = hashlib.md5(original_spec.encode()).hexdigest()[:8]
                 if spec_hash not in self.success_patterns:
                     self.success_patterns[spec_hash] = []
                 self.success_patterns[spec_hash].append(f"fixed_{error_pattern}")
@@ -372,7 +383,10 @@ class AlphaVerusTranslator:
         self.learning_iterations = 0
 
     async def translate_policy(
-        self, natural_language: str, target_language: PolicyLanguage, context: Dict[str, Any]
+        self,
+        natural_language: str,
+        target_language: PolicyLanguage,
+        context: Dict[str, Any]
     ) -> Tuple[str, Dict[str, Any]]:
         """
         Translate natural language policy to target formal language.
@@ -382,14 +396,10 @@ class AlphaVerusTranslator:
         logger.debug(f"Translating policy to {target_language.value}")
 
         # Generate initial translation
-        translation = await self._generate_initial_translation(
-            natural_language, target_language, context
-        )
+        translation = await self._generate_initial_translation(natural_language, target_language, context)
 
         # Apply learned improvements
-        improved_translation = await self._apply_learning(
-            translation, natural_language, target_language
-        )
+        improved_translation = await self._apply_learning(translation, natural_language, target_language)
 
         # Calculate confidence based on learning history
         confidence = self._calculate_confidence(natural_language, target_language)
@@ -404,7 +414,10 @@ class AlphaVerusTranslator:
         return improved_translation, metadata
 
     async def _generate_initial_translation(
-        self, natural_language: str, target_language: PolicyLanguage, context: Dict[str, Any]
+        self,
+        natural_language: str,
+        target_language: PolicyLanguage,
+        context: Dict[str, Any]
     ) -> str:
         """Generate initial translation to target language."""
         if target_language == PolicyLanguage.REGO:
@@ -417,15 +430,17 @@ class AlphaVerusTranslator:
             return natural_language  # No translation needed
 
     async def _apply_learning(
-        self, translation: str, natural_language: str, target_language: PolicyLanguage
+        self,
+        translation: str,
+        natural_language: str,
+        target_language: PolicyLanguage
     ) -> str:
         """Apply learned improvements to the translation."""
         improved = translation
 
         # Look for similar successful translations
         similar_translations = [
-            t
-            for t in self.translation_history
+            t for t in self.translation_history
             if self._similarity_score(t["natural_language"], natural_language) > 0.7
             and t["target_language"] == target_language.value
             and t["success"]
@@ -439,20 +454,20 @@ class AlphaVerusTranslator:
         return improved
 
     def _calculate_confidence(
-        self, natural_language: str, target_language: PolicyLanguage
+        self,
+        natural_language: str,
+        target_language: PolicyLanguage
     ) -> float:
         """Calculate confidence in translation based on learning history."""
         similar_successes = sum(
-            1
-            for t in self.translation_history
+            1 for t in self.translation_history
             if self._similarity_score(t["natural_language"], natural_language) > 0.7
             and t["target_language"] == target_language.value
             and t["success"]
         )
 
         total_similar = sum(
-            1
-            for t in self.translation_history
+            1 for t in self.translation_history
             if self._similarity_score(t["natural_language"], natural_language) > 0.7
             and t["target_language"] == target_language.value
         )
@@ -498,11 +513,11 @@ allow {{
         conditions = []
 
         if "admin" in natural_language.lower():
-            conditions.append('input.user.role == "admin"')
+            conditions.append("input.user.role == \"admin\"")
         if "authenticated" in natural_language.lower():
             conditions.append("input.user.authenticated == true")
         if "access" in natural_language.lower():
-            conditions.append('input.action == "access"')
+            conditions.append("input.action == \"access\"")
 
         if not conditions:
             conditions.append("true")  # Default allow
@@ -534,7 +549,7 @@ method checkPolicy(input: int) returns (result: bool)
         target_language: PolicyLanguage,
         translation: str,
         success: bool,
-        error_message: Optional[str] = None,
+        error_message: Optional[str] = None
     ):
         """Learn from translation result to improve future translations."""
         learning_record = {
@@ -544,9 +559,7 @@ method checkPolicy(input: int) returns (result: bool)
             "success": success,
             "error_message": error_message,
             "timestamp": datetime.now(timezone.utc).isoformat(),
-            "improvement_pattern": (
-                self._extract_improvement_pattern(error_message) if error_message else None
-            ),
+            "improvement_pattern": self._extract_improvement_pattern(error_message) if error_message else None,
         }
 
         self.translation_history.append(learning_record)
@@ -556,9 +569,7 @@ method checkPolicy(input: int) returns (result: bool)
         recent_results = self.translation_history[-100:]  # Last 100 translations
         self.success_rate = sum(1 for r in recent_results if r["success"]) / len(recent_results)
 
-        logger.debug(
-            f"Learned from translation result: success={success}, new success rate={self.success_rate:.2f}"
-        )
+        logger.debug(f"Learned from translation result: success={success}, new success rate={self.success_rate:.2f}")
 
     def _extract_improvement_pattern(self, error_message: str) -> str:
         """Extract improvement pattern from error message."""
@@ -590,7 +601,10 @@ class VerifiedPolicyGenerator:
         self.verified_corpus: List[VerifiedPolicy] = []
         self.psv_history: List[PSVIteration] = []
 
-    async def generate_verified_policy(self, specification: PolicySpecification) -> VerifiedPolicy:
+    async def generate_verified_policy(
+        self,
+        specification: PolicySpecification
+    ) -> VerifiedPolicy:
         """
         Generate a formally verified policy using PSV-Verus approach.
 
@@ -609,12 +623,16 @@ class VerifiedPolicyGenerator:
 
             # Solve: Translate to Rego using AlphaVerus
             rego_policy, solve_metadata = await self.alpha_verus.translate_policy(
-                specification.natural_language, PolicyLanguage.REGO, specification.context
+                specification.natural_language,
+                PolicyLanguage.REGO,
+                specification.context
             )
 
             # Verify: Generate Dafny and verify
             dafny_spec = await self.dafny_pro.annotate(
-                rego_policy, specification.natural_language, specification.domain
+                rego_policy,
+                specification.natural_language,
+                specification.domain
             )
 
             # Simulate Z3 verification (in practice, would call actual Z3)
@@ -643,7 +661,7 @@ class VerifiedPolicyGenerator:
                 PolicyLanguage.REGO,
                 rego_policy,
                 iteration_record.success,
-                iteration_record.error_message,
+                iteration_record.error_message
             )
 
             # Check if this is the best result so far
@@ -663,11 +681,7 @@ class VerifiedPolicyGenerator:
                         "alpha_verus_used": True,
                         "dafny_pro_used": True,
                     },
-                    verification_status=(
-                        VerificationStatus.VERIFIED
-                        if iteration_record.success
-                        else VerificationStatus.FAILED
-                    ),
+                    verification_status=VerificationStatus.VERIFIED if iteration_record.success else VerificationStatus.FAILED,
                     confidence_score=confidence,
                     verified_at=datetime.now(timezone.utc) if iteration_record.success else None,
                 )
@@ -683,7 +697,7 @@ class VerifiedPolicyGenerator:
                 refined_dafny = await self.dafny_pro.refine(
                     dafny_spec,
                     [iteration_record.error_message] if iteration_record.error_message else [],
-                    iteration + 1,
+                    iteration + 1
                 )
 
                 # Verify refined version
@@ -722,7 +736,7 @@ class VerifiedPolicyGenerator:
             "proof_time_ms": 150.0,
             "error": None if verified else "Specification verification failed",
             "z3_solver_calls": 1,
-            "verification_method": "dafny_to_z3",
+            "verification_method": "dafny_to_z3"
         }
 
         return result
@@ -761,16 +775,12 @@ class VerifiedPolicyGenerator:
             try:
                 verified_policy = await self.generate_verified_policy(spec)
                 success = verified_policy.verification_status == VerificationStatus.VERIFIED
-                results.append(
-                    {
-                        "spec_id": spec.spec_id,
-                        "success": success,
-                        "confidence": verified_policy.confidence_score if verified_policy else 0.0,
-                        "iterations": len(
-                            [p for p in self.psv_history if p.specification.spec_id == spec.spec_id]
-                        ),
-                    }
-                )
+                results.append({
+                    "spec_id": spec.spec_id,
+                    "success": success,
+                    "confidence": verified_policy.confidence_score if verified_policy else 0.0,
+                    "iterations": len([p for p in self.psv_history if p.specification.spec_id == spec.spec_id]),
+                })
 
                 # Learn from result
                 await self.alpha_verus.learn_from_result(
@@ -778,25 +788,21 @@ class VerifiedPolicyGenerator:
                     PolicyLanguage.REGO,
                     verified_policy.rego_policy if verified_policy else "",
                     success,
-                    "Self-play challenge" if not success else None,
+                    "Self-play challenge" if not success else None
                 )
 
             except Exception as e:
                 logger.error(f"Self-play failed for spec {spec.spec_id}: {e}")
-                results.append(
-                    {
-                        "spec_id": spec.spec_id,
-                        "success": False,
-                        "error": str(e),
-                    }
-                )
+                results.append({
+                    "spec_id": spec.spec_id,
+                    "success": False,
+                    "error": str(e),
+                })
 
         # Calculate improvement metrics
         success_rate = sum(1 for r in results if r["success"]) / len(results)
         avg_confidence = sum(r.get("confidence", 0) for r in results) / len(results)
-        avg_iterations = sum(r.get("iterations", 1) for r in results if "iterations" in r) / len(
-            results
-        )
+        avg_iterations = sum(r.get("iterations", 1) for r in results if "iterations" in r) / len(results)
 
         improvement_metrics = {
             "round_number": len(self.verified_corpus),  # Approximation
@@ -808,9 +814,7 @@ class VerifiedPolicyGenerator:
             "learning_iterations": self.alpha_verus.learning_iterations,
         }
 
-        logger.info(
-            f"Self-play round completed: success_rate={success_rate:.2f}, avg_confidence={avg_confidence:.2f}"
-        )
+        logger.info(f"Self-play round completed: success_rate={success_rate:.2f}, avg_confidence={avg_confidence:.2f}")
 
         return improvement_metrics
 
@@ -829,12 +833,10 @@ class VerifiedPolicyGenerator:
             template = challenging_templates[i % len(challenging_templates)]
             spec = PolicySpecification(
                 spec_id=f"challenge_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}_{i}",
-                natural_language=f"{template} (challenge variant {i + 1})",
-                domain=["access_control", "resource_allocation", "audit", "policy", "security"][
-                    i % 5
-                ],
+                natural_language=f"{template} (challenge variant {i+1})",
+                domain=["access_control", "resource_allocation", "audit", "policy", "security"][i % 5],
                 criticality="high",
-                context={"challenge_level": "advanced", "variant": i + 1},
+                context={"challenge_level": "advanced", "variant": i+1},
             )
             specs.append(spec)
 
@@ -858,10 +860,8 @@ class VerifiedPolicyGenerator:
                 "rego_generation": True,
             },
             "performance_metrics": {
-                "success_rate": sum(1 for i in recent_iterations if i.success)
-                / max(1, len(recent_iterations)),
-                "average_iterations_per_policy": sum(i.iteration_number for i in recent_iterations)
-                / max(1, len(recent_iterations)),
+                "success_rate": sum(1 for i in recent_iterations if i.success) / max(1, len(recent_iterations)),
+                "average_iterations_per_policy": sum(i.iteration_number for i in recent_iterations) / max(1, len(recent_iterations)),
                 "learning_effectiveness": self.alpha_verus.success_rate,
             },
             "constitutional_hash": CONSTITUTIONAL_HASH,
@@ -903,14 +903,14 @@ async def generate_policy_from_spec(
 if __name__ == "__main__":
     # Example usage and testing
     async def main():
-        logger.info("Testing PSV-Verus Verified Policy Generator...")
+        print("Testing PSV-Verus Verified Policy Generator...")
 
         generator = VerifiedPolicyGenerator(max_iterations=3)
 
         # Test status
         status = await generator.get_generator_status()
-        logger.info(f"✅ Generator status: {status['status']}")
-        logger.info("✅ Capabilities: DafnyPro + AlphaVerus integration")
+        print(f"✅ Generator status: {status['status']}")
+        print(f"✅ Capabilities: DafnyPro + AlphaVerus integration")
 
         # Test policy generation
         test_spec = PolicySpecification(
@@ -918,36 +918,36 @@ if __name__ == "__main__":
             natural_language="Users with admin role can access all resources, regular users can only read",
             domain="access_control",
             criticality="high",
-            context={"security_level": "standard"},
+            context={"security_level": "standard"}
         )
 
         verified_policy = await generator.generate_verified_policy(test_spec)
 
-        logger.info("✅ Policy generation completed")
-        logger.info(f"   Policy ID: {verified_policy.policy_id}")
-        logger.info(f"   Verification status: {verified_policy.verification_status.value}")
-        logger.info(f"   Confidence score: {verified_policy.confidence_score:.2f}")
-        logger.info(f"   Rego policy length: {len(verified_policy.rego_policy)} chars")
-        logger.info(f"   Dafny spec length: {len(verified_policy.dafny_spec)} chars")
+        print(f"✅ Policy generation completed")
+        print(f"   Policy ID: {verified_policy.policy_id}")
+        print(f"   Verification status: {verified_policy.verification_status.value}")
+        print(f"   Confidence score: {verified_policy.confidence_score:.2f}")
+        print(f"   Rego policy length: {len(verified_policy.rego_policy)} chars")
+        print(f"   Dafny spec length: {len(verified_policy.dafny_spec)} chars")
 
         # Test self-play improvement
         improvement_metrics = await generator.self_play_round(num_policies=2)
 
-        logger.info("✅ Self-play round completed")
-        logger.info(f"   Success rate: {improvement_metrics['success_rate']:.2f}")
-        logger.info(f"   Average confidence: {improvement_metrics['average_confidence']:.2f}")
-        logger.info(f"   Corpus size: {improvement_metrics['corpus_size']}")
+        print(f"✅ Self-play round completed")
+        print(f"   Success rate: {improvement_metrics['success_rate']:.2f}")
+        print(f"   Average confidence: {improvement_metrics['average_confidence']:.2f}")
+        print(f"   Corpus size: {improvement_metrics['corpus_size']}")
 
         # Test convenience function
         simple_policy = await generate_policy_from_spec(
-            "Audit all administrative actions", domain="audit", criticality="critical"
+            "Audit all administrative actions",
+            domain="audit",
+            criticality="critical"
         )
 
-        logger.info(
-            f"✅ Convenience function: verified={simple_policy.verification_status == VerificationStatus.VERIFIED}"
-        )
+        print(f"✅ Convenience function: verified={simple_policy.verification_status == VerificationStatus.VERIFIED}")
 
-        logger.info("✅ PSV-Verus Verified Policy Generator test completed!")
+        print("✅ PSV-Verus Verified Policy Generator test completed!")
 
     # Run test
     asyncio.run(main())

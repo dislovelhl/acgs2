@@ -5,26 +5,25 @@ Constitutional Hash: cdd01ef066bc6cf2
 Tests the breakthrough Mamba-2 hybrid architecture for 4M+ token context processing.
 """
 
-import os
-import sys
-from unittest.mock import Mock, patch
-
-import numpy as np
 import pytest
 import torch
+import numpy as np
+from unittest.mock import Mock, patch
+import sys
+import os
 
 # Add parent directory to path for imports
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 from mamba_hybrid_processor import (
-    CONSTITUTIONAL_HASH,
-    ConstitutionalMambaHybrid,
     MambaConfig,
-    MambaHybridManager,
     MambaSSM,
     SharedAttentionLayer,
+    ConstitutionalMambaHybrid,
+    MambaHybridManager,
     get_mamba_hybrid_processor,
     initialize_mamba_processor,
+    CONSTITUTIONAL_HASH
 )
 
 
@@ -39,8 +38,8 @@ class TestMambaConfig:
         assert config.d_state == 128
         assert config.num_mamba_layers == 6
         assert config.max_context_length == 4_000_000
-        assert config.use_shared_attention is True
-        assert config.jrt_enabled is True
+        assert config.use_shared_attention == True
+        assert config.jrt_enabled == True
         assert config.critical_sections_repeat == 3
         assert config.constitutional_hash == CONSTITUTIONAL_HASH
 
@@ -50,13 +49,13 @@ class TestMambaConfig:
             d_model=256,
             num_mamba_layers=4,
             max_context_length=1_000_000,
-            use_shared_attention=False,
+            use_shared_attention=False
         )
 
         assert config.d_model == 256
         assert config.num_mamba_layers == 4
         assert config.max_context_length == 1_000_000
-        assert config.use_shared_attention is False
+        assert config.use_shared_attention == False
 
 
 class TestMambaSSM:
@@ -127,7 +126,7 @@ class TestConstitutionalMambaHybrid:
             d_model=64,
             num_mamba_layers=2,  # Reduced for testing
             device="cpu",
-            dtype=torch.float32,
+            dtype=torch.float32
         )
 
     @pytest.fixture
@@ -202,7 +201,7 @@ class TestMambaHybridManager:
             d_model=32,  # Very small for testing
             num_mamba_layers=1,
             device="cpu",
-            dtype=torch.float32,
+            dtype=torch.float32
         )
 
     @pytest.fixture
@@ -285,7 +284,12 @@ class TestIntegration:
 
     def test_end_to_end_processing(self):
         """Test end-to-end context processing."""
-        config = MambaConfig(d_model=64, num_mamba_layers=2, device="cpu", dtype=torch.float32)
+        config = MambaConfig(
+            d_model=64,
+            num_mamba_layers=2,
+            device="cpu",
+            dtype=torch.float32
+        )
 
         manager = MambaHybridManager(config)
         manager.load_model()
@@ -296,7 +300,9 @@ class TestIntegration:
         input_ids = torch.randint(0, 1000, (batch_size, seq_len))
 
         output = manager.process_context(
-            input_tensor=input_tensor, input_ids=input_ids, use_attention=True
+            input_tensor=input_tensor,
+            input_ids=input_ids,
+            use_attention=True
         )
 
         assert output.shape == (batch_size, seq_len, d_model)
@@ -305,7 +311,10 @@ class TestIntegration:
     def test_memory_efficiency(self):
         """Test memory efficiency features."""
         config = MambaConfig(
-            d_model=128, max_context_length=1_000_000, device="cpu", dtype=torch.float32
+            d_model=128,
+            max_context_length=1_000_000,
+            device="cpu",
+            dtype=torch.float32
         )
 
         processor = ConstitutionalMambaHybrid(config)
