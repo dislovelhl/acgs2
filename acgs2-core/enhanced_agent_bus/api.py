@@ -26,6 +26,7 @@ app = FastAPI(
 # Removed allow_origins=["*"] to prevent CORS vulnerability (OWASP A05:2021)
 try:
     from shared.security.cors_config import get_cors_config
+
     cors_config = get_cors_config()
     logger.info("CORS: Using secure configuration from shared module")
 except ImportError:

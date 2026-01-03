@@ -31,7 +31,9 @@ logger = logging.getLogger(__name__)
 class PACARVerifier:
     """Orchestrates Red Team and Validator agents for agentic verification."""
 
-    def __init__(self, config: Optional[BusConfiguration] = None, redis_url: str = "redis://localhost:6379"):
+    def __init__(
+        self, config: Optional[BusConfiguration] = None, redis_url: str = "redis://localhost:6379"
+    ):
         self.config = config or BusConfiguration.from_environment()
         self.redis_url = redis_url
         self.redis_client: Optional[Any] = None

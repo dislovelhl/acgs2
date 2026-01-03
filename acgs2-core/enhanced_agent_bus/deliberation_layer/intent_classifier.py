@@ -195,7 +195,7 @@ Respond with ONLY the category name in lowercase."""
         """
         self.model_name = model_name
         self.config = config or BusConfiguration()
-        
+
         # LLM configuration
         self.llm_enabled = llm_enabled
         self.llm_model_version = llm_model_version
