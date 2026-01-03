@@ -15,6 +15,8 @@ from app.config import settings
 from app.core.approval_engine import (
     ApprovalEngine,
     ApprovalEngineError,
+    ApprovalNotFoundError,
+    ApprovalStateError,
     ChainNotFoundError,
     get_approval_engine,
 )
@@ -98,6 +100,33 @@ class ErrorResponse(BaseModel):
     error: str
     detail: str
     request_id: Optional[str] = None
+
+
+class ApprovalDecisionRequest(BaseModel):
+    """Request model for submitting an approval decision."""
+
+    reviewer_id: str = Field(..., description="ID of the reviewer making the decision")
+    decision: str = Field(
+        ..., description="Decision: 'approve' or 'reject'", pattern="^(approve|reject)$"
+    )
+    reasoning: Optional[str] = Field(None, description="Reason for the decision")
+    reviewer_role: Optional[str] = Field(
+        "approver", description="Role of the reviewer (default: approver)"
+    )
+    conditions: Optional[str] = Field(None, description="Any conditions attached to an approval")
+
+
+class ApprovalDecisionResponse(BaseModel):
+    """Response model for an approval decision."""
+
+    request_id: str = Field(..., description="The approval request ID")
+    decision_id: Optional[str] = Field(None, description="Original decision ID")
+    status: str = Field(..., description="New status after the decision")
+    decision: str = Field(..., description="The decision made (approve/reject)")
+    reviewer_id: str = Field(..., description="ID of the reviewer")
+    current_level: int = Field(..., description="Current approval level after decision")
+    updated_at: str = Field(..., description="Timestamp of the decision")
+    message: str = Field(..., description="Human-readable status message")
 
 
 # =============================================================================
@@ -383,4 +412,100 @@ async def get_approval_status(request_id: str) -> ApprovalStatusResponse:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to get approval status",
+        ) from e
+
+
+@router.post(
+    "/{request_id}/decision",
+    response_model=ApprovalDecisionResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Submit approval decision",
+    description="Capture an approval or rejection decision for a pending request. "
+    "Following pattern from hitl_manager.py process_approval method.",
+)
+async def submit_decision(
+    request_id: str,
+    decision_request: ApprovalDecisionRequest,
+) -> ApprovalDecisionResponse:
+    """
+    Process an approval or rejection decision.
+
+    Captures the human decision and records it to the approval request.
+    Implements pattern from enhanced_agent_bus/deliberation_layer/hitl_manager.py
+
+    Args:
+        request_id: The approval request ID
+        decision_request: The decision details including reviewer_id, decision, and reasoning
+    """
+    try:
+        engine = get_approval_engine()
+
+        # Map decision string to ApprovalStatus enum
+        if decision_request.decision.lower() == "approve":
+            decision_status = ApprovalStatus.APPROVED
+        else:
+            decision_status = ApprovalStatus.REJECTED
+
+        # Process the decision through the approval engine
+        updated_request = await engine.process_decision(
+            request_id=request_id,
+            approver_id=decision_request.reviewer_id,
+            approver_role=decision_request.reviewer_role or "approver",
+            decision=decision_status,
+            rationale=decision_request.reasoning,
+            conditions=decision_request.conditions,
+        )
+
+        # Build response message based on decision outcome
+        if updated_request.status == ApprovalStatus.APPROVED:
+            message = "Request approved successfully."
+        elif updated_request.status == ApprovalStatus.REJECTED:
+            message = "Request rejected."
+        elif updated_request.status == ApprovalStatus.PENDING:
+            message = (
+                f"Decision recorded. Request routed to level {updated_request.current_level} "
+                "for additional approval."
+            )
+        else:
+            message = f"Decision recorded. Status: {updated_request.status.value}"
+
+        logger.info(
+            f"Decision captured for {request_id}: {decision_request.decision} "
+            f"by {decision_request.reviewer_id}"
+        )
+
+        return ApprovalDecisionResponse(
+            request_id=updated_request.request_id,
+            decision_id=updated_request.decision_context.get("decision_id"),
+            status=updated_request.status.value,
+            decision=decision_request.decision,
+            reviewer_id=decision_request.reviewer_id,
+            current_level=updated_request.current_level,
+            updated_at=updated_request.updated_at.isoformat(),
+            message=message,
+        )
+
+    except ApprovalNotFoundError as e:
+        logger.warning(f"Approval request not found: {request_id}")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Approval request not found: {request_id}",
+        ) from e
+    except ApprovalStateError as e:
+        logger.warning(f"Invalid state for decision on {request_id}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=str(e),
+        ) from e
+    except ApprovalEngineError as e:
+        logger.error(f"Approval engine error processing decision: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to process decision: {e}",
+        ) from e
+    except Exception as e:
+        logger.exception(f"Unexpected error processing decision for {request_id}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An unexpected error occurred while processing the decision",
         ) from e
