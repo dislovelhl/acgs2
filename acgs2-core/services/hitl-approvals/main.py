@@ -9,6 +9,8 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.approvals import router as approvals_router
+from app.api.audit import router as audit_router
 from app.config import settings
 
 # Configure logging
@@ -51,6 +53,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Include API routers
+app.include_router(approvals_router)
+app.include_router(audit_router)
 
 
 @app.get("/health")
