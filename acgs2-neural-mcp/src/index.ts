@@ -17,6 +17,82 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 import { NeuralDomainMapper } from "./neural/NeuralDomainMapper.js";
 
+// HITL Approvals Service Configuration
+const HITL_APPROVALS_URL = process.env.HITL_APPROVALS_URL || "http://localhost:8003";
+const HITL_REQUEST_TIMEOUT_MS = 10000;
+
+// Type definitions for HITL approval requests
+interface HITLApprovalRequest {
+  decision_id: string;
+  decision_type: string;
+  decision_context: Record<string, unknown>;
+  impact_level: "low" | "medium" | "high" | "critical";
+  priority?: "low" | "medium" | "high" | "critical";
+  chain_id?: string;
+  requester_id?: string;
+  metadata?: Record<string, unknown>;
+}
+
+interface HITLApprovalResponse {
+  request_id: string;
+  status: string;
+  chain_id: string;
+  current_level: number;
+  created_at: string;
+  message?: string;
+}
+
+interface HITLApprovalError {
+  detail: string;
+  status_code?: number;
+}
+
+/**
+ * Emits an approval request to the HITL approvals service.
+ * Used when AI decisions require human oversight before proceeding.
+ */
+async function emitApprovalRequest(
+  request: HITLApprovalRequest
+): Promise<HITLApprovalResponse> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), HITL_REQUEST_TIMEOUT_MS);
+
+  try {
+    const response = await fetch(`${HITL_APPROVALS_URL}/api/approvals`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Source-Service": "acgs2-neural-mcp",
+      },
+      body: JSON.stringify(request),
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      let errorDetail: string;
+      try {
+        const errorBody = (await response.json()) as HITLApprovalError;
+        errorDetail = errorBody.detail || `HTTP ${response.status}`;
+      } catch {
+        errorDetail = `HTTP ${response.status}: ${response.statusText}`;
+      }
+      throw new Error(`HITL approval request failed: ${errorDetail}`);
+    }
+
+    return (await response.json()) as HITLApprovalResponse;
+  } catch (error: unknown) {
+    clearTimeout(timeoutId);
+    if (error instanceof Error && error.name === "AbortError") {
+      throw new Error(
+        `HITL approval request timed out after ${HITL_REQUEST_TIMEOUT_MS}ms`
+      );
+    }
+    throw error;
+  }
+}
+
 // Initialize the Neural Domain Mapper
 const mapper = new NeuralDomainMapper();
 
@@ -367,6 +443,80 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           properties: {},
         },
       },
+      {
+        name: "hitl_request_approval",
+        description:
+          "Request human approval for an AI decision. Emits an approval request to the HITL approvals service for decisions requiring human oversight.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            decision_id: {
+              type: "string",
+              description: "Unique identifier for the decision requiring approval",
+            },
+            decision_type: {
+              type: "string",
+              description: "Type of decision (e.g., 'high_risk', 'policy_change', 'resource_allocation')",
+            },
+            decision_context: {
+              type: "object",
+              description: "Context and details about the decision",
+              properties: {
+                summary: { type: "string", description: "Brief summary of the decision" },
+                rationale: { type: "string", description: "Reasoning behind the decision" },
+                affected_domains: {
+                  type: "array",
+                  items: { type: "string" },
+                  description: "List of affected domain IDs",
+                },
+                risk_factors: {
+                  type: "array",
+                  items: { type: "string" },
+                  description: "Identified risk factors",
+                },
+              },
+            },
+            impact_level: {
+              type: "string",
+              enum: ["low", "medium", "high", "critical"],
+              description: "Impact level of the decision",
+            },
+            priority: {
+              type: "string",
+              enum: ["low", "medium", "high", "critical"],
+              description: "Priority for approval processing (defaults to impact_level)",
+            },
+            chain_id: {
+              type: "string",
+              description: "Specific approval chain to use (optional, auto-selected based on decision_type if not provided)",
+            },
+            requester_id: {
+              type: "string",
+              description: "ID of the agent or system requesting approval",
+            },
+            metadata: {
+              type: "object",
+              description: "Additional metadata for the approval request",
+            },
+          },
+          required: ["decision_id", "decision_type", "decision_context", "impact_level"],
+        },
+      },
+      {
+        name: "hitl_check_status",
+        description:
+          "Check the status of a pending approval request.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            request_id: {
+              type: "string",
+              description: "The approval request ID to check",
+            },
+          },
+          required: ["request_id"],
+        },
+      },
     ],
   };
 });
@@ -411,6 +561,21 @@ interface LoadDomainsArgs {
 interface TrainArgs {
   epochs?: number;
   learningRate?: number;
+}
+
+interface HITLRequestApprovalArgs {
+  decision_id: string;
+  decision_type: string;
+  decision_context: Record<string, unknown>;
+  impact_level: "low" | "medium" | "high" | "critical";
+  priority?: "low" | "medium" | "high" | "critical";
+  chain_id?: string;
+  requester_id?: string;
+  metadata?: Record<string, unknown>;
+}
+
+interface HITLCheckStatusArgs {
+  request_id: string;
 }
 
 /**
@@ -615,6 +780,196 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           },
         ],
       };
+    }
+
+    if (name === "hitl_request_approval") {
+      const typedArgs = args as HITLRequestApprovalArgs;
+
+      // Validate required fields
+      if (!typedArgs.decision_id || !typedArgs.decision_type || !typedArgs.impact_level) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(
+                {
+                  status: "Error: Missing required fields",
+                  message: "decision_id, decision_type, decision_context, and impact_level are required",
+                },
+                null,
+                2
+              ),
+            },
+          ],
+          isError: true,
+        };
+      }
+
+      // Build the approval request
+      const approvalRequest: HITLApprovalRequest = {
+        decision_id: typedArgs.decision_id,
+        decision_type: typedArgs.decision_type,
+        decision_context: typedArgs.decision_context || {},
+        impact_level: typedArgs.impact_level,
+        priority: typedArgs.priority || typedArgs.impact_level,
+        chain_id: typedArgs.chain_id,
+        requester_id: typedArgs.requester_id || "acgs2-neural-mcp",
+        metadata: {
+          ...typedArgs.metadata,
+          source_service: "acgs2-neural-mcp",
+          source_version: "2.0.0",
+          emitted_at: new Date().toISOString(),
+        },
+      };
+
+      try {
+        const response = await emitApprovalRequest(approvalRequest);
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(
+                {
+                  status: "Approval request submitted",
+                  request_id: response.request_id,
+                  approval_status: response.status,
+                  chain_id: response.chain_id,
+                  current_level: response.current_level,
+                  created_at: response.created_at,
+                  hitl_service_url: HITL_APPROVALS_URL,
+                  message: response.message || "Awaiting human approval",
+                },
+                null,
+                2
+              ),
+            },
+          ],
+        };
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(
+                {
+                  status: "Error: Failed to submit approval request",
+                  error: errorMessage,
+                  hitl_service_url: HITL_APPROVALS_URL,
+                  suggestion: "Ensure the HITL approvals service is running and accessible",
+                },
+                null,
+                2
+              ),
+            },
+          ],
+          isError: true,
+        };
+      }
+    }
+
+    if (name === "hitl_check_status") {
+      const typedArgs = args as HITLCheckStatusArgs;
+
+      if (!typedArgs.request_id) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(
+                {
+                  status: "Error: Missing required field",
+                  message: "request_id is required",
+                },
+                null,
+                2
+              ),
+            },
+          ],
+          isError: true,
+        };
+      }
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), HITL_REQUEST_TIMEOUT_MS);
+
+      try {
+        const response = await fetch(
+          `${HITL_APPROVALS_URL}/api/approvals/${typedArgs.request_id}`,
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              "X-Source-Service": "acgs2-neural-mcp",
+            },
+            signal: controller.signal,
+          }
+        );
+
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+          if (response.status === 404) {
+            return {
+              content: [
+                {
+                  type: "text",
+                  text: JSON.stringify(
+                    {
+                      status: "Error: Approval request not found",
+                      request_id: typedArgs.request_id,
+                    },
+                    null,
+                    2
+                  ),
+                },
+              ],
+              isError: true,
+            };
+          }
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const approvalStatus = await response.json();
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(
+                {
+                  status: "Status retrieved",
+                  ...approvalStatus,
+                },
+                null,
+                2
+              ),
+            },
+          ],
+        };
+      } catch (error: unknown) {
+        clearTimeout(timeoutId);
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(
+                {
+                  status: "Error: Failed to check approval status",
+                  request_id: typedArgs.request_id,
+                  error: errorMessage,
+                  hitl_service_url: HITL_APPROVALS_URL,
+                },
+                null,
+                2
+              ),
+            },
+          ],
+          isError: true,
+        };
+      }
     }
 
     throw new Error(`Unknown tool: ${name}`);
