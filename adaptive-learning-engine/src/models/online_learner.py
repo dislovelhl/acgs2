@@ -4,6 +4,78 @@ Constitutional Hash: cdd01ef066bc6cf2
 
 River-based online learning model for real-time governance decisions.
 Implements progressive validation (predict first, then learn) paradigm.
+
+PROGRESSIVE VALIDATION (PREQUENTIAL EVALUATION)
+===============================================
+
+River implements the "prequential evaluation" paradigm (predictive sequential),
+originally proposed by Dawid (1984) for online learning systems. This evaluation
+approach more accurately simulates production reality than traditional batch
+learning with train/test splits.
+
+Key Principle: "Test, then train"
+---------------------------------
+For each incoming sample, the model:
+1. Makes a prediction FIRST (without seeing the true label)
+2. Records the prediction for evaluation
+3. Only THEN learns from the sample (after prediction is recorded)
+
+This order is critical - it ensures the model is evaluated on genuinely unseen
+data, exactly as it would behave in production where labels arrive after predictions.
+
+Contrast with Batch Learning
+-----------------------------
+Traditional ML:
+- Split data into train/test sets upfront
+- Train on all training data
+- Evaluate on held-out test set
+- Problem: Assumes static data distribution (i.i.d. assumption)
+- Problem: Test set may not represent future production data
+
+Progressive Validation (Online Learning):
+- No upfront split - each sample is "test, then train"
+- Model predicts on sample i, then learns from it
+- Sample i+1 becomes the next test case
+- Advantage: Simulates production streaming reality
+- Advantage: Naturally handles distribution shift (non-stationary data)
+- Advantage: More realistic performance estimates
+
+Why This Matters for Governance
+--------------------------------
+Governance policies evolve over time - new regulations emerge, organizational
+priorities shift, user behavior adapts. Progressive validation ensures our
+adaptive learning system is evaluated on its ability to:
+1. Handle distribution shift (policy drift over time)
+2. Learn incrementally without catastrophic forgetting
+3. Maintain performance as new governance patterns emerge
+
+The prequential paradigm gives us a more honest estimate of production
+performance than batch learning would, since governance is inherently
+a streaming, non-stationary problem.
+
+Theoretical Guarantees
+----------------------
+Under the prequential paradigm:
+- Cumulative accuracy converges to true model performance in stationary settings
+- Rolling accuracy tracks recent performance for drift detection
+- No "future information leakage" - all predictions are truly out-of-sample
+- Evaluation is unbiased (no overfitting to a fixed test set)
+
+References
+----------
+- Dawid, A. P. (1984). "Present Position and Potential Developments: Some
+  Personal Views: Statistical Theory: The Prequential Approach."
+  Journal of the Royal Statistical Society, Series A.
+
+- Gama, J., Žliobaitė, I., Bifet, A., Pechenizkiy, M., & Bouchachia, A. (2014).
+  "A Survey on Concept Drift Adaptation." ACM Computing Surveys, 46(4), 1-37.
+  https://doi.org/10.1145/2523813
+
+- River documentation on progressive validation:
+  https://riverml.xyz/latest/introduction/getting-started/
+
+- Bifet, A., & Gavaldà, R. (2007). "Learning from Time-Changing Data with
+  Adaptive Windowing." SIAM International Conference on Data Mining.
 """
 
 import logging
@@ -76,26 +148,80 @@ class ModelMetrics:
 class OnlineLearner:
     """River-based online learning model for governance decisions.
 
-    Implements the River online learning paradigm:
-    - One sample at a time (true online learning)
-    - Predict first, then learn (progressive validation)
-    - No separate fit phase
+    Implements the River online learning paradigm with progressive validation
+    (prequential evaluation), which more accurately simulates production ML
+    systems than traditional batch learning approaches.
 
-    Features:
-    - Cold start handling with conservative defaults
-    - Time-weighted learning for conflicting signals
-    - Thread-safe operations for concurrent requests
-    - Rolling accuracy tracking
+    Core Paradigm: Progressive Validation
+    --------------------------------------
+    Unlike batch ML where you train once on historical data and deploy:
+    1. Each sample arrives as a stream (one at a time)
+    2. Model makes prediction WITHOUT seeing the label (production simulation)
+    3. True label arrives (delayed feedback in real systems)
+    4. Model learns from the labeled sample
+    5. Next sample arrives → repeat
+
+    This "test-then-train" cycle ensures:
+    - No future information leakage (all predictions are truly out-of-sample)
+    - Realistic performance estimates (simulates production streaming)
+    - Natural handling of distribution drift (model adapts continuously)
+    - Memory efficiency (no need to store entire training dataset)
+
+    Why This Matters for Governance
+    --------------------------------
+    Governance is NOT a static problem with i.i.d. data:
+    - Policies evolve (new regulations, changing organizational priorities)
+    - User behavior adapts (users learn the system, adversarial actors probe)
+    - Context shifts (seasonal patterns, organizational restructuring)
+
+    Progressive validation gives us honest performance metrics under these
+    non-stationary conditions. Batch learning would overfit to historical
+    patterns that may no longer apply.
+
+    Implementation Features
+    -----------------------
+    - One sample at a time (true online learning, not mini-batches)
+    - Predict first, then learn (progressive validation / prequential)
+    - No separate fit phase (learning is continuous)
+    - Cold start handling with conservative defaults (fail-safe for governance)
+    - Time-weighted learning for conflicting signals (recent data matters more)
+    - Thread-safe operations for concurrent requests (production-ready)
+    - Rolling accuracy tracking (detect performance degradation early)
+
+    Model State Lifecycle
+    ----------------------
+    COLD_START → WARMING → ACTIVE
+                          ↕
+                       PAUSED (safety circuit breaker)
+
+    - COLD_START: No training samples yet, returns conservative defaults
+    - WARMING: Collecting samples but below min_training_samples threshold
+    - ACTIVE: Sufficient samples (≥1000), ready for production predictions
+    - PAUSED: Safety bounds triggered, learning halted (requires intervention)
 
     Example usage:
         learner = OnlineLearner()
 
-        # Progressive validation: predict first, then learn
+        # Progressive validation workflow (THE CORRECT ORDER):
+        # 1. Predict first (without label)
         prediction = learner.predict_one(features)
+
+        # 2. Later, when true label arrives, learn from it
         learner.learn_one(features, label)
 
-        # Get current metrics
+        # Combined atomic operation (ensures correct order):
+        prediction, training_result = learner.predict_and_learn(features, label)
+
+        # Monitor performance
         metrics = learner.get_metrics()
+        print(f"Cumulative accuracy: {metrics.accuracy:.3f}")
+        print(f"Rolling accuracy (last 100): {metrics.recent_accuracy:.3f}")
+
+    References
+    ----------
+    - River ML: https://riverml.xyz/
+    - Gama et al. (2014): "A Survey on Concept Drift Adaptation"
+    - Dawid (1984): "The Prequential Approach" (original progressive validation)
     """
 
     # Default deny prediction for cold start
@@ -266,13 +392,37 @@ class OnlineLearner:
     ) -> TrainingResult:
         """Update the model with a single training sample.
 
-        In the progressive validation paradigm, learn AFTER predicting.
-        This follows River's one-sample-at-a-time online learning.
+        CRITICAL: In the progressive validation paradigm, learn AFTER predicting.
+        This method should only be called after predict_one() for the same sample.
+
+        Progressive Validation Implementation
+        --------------------------------------
+        River's prequential evaluation requires this specific order:
+        1. predict_one(x) → get prediction without seeing label y
+        2. learn_one(x, y) → update model with labeled sample
+
+        This method internally verifies this order by making a prediction
+        and comparing it to the true label BEFORE updating the model weights.
+        This ensures:
+        - Accuracy metrics reflect truly out-of-sample performance
+        - No information leakage (model hasn't seen y when predicting)
+        - Simulation of production: predict now, learn later when label arrives
+
+        Why One Sample at a Time?
+        --------------------------
+        True online learning processes samples individually, not in batches:
+        - Immediate adaptation to new patterns (no waiting for batch)
+        - Memory-efficient (no need to accumulate samples)
+        - Handles non-stationary distributions (concept drift)
+        - Simulates real-time systems (streaming governance decisions)
 
         Args:
             x: Feature dictionary with numeric values.
             y: Target label (0 or 1 for binary classification).
             sample_weight: Optional weight for time-weighted learning.
+                          Weights >1.0 strengthen signal (learn multiple times).
+                          Weights <1.0 weaken signal (probabilistic learning).
+                          This enables time-decay for handling non-stationary data.
 
         Returns:
             TrainingResult with success status and metrics.
@@ -303,12 +453,24 @@ class OnlineLearner:
                         timestamp=timestamp,
                     )
 
-                # Progressive validation: get prediction before learning
+                # PREQUENTIAL EVALUATION: Predict before learning
+                # ================================================
+                # This is the CORE of progressive validation. For sample i:
+                # 1. Get prediction using model trained on samples 1...i-1
+                # 2. Compare prediction to true label y (for accuracy)
+                # 3. Only THEN update model weights with sample i
+                #
+                # This ensures accuracy metrics are computed on truly unseen data,
+                # exactly as they would be in production where predictions happen
+                # before labels arrive. It gives an unbiased estimate of future
+                # performance.
                 if self._sample_count > 0:
                     try:
                         y_pred = self._model.predict_one(x)
                         if y_pred is not None:
+                            # Update cumulative accuracy (overall model health)
                             self._accuracy_metric.update(y, y_pred)
+                            # Update rolling accuracy (recent performance for drift detection)
                             self._rolling_accuracy_metric.update(y, y_pred)
                     except Exception as e:
                         logger.debug(f"Could not update accuracy metrics: {e}")
@@ -373,26 +535,80 @@ class OnlineLearner:
     ) -> Tuple[PredictionResult, TrainingResult]:
         """Predict and then learn in a single atomic operation.
 
-        Implements progressive validation: predict before learning.
+        PROGRESSIVE VALIDATION CONVENIENCE METHOD
+        =========================================
+        This method enforces the correct "test-then-train" order required by
+        prequential evaluation. It guarantees that:
+
+        1. predict_one(x) is called FIRST (without seeing label y)
+        2. learn_one(x, y) is called SECOND (after prediction recorded)
+        3. Both operations are thread-safe (atomic under lock)
+
+        Why Use This Instead of Separate Calls?
+        ----------------------------------------
+        Calling predict_one() and learn_one() separately is valid, but this
+        combined method provides:
+        - Guaranteed correct order (prevents accidentally learning before predicting)
+        - Thread safety (both operations under single lock acquisition)
+        - Convenience (simpler API for common use case)
+        - Performance (single lock acquisition instead of two)
+
+        Production Streaming Scenario
+        ------------------------------
+        In real-world streaming systems, labels often arrive delayed:
+        - T=0: Request arrives, predict_one(features) → decision
+        - T=1-60min: User action or human review provides true label
+        - T=60min: learn_one(features, label) → model adapts
+
+        This method simulates that scenario when you have both features and
+        label available simultaneously (e.g., batch replay of historical data
+        for model initialization).
 
         Args:
             x: Feature dictionary with numeric values.
-            y: Target label.
+            y: Target label (0 or 1 for binary classification).
             sample_weight: Optional weight for time-weighted learning.
+                          Use this for time-decay in non-stationary environments.
 
         Returns:
             Tuple of (PredictionResult, TrainingResult).
+            The prediction is what the model would have predicted in production,
+            and the training result confirms whether learning succeeded.
+
+        Example:
+            # Replay historical data with progressive validation
+            for features, label in historical_data:
+                pred, train = learner.predict_and_learn(features, label)
+                print(f"Predicted: {pred.prediction}, Actual: {label}, "
+                      f"Accuracy so far: {train.current_accuracy:.3f}")
         """
         with self._lock:
+            # Step 1: Predict (simulate production prediction without label)
             prediction = self.predict_one(x)
+            # Step 2: Learn (simulate delayed label arrival and model update)
             training = self.learn_one(x, y, sample_weight)
             return prediction, training
 
     def get_accuracy(self) -> float:
         """Get the current cumulative accuracy.
 
+        PROGRESSIVE VALIDATION METRIC
+        ==============================
+        This accuracy is computed using prequential evaluation - each prediction
+        was made on a sample BEFORE the model learned from it. This ensures:
+
+        - No overfitting to test set (every sample was "test, then train")
+        - Unbiased performance estimate (truly out-of-sample predictions)
+        - Production-realistic metric (simulates streaming deployment)
+
+        Cumulative accuracy tracks overall model health across all samples.
+        It converges to the true model performance in stationary settings.
+
+        For non-stationary data (concept drift), also monitor rolling_accuracy
+        which tracks recent performance and can detect degradation earlier.
+
         Returns:
-            Accuracy value between 0 and 1.
+            Accuracy value between 0 and 1 (cumulative across all samples).
         """
         with self._lock:
             if self._sample_count == 0:
@@ -405,8 +621,31 @@ class OnlineLearner:
     def get_rolling_accuracy(self) -> float:
         """Get the rolling window accuracy.
 
+        DRIFT DETECTION METRIC
+        =======================
+        This tracks accuracy over the most recent N samples (default: 100).
+        Unlike cumulative accuracy which averages over all history, rolling
+        accuracy is sensitive to recent performance changes.
+
+        Use rolling accuracy to:
+        - Detect concept drift (sudden performance degradation)
+        - Monitor adaptation speed (how quickly model recovers)
+        - Trigger retraining or model swaps (if rolling << cumulative)
+
+        Progressive Validation Property
+        --------------------------------
+        Like cumulative accuracy, this is computed using prequential evaluation.
+        Each prediction was made before learning from that sample, ensuring
+        honest performance measurement even in the rolling window.
+
+        Example Drift Detection:
+            if learner.get_rolling_accuracy() < learner.get_accuracy() - 0.1:
+                # Rolling accuracy dropped 10% below cumulative
+                # Likely concept drift - model struggling on recent data
+                trigger_drift_alert()
+
         Returns:
-            Rolling accuracy value between 0 and 1.
+            Rolling accuracy value between 0 and 1 (last N samples only).
         """
         with self._lock:
             if self._sample_count == 0:
