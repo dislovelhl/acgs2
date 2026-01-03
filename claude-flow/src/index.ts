@@ -7,6 +7,12 @@ import { swarmCommand } from './commands/swarm';
 import { analyzeCommand } from './commands/analyze';
 import { taskCommand } from './commands/task';
 import { coordinationCommand } from './commands/coordination';
+import { validateConfigOrExit } from './config/validator';
+
+// Validate configuration at startup (fail-fast behavior)
+// This ensures all required environment variables are present and valid
+// before any business logic executes
+validateConfigOrExit(process.env as Record<string, unknown>);
 
 const program = new Command();
 
