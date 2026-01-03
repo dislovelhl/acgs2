@@ -146,7 +146,7 @@ class SAMLServiceProvider:
         if not SAML_AVAILABLE:
             raise RuntimeError("SAML library not available")
 
-        settings = OneLogin_Saml2_Settings(self._get_settings_dict())
+        OneLogin_Saml2_Settings(self._get_settings_dict())
 
         # Build AuthnRequest
         authn_request_id = f"_acgs2_{uuid.uuid4().hex}"
@@ -240,7 +240,7 @@ class SAMLServiceProvider:
         # Extract user information
         name_id = auth.get_nameid()
         attributes = auth.get_attributes()
-        session_index = auth.get_session_index()
+        auth.get_session_index()
 
         # Apply attribute mapping
         mapped = self.idp_config.attribute_mapping.apply(attributes)

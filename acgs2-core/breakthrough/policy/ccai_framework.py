@@ -700,9 +700,9 @@ class CCAIFramework:
             "decisions_made": len(session.decisions_made),
             "consensus_threshold": session.consensus_threshold,
             "deadline": session.deadline,
-            "time_remaining": max(0, (session.deadline - time.time()))
-            if session.deadline
-            else None,
+            "time_remaining": (
+                max(0, (session.deadline - time.time())) if session.deadline else None
+            ),
             "clusters_identified": len(session.clusters),
             "constitutional_compliance": len(session.constitutional_violations) == 0,
         }
@@ -749,8 +749,8 @@ class CCAIFramework:
                 if stakeholder.consensus_contribution > 0:
                     if stakeholder_id not in patterns["stakeholder_influence"]:
                         patterns["stakeholder_influence"][stakeholder_id] = 0
-                    patterns["stakeholder_influence"][stakeholder_id] += (
-                        stakeholder.consensus_contribution
-                    )
+                    patterns["stakeholder_influence"][
+                        stakeholder_id
+                    ] += stakeholder.consensus_contribution
 
         return patterns

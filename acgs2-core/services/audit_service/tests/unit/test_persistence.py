@@ -33,7 +33,7 @@ async def test_audit_ledger_persistence():
     vr2 = ValidationResult(is_valid=True, metadata={"msg": "second"})
 
     entry_hash1 = await ledger1.add_validation_result(vr1)
-    entry_hash2 = await ledger1.add_validation_result(vr2)
+    await ledger1.add_validation_result(vr2)
 
     # Wait for background processing (queue empty + lock released)
     for _ in range(20):

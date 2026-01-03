@@ -76,7 +76,7 @@ class TestReexports:
         ]
 
         # Check at least one metric export exists (depends on prometheus-client)
-        has_any_metric = any(hasattr(shared, name) for name in metrics_exports)
+        any(hasattr(shared, name) for name in metrics_exports)
         # May not have if prometheus-client not installed, that's OK
         assert True  # Presence test only
 
@@ -93,7 +93,7 @@ class TestReexports:
         ]
 
         # Check at least one circuit breaker export exists
-        has_any_cb = any(hasattr(shared, name) for name in cb_exports)
+        any(hasattr(shared, name) for name in cb_exports)
         # May not have if pybreaker not installed, that's OK
         assert True  # Presence test only
 

@@ -432,19 +432,19 @@ class ABLReflHandler:
         # Analyze each trigger
         for trigger in triggers:
             if trigger == ReflectionTrigger.CONSTITUTIONAL_IMPACT:
-                analysis["trigger_analysis"]["constitutional"] = (
-                    "System 1 may not fully consider constitutional implications"
-                )
+                analysis["trigger_analysis"][
+                    "constitutional"
+                ] = "System 1 may not fully consider constitutional implications"
                 analysis["potential_issues"].append("constitutional_oversight")
             elif trigger == ReflectionTrigger.NOVEL_SITUATION:
-                analysis["trigger_analysis"]["novelty"] = (
-                    "Situation may require novel reasoning beyond patterns"
-                )
+                analysis["trigger_analysis"][
+                    "novelty"
+                ] = "Situation may require novel reasoning beyond patterns"
                 analysis["potential_issues"].append("pattern_limitation")
             elif trigger == ReflectionTrigger.CONFLICTING_EVIDENCE:
-                analysis["trigger_analysis"]["conflict"] = (
-                    "Conflicting evidence requires careful analysis"
-                )
+                analysis["trigger_analysis"][
+                    "conflict"
+                ] = "Conflicting evidence requires careful analysis"
                 analysis["potential_issues"].append("evidence_conflict")
 
         return analysis

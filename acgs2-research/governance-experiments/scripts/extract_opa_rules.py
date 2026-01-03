@@ -5,7 +5,6 @@ from pathlib import Path
 
 def extract_rules_from_rego(rego_content):
     """Simple regex-based extraction of rules from Rego files."""
-    rules = []
     # Match rule definitions like 'allow { ... }' or 'deny[msg] { ... }'
     pattern = re.compile(r"^(\w+(?:\[\w+\])?)\s*\{", re.MULTILINE)
     matches = pattern.findall(rego_content)

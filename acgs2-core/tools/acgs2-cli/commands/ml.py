@@ -208,9 +208,8 @@ def update_model(
 def delete_model(ctx, model_id: str, force: bool):
     """Delete ML model"""
 
-    if not force:
-        if not click.confirm(f"Are you sure you want to delete model {model_id}?"):
-            return
+    if not force and not click.confirm(f"Are you sure you want to delete model {model_id}?"):
+        return
 
     async def delete():
         try:

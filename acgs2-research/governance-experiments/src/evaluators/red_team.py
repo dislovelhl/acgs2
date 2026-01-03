@@ -43,7 +43,7 @@ class RedTeamSimulator:
 
     def run_experiment(self, iterations: int = 1):
         print(f"Starting Experiment: {self.experiment_id}")
-        for i in range(iterations):
+        for _i in range(iterations):
             for task in self.tasks:
                 start_time = time.time()
 

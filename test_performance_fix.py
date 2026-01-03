@@ -51,7 +51,7 @@ try:
         iterations = 100
 
         results = []
-        for i in range(iterations):
+        for _i in range(iterations):
             result = await processor.process(msg)
             results.append(result)
 

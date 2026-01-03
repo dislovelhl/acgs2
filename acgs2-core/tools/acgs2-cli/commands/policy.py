@@ -242,9 +242,8 @@ def update_policy(
 def delete_policy(ctx, policy_id: str, force: bool):
     """Delete a policy"""
 
-    if not force:
-        if not click.confirm(f"Are you sure you want to delete policy {policy_id}?"):
-            return
+    if not force and not click.confirm(f"Are you sure you want to delete policy {policy_id}?"):
+        return
 
     async def delete():
         try:

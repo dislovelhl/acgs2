@@ -180,12 +180,11 @@ class SwarmMemoryService:
         """Clean up expired data (older than max_age_seconds)."""
         try:
             cleaned_count = 0
-            cutoff_time = time.time() - max_age_seconds
+            time.time() - max_age_seconds
 
             # Clean up each namespace
-            for namespace_name, namespace_key in self.namespaces.items():
+            for _namespace_name, _namespace_key in self.namespaces.items():
                 # Get all keys in namespace
-                pattern = f"{namespace_key}:*"
                 # Note: This is a simplified cleanup - in production you'd want more sophisticated cleanup
                 # For now, we'll skip actual cleanup and just return 0
                 pass

@@ -87,10 +87,7 @@ class AuditService:
         **kwargs: Any,
     ) -> PaginatedResponse[AuditEvent]:
         """Query audit events."""
-        if request:
-            params = request.model_dump(by_alias=True, exclude_none=True)
-        else:
-            params = kwargs
+        params = request.model_dump(by_alias=True, exclude_none=True) if request else kwargs
 
         data = await self._client.get(f"{self._base_path}/events", params=params)
         response_data = data.get("data", data)

@@ -31,9 +31,9 @@ class JiraAdapter(IntegrationAdapter):
         if not await self.validate_config():
             return False
 
-        url = f"{self.config['base_url'].rstrip('/')}/rest/api/3/issue"
+        f"{self.config['base_url'].rstrip('/')}/rest/api/3/issue"
 
-        payload = {
+        {
             "fields": {
                 "project": {"key": self.config["project_key"]},
                 "summary": f"Governance Alert: {event_data.get('action')}",

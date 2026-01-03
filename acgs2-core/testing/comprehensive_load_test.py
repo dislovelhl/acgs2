@@ -308,11 +308,13 @@ class EnhancedAgentBusLoadTester:
         if not meets_targets:
             if result.p99_latency_ms >= P99_LATENCY_TARGET_MS:
                 logging.warning(
-                    f"    ⚠ P99 latency {result.p99_latency_ms:.3f}ms exceeds target {P99_LATENCY_TARGET_MS}ms"
+                    f"    ⚠ P99 latency {result.p99_latency_ms:.3f}ms exceeds "
+                    f"target {P99_LATENCY_TARGET_MS}ms"
                 )
             if result.throughput_rps < MIN_THROUGHPUT_RPS:
                 logging.warning(
-                    f"    ⚠ Throughput {result.throughput_rps:.2f} RPS below target {MIN_THROUGHPUT_RPS} RPS"
+                    f"    ⚠ Throughput {result.throughput_rps:.2f} RPS below "
+                    f"target {MIN_THROUGHPUT_RPS} RPS"
                 )
 
         # Compare with baseline

@@ -169,7 +169,7 @@ class DelegationEngine:
 
     def audit_delegation_usage(self, user_id: str, time_window_hours: int = 24) -> Dict[str, Any]:
         """Audit delegation usage for a user"""
-        cutoff_time = datetime.utcnow() - timedelta(hours=time_window_hours)
+        datetime.utcnow() - timedelta(hours=time_window_hours)
 
         audit_data = {
             "user_id": user_id,

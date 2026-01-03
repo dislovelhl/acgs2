@@ -217,7 +217,7 @@ class ApprovalChainEngine:
         if chain_id not in self.chains:
             raise ValueError(f"Unknown approval chain: {chain_id}")
 
-        chain = self.chains[chain_id]
+        self.chains[chain_id]
 
         # Create approval request
         request = ApprovalRequest(

@@ -97,7 +97,7 @@ async def run_worker():
     worker = EscalationWorker()
 
     # Handle signals for graceful shutdown
-    loop = asyncio.get_event_loop()
+    asyncio.get_event_loop()
 
     try:
         await worker.start()

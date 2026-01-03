@@ -394,7 +394,8 @@ class VaultCryptoService:
                 nonce = secrets.token_bytes(12)
                 key_bytes = hashlib.sha256(key_name.encode()).digest()
                 encrypted = bytes(
-                    a ^ b for a, b in zip(plaintext, key_bytes * (len(plaintext) // 32 + 1))
+                    a ^ b
+                    for a, b in zip(plaintext, key_bytes * (len(plaintext) // 32 + 1), strict=False)
                 )
                 ciphertext = f"local:v1:{base64.b64encode(nonce + encrypted).decode()}"
                 logger.warning("Using insecure local encryption fallback - not for production")
@@ -446,10 +447,11 @@ class VaultCryptoService:
                     raise RuntimeError("Local ciphertext but fallback disabled")
                 _, _, encoded = ciphertext.split(":", 2)
                 data = base64.b64decode(encoded)
-                nonce, encrypted = data[:12], data[12:]
+                _nonce, encrypted = data[:12], data[12:]
                 key_bytes = hashlib.sha256(key_name.encode()).digest()
                 plaintext = bytes(
-                    a ^ b for a, b in zip(encrypted, key_bytes * (len(encrypted) // 32 + 1))
+                    a ^ b
+                    for a, b in zip(encrypted, key_bytes * (len(encrypted) // 32 + 1), strict=False)
                 )
                 logger.warning("Using insecure local decryption fallback - not for production")
 

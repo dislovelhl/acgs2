@@ -61,7 +61,6 @@ class QualityAutoFixer:
         print("\n📝 Converting print statements to logging...")
 
         # Skip test files and example files
-        exclude_patterns = ["test_", "conftest.py", "_test.py", "example", "demo", "__init__.py"]
 
         print("⚠️  Skipping print statement conversion (requires manual review)")
         print("   Manual conversion needed for context-aware logging")

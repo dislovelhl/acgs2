@@ -358,7 +358,7 @@ class PolisDeliberationEngine:
 
         This prevents polarization by ensuring consensus exists across diverse groups.
         """
-        group_consensus = {}
+        _group_consensus = {}  # noqa: F841
 
         for cluster in clusters:
             group_votes = {}

@@ -116,9 +116,9 @@ class RateLimitConfig:
                 RateLimitRule(
                     requests=requests_per_minute,
                     window_seconds=60,
-                    burst_multiplier=burst_limit / requests_per_minute
-                    if requests_per_minute > 0
-                    else 1.5,
+                    burst_multiplier=(
+                        burst_limit / requests_per_minute if requests_per_minute > 0 else 1.5
+                    ),
                 )
             )
 
@@ -380,7 +380,7 @@ def create_rate_limit_middleware(
         Middleware function
     """
     refill_rate = requests_per_minute / 60.0  # Convert to per second
-    effective_burst = int(burst_limit * burst_multiplier)
+    int(burst_limit * burst_multiplier)
 
     async def rate_limit_middleware(request: Request, call_next):
         # Extract identifiers

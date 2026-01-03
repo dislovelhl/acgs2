@@ -45,7 +45,7 @@ class Governor:
         2. Deliberation: Server-side ML check.
         3. Degraded Mode: If server fails, enforce local "Fail-Safe" policy.
         """
-        start_time = datetime.now(UTC)
+        datetime.now(UTC)
 
         # 1. Local Pre-Validation (Fast Lane)
         if self._is_blocked_locally(ai_output):
@@ -71,10 +71,7 @@ class Governor:
         dangerous_patterns = [r"(?i)jailbreak", r"(?i)system prompt override"]
         import re
 
-        for pattern in dangerous_patterns:
-            if re.search(pattern, content):
-                return True
-        return False
+        return any(re.search(pattern, content) for pattern in dangerous_patterns)
 
     def _handle_degraded_mode(self, content: str) -> str:
         """Enforces a strict 'Safety First' local policy during outages."""

@@ -185,11 +185,11 @@ class QualityDashboardGenerator:
                 gauge={
                     "axis": {"range": [0, 100]},
                     "bar": {
-                        "color": "green"
-                        if quality_score > 80
-                        else "orange"
-                        if quality_score > 60
-                        else "red"
+                        "color": (
+                            "green"
+                            if quality_score > 80
+                            else "orange" if quality_score > 60 else "red"
+                        )
                     },
                     "steps": [
                         {"range": [0, 60], "color": "red"},

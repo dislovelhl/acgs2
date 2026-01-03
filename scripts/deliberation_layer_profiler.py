@@ -149,7 +149,7 @@ class DeliberationLayerProfiler:
             result = await scorer.score_impact(msg)
             latencies.append((time.time() - req_start) * 1000)
 
-        scoring_time = time.time() - scoring_start
+        time.time() - scoring_start
         total_time = time.time() - start_time
 
         # Calculate metrics
@@ -224,7 +224,7 @@ class DeliberationLayerProfiler:
 
             # Step 2: Queue for deliberation if high impact
             if impact_result.requires_deliberation:
-                task_id = await queue.enqueue_for_deliberation(msg, requires_human_review=True)
+                await queue.enqueue_for_deliberation(msg, requires_human_review=True)
                 # Simulate brief processing
                 await asyncio.sleep(0.001)
 
@@ -250,7 +250,7 @@ class DeliberationLayerProfiler:
 
         # Current target is 2,605 RPS, so we're at ~41% of target
         target_rps = 2605
-        current_percentage = (rps / target_rps) * 100
+        (rps / target_rps) * 100
         bottlenecks.append(".1f")
         recommendations.append("Focus optimization on impact scoring and queue processing")
 

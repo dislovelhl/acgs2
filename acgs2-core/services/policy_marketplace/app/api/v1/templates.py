@@ -54,12 +54,12 @@ async def list_templates(
     category: Optional[str] = None, verified_only: bool = False, db: AsyncSession = Depends(get_db)
 ):
     """List available templates"""
-    query = select(PolicyTemplate).where(PolicyTemplate.is_public == True)
+    query = select(PolicyTemplate).where(PolicyTemplate.is_public)
 
     if category:
         query = query.where(PolicyTemplate.category == category)
     if verified_only:
-        query = query.where(PolicyTemplate.is_verified == True)
+        query = query.where(PolicyTemplate.is_verified)
 
     result = await db.execute(query)
     return result.scalars().all()

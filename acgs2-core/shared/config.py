@@ -492,9 +492,9 @@ else:
             default_factory=lambda: os.getenv("VAULT_ADDR", "http://127.0.0.1:8200")
         )
         token: Optional[SecretStr] = field(
-            default_factory=lambda: SecretStr(os.getenv("VAULT_TOKEN", ""))
-            if os.getenv("VAULT_TOKEN")
-            else None
+            default_factory=lambda: (
+                SecretStr(os.getenv("VAULT_TOKEN", "")) if os.getenv("VAULT_TOKEN") else None
+            )
         )
         namespace: Optional[str] = field(default_factory=lambda: os.getenv("VAULT_NAMESPACE"))
         transit_mount: str = field(

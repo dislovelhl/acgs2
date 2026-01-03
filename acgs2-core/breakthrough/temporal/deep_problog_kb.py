@@ -97,7 +97,8 @@ class ProbabilisticFact:
 
     def __post_init__(self):
         if not self.fact_id:
-            fact_str = f"{self.predicate}_{'_'.join(str(arg) for arg in self.arguments)}_{self.probability}"
+            args_str = '_'.join(str(arg) for arg in self.arguments)
+            fact_str = f"{self.predicate}_{args_str}_{self.probability}"
             self.fact_id = hashlib.sha256(fact_str.encode()).hexdigest()[:16]
 
     @property

@@ -240,13 +240,6 @@ class UsageMeteringService:
             MeterableOperation.BLOCKCHAIN_ANCHOR.value: 0.5,
         }
 
-        tier_multipliers = {
-            MeteringTier.STANDARD.value: 1.0,
-            MeteringTier.ENHANCED.value: 1.5,
-            MeteringTier.DELIBERATION.value: 3.0,
-            MeteringTier.ENTERPRISE.value: 2.0,
-        }
-
         line_items = []
         total_cents = 0
 

@@ -146,7 +146,7 @@ class QdrantManager(VectorDatabaseManager):
                 return False
 
             points = []
-            for i, (vector, payload) in enumerate(zip(vectors, payloads)):
+            for i, (vector, payload) in enumerate(zip(vectors, payloads, strict=False)):
                 point_id = ids[i] if ids else str(i)
                 points.append({"id": point_id, "vector": vector, "payload": payload})
 
@@ -211,7 +211,7 @@ class QdrantManager(VectorDatabaseManager):
                 return False
 
             points = []
-            for vector_id, vector, payload in zip(ids, vectors, payloads):
+            for vector_id, vector, payload in zip(ids, vectors, payloads, strict=False):
                 points.append({"id": vector_id, "vector": vector, "payload": payload})
 
             self.client.upsert(collection_name=collection_name, points=points)
@@ -290,7 +290,7 @@ class MilvusManager(VectorDatabaseManager):
             collection = Collection(collection_name)
 
             data = []
-            for i, (vector, payload) in enumerate(zip(vectors, payloads)):
+            for i, (vector, payload) in enumerate(zip(vectors, payloads, strict=False)):
                 vector_id = ids[i] if ids else f"vec_{i}_{datetime.now().timestamp()}"
                 data.append({"id": vector_id, "vector": vector, "payload": payload})
 

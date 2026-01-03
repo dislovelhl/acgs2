@@ -180,11 +180,13 @@ class TestFileSplitter:
         target_file = source_file.parent / f"test_agent_bus_{group_name}.py"
 
         with open(target_file, "w", encoding="utf-8") as f:
-            f.write(f'''"""
+            f.write(
+                f'''"""
 ACGS-2 Enhanced Agent Bus Tests - {group_name.title().replace("_", " ")}
 Focused tests for {group_name} functionality.
 """
-''')
+'''
+            )
 
             # Write imports and fixtures
             f.write("\n".join(header_content))

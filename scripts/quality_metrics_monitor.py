@@ -339,7 +339,7 @@ def main():
 
     # Analyze trends
     print("📈 Analyzing quality trends...")
-    trends = monitor.analyze_trends()
+    monitor.analyze_trends()
 
     # Generate and display report
     print("📋 Generating quality report...")

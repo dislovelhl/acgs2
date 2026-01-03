@@ -130,7 +130,7 @@ async def initialize_swarm(
                 # Import GitHub client if available
                 from enhanced_agent_bus.integrations.github_client import GitHubClient
 
-                github_client = GitHubClient()
+                GitHubClient()
 
                 # Generate webhook secret for this swarm
                 webhook_secret = f"swarm-{swarm_id}-webhook-{uuid.uuid4().hex[:16]}"

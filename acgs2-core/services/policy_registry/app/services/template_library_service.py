@@ -70,9 +70,9 @@ class TemplateLibraryService:
         return {
             "id": template_id,
             "name": file_path.stem.replace("_", " ").title(),
-            "category": Path(template_id).parts[0]
-            if len(Path(template_id).parts) > 1
-            else "general",
+            "category": (
+                Path(template_id).parts[0] if len(Path(template_id).parts) > 1 else "general"
+            ),
             "size": file_path.stat().st_size,
             "last_modified": file_path.stat().st_mtime,
         }

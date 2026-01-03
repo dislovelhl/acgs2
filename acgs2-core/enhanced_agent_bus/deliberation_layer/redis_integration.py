@@ -274,26 +274,6 @@ class RedisVotingSystem:
             logger.error(f"Failed to submit vote: {e}")
             return False
 
-    async def subscribe_to_votes(self, item_id: str):
-        """
-        Subscribe to votes for a deliberation item.
-
-        Returns:
-            Redis pubsub instance
-        """
-        if not self.redis_client:
-            return None
-
-        try:
-            pubsub = self.redis_client.pubsub()
-            channel = f"acgs:votes:channel:{item_id}"
-            await pubsub.subscribe(channel)
-            logger.info(f"Subscribed to vote channel: {channel}")
-            return pubsub
-        except Exception as e:
-            logger.error(f"Failed to subscribe to votes: {e}")
-            return None
-
     async def get_votes(self, item_id: str) -> List[Dict[str, Any]]:
         """Get all votes for a deliberation item."""
         if not self.redis_client:
@@ -413,7 +393,7 @@ class RedisVotingSystem:
             logger.error(f"Failed to publish vote event: {e}")
             return False
 
-    async def subscribe_to_votes(self, item_id: str) -> bool:
+    async def subscribe_to_votes(self, item_id: str) -> Any:
         """
         Subscribe to vote events for a deliberation item.
 
@@ -421,10 +401,10 @@ class RedisVotingSystem:
             item_id: Deliberation item ID to subscribe to
 
         Returns:
-            True if subscribed successfully
+            The pubsub instance
         """
         if not self.redis_client:
-            return False
+            return None
 
         try:
             if self._pubsub is None:
@@ -433,11 +413,11 @@ class RedisVotingSystem:
             channel = f"{self.pubsub_channel_prefix}{item_id}"
             await self._pubsub.subscribe(channel)
             logger.info(f"Subscribed to vote channel: {channel}")
-            return True
+            return self._pubsub
 
         except (ConnectionError, OSError) as e:
             logger.error(f"Failed to subscribe to vote channel: {e}")
-            return False
+            return None
 
     async def unsubscribe_from_votes(self, item_id: str) -> bool:
         """

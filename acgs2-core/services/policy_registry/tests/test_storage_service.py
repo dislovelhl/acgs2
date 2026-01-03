@@ -466,7 +466,7 @@ class TestStorageInitialization:
         with patch("app.services.storage_service.settings", MockSettings(storage_path)):
             from app.services.storage_service import StorageService
 
-            service = StorageService()
+            StorageService()
 
             assert os.path.exists(storage_path)
 

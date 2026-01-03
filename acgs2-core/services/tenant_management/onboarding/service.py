@@ -428,7 +428,7 @@ class TenantOnboardingWizard:
         # Create the tenant
         org_data = session.session_data["organization"]
         compliance_data = session.session_data["compliance"]
-        security_data = session.session_data["security"]
+        session.session_data["security"]
 
         # Map organization type to tier
         tier_mapping = {
@@ -487,12 +487,16 @@ class TenantOnboardingWizard:
                     "users": len(session.session_data.get("users", {}).get("invitations", [])),
                 },
                 integrations_configured=[
-                    "API Access"
-                    if session.session_data.get("integrations", {}).get("enable_api_access")
-                    else None,
-                    "SIEM Export"
-                    if session.session_data.get("integrations", {}).get("enable_siem_export")
-                    else None,
+                    (
+                        "API Access"
+                        if session.session_data.get("integrations", {}).get("enable_api_access")
+                        else None
+                    ),
+                    (
+                        "SIEM Export"
+                        if session.session_data.get("integrations", {}).get("enable_siem_export")
+                        else None
+                    ),
                 ],
                 next_steps=[
                     "Activate your tenant (requires admin approval)",
@@ -568,9 +572,9 @@ class TenantOnboardingWizard:
             "active_sessions": active_sessions,
             "completed_sessions": completed_sessions,
             "failed_sessions": failed_sessions,
-            "completion_rate": (completed_sessions / total_sessions * 100)
-            if total_sessions > 0
-            else 0,
+            "completion_rate": (
+                (completed_sessions / total_sessions * 100) if total_sessions > 0 else 0
+            ),
             "constitutional_hash": CONSTITUTIONAL_HASH,
         }
 

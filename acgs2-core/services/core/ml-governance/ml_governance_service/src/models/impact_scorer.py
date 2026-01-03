@@ -49,4 +49,4 @@ class ImpactScorer:
 
         # Placeholder feature names
         feature_names = [f"feature_{i}" for i in range(self.model.n_features_in_)]
-        return dict(zip(feature_names, self.model.feature_importances_))
+        return dict(zip(feature_names, self.model.feature_importances_, strict=False))

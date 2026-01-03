@@ -408,7 +408,7 @@ class TestPolicyRetrieval:
             name="Test Policy", tenant_id="tenant-001", content={}
         )
 
-        created_version = await policy_service.create_policy_version(
+        await policy_service.create_policy_version(
             policy_id=policy.policy_id,
             content=sample_policy_content,
             version="1.0.0",
@@ -708,9 +708,7 @@ class TestPolicyListing:
     @pytest.mark.asyncio
     async def test_list_policies_with_status_filter(self, policy_service):
         """Test listing policies with status filter."""
-        policy1 = await policy_service.create_policy(
-            name="Draft Policy", tenant_id="tenant-001", content={}
-        )
+        await policy_service.create_policy(name="Draft Policy", tenant_id="tenant-001", content={})
         policy2 = await policy_service.create_policy(
             name="Active Policy", tenant_id="tenant-001", content={}
         )

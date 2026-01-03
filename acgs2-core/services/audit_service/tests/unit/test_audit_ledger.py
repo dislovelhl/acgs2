@@ -231,7 +231,7 @@ class TestAuditLedgerPersistence:
         sample_metadata = {"service": "test"}
 
         # Add entry
-        entry_hash = await ledger.add_entry(sample_data, sample_metadata)
+        await ledger.add_entry(sample_data, sample_metadata)
 
         # Verify Redis calls were made
         mock_redis.set.assert_called()

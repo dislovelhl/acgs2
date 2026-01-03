@@ -262,7 +262,7 @@ class CodebaseConsolidationAnalyzer:
 
         pattern_counts = defaultdict(lambda: defaultdict(list))
 
-        for file_path, metrics in self.metrics.items():
+        for file_path, _metrics in self.metrics.items():
             with open(file_path, "r", encoding="utf-8") as f:
                 content = f.read()
 

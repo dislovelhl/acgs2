@@ -4,6 +4,7 @@ Constitutional Hash: cdd01ef066bc6cf2
 """
 
 import asyncio
+import contextlib
 import json
 import sys
 from pathlib import Path
@@ -77,10 +78,8 @@ def playground(ctx, policy: str | None, context: str | None, interactive: bool):
 
                     # Clean up temporary policy
                     if policy and Path(policy).exists():
-                        try:
+                        with contextlib.suppress(Exception):
                             await policy_service.delete(current_policy.id)
-                        except Exception:
-                            pass
 
         except Exception as e:
             click.secho(f"❌ Playground error: {e}", fg="red")
@@ -196,10 +195,8 @@ async def run_interactive_mode(
 
     # Cleanup temporary policies
     for policy_id in temp_policies:
-        try:
+        with contextlib.suppress(Exception):
             await policy_service.delete(policy_id)
-        except Exception:
-            pass
 
     click.secho("\n👋 Goodbye!", fg="cyan")
 

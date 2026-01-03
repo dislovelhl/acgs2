@@ -201,7 +201,7 @@ class QualityScorer:
     def _analyze_complexity(self, code: str, language: str) -> float:
         """分析代码复杂度"""
         # 简单的复杂度度量
-        lines = len([line for line in code.split("\n") if line.strip()])
+        len([line for line in code.split("\n") if line.strip()])
 
         # 圈复杂度估算
         complexity_indicators = [

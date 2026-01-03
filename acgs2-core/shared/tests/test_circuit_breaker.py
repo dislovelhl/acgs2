@@ -209,7 +209,7 @@ class TestCircuitBreakerRegistry:
     def test_reset_circuit_breaker(self):
         """Test resetting a circuit breaker."""
         registry = CircuitBreakerRegistry()
-        cb = registry.get_or_create("test_reset_service")
+        registry.get_or_create("test_reset_service")
 
         # Verify reset doesn't raise
         registry.reset("test_reset_service")
@@ -298,7 +298,7 @@ class TestWithCircuitBreakerDecorator:
     def test_sync_function_with_fallback(self):
         """Test decorator uses fallback when circuit opens."""
         # Create a circuit breaker that opens after 1 failure
-        cb = get_circuit_breaker("test_fallback_service", CircuitBreakerConfig(fail_max=1))
+        get_circuit_breaker("test_fallback_service", CircuitBreakerConfig(fail_max=1))
 
         call_count = 0
 

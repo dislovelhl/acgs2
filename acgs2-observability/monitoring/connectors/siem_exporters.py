@@ -667,14 +667,14 @@ class SIEMExporterManager:
 
     async def start_all(self):
         """Start all registered exporters."""
-        for name, exporter in self._exporters.items():
+        for _name, exporter in self._exporters.items():
             await exporter.start()
             if hasattr(exporter, "initialize"):
                 await exporter.initialize()
 
     async def stop_all(self):
         """Stop all registered exporters."""
-        for name, exporter in self._exporters.items():
+        for _name, exporter in self._exporters.items():
             await exporter.stop()
             if hasattr(exporter, "close"):
                 await exporter.close()

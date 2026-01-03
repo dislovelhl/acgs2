@@ -153,7 +153,7 @@ class LLMSolver:
         concepts = self._extract_concepts(natural_language)
 
         # Generate Rego skeleton
-        rego_template = f'''
+        rego_template = f"""
 package constitutional.policy_{policy_id}
 
 # Constitutional Hash: {CONSTITUTIONAL_HASH}
@@ -165,7 +165,7 @@ allow {{
     input.constitutional_hash == "{CONSTITUTIONAL_HASH}"
     {self._generate_conditions(concepts)}
 }}
-'''
+"""
 
         return rego_template.strip()
 
@@ -220,7 +220,7 @@ class DafnyProAnnotator:
         _package_name = package_match.group(1) if package_match else "policy"  # noqa: F841
 
         # Generate Dafny method with annotations
-        dafny_spec = f'''
+        dafny_spec = f"""
 // Constitutional Hash: {CONSTITUTIONAL_HASH}
 // Verified policy specification
 
@@ -254,7 +254,7 @@ module ConstitutionalPolicy {{
             IsAuthorized(a.actor, a.resource)
     }}
 }}
-'''
+"""
 
         self._success_count += 1
         return dafny_spec.strip()

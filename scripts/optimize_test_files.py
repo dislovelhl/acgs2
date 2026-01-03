@@ -86,7 +86,7 @@ class TestFileAnalyzer:
 
     def _create_refactor_plan(self, file_path: str, analysis: Dict) -> Dict:
         """Create a major refactoring plan for very large files."""
-        file_name = Path(file_path).name
+        Path(file_path).name
 
         # Group classes by functionality
         classes = analysis["classes"]

@@ -490,10 +490,11 @@ class VaultCryptoService:
                 )
                 _, _, encoded = ciphertext.split(":", 2)
                 data = base64.b64decode(encoded)
-                nonce, encrypted = data[:12], data[12:]
+                _nonce, encrypted = data[:12], data[12:]
                 key_bytes = hashlib.sha256(key_name.encode()).digest()
                 plaintext = bytes(
-                    a ^ b for a, b in zip(encrypted, key_bytes * (len(encrypted) // 32 + 1))
+                    a ^ b
+                    for a, b in zip(encrypted, key_bytes * (len(encrypted) // 32 + 1), strict=False)
                 )
 
             elif self._vault_available and self._transit:

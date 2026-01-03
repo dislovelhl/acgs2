@@ -263,7 +263,8 @@ class ChaosMonitor:
             rule_id=rule.id,
             experiment_id=experiment_id,
             severity=threshold.severity,
-            message=f"{rule.name}: {threshold.metric_name} {threshold.operator} {threshold.value} (current: {metric_value})",
+            message=f"{rule.name}: {threshold.metric_name} {threshold.operator} "
+                     f"{threshold.value} (current: {metric_value})",
             value=metric_value,
             threshold=threshold.value,
             timestamp=datetime.utcnow(),

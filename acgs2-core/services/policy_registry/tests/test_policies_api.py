@@ -409,7 +409,7 @@ class TestCreatePolicy:
                 check_role(["tenant_admin", "system_admin"], action="create", resource="policy")
             ] = mock_check
 
-            client = TestClient(app)
+            TestClient(app)
 
             # Due to dependency injection complexity, we verify model creation directly
             import asyncio

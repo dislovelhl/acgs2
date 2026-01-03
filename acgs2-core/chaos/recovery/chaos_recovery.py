@@ -250,7 +250,6 @@ class RecoveryOrchestrator:
     async def _scale_deployment(self, action: RecoveryAction) -> bool:
         """Scale a deployment"""
         deployment_name = action.parameters.get("deployment_name")
-        namespace = action.parameters.get("namespace", "default")
         replicas = action.parameters.get("replicas", 1)
 
         # In real implementation, this would use Kubernetes API
@@ -261,7 +260,6 @@ class RecoveryOrchestrator:
     async def _redeploy_service(self, action: RecoveryAction) -> bool:
         """Redeploy a service"""
         service_name = action.parameters.get("service_name")
-        namespace = action.parameters.get("namespace", "default")
         image_tag = action.parameters.get("image_tag")
 
         # In real implementation, this would update deployment image and rollout

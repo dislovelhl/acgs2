@@ -34,9 +34,11 @@ async def approval_page(request: Request, request_id: str):
             "requested_by": approval_request.requested_by,
             "tenant_id": approval_request.tenant_id,
             "created_at": approval_request.created_at.strftime("%Y-%m-%d %H:%M UTC"),
-            "expires_at": approval_request.expires_at.strftime("%Y-%m-%d %H:%M UTC")
-            if approval_request.expires_at
-            else "No expiration",
+            "expires_at": (
+                approval_request.expires_at.strftime("%Y-%m-%d %H:%M UTC")
+                if approval_request.expires_at
+                else "No expiration"
+            ),
             "status": approval_request.status.value.upper(),
             "context": approval_request.context,
             "approvals": approval_request.approvals,
@@ -116,9 +118,11 @@ async def approvals_dashboard(request: Request, tenant_id: Optional[str] = None)
                     "priority": req.priority.value.upper(),
                     "tenant_id": req.tenant_id,
                     "created_at": req.created_at.strftime("%Y-%m-%d %H:%M UTC"),
-                    "expires_at": req.expires_at.strftime("%Y-%m-%d %H:%M UTC")
-                    if req.expires_at
-                    else "No expiration",
+                    "expires_at": (
+                        req.expires_at.strftime("%Y-%m-%d %H:%M UTC")
+                        if req.expires_at
+                        else "No expiration"
+                    ),
                 }
             )
 

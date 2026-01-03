@@ -542,9 +542,9 @@ method checkPolicy(input: int) returns (result: bool)
             "success": success,
             "error_message": error_message,
             "timestamp": datetime.now(timezone.utc).isoformat(),
-            "improvement_pattern": self._extract_improvement_pattern(error_message)
-            if error_message
-            else None,
+            "improvement_pattern": (
+                self._extract_improvement_pattern(error_message) if error_message else None
+            ),
         }
 
         self.translation_history.append(learning_record)
@@ -661,9 +661,11 @@ class VerifiedPolicyGenerator:
                         "alpha_verus_used": True,
                         "dafny_pro_used": True,
                     },
-                    verification_status=VerificationStatus.VERIFIED
-                    if iteration_record.success
-                    else VerificationStatus.FAILED,
+                    verification_status=(
+                        VerificationStatus.VERIFIED
+                        if iteration_record.success
+                        else VerificationStatus.FAILED
+                    ),
                     confidence_score=confidence,
                     verified_at=datetime.now(timezone.utc) if iteration_record.success else None,
                 )

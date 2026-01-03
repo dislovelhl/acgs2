@@ -186,7 +186,6 @@ class ExecutiveAgent(BaseMACIAgent):
         Executive analysis: Propose decisions based on operational context.
         Does NOT validate compliance - that's for Legislative and Judicial agents.
         """
-        action = decision.action
         context = decision.context
 
         # Executive focuses on operational feasibility and impact

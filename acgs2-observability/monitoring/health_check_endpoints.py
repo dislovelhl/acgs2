@@ -113,9 +113,7 @@ class HealthChecker:
         overall_status = (
             "healthy"
             if unhealthy_count == 0
-            else "degraded"
-            if unhealthy_count < total_count / 2
-            else "unhealthy"
+            else "degraded" if unhealthy_count < total_count / 2 else "unhealthy"
         )
 
         return {

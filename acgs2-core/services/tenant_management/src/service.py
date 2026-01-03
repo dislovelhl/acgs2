@@ -299,7 +299,7 @@ class TenantManagementService:
         """Get tenant usage metrics"""
 
         tenant = await self.get_tenant(tenant_id)
-        quotas = await self.storage.get_tenant_quotas(tenant_id)
+        await self.storage.get_tenant_quotas(tenant_id)
 
         # Calculate utilization percentages
         user_utilization = (

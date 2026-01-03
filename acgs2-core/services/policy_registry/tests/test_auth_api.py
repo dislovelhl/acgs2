@@ -290,7 +290,7 @@ class TestTokenIssuance:
         with patch("app.api.v1.auth.get_current_user", return_value=admin_user):
             with patch("app.services.OPAService", return_value=mock_opa):
                 with patch("shared.config.settings", mock_settings):
-                    client = TestClient(app)
+                    TestClient(app)
 
                     # Note: In real test, we'd need to properly mock the auth dependencies
                     # For now, we'll test the function directly
@@ -300,7 +300,6 @@ class TestTokenIssuance:
         self, mock_crypto_service, mock_settings
     ):
         """Test token issuance uses system key when none provided."""
-        admin_user = {"sub": "admin-123", "role": "admin"}
 
         with patch("shared.config.settings", mock_settings):
             token = mock_crypto_service.issue_agent_token(

@@ -268,7 +268,8 @@ class NetworkChaosInjector(BaseChaosInjector):
         """Inject bandwidth limitation"""
         bandwidth_mbps = failure.parameters.get("bandwidth_mbps", 1.0)
 
-        # cmd = f"tc qdisc add dev eth0 root tbf rate {bandwidth_mbps}mbit burst 32kbit latency 400ms"
+        # cmd = f"tc qdisc add dev eth0 root tbf rate {bandwidth_mbps}mbit "
+        #       f"burst 32kbit latency 400ms"
         # Execute command on target
 
         self.logger.info(f"Limited bandwidth to {bandwidth_mbps}Mbps on {target.resource_id}")
@@ -290,10 +291,10 @@ class NetworkChaosInjector(BaseChaosInjector):
         """Rollback network failure"""
         # Remove tc rules or iptables rules
         if failure.parameters.get("type") in ["latency", "packet_loss", "bandwidth_limit"]:
-            cmd = "tc qdisc del dev eth0 root"
+            pass  # cmd = "tc qdisc del dev eth0 root"
         elif failure.parameters.get("type") == "network_partition":
-            target_ip = failure.parameters.get("target_ip")
-            cmd = f"iptables -D INPUT -s {target_ip} -j DROP"
+            pass  # target_ip = failure.parameters.get("target_ip")
+            # cmd = f"iptables -D INPUT -s {target_ip} -j DROP"
 
         # Execute rollback command
         self.logger.info(f"Rolled back network failure on {target.resource_id}")
@@ -329,7 +330,7 @@ class ComputeChaosInjector(BaseChaosInjector):
         cpu_percentage = failure.parameters.get("cpu_percentage", 80)
 
         # Use stress-ng or similar tool
-        cmd = f"stress-ng --cpu 0 --cpu-load {cpu_percentage} --timeout {failure.duration_seconds}s"
+        # cmd = f"stress-ng --cpu 0 --cpu-load {cpu_percentage} --timeout {failure.duration_seconds}s"
         # Execute in background on target
 
         self.logger.info(f"Injected {cpu_percentage}% CPU stress on {target.resource_id}")
@@ -339,7 +340,6 @@ class ComputeChaosInjector(BaseChaosInjector):
         """Inject memory stress"""
         memory_percentage = failure.parameters.get("memory_percentage", 80)
 
-        cmd = f"stress-ng --vm 1 --vm-bytes {memory_percentage}% --timeout {failure.duration_seconds}s"
         # Execute on target
 
         self.logger.info(f"Injected {memory_percentage}% memory stress on {target.resource_id}")
@@ -360,7 +360,7 @@ class ComputeChaosInjector(BaseChaosInjector):
         process_name = failure.parameters.get("process_name")
         signal = failure.parameters.get("signal", "TERM")
 
-        cmd = f"pkill -{signal} {process_name}"
+        # cmd = f"pkill -{signal} {process_name}"
         # Execute on target
 
         self.logger.info(f"Sent {signal} signal to {process_name} on {target.resource_id}")

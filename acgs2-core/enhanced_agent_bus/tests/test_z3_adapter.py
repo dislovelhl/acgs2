@@ -63,7 +63,7 @@ class TestZ3SolverAdapter:
             adapter.solver.add(x)  # x must be true
 
             result = adapter.check_sat()
-            assert result.is_sat == True
+            assert result.is_sat
             assert result.model is not None
             assert result.solve_time_ms >= 0
         except ImportError:
@@ -230,7 +230,7 @@ class TestDataStructures:
         assert policy.id == "test-policy"
         assert policy.natural_language == "Test policy text"
         assert len(policy.z3_constraints) == 1
-        assert policy.is_verified == True
+        assert policy.is_verified
         assert policy.constitutional_hash == CONSTITUTIONAL_HASH
         assert policy.created_at is not None
 
@@ -240,7 +240,7 @@ class TestDataStructures:
             is_sat=True, model={"x": True, "y": 42}, solve_time_ms=150.5, solver_stats={"decls": 2}
         )
 
-        assert result.is_sat == True
+        assert result.is_sat
         assert result.model == {"x": True, "y": 42}
         assert result.solve_time_ms == 150.5
         assert result.solver_stats == {"decls": 2}

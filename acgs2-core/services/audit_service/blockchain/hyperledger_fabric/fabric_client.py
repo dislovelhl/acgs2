@@ -93,7 +93,7 @@ class FabricClient:
 
         try:
             # 准备交易数据
-            transaction_data = {
+            {
                 "batch_id": batch_data["batch_id"],
                 "root_hash": batch_data["root_hash"],
                 "entry_count": batch_data["entry_count"],
