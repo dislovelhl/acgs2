@@ -8,27 +8,320 @@ import asyncio
 import logging
 import uuid
 from datetime import datetime, timezone
-from typing import Dict, Any, Optional
-from fastapi import FastAPI, HTTPException, BackgroundTasks
+from typing import Dict, Any, Optional, Type
+from fastapi import FastAPI, HTTPException, BackgroundTasks, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 import os
 
-# Import MessageProcessor and models with fallback handling
+# Import MessageProcessor, models, validators, and exceptions with fallback handling
 try:
     from .message_processor import MessageProcessor
     from .models import AgentMessage, MessageType, Priority
+    from .validators import ValidationResult
+    from .exceptions import (
+        AgentBusError,
+        # Constitutional errors
+        ConstitutionalError,
+        ConstitutionalHashMismatchError,
+        ConstitutionalValidationError,
+        # Message errors
+        MessageError,
+        MessageValidationError,
+        MessageDeliveryError,
+        MessageTimeoutError,
+        MessageRoutingError,
+        RateLimitExceeded,
+        # Agent errors
+        AgentError,
+        AgentNotRegisteredError,
+        AgentAlreadyRegisteredError,
+        AgentCapabilityError,
+        # Policy/OPA errors
+        PolicyError,
+        PolicyEvaluationError,
+        PolicyNotFoundError,
+        OPAConnectionError,
+        OPANotInitializedError,
+        # Bus operation errors
+        BusOperationError,
+        BusNotStartedError,
+        BusAlreadyStartedError,
+        HandlerExecutionError,
+        # Configuration errors
+        ConfigurationError,
+        # MACI errors
+        MACIError,
+        MACIRoleViolationError,
+        MACISelfValidationError,
+        # Governance errors
+        GovernanceError,
+        AlignmentViolationError,
+    )
 except (ImportError, ValueError):
     try:
         from message_processor import MessageProcessor  # type: ignore
         from models import AgentMessage, MessageType, Priority  # type: ignore
+        from validators import ValidationResult  # type: ignore
+        from exceptions import (  # type: ignore
+            AgentBusError,
+            ConstitutionalError,
+            ConstitutionalHashMismatchError,
+            ConstitutionalValidationError,
+            MessageError,
+            MessageValidationError,
+            MessageDeliveryError,
+            MessageTimeoutError,
+            MessageRoutingError,
+            RateLimitExceeded,
+            AgentError,
+            AgentNotRegisteredError,
+            AgentAlreadyRegisteredError,
+            AgentCapabilityError,
+            PolicyError,
+            PolicyEvaluationError,
+            PolicyNotFoundError,
+            OPAConnectionError,
+            OPANotInitializedError,
+            BusOperationError,
+            BusNotStartedError,
+            BusAlreadyStartedError,
+            HandlerExecutionError,
+            ConfigurationError,
+            MACIError,
+            MACIRoleViolationError,
+            MACISelfValidationError,
+            GovernanceError,
+            AlignmentViolationError,
+        )
     except ImportError:
         from enhanced_agent_bus.message_processor import MessageProcessor  # type: ignore
         from enhanced_agent_bus.models import AgentMessage, MessageType, Priority  # type: ignore
+        from enhanced_agent_bus.validators import ValidationResult  # type: ignore
+        from enhanced_agent_bus.exceptions import (  # type: ignore
+            AgentBusError,
+            ConstitutionalError,
+            ConstitutionalHashMismatchError,
+            ConstitutionalValidationError,
+            MessageError,
+            MessageValidationError,
+            MessageDeliveryError,
+            MessageTimeoutError,
+            MessageRoutingError,
+            RateLimitExceeded,
+            AgentError,
+            AgentNotRegisteredError,
+            AgentAlreadyRegisteredError,
+            AgentCapabilityError,
+            PolicyError,
+            PolicyEvaluationError,
+            PolicyNotFoundError,
+            OPAConnectionError,
+            OPANotInitializedError,
+            BusOperationError,
+            BusNotStartedError,
+            BusAlreadyStartedError,
+            HandlerExecutionError,
+            ConfigurationError,
+            MACIError,
+            MACIRoleViolationError,
+            MACISelfValidationError,
+            GovernanceError,
+            AlignmentViolationError,
+        )
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+
+# =============================================================================
+# HTTP Status Code Error Mapping
+# =============================================================================
+
+# Comprehensive mapping of exception types to HTTP status codes
+# Reference: RFC 7231 (HTTP/1.1 Semantics and Content)
+EXCEPTION_STATUS_MAP: Dict[Type[Exception], int] = {
+    # 400 Bad Request - Client-side validation errors
+    MessageValidationError: 400,
+    ConstitutionalValidationError: 400,
+    ConstitutionalHashMismatchError: 400,
+    ConfigurationError: 400,
+    # 403 Forbidden - Authorization/role violations
+    MACIRoleViolationError: 403,
+    MACISelfValidationError: 403,
+    AlignmentViolationError: 403,
+    # 404 Not Found - Resource not found
+    AgentNotRegisteredError: 404,
+    PolicyNotFoundError: 404,
+    # 409 Conflict - Resource state conflicts
+    AgentAlreadyRegisteredError: 409,
+    BusAlreadyStartedError: 409,
+    # 422 Unprocessable Entity - Semantic validation failures
+    MessageRoutingError: 422,
+    AgentCapabilityError: 422,
+    PolicyEvaluationError: 422,
+    GovernanceError: 422,
+    # 429 Too Many Requests - Rate limiting
+    RateLimitExceeded: 429,
+    # 500 Internal Server Error - Server-side processing errors
+    HandlerExecutionError: 500,
+    MessageDeliveryError: 500,
+    MACIError: 500,
+    # 503 Service Unavailable - Service not ready
+    BusNotStartedError: 503,
+    BusOperationError: 503,
+    OPAConnectionError: 503,
+    OPANotInitializedError: 503,
+    # 504 Gateway Timeout - Timeout errors
+    MessageTimeoutError: 504,
+}
+
+# Base exception fallback mapping (for hierarchy-based resolution)
+BASE_EXCEPTION_STATUS_MAP: Dict[Type[Exception], int] = {
+    ConstitutionalError: 400,
+    MessageError: 400,
+    AgentError: 400,
+    PolicyError: 422,
+    BusOperationError: 503,
+    AgentBusError: 500,
+}
+
+
+def get_http_status_for_exception(exc: Exception) -> int:
+    """
+    Determine the appropriate HTTP status code for an exception.
+
+    This function uses a hierarchical lookup:
+    1. First checks for exact exception type match
+    2. Then checks for base class matches
+    3. Falls back to 500 for unknown exceptions
+
+    Args:
+        exc: The exception to map to an HTTP status code
+
+    Returns:
+        int: The appropriate HTTP status code
+    """
+    exc_type = type(exc)
+
+    # Check for exact type match first
+    if exc_type in EXCEPTION_STATUS_MAP:
+        return EXCEPTION_STATUS_MAP[exc_type]
+
+    # Check inheritance hierarchy
+    for mapped_type, status_code in EXCEPTION_STATUS_MAP.items():
+        if isinstance(exc, mapped_type):
+            return status_code
+
+    # Check base exception fallbacks
+    for base_type, status_code in BASE_EXCEPTION_STATUS_MAP.items():
+        if isinstance(exc, base_type):
+            return status_code
+
+    # Default to 500 for unknown exceptions
+    return 500
+
+
+def get_http_status_for_validation_result(result: ValidationResult) -> int:
+    """
+    Determine the appropriate HTTP status code based on ValidationResult errors.
+
+    Maps validation error patterns to appropriate HTTP status codes:
+    - 400: General validation failures, constitutional hash mismatches
+    - 422: Semantic validation failures (routing, capability issues)
+    - 429: Rate limit indicators
+    - 500: Internal processing errors
+    - 503: Service unavailability indicators
+
+    Args:
+        result: The ValidationResult to analyze
+
+    Returns:
+        int: The appropriate HTTP status code (defaults to 400 for validation failures)
+    """
+    if result.is_valid:
+        return 200
+
+    # Analyze error messages to determine appropriate status code
+    error_text = " ".join(result.errors).lower()
+
+    # Check for rate limiting indicators
+    if any(keyword in error_text for keyword in ["rate limit", "too many", "throttle"]):
+        return 429
+
+    # Check for service unavailability indicators
+    if any(
+        keyword in error_text
+        for keyword in ["not started", "not initialized", "connection", "unavailable", "timeout"]
+    ):
+        return 503
+
+    # Check for authorization/forbidden indicators
+    if any(
+        keyword in error_text
+        for keyword in ["forbidden", "unauthorized", "role violation", "not allowed", "alignment"]
+    ):
+        return 403
+
+    # Check for not found indicators
+    if any(keyword in error_text for keyword in ["not found", "not registered", "does not exist"]):
+        return 404
+
+    # Check for semantic/unprocessable entity indicators
+    if any(
+        keyword in error_text
+        for keyword in ["routing", "capability", "cannot process", "unsupported"]
+    ):
+        return 422
+
+    # Check for internal error indicators
+    if any(
+        keyword in error_text
+        for keyword in ["internal", "handler", "execution", "processing error"]
+    ):
+        return 500
+
+    # Default to 400 for general validation failures
+    return 400
+
+
+def create_error_response(
+    exc: Exception,
+    status_code: int,
+    request_id: Optional[str] = None,
+) -> Dict[str, Any]:
+    """
+    Create a standardized error response dictionary.
+
+    Args:
+        exc: The exception that occurred
+        status_code: The HTTP status code
+        request_id: Optional request ID for tracing
+
+    Returns:
+        Dict containing error details in a consistent format
+    """
+    response = {
+        "error": {
+            "type": type(exc).__name__,
+            "message": str(exc),
+            "status_code": status_code,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        }
+    }
+
+    if request_id:
+        response["error"]["request_id"] = request_id
+
+    # Include additional details for AgentBusError subclasses
+    if isinstance(exc, AgentBusError):
+        response["error"]["details"] = exc.details
+        response["error"]["constitutional_hash"] = exc.constitutional_hash
+
+    return response
+
 
 app = FastAPI(
     title="ACGS-2 Enhanced Agent Bus API",
@@ -73,6 +366,161 @@ except ImportError:
     }
 
 app.add_middleware(CORSMiddleware, **cors_config)
+
+
+# =============================================================================
+# Exception Handlers
+# =============================================================================
+
+
+@app.exception_handler(RateLimitExceeded)
+async def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded) -> JSONResponse:
+    """Handle rate limit exceeded errors with 429 status and Retry-After header."""
+    status_code = 429
+    response = create_error_response(
+        exc,
+        status_code,
+        request_id=request.headers.get("X-Request-ID"),
+    )
+
+    headers = {}
+    if exc.retry_after_ms is not None:
+        # Convert milliseconds to seconds for Retry-After header
+        headers["Retry-After"] = str(exc.retry_after_ms // 1000)
+
+    logger.warning(f"Rate limit exceeded for agent '{exc.agent_id}': {exc.message}")
+    return JSONResponse(status_code=status_code, content=response, headers=headers)
+
+
+@app.exception_handler(MessageTimeoutError)
+async def message_timeout_handler(request: Request, exc: MessageTimeoutError) -> JSONResponse:
+    """Handle message timeout errors with 504 status."""
+    status_code = 504
+    response = create_error_response(
+        exc,
+        status_code,
+        request_id=request.headers.get("X-Request-ID"),
+    )
+    logger.error(f"Message timeout for '{exc.message_id}': {exc.message}")
+    return JSONResponse(status_code=status_code, content=response)
+
+
+@app.exception_handler(BusNotStartedError)
+async def bus_not_started_handler(request: Request, exc: BusNotStartedError) -> JSONResponse:
+    """Handle bus not started errors with 503 status."""
+    status_code = 503
+    response = create_error_response(
+        exc,
+        status_code,
+        request_id=request.headers.get("X-Request-ID"),
+    )
+    logger.error(f"Bus not started for operation '{exc.operation}': {exc.message}")
+    return JSONResponse(status_code=status_code, content=response)
+
+
+@app.exception_handler(OPAConnectionError)
+async def opa_connection_handler(request: Request, exc: OPAConnectionError) -> JSONResponse:
+    """Handle OPA connection errors with 503 status."""
+    status_code = 503
+    response = create_error_response(
+        exc,
+        status_code,
+        request_id=request.headers.get("X-Request-ID"),
+    )
+    logger.error(f"OPA connection error: {exc.message}")
+    return JSONResponse(status_code=status_code, content=response)
+
+
+@app.exception_handler(ConstitutionalError)
+async def constitutional_error_handler(request: Request, exc: ConstitutionalError) -> JSONResponse:
+    """Handle constitutional validation errors with 400 status."""
+    status_code = get_http_status_for_exception(exc)
+    response = create_error_response(
+        exc,
+        status_code,
+        request_id=request.headers.get("X-Request-ID"),
+    )
+    logger.warning(f"Constitutional error: {exc.message}")
+    return JSONResponse(status_code=status_code, content=response)
+
+
+@app.exception_handler(MACIError)
+async def maci_error_handler(request: Request, exc: MACIError) -> JSONResponse:
+    """Handle MACI role separation errors."""
+    status_code = get_http_status_for_exception(exc)
+    response = create_error_response(
+        exc,
+        status_code,
+        request_id=request.headers.get("X-Request-ID"),
+    )
+    logger.warning(f"MACI error: {exc.message}")
+    return JSONResponse(status_code=status_code, content=response)
+
+
+@app.exception_handler(PolicyError)
+async def policy_error_handler(request: Request, exc: PolicyError) -> JSONResponse:
+    """Handle policy evaluation errors."""
+    status_code = get_http_status_for_exception(exc)
+    response = create_error_response(
+        exc,
+        status_code,
+        request_id=request.headers.get("X-Request-ID"),
+    )
+    logger.error(f"Policy error: {exc.message}")
+    return JSONResponse(status_code=status_code, content=response)
+
+
+@app.exception_handler(AgentError)
+async def agent_error_handler(request: Request, exc: AgentError) -> JSONResponse:
+    """Handle agent-related errors."""
+    status_code = get_http_status_for_exception(exc)
+    response = create_error_response(
+        exc,
+        status_code,
+        request_id=request.headers.get("X-Request-ID"),
+    )
+    logger.warning(f"Agent error: {exc.message}")
+    return JSONResponse(status_code=status_code, content=response)
+
+
+@app.exception_handler(MessageError)
+async def message_error_handler(request: Request, exc: MessageError) -> JSONResponse:
+    """Handle message-related errors."""
+    status_code = get_http_status_for_exception(exc)
+    response = create_error_response(
+        exc,
+        status_code,
+        request_id=request.headers.get("X-Request-ID"),
+    )
+    logger.warning(f"Message error: {exc.message}")
+    return JSONResponse(status_code=status_code, content=response)
+
+
+@app.exception_handler(BusOperationError)
+async def bus_operation_error_handler(request: Request, exc: BusOperationError) -> JSONResponse:
+    """Handle bus operation errors with 503 status."""
+    status_code = get_http_status_for_exception(exc)
+    response = create_error_response(
+        exc,
+        status_code,
+        request_id=request.headers.get("X-Request-ID"),
+    )
+    logger.error(f"Bus operation error: {exc.message}")
+    return JSONResponse(status_code=status_code, content=response)
+
+
+@app.exception_handler(AgentBusError)
+async def agent_bus_error_handler(request: Request, exc: AgentBusError) -> JSONResponse:
+    """Handle generic AgentBusError (catch-all for bus errors)."""
+    status_code = get_http_status_for_exception(exc)
+    response = create_error_response(
+        exc,
+        status_code,
+        request_id=request.headers.get("X-Request-ID"),
+    )
+    logger.error(f"Agent bus error: {exc.message}")
+    return JSONResponse(status_code=status_code, content=response)
+
 
 # Global agent bus instance - simplified for development
 agent_bus = None
