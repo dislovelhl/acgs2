@@ -9,16 +9,15 @@ Manages SSO sessions including:
 - Logout handling
 """
 
+import jwt
 import logging
 import os
 import secrets
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
 
-import jwt
-
 from .config import SSOConfig
-from .models import IdPType, SSOSession, SSOUser
+from .models import SSOSession, SSOUser, IdPType
 
 logger = logging.getLogger(__name__)
 
@@ -71,7 +70,10 @@ class SSOSessionManager:
         elif config and config.session_secret_key:
             self._secret_key = config.session_secret_key
         else:
-            self._secret_key = os.getenv("SSO_SESSION_SECRET_KEY", secrets.token_urlsafe(32))
+            self._secret_key = os.getenv(
+                "SSO_SESSION_SECRET_KEY",
+                secrets.token_urlsafe(32)
+            )
 
         self.default_expiry_hours = default_expiry_hours
 
@@ -125,7 +127,10 @@ class SSOSessionManager:
             },
         )
 
-        logger.info(f"Created SSO session: {session.session_id[:8]}... for user {internal_user_id}")
+        logger.info(
+            f"Created SSO session: {session.session_id[:8]}... "
+            f"for user {internal_user_id}"
+        )
 
         return session
 

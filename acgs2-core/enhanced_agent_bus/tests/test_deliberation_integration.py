@@ -10,31 +10,30 @@ Tests the complete deliberation workflow including:
 """
 
 import asyncio
+import pytest
 from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import pytest
-
 # Import test targets
 from enhanced_agent_bus.deliberation_layer import (
-    DeliberationQueue,
-    DeliberationTask,
-    Vote,
     VotingService,
     VotingStrategy,
+    Vote,
+    DeliberationQueue,
+    DeliberationTask,
     get_redis_deliberation_queue,
     get_redis_voting_system,
 )
 from enhanced_agent_bus.deliberation_layer.vote_collector import (
-    EventDrivenVoteCollector,
     VoteEvent,
     VoteSession,
+    EventDrivenVoteCollector,
 )
 from enhanced_agent_bus.deliberation_layer.workflows.deliberation_workflow import (
-    DefaultDeliberationActivities,
     DeliberationWorkflow,
     DeliberationWorkflowInput,
     WorkflowStatus,
+    DefaultDeliberationActivities,
 )
 
 
@@ -67,7 +66,9 @@ class TestDeliberationWorkflowIntegration:
 
     @pytest.mark.asyncio
     @pytest.mark.governance
-    async def test_workflow_constitutional_validation_pass(self, workflow, sample_workflow_input):
+    async def test_workflow_constitutional_validation_pass(
+        self, workflow, sample_workflow_input
+    ):
         """Test workflow with valid constitutional hash."""
         # Use default constitutional hash
         sample_workflow_input.constitutional_hash = "cdd01ef066bc6cf2"
@@ -81,7 +82,9 @@ class TestDeliberationWorkflowIntegration:
 
     @pytest.mark.asyncio
     @pytest.mark.governance
-    async def test_workflow_constitutional_validation_fail(self, workflow, sample_workflow_input):
+    async def test_workflow_constitutional_validation_fail(
+        self, workflow, sample_workflow_input
+    ):
         """Test workflow rejects invalid constitutional hash."""
         sample_workflow_input.constitutional_hash = "invalid-hash"
 
@@ -118,7 +121,9 @@ class TestDeliberationWorkflowIntegration:
         assert result.votes_required == 3
 
     @pytest.mark.asyncio
-    async def test_workflow_processing_time_tracking(self, workflow, sample_workflow_input):
+    async def test_workflow_processing_time_tracking(
+        self, workflow, sample_workflow_input
+    ):
         """Test processing time is tracked."""
         sample_workflow_input.require_multi_agent_vote = False
         sample_workflow_input.require_human_review = False

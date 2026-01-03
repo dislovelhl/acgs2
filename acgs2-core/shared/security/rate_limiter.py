@@ -517,6 +517,100 @@ class RateLimiter:
                 self.local_windows[key] = []
 
             # Remove entries outside the window
+            self.local_windows[key] = [
+                ts for ts in self.local_windows[key]
+                if ts > window_start
+            ]
+
+            current_count = len(self.local_windows[key])
+            allowed = current_count < limit
+
+            if allowed:
+                self.local_windows[key].append(now)
+                current_count += 1
+
+            remaining = max(0, limit - current_count)
+            reset_at = datetime.fromtimestamp(now + window_seconds, tz=timezone.utc)
+            retry_after = None if allowed else window_seconds
+
+            return RateLimitResult(
+                allowed=allowed,
+                limit=limit,
+                remaining=remaining,
+                reset_at=reset_at,
+                retry_after=retry_after,
+            )
+
+
+class RateLimitMiddleware:
+    """
+    ASGI middleware for rate limiting.
+
+    Can be added to FastAPI/Starlette apps for automatic rate limiting.
+    """
+
+    def __init__(self, app, config: Optional[RateLimitConfig] = None):
+        self.app = app
+        self.config = config or RateLimitConfig()
+        self.limiter = SlidingWindowRateLimiter()
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
+        # Default rate limiting
+        client = scope.get("client", ("unknown", 0))
+        client_ip = client[0] if client else "unknown"
+        path = scope.get("path", "/")
+
+        key = f"ip:{client_ip}:{path}"
+        result = await self.limiter.is_allowed(key, limit=60, window_seconds=60)
+
+        if not result.allowed:
+            response = JSONResponse(
+                status_code=429,
+                content={
+                    "error": "Too Many Requests",
+                    "retry_after": result.retry_after,
+                },
+            )
+            await response(scope, receive, send)
+            return
+
+        await self.app(scope, receive, send)
+
+
+class RateLimiter:
+    """
+    Sliding window rate limiter implementation.
+
+    Uses a sliding window algorithm to provide smooth rate limiting
+    that doesn't suffer from boundary issues like fixed windows.
+    """
+
+    def __init__(self, redis_client=None, fallback_to_memory: bool = True):
+        self.redis_client = redis_client
+        self.fallback_to_memory = fallback_to_memory
+        self.local_windows: Dict[str, List[float]] = {}
+        self._lock = asyncio.Lock()
+
+    async def is_allowed(
+        self,
+        key: str,
+        limit: int,
+        window_seconds: int = 60,
+    ) -> RateLimitResult:
+        """Check if request is allowed and record it."""
+        now = time.time()
+        window_start = now - window_seconds
+
+        async with self._lock:
+            # Clean old entries and count current window
+            if key not in self.local_windows:
+                self.local_windows[key] = []
+
+            # Remove entries outside the window
             self.local_windows[key] = [ts for ts in self.local_windows[key] if ts > window_start]
 
             current_count = len(self.local_windows[key])

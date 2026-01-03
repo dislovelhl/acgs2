@@ -1,430 +1,350 @@
 /**
- * MemoryService - Redis-backed persistent memory for governance state storage
+ * Memory Service - Redis-backed persistent memory for governance state
  *
- * Implements connection management with automatic reconnection,
- * CRUD operations with TTL support, and non-blocking cleanup using SCAN.
+ * Implements persistent memory storage that survives service restarts and pod
+ * rescheduling. This enables adaptive governance through continuous learning
+ * from historical decisions.
+ *
+ * Features:
+ * - Redis-backed storage with automatic reconnection
+ * - TTL support for automatic cleanup
+ * - Graceful degradation when Redis unavailable
+ * - Pattern-based cleanup for batch operations
+ *
+ * @module services/memory
  */
 
 import { createClient, RedisClientType } from 'redis';
-import {
-  IMemoryService,
-  MemoryConfig,
-  MemoryConnectionState,
-  MemoryHealthStatus,
-  MemorySetOptions,
-  MemorySetResult,
-  MemoryGetResult,
-  MemoryDeleteResult,
-  MemoryCleanupResult,
-  MemoryServiceOptions,
-  MEMORY_DEFAULTS,
-  MEMORY_ENV_VARS,
-} from '../types/memory';
+import logger from '../utils/logger.js';
 
 /**
- * MemoryService provides Redis-backed persistent memory for governance state.
- *
- * Features:
- * - Automatic TLS detection for redis:// vs rediss:// URLs
- * - Exponential backoff reconnection strategy
- * - Atomic set operations with TTL
- * - Non-blocking cleanup using SCAN (not KEYS)
- * - Graceful degradation when Redis unavailable
+ * Configuration for the memory service
  */
-export class MemoryService implements IMemoryService {
+export interface MemoryConfig {
+  /** Redis connection URL (supports both redis:// and rediss://) */
+  redisUrl: string;
+  /** Redis password (optional, for production) */
+  redisPassword?: string;
+  /** Default TTL in seconds for memory entries (default: 24 hours) */
+  defaultTtlSeconds: number;
+  /** Maximum reconnection attempts before giving up */
+  maxReconnectAttempts: number;
+  /** Key prefix for all memory entries */
+  keyPrefix: string;
+}
+
+/**
+ * A memory entry stored in Redis
+ */
+export interface MemoryEntry<T = unknown> {
+  /** The stored value */
+  value: T;
+  /** Timestamp when the entry was created */
+  createdAt: string;
+  /** Timestamp when the entry was last updated */
+  updatedAt: string;
+  /** Optional metadata */
+  metadata?: Record<string, unknown>;
+}
+
+/**
+ * Default configuration values
+ */
+const DEFAULT_CONFIG: MemoryConfig = {
+  redisUrl: process.env.REDIS_URL || 'redis://localhost:6379',
+  redisPassword: process.env.REDIS_PASSWORD,
+  defaultTtlSeconds: parseInt(process.env.MEMORY_DEFAULT_TTL_SECONDS || '86400', 10),
+  maxReconnectAttempts: parseInt(process.env.MEMORY_MAX_RECONNECT_ATTEMPTS || '10', 10),
+  keyPrefix: 'claude-flow:memory:',
+};
+
+/**
+ * Memory Service - Persistent storage backed by Redis
+ *
+ * Provides CRUD operations for governance state with automatic
+ * reconnection and graceful degradation.
+ */
+export class MemoryService {
   private client: RedisClientType | null = null;
   private config: MemoryConfig;
-  private connectionState: MemoryConnectionState = 'disconnected';
   private reconnectAttempts = 0;
-  private lastConnectedAt?: string;
-  private lastErrorAt?: string;
-  private lastError?: string;
-  private debug: boolean;
-  private logger: (message: string, level: 'info' | 'warn' | 'error' | 'debug') => void;
+  private connected = false;
 
-  constructor(options?: MemoryServiceOptions) {
-    const redisUrl = options?.url || process.env[MEMORY_ENV_VARS.REDIS_URL] || MEMORY_DEFAULTS.REDIS_URL;
-
-    this.config = {
-      url: redisUrl,
-      password: options?.password || process.env[MEMORY_ENV_VARS.REDIS_PASSWORD],
-      defaultTtlSeconds: options?.defaultTtlSeconds ||
-        parseInt(process.env[MEMORY_ENV_VARS.MEMORY_DEFAULT_TTL_SECONDS] || '', 10) ||
-        MEMORY_DEFAULTS.DEFAULT_TTL_SECONDS,
-      maxReconnectAttempts: options?.maxReconnectAttempts ||
-        parseInt(process.env[MEMORY_ENV_VARS.MEMORY_MAX_RECONNECT_ATTEMPTS] || '', 10) ||
-        MEMORY_DEFAULTS.MAX_RECONNECT_ATTEMPTS,
-      enableTls: options?.enableTls ?? redisUrl.startsWith('rediss://'),
-      keyPrefix: options?.keyPrefix || MEMORY_DEFAULTS.KEY_PREFIX,
-    };
-
-    this.debug = options?.debug ?? false;
-    this.logger = options?.logger ?? this.defaultLogger.bind(this);
-  }
-
-  /**
-   * Redact sensitive information from log messages
-   * Covers: password=xxx, REDIS_PASSWORD=xxx, redis://:password@host, and password in error messages
-   */
-  private redactSensitiveInfo(message: string): string {
-    // Redact password=xxx or password:xxx patterns (case-insensitive)
-    message = message.replace(/password[=:]\s*\S+/gi, 'password=[REDACTED]');
-    // Redact REDIS_PASSWORD=xxx patterns
-    message = message.replace(/REDIS_PASSWORD[=:]\s*\S+/gi, 'REDIS_PASSWORD=[REDACTED]');
-    // Redact URL-embedded passwords: redis://:password@host or rediss://:password@host
-    message = message.replace(/(rediss?:\/\/):([^@]+)@/gi, '$1:[REDACTED]@');
-    // Redact auth password in connection strings
-    message = message.replace(/auth\s+\S+/gi, 'auth [REDACTED]');
-    return message;
-  }
-
-  /**
-   * Default logger implementation
-   */
-  private defaultLogger(message: string, level: 'info' | 'warn' | 'error' | 'debug'): void {
-    if (level === 'debug' && !this.debug) return;
-
-    const prefix = `[MemoryService]`;
-    switch (level) {
-      case 'error':
-        // Redact sensitive information from error messages
-        message = this.redactSensitiveInfo(message);
-        process.stderr.write(`${prefix} ERROR: ${message}\n`);
-        break;
-      case 'warn':
-        // Redact sensitive information from warning messages
-        message = this.redactSensitiveInfo(message);
-        process.stderr.write(`${prefix} WARN: ${message}\n`);
-        break;
-      case 'info':
-        // Redact sensitive information from info messages (in case of verbose mode)
-        message = this.redactSensitiveInfo(message);
-        process.stdout.write(`${prefix} ${message}\n`);
-        break;
-      case 'debug':
-        // Redact sensitive information from debug messages (most verbose, highest risk)
-        message = this.redactSensitiveInfo(message);
-        process.stdout.write(`${prefix} DEBUG: ${message}\n`);
-        break;
-    }
-  }
-
-  /**
-   * Update connection state and log the change
-   */
-  private setConnectionState(state: MemoryConnectionState): void {
-    if (this.connectionState !== state) {
-      this.connectionState = state;
-      this.logger(`Connection state changed to: ${state}`, 'debug');
-    }
+  constructor(config: Partial<MemoryConfig> = {}) {
+    this.config = { ...DEFAULT_CONFIG, ...config };
   }
 
   /**
    * Initialize the Redis connection
+   *
+   * Supports both development (redis://) and production (rediss://) URLs.
+   * TLS is automatically enabled for rediss:// URLs.
    */
-  async initialize(): Promise<void> {
-    if (this.client && this.connectionState === 'connected') {
-      this.logger('Already connected to Redis', 'debug');
-      return;
-    }
-
-    this.setConnectionState('connecting');
-    const isTls = this.config.enableTls || this.config.url.startsWith('rediss://');
-    const maxAttempts = this.config.maxReconnectAttempts || MEMORY_DEFAULTS.MAX_RECONNECT_ATTEMPTS;
+  async initialize(): Promise<boolean> {
+    const { redisUrl, redisPassword, maxReconnectAttempts } = this.config;
+    const isTLS = redisUrl.startsWith('rediss://');
 
     try {
       this.client = createClient({
-        url: this.config.url,
-        password: this.config.password,
+        url: redisUrl,
+        password: redisPassword,
         socket: {
-          reconnectStrategy: (retries: number) => {
+          reconnectStrategy: (retries) => {
             this.reconnectAttempts = retries;
-            if (retries > maxAttempts) {
-              this.setConnectionState('error');
-              this.lastError = 'Max reconnection attempts reached';
-              this.lastErrorAt = new Date().toISOString();
+            if (retries > maxReconnectAttempts) {
+              logger.error({ retries }, 'Max Redis reconnection attempts reached');
               return new Error('Max reconnection attempts reached');
             }
-            // Exponential backoff: 50ms, 100ms, 150ms... capped at 500ms
+            // Exponential backoff with cap
             const delay = Math.min(retries * 50, 500);
-            this.logger(`Reconnecting in ${delay}ms (attempt ${retries})`, 'debug');
+            logger.info({ retries, delay }, 'Redis reconnecting...');
             return delay;
           },
           // TLS configuration for production (rediss:// URLs)
-          ...(isTls && {
+          ...(isTLS && {
             tls: true,
-            rejectUnauthorized: false, // Allows self-signed certs
+            rejectUnauthorized: false, // Allow self-signed certs
           }),
         },
       });
 
-      // Set up event listeners
-      this.client.on('error', (err: Error) => {
-        this.lastError = err.message;
-        this.lastErrorAt = new Date().toISOString();
-        this.setConnectionState('error');
-        this.logger(`Redis client error: ${err.message}`, 'error');
+      // Event handlers
+      this.client.on('error', (err) => {
+        logger.error({ error: err.message }, 'Redis client error');
       });
 
       this.client.on('connect', () => {
-        this.setConnectionState('connected');
-        this.lastConnectedAt = new Date().toISOString();
+        logger.info('Redis connected');
+        this.connected = true;
         this.reconnectAttempts = 0;
-        this.logger('Redis connected', 'info');
       });
 
       this.client.on('reconnecting', () => {
-        this.setConnectionState('reconnecting');
-        this.logger('Redis reconnecting...', 'info');
+        logger.info('Redis reconnecting...');
+        this.connected = false;
       });
 
       this.client.on('end', () => {
-        this.setConnectionState('disconnected');
-        this.logger('Redis connection closed', 'debug');
+        logger.info('Redis connection closed');
+        this.connected = false;
       });
 
       // Explicitly connect (required in redis v4+)
       await this.client.connect();
+
+      return true;
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown connection error';
-      this.lastError = errorMessage;
-      this.lastErrorAt = new Date().toISOString();
-      this.setConnectionState('error');
-      this.logger(`Failed to connect to Redis: ${errorMessage}`, 'error');
-      throw error;
+      logger.error({ error: (error as Error).message }, 'Failed to initialize Redis connection');
+      this.client = null;
+      return false;
     }
   }
 
   /**
-   * Check if the service is connected
+   * Check if the service is connected to Redis
    */
   isConnected(): boolean {
-    return this.client !== null && this.connectionState === 'connected';
+    return this.connected && this.client !== null;
   }
 
   /**
-   * Build the full key with optional prefix
+   * Store a value in memory
+   *
+   * @param key - The key to store the value under
+   * @param value - The value to store (will be JSON serialized)
+   * @param ttlSeconds - Optional TTL in seconds (uses default if not provided)
    */
-  private buildKey(key: string): string {
-    // Only add prefix if it's not already there
-    if (this.config.keyPrefix && !key.startsWith(this.config.keyPrefix)) {
-      return `${this.config.keyPrefix}${key}`;
-    }
-    return key;
-  }
-
-  /**
-   * Store a value in memory with optional TTL
-   */
-  async set<T>(key: string, value: T, options?: MemorySetOptions): Promise<MemorySetResult> {
-    if (!this.client || !this.isConnected()) {
-      return {
-        success: false,
-        key,
-        error: 'Redis client not initialized or not connected',
-      };
+  async set<T>(key: string, value: T, ttlSeconds?: number): Promise<void> {
+    if (!this.client) {
+      throw new Error('Redis client not initialized');
     }
 
-    const fullKey = this.buildKey(key);
-    const ttlSeconds = options?.ttlSeconds ?? this.config.defaultTtlSeconds;
+    const fullKey = this.config.keyPrefix + key;
+    const entry: MemoryEntry<T> = {
+      value,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
 
-    try {
-      const serialized = JSON.stringify(value);
+    const serialized = JSON.stringify(entry);
+    const ttl = ttlSeconds ?? this.config.defaultTtlSeconds;
 
-      if (ttlSeconds && ttlSeconds > 0) {
-        // Atomic operation - set with expiry in single command
-        await this.client.set(fullKey, serialized, { EX: ttlSeconds });
-      } else {
-        await this.client.set(fullKey, serialized);
-      }
-
-      this.logger(`Set key: ${fullKey}`, 'debug');
-      return { success: true, key: fullKey };
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      this.logger(`Failed to set key ${fullKey}: ${errorMessage}`, 'error');
-      return {
-        success: false,
-        key: fullKey,
-        error: errorMessage,
-      };
+    if (ttl > 0) {
+      // Atomic set with expiry
+      await this.client.set(fullKey, serialized, { EX: ttl });
+    } else {
+      await this.client.set(fullKey, serialized);
     }
+
+    logger.debug({ key: fullKey, ttl }, 'Memory entry stored');
   }
 
   /**
    * Retrieve a value from memory
+   *
+   * @param key - The key to retrieve
+   * @returns The stored value or null if not found
    */
-  async get<T>(key: string): Promise<MemoryGetResult<T>> {
-    if (!this.client || !this.isConnected()) {
-      return {
-        found: false,
-        error: 'Redis client not initialized or not connected',
-      };
+  async get<T>(key: string): Promise<T | null> {
+    if (!this.client) {
+      throw new Error('Redis client not initialized');
     }
 
-    const fullKey = this.buildKey(key);
+    const fullKey = this.config.keyPrefix + key;
+    const data = await this.client.get(fullKey);
+
+    if (!data) {
+      return null;
+    }
 
     try {
-      const data = await this.client.get(fullKey);
-
-      if (data === null) {
-        return { found: false };
-      }
-
-      try {
-        const value = JSON.parse(data) as T;
-        return { found: true, value };
-      } catch (parseError) {
-        // Handle malformed JSON - log and return null
-        this.logger(`Malformed JSON in key ${fullKey}`, 'warn');
-        return {
-          found: false,
-          error: 'Malformed data in Redis',
-        };
-      }
+      const entry: MemoryEntry<T> = JSON.parse(data);
+      return entry.value;
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      this.logger(`Failed to get key ${fullKey}: ${errorMessage}`, 'error');
-      return {
-        found: false,
-        error: errorMessage,
-      };
+      logger.warn({ key: fullKey, error: (error as Error).message }, 'Failed to parse memory entry');
+      return null;
     }
   }
 
   /**
-   * Delete a key from memory
+   * Get the full memory entry with metadata
+   *
+   * @param key - The key to retrieve
+   * @returns The full memory entry or null if not found
    */
-  async delete(key: string): Promise<MemoryDeleteResult> {
-    if (!this.client || !this.isConnected()) {
-      return {
-        success: false,
-        deletedCount: 0,
-        error: 'Redis client not initialized or not connected',
-      };
+  async getEntry<T>(key: string): Promise<MemoryEntry<T> | null> {
+    if (!this.client) {
+      throw new Error('Redis client not initialized');
     }
 
-    const fullKey = this.buildKey(key);
+    const fullKey = this.config.keyPrefix + key;
+    const data = await this.client.get(fullKey);
+
+    if (!data) {
+      return null;
+    }
 
     try {
-      const deletedCount = await this.client.del(fullKey);
-      this.logger(`Deleted key: ${fullKey} (count: ${deletedCount})`, 'debug');
-      return {
-        success: true,
-        deletedCount,
-      };
+      return JSON.parse(data) as MemoryEntry<T>;
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      this.logger(`Failed to delete key ${fullKey}: ${errorMessage}`, 'error');
-      return {
-        success: false,
-        deletedCount: 0,
-        error: errorMessage,
-      };
+      logger.warn({ key: fullKey, error: (error as Error).message }, 'Failed to parse memory entry');
+      return null;
     }
+  }
+
+  /**
+   * Delete a value from memory
+   *
+   * @param key - The key to delete
+   * @returns True if the key was deleted, false if it didn't exist
+   */
+  async delete(key: string): Promise<boolean> {
+    if (!this.client) {
+      throw new Error('Redis client not initialized');
+    }
+
+    const fullKey = this.config.keyPrefix + key;
+    const result = await this.client.del(fullKey);
+
+    logger.debug({ key: fullKey, deleted: result > 0 }, 'Memory entry deleted');
+    return result > 0;
   }
 
   /**
    * Check if a key exists in memory
+   *
+   * @param key - The key to check
+   * @returns True if the key exists
    */
   async exists(key: string): Promise<boolean> {
-    if (!this.client || !this.isConnected()) {
-      return false;
+    if (!this.client) {
+      throw new Error('Redis client not initialized');
     }
 
-    const fullKey = this.buildKey(key);
-
-    try {
-      const count = await this.client.exists(fullKey);
-      return count > 0;
-    } catch (error) {
-      this.logger(`Failed to check existence of key ${fullKey}`, 'error');
-      return false;
-    }
+    const fullKey = this.config.keyPrefix + key;
+    const result = await this.client.exists(fullKey);
+    return result === 1;
   }
 
   /**
-   * Delete multiple keys matching a pattern using SCAN (non-blocking)
+   * Update the TTL of an existing key
+   *
+   * @param key - The key to update
+   * @param ttlSeconds - New TTL in seconds
+   * @returns True if the TTL was updated
    */
-  async cleanup(pattern: string = 'governance:*'): Promise<MemoryCleanupResult> {
-    const startTime = Date.now();
-
-    if (!this.client || !this.isConnected()) {
-      return {
-        success: false,
-        deletedCount: 0,
-        pattern,
-        durationMs: Date.now() - startTime,
-        error: 'Redis client not initialized or not connected',
-      };
+  async expire(key: string, ttlSeconds: number): Promise<boolean> {
+    if (!this.client) {
+      throw new Error('Redis client not initialized');
     }
 
-    try {
-      let cursor = 0;
-      let deletedCount = 0;
-
-      // Use SCAN instead of KEYS to avoid blocking
-      do {
-        const result = await this.client.scan(cursor, {
-          MATCH: pattern,
-          COUNT: MEMORY_DEFAULTS.SCAN_COUNT,
-        });
-
-        cursor = result.cursor;
-        const keys = result.keys;
-
-        if (keys.length > 0) {
-          await this.client.del(keys);
-          deletedCount += keys.length;
-        }
-      } while (cursor !== 0);
-
-      this.logger(`Cleanup completed: ${deletedCount} keys deleted matching "${pattern}"`, 'info');
-
-      return {
-        success: true,
-        deletedCount,
-        pattern,
-        durationMs: Date.now() - startTime,
-      };
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      this.logger(`Cleanup failed: ${errorMessage}`, 'error');
-      return {
-        success: false,
-        deletedCount: 0,
-        pattern,
-        durationMs: Date.now() - startTime,
-        error: errorMessage,
-      };
-    }
+    const fullKey = this.config.keyPrefix + key;
+    const result = await this.client.expire(fullKey, ttlSeconds);
+    return result;
   }
 
   /**
-   * Get the health status of the memory service
+   * Clean up entries matching a pattern using SCAN (non-blocking)
+   *
+   * @param pattern - Pattern to match (e.g., 'governance:*')
+   * @returns Number of keys deleted
    */
-  async getHealth(): Promise<MemoryHealthStatus> {
-    const status: MemoryHealthStatus = {
-      healthy: this.isConnected(),
-      connectionState: this.connectionState,
-      reconnectAttempts: this.reconnectAttempts,
-      lastConnectedAt: this.lastConnectedAt,
-      lastErrorAt: this.lastErrorAt,
-      lastError: this.lastError,
-    };
+  async cleanup(pattern: string = '*'): Promise<number> {
+    if (!this.client) {
+      throw new Error('Redis client not initialized');
+    }
 
-    // Measure latency with PING if connected
-    if (this.client && this.isConnected()) {
-      try {
-        const pingStart = Date.now();
-        await this.client.ping();
-        status.latencyMs = Date.now() - pingStart;
-      } catch {
-        status.healthy = false;
+    const fullPattern = this.config.keyPrefix + pattern;
+    let cursor = 0;
+    let deletedCount = 0;
+
+    // Use SCAN instead of KEYS to avoid blocking
+    do {
+      const result = await this.client.scan(cursor, {
+        MATCH: fullPattern,
+        COUNT: 100,
+      });
+
+      cursor = result.cursor;
+      const keys = result.keys;
+
+      if (keys.length > 0) {
+        await this.client.del(keys);
+        deletedCount += keys.length;
       }
+    } while (cursor !== 0);
+
+    logger.info({ pattern: fullPattern, deletedCount }, 'Memory cleanup completed');
+    return deletedCount;
+  }
+
+  /**
+   * Get all keys matching a pattern
+   *
+   * @param pattern - Pattern to match
+   * @returns Array of matching keys (without prefix)
+   */
+  async keys(pattern: string = '*'): Promise<string[]> {
+    if (!this.client) {
+      throw new Error('Redis client not initialized');
     }
 
-    return status;
+    const fullPattern = this.config.keyPrefix + pattern;
+    const allKeys: string[] = [];
+    let cursor = 0;
+
+    do {
+      const result = await this.client.scan(cursor, {
+        MATCH: fullPattern,
+        COUNT: 100,
+      });
+
+      cursor = result.cursor;
+      const keys = result.keys.map(k => k.replace(this.config.keyPrefix, ''));
+      allKeys.push(...keys);
+    } while (cursor !== 0);
+
+    return allKeys;
   }
 
   /**
@@ -432,44 +352,38 @@ export class MemoryService implements IMemoryService {
    */
   async disconnect(): Promise<void> {
     if (this.client) {
-      try {
-        await this.client.quit();
-        this.logger('Redis disconnected gracefully', 'info');
-      } catch (error) {
-        // Force disconnect if quit fails
-        this.client.disconnect();
-        this.logger('Redis force disconnected', 'warn');
-      }
+      await this.client.quit();
       this.client = null;
-      this.setConnectionState('disconnected');
+      this.connected = false;
+      logger.info('Redis connection closed gracefully');
     }
   }
 }
 
-/**
- * Singleton instance for shared memory service
- */
+// Singleton instance for global access
 let memoryServiceInstance: MemoryService | null = null;
 
 /**
- * Get or create the shared MemoryService instance
+ * Get the singleton memory service instance
+ *
+ * @param config - Optional configuration overrides
+ * @returns The memory service instance
  */
-export function getMemoryService(options?: MemoryServiceOptions): MemoryService {
+export function getMemoryService(config?: Partial<MemoryConfig>): MemoryService {
   if (!memoryServiceInstance) {
-    memoryServiceInstance = new MemoryService(options);
+    memoryServiceInstance = new MemoryService(config);
   }
   return memoryServiceInstance;
 }
 
 /**
- * Reset the singleton instance (for testing)
+ * Reset the memory service instance (for testing)
  */
-export function resetMemoryService(): void {
+export async function resetMemoryService(): Promise<void> {
   if (memoryServiceInstance) {
-    memoryServiceInstance.disconnect().catch(() => {});
+    await memoryServiceInstance.disconnect();
     memoryServiceInstance = null;
   }
 }
 
-// Default export
 export default MemoryService;

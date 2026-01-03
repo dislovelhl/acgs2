@@ -27,7 +27,7 @@ import uuid
 from contextvars import ContextVar
 from datetime import datetime, timezone
 from functools import wraps
-from typing import Any, Callable, Dict, Optional, Set
+from typing import Any, Callable, Dict, List, Optional, Set
 
 # ===== Correlation ID Context =====
 
@@ -139,7 +139,9 @@ class StructuredJSONFormatter(logging.Formatter):
                 "message": str(record.exc_info[1]) if record.exc_info[1] else "",
             }
             if self.include_stack_trace:
-                log_data["exception"]["traceback"] = traceback.format_exception(*record.exc_info)
+                log_data["exception"]["traceback"] = traceback.format_exception(
+                    *record.exc_info
+                )
 
         # Add source location for debugging
         if record.levelno >= logging.WARNING:
@@ -190,7 +192,7 @@ class TextFormatter(logging.Formatter):
 
     COLORS = {
         "DEBUG": "\033[36m",  # Cyan
-        "INFO": "\033[32m",  # Green
+        "INFO": "\033[32m",   # Green
         "WARNING": "\033[33m",  # Yellow
         "ERROR": "\033[31m",  # Red
         "CRITICAL": "\033[35m",  # Magenta
@@ -456,7 +458,6 @@ def log_function_call(logger: Optional[StructuredLogger] = None) -> Callable:
         def my_function(arg1, arg2):
             ...
     """
-
     def decorator(func: Callable) -> Callable:
         nonlocal logger
         if logger is None:
@@ -513,7 +514,6 @@ def log_function_call(logger: Optional[StructuredLogger] = None) -> Callable:
                 raise
 
         import asyncio
-
         if asyncio.iscoroutinefunction(func):
             return async_wrapper
         return wrapper

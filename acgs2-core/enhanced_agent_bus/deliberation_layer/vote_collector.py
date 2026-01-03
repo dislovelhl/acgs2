@@ -81,11 +81,9 @@ class VoteEvent:
             reasoning=data.get("reasoning", ""),
             confidence=float(data.get("confidence", 1.0)),
             weight=float(data.get("weight", 1.0)),
-            timestamp=(
-                datetime.fromisoformat(data["timestamp"])
-                if "timestamp" in data
-                else datetime.now(timezone.utc)
-            ),
+            timestamp=datetime.fromisoformat(data["timestamp"])
+            if "timestamp" in data
+            else datetime.now(timezone.utc),
             metadata=data.get("metadata", {}),
         )
 
@@ -110,7 +108,9 @@ class VoteSession:
         # Prevent duplicate votes from same agent
         existing_agents = {v.agent_id for v in self.votes}
         if vote.agent_id in existing_agents:
-            logger.warning(f"Duplicate vote from {vote.agent_id} for session {self.session_id}")
+            logger.warning(
+                f"Duplicate vote from {vote.agent_id} for session {self.session_id}"
+            )
             return False
 
         # Apply agent weight if configured
@@ -407,7 +407,9 @@ class EventDrivenVoteCollector:
 
                 # Also store in hash for persistence
                 votes_key = f"{self.channel_prefix}:votes:{message_id}"
-                await self.redis_client.hset(votes_key, agent_id, json.dumps(vote.to_dict()))
+                await self.redis_client.hset(
+                    votes_key, agent_id, json.dumps(vote.to_dict())
+                )
                 await self.redis_client.expire(votes_key, 86400)  # 24h expiry
 
                 return True
@@ -579,7 +581,9 @@ class EventDrivenVoteCollector:
 
         if self.redis_client:
             try:
-                await self.redis_client.hdel(f"{self.channel_prefix}:sessions", session_id)
+                await self.redis_client.hdel(
+                    f"{self.channel_prefix}:sessions", session_id
+                )
             except Exception as e:
                 logger.warning(f"Failed to remove session from Redis: {e}")
 

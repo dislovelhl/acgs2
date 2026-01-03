@@ -17,8 +17,8 @@ from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 from urllib.parse import urlencode
 
-from .config import IdPConfig, SPConfig
-from .models import SSOProtocol, SSOUser
+from .config import SPConfig, IdPConfig
+from .models import SSOUser, SSOProtocol, IdPType
 
 logger = logging.getLogger(__name__)
 
@@ -26,8 +26,8 @@ logger = logging.getLogger(__name__)
 SAML_AVAILABLE = False
 try:
     from onelogin.saml2.auth import OneLogin_Saml2_Auth
+    from onelogin.saml2.utils import OneLogin_Saml2_Utils
     from onelogin.saml2.settings import OneLogin_Saml2_Settings
-
     SAML_AVAILABLE = True
 except ImportError:
     logger.warning(
@@ -145,7 +145,7 @@ class SAMLServiceProvider:
         if not SAML_AVAILABLE:
             raise RuntimeError("SAML library not available")
 
-        OneLogin_Saml2_Settings(self._get_settings_dict())
+        settings = OneLogin_Saml2_Settings(self._get_settings_dict())
 
         # Build AuthnRequest
         authn_request_id = f"_acgs2_{uuid.uuid4().hex}"
@@ -239,7 +239,7 @@ class SAMLServiceProvider:
         # Extract user information
         name_id = auth.get_nameid()
         attributes = auth.get_attributes()
-        auth.get_session_index()
+        session_index = auth.get_session_index()
 
         # Apply attribute mapping
         mapped = self.idp_config.attribute_mapping.apply(attributes)
@@ -355,12 +355,8 @@ class SAMLServiceProvider:
             Location="{self.sp_config.acs_url}"
             index="0"
             isDefault="true"/>
-        {
-            f'''<md:SingleLogoutService
+        {f'''<md:SingleLogoutService
             Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect"
-            Location="{self.sp_config.sls_url}"/>'''
-            if self.sp_config.sls_url
-            else ""
-        }
+            Location="{self.sp_config.sls_url}"/>''' if self.sp_config.sls_url else ""}
     </md:SPSSODescriptor>
 </md:EntityDescriptor>"""

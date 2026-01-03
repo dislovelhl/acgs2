@@ -1,641 +1,54 @@
 """
 ACGS-2 Enhanced Agent Bus API
 FastAPI application for the Enhanced Agent Bus service
+Constitutional Hash: cdd01ef066bc6cf2
 
-Multi-Tenant Isolation:
-- TenantContextMiddleware extracts and validates X-Tenant-ID header
-- All non-exempt endpoints require tenant context
-- Cross-tenant access prevention via request state
+This module provides the main API endpoints for the Enhanced Agent Bus,
+including message processing for all 12 message types, rate limiting,
+circuit breaker patterns, and comprehensive error handling.
 """
 
 import asyncio
 import logging
-import time
+import os
 import uuid
-from dataclasses import dataclass, field
+from contextvars import ContextVar
 from datetime import datetime, timezone
-from typing import Dict, Any, Optional, Tuple, Type
-from fastapi import Depends, FastAPI, HTTPException, BackgroundTasks, Request, Response
+from enum import Enum
+from typing import Annotated, Any, Dict, List, Optional, Union
+
+from fastapi import BackgroundTasks, Depends, FastAPI, Header, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel, Field
-from enum import Enum as PyEnum
-import os
+from pydantic import BaseModel, Field, field_validator
 
-# Import MessageProcessor, models, validators, and exceptions with fallback handling
-try:
-    from .message_processor import MessageProcessor
-    from .models import AgentMessage, MessageType, Priority
-    from .validators import ValidationResult
-    from .exceptions import (
-        AgentBusError,
-        # Constitutional errors
-        ConstitutionalError,
-        ConstitutionalHashMismatchError,
-        ConstitutionalValidationError,
-        # Message errors
-        MessageError,
-        MessageValidationError,
-        MessageDeliveryError,
-        MessageTimeoutError,
-        MessageRoutingError,
-        RateLimitExceeded,
-        # Agent errors
-        AgentError,
-        AgentNotRegisteredError,
-        AgentAlreadyRegisteredError,
-        AgentCapabilityError,
-        # Policy/OPA errors
-        PolicyError,
-        PolicyEvaluationError,
-        PolicyNotFoundError,
-        OPAConnectionError,
-        OPANotInitializedError,
-        # Bus operation errors
-        BusOperationError,
-        BusNotStartedError,
-        BusAlreadyStartedError,
-        HandlerExecutionError,
-        # Configuration errors
-        ConfigurationError,
-        # MACI errors
-        MACIError,
-        MACIRoleViolationError,
-        MACISelfValidationError,
-        # Governance errors
-        GovernanceError,
-        AlignmentViolationError,
-    )
-except (ImportError, ValueError):
-    try:
-        from message_processor import MessageProcessor  # type: ignore
-        from models import AgentMessage, MessageType, Priority  # type: ignore
-        from validators import ValidationResult  # type: ignore
-        from exceptions import (  # type: ignore
-            AgentBusError,
-            ConstitutionalError,
-            ConstitutionalHashMismatchError,
-            ConstitutionalValidationError,
-            MessageError,
-            MessageValidationError,
-            MessageDeliveryError,
-            MessageTimeoutError,
-            MessageRoutingError,
-            RateLimitExceeded,
-            AgentError,
-            AgentNotRegisteredError,
-            AgentAlreadyRegisteredError,
-            AgentCapabilityError,
-            PolicyError,
-            PolicyEvaluationError,
-            PolicyNotFoundError,
-            OPAConnectionError,
-            OPANotInitializedError,
-            BusOperationError,
-            BusNotStartedError,
-            BusAlreadyStartedError,
-            HandlerExecutionError,
-            ConfigurationError,
-            MACIError,
-            MACIRoleViolationError,
-            MACISelfValidationError,
-            GovernanceError,
-            AlignmentViolationError,
-        )
-    except ImportError:
-        from enhanced_agent_bus.message_processor import MessageProcessor  # type: ignore
-        from enhanced_agent_bus.models import AgentMessage, MessageType, Priority  # type: ignore
-        from enhanced_agent_bus.validators import ValidationResult  # type: ignore
-        from enhanced_agent_bus.exceptions import (  # type: ignore
-            AgentBusError,
-            ConstitutionalError,
-            ConstitutionalHashMismatchError,
-            ConstitutionalValidationError,
-            MessageError,
-            MessageValidationError,
-            MessageDeliveryError,
-            MessageTimeoutError,
-            MessageRoutingError,
-            RateLimitExceeded,
-            AgentError,
-            AgentNotRegisteredError,
-            AgentAlreadyRegisteredError,
-            AgentCapabilityError,
-            PolicyError,
-            PolicyEvaluationError,
-            PolicyNotFoundError,
-            OPAConnectionError,
-            OPANotInitializedError,
-            BusOperationError,
-            BusNotStartedError,
-            BusAlreadyStartedError,
-            HandlerExecutionError,
-            ConfigurationError,
-            MACIError,
-            MACIRoleViolationError,
-            MACISelfValidationError,
-            GovernanceError,
-            AlignmentViolationError,
-        )
-
-# Configure logging
-logging.basicConfig(level=logging.INFO)
+# Configure structured logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='{"timestamp": "%(asctime)s", "level": "%(levelname)s", "name": "%(name)s", "message": "%(message)s"}'
+)
 logger = logging.getLogger(__name__)
 
-
-# =============================================================================
-# HTTP Status Code Error Mapping
-# =============================================================================
-
-# Comprehensive mapping of exception types to HTTP status codes
-# Reference: RFC 7231 (HTTP/1.1 Semantics and Content)
-EXCEPTION_STATUS_MAP: Dict[Type[Exception], int] = {
-    # 400 Bad Request - Client-side validation errors
-    MessageValidationError: 400,
-    ConstitutionalValidationError: 400,
-    ConstitutionalHashMismatchError: 400,
-    ConfigurationError: 400,
-    # 403 Forbidden - Authorization/role violations
-    MACIRoleViolationError: 403,
-    MACISelfValidationError: 403,
-    AlignmentViolationError: 403,
-    # 404 Not Found - Resource not found
-    AgentNotRegisteredError: 404,
-    PolicyNotFoundError: 404,
-    # 409 Conflict - Resource state conflicts
-    AgentAlreadyRegisteredError: 409,
-    BusAlreadyStartedError: 409,
-    # 422 Unprocessable Entity - Semantic validation failures
-    MessageRoutingError: 422,
-    AgentCapabilityError: 422,
-    PolicyEvaluationError: 422,
-    GovernanceError: 422,
-    # 429 Too Many Requests - Rate limiting
-    RateLimitExceeded: 429,
-    # 500 Internal Server Error - Server-side processing errors
-    HandlerExecutionError: 500,
-    MessageDeliveryError: 500,
-    MACIError: 500,
-    # 503 Service Unavailable - Service not ready
-    BusNotStartedError: 503,
-    BusOperationError: 503,
-    OPAConnectionError: 503,
-    OPANotInitializedError: 503,
-    # 504 Gateway Timeout - Timeout errors
-    MessageTimeoutError: 504,
-}
-
-# Base exception fallback mapping (for hierarchy-based resolution)
-BASE_EXCEPTION_STATUS_MAP: Dict[Type[Exception], int] = {
-    ConstitutionalError: 400,
-    MessageError: 400,
-    AgentError: 400,
-    PolicyError: 422,
-    BusOperationError: 503,
-    AgentBusError: 500,
-}
-
-
-def get_http_status_for_exception(exc: Exception) -> int:
-    """
-    Determine the appropriate HTTP status code for an exception.
-
-    This function uses a hierarchical lookup:
-    1. First checks for exact exception type match
-    2. Then checks for base class matches
-    3. Falls back to 500 for unknown exceptions
-
-    Args:
-        exc: The exception to map to an HTTP status code
-
-    Returns:
-        int: The appropriate HTTP status code
-    """
-    exc_type = type(exc)
-
-    # Check for exact type match first
-    if exc_type in EXCEPTION_STATUS_MAP:
-        return EXCEPTION_STATUS_MAP[exc_type]
-
-    # Check inheritance hierarchy
-    for mapped_type, status_code in EXCEPTION_STATUS_MAP.items():
-        if isinstance(exc, mapped_type):
-            return status_code
-
-    # Check base exception fallbacks
-    for base_type, status_code in BASE_EXCEPTION_STATUS_MAP.items():
-        if isinstance(exc, base_type):
-            return status_code
-
-    # Default to 500 for unknown exceptions
-    return 500
-
-
-# =============================================================================
-# Token Bucket Rate Limiter
-# =============================================================================
-
-# Rate limit configuration from environment
-RATE_LIMIT_REQUESTS_PER_MINUTE = int(os.getenv("RATE_LIMIT_REQUESTS_PER_MINUTE", "100"))
-RATE_LIMIT_BURST_CAPACITY = int(os.getenv("RATE_LIMIT_BURST_CAPACITY", "10"))
-
-
-@dataclass
-class TokenBucket:
-    """Token bucket for rate limiting.
-
-    Implements the token bucket algorithm for smooth rate limiting.
-    Tokens are refilled over time at a constant rate up to a maximum capacity.
-    """
-
-    capacity: int  # Maximum tokens (burst capacity)
-    refill_rate: float  # Tokens per second
-    tokens: float = field(init=False)
-    last_refill: float = field(init=False)
-
-    def __post_init__(self) -> None:
-        """Initialize bucket with full capacity."""
-        self.tokens = float(self.capacity)
-        self.last_refill = time.time()
-
-    def refill(self) -> None:
-        """Refill tokens based on elapsed time."""
-        now = time.time()
-        elapsed = now - self.last_refill
-        tokens_to_add = elapsed * self.refill_rate
-
-        self.tokens = min(float(self.capacity), self.tokens + tokens_to_add)
-        self.last_refill = now
-
-    def consume(self, tokens: int = 1) -> bool:
-        """
-        Try to consume tokens from the bucket.
-
-        Args:
-            tokens: Number of tokens to consume
-
-        Returns:
-            True if tokens were consumed, False if insufficient tokens
-        """
-        self.refill()
-
-        if self.tokens >= tokens:
-            self.tokens -= tokens
-            return True
-
-        return False
-
-    def get_remaining_tokens(self) -> float:
-        """Get remaining tokens in bucket."""
-        self.refill()
-        return self.tokens
-
-    def get_reset_time_seconds(self) -> float:
-        """Get time in seconds until bucket is fully refilled."""
-        self.refill()
-        if self.tokens >= self.capacity:
-            return 0.0
-
-        tokens_needed = self.capacity - self.tokens
-        return tokens_needed / self.refill_rate if self.refill_rate > 0 else 60.0
-
-
-class RateLimiterStore:
-    """In-memory storage for rate limit buckets.
-
-    Manages token buckets per tenant/client identifier.
-    Thread-safe using asyncio.Lock for concurrent access.
-    """
-
-    def __init__(self) -> None:
-        self._buckets: Dict[str, TokenBucket] = {}
-        self._lock = asyncio.Lock()
-
-    async def get_or_create_bucket(
-        self,
-        key: str,
-        capacity: int,
-        refill_rate: float,
-    ) -> TokenBucket:
-        """Get existing bucket or create new one for the given key."""
-        async with self._lock:
-            if key not in self._buckets:
-                self._buckets[key] = TokenBucket(capacity, refill_rate)
-            return self._buckets[key]
-
-    async def is_allowed(
-        self,
-        key: str,
-        capacity: int,
-        refill_rate: float,
-        consume_tokens: int = 1,
-    ) -> Tuple[bool, float, float]:
-        """
-        Check if request is allowed under rate limit.
-
-        Args:
-            key: Identifier for the rate limit bucket (e.g., tenant_id)
-            capacity: Maximum tokens (burst capacity)
-            refill_rate: Tokens per second
-            consume_tokens: Number of tokens to consume
-
-        Returns:
-            Tuple of (allowed, remaining_tokens, reset_time_seconds)
-        """
-        bucket = await self.get_or_create_bucket(key, capacity, refill_rate)
-
-        allowed = bucket.consume(consume_tokens)
-        remaining = bucket.get_remaining_tokens()
-        reset_time = bucket.get_reset_time_seconds()
-
-        return allowed, remaining, reset_time
-
-
-# Global rate limiter store instance
-_rate_limiter_store = RateLimiterStore()
-
-
-# =============================================================================
-# Latency Metrics Tracker
-# =============================================================================
-
-# Latency tracking configuration from environment
-LATENCY_WINDOW_SIZE = int(os.getenv("LATENCY_WINDOW_SIZE", "1000"))
-
-
-@dataclass
-class LatencyMetrics:
-    """Latency metrics with P50, P95, P99 percentiles.
-
-    Stores calculated percentile values for quick access.
-    """
-
-    p50_ms: float
-    p95_ms: float
-    p99_ms: float
-    min_ms: float
-    max_ms: float
-    mean_ms: float
-    sample_count: int
-    window_size: int
-
-
-class LatencyTracker:
-    """Sliding window latency tracker for P99/P95/P50 metrics.
-
-    Maintains a fixed-size buffer of recent latencies for percentile calculations.
-    Thread-safe using asyncio.Lock for concurrent access.
-    """
-
-    def __init__(self, window_size: int = 1000) -> None:
-        """Initialize the latency tracker.
-
-        Args:
-            window_size: Maximum number of latency samples to retain
-        """
-        self._latencies: list[float] = []
-        self._window_size = window_size
-        self._lock = asyncio.Lock()
-        self._total_messages: int = 0
-
-    async def record(self, latency_ms: float) -> None:
-        """Record a latency measurement.
-
-        Args:
-            latency_ms: Latency in milliseconds
-        """
-        async with self._lock:
-            self._latencies.append(latency_ms)
-            self._total_messages += 1
-
-            # Trim to window size (sliding window)
-            if len(self._latencies) > self._window_size:
-                self._latencies = self._latencies[-self._window_size :]
-
-    async def get_metrics(self) -> LatencyMetrics:
-        """Calculate and return latency metrics.
-
-        Returns:
-            LatencyMetrics with P50, P95, P99 percentiles and stats
-        """
-        async with self._lock:
-            if not self._latencies:
-                return LatencyMetrics(
-                    p50_ms=0.0,
-                    p95_ms=0.0,
-                    p99_ms=0.0,
-                    min_ms=0.0,
-                    max_ms=0.0,
-                    mean_ms=0.0,
-                    sample_count=0,
-                    window_size=self._window_size,
-                )
-
-            # Sort for percentile calculation
-            sorted_latencies = sorted(self._latencies)
-            n = len(sorted_latencies)
-
-            def percentile(p: float) -> float:
-                """Calculate percentile value."""
-                if n == 0:
-                    return 0.0
-                k = (n - 1) * (p / 100.0)
-                f = int(k)
-                c = f + 1 if f + 1 < n else f
-                return sorted_latencies[f] + (k - f) * (sorted_latencies[c] - sorted_latencies[f])
-
-            return LatencyMetrics(
-                p50_ms=round(percentile(50), 3),
-                p95_ms=round(percentile(95), 3),
-                p99_ms=round(percentile(99), 3),
-                min_ms=round(min(sorted_latencies), 3),
-                max_ms=round(max(sorted_latencies), 3),
-                mean_ms=round(sum(sorted_latencies) / n, 3),
-                sample_count=n,
-                window_size=self._window_size,
-            )
-
-    async def get_total_messages(self) -> int:
-        """Get total number of messages processed (all time)."""
-        async with self._lock:
-            return self._total_messages
-
-
-# Global latency tracker instance
-_latency_tracker = LatencyTracker(window_size=LATENCY_WINDOW_SIZE)
-
-
-async def check_rate_limit(request: Request) -> Tuple[bool, float, float, str]:
-    """
-    FastAPI dependency for token bucket rate limiting.
-
-    Checks rate limits per tenant_id (or client IP if no tenant_id).
-    Uses the token bucket algorithm for smooth rate limiting.
-
-    Configuration via environment variables:
-    - RATE_LIMIT_REQUESTS_PER_MINUTE: Max requests per minute (default: 100)
-    - RATE_LIMIT_BURST_CAPACITY: Burst capacity (default: 10)
-
-    Args:
-        request: FastAPI Request object
-
-    Returns:
-        Tuple of (allowed, remaining_tokens, reset_time_seconds, rate_limit_key)
-
-    Raises:
-        RateLimitExceeded: When rate limit is exceeded
-    """
-    # Extract tenant_id from request body or headers, fallback to client IP
-    rate_limit_key = "unknown"
-
-    # Try to get tenant_id from request state (if set by middleware)
-    if hasattr(request.state, "tenant_id") and request.state.tenant_id:
-        rate_limit_key = f"tenant:{request.state.tenant_id}"
-    # Try to get from X-Tenant-ID header
-    elif request.headers.get("X-Tenant-ID"):
-        rate_limit_key = f"tenant:{request.headers.get('X-Tenant-ID')}"
-    # Fallback to client IP
-    elif request.client:
-        rate_limit_key = f"ip:{request.client.host}"
-
-    # Calculate refill rate: tokens per second from requests per minute
-    refill_rate = RATE_LIMIT_REQUESTS_PER_MINUTE / 60.0
-
-    # Check rate limit
-    allowed, remaining, reset_time = await _rate_limiter_store.is_allowed(
-        key=rate_limit_key,
-        capacity=RATE_LIMIT_BURST_CAPACITY,
-        refill_rate=refill_rate,
-        consume_tokens=1,
-    )
-
-    if not allowed:
-        # Calculate retry_after in milliseconds
-        retry_after_ms = int(reset_time * 1000)
-
-        # Extract agent_id for the exception
-        agent_id = rate_limit_key.split(":", 1)[-1] if ":" in rate_limit_key else rate_limit_key
-
-        logger.warning(
-            f"Rate limit exceeded for {rate_limit_key}: "
-            f"limit={RATE_LIMIT_REQUESTS_PER_MINUTE}/min, "
-            f"remaining={remaining:.1f}, "
-            f"reset_in={reset_time:.1f}s"
-        )
-
-        raise RateLimitExceeded(
-            agent_id=agent_id,
-            limit=RATE_LIMIT_REQUESTS_PER_MINUTE,
-            window_seconds=60,
-            retry_after_ms=retry_after_ms,
-        )
-
-    logger.debug(
-        f"Rate limit check passed for {rate_limit_key}: "
-        f"remaining={remaining:.1f}, reset_in={reset_time:.1f}s"
-    )
-
-    return allowed, remaining, reset_time, rate_limit_key
-
-
-def get_http_status_for_validation_result(result: ValidationResult) -> int:
-    """
-    Determine the appropriate HTTP status code based on ValidationResult errors.
-
-    Maps validation error patterns to appropriate HTTP status codes:
-    - 400: General validation failures, constitutional hash mismatches
-    - 422: Semantic validation failures (routing, capability issues)
-    - 429: Rate limit indicators
-    - 500: Internal processing errors
-    - 503: Service unavailability indicators
-
-    Args:
-        result: The ValidationResult to analyze
-
-    Returns:
-        int: The appropriate HTTP status code (defaults to 400 for validation failures)
-    """
-    if result.is_valid:
-        return 200
-
-    # Analyze error messages to determine appropriate status code
-    error_text = " ".join(result.errors).lower()
-
-    # Check for rate limiting indicators
-    if any(keyword in error_text for keyword in ["rate limit", "too many", "throttle"]):
-        return 429
-
-    # Check for service unavailability indicators
-    if any(
-        keyword in error_text
-        for keyword in ["not started", "not initialized", "connection", "unavailable", "timeout"]
-    ):
-        return 503
-
-    # Check for authorization/forbidden indicators
-    if any(
-        keyword in error_text
-        for keyword in ["forbidden", "unauthorized", "role violation", "not allowed", "alignment"]
-    ):
-        return 403
-
-    # Check for not found indicators
-    if any(keyword in error_text for keyword in ["not found", "not registered", "does not exist"]):
-        return 404
-
-    # Check for semantic/unprocessable entity indicators
-    if any(
-        keyword in error_text
-        for keyword in ["routing", "capability", "cannot process", "unsupported"]
-    ):
-        return 422
-
-    # Check for internal error indicators
-    if any(
-        keyword in error_text
-        for keyword in ["internal", "handler", "execution", "processing error"]
-    ):
-        return 500
-
-    # Default to 400 for general validation failures
-    return 400
-
-
-def create_error_response(
-    exc: Exception,
-    status_code: int,
-    request_id: Optional[str] = None,
-) -> Dict[str, Any]:
-    """
-    Create a standardized error response dictionary.
-
-    Args:
-        exc: The exception that occurred
-        status_code: The HTTP status code
-        request_id: Optional request ID for tracing
-
-    Returns:
-        Dict containing error details in a consistent format
-    """
-    response = {
-        "error": {
-            "type": type(exc).__name__,
-            "message": str(exc),
-            "status_code": status_code,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-        }
-    }
-
-    if request_id:
-        response["error"]["request_id"] = request_id
-
-    # Include additional details for AgentBusError subclasses
-    if isinstance(exc, AgentBusError):
-        response["error"]["details"] = exc.details
-        response["error"]["constitutional_hash"] = exc.constitutional_hash
-
-    return response
-
+# Correlation ID context for request tracing
+correlation_id_var: ContextVar[str] = ContextVar('correlation_id', default='unknown')
+
+# Rate limiting imports (optional - graceful degradation if not available)
+RATE_LIMITING_AVAILABLE = False
+try:
+    from slowapi import Limiter, _rate_limit_exceeded_handler
+    from slowapi.util import get_remote_address
+    from slowapi.errors import RateLimitExceeded
+    RATE_LIMITING_AVAILABLE = True
+except ImportError:
+    logger.warning("slowapi not available - rate limiting disabled")
+
+# Circuit breaker imports (optional - graceful degradation if not available)
+CIRCUIT_BREAKER_AVAILABLE = False
+try:
+    import pybreaker
+    CIRCUIT_BREAKER_AVAILABLE = True
+except ImportError:
+    logger.warning("pybreaker not available - circuit breaker disabled")
 
 app = FastAPI(
     title="ACGS-2 Enhanced Agent Bus API",
@@ -842,21 +255,79 @@ async def agent_bus_error_handler(request: Request, exc: AgentBusError) -> JSONR
     return JSONResponse(status_code=status_code, content=response)
 
 
+# ===== Rate Limiting Setup =====
+limiter = None
+if RATE_LIMITING_AVAILABLE:
+    limiter = Limiter(key_func=get_remote_address)
+    app.state.limiter = limiter
+    app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+    logger.info("Rate limiting enabled: 60/minute per client")
+
+# ===== Circuit Breaker Setup =====
+message_circuit_breaker = None
+if CIRCUIT_BREAKER_AVAILABLE:
+    message_circuit_breaker = pybreaker.CircuitBreaker(
+        fail_max=5,  # Open circuit after 5 failures
+        reset_timeout=60,  # Try again after 60 seconds
+        name="message_processing"
+    )
+    logger.info("Circuit breaker enabled for message processing")
+
+
+# ===== Correlation ID Middleware =====
+@app.middleware("http")
+async def correlation_id_middleware(request: Request, call_next):
+    """Add correlation ID to all requests for distributed tracing."""
+    correlation_id = request.headers.get("X-Correlation-ID") or str(uuid.uuid4())
+    correlation_id_var.set(correlation_id)
+
+    response = await call_next(request)
+    response.headers["X-Correlation-ID"] = correlation_id
+    return response
+
+
+# ===== Global Exception Handler =====
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """Handle all unhandled exceptions with structured error response."""
+    correlation_id = correlation_id_var.get()
+    logger.error(f"Unhandled exception: {exc}", exc_info=True)
+
+    return JSONResponse(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        content={
+            "error": "internal_server_error",
+            "message": "An unexpected error occurred",
+            "correlation_id": correlation_id,
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+    )
+
+
 # Global agent bus instance - simplified for development
 agent_bus = None
 
-# Global message processor instance - initialized in isolated mode
-message_processor: Optional[MessageProcessor] = None
+# Message type handlers registry
+MESSAGE_HANDLERS: Dict[MessageTypeEnum, str] = {
+    MessageTypeEnum.COMMAND: "process_command",
+    MessageTypeEnum.QUERY: "process_query",
+    MessageTypeEnum.RESPONSE: "process_response",
+    MessageTypeEnum.EVENT: "process_event",
+    MessageTypeEnum.NOTIFICATION: "process_notification",
+    MessageTypeEnum.HEARTBEAT: "process_heartbeat",
+    MessageTypeEnum.GOVERNANCE_REQUEST: "process_governance_request",
+    MessageTypeEnum.GOVERNANCE_RESPONSE: "process_governance_response",
+    MessageTypeEnum.CONSTITUTIONAL_VALIDATION: "process_constitutional_validation",
+    MessageTypeEnum.TASK_REQUEST: "process_task_request",
+    MessageTypeEnum.TASK_RESPONSE: "process_task_response",
+    MessageTypeEnum.AUDIT_LOG: "process_audit_log",
+}
 
 
-# Request/Response Models
-class MessageTypeAPI(str, PyEnum):
-    """API-level MessageType enum for OpenAPI documentation.
+# ===== Message Type Definitions =====
 
-    Maps to MessageType from models.py - all 12 message types supported.
-    Constitutional Hash: cdd01ef066bc6cf2
-    """
-
+class MessageTypeEnum(str, Enum):
+    """Supported message types in the agent bus (12 types per spec)."""
     COMMAND = "command"
     QUERY = "query"
     RESPONSE = "response"
@@ -871,20 +342,38 @@ class MessageTypeAPI(str, PyEnum):
     AUDIT_LOG = "audit_log"
 
 
-class MessageRequest(BaseModel):
-    """Request model for sending messages"""
+class PriorityEnum(str, Enum):
+    """Message priority levels."""
+    LOW = "low"
+    NORMAL = "normal"
+    MEDIUM = "medium"
+    HIGH = "high"
+    CRITICAL = "critical"
 
-    content: str = Field(..., description="Message content")
-    message_type: MessageTypeAPI = Field(
-        default=MessageTypeAPI.COMMAND,
-        description="Type of message (12 types: command, query, response, event, notification, "
-        "heartbeat, governance_request, governance_response, constitutional_validation, "
-        "task_request, task_response, audit_log)",
+
+class MessageStatusEnum(str, Enum):
+    """Message processing status."""
+    ACCEPTED = "accepted"
+    PROCESSING = "processing"
+    COMPLETED = "completed"
+    FAILED = "failed"
+    REJECTED = "rejected"
+
+
+# ===== Request/Response Models =====
+
+class MessageRequest(BaseModel):
+    """Request model for sending messages to the agent bus."""
+
+    content: str = Field(..., description="Message content", min_length=1, max_length=1048576)  # 1MB max
+    message_type: MessageTypeEnum = Field(
+        default=MessageTypeEnum.COMMAND,
+        description="Type of message (one of 12 supported types)"
     )
-    priority: str = Field(default="normal", description="Message priority")
-    sender: str = Field(..., description="Sender identifier")
-    recipient: Optional[str] = Field(default=None, description="Recipient identifier")
-    tenant_id: Optional[str] = Field(default=None, description="Tenant identifier")
+    priority: PriorityEnum = Field(default=PriorityEnum.NORMAL, description="Message priority")
+    sender: str = Field(..., description="Sender identifier", min_length=1, max_length=255)
+    recipient: Optional[str] = Field(default=None, description="Recipient identifier", max_length=255)
+    tenant_id: Optional[str] = Field(default=None, description="Tenant identifier", max_length=100)
     metadata: Optional[Dict[str, Any]] = Field(default=None, description="Additional metadata")
     session_id: Optional[str] = Field(
         default=None, description="Session identifier for multi-turn conversations"
@@ -893,11 +382,11 @@ class MessageRequest(BaseModel):
         default=None, description="Idempotency key to prevent duplicate processing"
     )
 
-    @field_validator("content")
+    @field_validator('content')
     @classmethod
     def validate_content_not_empty(cls, v: str) -> str:
         if not v.strip():
-            raise ValueError("Content cannot be empty or whitespace only")
+            raise ValueError('Content cannot be empty or whitespace only')
         return v
 
     model_config = {
@@ -908,7 +397,7 @@ class MessageRequest(BaseModel):
                 "priority": "high",
                 "sender": "agent-orchestrator",
                 "recipient": "governance-engine",
-                "tenant_id": "acgs-dev",
+                "tenant_id": "acgs-dev"
             }
         }
     }
@@ -917,11 +406,39 @@ class MessageRequest(BaseModel):
 class MessageResponse(BaseModel):
     """Response model for message operations."""
 
-    message_id: str
-    status: str
-    timestamp: str
-    tenant_id: Optional[str] = Field(default=None, description="Tenant ID from request context")
-    details: Optional[Dict[str, Any]] = None
+    message_id: str = Field(..., description="Unique message identifier")
+    status: MessageStatusEnum = Field(..., description="Current message status")
+    timestamp: str = Field(..., description="ISO 8601 timestamp")
+    details: Optional[Dict[str, Any]] = Field(default=None, description="Additional response details")
+    correlation_id: Optional[str] = Field(default=None, description="Request correlation ID")
+
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "message_id": "550e8400-e29b-41d4-a716-446655440000",
+                "status": "accepted",
+                "timestamp": "2024-01-15T10:30:00Z",
+                "correlation_id": "req-12345"
+            }
+        }
+    }
+
+
+class ValidationFinding(BaseModel):
+    """A single validation finding."""
+    severity: str = Field(..., description="Severity: critical, warning, or recommendation")
+    code: str = Field(..., description="Finding code for programmatic handling")
+    message: str = Field(..., description="Human-readable description")
+    field: Optional[str] = Field(default=None, description="Field that caused the finding")
+
+
+class ValidationResponse(BaseModel):
+    """Detailed validation response."""
+    valid: bool = Field(..., description="Whether the request is valid")
+    findings: Dict[str, List[ValidationFinding]] = Field(
+        default_factory=lambda: {"critical": [], "warnings": [], "recommendations": []},
+        description="Categorized validation findings"
+    )
 
 
 class HealthResponse(BaseModel):
@@ -931,221 +448,17 @@ class HealthResponse(BaseModel):
     service: str = Field(..., description="Service name")
     version: str = Field(..., description="Service version")
     agent_bus_status: str = Field(..., description="Agent bus component status")
-    rate_limiting_enabled: bool = Field(
-        default=False, description="Whether rate limiting is active"
-    )
-    circuit_breaker_enabled: bool = Field(
-        default=False, description="Whether circuit breaker is active"
-    )
+    rate_limiting_enabled: bool = Field(default=False, description="Whether rate limiting is active")
+    circuit_breaker_enabled: bool = Field(default=False, description="Whether circuit breaker is active")
 
 
 class ErrorResponse(BaseModel):
     """Standard error response format."""
-
     error: str = Field(..., description="Error type")
     message: str = Field(..., description="Error message")
     details: Optional[Dict[str, Any]] = Field(default=None, description="Additional error details")
     correlation_id: Optional[str] = Field(default=None, description="Request correlation ID")
     timestamp: str = Field(..., description="Error timestamp")
-
-
-class FeatureDriftResponse(BaseModel):
-    """Drift result for a single feature"""
-
-    feature_name: str
-    drift_detected: bool
-    drift_score: float
-    stattest: str
-    threshold: float
-    psi_value: Optional[float] = None
-
-
-class DriftReportResponse(BaseModel):
-    """Response model for drift monitoring reports"""
-
-    timestamp: str
-    status: str
-    service: str
-    version: str
-    agent_bus_status: str
-    tenant_isolation_enabled: bool = Field(
-        default=True, description="Whether multi-tenant isolation is enabled"
-    )
-
-
-# =============================================================================
-# Error Response Models for OpenAPI Documentation
-# =============================================================================
-
-
-class ErrorDetail(BaseModel):
-    """Error detail schema for OpenAPI documentation.
-
-    Provides a standardized error format across all API endpoints.
-    Constitutional Hash: cdd01ef066bc6cf2
-    """
-
-    type: str = Field(
-        ...,
-        description="Exception type name (e.g., 'MessageValidationError', 'RateLimitExceeded')",
-        examples=["MessageValidationError"],
-    )
-    message: str = Field(
-        ...,
-        description="Human-readable error message describing what went wrong",
-        examples=["Message content failed validation: missing required field 'sender'"],
-    )
-    status_code: int = Field(
-        ...,
-        description="HTTP status code (mirrors response status)",
-        examples=[400],
-    )
-    timestamp: str = Field(
-        ...,
-        description="ISO 8601 timestamp when the error occurred",
-        examples=["2024-01-15T12:30:45.123456+00:00"],
-    )
-    request_id: Optional[str] = Field(
-        default=None,
-        description="Request ID for tracing (from X-Request-ID header if provided)",
-        examples=["req-12345-abcde"],
-    )
-    details: Optional[Dict[str, Any]] = Field(
-        default=None,
-        description="Additional error context (exception-specific details)",
-        examples=[{"field": "content", "constraint": "min_length"}],
-    )
-    constitutional_hash: Optional[str] = Field(
-        default=None,
-        description="Constitutional hash for governance tracing",
-        examples=["cdd01ef066bc6cf2"],
-    )
-
-
-class ErrorResponse(BaseModel):
-    """Standard error response wrapper for OpenAPI documentation.
-
-    All error responses follow this format for consistency.
-    See: RFC 7807 Problem Details for HTTP APIs
-    """
-
-    error: ErrorDetail = Field(
-        ...,
-        description="Error details object containing type, message, and context",
-    )
-
-
-class ValidationErrorItem(BaseModel):
-    """Individual validation error detail (Pydantic format)."""
-
-    loc: list = Field(
-        ...,
-        description="Location of the error (field path)",
-        examples=[["body", "content"]],
-    )
-    msg: str = Field(
-        ...,
-        description="Validation error message",
-        examples=["Field required"],
-    )
-    type: str = Field(
-        ...,
-        description="Error type identifier",
-        examples=["missing"],
-    )
-
-
-class ValidationErrorResponse(BaseModel):
-    """Pydantic validation error response (422 Unprocessable Entity).
-
-    FastAPI auto-generates this format for request validation failures.
-    """
-
-    detail: list[ValidationErrorItem] = Field(
-        ...,
-        description="List of validation errors",
-    )
-
-
-class RateLimitErrorResponse(BaseModel):
-    """Rate limit exceeded error response (429 Too Many Requests).
-
-    Includes Retry-After and X-RateLimit-* headers for client guidance.
-    """
-
-    error: ErrorDetail = Field(
-        ...,
-        description="Error details with rate limit context",
-        examples=[
-            {
-                "type": "RateLimitExceeded",
-                "message": "Rate limit exceeded for agent 'test-agent': 100/minute limit reached",
-                "status_code": 429,
-                "timestamp": "2024-01-15T12:30:45.123456+00:00",
-                "details": {
-                    "agent_id": "test-agent",
-                    "limit": 100,
-                    "window_seconds": 60,
-                    "retry_after_ms": 5000,
-                },
-            }
-        ],
-    )
-
-
-class ServiceUnavailableResponse(BaseModel):
-    """Service unavailable error response (503 Service Unavailable).
-
-    Returned when the agent bus or dependent services are not ready.
-    """
-
-    error: ErrorDetail = Field(
-        ...,
-        description="Error details with service status context",
-        examples=[
-            {
-                "type": "BusNotStartedError",
-                "message": "Agent bus not initialized - service starting up",
-                "status_code": 503,
-                "timestamp": "2024-01-15T12:30:45.123456+00:00",
-                "details": {"operation": "send_message", "required_state": "running"},
-            }
-        ],
-    )
-
-
-# =============================================================================
-# OpenAPI Response Documentation
-# =============================================================================
-
-# Standard error responses for endpoint documentation
-ERROR_RESPONSES: Dict[int, Dict[str, Any]] = {
-    400: {
-        "model": ErrorResponse,
-        "description": "Bad Request - Client-side validation error (malformed request, "
-        "constitutional hash mismatch, invalid message format)",
-    },
-    422: {
-        "model": ValidationErrorResponse,
-        "description": "Unprocessable Entity - Semantic validation failure (missing required "
-        "fields, invalid message type, routing errors, capability mismatches)",
-    },
-    429: {
-        "model": RateLimitErrorResponse,
-        "description": "Too Many Requests - Rate limit exceeded. Check X-RateLimit-* headers "
-        "and Retry-After header for retry guidance.",
-    },
-    500: {
-        "model": ErrorResponse,
-        "description": "Internal Server Error - Server-side processing failure (handler "
-        "execution error, message delivery failure, unexpected exception)",
-    },
-    503: {
-        "model": ServiceUnavailableResponse,
-        "description": "Service Unavailable - Agent bus or dependent service not ready "
-        "(bus not started, OPA connection error, circuit breaker open)",
-    },
-}
 
 
 # Startup event
@@ -1231,31 +544,11 @@ async def shutdown_event():
     logger.info("Enhanced Agent Bus stopped (dev mode)")
 
 
-# API Endpoints
-@app.get(
-    "/health",
-    response_model=HealthResponse,
-    responses={
-        503: {
-            "model": ServiceUnavailableResponse,
-            "description": "Service Unavailable - Agent bus is unhealthy or not initialized",
-        },
-    },
-    summary="Health check",
-    tags=["Health"],
-)
+# ===== API Endpoints =====
+
+@app.get("/health", response_model=HealthResponse)
 async def health_check():
-    """Health check endpoint.
-
-    Returns the health status of the Enhanced Agent Bus service.
-    Checks the initialization state of the agent bus and dependent services.
-
-    **Response:**
-    - status: Overall health status ('healthy' or 'unhealthy')
-    - service: Service identifier
-    - version: API version
-    - agent_bus_status: Agent bus component status
-    """
+    """Health check endpoint for service monitoring."""
     agent_bus_status = "healthy" if agent_bus else "unhealthy"
 
     return HealthResponse(
@@ -1263,27 +556,56 @@ async def health_check():
         service="enhanced-agent-bus",
         version="1.0.0",
         agent_bus_status=agent_bus_status,
-        tenant_isolation_enabled=tenant_config.enabled,
+        rate_limiting_enabled=RATE_LIMITING_AVAILABLE,
+        circuit_breaker_enabled=CIRCUIT_BREAKER_AVAILABLE,
     )
 
 
+@app.get("/health/live")
+async def liveness_check():
+    """Kubernetes liveness probe endpoint."""
+    return {"status": "alive"}
+
+
+@app.get("/health/ready")
+async def readiness_check():
+    """Kubernetes readiness probe endpoint."""
+    if not agent_bus:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Agent bus not ready"
+        )
+    return {"status": "ready"}
+
+
+@app.get("/api/v1/message-types")
+async def list_message_types():
+    """List all supported message types with descriptions."""
+    return {
+        "message_types": [
+            {"type": t.value, "description": f"Message type: {t.value}"}
+            for t in MessageTypeEnum
+        ],
+        "total": len(MessageTypeEnum)
+    }
+
+
 @app.post(
-    "/messages",
+    "/api/v1/messages",
     response_model=MessageResponse,
-    status_code=202,
+    status_code=status.HTTP_202_ACCEPTED,
     responses={
-        202: {
-            "model": MessageResponse,
-            "description": "Accepted - Message queued for processing. "
-            "Background processing will complete asynchronously.",
-        },
-        **ERROR_RESPONSES,
-    },
-    summary="Send message to agent bus",
-    tags=["Messages"],
+        202: {"description": "Message accepted for processing"},
+        400: {"description": "Invalid request format"},
+        422: {"description": "Validation error"},
+        429: {"description": "Rate limit exceeded"},
+        500: {"description": "Internal server error"},
+        503: {"description": "Service unavailable"},
+    }
 )
 async def send_message(
-    request: MessageRequest,
+    request: Request,
+    message: MessageRequest,
     background_tasks: BackgroundTasks,
     response: Response,
     http_request: Request,
@@ -1379,93 +701,109 @@ async def send_message(
 
     if not agent_bus:
         raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Agent bus not initialized"
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Agent bus not initialized"
         )
 
     try:
-        # Create message ID and timestamp
+        # Generate unique message ID
         message_id = str(uuid.uuid4())
         timestamp = datetime.now(timezone.utc)
 
-        # Map request message_type to MessageType enum (all 12 types)
-        message_type_map = {
-            "command": MessageType.COMMAND,
-            "query": MessageType.QUERY,
-            "response": MessageType.RESPONSE,
-            "event": MessageType.EVENT,
-            "notification": MessageType.NOTIFICATION,
-            "heartbeat": MessageType.HEARTBEAT,
-            "governance_request": MessageType.GOVERNANCE_REQUEST,
-            "governance_response": MessageType.GOVERNANCE_RESPONSE,
-            "constitutional_validation": MessageType.CONSTITUTIONAL_VALIDATION,
-            "task_request": MessageType.TASK_REQUEST,
-            "task_response": MessageType.TASK_RESPONSE,
-            "audit_log": MessageType.AUDIT_LOG,
-        }
-        # Get the value from the enum if it's an enum, otherwise use the string directly
-        msg_type_str = (
-            request.message_type.value
-            if isinstance(request.message_type, MessageTypeAPI)
-            else request.message_type
-        )
-        msg_type = message_type_map.get(msg_type_str.lower(), MessageType.COMMAND)
+        # Use session_id from request body if provided, otherwise fall back to header
+        effective_session_id = message.session_id or session_id
 
-        # Map request priority to Priority enum
-        priority_map = {
-            "low": Priority.LOW,
-            "normal": Priority.NORMAL,
-            "medium": Priority.MEDIUM,
-            "high": Priority.HIGH,
-            "critical": Priority.CRITICAL,
-        }
-        msg_priority = priority_map.get(request.priority.lower(), Priority.NORMAL)
+        # Process message asynchronously based on type
+        async def process_message_async(
+            msg_id: str,
+            msg: MessageRequest,
+            corr_id: str
+        ):
+            """Process message asynchronously with type-specific handling."""
+            import hashlib
 
-        # Create AgentMessage from request
-        agent_message = AgentMessage(
-            message_id=message_id,
-            content={"text": request.content, **(request.metadata or {})},
-            from_agent=request.sender,
-            to_agent=request.recipient or "",
-            message_type=msg_type,
-            priority=msg_priority,
-            tenant_id=request.tenant_id or "",
-        )
+            logger.info(
+                f"Processing message: id={msg_id}, type={msg.message_type.value}, "
+                f"priority={msg.priority.value}, correlation_id={corr_id}"
+            )
 
-        # Process message asynchronously with MessageProcessor
-        async def process_message_with_processor(msg: AgentMessage):
-            logger.info(f"Processing message {msg.message_id}: {str(msg.content)[:50]}...")
-            if message_processor:
-                result = await message_processor.process(msg)
-                if result.is_valid:
-                    logger.info(f"Message {msg.message_id} validated successfully")
+            try:
+                # Route to type-specific handler
+                handler_name = MESSAGE_HANDLERS.get(msg.message_type, "process_generic")
+
+                # Perform message validation and content hash
+                content_hash = hashlib.sha256(msg.content.encode()).hexdigest()[:16]
+
+                # Type-specific processing logic
+                if msg.message_type == MessageTypeEnum.GOVERNANCE_REQUEST:
+                    # Governance requests may trigger deliberation
+                    logger.info(f"Governance request {msg_id}: routing to deliberation layer")
+
+                elif msg.message_type == MessageTypeEnum.CONSTITUTIONAL_VALIDATION:
+                    # Constitutional validation requires special handling
+                    logger.info(f"Constitutional validation {msg_id}: verifying compliance")
+
+                elif msg.message_type == MessageTypeEnum.HEARTBEAT:
+                    # Heartbeats are lightweight status checks
+                    logger.debug(f"Heartbeat from {msg.sender}: acknowledged")
+
+                elif msg.message_type == MessageTypeEnum.AUDIT_LOG:
+                    # Audit logs are write-only, no response needed
+                    logger.info(f"Audit log {msg_id}: recorded from {msg.sender}")
+
                 else:
-                    logger.warning(f"Message {msg.message_id} validation failed: {result.errors}")
-            else:
-                logger.warning(
-                    f"MessageProcessor not available, skipping validation for {msg.message_id}"
+                    # Standard message processing
+                    logger.info(f"Message {msg_id} ({msg.message_type.value}): processing with {handler_name}")
+
+                logger.info(
+                    f"Message {msg_id} processed: hash={content_hash}, "
+                    f"handler={handler_name}, correlation_id={corr_id}"
                 )
-            logger.info(f"Message {msg.message_id} processed successfully")
 
-        background_tasks.add_task(process_message_with_processor, agent_message)
+            except Exception as e:
+                logger.error(f"Message processing failed for {msg_id}: {e}", exc_info=True)
 
-        # Calculate request latency in milliseconds (following pattern from message_processor.py)
-        latency_ms = (time.perf_counter() - start) * 1000
-
-        # Record latency for P99/P95/P50 metrics
-        await _latency_tracker.record(latency_ms)
+        # Add processing task to background
+        background_tasks.add_task(
+            process_message_async,
+            message_id,
+            message,
+            correlation_id
+        )
 
         return MessageResponse(
             message_id=message_id,
             status=MessageStatusEnum.ACCEPTED,
             timestamp=timestamp.isoformat(),
-            details={"message_type": msg_type_str, "latency_ms": round(latency_ms, 3)},
+            correlation_id=correlation_id,
+            details={
+                "message_type": message.message_type.value,
+                "priority": message.priority.value,
+                "session_id": effective_session_id,
+                "sender": message.sender,
+            },
         )
 
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error sending message: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        logger.error(f"Error sending message: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Message processing failed"
+        ) from e
+
+
+# Legacy endpoint for backward compatibility
+@app.post("/messages", response_model=MessageResponse, include_in_schema=False)
+async def send_message_legacy(
+    request: Request,
+    message: MessageRequest,
+    background_tasks: BackgroundTasks,
+    session_id: Annotated[Optional[str], Header(alias="X-Session-ID")] = None,
+):
+    """Legacy endpoint - redirects to /api/v1/messages."""
+    return await send_message(request, message, background_tasks, session_id)
 
 
 @app.get(

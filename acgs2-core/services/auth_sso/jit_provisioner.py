@@ -9,11 +9,11 @@ Implements JIT user provisioning:
 """
 
 import logging
-from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Protocol
+from dataclasses import dataclass
 
-from .models import IdPType, SSOUser
+from .models import SSOUser, IdPType
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +25,6 @@ class ProvisionedUser:
 
     Represents a user created or updated via JIT provisioning.
     """
-
     user_id: str
     external_id: str
     email: str

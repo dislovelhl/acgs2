@@ -336,7 +336,7 @@ class DefaultDeliberationActivities(DeliberationActivities):
         eliminating the need for polling-based collection.
         """
         try:
-            from ..vote_collector import VoteEvent, get_vote_collector
+            from ..vote_collector import get_vote_collector, VoteEvent
 
             collector = get_vote_collector()
 
@@ -371,7 +371,8 @@ class DefaultDeliberationActivities(DeliberationActivities):
                 votes.append(vote)
 
             logger.info(
-                f"Collected {len(votes)} votes for message {message_id} via event-driven collector"
+                f"Collected {len(votes)} votes for message {message_id} "
+                f"via event-driven collector"
             )
             return votes
 

@@ -11,22 +11,26 @@ Implements OIDC RP functionality:
 
 import base64
 import hashlib
+import json
 import logging
+import os
 import secrets
 import time
+from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, Optional
 from urllib.parse import urlencode
 
 from .config import IdPConfig
-from .models import SSOProtocol, SSOUser
+from .models import SSOUser, SSOProtocol
 
 logger = logging.getLogger(__name__)
 
 # Check if authlib is available
 AUTHLIB_AVAILABLE = False
 try:
-    from authlib.jose import JsonWebKey, jwt
-
+    from authlib.integrations.httpx_client import AsyncOAuth2Client
+    from authlib.jose import jwt
+    from authlib.jose import JsonWebKey
     AUTHLIB_AVAILABLE = True
 except ImportError:
     logger.warning(
@@ -38,7 +42,6 @@ except ImportError:
 HTTPX_AVAILABLE = False
 try:
     import httpx
-
     HTTPX_AVAILABLE = True
 except ImportError:
     pass
@@ -178,11 +181,9 @@ class OIDCRelyingParty:
     def _generate_pkce(self) -> tuple[str, str]:
         """Generate PKCE code verifier and challenge."""
         verifier = secrets.token_urlsafe(32)
-        challenge = (
-            base64.urlsafe_b64encode(hashlib.sha256(verifier.encode()).digest())
-            .rstrip(b"=")
-            .decode()
-        )
+        challenge = base64.urlsafe_b64encode(
+            hashlib.sha256(verifier.encode()).digest()
+        ).rstrip(b"=").decode()
         return verifier, challenge
 
     async def create_auth_request(

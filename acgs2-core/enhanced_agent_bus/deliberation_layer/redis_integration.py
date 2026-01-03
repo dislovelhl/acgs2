@@ -393,7 +393,7 @@ class RedisVotingSystem:
             logger.error(f"Failed to publish vote event: {e}")
             return False
 
-    async def subscribe_to_votes(self, item_id: str) -> Any:
+    async def subscribe_to_votes(self, item_id: str) -> bool:
         """
         Subscribe to vote events for a deliberation item.
 
@@ -401,10 +401,10 @@ class RedisVotingSystem:
             item_id: Deliberation item ID to subscribe to
 
         Returns:
-            The pubsub instance
+            True if subscribed successfully
         """
         if not self.redis_client:
-            return None
+            return False
 
         try:
             if self._pubsub is None:
@@ -413,11 +413,11 @@ class RedisVotingSystem:
             channel = f"{self.pubsub_channel_prefix}{item_id}"
             await self._pubsub.subscribe(channel)
             logger.info(f"Subscribed to vote channel: {channel}")
-            return self._pubsub
+            return True
 
         except (ConnectionError, OSError) as e:
             logger.error(f"Failed to subscribe to vote channel: {e}")
-            return None
+            return False
 
     async def unsubscribe_from_votes(self, item_id: str) -> bool:
         """
@@ -459,9 +459,9 @@ class RedisVotingSystem:
 
         try:
             import asyncio
-
             message = await asyncio.wait_for(
-                self._pubsub.get_message(ignore_subscribe_messages=True), timeout=timeout
+                self._pubsub.get_message(ignore_subscribe_messages=True),
+                timeout=timeout
             )
 
             if message and message["type"] == "message":
@@ -503,7 +503,6 @@ class RedisVotingSystem:
             await self.subscribe_to_votes(item_id)
 
             import asyncio
-
             deadline = datetime.now(timezone.utc).timestamp() + timeout_seconds
 
             while len(collected_votes) < required_votes:

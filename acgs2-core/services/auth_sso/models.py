@@ -16,7 +16,6 @@ from typing import Any, Dict, List, Optional
 
 class IdPType(Enum):
     """Supported Identity Provider types."""
-
     OKTA = "okta"
     AZURE_AD = "azure_ad"
     GOOGLE_WORKSPACE = "google_workspace"
@@ -26,7 +25,6 @@ class IdPType(Enum):
 
 class SSOProtocol(Enum):
     """SSO authentication protocols."""
-
     SAML_2_0 = "saml"
     OIDC = "oidc"
 
@@ -45,7 +43,6 @@ class SSOUser:
         protocol: SSO protocol used (SAML or OIDC)
         raw_attributes: All attributes from the IdP assertion/token
     """
-
     external_id: str
     email: str
     display_name: Optional[str] = None
@@ -84,11 +81,9 @@ class SSOUser:
             idp_type=IdPType(data.get("idp_type", "custom_saml")),
             protocol=SSOProtocol(data.get("protocol", "saml")),
             raw_attributes=data.get("raw_attributes", {}),
-            authenticated_at=(
-                datetime.fromisoformat(data["authenticated_at"])
-                if "authenticated_at" in data
-                else datetime.now(timezone.utc)
-            ),
+            authenticated_at=datetime.fromisoformat(data["authenticated_at"])
+            if "authenticated_at" in data
+            else datetime.now(timezone.utc),
         )
 
 
@@ -107,7 +102,6 @@ class SSOSession:
         saml_session_index: SAML session index for SLO (if SAML)
         oidc_id_token: OIDC ID token for logout (if OIDC)
     """
-
     session_id: str
     user_id: str
     external_id: str
@@ -143,7 +137,6 @@ class SSOSession:
 @dataclass
 class AttributeMapping:
     """Mapping configuration for IdP attributes to user fields."""
-
     email: str = "email"
     display_name: str = "displayName"
     first_name: str = "firstName"
@@ -153,7 +146,6 @@ class AttributeMapping:
 
     def apply(self, attributes: Dict[str, Any]) -> Dict[str, Any]:
         """Apply mapping to extract user fields from IdP attributes."""
-
         def get_value(key: str) -> Any:
             """Get value from attributes, handling list values."""
             value = attributes.get(key)
@@ -173,7 +165,6 @@ class AttributeMapping:
 @dataclass
 class RoleMappingRule:
     """Rule for mapping IdP group to MACI role."""
-
     idp_group: str
     maci_role: str
     priority: int = 0  # Higher priority rules take precedence
@@ -186,7 +177,6 @@ class RoleMappingRule:
 @dataclass
 class IdPMetadata:
     """Identity Provider metadata."""
-
     entity_id: str
     sso_url: str
     slo_url: Optional[str] = None

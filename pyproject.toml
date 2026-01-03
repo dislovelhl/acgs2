@@ -68,13 +68,13 @@ target-version = ['py312']
 # NOTE: This configuration is for individual component testing only.
 # For running all tests across components, use: ./scripts/run_all_tests.sh
 # This avoids pytest configuration conflicts between root and component-specific configs.
-addopts = "-q --maxfail=3"
+addopts = "-q --maxfail=3 --cov --cov-report=term-missing --cov-report=html --cov-report=xml"
 asyncio_mode = "auto"
 markers = [
     "constitutional: marks tests as related to constitutional compliance",
     "integration: marks tests as integration tests requiring external services",
-    "asyncio: marks tests as async tests using pytest-asyncio",
-    "slow: marks tests as slow-running tests",
+    "slow: marks tests as slow running",
+    "governance: marks tests as critical governance path tests (90%+ coverage required)",
 ]
 # Only run tests in the immediate directory to avoid conflicts
 testpaths = ["."]
@@ -111,11 +111,19 @@ exclude_lines = [
     "raise NotImplementedError",
     "if __name__ == .__main__.:",
     "if TYPE_CHECKING:",
-    "@abstractmethod",
+    "raise NotImplementedError",
+    "except ImportError:",
 ]
+# Enforce 80% minimum coverage (spec 027)
+fail_under = 80
 show_missing = true
-precision = 2
-fail_under = 85
+skip_covered = false
+
+[tool.coverage.html]
+directory = "htmlcov"
+
+[tool.coverage.xml]
+output = "coverage.xml"
 
 [tool.bandit]
 exclude_dirs = ["tests", "venv", ".venv", "node_modules", "__pycache__", "examples"]

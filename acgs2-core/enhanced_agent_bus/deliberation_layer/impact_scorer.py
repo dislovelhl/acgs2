@@ -1,8 +1,19 @@
-import asyncio
+"""
+Impact Scorer v3.1.0 - ML-Powered Impact Assessment
+
+This module provides ML-based impact scoring for governance decisions using:
+1. ONNX Runtime (fastest) - GPU-accelerated inference
+2. PyTorch Transformers (fallback) - CPU/GPU inference
+3. NumPy heuristics (final fallback) - Keyword-based scoring
+
+The fallback cascade ensures the service remains operational even when
+ML dependencies are unavailable.
+"""
 import logging
 import os
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Union
 
 import numpy as np
 
@@ -20,7 +31,6 @@ logger = logging.getLogger(__name__)
 ONNX_AVAILABLE = False
 try:
     import onnxruntime as ort
-
     ONNX_AVAILABLE = True
     logger.info(f"ONNX Runtime available: {ort.__version__}")
 except ImportError:
@@ -32,26 +42,14 @@ try:
     import torch
     from sklearn.metrics.pairwise import cosine_similarity
     from transformers import AutoModel, AutoTokenizer
-
     TRANSFORMERS_AVAILABLE = True
     logger.info(f"Transformers available: torch={torch.__version__}")
 except ImportError:
     logger.info("Transformers not available - will use heuristics fallback")
 
 # Feature flags based on availability (can be overridden via environment)
-USE_TRANSFORMERS = (
-    TRANSFORMERS_AVAILABLE and os.getenv("USE_TRANSFORMERS", "true").lower() == "true"
-)
+USE_TRANSFORMERS = TRANSFORMERS_AVAILABLE and os.getenv("USE_TRANSFORMERS", "true").lower() == "true"
 USE_ONNX = ONNX_AVAILABLE and os.getenv("USE_ONNX_INFERENCE", "true").lower() == "true"
-
-# ONNX Runtime availability check
-ONNX_AVAILABLE = False
-try:
-    import onnxruntime as ort
-
-    ONNX_AVAILABLE = True
-except ImportError:
-    pass
 
 PROFILING_AVAILABLE = False
 
@@ -78,29 +76,23 @@ class ImpactAnalysis:
 
 
 class ImpactScorer:
-    """Streamlined ImpactScorer v3.0.0 (ONNX/BERT optimized).
+    """
+    ImpactScorer v3.1.0 - ML-Powered Governance Impact Assessment
 
-    Features tokenization caching, class-level model singleton, and lazy ONNX
-    session loading with warmup for optimal performance.
+    Implements a fallback cascade:
+    1. ONNX Runtime (fastest) - GPU-accelerated when available
+    2. PyTorch Transformers (fallback) - Full model inference
+    3. NumPy heuristics (final fallback) - Keyword-based scoring
 
-    ONNX Session Management:
-    - Lazy loading: Session created on first inference, not at initialization
-    - Class-level caching: Single ONNX session shared across instances
-    - Warmup: Pre-warms execution path to avoid cold-start latency
-    - Optimized: Graph optimization and threading configured for performance
+    Feature flags:
+    - USE_TRANSFORMERS: Enable/disable ML inference (env: USE_TRANSFORMERS)
+    - USE_ONNX: Enable/disable ONNX optimization (env: USE_ONNX_INFERENCE)
     """
 
-    # Class-level tokenizer and model cache (singleton pattern to avoid reloading)
-    _tokenizer_instance: Optional[Any] = None
+    # Class-level model cache for singleton behavior
     _model_instance: Optional[Any] = None
-    _cached_model_name: Optional[str] = None
-
-    # Class-level ONNX session cache (singleton pattern for efficiency)
+    _tokenizer_instance: Optional[Any] = None
     _onnx_session_instance: Optional[Any] = None
-    _cached_onnx_path: Optional[str] = None
-
-    # Default ONNX model path (relative to deliberation_layer directory)
-    DEFAULT_ONNX_PATH = "optimized_models/distilbert_base_uncased.onnx"
 
     def __init__(
         self,
@@ -112,15 +104,20 @@ class ImpactScorer:
     ):
         self.config = config or ScoringConfig()
         self.model_name = model_name
-        self.use_onnx = use_onnx
-        # PERFORMANCE: Disable ONNX for now due to performance regression
-        self._onnx_enabled = False  # use_onnx if TRANSFORMERS_AVAILABLE and ONNX_AVAILABLE else False
-        self._bert_enabled = False
-        self.session = None
+        self.use_onnx = use_onnx and USE_ONNX
 
-        # PERFORMANCE: Skip BERT model loading for now to maintain throughput
-        # TODO: Re-enable optimized BERT inference after debugging performance issues
-        logger.info("BERT inference disabled for performance - using keyword-based scoring")
+        # State flags - will be set during lazy loading
+        self._onnx_enabled = False
+        self._bert_enabled = False
+        self._model_loaded = False
+
+        # Model references (lazy loaded)
+        self.model = None
+        self.tokenizer = None
+        self.onnx_session = None
+
+        # Embeddings cache for performance
+        self._embeddings_cache: Dict[str, np.ndarray] = {}
 
         self.high_impact_keywords = [
             "critical",
@@ -197,9 +194,11 @@ class ImpactScorer:
 
             # Load tokenizer
             from transformers import AutoTokenizer
-
             cache_dir = os.getenv("TRANSFORMERS_CACHE", None)
-            self.tokenizer = AutoTokenizer.from_pretrained(self.model_name, cache_dir=cache_dir)
+            self.tokenizer = AutoTokenizer.from_pretrained(
+                self.model_name,
+                cache_dir=cache_dir
+            )
 
             # Find ONNX model file
             onnx_path = self._find_onnx_model_path()
@@ -208,12 +207,12 @@ class ImpactScorer:
                 return False
 
             # Create ONNX session with GPU if available
-            providers = ["CUDAExecutionProvider", "CPUExecutionProvider"]
+            providers = ['CUDAExecutionProvider', 'CPUExecutionProvider']
             self.onnx_session = ort.InferenceSession(str(onnx_path), providers=providers)
 
             # Verify GPU provider was loaded
             active_providers = self.onnx_session.get_providers()
-            if "CUDAExecutionProvider" in active_providers:
+            if 'CUDAExecutionProvider' in active_providers:
                 logger.info("GPU acceleration ENABLED ✓ - Using ONNX with CUDA")
             else:
                 logger.info("GPU acceleration DISABLED - Using ONNX with CPU fallback")
@@ -264,12 +263,17 @@ class ImpactScorer:
                 return True
 
             from transformers import AutoModel, AutoTokenizer
-
             cache_dir = os.getenv("TRANSFORMERS_CACHE", None)
 
             # Load tokenizer and model
-            self.tokenizer = AutoTokenizer.from_pretrained(self.model_name, cache_dir=cache_dir)
-            self.model = AutoModel.from_pretrained(self.model_name, cache_dir=cache_dir)
+            self.tokenizer = AutoTokenizer.from_pretrained(
+                self.model_name,
+                cache_dir=cache_dir
+            )
+            self.model = AutoModel.from_pretrained(
+                self.model_name,
+                cache_dir=cache_dir
+            )
             self.model.eval()  # Set to evaluation mode
 
             # Cache for reuse
@@ -283,333 +287,6 @@ class ImpactScorer:
         except Exception as e:
             logger.warning(f"Transformers model load failed: {e}")
             return False
-
-    def _tokenize_text(self, text: str) -> Optional[Dict[str, Any]]:
-        """
-        Tokenize a single text with caching.
-
-        Uses LRU cache to avoid re-tokenizing identical inputs.
-        Optimized with fixed max_length=512 for consistent memory usage.
-
-        Args:
-            text: Input text to tokenize.
-
-        Returns:
-            Tokenized input dict or None if tokenizer not available.
-        """
-        if not hasattr(self, "tokenizer") or self.tokenizer is None:
-            return None
-
-        # Check cache first
-        cache_key = hash(text)
-        if self._tokenization_cache is not None:
-            cached = self._tokenization_cache.get(cache_key)
-            if cached is not None:
-                return cached
-
-        # Tokenize with optimized settings
-        try:
-            tokens = self.tokenizer(
-                text,
-                padding="max_length",
-                truncation=True,
-                max_length=512,
-                return_tensors="pt",
-            )
-
-            # Cache the result
-            if self._tokenization_cache is not None:
-                self._tokenization_cache.set(cache_key, tokens)
-
-            return tokens
-        except Exception as e:
-            logger.debug("Tokenization failed for text: %s", e)
-            return None
-
-    def _tokenize_batch(
-        self, texts: List[str], use_cache: bool = True
-    ) -> Optional[Dict[str, Any]]:
-        """
-        Tokenize multiple texts efficiently with optional caching.
-
-        For batch processing, uses single tokenizer call for better throughput.
-        Individual cache lookups used when texts may repeat across batches.
-
-        Args:
-            texts: List of texts to tokenize.
-            use_cache: Whether to check/populate cache for individual texts.
-
-        Returns:
-            Batch tokenized inputs or None if tokenizer not available.
-        """
-        if not hasattr(self, "tokenizer") or self.tokenizer is None:
-            return None
-
-        if not texts:
-            return None
-
-        # For small batches with caching enabled, check individual cache entries
-        if use_cache and self._tokenization_cache is not None and len(texts) <= 8:
-            cached_results = []
-            uncached_texts = []
-            uncached_indices = []
-
-            for i, text in enumerate(texts):
-                cache_key = hash(text)
-                cached = self._tokenization_cache.get(cache_key)
-                if cached is not None:
-                    cached_results.append((i, cached))
-                else:
-                    uncached_texts.append(text)
-                    uncached_indices.append(i)
-
-            # If all texts were cached, reconstruct batch from cache
-            if not uncached_texts and cached_results:
-                # Merge cached results into batch format
-                try:
-                    if TRANSFORMERS_AVAILABLE:
-                        input_ids = torch.cat(
-                            [cached_results[i][1]["input_ids"] for i in range(len(cached_results))],
-                            dim=0,
-                        )
-                        attention_mask = torch.cat(
-                            [
-                                cached_results[i][1]["attention_mask"]
-                                for i in range(len(cached_results))
-                            ],
-                            dim=0,
-                        )
-                        return {"input_ids": input_ids, "attention_mask": attention_mask}
-                except Exception:
-                    pass  # Fall through to full batch tokenization
-
-        # Batch tokenization (single call for all texts - more efficient)
-        try:
-            batch_tokens = self.tokenizer(
-                texts,
-                padding="max_length",
-                truncation=True,
-                max_length=512,
-                return_tensors="pt",
-            )
-
-            # Optionally cache individual results for future lookups
-            if use_cache and self._tokenization_cache is not None:
-                for i, text in enumerate(texts):
-                    cache_key = hash(text)
-                    try:
-                        individual_tokens = {
-                            "input_ids": batch_tokens["input_ids"][i : i + 1],
-                            "attention_mask": batch_tokens["attention_mask"][i : i + 1],
-                        }
-                        self._tokenization_cache.set(cache_key, individual_tokens)
-                    except Exception:
-                        pass  # Cache failure is non-critical
-
-            return batch_tokens
-        except Exception as e:
-            logger.debug("Batch tokenization failed: %s", e)
-            return None
-
-    def clear_tokenization_cache(self) -> None:
-        """Clear the tokenization cache to free memory."""
-        if self._tokenization_cache is not None:
-            self._tokenization_cache.clear()
-
-    @classmethod
-    def reset_class_cache(cls) -> None:
-        """Reset class-level tokenizer, model, and ONNX session cache.
-
-        Use this when switching models or to free memory.
-        """
-        cls._tokenizer_instance = None
-        cls._model_instance = None
-        cls._cached_model_name = None
-        cls._onnx_session_instance = None
-        cls._cached_onnx_path = None
-
-    def _get_onnx_model_path(self) -> Optional[str]:
-        """
-        Get the ONNX model path, resolving from environment or default.
-
-        Priority:
-        1. Instance-level onnx_model_path (constructor parameter)
-        2. Environment variable ONNX_MODEL_PATH
-        3. Default path relative to this module
-
-        Returns:
-            Absolute path to ONNX model file, or None if not found.
-        """
-        import os
-        from pathlib import Path
-
-        # Priority 1: Instance-level path
-        if self._onnx_model_path:
-            path = Path(self._onnx_model_path)
-            if path.exists():
-                return str(path.resolve())
-
-        # Priority 2: Environment variable
-        env_path = os.environ.get("ONNX_MODEL_PATH")
-        if env_path:
-            path = Path(env_path)
-            if path.exists():
-                return str(path.resolve())
-
-        # Priority 3: Default path relative to this module
-        module_dir = Path(__file__).parent
-        default_path = module_dir / self.DEFAULT_ONNX_PATH
-        if default_path.exists():
-            return str(default_path.resolve())
-
-        return None
-
-    def _ensure_onnx_session(self) -> Optional[Any]:
-        """
-        Lazily load ONNX session on first inference.
-
-        Creates the session only when needed, using class-level caching to share
-        the session across instances. Performs warmup on first load.
-
-        Returns:
-            ONNX InferenceSession or None if unavailable.
-        """
-        if not self._onnx_enabled or not ONNX_AVAILABLE:
-            return None
-
-        onnx_path = self._get_onnx_model_path()
-        if onnx_path is None:
-            logger.debug("ONNX model file not found, skipping ONNX inference")
-            return None
-
-        # Check class-level cache
-        if (
-            ImpactScorer._onnx_session_instance is not None
-            and ImpactScorer._cached_onnx_path == onnx_path
-        ):
-            self.session = ImpactScorer._onnx_session_instance
-            # Warmup if not done for this instance
-            if not self._onnx_session_warmed_up:
-                self._warmup_session()
-            return self.session
-
-        # Create new session with optimization
-        session = self._create_onnx_session(onnx_path)
-        if session is not None:
-            # Update class-level cache
-            ImpactScorer._onnx_session_instance = session
-            ImpactScorer._cached_onnx_path = onnx_path
-            self.session = session
-            # Perform warmup
-            self._warmup_session()
-            logger.info(f"ONNX session loaded and cached: {onnx_path}")
-
-        return self.session
-
-    def _create_onnx_session(self, onnx_path: str) -> Optional[Any]:
-        """
-        Create ONNX Runtime session with performance optimizations.
-
-        Configures the session with:
-        - Maximum graph optimization level
-        - Optimal threading configuration
-        - CPU execution provider (GPU can be added later)
-
-        Args:
-            onnx_path: Path to the ONNX model file.
-
-        Returns:
-            Configured ONNX InferenceSession or None on failure.
-        """
-        if not ONNX_AVAILABLE:
-            return None
-
-        try:
-            # Configure session options for optimal performance
-            sess_options = ort.SessionOptions()
-
-            # Enable all graph optimizations (constant folding, operator fusion, etc.)
-            sess_options.graph_optimization_level = (
-                ort.GraphOptimizationLevel.ORT_ENABLE_ALL
-            )
-
-            # Configure threading for CPU efficiency
-            # intra_op: threads for parallel ops within a single operator
-            # inter_op: threads for parallel execution of independent operators
-            sess_options.intra_op_num_threads = 4
-            sess_options.inter_op_num_threads = 2
-
-            # Execution mode: parallel for better throughput
-            sess_options.execution_mode = ort.ExecutionMode.ORT_PARALLEL
-
-            # Create session with CPU provider
-            # GPU providers (CUDA, TensorRT) can be added in priority order
-            providers = ["CPUExecutionProvider"]
-
-            session = ort.InferenceSession(
-                onnx_path,
-                sess_options=sess_options,
-                providers=providers,
-            )
-
-            logger.debug(f"ONNX session created with providers: {providers}")
-            return session
-
-        except Exception as e:
-            logger.warning(f"Failed to create ONNX session: {e}")
-            return None
-
-    def _warmup_session(self) -> None:
-        """
-        Pre-warm the ONNX session to avoid cold-start latency.
-
-        Runs a dummy inference to:
-        - Trigger JIT compilation (if applicable)
-        - Allocate memory for inference buffers
-        - Prime the execution path
-
-        This significantly reduces latency on the first real inference.
-        """
-        if self.session is None or self._onnx_session_warmed_up:
-            return
-
-        if not hasattr(self, "tokenizer") or self.tokenizer is None:
-            self._onnx_session_warmed_up = True
-            return
-
-        try:
-            # Create dummy input matching expected model input shape
-            dummy_text = "warmup inference"
-            dummy_inputs = self.tokenizer(
-                dummy_text,
-                padding="max_length",
-                truncation=True,
-                max_length=512,
-                return_tensors="np",
-            )
-
-            # Get input names from session
-            input_names = [inp.name for inp in self.session.get_inputs()]
-
-            # Create input feed
-            input_feed = {}
-            if "input_ids" in input_names:
-                input_feed["input_ids"] = dummy_inputs["input_ids"].astype(np.int64)
-            if "attention_mask" in input_names:
-                input_feed["attention_mask"] = dummy_inputs["attention_mask"].astype(
-                    np.int64
-                )
-
-            # Run warmup inference
-            _ = self.session.run(None, input_feed)
-
-            self._onnx_session_warmed_up = True
-            logger.debug("ONNX session warmup completed")
-
-        except Exception as e:
-            # Warmup failure is non-critical, log and continue
-            logger.debug(f"ONNX session warmup failed (non-critical): {e}")
-            self._onnx_session_warmed_up = True
 
     def _extract_text_content(self, message: Any) -> str:
         if isinstance(message, dict):
@@ -778,14 +455,20 @@ class ImpactScorer:
                 emb = self._get_embeddings(text)
                 kw_emb = self._get_keyword_embeddings()
 
-                    sim = cosine_similarity(emb, kw_emb)
-                    embedding_score = float(np.max(sim))
-                else:
-                    # Manual cosine similarity fallback
-                    sims = [cosine_similarity_fallback(emb, kw) for kw in kw_emb]
-                    embedding_score = max(sims) if sims else 0.0
+                # Skip if embeddings are zeros (fallback mode)
+                if np.any(emb) and np.any(kw_emb):
+                    if TRANSFORMERS_AVAILABLE:
+                        from sklearn.metrics.pairwise import cosine_similarity
+                        sim = cosine_similarity(emb.reshape(1, -1) if emb.ndim == 1 else emb, kw_emb)
+                        embedding_score = float(np.max(sim))
+                    else:
+                        # Manual cosine similarity fallback
+                        emb_flat = emb.flatten()
+                        sims = [cosine_similarity_fallback(emb_flat, kw) for kw in kw_emb]
+                        embedding_score = max(sims) if sims else 0.0
+
             except Exception as e:
-                logger.debug("Embedding-based scoring failed, using keyword score: %s", e)
+                logger.debug(f"Embedding-based scoring failed: {e}")
 
         return max(keyword_score, embedding_score)
 
@@ -1024,76 +707,165 @@ class ImpactScorer:
         return self.batch_score_impact(messages)
 
     def _get_embeddings(self, text: str) -> np.ndarray:
-        """Get embeddings using ONNX-optimized BERT model."""
-        # PERFORMANCE: Disable ONNX for now - it's causing performance regression
-        # TODO: Debug ONNX inference issues and re-enable for GPU acceleration
-        logger.debug("Using dummy embeddings for performance (ONNX disabled)")
-        return np.zeros((1, 768))
+        """
+        Get embeddings for text using available ML backend.
 
-        # Original ONNX implementation (disabled due to performance issues)
-        if not self._onnx_enabled or not ONNX_AVAILABLE:
-            # Fallback to dummy embeddings if ONNX not available
+        Implements fallback cascade:
+        1. ONNX Runtime (fastest)
+        2. PyTorch Transformers
+        3. Dummy zeros (heuristics only)
+        """
+        # Check cache first
+        cache_key = hash(text)
+        if cache_key in self._embeddings_cache:
+            return self._embeddings_cache[cache_key]
+
+        # Ensure model is loaded
+        if not self._ensure_model_loaded():
             return np.zeros((1, 768))
 
         try:
-            # Lazy load ONNX session
-            if self.session is None:
-                import onnxruntime as ort
-                from pathlib import Path
+            # Try ONNX inference first
+            if self._onnx_enabled and self.onnx_session is not None:
+                embeddings = self._onnx_inference(text)
+                self._embeddings_cache[cache_key] = embeddings
+                return embeddings
 
-                # Try to find ONNX model in optimized_models directory
-                model_dir = Path(__file__).parent / "optimized_models"
-                onnx_path = model_dir / "distilbert_base_uncased.onnx"
-
-                if not onnx_path.exists():
-                    logger.warning(f"ONNX model not found at {onnx_path}, falling back to dummy embeddings")
-                    return np.zeros((1, 768))
-
-                # Create ONNX session with GPU if available
-                providers = ['CUDAExecutionProvider', 'CPUExecutionProvider']
-                self.session = ort.InferenceSession(str(onnx_path), providers=providers)
-
-            # Tokenize input
-            inputs = self.tokenizer(text, return_tensors="np", truncation=True, max_length=512, padding="max_length")
-
-            # Run inference
-            outputs = self.session.run(None, {
-                "input_ids": inputs["input_ids"],
-                "attention_mask": inputs["attention_mask"]
-            })
-
-            # Extract [CLS] token embedding (first token)
-            embeddings = outputs[0][:, 0, :]  # Shape: (batch_size, hidden_size)
-            return embeddings
+            # Fall back to PyTorch Transformers
+            if self._bert_enabled and self.model is not None:
+                embeddings = self._transformer_inference(text)
+                self._embeddings_cache[cache_key] = embeddings
+                return embeddings
 
         except Exception as e:
-            logger.warning(f"ONNX inference failed: {e}, falling back to dummy embeddings")
+            logger.warning(f"Embedding generation failed: {e}")
+
+        return np.zeros((1, 768))
+
+    def _onnx_inference(self, text: str) -> np.ndarray:
+        """Run inference using ONNX Runtime."""
+        if self.tokenizer is None or self.onnx_session is None:
             return np.zeros((1, 768))
 
+        # Tokenize input
+        inputs = self.tokenizer(
+            text,
+            max_length=512,
+            truncation=True,
+            padding="max_length",
+            return_tensors="np"
+        )
+
+        # Run ONNX inference
+        input_names = [i.name for i in self.onnx_session.get_inputs()]
+        onnx_inputs = {name: inputs[name] for name in input_names if name in inputs}
+
+        outputs = self.onnx_session.run(None, onnx_inputs)
+
+        # Extract [CLS] token embedding (first token)
+        # Output shape is typically (batch, seq_len, hidden_dim)
+        if len(outputs) > 0 and outputs[0].ndim == 3:
+            return outputs[0][:, 0, :]  # [CLS] token
+        elif len(outputs) > 0:
+            return outputs[0]
+
+        return np.zeros((1, 768))
+
+    def _transformer_inference(self, text: str) -> np.ndarray:
+        """Run inference using PyTorch Transformers."""
+        if self.tokenizer is None or self.model is None:
+            return np.zeros((1, 768))
+
+        import torch
+
+        # Tokenize input
+        inputs = self.tokenizer(
+            text,
+            max_length=512,
+            truncation=True,
+            padding="max_length",
+            return_tensors="pt"
+        )
+
+        # Run inference without gradient computation
+        with torch.no_grad():
+            outputs = self.model(**inputs)
+            # Get [CLS] token embedding (first token of last hidden state)
+            embeddings = outputs.last_hidden_state[:, 0, :].numpy()
+
+        return embeddings
+
     def _get_keyword_embeddings(self) -> np.ndarray:
-        """Get embeddings for high-impact keywords using ONNX model."""
+        """Get embeddings for high-impact keywords."""
         if self._keyword_embeddings is not None:
             return self._keyword_embeddings
 
-        if not self._onnx_enabled or not ONNX_AVAILABLE:
-            # Fallback to dummy embeddings
+        # Ensure model is loaded
+        if not self._ensure_model_loaded():
             self._keyword_embeddings = np.zeros((len(self.high_impact_keywords), 768))
             return self._keyword_embeddings
 
+        # Generate embeddings for all keywords
         try:
-            # Get embeddings for each keyword
-            embeddings = []
+            embeddings_list = []
             for keyword in self.high_impact_keywords:
                 emb = self._get_embeddings(keyword)
-                embeddings.append(emb[0])  # Remove batch dimension
+                embeddings_list.append(emb.flatten())
 
-            self._keyword_embeddings = np.array(embeddings)
-            return self._keyword_embeddings
+            self._keyword_embeddings = np.array(embeddings_list)
+            logger.info(f"Generated embeddings for {len(self.high_impact_keywords)} keywords")
 
         except Exception as e:
-            logger.warning(f"Keyword embedding generation failed: {e}, falling back to dummy embeddings")
+            logger.warning(f"Keyword embedding generation failed: {e}")
             self._keyword_embeddings = np.zeros((len(self.high_impact_keywords), 768))
-            return self._keyword_embeddings
+
+        return self._keyword_embeddings
+
+    def score_batch(self, texts: List[str], reference_texts: Optional[List[str]] = None) -> List[float]:
+        """
+        Process multiple texts efficiently with batching.
+
+        Args:
+            texts: List of texts to score
+            reference_texts: Optional reference texts (uses keywords if None)
+
+        Returns:
+            List of impact scores
+        """
+        self._ensure_model_loaded()
+
+        # Use batch tokenization if Transformers available
+        if self._bert_enabled and self.tokenizer is not None and self.model is not None:
+            try:
+                import torch
+
+                # Batch tokenization
+                inputs = self.tokenizer(
+                    texts,
+                    max_length=512,
+                    truncation=True,
+                    padding="max_length",
+                    return_tensors="pt"
+                )
+
+                # Batch inference
+                with torch.no_grad():
+                    outputs = self.model(**inputs)
+                    embeddings = outputs.last_hidden_state[:, 0, :].numpy()
+
+                # Compute similarities against keyword embeddings
+                kw_emb = self._get_keyword_embeddings()
+                from sklearn.metrics.pairwise import cosine_similarity
+                sims = cosine_similarity(embeddings, kw_emb)
+
+                # Return max similarity as score
+                return [float(np.max(sim)) for sim in sims]
+
+            except Exception as e:
+                logger.warning(f"Batch inference failed: {e}")
+
+        # Fallback to sequential processing
+        return [self._calculate_semantic_score({"content": text}) for text in texts]
 
 
 def cosine_similarity_fallback(a: Any, b: Any) -> float:
@@ -1131,11 +903,18 @@ def get_vector_space_metrics():
 
 
 def reset_impact_scorer():
-    """Reset global scorer and class-level caches."""
+    """Reset global scorer and clear model caches."""
     global _global_scorer
     _global_scorer = None
     # Also reset class-level tokenizer/model cache
     ImpactScorer.reset_class_cache()
+
+    # Clear class-level model caches
+    ImpactScorer._model_instance = None
+    ImpactScorer._tokenizer_instance = None
+    ImpactScorer._onnx_session_instance = None
+
+    logger.info("Impact scorer and model caches reset")
 
     # Clear class-level model caches
     ImpactScorer._model_instance = None
