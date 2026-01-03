@@ -20,8 +20,9 @@ import logging
 import time
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
+from ...shared.types import JSONDict, JSONValue
 from .. import CONSTITUTIONAL_HASH, MAX_CONTEXT_LENGTH
 
 logger = logging.getLogger(__name__)
@@ -60,7 +61,7 @@ class AttentionConfig:
 @dataclass
 class ProcessingResult:
     """Result from hybrid processing."""
-    output: Any
+    output: JSONValue
     processing_time_ms: float
     mode_used: ProcessingMode
     context_length: int
@@ -102,9 +103,9 @@ class MambaLayer:
 
     async def forward(
         self,
-        x: Any,
-        state: Optional[Any] = None
-    ) -> Tuple[Any, Any]:
+        x: JSONValue,
+        state: Optional[JSONDict] = None
+    ) -> Tuple[JSONValue, JSONDict]:
         """
         Forward pass through Mamba layer.
 
@@ -119,7 +120,7 @@ class MambaLayer:
         # In production, this would use mamba_ssm library
 
         batch_size = 1  # Simplified
-        seq_len = len(x) if isinstance(x, list) else 1
+        _seq_len = len(x) if isinstance(x, list) else 1
 
         # Discretize continuous parameters
         # A_discrete = exp(dt * A)
@@ -138,17 +139,17 @@ class MambaLayer:
 
         return output, new_state
 
-    def _init_state(self, batch_size: int) -> Any:
+    def _init_state(self, batch_size: int) -> JSONDict:
         """Initialize hidden state."""
         return {"h": None, "layer_idx": self.layer_idx}
 
-    async def _ssm_forward(self, x: Any, state: Any) -> Any:
+    async def _ssm_forward(self, x: JSONValue, state: JSONDict) -> JSONValue:
         """State space model forward computation."""
         # Placeholder for actual SSM computation
         # Would use selective scan algorithm from Mamba-2
         return x
 
-    def _update_state(self, state: Any, x: Any) -> Any:
+    def _update_state(self, state: JSONDict, x: JSONValue) -> JSONDict:
         """Update hidden state after processing."""
         return {"h": x, "layer_idx": self.layer_idx}
 
@@ -177,10 +178,10 @@ class SharedAttentionLayer:
 
     async def forward(
         self,
-        x: Any,
-        mask: Optional[Any] = None,
+        x: JSONValue,
+        mask: Optional[JSONDict] = None,
         critical_positions: Optional[List[int]] = None
-    ) -> Any:
+    ) -> JSONValue:
         """
         Forward pass through attention layer.
 
@@ -215,9 +216,9 @@ class SharedAttentionLayer:
 
     async def _focused_attention(
         self,
-        x: Any,
+        x: JSONValue,
         critical_positions: List[int]
-    ) -> Any:
+    ) -> JSONValue:
         """Apply focused attention to critical positions."""
         # Boost attention weights for critical positions
         return x
@@ -265,7 +266,7 @@ class ConstitutionalMambaHybrid:
         self.shared_attention = SharedAttentionLayer(self.attention_config)
 
         # Context cache for JRT preparation
-        self._context_cache: Dict[str, Any] = {}
+        self._context_cache: Dict[str, JSONValue] = {}
         self._cache_max_size = 1000
 
         # Processing statistics
@@ -284,7 +285,7 @@ class ConstitutionalMambaHybrid:
 
     async def process(
         self,
-        x: Any,
+        x: JSONValue,
         critical_positions: Optional[List[int]] = None,
         mode: Optional[ProcessingMode] = None
     ) -> ProcessingResult:
@@ -366,9 +367,9 @@ class ConstitutionalMambaHybrid:
 
     async def _prepare_jrt_context(
         self,
-        x: Any,
+        x: JSONValue,
         critical_positions: Optional[List[int]]
-    ) -> Any:
+    ) -> JSONValue:
         """
         JRT-style context preparation.
 
@@ -382,12 +383,12 @@ class ConstitutionalMambaHybrid:
         # to ensure they appear in attention's receptive field
         return x
 
-    def _compute_cache_key(self, x: Any) -> str:
+    def _compute_cache_key(self, x: JSONValue) -> str:
         """Compute cache key for input."""
         content = str(x).encode('utf-8')
         return hashlib.sha256(content).hexdigest()[:16]
 
-    def _get_context_length(self, x: Any) -> int:
+    def _get_context_length(self, x: JSONValue) -> int:
         """Get context length from input."""
         if isinstance(x, list):
             return len(x)
@@ -395,7 +396,7 @@ class ConstitutionalMambaHybrid:
             return len(x.split())
         return 1
 
-    def _update_cache(self, key: str, value: Any) -> None:
+    def _update_cache(self, key: str, value: JSONValue) -> None:
         """Update context cache with LRU eviction."""
         if len(self._context_cache) >= self._cache_max_size:
             # Simple eviction: remove first item
@@ -409,7 +410,7 @@ class ConstitutionalMambaHybrid:
         old_avg = self._stats["avg_processing_time_ms"]
         self._stats["avg_processing_time_ms"] = (old_avg * (n - 1) + new_time_ms) / n
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> JSONDict:
         """Get processing statistics."""
         return {
             **self._stats,
@@ -418,7 +419,7 @@ class ConstitutionalMambaHybrid:
             "max_context_length": MAX_CONTEXT_LENGTH,
         }
 
-    async def validate_constitutional_compliance(self, x: Any) -> bool:
+    async def validate_constitutional_compliance(self, x: JSONValue) -> bool:
         """
         Validate that processing maintains constitutional compliance.
 
