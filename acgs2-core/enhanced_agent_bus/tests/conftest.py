@@ -38,6 +38,15 @@ try:
     import enhanced_agent_bus.utils as _utils
     import enhanced_agent_bus.validators as _validators
 
+    # Import online_learning module for ML tests
+    try:
+        import enhanced_agent_bus.online_learning as _online_learning
+
+        sys.modules["online_learning"] = _online_learning
+        sys.modules["enhanced_agent_bus.online_learning"] = _online_learning
+    except ImportError:
+        _online_learning = None  # River/numpy may not be installed
+
     # Patch sys.models to point flat names to package-qualified modules
     sys.modules["audit_client"] = _audit_client
     sys.modules["models"] = _models
@@ -63,6 +72,15 @@ except ImportError:
         import registry as _registry
         import utils as _utils
         import validators as _validators
+
+        # Import online_learning module for ML tests (fallback)
+        try:
+            import online_learning as _online_learning
+
+            sys.modules["online_learning"] = _online_learning
+            sys.modules["enhanced_agent_bus.online_learning"] = _online_learning
+        except ImportError:
+            _online_learning = None  # River/numpy may not be installed
 
         # Patch package names to point to flat modules
         sys.modules["audit_client"] = _audit_client
