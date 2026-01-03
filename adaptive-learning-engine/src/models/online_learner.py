@@ -224,7 +224,26 @@ class OnlineLearner:
     - Dawid (1984): "The Prequential Approach" (original progressive validation)
     """
 
-    # Default deny prediction for cold start
+    # COLD START SAFETY DEFAULTS
+    # ===========================
+    # During cold start (no training samples yet), the model has no learned
+    # knowledge about governance patterns. We must return safe defaults that
+    # minimize risk in safety-critical governance applications.
+    #
+    # DEFAULT_PREDICTION = 0 (DENY)
+    # - Fail-safe principle: When uncertain, deny by default
+    # - Governance rationale: False positives (deny when should allow) are
+    #   safer than false negatives (allow when should deny)
+    # - Example: Denying a risky data access is safer than allowing it
+    # - As model learns patterns, it can confidently predict 1 (allow) when appropriate
+    # - This conservative default prevents untrained models from making high-risk decisions
+    #
+    # DEFAULT_CONFIDENCE = 0.5 (MAXIMUM UNCERTAINTY)
+    # - Represents complete uncertainty (equal probability for both classes)
+    # - Signals to downstream systems: "This prediction is a guess, not informed"
+    # - Enables safety systems to detect cold start state (low confidence → extra scrutiny)
+    # - Contrasts with trained model confidences (typically 0.7-0.95 for clear patterns)
+    # - Maximum entropy: No bias toward either class (truly uninformed prior)
     DEFAULT_PREDICTION = 0
     DEFAULT_CONFIDENCE = 0.5
 
@@ -514,7 +533,26 @@ class OnlineLearner:
             self._predictions_count += 1
             timestamp = time.time()
 
-            # Cold start: return conservative default (deny)
+            # COLD START SAFETY STRATEGY
+            # ===========================
+            # When the model has received zero training samples (_state == COLD_START),
+            # it has no learned knowledge about governance patterns. Returning predictions
+            # from an untrained model would be dangerous in safety-critical applications.
+            #
+            # Safety-First Approach:
+            # - Return DEFAULT_PREDICTION = 0 (deny) - fail-safe for governance
+            # - Return DEFAULT_CONFIDENCE = 0.5 - signals maximum uncertainty
+            # - Probabilities = {0: 0.5, 1: 0.5} - uniform distribution (no bias)
+            #
+            # Why This Matters:
+            # - Governance decisions have real-world impact (data access, policy enforcement)
+            # - False negatives (allowing bad actions) are costlier than false positives
+            # - Conservative default prevents untrained model from granting risky permissions
+            # - Downstream systems can detect cold start via low confidence and route to human review
+            #
+            # State Transition:
+            # - COLD_START persists until first training sample arrives
+            # - Then transitions to WARMING state (see _update_state())
             if self._state == ModelState.COLD_START:
                 return PredictionResult(
                     prediction=self.DEFAULT_PREDICTION,
@@ -524,6 +562,27 @@ class OnlineLearner:
                     sample_count=self._sample_count,
                     timestamp=timestamp,
                 )
+
+            # WARMING AND ACTIVE STATE PREDICTIONS
+            # =====================================
+            # For WARMING (1 ≤ samples < min_training_samples) and ACTIVE (samples ≥ 1000),
+            # we use the model's learned predictions instead of defaults.
+            #
+            # WARMING State (samples < 1000):
+            # - Model is learning but predictions may be unreliable
+            # - StandardScaler statistics are still stabilizing
+            # - Model weights have high variance (not yet converged)
+            # - Confidence scores may be poorly calibrated
+            # - Downstream systems should treat WARMING predictions with extra scrutiny
+            #
+            # ACTIVE State (samples ≥ 1000):
+            # - Model has sufficient training for stable, reliable predictions
+            # - Ready for production governance decisions
+            # - Confidence scores are well-calibrated (typically 0.7-0.95 for clear patterns)
+            # - Model continues to learn incrementally (adapts to distribution shift)
+            #
+            # Both states use the same prediction logic - the state distinction helps
+            # downstream systems decide how much to trust the predictions.
 
             # Get probability predictions
             try:
@@ -960,14 +1019,112 @@ class OnlineLearner:
             }
 
     def _update_state(self) -> None:
-        """Update the model state based on current sample count."""
+        """Update the model state based on current sample count.
+
+        MODEL STATE LIFECYCLE AND TRANSITIONS
+        ======================================
+        The online learner progresses through distinct states as it accumulates
+        training samples. These states reflect the model's readiness for
+        production governance decisions.
+
+        State Transition Flow:
+        ----------------------
+        COLD_START (0 samples)
+            ↓ (first sample arrives)
+        WARMING (1 to min_training_samples-1)
+            ↓ (reaches min_training_samples)
+        ACTIVE (≥ min_training_samples)
+            ↕ (safety bounds triggered / resumed)
+        PAUSED (safety circuit breaker)
+
+        State Descriptions:
+        -------------------
+        COLD_START (sample_count == 0):
+        - No training samples processed yet
+        - Model has no learned patterns
+        - Returns DEFAULT_PREDICTION=0 (deny) with DEFAULT_CONFIDENCE=0.5
+        - Rationale: Fail-safe for governance - untrained model should not make risky decisions
+
+        WARMING (1 ≤ sample_count < min_training_samples):
+        - Model is learning but statistics are not yet stable
+        - Predictions are improving but may be unreliable
+        - StandardScaler normalization is stabilizing (mean/variance estimates improving)
+        - Model weights are converging but with high variance
+        - Still considered "training phase" - not ready for critical production decisions
+
+        Why min_training_samples = 1000?
+        ---------------------------------
+        The threshold of 1000 samples before ACTIVE state is based on statistical
+        stability requirements for online learning:
+
+        1. STATISTICAL SIGNIFICANCE
+           - Sample size n=1000 provides confidence intervals narrow enough for
+             production governance decisions
+           - Central Limit Theorem: Sampling distribution of model parameters
+             becomes approximately normal with n ≥ 30-100
+           - For binary classification, 1000 samples typically ensures:
+             * Accuracy estimate ±3% margin of error (95% confidence)
+             * Both classes observed with sufficient frequency
+             * Feature correlations reliably estimated
+
+        2. ONLINE STANDARDSCALER STABILITY
+           - StandardScaler computes incremental mean and variance using Welford's algorithm
+           - Early samples (n < 100) have high variance in normalization statistics
+           - After ~500-1000 samples, mean/variance estimates stabilize
+           - Unstable normalization causes inconsistent feature scaling → poor predictions
+
+        3. MODEL WEIGHT CONVERGENCE
+           - Linear models (LogisticRegression, Perceptron, PA) require sufficient samples
+             to learn stable decision boundaries
+           - Early samples cause large weight swings (high gradient magnitudes)
+           - After 1000 samples, weight updates become smaller and more stable
+           - Prevents premature production deployment with unconverged weights
+
+        4. GOVERNANCE SAFETY MARGIN
+           - Governance decisions are safety-critical (data access, policy enforcement)
+           - Deploying undertrained models risks costly errors (false negatives)
+           - 1000-sample threshold provides safety margin beyond minimum statistical requirements
+           - Conservative but appropriate for high-stakes applications
+
+        5. CLASS BALANCE VERIFICATION
+           - Binary classification requires observing both classes (0 and 1)
+           - With 1000 samples, even rare class (e.g., 10% of data) has ~100 examples
+           - Prevents model from learning trivial "always predict majority class" strategy
+           - Ensures both deny (0) and allow (1) patterns are learned
+
+        Trade-offs:
+        -----------
+        - Higher threshold (e.g., 5000): More stable but slower to activate
+        - Lower threshold (e.g., 500): Faster activation but less reliable predictions
+        - 1000 balances: Quick enough for practical deployment, safe enough for governance
+
+        ACTIVE (sample_count ≥ min_training_samples):
+        - Model has sufficient training data for stable predictions
+        - Ready for production governance decisions
+        - Continues to learn incrementally (online learning never stops)
+        - Monitored by SafetyBoundsChecker for performance degradation
+
+        PAUSED (_is_paused == True):
+        - Safety circuit breaker triggered (accuracy drop, consecutive failures)
+        - Learning is halted to prevent model degradation
+        - Predictions still returned but flagged as PAUSED state
+        - Requires manual intervention (resume_learning()) to reactivate
+        - Prevents bad samples from corrupting trained model
+        """
         if self._is_paused:
+            # Safety circuit breaker active - halt all learning
+            # Requires manual resume_learning() call to exit PAUSED state
             self._state = ModelState.PAUSED
         elif self._sample_count == 0:
+            # No training samples yet - return fail-safe defaults
             self._state = ModelState.COLD_START
         elif self._sample_count < self.min_training_samples:
+            # Collecting samples but not yet statistically stable
+            # Model is learning but not ready for production governance decisions
             self._state = ModelState.WARMING
         else:
+            # Sufficient samples for stable predictions - ready for production
+            # Model continues to learn incrementally while serving predictions
             self._state = ModelState.ACTIVE
 
     def _update_feature_stats(self, x: Dict[str, Any]) -> None:
