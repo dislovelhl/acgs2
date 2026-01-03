@@ -79,6 +79,21 @@ if HAS_PYDANTIC_SETTINGS:
                     raise ValueError("Sensitive credential uses a forbidden placeholder value")
             return v
 
+        @field_validator("cors_origins")
+        @classmethod
+        def validate_cors_origins(cls, v: List[str], info) -> List[str]:
+            """Block wildcard CORS in production environments."""
+            # Get the environment from the parent Settings object if available
+            # During validation, we need to check the ENV variable directly
+            env = os.getenv("APP_ENV", "development").lower()
+
+            if env == "production" and "*" in v:
+                raise ValueError(
+                    "SECURITY ERROR: Wildcard CORS origins (*) are not allowed in production. "
+                    "Please set CORS_ORIGINS to explicit domain allowlist."
+                )
+            return v
+
     class OPASettings(BaseSettings):
         """OPA (Open Policy Agent) settings."""
 
@@ -195,6 +210,22 @@ if HAS_PYDANTIC_SETTINGS:
         ca_cert: Optional[str] = Field(None, validation_alias="VAULT_CACERT")
         client_cert: Optional[str] = Field(None, validation_alias="VAULT_CLIENT_CERT")
         client_key: Optional[str] = Field(None, validation_alias="VAULT_CLIENT_KEY")
+
+    class VotingSettings(BaseSettings):
+        """Voting and deliberation settings for event-driven vote collection."""
+
+        default_timeout_seconds: int = Field(30, validation_alias="VOTING_DEFAULT_TIMEOUT_SECONDS")
+        vote_topic_pattern: str = Field(
+            "acgs.tenant.{tenant_id}.votes", validation_alias="VOTING_VOTE_TOPIC_PATTERN"
+        )
+        audit_topic_pattern: str = Field(
+            "acgs.tenant.{tenant_id}.audit.votes", validation_alias="VOTING_AUDIT_TOPIC_PATTERN"
+        )
+        redis_election_prefix: str = Field("election:", validation_alias="VOTING_REDIS_ELECTION_PREFIX")
+        enable_weighted_voting: bool = Field(True, validation_alias="VOTING_ENABLE_WEIGHTED")
+        signature_algorithm: str = Field("HMAC-SHA256", validation_alias="VOTING_SIGNATURE_ALGORITHM")
+        audit_signature_key: Optional[SecretStr] = Field(None, validation_alias="AUDIT_SIGNATURE_KEY")
+        timeout_check_interval_seconds: int = Field(5, validation_alias="VOTING_TIMEOUT_CHECK_INTERVAL")
 
     class SMTPSettings(BaseSettings):
         """SMTP email delivery settings."""

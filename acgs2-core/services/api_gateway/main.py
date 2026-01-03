@@ -13,21 +13,15 @@ from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import ORJSONResponse
 from pydantic import BaseModel, Field
+from starlette.middleware.sessions import SessionMiddleware
 
 from routes import admin_sso_router, sso_router
 from shared.config import settings
-from shared.logging_config import (
-    configure_logging,
-    get_logger,
-)
-from shared.metrics import (
-    track_request_metrics,
-)
+from shared.logging_config import configure_logging, get_logger
+from shared.metrics import track_request_metrics
 from shared.otel_config import init_otel
-from shared.security.auth import (
-    UserClaims,
-    get_current_user_optional,
-)
+from shared.security.auth import UserClaims, get_current_user_optional
+from shared.security.cors_config import get_cors_config
 
 # Service name for logging and tracing
 SERVICE_NAME = "api_gateway"
@@ -49,13 +43,7 @@ app = FastAPI(
 init_otel("api-gateway", app=app, export_to_console=settings.debug)
 
 # Add CORS middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=settings.security.cors_origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+app.add_middleware(CORSMiddleware, **get_cors_config())
 
 # Add SessionMiddleware for OAuth state management
 # Use JWT secret if available, otherwise generate a secure random key for development
@@ -261,11 +249,6 @@ async def proxy_to_agent_bus(request: Request, path: str):
     if request.url.query:
         target_url += f"?{request.url.query}"
 
-    import time
-
-    start_time = time.perf_counter()
-    status_code = 200
-
     try:
         # Get request body
         body = await request.body()
@@ -279,8 +262,6 @@ async def proxy_to_agent_bus(request: Request, path: str):
                 content=body,
                 params=request.query_params,
             )
-
-            status_code = response.status_code
 
             # Return the response
             return ORJSONResponse(
