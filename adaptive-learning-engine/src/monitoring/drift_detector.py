@@ -320,6 +320,8 @@ class DriftDetector:
             self._known_columns.update(
                 c for c in reference_df.columns if not str(c).startswith("_")
             )
+            # Invalidate reference cache after setting new reference data
+            self._clear_reference_cache()
             logger.info(
                 "Reference data set from DataFrame",
                 extra={"reference_size": len(self._reference_data)},
