@@ -12,6 +12,92 @@ Features:
 - Custom event fields support (source, component, group, class)
 - Rate limit handling
 - Incident lifecycle management (create, resolve, escalate, add notes)
+
+Example - Basic incident creation (Events API only):
+    ```python
+    from pydantic import SecretStr
+    from integrations.pagerduty_adapter import PagerDutyAdapter, PagerDutyCredentials
+    from integrations.base import IntegrationEvent, EventSeverity
+    from datetime import datetime
+
+    # Create credentials
+    credentials = PagerDutyCredentials(
+        integration_name="Production PagerDuty",
+        integration_key=SecretStr("your-integration-key-here"),
+    )
+
+    # Initialize adapter
+    adapter = PagerDutyAdapter(credentials)
+    await adapter.authenticate()
+
+    # Create an incident
+    event = IntegrationEvent(
+        event_id="evt-123",
+        event_type="policy.violation",
+        title="Critical policy violation detected",
+        severity=EventSeverity.CRITICAL,
+        timestamp=datetime.utcnow(),
+        policy_id="pol-456",
+        resource_id="res-789",
+    )
+    result = await adapter.send_event(event)
+    ```
+
+Example - Full incident management (both APIs):
+    ```python
+    # Create credentials with both authentication methods
+    credentials = PagerDutyCredentials(
+        integration_name="Production PagerDuty",
+        auth_type=PagerDutyAuthType.BOTH,
+        integration_key=SecretStr("your-integration-key"),
+        api_token=SecretStr("your-api-token"),
+        service_id="P1234567",
+    )
+
+    adapter = PagerDutyAdapter(credentials)
+    await adapter.authenticate()
+
+    # Create incident
+    result = await adapter.send_event(event)
+    dedup_key = result.external_id  # e.g., "acgs2-evt-123"
+
+    # Add a note
+    await adapter.add_note("P1234", "Investigation in progress")
+
+    # Escalate if needed
+    await adapter.escalate_incident("P1234", "POLICYID")
+
+    # Resolve when done
+    await adapter.resolve_incident(dedup_key)
+    ```
+
+Example - Custom configuration:
+    ```python
+    credentials = PagerDutyCredentials(
+        integration_name="Dev PagerDuty",
+        integration_key=SecretStr("your-key"),
+        # Custom severity mapping
+        severity_mapping={
+            "critical": "critical",
+            "high": "error",
+            "medium": "warning",
+            "low": "info",
+        },
+        # Custom urgency mapping
+        urgency_mapping={
+            "critical": "high",
+            "high": "high",
+            "medium": "low",
+            "low": "low",
+        },
+        # Custom incident details
+        default_source="acgs2-dev",
+        default_component="governance-engine",
+        default_group="policy-violations",
+        summary_template="[{severity}] {title}",
+        custom_details={"environment": "development"},
+    )
+    ```
 """
 
 import logging
@@ -83,6 +169,81 @@ class PagerDutyCredentials(IntegrationCredentials):
     - Rate limit: 960 requests per minute
 
     You can provide one or both authentication methods depending on your needs.
+
+    Example - Events API only (basic incident creation):
+        ```python
+        from pydantic import SecretStr
+
+        credentials = PagerDutyCredentials(
+            integration_name="Production Alerts",
+            integration_key=SecretStr("R01234567890ABCDEFGHIJKLMNOPQRS"),
+        )
+        ```
+
+    Example - REST API only (incident management):
+        ```python
+        credentials = PagerDutyCredentials(
+            integration_name="Incident Manager",
+            auth_type=PagerDutyAuthType.REST_API,
+            api_token=SecretStr("u+abcdefghijklmnop-qrstuvwxyz"),
+            service_id="P1234567",
+        )
+        ```
+
+    Example - Both APIs (full functionality):
+        ```python
+        credentials = PagerDutyCredentials(
+            integration_name="Full PagerDuty Integration",
+            auth_type=PagerDutyAuthType.BOTH,
+            integration_key=SecretStr("R01234567890ABCDEFGHIJKLMNOPQRS"),
+            api_token=SecretStr("u+abcdefghijklmnop-qrstuvwxyz"),
+            service_id="P1234567",
+            escalation_policy="P7654321",
+        )
+        ```
+
+    Example - Custom severity and urgency mapping:
+        ```python
+        credentials = PagerDutyCredentials(
+            integration_name="Custom Mapping",
+            integration_key=SecretStr("your-key"),
+            # Map ACGS-2 severity to PagerDuty severity
+            severity_mapping={
+                "critical": "critical",
+                "high": "error",
+                "medium": "warning",
+                "low": "info",
+                "info": "info",
+            },
+            # Map ACGS-2 severity to PagerDuty urgency
+            urgency_mapping={
+                "critical": "high",
+                "high": "high",
+                "medium": "low",
+                "low": "low",
+                "info": "low",
+            },
+        )
+        ```
+
+    Example - Custom incident details:
+        ```python
+        credentials = PagerDutyCredentials(
+            integration_name="Custom Details",
+            integration_key=SecretStr("your-key"),
+            default_source="acgs2-production",
+            default_component="governance-engine",
+            default_group="policy-violations",
+            default_class="security",
+            summary_template="[{severity}] {event_type}: {title}",
+            dedup_key_prefix="prod-acgs2",
+            custom_details={
+                "environment": "production",
+                "region": "us-east-1",
+                "team": "security-ops",
+            },
+        )
+        ```
     """
 
     integration_type: IntegrationType = Field(
@@ -236,29 +397,6 @@ class PagerDutyAdapter(BaseIntegration):
     Supports both Events API v2 (for incident creation/resolution) and REST API
     (for incident management operations).
 
-    Usage:
-        # Events API v2 only (incident creation/resolution)
-        credentials = PagerDutyCredentials(
-            integration_name="Production PagerDuty",
-            auth_type=PagerDutyAuthType.EVENTS_V2,
-            integration_key=SecretStr("your-integration-key"),
-        )
-        adapter = PagerDutyAdapter(credentials)
-        await adapter.authenticate()
-        result = await adapter.send_event(event)
-
-        # Both APIs (full incident management)
-        credentials = PagerDutyCredentials(
-            integration_name="Production PagerDuty",
-            auth_type=PagerDutyAuthType.BOTH,
-            integration_key=SecretStr("your-integration-key"),
-            api_token=SecretStr("your-api-token"),
-            service_id="P1234567",
-        )
-        adapter = PagerDutyAdapter(credentials)
-        await adapter.authenticate()
-        result = await adapter.send_event(event)
-
     Features:
         - Events API v2 integration key authentication for incident creation
         - REST API token authentication for incident management
@@ -267,6 +405,125 @@ class PagerDutyAdapter(BaseIntegration):
         - Custom event fields support (source, component, group, class)
         - Rate limit handling (Events API: 120 req/min)
         - Detailed error reporting
+
+    Example - Basic incident creation:
+        ```python
+        from pydantic import SecretStr
+        from integrations.pagerduty_adapter import PagerDutyAdapter, PagerDutyCredentials
+        from integrations.base import IntegrationEvent, EventSeverity
+        from datetime import datetime
+
+        # Create credentials
+        credentials = PagerDutyCredentials(
+            integration_name="Production PagerDuty",
+            integration_key=SecretStr("your-integration-key"),
+        )
+
+        # Initialize and authenticate
+        adapter = PagerDutyAdapter(credentials)
+        await adapter.authenticate()
+
+        # Create an incident from an event
+        event = IntegrationEvent(
+            event_id="evt-123",
+            event_type="policy.violation",
+            title="Critical policy violation detected",
+            severity=EventSeverity.CRITICAL,
+            timestamp=datetime.utcnow(),
+            policy_id="pol-456",
+            resource_id="res-789",
+        )
+        result = await adapter.send_event(event)
+        if result.success:
+            print(f"Incident created: {result.external_id}")
+        ```
+
+    Example - Full incident lifecycle management:
+        ```python
+        # Setup with both APIs for full functionality
+        credentials = PagerDutyCredentials(
+            integration_name="Production PagerDuty",
+            auth_type=PagerDutyAuthType.BOTH,
+            integration_key=SecretStr("your-integration-key"),
+            api_token=SecretStr("your-api-token"),
+            service_id="P1234567",
+        )
+
+        adapter = PagerDutyAdapter(credentials)
+        await adapter.authenticate()
+
+        # Create incident
+        result = await adapter.send_event(event)
+        dedup_key = result.external_id  # e.g., "acgs2-evt-123"
+
+        # Get incident details (requires incident ID from PagerDuty)
+        incident_result = await adapter.get_incident("P1234")
+        incident_data = incident_result.error_details
+
+        # Add investigation notes
+        await adapter.add_note("P1234", "Root cause analysis in progress")
+        await adapter.add_note("P1234", "Identified misconfigured resource")
+
+        # Update incident status
+        await adapter.update_incident(
+            "P1234",
+            status="acknowledged",
+        )
+
+        # Escalate if needed
+        await adapter.escalate_incident("P1234", "ESCALATION_POLICY_ID")
+
+        # Resolve when fixed
+        await adapter.resolve_incident(dedup_key)
+        ```
+
+    Example - Error handling:
+        ```python
+        from integrations.base import (
+            AuthenticationError,
+            DeliveryError,
+            RateLimitError,
+        )
+
+        adapter = PagerDutyAdapter(credentials)
+
+        try:
+            await adapter.authenticate()
+        except AuthenticationError as e:
+            print(f"Authentication failed: {e}")
+            return
+
+        try:
+            result = await adapter.send_event(event)
+            if not result.success:
+                print(f"Failed: {result.error_message}")
+        except RateLimitError as e:
+            print(f"Rate limited, retry after {e.retry_after}s")
+        except DeliveryError as e:
+            print(f"Delivery failed: {e}")
+        ```
+
+    Example - Custom configuration:
+        ```python
+        credentials = PagerDutyCredentials(
+            integration_name="Custom PagerDuty",
+            integration_key=SecretStr("your-key"),
+            # Custom mappings
+            severity_mapping={"critical": "critical", "high": "error"},
+            urgency_mapping={"critical": "high", "high": "high"},
+            # Custom incident fields
+            default_source="acgs2-prod",
+            default_component="governance",
+            summary_template="[{severity}] {event_type}: {title}",
+            custom_details={"environment": "production"},
+        )
+
+        adapter = PagerDutyAdapter(
+            credentials,
+            max_retries=3,
+            timeout=30.0,
+        )
+        ```
     """
 
     # PagerDuty API endpoints
@@ -949,6 +1206,22 @@ class PagerDutyAdapter(BaseIntegration):
 
         Raises:
             AuthenticationError: If not authenticated or REST API not configured
+
+        Example:
+            ```python
+            # Get incident details
+            result = await adapter.get_incident("P1234")
+
+            if result.success:
+                incident = result.error_details  # Incident data
+                print(f"Incident #{result.external_id}")
+                print(f"Status: {incident.get('status')}")
+                print(f"URL: {result.external_url}")
+                print(f"Title: {incident.get('title')}")
+                print(f"Created: {incident.get('created_at')}")
+            else:
+                print(f"Error: {result.error_message}")
+            ```
         """
         if not self._authenticated:
             raise AuthenticationError("Integration is not authenticated", self.name)
@@ -1085,6 +1358,46 @@ class PagerDutyAdapter(BaseIntegration):
 
         Raises:
             AuthenticationError: If not authenticated or REST API not configured
+
+        Example - Update status:
+            ```python
+            # Acknowledge incident
+            result = await adapter.update_incident(
+                "P1234",
+                status="acknowledged",
+            )
+            ```
+
+        Example - Assign to users:
+            ```python
+            # Assign to specific users
+            result = await adapter.update_incident(
+                "P1234",
+                assigned_to_user_ids=["USER123", "USER456"],
+            )
+            ```
+
+        Example - Change escalation policy:
+            ```python
+            # Update escalation policy
+            result = await adapter.update_incident(
+                "P1234",
+                escalation_policy_id="POLICY789",
+            )
+            ```
+
+        Example - Multiple updates:
+            ```python
+            # Update multiple fields at once
+            result = await adapter.update_incident(
+                "P1234",
+                status="acknowledged",
+                priority="P1",
+                assigned_to_user_ids=["USER123"],
+            )
+            if result.success:
+                print(f"Updated incident #{result.external_id}")
+            ```
         """
         if not self._authenticated:
             raise AuthenticationError("Integration is not authenticated", self.name)
@@ -1245,6 +1558,29 @@ class PagerDutyAdapter(BaseIntegration):
 
         Raises:
             AuthenticationError: If not authenticated or Events API not configured
+
+        Example:
+            ```python
+            # Create incident and get dedup_key
+            result = await adapter.send_event(event)
+            dedup_key = result.external_id  # e.g., "acgs2-evt-123"
+
+            # ... investigate and fix issue ...
+
+            # Resolve the incident
+            resolve_result = await adapter.resolve_incident(dedup_key)
+            if resolve_result.success:
+                print(f"Incident {dedup_key} resolved successfully")
+            ```
+
+        Example - Resolve by constructing dedup_key:
+            ```python
+            # If you know the event_id, construct the dedup_key
+            event_id = "evt-123"
+            dedup_key = f"acgs2-{event_id}"  # Using default prefix
+
+            result = await adapter.resolve_incident(dedup_key)
+            ```
         """
         if not self._authenticated:
             raise AuthenticationError("Integration is not authenticated", self.name)
@@ -1383,6 +1719,42 @@ class PagerDutyAdapter(BaseIntegration):
 
         Raises:
             AuthenticationError: If not authenticated or REST API not configured
+
+        Example:
+            ```python
+            # Add investigation notes to an incident
+            await adapter.add_note(
+                "P1234",
+                "Root cause identified: misconfigured IAM policy"
+            )
+
+            await adapter.add_note(
+                "P1234",
+                "Applied fix to production environment"
+            )
+
+            await adapter.add_note(
+                "P1234",
+                "Monitoring for 30 minutes to confirm resolution"
+            )
+            ```
+
+        Example - Structured note:
+            ```python
+            import json
+
+            # Add structured note with details
+            note_data = {
+                "investigation": "Root cause analysis complete",
+                "root_cause": "Misconfigured S3 bucket policy",
+                "fix_applied": "Updated bucket policy at 14:30 UTC",
+                "affected_resources": ["s3://bucket-prod", "s3://bucket-staging"],
+            }
+            await adapter.add_note(
+                "P1234",
+                f"Investigation Results:\n{json.dumps(note_data, indent=2)}"
+            )
+            ```
         """
         if not self._authenticated:
             raise AuthenticationError("Integration is not authenticated", self.name)
@@ -1526,6 +1898,36 @@ class PagerDutyAdapter(BaseIntegration):
 
         Raises:
             AuthenticationError: If not authenticated or REST API not configured
+
+        Example:
+            ```python
+            # Escalate to senior engineer escalation policy
+            result = await adapter.escalate_incident(
+                "P1234",
+                "SENIOR_ENG_POLICY"
+            )
+
+            if result.success:
+                print("Incident escalated to senior engineers")
+            ```
+
+        Example - Escalate based on severity:
+            ```python
+            # Check incident severity and escalate if critical
+            incident_result = await adapter.get_incident("P1234")
+            incident = incident_result.error_details
+
+            if incident.get("urgency") == "high":
+                # Escalate critical incidents
+                await adapter.escalate_incident(
+                    "P1234",
+                    "CRITICAL_ESCALATION_POLICY"
+                )
+                await adapter.add_note(
+                    "P1234",
+                    "Auto-escalated to critical incident team"
+                )
+            ```
         """
         logger.debug(
             f"Escalating PagerDuty incident {incident_id} to policy {escalation_policy_id}"
