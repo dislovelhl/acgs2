@@ -8,6 +8,7 @@ to detect when the model needs updating or rollback.
 """
 
 import asyncio
+import hashlib
 import logging
 import threading
 import time
@@ -613,6 +614,46 @@ class DriftDetector:
                 DriftStatus.INSUFFICIENT_DATA if self._enabled else DriftStatus.DISABLED
             )
             logger.info("DriftDetector reset")
+
+    def _compute_deque_checksum(self, data: Deque[Dict[str, Any]], num_items: int = 3) -> str:
+        """Compute a fast checksum of deque data to detect changes.
+
+        Uses length + hash of first/last few items for performance.
+        This allows detecting data changes without converting the entire
+        deque to a DataFrame or hashing all items.
+
+        Args:
+            data: Deque of data dictionaries.
+            num_items: Number of items to hash from start and end (default 3).
+
+        Returns:
+            Hex string checksum representing the data.
+        """
+        if not data:
+            return hashlib.md5(b"empty").hexdigest()
+
+        # Start with length
+        components = [str(len(data))]
+
+        # Hash first few items
+        first_items = list(data)[:num_items]
+        for item in first_items:
+            # Convert dict to sorted tuple of items for consistent hashing
+            item_str = str(sorted(item.items()))
+            components.append(item_str)
+
+        # Hash last few items (if different from first)
+        if len(data) > num_items:
+            last_items = list(data)[-num_items:]
+            for item in last_items:
+                item_str = str(sorted(item.items()))
+                components.append(item_str)
+
+        # Combine all components and hash
+        combined = "|".join(components)
+        checksum = hashlib.md5(combined.encode("utf-8")).hexdigest()
+
+        return checksum
 
     def _to_dataframe(self, data: List[Dict[str, Any]]) -> pd.DataFrame:
         """Convert list of dictionaries to DataFrame.
