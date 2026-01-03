@@ -237,6 +237,24 @@ export const handlers = [
     return HttpResponse.json({ status: "healthy", service: "predictions" });
   }),
 
+  // GET /compliance
+  http.get(`${API_BASE_URL}/compliance`, ({ request }) => {
+    const url = new URL(request.url);
+    const severity = url.searchParams.get("severity");
+
+    if (severity) {
+      const filteredViolations = {
+        ...mockComplianceData,
+        recent_violations: mockComplianceData.recent_violations.filter(
+          (v) => v.severity === severity
+        ),
+      };
+      return HttpResponse.json(filteredViolations);
+    }
+
+    return HttpResponse.json(mockComplianceData);
+  }),
+
   // POST /query
   http.post(`${API_BASE_URL}/query`, async ({ request }) => {
     const body = await request.json();
