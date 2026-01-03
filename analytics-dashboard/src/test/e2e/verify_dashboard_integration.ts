@@ -1,4 +1,6 @@
 import { getLogger } from '../../../../../../sdk/typescript/src/utils/logger';
+import { API_BASE_URL } from '../../lib';
+
 const logger = getLogger('verify_dashboard_integration');
 
 
@@ -14,8 +16,6 @@ const logger = getLogger('verify_dashboard_integration');
  * - analytics-api running at http://localhost:8080
  * - analytics-dashboard running at http://localhost:5173
  */
-
-const API_BASE_URL = process.env.VITE_ANALYTICS_API_URL || "http://localhost:8080";
 
 interface VerificationResult {
   endpoint: string;
