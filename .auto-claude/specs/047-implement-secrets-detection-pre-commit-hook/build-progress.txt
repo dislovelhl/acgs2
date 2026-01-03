@@ -73,16 +73,50 @@
 
 ---
 
+---
+
+## Current Status: Phase 2 - Gitleaks Pre-commit Integration (In Progress)
+
+### Completed Subtasks:
+
+#### ✅ Subtask 2.1 - Add gitleaks to pre-commit config (2026-01-03)
+- Added gitleaks v8.21.2 to `.pre-commit-config.yaml`
+- Configured with `gitleaks protect --verbose --redact --staged` command
+- Uses `--staged` flag for efficient scanning (only staged files, not full history)
+- Uses `--redact` flag to redact secrets in output for security
+- Automatically uses existing `.gitleaksignore` file
+- Successfully tested - hook runs and passes in pre-commit workflow
+
+**Configuration Details:**
+```yaml
+- repo: https://github.com/gitleaks/gitleaks
+  rev: v8.21.2
+  hooks:
+    - id: gitleaks
+      name: Gitleaks Secret Detection
+      description: Scan for secrets and credentials
+      entry: gitleaks protect --verbose --redact --staged
+      language: golang
+      pass_filenames: false
+```
+
+**Acceptance Criteria Met:**
+- ✅ Gitleaks hook added to .pre-commit-config.yaml
+- ✅ Hook configured to use existing .gitleaksignore (automatic)
+- ✅ Hook runs efficiently (--staged flag scans only staged files)
+
+---
+
 ### Pending Subtasks:
 
-None - Phase 1 Complete! Ready for Phase 2.
+- Subtask 2.2: Create gitleaks configuration file (.gitleaks.toml)
+- Subtask 2.3: Update .gitleaksignore with known safe secrets
 
 ---
 
 ## Next Steps:
-1. Proceed to Phase 2 - Gitleaks Pre-commit Integration
-2. Implement subtask 2.1: Add gitleaks to pre-commit config
-3. Create .gitleaks.toml with ACGS-2 specific rules
+1. Implement subtask 2.2: Create .gitleaks.toml with ACGS-2 specific rules
+2. Implement subtask 2.3: Update .gitleaksignore with documented exceptions
 
 ## Blockers:
 None

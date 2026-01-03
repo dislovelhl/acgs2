@@ -67,7 +67,9 @@
           "subtask_id": "2.1",
           "title": "Add gitleaks to pre-commit config",
           "description": "Configure gitleaks as a pre-commit hook in .pre-commit-config.yaml",
-          "status": "pending",
+          "status": "completed",
+          "completed_at": "2026-01-03T21:45:00.000Z",
+          "notes": "Successfully added gitleaks v8.21.2 to .pre-commit-config.yaml. Hook configured with --staged flag for efficient scanning of only staged files, --redact for security, and --verbose for debugging. Automatically uses existing .gitleaksignore. Verified hook runs successfully in pre-commit workflow.",
           "acceptance_criteria": [
             "Gitleaks hook added to .pre-commit-config.yaml",
             "Hook configured to use existing .gitleaksignore",
