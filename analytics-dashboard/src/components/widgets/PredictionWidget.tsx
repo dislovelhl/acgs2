@@ -18,14 +18,12 @@ import {
   Minus,
 } from "lucide-react";
 import {
-  Area,
+  ResponsiveChart,
   ComposedChart,
-  Line,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
+  type GradientConfig,
+  type LineSeries,
+  type AreaSeries,
+} from "../charts";
 
 /** Prediction point data structure from the API */
 interface PredictionPoint {
@@ -58,14 +56,13 @@ interface PredictionsResponse {
   error_message: string | null;
 }
 
-/** Chart data point with calculated confidence band */
+/** Chart data point for visualization */
 interface ChartDataPoint {
   date: string;
   displayDate: string;
   predicted: number;
   lower: number;
   upper: number;
-  confidenceRange: [number, number];
 }
 
 /** Widget loading state */
@@ -135,25 +132,11 @@ function formatChartDate(dateString: string): string {
 }
 
 /**
- * Custom tooltip component for the chart
+ * Custom tooltip renderer for the chart
  */
-function CustomTooltip({
-  active,
-  payload,
-}: {
-  active?: boolean;
-  payload?: Array<{
-    payload: ChartDataPoint;
-  }>;
-}): JSX.Element | null {
-  if (!active || !payload || payload.length === 0) {
-    return null;
-  }
-
-  const data = payload[0].payload;
-
+function renderCustomTooltip(data: ChartDataPoint): React.ReactNode {
   return (
-    <div className="rounded-lg border border-gray-200 bg-white p-3 shadow-lg">
+    <div>
       <p className="mb-2 text-sm font-medium text-gray-900">{data.date}</p>
       <div className="space-y-1 text-xs">
         <div className="flex items-center justify-between gap-4">
@@ -245,10 +228,6 @@ export function PredictionWidget(): JSX.Element {
       predicted: point.predicted_value,
       lower: point.lower_bound,
       upper: point.upper_bound,
-      confidenceRange: [point.lower_bound, point.upper_bound] as [
-        number,
-        number,
-      ],
     })) || [];
 
   // Loading state
@@ -401,83 +380,101 @@ export function PredictionWidget(): JSX.Element {
 
       {/* Chart */}
       <div className="mt-4 flex-1">
-        <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart
-            data={chartData}
-            margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
-          >
-            <defs>
-              <linearGradient
-                id="confidenceGradient"
-                x1="0"
-                y1="0"
-                x2="0"
-                y2="1"
-              >
-                <stop offset="5%" stopColor="#8B5CF6" stopOpacity={0.2} />
-                <stop offset="95%" stopColor="#8B5CF6" stopOpacity={0.05} />
-              </linearGradient>
-            </defs>
-            <XAxis
-              dataKey="displayDate"
-              tick={{ fontSize: 11, fill: "#6B7280" }}
-              tickLine={false}
-              axisLine={{ stroke: "#E5E7EB" }}
-              interval="preserveStartEnd"
-            />
-            <YAxis
-              tick={{ fontSize: 11, fill: "#6B7280" }}
-              tickLine={false}
-              axisLine={{ stroke: "#E5E7EB" }}
-              domain={["auto", "auto"]}
-              tickFormatter={(value) => value.toFixed(0)}
-            />
-            <Tooltip content={<CustomTooltip />} />
-            {/* Confidence interval area */}
-            <Area
-              type="monotone"
-              dataKey="confidenceRange"
-              fill="url(#confidenceGradient)"
-              stroke="none"
-              isAnimationActive={false}
-            />
-            {/* Lower bound line (dashed) */}
-            <Line
-              type="monotone"
-              dataKey="lower"
-              stroke="#C4B5FD"
-              strokeWidth={1}
-              strokeDasharray="4 4"
-              dot={false}
-              isAnimationActive={false}
-            />
-            {/* Upper bound line (dashed) */}
-            <Line
-              type="monotone"
-              dataKey="upper"
-              stroke="#C4B5FD"
-              strokeWidth={1}
-              strokeDasharray="4 4"
-              dot={false}
-              isAnimationActive={false}
-            />
-            {/* Predicted value line */}
-            <Line
-              type="monotone"
-              dataKey="predicted"
-              stroke="#7C3AED"
-              strokeWidth={2}
-              dot={false}
-              activeDot={{
-                r: 4,
-                fill: "#7C3AED",
-                stroke: "#fff",
+        <ResponsiveChart>
+          {({ width, height }) => {
+            // Define gradient configuration
+            const gradients: GradientConfig[] = [
+              {
+                id: "confidenceGradient",
+                from: "#8B5CF6",
+                to: "#8B5CF6",
+                fromOpacity: 0.2,
+                toOpacity: 0.05,
+              },
+            ];
+
+            // Define area series (confidence interval)
+            const areas: AreaSeries<ChartDataPoint>[] = [
+              {
+                dataKeyY0: "lower",
+                dataKeyY1: "upper",
+                fill: "url(#confidenceGradient)",
+                type: "monotone",
+                label: "Confidence Interval",
+              },
+            ];
+
+            // Define line series
+            const lines: LineSeries<ChartDataPoint>[] = [
+              // Lower bound line (dashed)
+              {
+                dataKey: "lower",
+                stroke: "#C4B5FD",
+                strokeWidth: 1,
+                strokeDasharray: "4 4",
+                type: "monotone",
+                label: "Lower Bound",
+              },
+              // Upper bound line (dashed)
+              {
+                dataKey: "upper",
+                stroke: "#C4B5FD",
+                strokeWidth: 1,
+                strokeDasharray: "4 4",
+                type: "monotone",
+                label: "Upper Bound",
+              },
+              // Predicted value line
+              {
+                dataKey: "predicted",
+                stroke: "#7C3AED",
                 strokeWidth: 2,
-              }}
-              isAnimationActive={false}
-            />
-          </ComposedChart>
-        </ResponsiveContainer>
+                type: "monotone",
+                label: "Predicted",
+                activeDot: {
+                  r: 4,
+                  fill: "#7C3AED",
+                  stroke: "#fff",
+                  strokeWidth: 2,
+                },
+              },
+            ];
+
+            return (
+              <ComposedChart
+                data={chartData}
+                width={width}
+                height={height}
+                xKey="date"
+                xScaleType="time"
+                areas={areas}
+                lines={lines}
+                gradients={gradients}
+                margin={{ top: 10, right: 10, left: 40, bottom: 30 }}
+                xAxis={{
+                  tickFontSize: 11,
+                  tickColor: "#6B7280",
+                  stroke: "#E5E7EB",
+                  tickStroke: "transparent",
+                  tickFormatter: (value) => {
+                    const date = value instanceof Date ? value : new Date(value as string | number);
+                    return `${date.getMonth() + 1}/${date.getDate()}`;
+                  },
+                }}
+                yAxis={{
+                  tickFontSize: 11,
+                  tickColor: "#6B7280",
+                  stroke: "#E5E7EB",
+                  tickStroke: "transparent",
+                  domain: ["auto", "auto"],
+                  tickFormatter: (value) =>
+                    typeof value === "number" ? value.toFixed(0) : String(value),
+                }}
+                tooltip={renderCustomTooltip}
+              />
+            );
+          }}
+        </ResponsiveChart>
       </div>
 
       {/* Summary Statistics */}
