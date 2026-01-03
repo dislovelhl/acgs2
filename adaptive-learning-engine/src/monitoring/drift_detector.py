@@ -300,6 +300,8 @@ class DriftDetector:
             self._reference_data.clear()
             self._reference_data.extend(self._current_data)
             self._reference_locked = True
+            # Invalidate reference cache after copying current to reference
+            self._clear_reference_cache()
             logger.info(
                 "Reference data updated from current",
                 extra={"reference_size": len(self._reference_data)},
