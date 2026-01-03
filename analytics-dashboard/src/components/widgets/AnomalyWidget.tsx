@@ -7,7 +7,7 @@
  * - Affected metrics details
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import {
   AlertCircle,
   AlertTriangle,
@@ -16,15 +16,8 @@ import {
   Shield,
   XOctagon,
 } from "lucide-react";
-import type { AnomalyItem, AnomaliesResponse } from "../../types/anomalies";
+import type { AnomalyItem } from "../../types/anomalies";
 import { useAnomalies } from "../../hooks";
-
-/** Widget loading state */
-type LoadingState = "idle" | "loading" | "success" | "error";
-
-/** API URL from environment */
-const API_BASE_URL =
-  import.meta.env.VITE_ANALYTICS_API_URL || "http://localhost:8080";
 
 /**
  * Gets the appropriate icon for a severity level
@@ -130,59 +123,14 @@ function formatAffectedMetrics(
  * - Shows affected metrics for each anomaly
  */
 export function AnomalyWidget(): JSX.Element {
-  const [data, setData] = useState<AnomaliesResponse | null>(null);
-  const [loadingState, setLoadingState] = useState<LoadingState>("idle");
-  const [error, setError] = useState<string | null>(null);
   const [severityFilter, setSeverityFilter] = useState<string | null>(null);
-
-  /**
-   * Fetches anomaly data from the API
-   */
-  const fetchAnomalies = useCallback(async () => {
-    setLoadingState("loading");
-    setError(null);
-
-    try {
-      const url = new URL(`${API_BASE_URL}/anomalies`);
-      if (severityFilter) {
-        url.searchParams.set("severity", severityFilter);
-      }
-
-      const response = await fetch(url.toString(), {
-        method: "GET",
-        headers: {
-          Accept: "application/json",
-        },
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(
-          errorData.detail || `Failed to fetch anomalies: ${response.status}`
-        );
-      }
-
-      const responseData: AnomaliesResponse = await response.json();
-      setData(responseData);
-      setLoadingState("success");
-    } catch (err) {
-      const message =
-        err instanceof Error ? err.message : "Failed to load anomalies";
-      setError(message);
-      setLoadingState("error");
-    }
-  }, [severityFilter]);
-
-  // Fetch anomalies on mount and when filter changes
-  useEffect(() => {
-    fetchAnomalies();
-  }, [fetchAnomalies]);
+  const { data, loading, error, refetch } = useAnomalies(severityFilter);
 
   /**
    * Handle refresh button click
    */
   const handleRefresh = () => {
-    fetchAnomalies();
+    refetch();
   };
 
   /**
@@ -193,7 +141,7 @@ export function AnomalyWidget(): JSX.Element {
   };
 
   // Loading state
-  if (loadingState === "loading" && !data) {
+  if (loading && !data) {
     return (
       <div className="h-full rounded-lg bg-white p-4 shadow">
         <div className="flex items-center justify-between">
@@ -214,7 +162,7 @@ export function AnomalyWidget(): JSX.Element {
   }
 
   // Error state
-  if (loadingState === "error") {
+  if (error) {
     return (
       <div className="h-full rounded-lg bg-white p-4 shadow">
         <div className="flex items-center justify-between">
@@ -235,7 +183,7 @@ export function AnomalyWidget(): JSX.Element {
         </div>
         <div className="mt-4 flex flex-col items-center justify-center py-8">
           <AlertCircle className="h-8 w-8 text-red-500" />
-          <p className="mt-2 text-center text-sm text-red-600">{error}</p>
+          <p className="mt-2 text-center text-sm text-red-600">{error.message}</p>
           <button
             onClick={handleRefresh}
             className="mt-4 rounded-md bg-red-50 px-4 py-2 text-sm font-medium text-red-700 transition-colors hover:bg-red-100"
@@ -261,13 +209,13 @@ export function AnomalyWidget(): JSX.Element {
           </div>
           <button
             onClick={handleRefresh}
-            disabled={loadingState === "loading"}
+            disabled={loading}
             className="rounded p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 disabled:cursor-not-allowed disabled:opacity-50"
             title="Refresh anomalies"
             aria-label="Refresh anomalies"
           >
             <RefreshCw
-              className={`h-4 w-4 ${loadingState === "loading" ? "animate-spin" : ""}`}
+              className={`h-4 w-4 ${loading ? "animate-spin" : ""}`}
             />
           </button>
         </div>
@@ -307,13 +255,13 @@ export function AnomalyWidget(): JSX.Element {
         </div>
         <button
           onClick={handleRefresh}
-          disabled={loadingState === "loading"}
+          disabled={loading}
           className="rounded p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 disabled:cursor-not-allowed disabled:opacity-50"
           title="Refresh anomalies"
           aria-label="Refresh anomalies"
         >
           <RefreshCw
-            className={`h-4 w-4 ${loadingState === "loading" ? "animate-spin" : ""}`}
+            className={`h-4 w-4 ${loading ? "animate-spin" : ""}`}
           />
         </button>
       </div>
