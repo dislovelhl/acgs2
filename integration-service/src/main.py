@@ -5,10 +5,19 @@ Third-party integration ecosystem for enterprise tool connectivity
 
 import logging
 import os
+import sys
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
+# Add acgs2-core to path for shared modules
+core_path = Path(__file__).parent.parent.parent / "acgs2-core"
+if str(core_path) not in sys.path:
+    sys.path.insert(0, str(core_path))
+
+from shared.security import SecurityHeadersConfig, SecurityHeadersMiddleware
 
 from .api.health import configure_health_router
 from .api.health import router as health_router
@@ -78,6 +87,12 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Add security headers middleware
+# Configure for integration service (allows webhooks and external integrations)
+security_config = SecurityHeadersConfig.for_integration_service()
+app.add_middleware(SecurityHeadersMiddleware, config=security_config)
+logger.info(f"Security headers middleware configured for integration service (environment: {ENVIRONMENT})")
 
 # Include routers
 app.include_router(health_router)
