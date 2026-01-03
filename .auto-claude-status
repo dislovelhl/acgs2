@@ -1,25 +1,25 @@
 {
   "active": true,
-  "spec": "024-complete-api-message-processing",
+  "spec": "025-configuration-validation-improvements",
   "state": "building",
   "subtasks": {
-    "completed": 12,
+    "completed": 14,
     "total": 16,
     "in_progress": 1,
     "failed": 0
   },
   "phase": {
-    "current": "Comprehensive Test Coverage",
+    "current": "Integration Verification",
     "id": null,
-    "total": 4
+    "total": 3
   },
   "workers": {
     "active": 0,
     "max": 1
   },
   "session": {
-    "number": 405,
-    "started_at": "2026-01-03T08:54:13.796010"
+    "number": 406,
+    "started_at": "2026-01-03T08:54:11.734627"
   },
-  "last_update": "2026-01-03T11:20:14.234824"
+  "last_update": "2026-01-03T11:20:13.479752"
 }
