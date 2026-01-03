@@ -1,117 +1,115 @@
 """
 ACGS-2 Compliance Documentation Service
-Generates compliance documentation and evidence exports for SOC 2, ISO 27001, GDPR, and EU AI Act
+Enterprise compliance documentation generation for SOC 2, ISO 27001, GDPR, EU AI Act
 """
 
-import os
-from datetime import datetime, timezone
+import logging
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from shared.logging import create_correlation_middleware, init_service_logging
-from shared.metrics import create_metrics_endpoint, set_service_info, track_request_metrics
 
-# Initialize structured logging
-logger = init_service_logging("compliance-docs")
+from shared.config import settings
+
+from .api import evidence_router, reports_router, templates_router
+from .cleanup import background_cleanup, ensure_output_directory, get_cleanup_status
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Service configuration
+SERVICE_NAME = "compliance-docs-service"
+SERVICE_PORT = 8100
+ENVIRONMENT = settings.env
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Application lifespan manager for startup and shutdown events."""
+    # Startup
+    logger.info(f"Starting {SERVICE_NAME} in {ENVIRONMENT} environment")
+
+    # Ensure output directory exists
+    ensure_output_directory()
+
+    # Start background cleanup task
+    await background_cleanup.start()
+    logger.info("Background cleanup task started")
+
+    yield
+
+    # Shutdown
+    logger.info(f"Shutting down {SERVICE_NAME}")
+
+    # Stop background cleanup task
+    await background_cleanup.stop()
+    logger.info("Background cleanup task stopped")
+
 
 app = FastAPI(
     title="ACGS-2 Compliance Documentation Service",
-    description="Enterprise compliance documentation and evidence export service",
+    description=(
+        "Enterprise compliance documentation generation for SOC 2 Type II, "
+        "ISO 27001, GDPR, and EU AI Act certifications"
+    ),
     version="1.0.0",
+    lifespan=lifespan,
 )
 
-# Configure CORS based on environment for security
-cors_origins = os.getenv("CORS_ALLOWED_ORIGINS", "").split(",")
-if not cors_origins or cors_origins == [""]:
-    # Default secure configuration - no external origins allowed
-    cors_origins = []
-
-# Allow localhost for development (but not in production)
-if os.getenv("ENVIRONMENT", "").lower() == "development":
-    cors_origins.extend(
-        [
-            "http://localhost:3000",
-            "http://localhost:8080",
-            "http://127.0.0.1:3000",
-            "http://127.0.0.1:8080",
-        ]
-    )
-
-logger.info(f"CORS configured with origins: {cors_origins}")
-
-# Add CORS middleware with secure configuration
+# Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=cors_origins,
+    allow_origins=settings.security.cors_origins,
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allow_headers=["Authorization", "Content-Type", "X-Correlation-ID"],
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
-# Add correlation ID middleware
-app.middleware("http")(create_correlation_middleware())
 
-# Initialize metrics
-set_service_info("compliance-docs", "1.0.0")
-
-# Add metrics endpoint
-app.add_api_route("/metrics", create_metrics_endpoint())
-
-
-# Health check endpoints
 @app.get("/health")
-@track_request_metrics("compliance-docs", "/health")
 async def health_check():
     """Health check endpoint"""
     return {
         "status": "healthy",
-        "service": "compliance-docs-service",
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "service": SERVICE_NAME,
+        "environment": ENVIRONMENT,
     }
 
 
 @app.get("/ready")
-@track_request_metrics("compliance-docs", "/ready")
 async def readiness_check():
     """Readiness check endpoint"""
     return {
         "status": "ready",
-        "service": "compliance-docs-service",
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "service": SERVICE_NAME,
     }
 
 
-# API v1 router will be added here
-try:
-    from .api.euaiact_routes import router as euaiact_router
+@app.get("/cleanup/status")
+async def cleanup_status():
+    """
+    Get the current status of the background cleanup task.
 
-    app.include_router(euaiact_router)
-    from .api.compliance_routes import router as compliance_router
-
-    app.include_router(compliance_router)
-except ImportError as e:
-    logger.error(f"Failed to import routes: {e}")
+    Returns information about the cleanup configuration and whether
+    the background task is currently running.
+    """
+    return get_cleanup_status()
 
 
-@app.get("/")
-@track_request_metrics("compliance-docs", "/")
-async def root():
-    """Root endpoint"""
-    return {
-        "service": "compliance-docs-service",
-        "version": "1.0.0",
-        "description": "Enterprise compliance documentation and evidence export service",
-        "endpoints": {
-            "health": "/health",
-            "ready": "/ready",
-            "api": "/api/v1/",
-            "euaiact": "/api/v1/euaiact",
-            "compliance": "/api/v1/compliance",
-        },
-    }
+# Include API routers
+app.include_router(evidence_router)
+app.include_router(reports_router)
+app.include_router(templates_router)
 
 
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run("main:app", host="0.0.0.0", port=8100, reload=True, log_level="info")
+    uvicorn.run(
+        "main:app",
+        host="0.0.0.0",
+        port=SERVICE_PORT,
+        reload=True,
+        log_level="info",
+    )

@@ -1,0 +1,1087 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GDPR Article 30(2) Records of Processing Activities - {{ organization_name | default_value }}</title>
+    <style>
+        :root {
+            --primary-color: #1a4480;
+            --secondary-color: #2c608a;
+            --success-color: #2e8540;
+            --warning-color: #e66f0e;
+            --danger-color: #d63e04;
+            --info-color: #00bcd4;
+            --light-gray: #f5f7f8;
+            --border-color: #dfe1e2;
+            --gdpr-blue: #003399;
+            --processor-color: #5c3d99;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #1b1b1b;
+            background-color: #fff;
+            font-size: 11pt;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 40px;
+        }
+
+        /* Header Styles */
+        .report-header {
+            text-align: center;
+            border-bottom: 4px solid var(--processor-color);
+            padding-bottom: 30px;
+            margin-bottom: 40px;
+        }
+
+        .report-header h1 {
+            color: var(--processor-color);
+            font-size: 24pt;
+            margin-bottom: 5px;
+        }
+
+        .report-header h2 {
+            color: var(--secondary-color);
+            font-size: 16pt;
+            font-weight: normal;
+            margin-bottom: 10px;
+        }
+
+        .report-header .regulation-ref {
+            color: #71767a;
+            font-size: 10pt;
+            font-style: italic;
+        }
+
+        .report-meta {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin-top: 25px;
+            flex-wrap: wrap;
+        }
+
+        .report-meta-item {
+            text-align: center;
+        }
+
+        .report-meta-label {
+            font-size: 9pt;
+            color: #71767a;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .report-meta-value {
+            font-size: 11pt;
+            color: var(--primary-color);
+            font-weight: 600;
+        }
+
+        /* Section Styles */
+        .section {
+            margin-bottom: 40px;
+            page-break-inside: avoid;
+        }
+
+        .section-title {
+            color: var(--processor-color);
+            font-size: 16pt;
+            border-bottom: 2px solid var(--secondary-color);
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+
+        .subsection-title {
+            color: var(--secondary-color);
+            font-size: 13pt;
+            margin: 20px 0 15px 0;
+        }
+
+        /* Table Styles */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 10pt;
+        }
+
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 12px;
+            text-align: left;
+            vertical-align: top;
+        }
+
+        th {
+            background-color: var(--processor-color);
+            color: white;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 9pt;
+            letter-spacing: 0.5px;
+        }
+
+        tr:nth-child(even) {
+            background-color: var(--light-gray);
+        }
+
+        tr:hover {
+            background-color: #f0e8f8;
+        }
+
+        /* Entity Card */
+        .entity-card {
+            background: white;
+            border: 1px solid var(--border-color);
+            border-left: 4px solid var(--processor-color);
+            border-radius: 4px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .entity-card h3 {
+            color: var(--processor-color);
+            margin-bottom: 15px;
+        }
+
+        .entity-details {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+
+        .entity-field {
+            margin-bottom: 10px;
+        }
+
+        .entity-field-label {
+            font-size: 9pt;
+            color: #71767a;
+            text-transform: uppercase;
+            margin-bottom: 3px;
+        }
+
+        .entity-field-value {
+            color: #1b1b1b;
+            font-weight: 500;
+        }
+
+        /* Status Badges */
+        .status-badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 3px;
+            font-size: 9pt;
+            font-weight: 600;
+        }
+
+        .status-processor { background-color: #e8dff5; color: var(--processor-color); }
+        .status-active { background-color: #d4edda; color: var(--success-color); }
+        .status-inactive { background-color: #f8d7da; color: var(--danger-color); }
+        .status-pending { background-color: #fff3cd; color: #856404; }
+        .status-implemented { background-color: #cce5ff; color: #004085; }
+
+        /* Controller Tags */
+        .controller-tag {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 9pt;
+            font-weight: 500;
+            background-color: #e8f4fd;
+            color: var(--primary-color);
+            margin: 3px;
+        }
+
+        /* Processing Category Tags */
+        .processing-tag {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 8pt;
+            font-weight: 500;
+            margin: 2px;
+            background-color: #f0e8f8;
+            color: var(--processor-color);
+        }
+
+        /* Summary Box */
+        .summary-box {
+            background-color: var(--light-gray);
+            border: 1px solid var(--border-color);
+            border-left: 4px solid var(--processor-color);
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .summary-stats {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 15px 20px;
+            background: white;
+            border-radius: 8px;
+            min-width: 130px;
+        }
+
+        .stat-value {
+            font-size: 24pt;
+            font-weight: 700;
+            color: var(--processor-color);
+        }
+
+        .stat-label {
+            font-size: 9pt;
+            color: #71767a;
+            text-transform: uppercase;
+        }
+
+        /* Controller Card */
+        .controller-card {
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .controller-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .controller-title {
+            color: var(--primary-color);
+            font-size: 13pt;
+            margin: 0;
+        }
+
+        .controller-body {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        /* Transfer Warning */
+        .transfer-warning {
+            background-color: #fff3cd;
+            border: 1px solid #ffc107;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 15px 0;
+            font-size: 10pt;
+        }
+
+        .transfer-warning strong {
+            color: #856404;
+        }
+
+        /* Sub-processor Table */
+        .sub-processor-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 9pt;
+            margin: 10px 0;
+        }
+
+        .sub-processor-table th {
+            background-color: var(--secondary-color);
+            padding: 10px;
+        }
+
+        .sub-processor-table td {
+            padding: 10px;
+        }
+
+        /* Security Measures */
+        .security-section {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .security-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            margin-top: 15px;
+        }
+
+        .security-category-card {
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 15px;
+        }
+
+        .security-category-title {
+            font-size: 10pt;
+            font-weight: 600;
+            color: var(--processor-color);
+            text-transform: uppercase;
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 1px dashed var(--border-color);
+        }
+
+        .security-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .security-list li {
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .security-list li:last-child {
+            border-bottom: none;
+        }
+
+        .security-status {
+            font-size: 8pt;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+
+        .security-implemented { background-color: #d4edda; color: var(--success-color); }
+        .security-planned { background-color: #fff3cd; color: #856404; }
+        .security-not-implemented { background-color: #f8d7da; color: var(--danger-color); }
+
+        /* Footer */
+        .report-footer {
+            margin-top: 60px;
+            padding-top: 20px;
+            border-top: 2px solid var(--border-color);
+            text-align: center;
+            font-size: 9pt;
+            color: #71767a;
+        }
+
+        .legal-notice {
+            background-color: #f5f7f8;
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 4px;
+            font-size: 8pt;
+        }
+
+        /* Print Styles */
+        @media print {
+            .container {
+                max-width: 100%;
+                padding: 20px;
+            }
+
+            .section {
+                page-break-inside: avoid;
+            }
+
+            .controller-card {
+                page-break-inside: avoid;
+            }
+
+            tr {
+                page-break-inside: avoid;
+            }
+        }
+
+        /* Relationship Diagram Placeholder */
+        .relationship-box {
+            background: white;
+            border: 2px dashed var(--border-color);
+            border-radius: 8px;
+            padding: 30px;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .relationship-arrow {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .relationship-entity {
+            background: var(--processor-color);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 8px;
+            font-weight: 600;
+        }
+
+        .relationship-entity.controller {
+            background: var(--primary-color);
+        }
+
+        .arrow-connector {
+            font-size: 24pt;
+            color: var(--border-color);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Report Header -->
+        <header class="report-header">
+            <h1>Records of Processing Activities</h1>
+            <h2>Article 30(2) - Processor Record</h2>
+            <p class="regulation-ref">General Data Protection Regulation (EU) 2016/679</p>
+            <div class="report-meta">
+                <div class="report-meta-item">
+                    <div class="report-meta-label">Processor</div>
+                    <div class="report-meta-value">{{ organization_name | default_value('Organization Name') }}</div>
+                </div>
+                <div class="report-meta-item">
+                    <div class="report-meta-label">Record Version</div>
+                    <div class="report-meta-value">{{ document_version | default_value('1.0') }}</div>
+                </div>
+                <div class="report-meta-item">
+                    <div class="report-meta-label">Generated</div>
+                    <div class="report-meta-value">{{ generated_at | format_datetime }}</div>
+                </div>
+                <div class="report-meta-item">
+                    <div class="report-meta-label">Record Period</div>
+                    <div class="report-meta-value">
+                        {{ reporting_period_start | format_date }} - {{ reporting_period_end | format_date }}
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Processor Details -->
+        <section class="section">
+            <h2 class="section-title">1. Processor Information</h2>
+            <p>
+                Pursuant to Article 30(2)(a) of the GDPR, the following identifies the processor
+                and where applicable, the processor's representative and the data protection officer.
+            </p>
+
+            <div class="entity-card">
+                <h3>Data Processor</h3>
+                <div class="entity-details">
+                    <div class="entity-field">
+                        <div class="entity-field-label">Processor Name</div>
+                        <div class="entity-field-value">{{ processor_record.processor_name | default_value('Processor name not specified') }}</div>
+                    </div>
+                    <div class="entity-field">
+                        <div class="entity-field-label">Role</div>
+                        <div class="entity-field-value">
+                            <span class="status-badge status-processor">Data Processor</span>
+                        </div>
+                    </div>
+                    <div class="entity-field">
+                        <div class="entity-field-label">Contact Name</div>
+                        <div class="entity-field-value">{{ processor_record.processor_contact.name | default_value('N/A') }}</div>
+                    </div>
+                    <div class="entity-field">
+                        <div class="entity-field-label">Contact Email</div>
+                        <div class="entity-field-value">{{ processor_record.processor_contact.email | default_value('N/A') }}</div>
+                    </div>
+                    <div class="entity-field">
+                        <div class="entity-field-label">Contact Phone</div>
+                        <div class="entity-field-value">{{ processor_record.processor_contact.phone | default_value('N/A') }}</div>
+                    </div>
+                    <div class="entity-field">
+                        <div class="entity-field-label">Address</div>
+                        <div class="entity-field-value">{{ processor_record.processor_contact.address | default_value('N/A') }}</div>
+                    </div>
+                </div>
+            </div>
+
+            {% if processor_record.representative %}
+            <div class="entity-card">
+                <h3>EU Representative (Article 27)</h3>
+                <div class="entity-details">
+                    <div class="entity-field">
+                        <div class="entity-field-label">Name</div>
+                        <div class="entity-field-value">{{ processor_record.representative.name | default_value('N/A') }}</div>
+                    </div>
+                    <div class="entity-field">
+                        <div class="entity-field-label">Email</div>
+                        <div class="entity-field-value">{{ processor_record.representative.email | default_value('N/A') }}</div>
+                    </div>
+                    <div class="entity-field">
+                        <div class="entity-field-label">Phone</div>
+                        <div class="entity-field-value">{{ processor_record.representative.phone | default_value('N/A') }}</div>
+                    </div>
+                    <div class="entity-field">
+                        <div class="entity-field-label">Address</div>
+                        <div class="entity-field-value">{{ processor_record.representative.address | default_value('N/A') }}</div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            {% if processor_record.dpo %}
+            <div class="entity-card">
+                <h3>Data Protection Officer (Article 37-39)</h3>
+                <div class="entity-details">
+                    <div class="entity-field">
+                        <div class="entity-field-label">DPO Name</div>
+                        <div class="entity-field-value">{{ processor_record.dpo.name | default_value('N/A') }}</div>
+                    </div>
+                    <div class="entity-field">
+                        <div class="entity-field-label">Email</div>
+                        <div class="entity-field-value">{{ processor_record.dpo.email | default_value('N/A') }}</div>
+                    </div>
+                    <div class="entity-field">
+                        <div class="entity-field-label">Phone</div>
+                        <div class="entity-field-value">{{ processor_record.dpo.phone | default_value('N/A') }}</div>
+                    </div>
+                    <div class="entity-field">
+                        <div class="entity-field-label">DPO Mandatory</div>
+                        <div class="entity-field-value">
+                            {% if processor_record.dpo.is_required %}
+                            <span class="status-badge status-active">Yes</span>
+                            {% else %}
+                            <span class="status-badge status-pending">Voluntary</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% if processor_record.dpo.appointment_date %}
+                    <div class="entity-field">
+                        <div class="entity-field-label">Appointment Date</div>
+                        <div class="entity-field-value">{{ processor_record.dpo.appointment_date | format_date }}</div>
+                    </div>
+                    {% endif %}
+                    {% if processor_record.dpo.registration_reference %}
+                    <div class="entity-field">
+                        <div class="entity-field-label">Registration Reference</div>
+                        <div class="entity-field-value">{{ processor_record.dpo.registration_reference }}</div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </section>
+
+        <!-- Controllers Overview -->
+        <section class="section">
+            <h2 class="section-title">2. Controllers on Whose Behalf Processing is Carried Out</h2>
+            <p>
+                Article 30(2)(a) requires processors to maintain records including the name and contact details
+                of each controller on whose behalf the processor is acting.
+            </p>
+
+            <div class="summary-box">
+                <div class="summary-stats">
+                    <div class="stat-item">
+                        <div class="stat-value">{{ processor_record.controllers | length if processor_record.controllers else '0' }}</div>
+                        <div class="stat-label">Controllers</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">{{ processor_record.processing_categories | length if processor_record.processing_categories else '0' }}</div>
+                        <div class="stat-label">Processing Categories</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">{{ processor_record.sub_processors | length if processor_record.sub_processors else '0' }}</div>
+                        <div class="stat-label">Sub-Processors</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">{{ processor_record.international_transfers | length if processor_record.international_transfers else '0' }}</div>
+                        <div class="stat-label">Third Country Transfers</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Processing Relationship Diagram -->
+            <div class="relationship-box">
+                <h4 style="color: #71767a; margin-bottom: 15px;">Processing Relationship Overview</h4>
+                <div class="relationship-arrow">
+                    <div class="relationship-entity controller">
+                        Controllers<br>
+                        <small>({{ processor_record.controllers | length if processor_record.controllers else '0' }})</small>
+                    </div>
+                    <span class="arrow-connector">&rarr;</span>
+                    <div class="relationship-entity">
+                        {{ organization_name | default_value('Processor') }}<br>
+                        <small>(You)</small>
+                    </div>
+                    {% if processor_record.sub_processors %}
+                    <span class="arrow-connector">&rarr;</span>
+                    <div class="relationship-entity" style="background-color: var(--secondary-color);">
+                        Sub-Processors<br>
+                        <small>({{ processor_record.sub_processors | length }})</small>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Controllers Table -->
+            <table>
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Controller Name</th>
+                        <th>Contact Email</th>
+                        <th>Contact Phone</th>
+                        <th>Address</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for controller in processor_record.controllers %}
+                    <tr>
+                        <td>{{ loop.index }}</td>
+                        <td><strong>{{ controller.name | default_value('N/A') }}</strong></td>
+                        <td>{{ controller.email | default_value('N/A') }}</td>
+                        <td>{{ controller.phone | default_value('N/A') }}</td>
+                        <td>{{ controller.address | default_value('N/A') }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" style="text-align: center; font-style: italic; color: #71767a;">
+                            No controllers documented. Please add controller data.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Categories of Processing -->
+        <section class="section">
+            <h2 class="section-title">3. Categories of Processing (Article 30(2)(b))</h2>
+            <p>
+                This section documents the categories of processing carried out on behalf of each controller,
+                as required by Article 30(2)(b).
+            </p>
+
+            {% if processor_record.processing_categories %}
+            <div style="margin: 20px 0;">
+                {% for category in processor_record.processing_categories %}
+                <span class="processing-tag">{{ category }}</span>
+                {% endfor %}
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Processing Category</th>
+                        <th>Description</th>
+                        <th>Applicable Controllers</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for category in processor_record.processing_categories %}
+                    <tr>
+                        <td>{{ loop.index }}</td>
+                        <td><strong>{{ category }}</strong></td>
+                        <td>
+                            Processing activities related to {{ category | lower }} on behalf of controller(s).
+                        </td>
+                        <td>
+                            {% for controller in processor_record.controllers %}
+                            <span class="controller-tag">{{ controller.name | default_value('Controller ' ~ loop.index) }}</span>
+                            {% else %}
+                            <span style="color: #71767a;">All Controllers</span>
+                            {% endfor %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="summary-box">
+                <p style="text-align: center; font-style: italic;">
+                    No processing categories documented. Processing category data will be displayed here
+                    when processing_categories data is provided.
+                </p>
+            </div>
+            {% endif %}
+        </section>
+
+        <!-- International Transfers -->
+        <section class="section">
+            <h2 class="section-title">4. International Transfers (Article 30(2)(c))</h2>
+            <p>
+                Where applicable, this section documents transfers of personal data to a third country
+                or an international organisation, including the identification of that third country or
+                international organisation, and the documentation of suitable safeguards referred to in
+                the second subparagraph of Article 49(1).
+            </p>
+
+            {% if processor_record.international_transfers %}
+            <div class="transfer-warning">
+                <strong>Third Country Transfers Identified:</strong>
+                This processor transfers personal data to {{ processor_record.international_transfers | length }}
+                recipient(s) outside the European Economic Area. Appropriate safeguards must be documented.
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Recipient</th>
+                        <th>Country</th>
+                        <th>Transfer Mechanism</th>
+                        <th>Purpose</th>
+                        <th>Contract Reference</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for transfer in processor_record.international_transfers %}
+                    <tr>
+                        <td>
+                            <strong>{{ transfer.name | default_value('N/A') }}</strong>
+                            <br>
+                            <small>{{ transfer.category | default_value('') }}</small>
+                        </td>
+                        <td>
+                            {{ transfer.country | default_value('N/A') }}
+                            {% if transfer.is_third_country %}
+                            <span style="color: var(--warning-color);">(Third Country)</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if transfer.transfer_mechanism == 'adequacy_decision' %}
+                            <span class="status-badge status-active">Adequacy Decision</span>
+                            {% elif transfer.transfer_mechanism == 'standard_contractual_clauses' %}
+                            <span class="status-badge status-implemented">SCCs</span>
+                            {% elif transfer.transfer_mechanism == 'binding_corporate_rules' %}
+                            <span class="status-badge status-implemented">BCRs</span>
+                            {% elif transfer.transfer_mechanism == 'certification' %}
+                            <span class="status-badge status-pending">Certification</span>
+                            {% elif transfer.transfer_mechanism == 'code_of_conduct' %}
+                            <span class="status-badge status-pending">Code of Conduct</span>
+                            {% elif transfer.transfer_mechanism == 'derogations' %}
+                            <span class="status-badge status-pending">Derogation (Art. 49)</span>
+                            {% else %}
+                            <span class="status-badge">{{ transfer.transfer_mechanism | replace('_', ' ') | title }}</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ transfer.purpose | default_value('N/A') }}</td>
+                        <td>{{ transfer.contract_reference | default_value('N/A') }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <h3 class="subsection-title">Transfer Mechanism Details</h3>
+            <p>
+                For each international transfer, the following safeguards are in place:
+            </p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Transfer Mechanism</th>
+                        <th>Legal Basis</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Adequacy Decision</strong></td>
+                        <td>Article 45</td>
+                        <td>European Commission has determined that the third country ensures an adequate level of protection.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Standard Contractual Clauses (SCCs)</strong></td>
+                        <td>Article 46(2)(c)</td>
+                        <td>Transfers under SCCs adopted by the European Commission (2021/914).</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Binding Corporate Rules (BCRs)</strong></td>
+                        <td>Article 47</td>
+                        <td>Approved binding corporate rules for intra-group transfers.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Certification</strong></td>
+                        <td>Article 42</td>
+                        <td>Approved certification mechanism together with binding commitments.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Derogations</strong></td>
+                        <td>Article 49</td>
+                        <td>Specific derogation applies (consent, contract, public interest, etc.).</td>
+                    </tr>
+                </tbody>
+            </table>
+            {% else %}
+            <div class="summary-box" style="border-left-color: var(--success-color);">
+                <p>
+                    <strong>No third country transfers identified.</strong>
+                    All processing activities are conducted within the European Economic Area.
+                </p>
+            </div>
+            {% endif %}
+        </section>
+
+        <!-- Sub-Processors -->
+        <section class="section">
+            <h2 class="section-title">5. Sub-Processors</h2>
+            <p>
+                This section documents any sub-processors engaged by the processor. Article 28(2) requires
+                prior specific or general written authorization of the controller before engaging sub-processors.
+            </p>
+
+            {% if processor_record.sub_processors %}
+            <table class="sub-processor-table">
+                <thead>
+                    <tr>
+                        <th>Sub-Processor</th>
+                        <th>Category</th>
+                        <th>Country</th>
+                        <th>Purpose</th>
+                        <th>Third Country?</th>
+                        <th>Transfer Mechanism</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for sub in processor_record.sub_processors %}
+                    <tr>
+                        <td>
+                            <strong>{{ sub.name | default_value('N/A') }}</strong>
+                        </td>
+                        <td>{{ sub.category | default_value('N/A') }}</td>
+                        <td>{{ sub.country | default_value('N/A') }}</td>
+                        <td>{{ sub.purpose | default_value('N/A') }}</td>
+                        <td>
+                            {% if sub.is_third_country %}
+                            <span class="status-badge status-pending">Yes</span>
+                            {% else %}
+                            <span class="status-badge status-active">No</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if sub.is_third_country %}
+                            {{ sub.transfer_mechanism | replace('_', ' ') | title }}
+                            {% else %}
+                            N/A
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <div class="summary-box">
+                <p>
+                    <strong>Sub-Processor Authorisation:</strong>
+                    All listed sub-processors have been authorised in accordance with Article 28(2) GDPR.
+                    Written agreements containing appropriate data protection provisions are in place with each sub-processor.
+                </p>
+            </div>
+            {% else %}
+            <div class="summary-box">
+                <p style="text-align: center; font-style: italic;">
+                    No sub-processors engaged. All processing is performed directly by the processor.
+                </p>
+            </div>
+            {% endif %}
+        </section>
+
+        <!-- Security Measures -->
+        <section class="section">
+            <h2 class="section-title">6. Technical and Organisational Security Measures (Article 30(2)(d))</h2>
+            <p>
+                Where possible, a general description of the technical and organisational security measures
+                referred to in Article 32(1), as required by Article 30(2)(d).
+            </p>
+
+            {% if processor_record.security_measures %}
+            <div class="security-section">
+                <h3 style="color: var(--processor-color); margin-bottom: 15px;">Security Measures Overview</h3>
+
+                {% set technical_measures = [] %}
+                {% set organizational_measures = [] %}
+                {% for measure in processor_record.security_measures %}
+                    {% if measure.category == 'technical' %}
+                        {% if technical_measures.append(measure) %}{% endif %}
+                    {% else %}
+                        {% if organizational_measures.append(measure) %}{% endif %}
+                    {% endif %}
+                {% endfor %}
+
+                <div class="security-grid">
+                    <div class="security-category-card">
+                        <div class="security-category-title">Technical Measures</div>
+                        <ul class="security-list">
+                            {% for measure in technical_measures %}
+                            <li>
+                                <div>
+                                    <strong>{{ measure.name }}</strong>
+                                    {% if measure.description %}
+                                    <br><small style="color: #5c5c5c;">{{ measure.description }}</small>
+                                    {% endif %}
+                                </div>
+                                {% if measure.implementation_status == 'implemented' %}
+                                <span class="security-status security-implemented">Implemented</span>
+                                {% elif measure.implementation_status == 'planned' %}
+                                <span class="security-status security-planned">Planned</span>
+                                {% else %}
+                                <span class="security-status security-not-implemented">Not Implemented</span>
+                                {% endif %}
+                            </li>
+                            {% else %}
+                            <li style="color: #71767a; font-style: italic;">No technical measures documented</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+
+                    <div class="security-category-card">
+                        <div class="security-category-title">Organisational Measures</div>
+                        <ul class="security-list">
+                            {% for measure in organizational_measures %}
+                            <li>
+                                <div>
+                                    <strong>{{ measure.name }}</strong>
+                                    {% if measure.description %}
+                                    <br><small style="color: #5c5c5c;">{{ measure.description }}</small>
+                                    {% endif %}
+                                </div>
+                                {% if measure.implementation_status == 'implemented' %}
+                                <span class="security-status security-implemented">Implemented</span>
+                                {% elif measure.implementation_status == 'planned' %}
+                                <span class="security-status security-planned">Planned</span>
+                                {% else %}
+                                <span class="security-status security-not-implemented">Not Implemented</span>
+                                {% endif %}
+                            </li>
+                            {% else %}
+                            <li style="color: #71767a; font-style: italic;">No organisational measures documented</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+
+                <h4 class="subsection-title">Security Measures Summary Table</h4>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Measure ID</th>
+                            <th>Category</th>
+                            <th>Measure Name</th>
+                            <th>Description</th>
+                            <th>Status</th>
+                            <th>Related Controls</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for measure in processor_record.security_measures %}
+                        <tr>
+                            <td><code>{{ measure.measure_id }}</code></td>
+                            <td>
+                                {% if measure.category == 'technical' %}
+                                <span class="processing-tag">Technical</span>
+                                {% else %}
+                                <span class="processing-tag" style="background-color: #e8f4fd; color: var(--primary-color);">Organisational</span>
+                                {% endif %}
+                            </td>
+                            <td><strong>{{ measure.name }}</strong></td>
+                            <td>{{ measure.description | default_value('N/A') }}</td>
+                            <td>
+                                {% if measure.implementation_status == 'implemented' %}
+                                <span class="status-badge status-active">Implemented</span>
+                                {% elif measure.implementation_status == 'planned' %}
+                                <span class="status-badge status-pending">Planned</span>
+                                {% else %}
+                                <span class="status-badge status-inactive">Not Implemented</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if measure.controls_reference %}
+                                {{ measure.controls_reference | join(', ') }}
+                                {% else %}
+                                N/A
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="summary-box">
+                <p style="text-align: center; font-style: italic;">
+                    No security measures documented. Security measure data will be displayed here
+                    when security_measures data is provided.
+                </p>
+            </div>
+            {% endif %}
+        </section>
+
+        <!-- Article Reference -->
+        <section class="section">
+            <h2 class="section-title">Appendix: Article 30 Reference</h2>
+
+            <h3 class="subsection-title">Article 30(2) - Records of Processing Activities (Processor)</h3>
+            <p>
+                Each processor and, where applicable, the processor's representative, shall maintain a record
+                of all categories of processing activities carried out on behalf of a controller, containing:
+            </p>
+            <ol style="margin: 15px 0; padding-left: 25px;">
+                <li style="margin-bottom: 8px;"><strong>(a)</strong> The name and contact details of the processor or processors and of each controller on behalf of which the processor is acting, and, where applicable, of the controller's or the processor's representative, and the data protection officer</li>
+                <li style="margin-bottom: 8px;"><strong>(b)</strong> The categories of processing carried out on behalf of each controller</li>
+                <li style="margin-bottom: 8px;"><strong>(c)</strong> Where applicable, transfers of personal data to a third country or an international organisation, including the identification of that third country or international organisation and, in the case of transfers referred to in the second subparagraph of Article 49(1), the documentation of suitable safeguards</li>
+                <li style="margin-bottom: 8px;"><strong>(d)</strong> Where possible, a general description of the technical and organisational security measures referred to in Article 32(1)</li>
+            </ol>
+
+            <h3 class="subsection-title">Article 28 - Processor Obligations</h3>
+            <p>
+                As a processor, the following obligations under Article 28 apply:
+            </p>
+            <ul style="margin: 15px 0; padding-left: 25px;">
+                <li style="margin-bottom: 8px;">Process personal data only on documented instructions from the controller</li>
+                <li style="margin-bottom: 8px;">Ensure persons authorised to process have committed to confidentiality</li>
+                <li style="margin-bottom: 8px;">Take appropriate security measures (Article 32)</li>
+                <li style="margin-bottom: 8px;">Respect conditions for engaging sub-processors</li>
+                <li style="margin-bottom: 8px;">Assist controller in responding to data subject requests</li>
+                <li style="margin-bottom: 8px;">Assist controller in ensuring compliance with security, breach notification, and DPIA obligations</li>
+                <li style="margin-bottom: 8px;">Delete or return all personal data on termination</li>
+                <li style="margin-bottom: 8px;">Make available information necessary to demonstrate compliance</li>
+            </ul>
+        </section>
+
+        <!-- Report Footer -->
+        <footer class="report-footer">
+            <p>
+                <strong>GDPR Article 30(2) Records of Processing Activities</strong>
+                <br>
+                {{ organization_name | default_value('Organization') }} | Generated: {{ generated_at | format_datetime }}
+                <br>
+                Document Version: {{ document_version | default_value('1.0') }} | Generator Version: {{ generator_version | default_value('1.0.0') }}
+            </p>
+            <div class="legal-notice">
+                <strong>Legal Notice:</strong> This document has been generated to support GDPR Article 30 compliance requirements
+                for processors. It should be reviewed by qualified data protection personnel to ensure accuracy and completeness.
+                The processor is responsible for maintaining these records and making them available to the supervisory authority on request.
+                This document is confidential and intended for internal compliance purposes.
+                <br><br>
+                ACGS-2 Enterprise Guardrails Platform - Compliance Documentation Service
+            </div>
+        </footer>
+    </div>
+</body>
+</html>

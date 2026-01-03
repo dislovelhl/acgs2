@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SOC 2 Type II Control Mapping Report - {{ organization_name | default_value }}</title>
+    <style>
+        :root {
+            --primary-color: #1a365d;
+            --secondary-color: #2c5282;
+            --success-color: #276749;
+            --warning-color: #c05621;
+            --danger-color: #c53030;
+            --info-color: #2b6cb0;
+            --light-gray: #f7fafc;
+            --border-color: #e2e8f0;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #2d3748;
+            background-color: #fff;
+            font-size: 11pt;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 40px;
+        }
+
+        /* Header Styles */
+        .report-header {
+            text-align: center;
+            border-bottom: 3px solid var(--primary-color);
+            padding-bottom: 30px;
+            margin-bottom: 40px;
+        }
+
+        .report-header h1 {
+            color: var(--primary-color);
+            font-size: 28pt;
+            margin-bottom: 10px;
+        }
+
+        .report-header h2 {
+            color: var(--secondary-color);
+            font-size: 18pt;
+            font-weight: normal;
+            margin-bottom: 20px;
+        }
+
+        .report-meta {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .report-meta-item {
+            text-align: center;
+        }
+
+        .report-meta-label {
+            font-size: 9pt;
+            color: #718096;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .report-meta-value {
+            font-size: 11pt;
+            color: var(--primary-color);
+            font-weight: 600;
+        }
+
+        /* Section Styles */
+        .section {
+            margin-bottom: 40px;
+            page-break-inside: avoid;
+        }
+
+        .section-title {
+            color: var(--primary-color);
+            font-size: 16pt;
+            border-bottom: 2px solid var(--secondary-color);
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+
+        .subsection-title {
+            color: var(--secondary-color);
+            font-size: 13pt;
+            margin: 20px 0 15px 0;
+        }
+
+        /* Table Styles */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 10pt;
+        }
+
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 12px;
+            text-align: left;
+            vertical-align: top;
+        }
+
+        th {
+            background-color: var(--primary-color);
+            color: white;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 9pt;
+            letter-spacing: 0.5px;
+        }
+
+        tr:nth-child(even) {
+            background-color: var(--light-gray);
+        }
+
+        tr:hover {
+            background-color: #edf2f7;
+        }
+
+        /* Trust Service Criteria Badges */
+        .tsc-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 9pt;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .tsc-security { background-color: #2b6cb0; color: white; }
+        .tsc-availability { background-color: #276749; color: white; }
+        .tsc-processing-integrity { background-color: #6b46c1; color: white; }
+        .tsc-confidentiality { background-color: #c05621; color: white; }
+        .tsc-privacy { background-color: #702459; color: white; }
+
+        /* Coverage Indicator */
+        .coverage-bar {
+            width: 100%;
+            height: 20px;
+            background-color: #e2e8f0;
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .coverage-fill {
+            height: 100%;
+            border-radius: 10px;
+            transition: width 0.3s ease;
+        }
+
+        .coverage-high { background-color: var(--success-color); }
+        .coverage-medium { background-color: var(--warning-color); }
+        .coverage-low { background-color: var(--danger-color); }
+
+        .coverage-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 9pt;
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+
+        /* Status Badges */
+        .status-badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 9pt;
+            font-weight: 600;
+        }
+
+        .status-effective { background-color: #c6f6d5; color: #276749; }
+        .status-ineffective { background-color: #fed7d7; color: #c53030; }
+        .status-not-tested { background-color: #fefcbf; color: #975a16; }
+        .status-partial { background-color: #feebc8; color: #c05621; }
+
+        /* Gap and Control Lists */
+        .gap-list, .control-list {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+
+        .gap-list li {
+            color: var(--danger-color);
+            margin-bottom: 5px;
+        }
+
+        .control-list li {
+            color: var(--info-color);
+            margin-bottom: 5px;
+        }
+
+        /* Executive Summary Box */
+        .summary-box {
+            background-color: var(--light-gray);
+            border: 1px solid var(--border-color);
+            border-left: 4px solid var(--primary-color);
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .summary-stats {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            min-width: 120px;
+        }
+
+        .stat-value {
+            font-size: 24pt;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+
+        .stat-label {
+            font-size: 9pt;
+            color: #718096;
+            text-transform: uppercase;
+        }
+
+        /* Footer */
+        .report-footer {
+            margin-top: 60px;
+            padding-top: 20px;
+            border-top: 2px solid var(--border-color);
+            text-align: center;
+            font-size: 9pt;
+            color: #718096;
+        }
+
+        /* Print Styles */
+        @media print {
+            .container {
+                max-width: 100%;
+                padding: 20px;
+            }
+
+            .section {
+                page-break-inside: avoid;
+            }
+
+            tr {
+                page-break-inside: avoid;
+            }
+        }
+
+        /* Mapping Details */
+        .mapping-card {
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .mapping-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .mapping-id {
+            font-size: 11pt;
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+
+        .mapping-body {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .mapping-field {
+            margin-bottom: 10px;
+        }
+
+        .mapping-field-label {
+            font-size: 9pt;
+            color: #718096;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+
+        .mapping-field-value {
+            color: #2d3748;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Report Header -->
+        <header class="report-header">
+            <h1>SOC 2 Type II Control Mapping</h1>
+            <h2>{{ organization_name | default_value('Organization Name') }}</h2>
+            <div class="report-meta">
+                <div class="report-meta-item">
+                    <div class="report-meta-label">Report Type</div>
+                    <div class="report-meta-value">{{ report_type | default_value('Type II') }}</div>
+                </div>
+                <div class="report-meta-item">
+                    <div class="report-meta-label">Audit Period</div>
+                    <div class="report-meta-value">
+                        {{ audit_period_start | format_date }} - {{ audit_period_end | format_date }}
+                    </div>
+                </div>
+                <div class="report-meta-item">
+                    <div class="report-meta-label">Generated</div>
+                    <div class="report-meta-value">{{ generated_at | format_datetime }}</div>
+                </div>
+                <div class="report-meta-item">
+                    <div class="report-meta-label">Document Version</div>
+                    <div class="report-meta-value">{{ document_version | default_value('1.0') }}</div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Executive Summary -->
+        <section class="section">
+            <h2 class="section-title">Executive Summary</h2>
+            <div class="summary-box">
+                <p>
+                    This document presents the control mapping between ACGS-2 guardrail controls and
+                    SOC 2 Type II Trust Service Criteria. The mapping demonstrates how the platform's
+                    security controls satisfy SOC 2 compliance requirements across all applicable criteria.
+                </p>
+                <div class="summary-stats">
+                    <div class="stat-item">
+                        <div class="stat-value">{{ total_mappings | default_value('0') }}</div>
+                        <div class="stat-label">Total Mappings</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">{{ criteria_in_scope | length if criteria_in_scope else '5' }}</div>
+                        <div class="stat-label">TSC In Scope</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">{{ average_coverage | default_value('N/A') }}%</div>
+                        <div class="stat-label">Avg Coverage</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">{{ gaps_identified | default_value('0') }}</div>
+                        <div class="stat-label">Gaps Identified</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Trust Service Criteria Overview -->
+        <section class="section">
+            <h2 class="section-title">Trust Service Criteria In Scope</h2>
+            <p>The following Trust Service Criteria are included in this SOC 2 Type II assessment:</p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Criteria</th>
+                        <th>Description</th>
+                        <th>Status</th>
+                        <th>Controls Mapped</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for criteria in criteria_in_scope %}
+                    <tr>
+                        <td>
+                            {% if criteria.criteria == 'security' or criteria == 'security' %}
+                            <span class="tsc-badge tsc-security">Security (CC)</span>
+                            {% elif criteria.criteria == 'availability' or criteria == 'availability' %}
+                            <span class="tsc-badge tsc-availability">Availability (A)</span>
+                            {% elif criteria.criteria == 'processing_integrity' or criteria == 'processing_integrity' %}
+                            <span class="tsc-badge tsc-processing-integrity">Processing Integrity (PI)</span>
+                            {% elif criteria.criteria == 'confidentiality' or criteria == 'confidentiality' %}
+                            <span class="tsc-badge tsc-confidentiality">Confidentiality (C)</span>
+                            {% elif criteria.criteria == 'privacy' or criteria == 'privacy' %}
+                            <span class="tsc-badge tsc-privacy">Privacy (P)</span>
+                            {% else %}
+                            <span class="tsc-badge">{{ criteria | default_value }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if criteria.criteria == 'security' or criteria == 'security' %}
+                            Information and systems are protected against unauthorized access, unauthorized disclosure, and damage.
+                            {% elif criteria.criteria == 'availability' or criteria == 'availability' %}
+                            Information and systems are available for operation and use as committed or agreed.
+                            {% elif criteria.criteria == 'processing_integrity' or criteria == 'processing_integrity' %}
+                            System processing is complete, valid, accurate, timely, and authorized.
+                            {% elif criteria.criteria == 'confidentiality' or criteria == 'confidentiality' %}
+                            Information designated as confidential is protected as committed or agreed.
+                            {% elif criteria.criteria == 'privacy' or criteria == 'privacy' %}
+                            Personal information is collected, used, retained, disclosed, and disposed of appropriately.
+                            {% else %}
+                            {{ criteria.description | default_value('Description not available') }}
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if criteria.in_scope is defined %}
+                                {% if criteria.in_scope %}
+                                <span class="status-badge status-effective">In Scope</span>
+                                {% else %}
+                                <span class="status-badge status-not-tested">Not In Scope</span>
+                                {% endif %}
+                            {% else %}
+                            <span class="status-badge status-effective">In Scope</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ criteria.controls | length if criteria.controls is defined else 'N/A' }}</td>
+                    </tr>
+                    {% else %}
+                    <!-- Default TSC listing when no data provided -->
+                    <tr>
+                        <td><span class="tsc-badge tsc-security">Security (CC)</span></td>
+                        <td>Information and systems are protected against unauthorized access, unauthorized disclosure, and damage.</td>
+                        <td><span class="status-badge status-effective">In Scope</span></td>
+                        <td>-</td>
+                    </tr>
+                    <tr>
+                        <td><span class="tsc-badge tsc-availability">Availability (A)</span></td>
+                        <td>Information and systems are available for operation and use as committed or agreed.</td>
+                        <td><span class="status-badge status-effective">In Scope</span></td>
+                        <td>-</td>
+                    </tr>
+                    <tr>
+                        <td><span class="tsc-badge tsc-processing-integrity">Processing Integrity (PI)</span></td>
+                        <td>System processing is complete, valid, accurate, timely, and authorized.</td>
+                        <td><span class="status-badge status-effective">In Scope</span></td>
+                        <td>-</td>
+                    </tr>
+                    <tr>
+                        <td><span class="tsc-badge tsc-confidentiality">Confidentiality (C)</span></td>
+                        <td>Information designated as confidential is protected as committed or agreed.</td>
+                        <td><span class="status-badge status-effective">In Scope</span></td>
+                        <td>-</td>
+                    </tr>
+                    <tr>
+                        <td><span class="tsc-badge tsc-privacy">Privacy (P)</span></td>
+                        <td>Personal information is collected, used, retained, disclosed, and disposed of appropriately.</td>
+                        <td><span class="status-badge status-effective">In Scope</span></td>
+                        <td>-</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Control Mappings Table -->
+        <section class="section">
+            <h2 class="section-title">Control Mapping Summary</h2>
+            <p>
+                The following table summarizes how ACGS-2 guardrail controls map to SOC 2 Trust Service Criteria controls.
+            </p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>SOC 2 Control</th>
+                        <th>TSC</th>
+                        <th>Guardrail Control</th>
+                        <th>Coverage</th>
+                        <th>Gaps</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for mapping in control_mappings %}
+                    <tr>
+                        <td>
+                            <strong>{{ mapping.soc2_control_id | control_id('SOC2') }}</strong>
+                        </td>
+                        <td>
+                            {% if 'CC' in mapping.soc2_control_id %}
+                            <span class="tsc-badge tsc-security">CC</span>
+                            {% elif 'A' in mapping.soc2_control_id %}
+                            <span class="tsc-badge tsc-availability">A</span>
+                            {% elif 'PI' in mapping.soc2_control_id %}
+                            <span class="tsc-badge tsc-processing-integrity">PI</span>
+                            {% elif 'C' in mapping.soc2_control_id %}
+                            <span class="tsc-badge tsc-confidentiality">C</span>
+                            {% elif 'P' in mapping.soc2_control_id %}
+                            <span class="tsc-badge tsc-privacy">P</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <strong>{{ mapping.guardrail_control_id | default_value }}</strong>
+                            <br>
+                            <small>{{ mapping.guardrail_control_name | default_value }}</small>
+                        </td>
+                        <td>
+                            <div class="coverage-bar">
+                                <div class="coverage-fill {% if mapping.coverage_percentage >= 80 %}coverage-high{% elif mapping.coverage_percentage >= 50 %}coverage-medium{% else %}coverage-low{% endif %}"
+                                     style="width: {{ mapping.coverage_percentage | default_value('0') }}%;">
+                                </div>
+                                <span class="coverage-text">{{ mapping.coverage_percentage | default_value('0') }}%</span>
+                            </div>
+                        </td>
+                        <td>
+                            {% if mapping.gaps %}
+                            {{ mapping.gaps | length }} gap(s)
+                            {% else %}
+                            <span class="status-badge status-effective">None</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" style="text-align: center; font-style: italic; color: #718096;">
+                            No control mappings available. Please provide control mapping data.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Detailed Control Mappings -->
+        <section class="section">
+            <h2 class="section-title">Detailed Control Mappings</h2>
+
+            {% for mapping in control_mappings %}
+            <div class="mapping-card">
+                <div class="mapping-header">
+                    <span class="mapping-id">
+                        Mapping ID: {{ mapping.mapping_id | default_value('N/A') }}
+                    </span>
+                    <span>
+                        {% if mapping.coverage_percentage >= 80 %}
+                        <span class="status-badge status-effective">High Coverage</span>
+                        {% elif mapping.coverage_percentage >= 50 %}
+                        <span class="status-badge status-partial">Partial Coverage</span>
+                        {% else %}
+                        <span class="status-badge status-ineffective">Low Coverage</span>
+                        {% endif %}
+                    </span>
+                </div>
+
+                <div class="mapping-body">
+                    <div>
+                        <div class="mapping-field">
+                            <div class="mapping-field-label">SOC 2 Control</div>
+                            <div class="mapping-field-value">
+                                <strong>{{ mapping.soc2_control_id | control_id('SOC2') }}</strong>
+                            </div>
+                        </div>
+
+                        <div class="mapping-field">
+                            <div class="mapping-field-label">Guardrail Control</div>
+                            <div class="mapping-field-value">
+                                <strong>{{ mapping.guardrail_control_id | default_value }}</strong>
+                                <br>
+                                {{ mapping.guardrail_control_name | default_value }}
+                            </div>
+                        </div>
+
+                        <div class="mapping-field">
+                            <div class="mapping-field-label">Coverage Percentage</div>
+                            <div class="mapping-field-value">{{ mapping.coverage_percentage | default_value('0') }}%</div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="mapping-field">
+                            <div class="mapping-field-label">Mapping Rationale</div>
+                            <div class="mapping-field-value">{{ mapping.mapping_rationale | default_value('No rationale provided') }}</div>
+                        </div>
+
+                        {% if mapping.gaps %}
+                        <div class="mapping-field">
+                            <div class="mapping-field-label">Identified Gaps</div>
+                            <ul class="gap-list">
+                                {% for gap in mapping.gaps %}
+                                <li>{{ gap }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        {% endif %}
+
+                        {% if mapping.compensating_controls %}
+                        <div class="mapping-field">
+                            <div class="mapping-field-label">Compensating Controls</div>
+                            <ul class="control-list">
+                                {% for control in mapping.compensating_controls %}
+                                <li>{{ control }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="summary-box">
+                <p style="text-align: center; font-style: italic;">
+                    No detailed control mappings available. Control mapping data will be displayed here
+                    when control_mappings data is provided to the template.
+                </p>
+            </div>
+            {% endfor %}
+        </section>
+
+        <!-- Gaps and Remediation -->
+        <section class="section">
+            <h2 class="section-title">Gaps and Remediation Plan</h2>
+            <p>
+                This section identifies any gaps in control coverage and outlines the remediation approach.
+            </p>
+
+            {% set all_gaps = [] %}
+            {% for mapping in control_mappings %}
+                {% if mapping.gaps %}
+                    {% for gap in mapping.gaps %}
+                        {% if all_gaps.append({'control': mapping.soc2_control_id, 'gap': gap, 'compensating': mapping.compensating_controls}) %}{% endif %}
+                    {% endfor %}
+                {% endif %}
+            {% endfor %}
+
+            {% if all_gaps %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>SOC 2 Control</th>
+                        <th>Gap Description</th>
+                        <th>Compensating Controls</th>
+                        <th>Remediation Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in all_gaps %}
+                    <tr>
+                        <td>{{ item.control | control_id('SOC2') }}</td>
+                        <td>{{ item.gap }}</td>
+                        <td>
+                            {% if item.compensating %}
+                            <ul class="control-list" style="margin: 0; padding-left: 15px;">
+                                {% for ctrl in item.compensating %}
+                                <li>{{ ctrl }}</li>
+                                {% endfor %}
+                            </ul>
+                            {% else %}
+                            <span style="color: var(--danger-color);">None identified</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="status-badge status-not-tested">Pending Review</span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="summary-box" style="border-left-color: var(--success-color);">
+                <p>
+                    <strong>No gaps identified.</strong> All mapped controls demonstrate adequate coverage
+                    of SOC 2 Trust Service Criteria requirements.
+                </p>
+            </div>
+            {% endif %}
+        </section>
+
+        <!-- Appendix: Control Definitions -->
+        <section class="section">
+            <h2 class="section-title">Appendix A: SOC 2 Trust Service Criteria Reference</h2>
+
+            <h3 class="subsection-title">Security (Common Criteria - CC)</h3>
+            <p>
+                The security category refers to the protection of information during its collection or creation,
+                use, processing, transmission, and storage. Security is referred to in the Trust Services Criteria
+                as "common criteria" because it is relevant to all five Trust Service Categories.
+            </p>
+
+            <h3 class="subsection-title">Availability (A)</h3>
+            <p>
+                The availability category refers to the accessibility of information used by the entity's systems,
+                as well as the products or services provided to its customers. Availability does not set
+                a minimum acceptable performance level; rather, it addresses whether information and systems
+                are available for operation and use as committed or agreed.
+            </p>
+
+            <h3 class="subsection-title">Processing Integrity (PI)</h3>
+            <p>
+                Processing integrity refers to the completeness, validity, accuracy, timeliness, and
+                authorization of system processing. Processing integrity addresses whether systems achieve
+                the aim or purpose for which they exist and whether they perform their intended functions
+                in an unimpaired manner, free from error, delay, omission, and unauthorized or inadvertent manipulation.
+            </p>
+
+            <h3 class="subsection-title">Confidentiality (C)</h3>
+            <p>
+                Confidentiality addresses the entity's ability to protect information designated as confidential
+                from its collection or creation through its final disposition and removal from the entity's control
+                in accordance with management's objectives. Information is confidential if the custodian (the entity
+                that holds or stores the information) is required to limit access, use, and retention of the information
+                and appropriately dispose of it.
+            </p>
+
+            <h3 class="subsection-title">Privacy (P)</h3>
+            <p>
+                The privacy category addresses the entity's collection, use, retention, disclosure, and disposal
+                of personal information in conformity with the commitments in the entity's privacy notice, and with
+                criteria set forth in generally accepted privacy principles (GAPP) issued by the AICPA and CICA.
+            </p>
+        </section>
+
+        <!-- Report Footer -->
+        <footer class="report-footer">
+            <p>
+                <strong>SOC 2 Type II Control Mapping Report</strong>
+                <br>
+                {{ organization_name | default_value('Organization') }} | Generated: {{ generated_at | format_datetime }}
+                <br>
+                Document Version: {{ document_version | default_value('1.0') }} | Generator Version: {{ generator_version | default_value('1.0.0') }}
+            </p>
+            <p style="margin-top: 15px; font-size: 8pt;">
+                This document is confidential and intended for compliance assessment purposes only.
+                <br>
+                ACGS-2 Enterprise Guardrails Platform - Compliance Documentation Service
+            </p>
+        </footer>
+    </div>
+</body>
+</html>

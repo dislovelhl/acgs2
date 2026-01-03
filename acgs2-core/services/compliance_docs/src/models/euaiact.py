@@ -1,20 +1,27 @@
 """
-EU AI Act compliance models and data structures
-Constitutional Hash: cdd01ef066bc6cf2
+EU AI Act Pydantic models for Compliance Documentation Service
 
-Models for EU AI Act compliance documentation, validation, and reporting
-for high-risk AI systems per EU Regulation 2024/1689.
+Models for EU AI Act risk classification, conformity assessment,
+and technical documentation requirements.
+
+The EU AI Act (2024) categorizes AI systems by risk level:
+- Unacceptable risk: Prohibited practices (Article 5)
+- High risk: Subject to strict requirements (Annex III)
+- Limited risk: Transparency obligations (Article 52)
+- Minimal risk: No specific requirements
 """
 
-from datetime import date, datetime
+from datetime import datetime
 from enum import Enum
-from typing import List, Optional
+from typing import Optional
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import Field
+
+from .base import ComplianceBaseModel, VersionedDocument
 
 
 class RiskLevel(str, Enum):
-    """EU AI Act risk levels for AI systems"""
+    """EU AI Act risk classification levels"""
 
     UNACCEPTABLE = "unacceptable"
     HIGH = "high"
@@ -22,211 +29,603 @@ class RiskLevel(str, Enum):
     MINIMAL = "minimal"
 
 
-class HighRiskCategory(str, Enum):
-    """EU AI Act Article 6 high-risk AI system categories"""
+class ProviderRole(str, Enum):
+    """Role in the AI system value chain"""
 
-    BIOMETRIC_IDENTIFICATION = "biometric_identification"
+    PROVIDER = "provider"
+    DEPLOYER = "deployer"
+    IMPORTER = "importer"
+    DISTRIBUTOR = "distributor"
+    AUTHORIZED_REPRESENTATIVE = "authorized_representative"
+
+
+class HighRiskCategory(str, Enum):
+    """High-risk AI system categories (Annex III)"""
+
+    BIOMETRIC = "biometric_identification"
     CRITICAL_INFRASTRUCTURE = "critical_infrastructure"
-    EDUCATION_VOCATIONAL = "education_vocational"
-    EMPLOYMENT_WORKPLACE = "employment_workplace"
-    ACCESS_TO_ESSENTIAL_SERVICES = "access_to_essential_services"
+    EDUCATION_TRAINING = "education_training"
+    EMPLOYMENT = "employment"
+    ESSENTIAL_SERVICES = "essential_services"
     LAW_ENFORCEMENT = "law_enforcement"
     MIGRATION_ASYLUM = "migration_asylum"
-    ADMINISTRATION_OF_JUSTICE = "administration_of_justice"
+    JUSTICE_DEMOCRACY = "justice_democracy"
 
 
-class ComplianceStatus(str, Enum):
-    """Compliance validation status"""
+class ConformityAssessmentType(str, Enum):
+    """Type of conformity assessment procedure"""
 
-    COMPLIANT = "compliant"
-    NON_COMPLIANT = "non_compliant"
-    PARTIAL = "partial"
-    NOT_ASSESSED = "not_assessed"
-
-
-class FindingSeverity(str, Enum):
-    """Severity levels for compliance findings"""
-
-    CRITICAL = "critical"
-    HIGH = "high"
-    MEDIUM = "medium"
-    LOW = "low"
-    INFO = "info"
+    INTERNAL_CONTROL = "internal_control"
+    NOTIFIED_BODY = "notified_body"
+    QUALITY_MANAGEMENT = "quality_management"
 
 
-class EUAIActComplianceFinding(BaseModel):
-    """Individual compliance finding from validation"""
+class TransparencyObligation(str, Enum):
+    """Transparency obligations for limited risk systems"""
 
-    finding_id: str = Field(..., description="Unique finding identifier")
-    article: str = Field(..., description="EU AI Act article reference (e.g., 'Article 9')")
-    requirement: str = Field(..., description="Specific requirement text")
-    status: ComplianceStatus = Field(..., description="Compliance status")
-    severity: FindingSeverity = Field(..., description="Finding severity")
-    description: str = Field(..., description="Detailed finding description")
-    evidence: Optional[str] = Field(None, description="Evidence or proof of compliance")
-    remediation: Optional[str] = Field(None, description="Recommended remediation steps")
-    assessed_at: datetime = Field(
-        default_factory=lambda: datetime.now(), description="When finding was assessed"
+    AI_INTERACTION_DISCLOSURE = "ai_interaction_disclosure"
+    EMOTION_RECOGNITION_DISCLOSURE = "emotion_recognition_disclosure"
+    BIOMETRIC_CATEGORIZATION_DISCLOSURE = "biometric_categorization_disclosure"
+    DEEPFAKE_DISCLOSURE = "deepfake_disclosure"
+
+
+class RiskAssessmentResult(ComplianceBaseModel):
+    """Result of AI system risk classification"""
+
+    assessment_id: str = Field(
+        ...,
+        description="Unique identifier for this assessment",
+    )
+    system_name: str = Field(
+        ...,
+        description="Name of the AI system",
+    )
+    risk_level: RiskLevel = Field(
+        ...,
+        description="Classified risk level",
+    )
+    high_risk_category: Optional[HighRiskCategory] = Field(
+        default=None,
+        description="High-risk category if applicable",
+    )
+    classification_rationale: str = Field(
+        ...,
+        description="Rationale for the risk classification",
+    )
+    assessed_by: str = Field(
+        default="",
+        description="Person or team that performed the assessment",
+    )
+    assessment_date: datetime = Field(
+        default_factory=datetime.utcnow,
+        description="Date of the assessment",
+    )
+    review_required_by: Optional[datetime] = Field(
+        default=None,
+        description="Date by which reassessment is required",
+    )
+    prohibited_practices_check: list[str] = Field(
+        default_factory=list,
+        description="Prohibited practices checked (Article 5)",
+    )
+    is_prohibited: bool = Field(
+        default=False,
+        description="Whether the system falls under prohibited practices",
     )
 
 
-class EUAIActComplianceChecklist(BaseModel):
-    """EU AI Act compliance checklist for high-risk AI systems"""
+class AISystemDescription(ComplianceBaseModel):
+    """Detailed description of an AI system"""
 
-    system_name: str = Field(..., description="High-risk AI system identifier")
-    system_version: str = Field(..., description="System version")
-    organization_name: str = Field(..., description="Organization deploying the system")
-    assessment_date: date = Field(..., description="Date of compliance assessment")
-    assessor_name: str = Field(..., description="Name of person conducting assessment")
-    assessor_role: str = Field(..., description="Role of assessor")
-    high_risk_category: HighRiskCategory = Field(
-        ..., description="High-risk category per Article 6"
+    system_id: str = Field(
+        ...,
+        description="Unique identifier for the AI system",
     )
-    findings: List[EUAIActComplianceFinding] = Field(
-        default_factory=list, description="Compliance findings"
+    name: str = Field(
+        ...,
+        description="Name of the AI system",
     )
-    overall_status: ComplianceStatus = Field(..., description="Overall compliance status")
-    notes: Optional[str] = Field(None, description="Additional assessment notes")
+    version: str = Field(
+        default="1.0.0",
+        description="Version of the AI system",
+    )
+    description: str = Field(
+        ...,
+        description="Detailed description of the system's purpose and function",
+    )
+    intended_purpose: str = Field(
+        ...,
+        description="Intended purpose as per Article 3",
+    )
+    intended_users: list[str] = Field(
+        default_factory=list,
+        description="Categories of intended users",
+    )
+    deployment_context: str = Field(
+        default="",
+        description="Context in which the system will be deployed",
+    )
+    ai_techniques: list[str] = Field(
+        default_factory=list,
+        description="AI techniques used (e.g., machine learning, neural networks)",
+    )
+    training_data_description: str = Field(
+        default="",
+        description="Description of training data used",
+    )
+    input_data_types: list[str] = Field(
+        default_factory=list,
+        description="Types of input data processed",
+    )
+    output_description: str = Field(
+        default="",
+        description="Description of system outputs",
+    )
+    hardware_requirements: str = Field(
+        default="",
+        description="Hardware requirements for deployment",
+    )
+    software_dependencies: list[str] = Field(
+        default_factory=list,
+        description="Software dependencies",
+    )
 
-    @field_validator("assessment_date")
-    @classmethod
-    def validate_assessment_date(cls, v: date) -> date:
-        """Ensure assessment date is not in the future."""
-        if v > date.today():
-            raise ValueError("Assessment date cannot be in the future")
-        return v
+
+class ProviderInformation(ComplianceBaseModel):
+    """Information about the AI system provider"""
+
+    provider_id: str = Field(
+        ...,
+        description="Unique identifier for the provider",
+    )
+    name: str = Field(
+        ...,
+        description="Legal name of the provider",
+    )
+    address: str = Field(
+        default="",
+        description="Registered address",
+    )
+    country: str = Field(
+        default="",
+        description="Country of establishment",
+    )
+    contact_email: str = Field(
+        default="",
+        description="Contact email address",
+    )
+    contact_phone: Optional[str] = Field(
+        default=None,
+        description="Contact phone number",
+    )
+    authorized_representative: Optional[str] = Field(
+        default=None,
+        description="EU authorized representative if provider is outside EU",
+    )
+    role: ProviderRole = Field(
+        default=ProviderRole.PROVIDER,
+        description="Role in the AI value chain",
+    )
 
 
-class RiskFactor(BaseModel):
-    """Individual risk factor in risk assessment"""
+class QualityManagementSystem(ComplianceBaseModel):
+    """Quality management system requirements for high-risk AI"""
 
-    factor_id: str = Field(..., description="Unique risk factor identifier")
-    category: str = Field(..., description="Risk category (e.g., 'Data Quality', 'Bias')")
-    description: str = Field(..., description="Risk factor description")
+    qms_id: str = Field(
+        ...,
+        description="Quality management system identifier",
+    )
+    is_implemented: bool = Field(
+        default=False,
+        description="Whether QMS is fully implemented",
+    )
+    policies_documentation: list[str] = Field(
+        default_factory=list,
+        description="QMS policies documented",
+    )
+    design_procedures: str = Field(
+        default="",
+        description="Procedures for AI system design",
+    )
+    development_procedures: str = Field(
+        default="",
+        description="Procedures for development and testing",
+    )
+    data_management_procedures: str = Field(
+        default="",
+        description="Procedures for data management",
+    )
+    risk_management_procedures: str = Field(
+        default="",
+        description="Risk management procedures",
+    )
+    post_market_monitoring: str = Field(
+        default="",
+        description="Post-market monitoring procedures",
+    )
+    incident_reporting_procedures: str = Field(
+        default="",
+        description="Serious incident reporting procedures",
+    )
+    last_audit_date: Optional[datetime] = Field(
+        default=None,
+        description="Date of last QMS audit",
+    )
+    certification_reference: Optional[str] = Field(
+        default=None,
+        description="QMS certification reference (e.g., ISO 9001)",
+    )
+
+
+class RiskManagementRecord(ComplianceBaseModel):
+    """Risk management system record (Article 9)"""
+
+    record_id: str = Field(
+        ...,
+        description="Risk management record identifier",
+    )
+    risk_identification_date: datetime = Field(
+        default_factory=datetime.utcnow,
+        description="Date risk was identified",
+    )
+    risk_description: str = Field(
+        ...,
+        description="Description of the identified risk",
+    )
+    risk_category: str = Field(
+        default="",
+        description="Category of risk (e.g., safety, fundamental rights)",
+    )
     likelihood: str = Field(
-        ..., description="Likelihood assessment (e.g., 'High', 'Medium', 'Low')"
+        default="medium",
+        description="Likelihood of risk (low, medium, high)",
     )
-    impact: str = Field(..., description="Impact assessment (e.g., 'High', 'Medium', 'Low')")
-    risk_level: RiskLevel = Field(..., description="Calculated risk level")
-    mitigation_measures: List[str] = Field(
-        default_factory=list, description="Mitigation measures for this risk"
+    severity: str = Field(
+        default="medium",
+        description="Severity of impact (low, medium, high)",
     )
-
-
-class EUAIActRiskAssessment(BaseModel):
-    """Article 9 Risk Assessment Model"""
-
-    system_name: str = Field(..., description="High-risk AI system identifier")
-    system_version: str = Field(..., description="System version")
-    organization_name: str = Field(..., description="Organization name")
-    assessment_date: date = Field(..., description="Date of risk assessment")
-    assessor_name: str = Field(..., description="Name of person conducting assessment")
-    assessor_qualifications: str = Field(..., description="Assessor qualifications/credentials")
-    high_risk_category: HighRiskCategory = Field(
-        ..., description="High-risk category per Article 6"
+    affected_stakeholders: list[str] = Field(
+        default_factory=list,
+        description="Stakeholders affected by this risk",
     )
-    system_description: str = Field(..., description="Description of the AI system")
-    intended_purpose: str = Field(..., description="Intended purpose of the AI system")
-    risk_factors: List[RiskFactor] = Field(..., description="Identified risk factors")
-    overall_risk_level: RiskLevel = Field(..., description="Overall risk level assessment")
-    mitigation_measures: List[str] = Field(
-        default_factory=list, description="Overall mitigation measures"
+    mitigation_measures: list[str] = Field(
+        default_factory=list,
+        description="Measures to mitigate the risk",
     )
-    residual_risks: List[str] = Field(
-        default_factory=list, description="Residual risks after mitigation"
+    residual_risk: str = Field(
+        default="",
+        description="Description of residual risk after mitigation",
     )
-    review_date: Optional[date] = Field(None, description="Planned review date for reassessment")
-
-    @field_validator("assessment_date")
-    @classmethod
-    def validate_assessment_date(cls, v: date) -> date:
-        """Ensure assessment date is not in the future."""
-        if v > date.today():
-            raise ValueError("Assessment date cannot be in the future")
-        return v
-
-
-class HumanOversightMeasure(BaseModel):
-    """Individual human oversight measure"""
-
-    measure_id: str = Field(..., description="Unique measure identifier")
-    measure_type: str = Field(
-        ..., description="Type of oversight (e.g., 'Pre-deployment review', 'Real-time monitoring')"
+    accepted_by: Optional[str] = Field(
+        default=None,
+        description="Person who accepted the residual risk",
     )
-    description: str = Field(..., description="Description of the oversight measure")
-    responsible_role: str = Field(..., description="Role responsible for this measure")
-    frequency: str = Field(..., description="Frequency of oversight (e.g., 'Continuous', 'Daily')")
-    triggers: List[str] = Field(
-        default_factory=list, description="Triggers that activate this oversight measure"
-    )
-    documentation: Optional[str] = Field(None, description="Documentation reference")
-
-
-class EUAIActHumanOversight(BaseModel):
-    """Article 14 Human Oversight Model"""
-
-    system_name: str = Field(..., description="High-risk AI system identifier")
-    system_version: str = Field(..., description="System version")
-    organization_name: str = Field(..., description="Organization name")
-    assessment_date: date = Field(..., description="Date of human oversight assessment")
-    assessor_name: str = Field(..., description="Name of person conducting assessment")
-    oversight_measures: List[HumanOversightMeasure] = Field(
-        ..., description="Human oversight measures implemented"
-    )
-    oversight_effectiveness: str = Field(..., description="Assessment of oversight effectiveness")
-    escalation_procedures: List[str] = Field(
-        default_factory=list, description="Procedures for escalating issues to human oversight"
-    )
-    training_requirements: List[str] = Field(
-        default_factory=list, description="Training requirements for human overseers"
-    )
-    documentation_references: List[str] = Field(
-        default_factory=list, description="References to oversight documentation"
+    review_date: Optional[datetime] = Field(
+        default=None,
+        description="Next scheduled review date",
     )
 
-    @field_validator("assessment_date")
-    @classmethod
-    def validate_assessment_date(cls, v: date) -> date:
-        """Ensure assessment date is not in the future."""
-        if v > date.today():
-            raise ValueError("Assessment date cannot be in the future")
-        return v
 
+class DataGovernanceRecord(ComplianceBaseModel):
+    """Data governance practices (Article 10)"""
 
-class QuarterlyComplianceMetrics(BaseModel):
-    """Quarterly compliance metrics"""
-
-    quarter: str = Field(..., description="Quarter identifier (e.g., '2024-Q1')")
-    period_start: date = Field(..., description="Quarter start date")
-    period_end: date = Field(..., description="Quarter end date")
-    total_assessments: int = Field(..., description="Total compliance assessments conducted")
-    compliant_systems: int = Field(..., description="Number of compliant systems")
-    non_compliant_systems: int = Field(..., description="Number of non-compliant systems")
-    partial_compliance_systems: int = Field(
-        ..., description="Number of partially compliant systems"
+    record_id: str = Field(
+        ...,
+        description="Data governance record identifier",
     )
-    critical_findings: int = Field(..., description="Number of critical findings")
-    high_findings: int = Field(..., description="Number of high-severity findings")
-    remediation_actions_taken: int = Field(..., description="Number of remediation actions taken")
+    dataset_name: str = Field(
+        ...,
+        description="Name of the dataset",
+    )
+    dataset_purpose: str = Field(
+        default="",
+        description="Purpose of the dataset (training, validation, testing)",
+    )
+    data_collection_method: str = Field(
+        default="",
+        description="How data was collected",
+    )
+    data_quality_measures: list[str] = Field(
+        default_factory=list,
+        description="Data quality measures applied",
+    )
+    bias_detection_methods: list[str] = Field(
+        default_factory=list,
+        description="Methods used to detect and address bias",
+    )
+    bias_findings: list[str] = Field(
+        default_factory=list,
+        description="Bias findings and remediation actions",
+    )
+    data_gaps_identified: list[str] = Field(
+        default_factory=list,
+        description="Identified gaps in training data",
+    )
+    personal_data_processing: bool = Field(
+        default=False,
+        description="Whether personal data is processed",
+    )
+    gdpr_compliance_reference: Optional[str] = Field(
+        default=None,
+        description="Reference to GDPR compliance documentation",
+    )
 
 
-class EUAIActQuarterlyReport(BaseModel):
-    """Quarterly compliance report"""
+class TechnicalDocumentation(VersionedDocument):
+    """Technical documentation requirements (Article 11, Annex IV)"""
 
-    organization_name: str = Field(..., description="Organization name")
-    report_period: QuarterlyComplianceMetrics = Field(..., description="Quarter metrics")
-    generated_at: datetime = Field(
-        default_factory=lambda: datetime.now(), description="Report generation timestamp"
+    documentation_id: str = Field(
+        ...,
+        description="Technical documentation identifier",
     )
-    generated_by: str = Field(..., description="System/user that generated the report")
-    systems_assessed: List[str] = Field(
-        ..., description="List of AI systems assessed during the quarter"
+    system_description: AISystemDescription = Field(
+        ...,
+        description="Detailed system description",
     )
-    key_findings: List[str] = Field(..., description="Key compliance findings summary")
-    remediation_actions: List[str] = Field(
-        default_factory=list, description="Remediation actions taken or planned"
+    provider_info: ProviderInformation = Field(
+        ...,
+        description="Provider information",
     )
-    next_quarter_priorities: List[str] = Field(
-        default_factory=list, description="Priorities for next quarter"
+    risk_assessment: RiskAssessmentResult = Field(
+        ...,
+        description="Risk classification result",
     )
-    executive_summary: str = Field(..., description="Executive summary of compliance status")
+    design_specifications: str = Field(
+        default="",
+        description="Design specifications and architecture",
+    )
+    development_process: str = Field(
+        default="",
+        description="Description of development process",
+    )
+    validation_testing: str = Field(
+        default="",
+        description="Validation and testing procedures",
+    )
+    performance_metrics: dict = Field(
+        default_factory=dict,
+        description="Performance metrics and benchmarks",
+    )
+    accuracy_metrics: dict = Field(
+        default_factory=dict,
+        description="Accuracy and robustness metrics",
+    )
+    risk_management_records: list[RiskManagementRecord] = Field(
+        default_factory=list,
+        description="Risk management records",
+    )
+    data_governance_records: list[DataGovernanceRecord] = Field(
+        default_factory=list,
+        description="Data governance records",
+    )
+    human_oversight_measures: list[str] = Field(
+        default_factory=list,
+        description="Human oversight measures (Article 14)",
+    )
+    cybersecurity_measures: list[str] = Field(
+        default_factory=list,
+        description="Cybersecurity measures (Article 15)",
+    )
+    instructions_for_use: str = Field(
+        default="",
+        description="Instructions for use",
+    )
+    change_log: list[str] = Field(
+        default_factory=list,
+        description="Log of substantial modifications",
+    )
+
+
+class ConformityAssessment(ComplianceBaseModel):
+    """Conformity assessment documentation (Article 43)"""
+
+    assessment_id: str = Field(
+        ...,
+        description="Conformity assessment identifier",
+    )
+    system_id: str = Field(
+        ...,
+        description="AI system being assessed",
+    )
+    assessment_type: ConformityAssessmentType = Field(
+        ...,
+        description="Type of conformity assessment",
+    )
+    notified_body: Optional[str] = Field(
+        default=None,
+        description="Notified body if applicable",
+    )
+    assessment_date: datetime = Field(
+        default_factory=datetime.utcnow,
+        description="Date of assessment",
+    )
+    assessment_result: str = Field(
+        default="pending",
+        description="Result of assessment (pending, passed, failed)",
+    )
+    requirements_checked: list[str] = Field(
+        default_factory=list,
+        description="Requirements verified during assessment",
+    )
+    nonconformities: list[str] = Field(
+        default_factory=list,
+        description="Nonconformities identified",
+    )
+    corrective_actions: list[str] = Field(
+        default_factory=list,
+        description="Corrective actions required",
+    )
+    certificate_number: Optional[str] = Field(
+        default=None,
+        description="Certificate number if issued",
+    )
+    certificate_expiry: Optional[datetime] = Field(
+        default=None,
+        description="Certificate expiry date",
+    )
+    eu_declaration_reference: Optional[str] = Field(
+        default=None,
+        description="Reference to EU declaration of conformity",
+    )
+
+
+class EUDeclarationOfConformity(ComplianceBaseModel):
+    """EU Declaration of Conformity (Article 47)"""
+
+    declaration_id: str = Field(
+        ...,
+        description="Declaration identifier",
+    )
+    system_id: str = Field(
+        ...,
+        description="AI system covered",
+    )
+    system_name: str = Field(
+        ...,
+        description="Name of the AI system",
+    )
+    provider_info: ProviderInformation = Field(
+        ...,
+        description="Provider information",
+    )
+    declaration_date: datetime = Field(
+        default_factory=datetime.utcnow,
+        description="Date of declaration",
+    )
+    applicable_legislation: list[str] = Field(
+        default_factory=list,
+        description="Applicable EU legislation",
+    )
+    harmonised_standards: list[str] = Field(
+        default_factory=list,
+        description="Harmonised standards applied",
+    )
+    conformity_assessment_reference: str = Field(
+        default="",
+        description="Reference to conformity assessment",
+    )
+    notified_body_number: Optional[str] = Field(
+        default=None,
+        description="Notified body number if applicable",
+    )
+    signatory_name: str = Field(
+        default="",
+        description="Name of signatory",
+    )
+    signatory_position: str = Field(
+        default="",
+        description="Position of signatory",
+    )
+    ce_marking_applied: bool = Field(
+        default=False,
+        description="Whether CE marking has been applied",
+    )
+
+
+class EUAIActReportData(VersionedDocument):
+    """Complete data model for EU AI Act compliance report"""
+
+    report_id: str = Field(
+        ...,
+        description="Unique report identifier",
+    )
+    organization_name: str = Field(
+        ...,
+        description="Name of the organization",
+    )
+    organization_role: ProviderRole = Field(
+        ...,
+        description="Role in the AI value chain",
+    )
+    reporting_period_start: datetime = Field(
+        ...,
+        description="Start of reporting period",
+    )
+    reporting_period_end: datetime = Field(
+        ...,
+        description="End of reporting period",
+    )
+    ai_systems: list[AISystemDescription] = Field(
+        default_factory=list,
+        description="AI systems covered in this report",
+    )
+    risk_assessments: list[RiskAssessmentResult] = Field(
+        default_factory=list,
+        description="Risk assessments for each system",
+    )
+    technical_documentation: list[TechnicalDocumentation] = Field(
+        default_factory=list,
+        description="Technical documentation for high-risk systems",
+    )
+    conformity_assessments: list[ConformityAssessment] = Field(
+        default_factory=list,
+        description="Conformity assessments performed",
+    )
+    declarations_of_conformity: list[EUDeclarationOfConformity] = Field(
+        default_factory=list,
+        description="EU Declarations of Conformity",
+    )
+    qms: Optional[QualityManagementSystem] = Field(
+        default=None,
+        description="Quality management system details",
+    )
+    transparency_obligations_met: list[TransparencyObligation] = Field(
+        default_factory=list,
+        description="Transparency obligations satisfied",
+    )
+    high_risk_systems_count: int = Field(
+        default=0,
+        ge=0,
+        description="Number of high-risk AI systems",
+    )
+    limited_risk_systems_count: int = Field(
+        default=0,
+        ge=0,
+        description="Number of limited-risk AI systems",
+    )
+    minimal_risk_systems_count: int = Field(
+        default=0,
+        ge=0,
+        description="Number of minimal-risk AI systems",
+    )
+
+
+class EUAIActExportRequest(ComplianceBaseModel):
+    """Request model for EU AI Act report export"""
+
+    organization_name: str = Field(
+        ...,
+        description="Name of the organization",
+    )
+    organization_role: ProviderRole = Field(
+        ...,
+        description="Role in the AI value chain",
+    )
+    reporting_period_start: datetime = Field(
+        ...,
+        description="Start of reporting period",
+    )
+    reporting_period_end: datetime = Field(
+        ...,
+        description="End of reporting period",
+    )
+    include_risk_assessments: bool = Field(
+        default=True,
+        description="Include risk assessments",
+    )
+    include_technical_documentation: bool = Field(
+        default=True,
+        description="Include technical documentation",
+    )
+    include_conformity_assessments: bool = Field(
+        default=True,
+        description="Include conformity assessments",
+    )
+    include_qms_details: bool = Field(
+        default=True,
+        description="Include QMS details",
+    )
+    ai_system_ids: list[str] = Field(
+        default_factory=list,
+        description="Specific AI systems to include (empty = all)",
+    )

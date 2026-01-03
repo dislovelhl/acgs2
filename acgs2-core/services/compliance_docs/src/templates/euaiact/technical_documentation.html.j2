@@ -1,0 +1,1192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EU AI Act Technical Documentation - {{ organization_name | default_value }}</title>
+    <style>
+        :root {
+            --primary-color: #1a4480;
+            --secondary-color: #2c608a;
+            --success-color: #2e8540;
+            --warning-color: #e66f0e;
+            --danger-color: #d63e04;
+            --info-color: #00bcd4;
+            --light-gray: #f5f7f8;
+            --border-color: #dfe1e2;
+            /* EU AI Act colors */
+            --euaiact-blue: #003399;
+            --eu-gold: #ffcc00;
+            --tech-purple: #6f42c1;
+            --data-teal: #17a2b8;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #1b1b1b;
+            background-color: #fff;
+            font-size: 11pt;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 40px;
+        }
+
+        /* Header Styles */
+        .report-header {
+            text-align: center;
+            border-bottom: 4px solid var(--euaiact-blue);
+            padding-bottom: 30px;
+            margin-bottom: 40px;
+        }
+
+        .report-header h1 {
+            color: var(--euaiact-blue);
+            font-size: 24pt;
+            margin-bottom: 5px;
+        }
+
+        .report-header h2 {
+            color: var(--secondary-color);
+            font-size: 16pt;
+            font-weight: normal;
+            margin-bottom: 10px;
+        }
+
+        .report-header .regulation-ref {
+            color: #71767a;
+            font-size: 10pt;
+            font-style: italic;
+        }
+
+        .eu-flag {
+            display: inline-block;
+            background: var(--euaiact-blue);
+            padding: 8px 16px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+        }
+
+        .eu-flag span {
+            color: var(--eu-gold);
+            font-size: 18pt;
+            font-weight: bold;
+        }
+
+        .report-meta {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin-top: 25px;
+            flex-wrap: wrap;
+        }
+
+        .report-meta-item {
+            text-align: center;
+        }
+
+        .report-meta-label {
+            font-size: 9pt;
+            color: #71767a;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .report-meta-value {
+            font-size: 11pt;
+            color: var(--primary-color);
+            font-weight: 600;
+        }
+
+        /* Section Styles */
+        .section {
+            margin-bottom: 40px;
+            page-break-inside: avoid;
+        }
+
+        .section-title {
+            color: var(--euaiact-blue);
+            font-size: 16pt;
+            border-bottom: 2px solid var(--secondary-color);
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+
+        .subsection-title {
+            color: var(--secondary-color);
+            font-size: 13pt;
+            margin: 20px 0 15px 0;
+        }
+
+        .annex-reference {
+            display: inline-block;
+            background-color: var(--euaiact-blue);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-size: 9pt;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+
+        /* Table Styles */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 10pt;
+        }
+
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 12px;
+            text-align: left;
+            vertical-align: top;
+        }
+
+        th {
+            background-color: var(--euaiact-blue);
+            color: white;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 9pt;
+            letter-spacing: 0.5px;
+        }
+
+        tr:nth-child(even) {
+            background-color: var(--light-gray);
+        }
+
+        tr:hover {
+            background-color: #e8f0f8;
+        }
+
+        /* Status Badges */
+        .status-badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 3px;
+            font-size: 9pt;
+            font-weight: 600;
+        }
+
+        .status-complete { background-color: #d4edda; color: var(--success-color); }
+        .status-incomplete { background-color: #f8d7da; color: var(--danger-color); }
+        .status-partial { background-color: #fff3cd; color: #856404; }
+        .status-pending { background-color: #cce5ff; color: #004085; }
+
+        /* Risk Level Badges */
+        .risk-badge {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 4px;
+            font-size: 10pt;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .risk-high {
+            background-color: #f8d7da;
+            color: var(--danger-color);
+            border: 1px solid var(--danger-color);
+        }
+
+        /* Entity Card */
+        .entity-card {
+            background: white;
+            border: 1px solid var(--border-color);
+            border-left: 4px solid var(--euaiact-blue);
+            border-radius: 4px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .entity-card h3 {
+            color: var(--euaiact-blue);
+            margin-bottom: 15px;
+        }
+
+        .entity-details {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+
+        .entity-field {
+            margin-bottom: 10px;
+        }
+
+        .entity-field-label {
+            font-size: 9pt;
+            color: #71767a;
+            text-transform: uppercase;
+            margin-bottom: 3px;
+        }
+
+        .entity-field-value {
+            color: #1b1b1b;
+            font-weight: 500;
+        }
+
+        /* Documentation Card */
+        .doc-card {
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 25px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .doc-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .doc-title {
+            color: var(--euaiact-blue);
+            font-size: 14pt;
+            margin: 0;
+        }
+
+        .doc-id {
+            color: #71767a;
+            font-size: 10pt;
+            font-family: monospace;
+        }
+
+        .doc-body {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+        }
+
+        .doc-section {
+            margin-bottom: 15px;
+        }
+
+        .doc-section-title {
+            font-size: 10pt;
+            font-weight: 600;
+            color: var(--secondary-color);
+            text-transform: uppercase;
+            margin-bottom: 8px;
+            padding-bottom: 5px;
+            border-bottom: 1px dashed var(--border-color);
+        }
+
+        /* Summary Box */
+        .summary-box {
+            background-color: var(--light-gray);
+            border: 1px solid var(--border-color);
+            border-left: 4px solid var(--euaiact-blue);
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        /* Info Box */
+        .info-box {
+            background: linear-gradient(135deg, #f8f9ff 0%, #e8f4fd 100%);
+            border: 1px solid var(--info-color);
+            border-radius: 4px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+
+        .info-box h4 {
+            color: var(--info-color);
+            margin-bottom: 10px;
+        }
+
+        /* Tech Spec Box */
+        .tech-spec-box {
+            background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%);
+            border: 1px solid var(--tech-purple);
+            border-radius: 4px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+
+        .tech-spec-box h4 {
+            color: var(--tech-purple);
+            margin-bottom: 10px;
+        }
+
+        /* Data Governance Box */
+        .data-box {
+            background: linear-gradient(135deg, #f0fffe 0%, #e0f7f6 100%);
+            border: 1px solid var(--data-teal);
+            border-radius: 4px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+
+        .data-box h4 {
+            color: var(--data-teal);
+            margin-bottom: 10px;
+        }
+
+        /* Risk Management Box */
+        .risk-box {
+            background: linear-gradient(135deg, #fff8f5 0%, #ffefea 100%);
+            border: 1px solid var(--warning-color);
+            border-radius: 4px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+
+        .risk-box h4 {
+            color: var(--warning-color);
+            margin-bottom: 10px;
+        }
+
+        /* Category Tags */
+        .tag {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 8pt;
+            font-weight: 500;
+            margin: 2px;
+        }
+
+        .tag-ai { background-color: #e8e0ff; color: var(--tech-purple); }
+        .tag-data { background-color: #d4edda; color: var(--success-color); }
+        .tag-security { background-color: #f8d7da; color: var(--danger-color); }
+        .tag-user { background-color: #cce5ff; color: #004085; }
+
+        /* Metrics Grid */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .metric-card {
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 15px;
+            text-align: center;
+        }
+
+        .metric-value {
+            font-size: 20pt;
+            font-weight: 700;
+            color: var(--euaiact-blue);
+        }
+
+        .metric-label {
+            font-size: 9pt;
+            color: #71767a;
+            text-transform: uppercase;
+        }
+
+        /* Requirements List */
+        .requirements-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .requirements-list li {
+            padding: 12px 15px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .requirements-list li:last-child {
+            border-bottom: none;
+        }
+
+        .requirement-article {
+            font-size: 9pt;
+            padding: 2px 8px;
+            border-radius: 3px;
+            background-color: var(--euaiact-blue);
+            color: white;
+        }
+
+        /* Change Log Table */
+        .changelog {
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+
+        .changelog-entry {
+            padding: 10px 0;
+            border-bottom: 1px dashed var(--border-color);
+        }
+
+        .changelog-entry:last-child {
+            border-bottom: none;
+        }
+
+        .changelog-date {
+            font-size: 9pt;
+            color: #71767a;
+            font-weight: 600;
+        }
+
+        /* Footer */
+        .report-footer {
+            margin-top: 60px;
+            padding-top: 20px;
+            border-top: 2px solid var(--border-color);
+            text-align: center;
+            font-size: 9pt;
+            color: #71767a;
+        }
+
+        .legal-notice {
+            background-color: #f5f7f8;
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 4px;
+            font-size: 8pt;
+        }
+
+        /* Print Styles */
+        @media print {
+            .container {
+                max-width: 100%;
+                padding: 20px;
+            }
+
+            .section {
+                page-break-inside: avoid;
+            }
+
+            .doc-card {
+                page-break-inside: avoid;
+            }
+
+            tr {
+                page-break-inside: avoid;
+            }
+        }
+
+        /* Full Width Sections */
+        .full-width {
+            grid-column: 1 / -1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Report Header -->
+        <header class="report-header">
+            <div class="eu-flag">
+                <span>EU AI ACT</span>
+            </div>
+            <h1>Technical Documentation</h1>
+            <h2>Article 11 & Annex IV Requirements</h2>
+            <p class="regulation-ref">Regulation (EU) 2024/1689 - High-Risk AI Systems</p>
+            <div class="report-meta">
+                <div class="report-meta-item">
+                    <div class="report-meta-label">Organization</div>
+                    <div class="report-meta-value">{{ organization_name | default_value('Organization Name') }}</div>
+                </div>
+                <div class="report-meta-item">
+                    <div class="report-meta-label">Document Version</div>
+                    <div class="report-meta-value">{{ document_version | default_value('1.0') }}</div>
+                </div>
+                <div class="report-meta-item">
+                    <div class="report-meta-label">Generated</div>
+                    <div class="report-meta-value">{{ generated_at | format_datetime }}</div>
+                </div>
+                <div class="report-meta-item">
+                    <div class="report-meta-label">Documentation Period</div>
+                    <div class="report-meta-value">
+                        {{ reporting_period_start | format_date }} - {{ reporting_period_end | format_date }}
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Introduction -->
+        <section class="section">
+            <h2 class="section-title">1. Introduction</h2>
+            <div class="summary-box">
+                <p>
+                    This document provides the technical documentation required under Article 11 and Annex IV of the
+                    EU Artificial Intelligence Act (Regulation (EU) 2024/1689) for high-risk AI systems. The technical
+                    documentation shall be drawn up in such a way as to demonstrate that the high-risk AI system
+                    complies with the requirements set out in Chapter III, Section 2 and shall provide national
+                    competent authorities and notified bodies with all necessary information.
+                </p>
+            </div>
+
+            <div class="info-box">
+                <h4>Article 11 - Technical Documentation</h4>
+                <p>
+                    The technical documentation of a high-risk AI system shall be drawn up before that system is
+                    placed on the market or put into service and shall be kept up-to-date. The documentation shall
+                    contain, at a minimum, the elements set out in Annex IV.
+                </p>
+            </div>
+        </section>
+
+        <!-- Annex IV Requirements Overview -->
+        <section class="section">
+            <h2 class="section-title">2. Annex IV - Technical Documentation Requirements</h2>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Section</th>
+                        <th>Requirement</th>
+                        <th>Article Reference</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>1</td>
+                        <td>General Description</td>
+                        <td>Annex IV(1)</td>
+                        <td>Intended purpose, provider details, version information</td>
+                    </tr>
+                    <tr>
+                        <td>2</td>
+                        <td>System Elements</td>
+                        <td>Annex IV(2)</td>
+                        <td>Development methods, design specifications, system architecture</td>
+                    </tr>
+                    <tr>
+                        <td>3</td>
+                        <td>Monitoring & Functioning</td>
+                        <td>Annex IV(3)</td>
+                        <td>Capabilities, limitations, logging, human oversight</td>
+                    </tr>
+                    <tr>
+                        <td>4</td>
+                        <td>Risk Management</td>
+                        <td>Annex IV(4)</td>
+                        <td>Risk management system per Article 9</td>
+                    </tr>
+                    <tr>
+                        <td>5</td>
+                        <td>Lifecycle Changes</td>
+                        <td>Annex IV(5)</td>
+                        <td>Record of modifications throughout lifecycle</td>
+                    </tr>
+                    <tr>
+                        <td>6</td>
+                        <td>Harmonised Standards</td>
+                        <td>Annex IV(6)</td>
+                        <td>Applied standards and common specifications</td>
+                    </tr>
+                    <tr>
+                        <td>7</td>
+                        <td>EU Declaration</td>
+                        <td>Annex IV(7)</td>
+                        <td>Copy of EU declaration of conformity</td>
+                    </tr>
+                    <tr>
+                        <td>8</td>
+                        <td>Post-Market Monitoring</td>
+                        <td>Annex IV(8)</td>
+                        <td>Post-market monitoring system description</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Technical Documentation for Each System -->
+        {% for tech_doc in technical_documentation %}
+        <section class="section">
+            <h2 class="section-title">
+                3. Technical Documentation: {{ tech_doc.system_description.name }}
+                <span class="annex-reference">Annex IV</span>
+            </h2>
+
+            <div class="doc-card">
+                <div class="doc-header">
+                    <div>
+                        <h3 class="doc-title">{{ tech_doc.system_description.name }}</h3>
+                        <span class="doc-id">Documentation ID: {{ tech_doc.documentation_id }}</span>
+                    </div>
+                    <div>
+                        <span class="risk-badge risk-high">High Risk</span>
+                    </div>
+                </div>
+
+                <!-- Section 1: General Description -->
+                <h3 class="subsection-title">Section 1: General Description <span class="annex-reference">Annex IV(1)</span></h3>
+
+                <div class="entity-card">
+                    <h3>AI System Information</h3>
+                    <div class="entity-details">
+                        <div class="entity-field">
+                            <div class="entity-field-label">System ID</div>
+                            <div class="entity-field-value">{{ tech_doc.system_description.system_id }}</div>
+                        </div>
+                        <div class="entity-field">
+                            <div class="entity-field-label">System Name</div>
+                            <div class="entity-field-value">{{ tech_doc.system_description.name }}</div>
+                        </div>
+                        <div class="entity-field">
+                            <div class="entity-field-label">Version</div>
+                            <div class="entity-field-value">{{ tech_doc.system_description.version | default_value('1.0.0') }}</div>
+                        </div>
+                        <div class="entity-field">
+                            <div class="entity-field-label">Intended Purpose</div>
+                            <div class="entity-field-value">{{ tech_doc.system_description.intended_purpose | default_value('Not specified') }}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="entity-card">
+                    <h3>Provider Information</h3>
+                    <div class="entity-details">
+                        <div class="entity-field">
+                            <div class="entity-field-label">Provider Name</div>
+                            <div class="entity-field-value">{{ tech_doc.provider_info.name | default_value('N/A') }}</div>
+                        </div>
+                        <div class="entity-field">
+                            <div class="entity-field-label">Provider ID</div>
+                            <div class="entity-field-value">{{ tech_doc.provider_info.provider_id | default_value('N/A') }}</div>
+                        </div>
+                        <div class="entity-field">
+                            <div class="entity-field-label">Address</div>
+                            <div class="entity-field-value">{{ tech_doc.provider_info.address | default_value('N/A') }}</div>
+                        </div>
+                        <div class="entity-field">
+                            <div class="entity-field-label">Country</div>
+                            <div class="entity-field-value">{{ tech_doc.provider_info.country | default_value('N/A') }}</div>
+                        </div>
+                        <div class="entity-field">
+                            <div class="entity-field-label">Contact Email</div>
+                            <div class="entity-field-value">{{ tech_doc.provider_info.contact_email | default_value('N/A') }}</div>
+                        </div>
+                        <div class="entity-field">
+                            <div class="entity-field-label">Role</div>
+                            <div class="entity-field-value">{{ tech_doc.provider_info.role | replace('_', ' ') | title | default_value('Provider') }}</div>
+                        </div>
+                        {% if tech_doc.provider_info.authorized_representative %}
+                        <div class="entity-field full-width">
+                            <div class="entity-field-label">EU Authorized Representative</div>
+                            <div class="entity-field-value">{{ tech_doc.provider_info.authorized_representative }}</div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="entity-card">
+                    <h3>System Description</h3>
+                    <p>{{ tech_doc.system_description.description | default_value('No description provided') }}</p>
+
+                    {% if tech_doc.system_description.deployment_context %}
+                    <div style="margin-top: 15px;">
+                        <strong>Deployment Context:</strong>
+                        <p>{{ tech_doc.system_description.deployment_context }}</p>
+                    </div>
+                    {% endif %}
+
+                    {% if tech_doc.system_description.intended_users %}
+                    <div style="margin-top: 15px;">
+                        <strong>Intended Users:</strong>
+                        <div style="margin-top: 5px;">
+                            {% for user in tech_doc.system_description.intended_users %}
+                            <span class="tag tag-user">{{ user }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Section 2: System Elements -->
+                <h3 class="subsection-title">Section 2: System Elements & Architecture <span class="annex-reference">Annex IV(2)</span></h3>
+
+                <div class="tech-spec-box">
+                    <h4>AI Techniques & Approaches</h4>
+                    {% if tech_doc.system_description.ai_techniques %}
+                    <div style="margin-top: 10px;">
+                        {% for technique in tech_doc.system_description.ai_techniques %}
+                        <span class="tag tag-ai">{{ technique }}</span>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p style="color: #71767a; font-style: italic;">AI techniques not specified</p>
+                    {% endif %}
+                </div>
+
+                <div class="entity-card">
+                    <h3>Design Specifications</h3>
+                    <p>{{ tech_doc.design_specifications | default_value('Design specifications not provided') }}</p>
+                </div>
+
+                <div class="entity-card">
+                    <h3>Development Process</h3>
+                    <p>{{ tech_doc.development_process | default_value('Development process not documented') }}</p>
+                </div>
+
+                {% if tech_doc.system_description.training_data_description %}
+                <div class="data-box">
+                    <h4>Training Data Description</h4>
+                    <p>{{ tech_doc.system_description.training_data_description }}</p>
+                </div>
+                {% endif %}
+
+                <div class="doc-body">
+                    <div>
+                        <div class="doc-section">
+                            <div class="doc-section-title">Input Data Types</div>
+                            {% if tech_doc.system_description.input_data_types %}
+                            <ul style="padding-left: 20px;">
+                                {% for input_type in tech_doc.system_description.input_data_types %}
+                                <li>{{ input_type }}</li>
+                                {% endfor %}
+                            </ul>
+                            {% else %}
+                            <p style="color: #71767a; font-style: italic;">Not specified</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div>
+                        <div class="doc-section">
+                            <div class="doc-section-title">Output Description</div>
+                            <p>{{ tech_doc.system_description.output_description | default_value('Not specified') }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="doc-body">
+                    <div>
+                        <div class="doc-section">
+                            <div class="doc-section-title">Hardware Requirements</div>
+                            <p>{{ tech_doc.system_description.hardware_requirements | default_value('Not specified') }}</p>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="doc-section">
+                            <div class="doc-section-title">Software Dependencies</div>
+                            {% if tech_doc.system_description.software_dependencies %}
+                            <ul style="padding-left: 20px;">
+                                {% for dep in tech_doc.system_description.software_dependencies %}
+                                <li><code>{{ dep }}</code></li>
+                                {% endfor %}
+                            </ul>
+                            {% else %}
+                            <p style="color: #71767a; font-style: italic;">Not specified</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 3: Monitoring & Human Oversight -->
+                <h3 class="subsection-title">Section 3: Monitoring, Functioning & Human Oversight <span class="annex-reference">Annex IV(3)</span></h3>
+
+                <div class="entity-card">
+                    <h3>Validation & Testing</h3>
+                    <p>{{ tech_doc.validation_testing | default_value('Validation and testing procedures not documented') }}</p>
+                </div>
+
+                {% if tech_doc.performance_metrics %}
+                <h4>Performance Metrics</h4>
+                <div class="metrics-grid">
+                    {% for key, value in tech_doc.performance_metrics.items() %}
+                    <div class="metric-card">
+                        <div class="metric-value">{{ value }}</div>
+                        <div class="metric-label">{{ key | replace('_', ' ') | title }}</div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                {% if tech_doc.accuracy_metrics %}
+                <h4>Accuracy & Robustness Metrics (Article 15)</h4>
+                <div class="metrics-grid">
+                    {% for key, value in tech_doc.accuracy_metrics.items() %}
+                    <div class="metric-card">
+                        <div class="metric-value">{{ value }}</div>
+                        <div class="metric-label">{{ key | replace('_', ' ') | title }}</div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                {% if tech_doc.human_oversight_measures %}
+                <div class="info-box">
+                    <h4>Human Oversight Measures (Article 14)</h4>
+                    <ul style="margin-top: 10px; padding-left: 20px;">
+                        {% for measure in tech_doc.human_oversight_measures %}
+                        <li style="margin-bottom: 8px;">{{ measure }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+
+                {% if tech_doc.cybersecurity_measures %}
+                <div class="entity-card" style="border-left-color: var(--danger-color);">
+                    <h3 style="color: var(--danger-color);">Cybersecurity Measures (Article 15)</h3>
+                    <ul style="padding-left: 20px;">
+                        {% for measure in tech_doc.cybersecurity_measures %}
+                        <li style="margin-bottom: 8px;">{{ measure }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+
+                <!-- Section 4: Risk Management -->
+                <h3 class="subsection-title">Section 4: Risk Management System <span class="annex-reference">Annex IV(4) / Article 9</span></h3>
+
+                {% if tech_doc.risk_assessment %}
+                <div class="entity-card">
+                    <h3>Risk Assessment Summary</h3>
+                    <div class="entity-details">
+                        <div class="entity-field">
+                            <div class="entity-field-label">Risk Level</div>
+                            <div class="entity-field-value">
+                                <span class="risk-badge risk-high">{{ tech_doc.risk_assessment.risk_level | upper }}</span>
+                            </div>
+                        </div>
+                        <div class="entity-field">
+                            <div class="entity-field-label">Assessment Date</div>
+                            <div class="entity-field-value">{{ tech_doc.risk_assessment.assessment_date | format_date }}</div>
+                        </div>
+                        <div class="entity-field full-width">
+                            <div class="entity-field-label">Classification Rationale</div>
+                            <div class="entity-field-value">{{ tech_doc.risk_assessment.classification_rationale | default_value('N/A') }}</div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if tech_doc.risk_management_records %}
+                <h4>Risk Management Records</h4>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Record ID</th>
+                            <th>Risk Description</th>
+                            <th>Category</th>
+                            <th>Likelihood</th>
+                            <th>Severity</th>
+                            <th>Mitigation Measures</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for risk in tech_doc.risk_management_records %}
+                        <tr>
+                            <td><code>{{ risk.record_id }}</code></td>
+                            <td>{{ risk.risk_description }}</td>
+                            <td>{{ risk.risk_category | default_value('N/A') }}</td>
+                            <td>
+                                {% if risk.likelihood == 'high' %}
+                                <span class="status-badge status-incomplete">High</span>
+                                {% elif risk.likelihood == 'medium' %}
+                                <span class="status-badge status-partial">Medium</span>
+                                {% else %}
+                                <span class="status-badge status-complete">Low</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if risk.severity == 'high' %}
+                                <span class="status-badge status-incomplete">High</span>
+                                {% elif risk.severity == 'medium' %}
+                                <span class="status-badge status-partial">Medium</span>
+                                {% else %}
+                                <span class="status-badge status-complete">Low</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% for measure in risk.mitigation_measures %}
+                                <div>&#8226; {{ measure }}</div>
+                                {% endfor %}
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="6" style="text-align: center; font-style: italic; color: #71767a;">
+                                No risk management records documented
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% endif %}
+
+                <!-- Data Governance -->
+                {% if tech_doc.data_governance_records %}
+                <h3 class="subsection-title">Data Governance (Article 10)</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Dataset</th>
+                            <th>Purpose</th>
+                            <th>Collection Method</th>
+                            <th>Quality Measures</th>
+                            <th>Bias Detection</th>
+                            <th>Personal Data</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for data in tech_doc.data_governance_records %}
+                        <tr>
+                            <td><strong>{{ data.dataset_name }}</strong></td>
+                            <td>{{ data.dataset_purpose | default_value('N/A') }}</td>
+                            <td>{{ data.data_collection_method | default_value('N/A') }}</td>
+                            <td>
+                                {% for measure in data.data_quality_measures %}
+                                <span class="tag tag-data">{{ measure }}</span>
+                                {% endfor %}
+                            </td>
+                            <td>
+                                {% for method in data.bias_detection_methods %}
+                                <div>&#8226; {{ method }}</div>
+                                {% endfor %}
+                            </td>
+                            <td>
+                                {% if data.personal_data_processing %}
+                                <span class="status-badge status-partial">Yes</span>
+                                {% if data.gdpr_compliance_reference %}
+                                <br><small>GDPR Ref: {{ data.gdpr_compliance_reference }}</small>
+                                {% endif %}
+                                {% else %}
+                                <span class="status-badge status-complete">No</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="6" style="text-align: center; font-style: italic; color: #71767a;">
+                                No data governance records documented
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% endif %}
+
+                <!-- Section 5: Lifecycle Changes -->
+                <h3 class="subsection-title">Section 5: Lifecycle Changes <span class="annex-reference">Annex IV(5)</span></h3>
+
+                {% if tech_doc.change_log %}
+                <div class="changelog">
+                    <h4>Change Log - Substantial Modifications</h4>
+                    {% for change in tech_doc.change_log %}
+                    <div class="changelog-entry">
+                        <div class="changelog-date">{{ loop.index }}.</div>
+                        <p>{{ change }}</p>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="summary-box">
+                    <p style="text-align: center; font-style: italic;">
+                        No substantial modifications recorded. Changes will be logged here as they occur.
+                    </p>
+                </div>
+                {% endif %}
+
+                <!-- Instructions for Use -->
+                {% if tech_doc.instructions_for_use %}
+                <h3 class="subsection-title">Instructions for Use (Article 13)</h3>
+                <div class="entity-card">
+                    <p>{{ tech_doc.instructions_for_use }}</p>
+                </div>
+                {% endif %}
+
+            </div>
+        </section>
+        {% else %}
+        <section class="section">
+            <h2 class="section-title">3. Technical Documentation</h2>
+            <div class="summary-box">
+                <p style="text-align: center; font-style: italic;">
+                    No technical documentation records provided. Documentation for high-risk AI systems
+                    will appear here when data is supplied to the template.
+                </p>
+            </div>
+        </section>
+        {% endfor %}
+
+        <!-- Documentation Checklist -->
+        <section class="section">
+            <h2 class="section-title">{{ (technical_documentation | length) + 3 }}. Annex IV Compliance Checklist</h2>
+
+            <p>The following checklist summarizes the Annex IV requirements for technical documentation:</p>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Requirement</th>
+                        <th>Annex IV Reference</th>
+                        <th>Description</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>General description of the AI system</td>
+                        <td>Annex IV(1)(a)</td>
+                        <td>Intended purpose, name, version of provider</td>
+                        <td><span class="status-badge status-pending">Review</span></td>
+                    </tr>
+                    <tr>
+                        <td>Interaction with other systems</td>
+                        <td>Annex IV(1)(b)</td>
+                        <td>How the system interacts with hardware or software</td>
+                        <td><span class="status-badge status-pending">Review</span></td>
+                    </tr>
+                    <tr>
+                        <td>Versions of software</td>
+                        <td>Annex IV(1)(c)</td>
+                        <td>Versions of relevant software or firmware</td>
+                        <td><span class="status-badge status-pending">Review</span></td>
+                    </tr>
+                    <tr>
+                        <td>Forms of presentation</td>
+                        <td>Annex IV(1)(d)</td>
+                        <td>All forms in which the AI system is placed on market</td>
+                        <td><span class="status-badge status-pending">Review</span></td>
+                    </tr>
+                    <tr>
+                        <td>Hardware requirements</td>
+                        <td>Annex IV(1)(e)</td>
+                        <td>Description of hardware on which AI system runs</td>
+                        <td><span class="status-badge status-pending">Review</span></td>
+                    </tr>
+                    <tr>
+                        <td>Product integration</td>
+                        <td>Annex IV(1)(f)</td>
+                        <td>If part of product, photographs or illustrations</td>
+                        <td><span class="status-badge status-pending">Review</span></td>
+                    </tr>
+                    <tr>
+                        <td>Instructions for use</td>
+                        <td>Annex IV(1)(g)</td>
+                        <td>Instructions for use for deployers</td>
+                        <td><span class="status-badge status-pending">Review</span></td>
+                    </tr>
+                    <tr>
+                        <td>Development methods</td>
+                        <td>Annex IV(2)(a)</td>
+                        <td>Development methods and third-party elements</td>
+                        <td><span class="status-badge status-pending">Review</span></td>
+                    </tr>
+                    <tr>
+                        <td>Design specifications</td>
+                        <td>Annex IV(2)(b)</td>
+                        <td>Design specifications and architecture</td>
+                        <td><span class="status-badge status-pending">Review</span></td>
+                    </tr>
+                    <tr>
+                        <td>Data requirements</td>
+                        <td>Annex IV(2)(c)</td>
+                        <td>Data requirements and data governance measures</td>
+                        <td><span class="status-badge status-pending">Review</span></td>
+                    </tr>
+                    <tr>
+                        <td>Training approaches</td>
+                        <td>Annex IV(2)(d)</td>
+                        <td>Training methodologies and techniques</td>
+                        <td><span class="status-badge status-pending">Review</span></td>
+                    </tr>
+                    <tr>
+                        <td>Validation and testing</td>
+                        <td>Annex IV(2)(e)</td>
+                        <td>Assessment of validation and testing procedures</td>
+                        <td><span class="status-badge status-pending">Review</span></td>
+                    </tr>
+                    <tr>
+                        <td>Capabilities and limitations</td>
+                        <td>Annex IV(3)(a)</td>
+                        <td>Description of capabilities, limitations, levels of accuracy</td>
+                        <td><span class="status-badge status-pending">Review</span></td>
+                    </tr>
+                    <tr>
+                        <td>Foreseeable misuse</td>
+                        <td>Annex IV(3)(b)</td>
+                        <td>Reasonably foreseeable misuse and risks</td>
+                        <td><span class="status-badge status-pending">Review</span></td>
+                    </tr>
+                    <tr>
+                        <td>Human oversight measures</td>
+                        <td>Annex IV(3)(c)</td>
+                        <td>Human oversight measures pursuant to Article 14</td>
+                        <td><span class="status-badge status-pending">Review</span></td>
+                    </tr>
+                    <tr>
+                        <td>Logging capabilities</td>
+                        <td>Annex IV(3)(d)</td>
+                        <td>Automatic logging capabilities pursuant to Article 12</td>
+                        <td><span class="status-badge status-pending">Review</span></td>
+                    </tr>
+                    <tr>
+                        <td>Risk management system</td>
+                        <td>Annex IV(4)</td>
+                        <td>Description of risk management system per Article 9</td>
+                        <td><span class="status-badge status-pending">Review</span></td>
+                    </tr>
+                    <tr>
+                        <td>Lifecycle changes</td>
+                        <td>Annex IV(5)</td>
+                        <td>Description of relevant changes made during lifecycle</td>
+                        <td><span class="status-badge status-pending">Review</span></td>
+                    </tr>
+                    <tr>
+                        <td>Harmonised standards</td>
+                        <td>Annex IV(6)</td>
+                        <td>List of harmonised standards or common specifications applied</td>
+                        <td><span class="status-badge status-pending">Review</span></td>
+                    </tr>
+                    <tr>
+                        <td>EU Declaration</td>
+                        <td>Annex IV(7)</td>
+                        <td>Copy of EU declaration of conformity</td>
+                        <td><span class="status-badge status-pending">Review</span></td>
+                    </tr>
+                    <tr>
+                        <td>Post-market monitoring</td>
+                        <td>Annex IV(8)</td>
+                        <td>Description of post-market monitoring system</td>
+                        <td><span class="status-badge status-pending">Review</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Report Footer -->
+        <footer class="report-footer">
+            <p>
+                <strong>EU AI Act Technical Documentation</strong>
+                <br>
+                {{ organization_name | default_value('Organization') }} | Generated: {{ generated_at | format_datetime }}
+                <br>
+                Document Version: {{ document_version | default_value('1.0') }} | Generator Version: {{ generator_version | default_value('1.0.0') }}
+            </p>
+            <div class="legal-notice">
+                <strong>Legal Notice:</strong> This document has been generated to support EU AI Act (Regulation (EU) 2024/1689)
+                technical documentation requirements under Article 11 and Annex IV. The technical documentation shall be drawn
+                up before the high-risk AI system is placed on the market or put into service and shall be kept up-to-date.
+                This documentation must be made available to national competent authorities and notified bodies upon request.
+                The provider is responsible for ensuring the accuracy and completeness of this documentation.
+                <br><br>
+                ACGS-2 Enterprise Guardrails Platform - Compliance Documentation Service
+            </div>
+        </footer>
+    </div>
+</body>
+</html>

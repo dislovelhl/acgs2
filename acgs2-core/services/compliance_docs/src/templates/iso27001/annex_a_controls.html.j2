@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ISO 27001:2022 Annex A Controls - {{ organization_name | default_value }}</title>
+    <style>
+        :root {
+            --primary-color: #1a365d;
+            --secondary-color: #2c5282;
+            --success-color: #276749;
+            --warning-color: #c05621;
+            --danger-color: #c53030;
+            --info-color: #2b6cb0;
+            --light-gray: #f7fafc;
+            --border-color: #e2e8f0;
+
+            /* Theme-specific colors */
+            --theme-organizational: #2b6cb0;
+            --theme-people: #276749;
+            --theme-physical: #6b46c1;
+            --theme-technological: #c05621;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #2d3748;
+            background-color: #fff;
+            font-size: 11pt;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 40px;
+        }
+
+        /* Header Styles */
+        .report-header {
+            text-align: center;
+            border-bottom: 3px solid var(--primary-color);
+            padding-bottom: 30px;
+            margin-bottom: 40px;
+        }
+
+        .report-header h1 {
+            color: var(--primary-color);
+            font-size: 28pt;
+            margin-bottom: 10px;
+        }
+
+        .report-header h2 {
+            color: var(--secondary-color);
+            font-size: 18pt;
+            font-weight: normal;
+            margin-bottom: 20px;
+        }
+
+        .report-meta {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .report-meta-item {
+            text-align: center;
+        }
+
+        .report-meta-label {
+            font-size: 9pt;
+            color: #718096;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .report-meta-value {
+            font-size: 11pt;
+            color: var(--primary-color);
+            font-weight: 600;
+        }
+
+        /* Section Styles */
+        .section {
+            margin-bottom: 40px;
+            page-break-inside: avoid;
+        }
+
+        .section-title {
+            color: var(--primary-color);
+            font-size: 16pt;
+            border-bottom: 2px solid var(--secondary-color);
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+
+        .subsection-title {
+            color: var(--secondary-color);
+            font-size: 13pt;
+            margin: 20px 0 15px 0;
+        }
+
+        /* Table Styles */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 10pt;
+        }
+
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 12px;
+            text-align: left;
+            vertical-align: top;
+        }
+
+        th {
+            background-color: var(--primary-color);
+            color: white;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 9pt;
+            letter-spacing: 0.5px;
+        }
+
+        tr:nth-child(even) {
+            background-color: var(--light-gray);
+        }
+
+        tr:hover {
+            background-color: #edf2f7;
+        }
+
+        /* Theme Badges */
+        .theme-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 9pt;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .theme-organizational { background-color: var(--theme-organizational); color: white; }
+        .theme-people { background-color: var(--theme-people); color: white; }
+        .theme-physical { background-color: var(--theme-physical); color: white; }
+        .theme-technological { background-color: var(--theme-technological); color: white; }
+
+        /* Status Badges */
+        .status-badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 9pt;
+            font-weight: 600;
+        }
+
+        .status-implemented { background-color: #c6f6d5; color: #276749; }
+        .status-in-progress { background-color: #feebc8; color: #c05621; }
+        .status-planned { background-color: #bee3f8; color: #2a4365; }
+        .status-not-implemented { background-color: #fed7d7; color: #c53030; }
+        .status-not-required { background-color: #e2e8f0; color: #4a5568; }
+
+        /* Attribute Tags */
+        .attribute-tag {
+            display: inline-block;
+            padding: 2px 6px;
+            margin: 2px;
+            border-radius: 3px;
+            font-size: 8pt;
+            background-color: #edf2f7;
+            color: #4a5568;
+        }
+
+        /* Summary Box */
+        .summary-box {
+            background-color: var(--light-gray);
+            border: 1px solid var(--border-color);
+            border-left: 4px solid var(--primary-color);
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .summary-stats {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            min-width: 120px;
+        }
+
+        .stat-value {
+            font-size: 24pt;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+
+        .stat-label {
+            font-size: 9pt;
+            color: #718096;
+            text-transform: uppercase;
+        }
+
+        /* Theme Card */
+        .theme-card {
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 25px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .theme-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .theme-name {
+            font-size: 14pt;
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+
+        .theme-stats {
+            font-size: 10pt;
+            color: #718096;
+        }
+
+        /* Control Card */
+        .control-card {
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .control-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 10px;
+        }
+
+        .control-id {
+            font-size: 11pt;
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+
+        .control-title {
+            font-size: 11pt;
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+
+        .control-description {
+            font-size: 10pt;
+            color: #4a5568;
+            margin-bottom: 10px;
+        }
+
+        .control-guidance {
+            font-size: 9pt;
+            color: #718096;
+            padding: 10px;
+            background: var(--light-gray);
+            border-radius: 4px;
+        }
+
+        .control-guidance-title {
+            font-weight: 600;
+            color: var(--secondary-color);
+            margin-bottom: 5px;
+        }
+
+        .related-controls {
+            margin-top: 10px;
+            font-size: 9pt;
+        }
+
+        .related-controls-label {
+            font-weight: 600;
+            color: #718096;
+        }
+
+        /* Coverage Indicator */
+        .coverage-bar {
+            width: 100%;
+            height: 20px;
+            background-color: #e2e8f0;
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .coverage-fill {
+            height: 100%;
+            border-radius: 10px;
+            transition: width 0.3s ease;
+        }
+
+        .coverage-high { background-color: var(--success-color); }
+        .coverage-medium { background-color: var(--warning-color); }
+        .coverage-low { background-color: var(--danger-color); }
+
+        .coverage-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 9pt;
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+
+        /* Footer */
+        .report-footer {
+            margin-top: 60px;
+            padding-top: 20px;
+            border-top: 2px solid var(--border-color);
+            text-align: center;
+            font-size: 9pt;
+            color: #718096;
+        }
+
+        /* Print Styles */
+        @media print {
+            .container {
+                max-width: 100%;
+                padding: 20px;
+            }
+
+            .section {
+                page-break-inside: avoid;
+            }
+
+            .theme-card {
+                page-break-inside: avoid;
+            }
+
+            tr {
+                page-break-inside: avoid;
+            }
+        }
+
+        /* Table of Contents */
+        .toc {
+            background: var(--light-gray);
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+
+        .toc-title {
+            font-size: 12pt;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 15px;
+        }
+
+        .toc-list {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .toc-list li {
+            margin-bottom: 8px;
+        }
+
+        .toc-list a {
+            color: var(--secondary-color);
+            text-decoration: none;
+        }
+
+        .toc-list a:hover {
+            text-decoration: underline;
+        }
+
+        .toc-theme-count {
+            color: #718096;
+            font-size: 9pt;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Report Header -->
+        <header class="report-header">
+            <h1>ISO 27001:2022 Annex A Controls</h1>
+            <h2>{{ organization_name | default_value('Organization Name') }}</h2>
+            <div class="report-meta">
+                <div class="report-meta-item">
+                    <div class="report-meta-label">Standard Version</div>
+                    <div class="report-meta-value">ISO/IEC 27001:2022</div>
+                </div>
+                <div class="report-meta-item">
+                    <div class="report-meta-label">Assessment Period</div>
+                    <div class="report-meta-value">
+                        {{ audit_period_start | format_date }} - {{ audit_period_end | format_date }}
+                    </div>
+                </div>
+                <div class="report-meta-item">
+                    <div class="report-meta-label">Generated</div>
+                    <div class="report-meta-value">{{ generated_at | format_datetime }}</div>
+                </div>
+                <div class="report-meta-item">
+                    <div class="report-meta-label">Document Version</div>
+                    <div class="report-meta-value">{{ document_version | default_value('1.0') }}</div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Executive Summary -->
+        <section class="section">
+            <h2 class="section-title">Executive Summary</h2>
+            <div class="summary-box">
+                <p>
+                    This document presents the complete ISO 27001:2022 Annex A control set, comprising
+                    93 controls organized into four thematic domains. ISO/IEC 27001:2022 represents
+                    the latest revision of the information security management standard, consolidating
+                    controls from the previous 114 controls (2013 version) into a streamlined framework.
+                </p>
+                <div class="summary-stats">
+                    <div class="stat-item">
+                        <div class="stat-value">93</div>
+                        <div class="stat-label">Total Controls</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">4</div>
+                        <div class="stat-label">Control Themes</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">{{ implemented_controls | default_value('0') }}</div>
+                        <div class="stat-label">Implemented</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">{{ implementation_percentage | default_value('0') }}%</div>
+                        <div class="stat-label">Coverage</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Table of Contents -->
+        <section class="section">
+            <div class="toc">
+                <div class="toc-title">Control Themes Overview</div>
+                <ul class="toc-list">
+                    <li>
+                        <span class="theme-badge theme-organizational">A.5</span>
+                        <a href="#theme-organizational">Organizational Controls</a>
+                        <span class="toc-theme-count">(37 controls)</span>
+                    </li>
+                    <li>
+                        <span class="theme-badge theme-people">A.6</span>
+                        <a href="#theme-people">People Controls</a>
+                        <span class="toc-theme-count">(8 controls)</span>
+                    </li>
+                    <li>
+                        <span class="theme-badge theme-physical">A.7</span>
+                        <a href="#theme-physical">Physical Controls</a>
+                        <span class="toc-theme-count">(14 controls)</span>
+                    </li>
+                    <li>
+                        <span class="theme-badge theme-technological">A.8</span>
+                        <a href="#theme-technological">Technological Controls</a>
+                        <span class="toc-theme-count">(34 controls)</span>
+                    </li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- Theme Summary Table -->
+        <section class="section">
+            <h2 class="section-title">Control Theme Summary</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Theme</th>
+                        <th>Control Range</th>
+                        <th>Control Count</th>
+                        <th>Description</th>
+                        <th>Implementation Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><span class="theme-badge theme-organizational">Organizational</span></td>
+                        <td>A.5.1 - A.5.37</td>
+                        <td>37</td>
+                        <td>Policies, procedures, roles, responsibilities, and organizational measures for information security</td>
+                        <td>
+                            {% set org_impl = theme_stats.organizational.implemented if theme_stats and theme_stats.organizational else 0 %}
+                            <div class="coverage-bar">
+                                <div class="coverage-fill {% if org_impl >= 80 %}coverage-high{% elif org_impl >= 50 %}coverage-medium{% else %}coverage-low{% endif %}"
+                                     style="width: {{ org_impl }}%;">
+                                </div>
+                                <span class="coverage-text">{{ org_impl }}%</span>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><span class="theme-badge theme-people">People</span></td>
+                        <td>A.6.1 - A.6.8</td>
+                        <td>8</td>
+                        <td>Human resource security, awareness, training, and disciplinary processes</td>
+                        <td>
+                            {% set ppl_impl = theme_stats.people.implemented if theme_stats and theme_stats.people else 0 %}
+                            <div class="coverage-bar">
+                                <div class="coverage-fill {% if ppl_impl >= 80 %}coverage-high{% elif ppl_impl >= 50 %}coverage-medium{% else %}coverage-low{% endif %}"
+                                     style="width: {{ ppl_impl }}%;">
+                                </div>
+                                <span class="coverage-text">{{ ppl_impl }}%</span>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><span class="theme-badge theme-physical">Physical</span></td>
+                        <td>A.7.1 - A.7.14</td>
+                        <td>14</td>
+                        <td>Physical security perimeters, entry controls, equipment protection, and secure disposal</td>
+                        <td>
+                            {% set phy_impl = theme_stats.physical.implemented if theme_stats and theme_stats.physical else 0 %}
+                            <div class="coverage-bar">
+                                <div class="coverage-fill {% if phy_impl >= 80 %}coverage-high{% elif phy_impl >= 50 %}coverage-medium{% else %}coverage-low{% endif %}"
+                                     style="width: {{ phy_impl }}%;">
+                                </div>
+                                <span class="coverage-text">{{ phy_impl }}%</span>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><span class="theme-badge theme-technological">Technological</span></td>
+                        <td>A.8.1 - A.8.34</td>
+                        <td>34</td>
+                        <td>Technical controls including access management, cryptography, network security, and secure development</td>
+                        <td>
+                            {% set tech_impl = theme_stats.technological.implemented if theme_stats and theme_stats.technological else 0 %}
+                            <div class="coverage-bar">
+                                <div class="coverage-fill {% if tech_impl >= 80 %}coverage-high{% elif tech_impl >= 50 %}coverage-medium{% else %}coverage-low{% endif %}"
+                                     style="width: {{ tech_impl }}%;">
+                                </div>
+                                <span class="coverage-text">{{ tech_impl }}%</span>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Organizational Controls (A.5) - 37 controls -->
+        <section class="section" id="theme-organizational">
+            <h2 class="section-title">
+                <span class="theme-badge theme-organizational">A.5</span>
+                Organizational Controls
+            </h2>
+            <p style="margin-bottom: 20px;">
+                Organizational controls address the governance framework for information security,
+                including policies, roles, responsibilities, and organizational processes that
+                support effective security management.
+            </p>
+
+            {% if theme_sections and theme_sections.organizational %}
+            {% for control in theme_sections.organizational.controls %}
+            <div class="control-card">
+                <div class="control-header">
+                    <span class="control-id">{{ control.control_id | control_id('ISO27001') }}</span>
+                    {% if control.implementation_status == 'implemented' %}
+                    <span class="status-badge status-implemented">Implemented</span>
+                    {% elif control.implementation_status == 'in_progress' %}
+                    <span class="status-badge status-in-progress">In Progress</span>
+                    {% elif control.implementation_status == 'planned' %}
+                    <span class="status-badge status-planned">Planned</span>
+                    {% elif control.implementation_status == 'not_required' %}
+                    <span class="status-badge status-not-required">Not Required</span>
+                    {% else %}
+                    <span class="status-badge status-not-implemented">Not Implemented</span>
+                    {% endif %}
+                </div>
+                <div class="control-title">{{ control.title | default_value }}</div>
+                <div class="control-description">{{ control.description | default_value }}</div>
+                {% if control.implementation_guidance %}
+                <div class="control-guidance">
+                    <div class="control-guidance-title">Implementation Guidance</div>
+                    {{ control.implementation_guidance }}
+                </div>
+                {% endif %}
+                {% if control.attributes %}
+                <div style="margin-top: 10px;">
+                    {% for attr in control.attributes %}
+                    <span class="attribute-tag">{{ attr }}</span>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                {% if control.related_controls %}
+                <div class="related-controls">
+                    <span class="related-controls-label">Related Controls:</span>
+                    {{ control.related_controls | join(', ') }}
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+            {% else %}
+            <!-- Default Organizational Controls (A.5.1 - A.5.37) -->
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 80px;">Control ID</th>
+                        <th style="width: 200px;">Control Title</th>
+                        <th>Description</th>
+                        <th style="width: 100px;">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td>A.5.1</td><td>Policies for information security</td><td>Information security policy and topic-specific policies shall be defined, approved by management, published, communicated to and acknowledged by relevant personnel and relevant interested parties, and reviewed at planned intervals and if significant changes occur.</td><td><span class="status-badge status-not-implemented">-</span></td></tr>
+                    <tr><td>A.5.2</td><td>Information security roles and responsibilities</td><td>Information security roles and responsibilities shall be defined and allocated according to the organization needs.</td><td><span class="status-badge status-not-implemented">-</span></td></tr>
+                    <tr><td>A.5.3</td><td>Segregation of duties</td><td>Conflicting duties and conflicting areas of responsibility shall be segregated.</td><td><span class="status-badge status-not-implemented">-</span></td></tr>
+                    <tr><td>A.5.4</td><td>Management responsibilities</td><td>Management shall require all personnel to apply information security in accordance with the established information security policy, topic-specific policies and procedures of the organization.</td><td><span class="status-badge status-not-implemented">-</span></td></tr>
+                    <tr><td>A.5.5</td><td>Contact with authorities</td><td>The organization shall establish and maintain contact with relevant authorities.</td><td><span class="status-badge status-not-implemented">-</span></td></tr>
+                    <tr><td>A.5.6</td><td>Contact with special interest groups</td><td>The organization shall establish and maintain contact with special interest groups or other specialist security forums and professional associations.</td><td><span class="status-badge status-not-implemented">-</span></td></tr>
+                    <tr><td>A.5.7</td><td>Threat intelligence</td><td>Information relating to information security threats shall be collected and analysed to produce threat intelligence.</td><td><span class="status-badge status-not-implemented">-</span></td></tr>
+                    <tr><td>A.5.8</td><td>Information security in project management</td><td>Information security shall be integrated into project management.</td><td><span class="status-badge status-not-implemented">-</span></td></tr>
+                    <tr><td>A.5.9</td><td>Inventory of information and other associated assets</td><td>An inventory of information and other associated assets, including owners, shall be developed and maintained.</td><td><span class="status-badge status-not-implemented">-</span></td></tr>
+                    <tr><td>A.5.10</td><td>Acceptable use of information and other associated assets</td><td>Rules for the acceptable use and procedures for handling information and other associated assets shall be identified, documented and implemented.</td><td><span class="status-badge status-not-implemented">-</span></td></tr>
+                    <tr><td>A.5.11</td><td>Return of assets</td><td>Personnel and other interested parties as appropriate shall return all the organization's assets in their possession upon change or termination of their employment, contract or agreement.</td><td><span class="status-badge status-not-implemented">-</span></td></tr>
+                    <tr><td>A.5.12</td><td>Classification of information</td><td>Information shall be classified according to the information security needs of the organization based on confidentiality, integrity, availability and relevant interested party requirements.</td><td><span class="status-badge status-not-implemented">-</span></td></tr>
+                    <tr><td>A.5.13</td><td>Labelling of information</td><td>An appropriate set of procedures for information labelling shall be developed and implemented in accordance with the information classification scheme adopted by the organization.</td><td><span class="status-badge status-not-implemented">-</span></td></tr>
+                    <tr><td>A.5.14</td><td>Information transfer</td><td>Information transfer rules, procedures, or agreements shall be in place for all types of transfer facilities within the organization and between the organization and other parties.</td><td><span class="status-badge status-not-implemented">-</span></td></tr>
+                    <tr><td>A.5.15</td><td>Access control</td><td>Rules to control physical and logical access to information and other associated assets shall be established and implemented based on business and information security requirements.</td><td><span class="status-badge status-not-implemented">-</span></td></tr>
+                    <tr><td>A.5.16</td><td>Identity management</td><td>The full life cycle of identities shall be managed.</td><td><span class="status-badge status-not-implemented">-</span></td></tr>
+                    <tr><td>A.5.17</td><td>Authentication information</td><td>Allocation and management of authentication information shall be controlled by a management process, including advising personnel on appropriate handling of authentication information.</td><td><span class="status-badge status-not-implemented">-</span></td></tr>
+                    <tr><td>A.5.18</td><td>Access rights</td><td>Access rights to information and other associated assets shall be provisioned, reviewed, modified and removed in accordance with the organization's topic-specific policy on and rules for access control.</td><td><span class="status-badge status-not-implemented">-</span></td></tr>
+                    <tr><td>A.5.19</td><td>Information security in supplier relationships</td><td>Processes and procedures shall be defined and implemented to manage the information security risks associated with the use of supplier's products or services.</td><td><span class="status-badge status-not-implemented">-</span></td></tr>
+                    <tr><td>A.5.20</td><td>Addressing information security within supplier agreements</td><td>Relevant information security requirements shall be established and agreed with each supplier based on the type of supplier relationship.</td><td><span class="status-badge status-not-implemented">-</span></td></tr>
+                    <tr><td>A.5.21</td><td>Managing information security in the ICT supply chain</td><td>Processes and procedures shall be defined and implemented to manage the information security risks associated with the ICT products and services supply chain.</td><td><span class="status-badge status-not-implemented">-</span></td></tr>
+                    <tr><td>A.5.22</td><td>Monitoring, review and change management of supplier services</td><td>The organization shall regularly monitor, review, evaluate and manage change in supplier information security practices and service delivery.</td><td><span class="status-badge status-not-implemented">-</span></td></tr>
+                    <tr><td>A.5.23</td><td>Information security for use of cloud services</td><td>Processes for acquisition, use, management and exit from cloud services shall be established in accordance with the organization's information security requirements.</td><td><span class="status-badge status-not-implemented">-</span></td></tr>
+                    <tr><td>A.5.24</td><td>Information security incident management planning and preparation</td><td>The organization shall plan and prepare for managing information security incidents by defining, establishing and communicating information security incident management processes, roles and responsibilities.</td><td><span class="status-badge status-not-implemented">-</span></td></tr>
+                    <tr><td>A.5.25</td><td>Assessment and decision on information security events</td><td>The organization shall assess information security events and decide if they are to be categorized as information security incidents.</td><td><span class="status-badge status-not-implemented">-</span></td></tr>
+                    <tr><td>A.5.26</td><td>Response to information security incidents</td><td>Information security incidents shall be responded to in accordance with the documented procedures.</td><td><span class="status-badge status-not-implemented">-</span></td></tr>
+                    <tr><td>A.5.27</td><td>Learning from information security incidents</td><td>Knowledge gained from information security incidents shall be used to strengthen and improve the information security controls.</td><td><span class="status-badge status-not-implemented">-</span></td></tr>
+                    <tr><td>A.5.28</td><td>Collection of evidence</td><td>The organization shall establish and implement procedures for the identification, collection, acquisition and preservation of evidence related to information security events.</td><td><span class="status-badge status-not-implemented">-</span></td></tr>
+                    <tr><td>A.5.29</td><td>Information security during disruption</td><td>The organization shall plan how to maintain information security at an appropriate level during disruption.</td><td><span class="status-badge status-not-implemented">-</span></td></tr>
+                    <tr><td>A.5.30</td><td>ICT readiness for business continuity</td><td>ICT readiness shall be planned, implemented, maintained and tested based on business continuity objectives and ICT continuity requirements.</td><td><span class="status-badge status-not-implemented">-</span></td></tr>
+                    <tr><td>A.5.31</td><td>Legal, statutory, regulatory and contractual requirements</td><td>Legal, statutory, regulatory and contractual requirements relevant to information security and the organization's approach to meet these requirements shall be identified, documented and kept up to date.</td><td><span class="status-badge status-not-implemented">-</span></td></tr>
+                    <tr><td>A.5.32</td><td>Intellectual property rights</td><td>The organization shall implement appropriate procedures to protect intellectual property rights.</td><td><span class="status-badge status-not-implemented">-</span></td></tr>
+                    <tr><td>A.5.33</td><td>Protection of records</td><td>Records shall be protected from loss, destruction, falsification, unauthorized access and unauthorized release.</td><td><span class="status-badge status-not-implemented">-</span></td></tr>
+                    <tr><td>A.5.34</td><td>Privacy and protection of PII</td><td>The organization shall identify and meet the requirements regarding the preservation of privacy and protection of PII according to applicable laws and regulations and contractual requirements.</td><td><span class="status-badge status-not-implemented">-</span></td></tr>
+                    <tr><td>A.5.35</td><td>Independent review of information security</td><td>The organization's approach to managing information security and its implementation including people, processes and technologies shall be reviewed independently at planned intervals, or when significant changes occur.</td><td><span class="status-badge status-not-implemented">-</span></td></tr>
+                    <tr><td>A.5.36</td><td>Compliance with policies, rules and standards for information security</td><td>Compliance with the organization's information security policy, topic-specific policies, rules and standards shall be regularly reviewed.</td><td><span class="status-badge status-not-implemented">-</span></td></tr>
+                    <tr><td>A.5.37</td><td>Documented operating procedures</td><td>Operating procedures for information processing facilities shall be documented and made available to personnel who need them.</td><td><span class="status-badge status-not-implemented">-</span></td></tr>
+                </tbody>
+            </table>
+            {% endif %}
+        </section>
+
+        <!-- People Controls (A.6) - 8 controls -->
+        <section class="section" id="theme-people">
+            <h2 class="section-title">
+                <span class="theme-badge theme-people">A.6</span>
+                People Controls
+            </h2>
+            <p style="margin-bottom: 20px;">
+                People controls focus on human resource security, including screening, terms and
+                conditions of employment, awareness training, and managing personnel changes.
+            </p>
+
+            {% if theme_sections and theme_sections.people %}
+            {% for control in theme_sections.people.controls %}
+            <div class="control-card">
+                <div class="control-header">
+                    <span class="control-id">{{ control.control_id | control_id('ISO27001') }}</span>
+                    {% if control.implementation_status == 'implemented' %}
+                    <span class="status-badge status-implemented">Implemented</span>
+                    {% elif control.implementation_status == 'in_progress' %}
+                    <span class="status-badge status-in-progress">In Progress</span>
+                    {% elif control.implementation_status == 'planned' %}
+                    <span class="status-badge status-planned">Planned</span>
+                    {% elif control.implementation_status == 'not_required' %}
+                    <span class="status-badge status-not-required">Not Required</span>
+                    {% else %}
+                    <span class="status-badge status-not-implemented">Not Implemented</span>
+                    {% endif %}
+                </div>
+                <div class="control-title">{{ control.title | default_value }}</div>
+                <div class="control-description">{{ control.description | default_value }}</div>
+                {% if control.implementation_guidance %}
+                <div class="control-guidance">
+                    <div class="control-guidance-title">Implementation Guidance</div>
+                    {{ control.implementation_guidance }}
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+            {% else %}
+            <!-- Default People Controls (A.6.1 - A.6.8) -->
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 80px;">Control ID</th>
+                        <th style="width: 200px;">Control Title</th>
+                        <th>Description</th>
+                        <th style="width: 100px;">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td>A.6.1</td><td>Screening</td><td>Background verification checks on all candidates to become personnel shall be carried out prior to joining the organization and on an ongoing basis taking into consideration applicable laws, regulations and ethics and be proportional to the business requirements, the classification of the information to be accessed and the perceived risks.</td><td><span class="status-badge status-not-implemented">-</span></td></tr>
+                    <tr><td>A.6.2</td><td>Terms and conditions of employment</td><td>The employment contractual agreements shall state the personnel's and the organization's responsibilities for information security.</td><td><span class="status-badge status-not-implemented">-</span></td></tr>
+                    <tr><td>A.6.3</td><td>Information security awareness, education and training</td><td>Personnel of the organization and relevant interested parties shall receive appropriate information security awareness, education and training and regular updates of the organization's information security policy, topic-specific policies and procedures, as relevant for their job function.</td><td><span class="status-badge status-not-implemented">-</span></td></tr>
+                    <tr><td>A.6.4</td><td>Disciplinary process</td><td>A disciplinary process shall be formalized and communicated to take actions against personnel and other relevant interested parties who have committed an information security policy violation.</td><td><span class="status-badge status-not-implemented">-</span></td></tr>
+                    <tr><td>A.6.5</td><td>Responsibilities after termination or change of employment</td><td>Information security responsibilities and duties that remain valid after termination or change of employment shall be defined, enforced and communicated to relevant personnel and other interested parties.</td><td><span class="status-badge status-not-implemented">-</span></td></tr>
+                    <tr><td>A.6.6</td><td>Confidentiality or non-disclosure agreements</td><td>Confidentiality or non-disclosure agreements reflecting the organization's needs for the protection of information shall be identified, documented, regularly reviewed and signed by personnel and other relevant interested parties.</td><td><span class="status-badge status-not-implemented">-</span></td></tr>
+                    <tr><td>A.6.7</td><td>Remote working</td><td>Security measures shall be implemented when personnel are working remotely to protect information accessed, processed or stored outside the organization's premises.</td><td><span class="status-badge status-not-implemented">-</span></td></tr>
+                    <tr><td>A.6.8</td><td>Information security event reporting</td><td>The organization shall provide a mechanism for personnel to report observed or suspected information security events through appropriate channels in a timely manner.</td><td><span class="status-badge status-not-implemented">-</span></td></tr>
+                </tbody>
+            </table>
+            {% endif %}
+        </section>
+
+        <!-- Physical Controls (A.7) - 14 controls -->
+        <section class="section" id="theme-physical">
+            <h2 class="section-title">
+                <span class="theme-badge theme-physical">A.7</span>
+                Physical Controls
+            </h2>
+            <p style="margin-bottom: 20px;">
+                Physical controls address physical security measures including secure areas,
+                equipment protection, supporting utilities, and secure disposal of media.
+            </p>
+
+            {% if theme_sections and theme_sections.physical %}
+            {% for control in theme_sections.physical.controls %}
+            <div class="control-card">
+                <div class="control-header">
+                    <span class="control-id">{{ control.control_id | control_id('ISO27001') }}</span>
+                    {% if control.implementation_status == 'implemented' %}
+                    <span class="status-badge status-implemented">Implemented</span>
+                    {% elif control.implementation_status == 'in_progress' %}
+                    <span class="status-badge status-in-progress">In Progress</span>
+                    {% elif control.implementation_status == 'planned' %}
+                    <span class="status-badge status-planned">Planned</span>
+                    {% elif control.implementation_status == 'not_required' %}
+                    <span class="status-badge status-not-required">Not Required</span>
+                    {% else %}
+                    <span class="status-badge status-not-implemented">Not Implemented</span>
+                    {% endif %}
+                </div>
+                <div class="control-title">{{ control.title | default_value }}</div>
+                <div class="control-description">{{ control.description | default_value }}</div>
+                {% if control.implementation_guidance %}
+                <div class="control-guidance">
+                    <div class="control-guidance-title">Implementation Guidance</div>
+                    {{ control.implementation_guidance }}
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+            {% else %}
+            <!-- Default Physical Controls (A.7.1 - A.7.14) -->
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 80px;">Control ID</th>
+                        <th style="width: 200px;">Control Title</th>
+                        <th>Description</th>
+                        <th style="width: 100px;">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td>A.7.1</td><td>Physical security perimeters</td><td>Security perimeters shall be defined and used to protect areas that contain information and other associated assets.</td><td><span class="status-badge status-not-implemented">-</span></td></tr>
+                    <tr><td>A.7.2</td><td>Physical entry</td><td>Secure areas shall be protected by appropriate entry controls and access points.</td><td><span class="status-badge status-not-implemented">-</span></td></tr>
+                    <tr><td>A.7.3</td><td>Securing offices, rooms and facilities</td><td>Physical security for offices, rooms and facilities shall be designed and implemented.</td><td><span class="status-badge status-not-implemented">-</span></td></tr>
+                    <tr><td>A.7.4</td><td>Physical security monitoring</td><td>Premises shall be continuously monitored for unauthorized physical access.</td><td><span class="status-badge status-not-implemented">-</span></td></tr>
+                    <tr><td>A.7.5</td><td>Protecting against physical and environmental threats</td><td>Protection against physical and environmental threats, such as natural disasters and other intentional or unintentional physical threats to infrastructure shall be designed and implemented.</td><td><span class="status-badge status-not-implemented">-</span></td></tr>
+                    <tr><td>A.7.6</td><td>Working in secure areas</td><td>Security measures for working in secure areas shall be designed and implemented.</td><td><span class="status-badge status-not-implemented">-</span></td></tr>
+                    <tr><td>A.7.7</td><td>Clear desk and clear screen</td><td>Clear desk rules for papers and removable storage media and clear screen rules for information processing facilities shall be defined and appropriately enforced.</td><td><span class="status-badge status-not-implemented">-</span></td></tr>
+                    <tr><td>A.7.8</td><td>Equipment siting and protection</td><td>Equipment shall be sited securely and protected.</td><td><span class="status-badge status-not-implemented">-</span></td></tr>
+                    <tr><td>A.7.9</td><td>Security of assets off-premises</td><td>Off-site assets shall be protected.</td><td><span class="status-badge status-not-implemented">-</span></td></tr>
+                    <tr><td>A.7.10</td><td>Storage media</td><td>Storage media shall be managed through their life cycle of acquisition, use, transportation and disposal in accordance with the organization's classification scheme and handling requirements.</td><td><span class="status-badge status-not-implemented">-</span></td></tr>
+                    <tr><td>A.7.11</td><td>Supporting utilities</td><td>Information processing facilities shall be protected from power failures and other disruptions caused by failures in supporting utilities.</td><td><span class="status-badge status-not-implemented">-</span></td></tr>
+                    <tr><td>A.7.12</td><td>Cabling security</td><td>Cables carrying power, data or supporting information services shall be protected from interception, interference or damage.</td><td><span class="status-badge status-not-implemented">-</span></td></tr>
+                    <tr><td>A.7.13</td><td>Equipment maintenance</td><td>Equipment shall be maintained correctly to ensure availability, integrity and confidentiality of information.</td><td><span class="status-badge status-not-implemented">-</span></td></tr>
+                    <tr><td>A.7.14</td><td>Secure disposal or re-use of equipment</td><td>Items of equipment containing storage media shall be verified to ensure that any sensitive data and licensed software has been removed or securely overwritten prior to disposal or re-use.</td><td><span class="status-badge status-not-implemented">-</span></td></tr>
+                </tbody>
+            </table>
+            {% endif %}
+        </section>
+
+        <!-- Technological Controls (A.8) - 34 controls -->
+        <section class="section" id="theme-technological">
+            <h2 class="section-title">
+                <span class="theme-badge theme-technological">A.8</span>
+                Technological Controls
+            </h2>
+            <p style="margin-bottom: 20px;">
+                Technological controls address technical security measures including user endpoint
+                devices, privileged access, access restriction, cryptography, network security,
+                and secure development practices.
+            </p>
+
+            {% if theme_sections and theme_sections.technological %}
+            {% for control in theme_sections.technological.controls %}
+            <div class="control-card">
+                <div class="control-header">
+                    <span class="control-id">{{ control.control_id | control_id('ISO27001') }}</span>
+                    {% if control.implementation_status == 'implemented' %}
+                    <span class="status-badge status-implemented">Implemented</span>
+                    {% elif control.implementation_status == 'in_progress' %}
+                    <span class="status-badge status-in-progress">In Progress</span>
+                    {% elif control.implementation_status == 'planned' %}
+                    <span class="status-badge status-planned">Planned</span>
+                    {% elif control.implementation_status == 'not_required' %}
+                    <span class="status-badge status-not-required">Not Required</span>
+                    {% else %}
+                    <span class="status-badge status-not-implemented">Not Implemented</span>
+                    {% endif %}
+                </div>
+                <div class="control-title">{{ control.title | default_value }}</div>
+                <div class="control-description">{{ control.description | default_value }}</div>
+                {% if control.implementation_guidance %}
+                <div class="control-guidance">
+                    <div class="control-guidance-title">Implementation Guidance</div>
+                    {{ control.implementation_guidance }}
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+            {% else %}
+            <!-- Default Technological Controls (A.8.1 - A.8.34) -->
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 80px;">Control ID</th>
+                        <th style="width: 200px;">Control Title</th>
+                        <th>Description</th>
+                        <th style="width: 100px;">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td>A.8.1</td><td>User endpoint devices</td><td>Information stored on, processed by or accessible via user endpoint devices shall be protected.</td><td><span class="status-badge status-not-implemented">-</span></td></tr>
+                    <tr><td>A.8.2</td><td>Privileged access rights</td><td>The allocation and use of privileged access rights shall be restricted and managed.</td><td><span class="status-badge status-not-implemented">-</span></td></tr>
+                    <tr><td>A.8.3</td><td>Information access restriction</td><td>Access to information and other associated assets shall be restricted in accordance with the established topic-specific policy on access control.</td><td><span class="status-badge status-not-implemented">-</span></td></tr>
+                    <tr><td>A.8.4</td><td>Access to source code</td><td>Read and write access to source code, development tools and software libraries shall be appropriately managed.</td><td><span class="status-badge status-not-implemented">-</span></td></tr>
+                    <tr><td>A.8.5</td><td>Secure authentication</td><td>Secure authentication technologies and procedures shall be implemented based on information access restrictions and the topic-specific policy on access control.</td><td><span class="status-badge status-not-implemented">-</span></td></tr>
+                    <tr><td>A.8.6</td><td>Capacity management</td><td>The use of resources shall be monitored and adjusted in line with current and expected capacity requirements.</td><td><span class="status-badge status-not-implemented">-</span></td></tr>
+                    <tr><td>A.8.7</td><td>Protection against malware</td><td>Protection against malware shall be implemented and supported by appropriate user awareness.</td><td><span class="status-badge status-not-implemented">-</span></td></tr>
+                    <tr><td>A.8.8</td><td>Management of technical vulnerabilities</td><td>Information about technical vulnerabilities of information systems in use shall be obtained, the organization's exposure to such vulnerabilities shall be evaluated and appropriate measures shall be taken.</td><td><span class="status-badge status-not-implemented">-</span></td></tr>
+                    <tr><td>A.8.9</td><td>Configuration management</td><td>Configurations, including security configurations, of hardware, software, services and networks shall be established, documented, implemented, monitored and reviewed.</td><td><span class="status-badge status-not-implemented">-</span></td></tr>
+                    <tr><td>A.8.10</td><td>Information deletion</td><td>Information stored in information systems, devices or in any other storage media shall be deleted when no longer required.</td><td><span class="status-badge status-not-implemented">-</span></td></tr>
+                    <tr><td>A.8.11</td><td>Data masking</td><td>Data masking shall be used in accordance with the organization's topic-specific policy on access control and other related topic-specific policies, and business requirements, taking applicable legislation into consideration.</td><td><span class="status-badge status-not-implemented">-</span></td></tr>
+                    <tr><td>A.8.12</td><td>Data leakage prevention</td><td>Data leakage prevention measures shall be applied to systems, networks and any other devices that process, store or transmit sensitive information.</td><td><span class="status-badge status-not-implemented">-</span></td></tr>
+                    <tr><td>A.8.13</td><td>Information backup</td><td>Backup copies of information, software and systems shall be maintained and regularly tested in accordance with the agreed topic-specific policy on backup.</td><td><span class="status-badge status-not-implemented">-</span></td></tr>
+                    <tr><td>A.8.14</td><td>Redundancy of information processing facilities</td><td>Information processing facilities shall be implemented with redundancy sufficient to meet availability requirements.</td><td><span class="status-badge status-not-implemented">-</span></td></tr>
+                    <tr><td>A.8.15</td><td>Logging</td><td>Logs that record activities, exceptions, faults and other relevant events shall be produced, stored, protected and analysed.</td><td><span class="status-badge status-not-implemented">-</span></td></tr>
+                    <tr><td>A.8.16</td><td>Monitoring activities</td><td>Networks, systems and applications shall be monitored for anomalous behaviour and appropriate actions taken to evaluate potential information security incidents.</td><td><span class="status-badge status-not-implemented">-</span></td></tr>
+                    <tr><td>A.8.17</td><td>Clock synchronization</td><td>The clocks of information processing systems used by the organization shall be synchronized to approved time sources.</td><td><span class="status-badge status-not-implemented">-</span></td></tr>
+                    <tr><td>A.8.18</td><td>Use of privileged utility programs</td><td>The use of utility programs that can be capable of overriding system and application controls shall be restricted and tightly controlled.</td><td><span class="status-badge status-not-implemented">-</span></td></tr>
+                    <tr><td>A.8.19</td><td>Installation of software on operational systems</td><td>Procedures and measures shall be implemented to securely manage software installation on operational systems.</td><td><span class="status-badge status-not-implemented">-</span></td></tr>
+                    <tr><td>A.8.20</td><td>Networks security</td><td>Networks and network devices shall be secured, managed and controlled to protect information in systems and applications.</td><td><span class="status-badge status-not-implemented">-</span></td></tr>
+                    <tr><td>A.8.21</td><td>Security of network services</td><td>Security mechanisms, service levels and service requirements of network services shall be identified, implemented and monitored.</td><td><span class="status-badge status-not-implemented">-</span></td></tr>
+                    <tr><td>A.8.22</td><td>Segregation of networks</td><td>Groups of information services, users and information systems shall be segregated in the organization's networks.</td><td><span class="status-badge status-not-implemented">-</span></td></tr>
+                    <tr><td>A.8.23</td><td>Web filtering</td><td>Access to external websites shall be managed to reduce exposure to malicious content.</td><td><span class="status-badge status-not-implemented">-</span></td></tr>
+                    <tr><td>A.8.24</td><td>Use of cryptography</td><td>Rules for the effective use of cryptography, including cryptographic key management, shall be defined and implemented.</td><td><span class="status-badge status-not-implemented">-</span></td></tr>
+                    <tr><td>A.8.25</td><td>Secure development life cycle</td><td>Rules for the secure development of software and systems shall be established and applied.</td><td><span class="status-badge status-not-implemented">-</span></td></tr>
+                    <tr><td>A.8.26</td><td>Application security requirements</td><td>Information security requirements shall be identified, specified and approved when developing or acquiring applications.</td><td><span class="status-badge status-not-implemented">-</span></td></tr>
+                    <tr><td>A.8.27</td><td>Secure system architecture and engineering principles</td><td>Principles for engineering secure systems shall be established, documented, maintained and applied to any information system development activities.</td><td><span class="status-badge status-not-implemented">-</span></td></tr>
+                    <tr><td>A.8.28</td><td>Secure coding</td><td>Secure coding principles shall be applied to software development.</td><td><span class="status-badge status-not-implemented">-</span></td></tr>
+                    <tr><td>A.8.29</td><td>Security testing in development and acceptance</td><td>Security testing processes shall be defined and implemented in the development life cycle.</td><td><span class="status-badge status-not-implemented">-</span></td></tr>
+                    <tr><td>A.8.30</td><td>Outsourced development</td><td>The organization shall direct, monitor and review the activities related to outsourced system development.</td><td><span class="status-badge status-not-implemented">-</span></td></tr>
+                    <tr><td>A.8.31</td><td>Separation of development, test and production environments</td><td>Development, testing and production environments shall be separated and secured.</td><td><span class="status-badge status-not-implemented">-</span></td></tr>
+                    <tr><td>A.8.32</td><td>Change management</td><td>Changes to information processing facilities and information systems shall be subject to change management procedures.</td><td><span class="status-badge status-not-implemented">-</span></td></tr>
+                    <tr><td>A.8.33</td><td>Test information</td><td>Test information shall be appropriately selected, protected and managed.</td><td><span class="status-badge status-not-implemented">-</span></td></tr>
+                    <tr><td>A.8.34</td><td>Protection of information systems during audit testing</td><td>Audit tests and other assurance activities involving assessment of operational systems shall be planned and agreed between the tester and appropriate management.</td><td><span class="status-badge status-not-implemented">-</span></td></tr>
+                </tbody>
+            </table>
+            {% endif %}
+        </section>
+
+        <!-- Appendix: ISO 27001:2022 Overview -->
+        <section class="section">
+            <h2 class="section-title">Appendix A: ISO 27001:2022 Overview</h2>
+
+            <h3 class="subsection-title">About ISO/IEC 27001:2022</h3>
+            <p style="margin-bottom: 15px;">
+                ISO/IEC 27001:2022 is the international standard for information security management
+                systems (ISMS). The 2022 revision updates the previous 2013 version, restructuring
+                the 114 controls from the Annex A into 93 controls organized into four thematic domains.
+            </p>
+
+            <h3 class="subsection-title">Key Changes from 2013 to 2022</h3>
+            <ul style="margin: 15px 0; padding-left: 25px;">
+                <li>Reduced from 114 controls (14 domains) to 93 controls (4 themes)</li>
+                <li>11 new controls added covering cloud security, threat intelligence, and more</li>
+                <li>Controls consolidated to reduce redundancy and improve clarity</li>
+                <li>New attributes introduced for control categorization</li>
+                <li>Enhanced focus on technology and organizational context</li>
+            </ul>
+
+            <h3 class="subsection-title">Control Attributes</h3>
+            <p style="margin-bottom: 10px;">
+                ISO 27001:2022 introduces five attributes for categorizing controls:
+            </p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Attribute</th>
+                        <th>Values</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Control Type</strong></td>
+                        <td>Preventive, Detective, Corrective</td>
+                        <td>When and how the control modifies risk</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Information Security Properties</strong></td>
+                        <td>Confidentiality, Integrity, Availability</td>
+                        <td>Which security property the control helps protect</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Cybersecurity Concepts</strong></td>
+                        <td>Identify, Protect, Detect, Respond, Recover</td>
+                        <td>Alignment with NIST Cybersecurity Framework</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Operational Capabilities</strong></td>
+                        <td>Various (e.g., Governance, Asset Management)</td>
+                        <td>Practitioner perspective on control capabilities</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Security Domains</strong></td>
+                        <td>Governance, Protection, Defence, Resilience</td>
+                        <td>High-level security domain categorization</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Report Footer -->
+        <footer class="report-footer">
+            <p>
+                <strong>ISO 27001:2022 Annex A Controls Reference</strong>
+                <br>
+                {{ organization_name | default_value('Organization') }} | Generated: {{ generated_at | format_datetime }}
+                <br>
+                Document Version: {{ document_version | default_value('1.0') }} | Generator Version: {{ generator_version | default_value('1.0.0') }}
+            </p>
+            <p style="margin-top: 15px; font-size: 8pt;">
+                This document is confidential and intended for compliance assessment purposes only.
+                <br>
+                ACGS-2 Enterprise Guardrails Platform - Compliance Documentation Service
+            </p>
+        </footer>
+    </div>
+</body>
+</html>

@@ -1,0 +1,1177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EU AI Act Conformity Assessment Report - {{ organization_name | default_value }}</title>
+    <style>
+        :root {
+            --primary-color: #1a4480;
+            --secondary-color: #2c608a;
+            --success-color: #2e8540;
+            --warning-color: #e66f0e;
+            --danger-color: #d63e04;
+            --info-color: #00bcd4;
+            --light-gray: #f5f7f8;
+            --border-color: #dfe1e2;
+            /* EU AI Act colors */
+            --euaiact-blue: #003399;
+            --eu-gold: #ffcc00;
+            --conformity-green: #28a745;
+            --pending-orange: #fd7e14;
+            --failed-red: #dc3545;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #1b1b1b;
+            background-color: #fff;
+            font-size: 11pt;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 40px;
+        }
+
+        /* Header Styles */
+        .report-header {
+            text-align: center;
+            border-bottom: 4px solid var(--euaiact-blue);
+            padding-bottom: 30px;
+            margin-bottom: 40px;
+        }
+
+        .report-header h1 {
+            color: var(--euaiact-blue);
+            font-size: 24pt;
+            margin-bottom: 5px;
+        }
+
+        .report-header h2 {
+            color: var(--secondary-color);
+            font-size: 16pt;
+            font-weight: normal;
+            margin-bottom: 10px;
+        }
+
+        .report-header .regulation-ref {
+            color: #71767a;
+            font-size: 10pt;
+            font-style: italic;
+        }
+
+        .eu-flag {
+            display: inline-block;
+            background: var(--euaiact-blue);
+            padding: 8px 16px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+        }
+
+        .eu-flag span {
+            color: var(--eu-gold);
+            font-size: 18pt;
+            font-weight: bold;
+        }
+
+        .report-meta {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin-top: 25px;
+            flex-wrap: wrap;
+        }
+
+        .report-meta-item {
+            text-align: center;
+        }
+
+        .report-meta-label {
+            font-size: 9pt;
+            color: #71767a;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .report-meta-value {
+            font-size: 11pt;
+            color: var(--primary-color);
+            font-weight: 600;
+        }
+
+        /* Section Styles */
+        .section {
+            margin-bottom: 40px;
+            page-break-inside: avoid;
+        }
+
+        .section-title {
+            color: var(--euaiact-blue);
+            font-size: 16pt;
+            border-bottom: 2px solid var(--secondary-color);
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+
+        .subsection-title {
+            color: var(--secondary-color);
+            font-size: 13pt;
+            margin: 20px 0 15px 0;
+        }
+
+        /* Table Styles */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 10pt;
+        }
+
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 12px;
+            text-align: left;
+            vertical-align: top;
+        }
+
+        th {
+            background-color: var(--euaiact-blue);
+            color: white;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 9pt;
+            letter-spacing: 0.5px;
+        }
+
+        tr:nth-child(even) {
+            background-color: var(--light-gray);
+        }
+
+        tr:hover {
+            background-color: #e8f0f8;
+        }
+
+        /* Assessment Status Badges */
+        .assessment-badge {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 4px;
+            font-size: 10pt;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .assessment-passed {
+            background-color: #d4edda;
+            color: var(--conformity-green);
+            border: 1px solid var(--conformity-green);
+        }
+
+        .assessment-pending {
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid var(--pending-orange);
+        }
+
+        .assessment-failed {
+            background-color: #f8d7da;
+            color: var(--failed-red);
+            border: 1px solid var(--failed-red);
+        }
+
+        /* Assessment Type Badges */
+        .type-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 3px;
+            font-size: 9pt;
+            font-weight: 600;
+        }
+
+        .type-internal { background-color: #cce5ff; color: #004085; }
+        .type-notified { background-color: #d4edda; color: #155724; }
+        .type-qms { background-color: #e2e3e5; color: #383d41; }
+
+        /* Status Badges */
+        .status-badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 3px;
+            font-size: 9pt;
+            font-weight: 600;
+        }
+
+        .status-compliant { background-color: #d4edda; color: var(--success-color); }
+        .status-noncompliant { background-color: #f8d7da; color: var(--danger-color); }
+        .status-partial { background-color: #fff3cd; color: #856404; }
+        .status-pending { background-color: #cce5ff; color: #004085; }
+
+        /* Entity Card */
+        .entity-card {
+            background: white;
+            border: 1px solid var(--border-color);
+            border-left: 4px solid var(--euaiact-blue);
+            border-radius: 4px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .entity-card h3 {
+            color: var(--euaiact-blue);
+            margin-bottom: 15px;
+        }
+
+        .entity-details {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+
+        .entity-field {
+            margin-bottom: 10px;
+        }
+
+        .entity-field-label {
+            font-size: 9pt;
+            color: #71767a;
+            text-transform: uppercase;
+            margin-bottom: 3px;
+        }
+
+        .entity-field-value {
+            color: #1b1b1b;
+            font-weight: 500;
+        }
+
+        /* Assessment Overview Cards */
+        .assessment-overview {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .overview-card {
+            text-align: center;
+            padding: 25px;
+            border-radius: 8px;
+            border: 2px solid;
+        }
+
+        .overview-card.passed {
+            border-color: var(--conformity-green);
+            background: linear-gradient(135deg, #fff 0%, #f0fff4 100%);
+        }
+
+        .overview-card.pending {
+            border-color: var(--pending-orange);
+            background: linear-gradient(135deg, #fff 0%, #fffaf0 100%);
+        }
+
+        .overview-card.failed {
+            border-color: var(--failed-red);
+            background: linear-gradient(135deg, #fff 0%, #fff5f5 100%);
+        }
+
+        .overview-count {
+            font-size: 36pt;
+            font-weight: 700;
+        }
+
+        .overview-card.passed .overview-count { color: var(--conformity-green); }
+        .overview-card.pending .overview-count { color: var(--pending-orange); }
+        .overview-card.failed .overview-count { color: var(--failed-red); }
+
+        .overview-label {
+            font-size: 11pt;
+            text-transform: uppercase;
+            font-weight: 600;
+            color: #5c5c5c;
+            margin-top: 5px;
+        }
+
+        /* Assessment Card */
+        .assessment-card {
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 25px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .assessment-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .assessment-title {
+            color: var(--euaiact-blue);
+            font-size: 14pt;
+            margin: 0;
+        }
+
+        .assessment-id {
+            color: #71767a;
+            font-size: 10pt;
+            font-family: monospace;
+        }
+
+        .assessment-body {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+        }
+
+        .assessment-section {
+            margin-bottom: 15px;
+        }
+
+        .assessment-section-title {
+            font-size: 10pt;
+            font-weight: 600;
+            color: var(--secondary-color);
+            text-transform: uppercase;
+            margin-bottom: 8px;
+            padding-bottom: 5px;
+            border-bottom: 1px dashed var(--border-color);
+        }
+
+        /* Summary Box */
+        .summary-box {
+            background-color: var(--light-gray);
+            border: 1px solid var(--border-color);
+            border-left: 4px solid var(--euaiact-blue);
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        /* Requirements Checklist */
+        .requirements-checklist {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .requirements-checklist li {
+            padding: 12px 15px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .requirements-checklist li:last-child {
+            border-bottom: none;
+        }
+
+        .requirement-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .check-icon {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12pt;
+        }
+
+        .check-icon.passed { background-color: var(--conformity-green); color: white; }
+        .check-icon.pending { background-color: var(--pending-orange); color: white; }
+        .check-icon.failed { background-color: var(--failed-red); color: white; }
+
+        /* Nonconformity Alert */
+        .nonconformity-alert {
+            background-color: #fff5f5;
+            border: 1px solid var(--failed-red);
+            border-radius: 4px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+
+        .nonconformity-alert h4 {
+            color: var(--failed-red);
+            margin-bottom: 10px;
+        }
+
+        /* Corrective Actions Box */
+        .corrective-actions {
+            background-color: #fff8e6;
+            border: 1px solid var(--pending-orange);
+            border-radius: 4px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+
+        .corrective-actions h4 {
+            color: var(--pending-orange);
+            margin-bottom: 10px;
+        }
+
+        /* Certificate Box */
+        .certificate-box {
+            background: linear-gradient(135deg, #f0fff4 0%, #e8f5e9 100%);
+            border: 2px solid var(--conformity-green);
+            border-radius: 8px;
+            padding: 25px;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .certificate-box h3 {
+            color: var(--conformity-green);
+            margin-bottom: 15px;
+        }
+
+        .certificate-number {
+            font-size: 18pt;
+            font-weight: 700;
+            color: var(--euaiact-blue);
+            margin: 10px 0;
+        }
+
+        /* Declaration Box */
+        .declaration-box {
+            background: white;
+            border: 2px solid var(--euaiact-blue);
+            border-radius: 8px;
+            padding: 25px;
+            margin: 20px 0;
+        }
+
+        .declaration-header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--euaiact-blue);
+        }
+
+        .declaration-header h3 {
+            color: var(--euaiact-blue);
+            font-size: 16pt;
+        }
+
+        .ce-marking {
+            display: inline-block;
+            border: 3px solid var(--euaiact-blue);
+            padding: 10px 20px;
+            font-size: 24pt;
+            font-weight: bold;
+            color: var(--euaiact-blue);
+            margin: 15px 0;
+        }
+
+        /* Procedure Flow */
+        .procedure-flow {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 30px 0;
+            padding: 20px;
+            background-color: var(--light-gray);
+            border-radius: 8px;
+        }
+
+        .procedure-step {
+            text-align: center;
+            flex: 1;
+        }
+
+        .procedure-step-number {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: var(--euaiact-blue);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            margin: 0 auto 10px;
+        }
+
+        .procedure-step-title {
+            font-weight: 600;
+            color: var(--primary-color);
+            font-size: 10pt;
+        }
+
+        .procedure-arrow {
+            color: var(--secondary-color);
+            font-size: 20pt;
+        }
+
+        /* Footer */
+        .report-footer {
+            margin-top: 60px;
+            padding-top: 20px;
+            border-top: 2px solid var(--border-color);
+            text-align: center;
+            font-size: 9pt;
+            color: #71767a;
+        }
+
+        .legal-notice {
+            background-color: #f5f7f8;
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 4px;
+            font-size: 8pt;
+        }
+
+        /* Print Styles */
+        @media print {
+            .container {
+                max-width: 100%;
+                padding: 20px;
+            }
+
+            .section {
+                page-break-inside: avoid;
+            }
+
+            .assessment-card {
+                page-break-inside: avoid;
+            }
+
+            tr {
+                page-break-inside: avoid;
+            }
+        }
+
+        /* Full Width Sections */
+        .full-width {
+            grid-column: 1 / -1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Report Header -->
+        <header class="report-header">
+            <div class="eu-flag">
+                <span>EU AI ACT</span>
+            </div>
+            <h1>Conformity Assessment Report</h1>
+            <h2>Article 43 - High-Risk AI System Compliance</h2>
+            <p class="regulation-ref">Regulation (EU) 2024/1689 - Artificial Intelligence Act</p>
+            <div class="report-meta">
+                <div class="report-meta-item">
+                    <div class="report-meta-label">Organization</div>
+                    <div class="report-meta-value">{{ organization_name | default_value('Organization Name') }}</div>
+                </div>
+                <div class="report-meta-item">
+                    <div class="report-meta-label">Document Version</div>
+                    <div class="report-meta-value">{{ document_version | default_value('1.0') }}</div>
+                </div>
+                <div class="report-meta-item">
+                    <div class="report-meta-label">Generated</div>
+                    <div class="report-meta-value">{{ generated_at | format_datetime }}</div>
+                </div>
+                <div class="report-meta-item">
+                    <div class="report-meta-label">Assessment Period</div>
+                    <div class="report-meta-value">
+                        {{ reporting_period_start | format_date }} - {{ reporting_period_end | format_date }}
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Conformity Assessment Overview -->
+        <section class="section">
+            <h2 class="section-title">1. Conformity Assessment Overview</h2>
+            <div class="summary-box">
+                <p>
+                    This report documents conformity assessments performed pursuant to Article 43 of the EU AI Act.
+                    Providers of high-risk AI systems must undergo conformity assessment procedures before placing
+                    their systems on the market or putting them into service.
+                </p>
+            </div>
+
+            <!-- Assessment Status Overview -->
+            <h3 class="subsection-title">Assessment Status Summary</h3>
+            <div class="assessment-overview">
+                <div class="overview-card passed">
+                    <div class="overview-count">
+                        {% set passed_count = 0 %}
+                        {% for assessment in conformity_assessments %}
+                            {% if assessment.assessment_result == 'passed' %}
+                                {% set passed_count = passed_count + 1 %}
+                            {% endif %}
+                        {% endfor %}
+                        {{ passed_count }}
+                    </div>
+                    <div class="overview-label">Passed</div>
+                </div>
+                <div class="overview-card pending">
+                    <div class="overview-count">
+                        {% set pending_count = 0 %}
+                        {% for assessment in conformity_assessments %}
+                            {% if assessment.assessment_result == 'pending' %}
+                                {% set pending_count = pending_count + 1 %}
+                            {% endif %}
+                        {% endfor %}
+                        {{ pending_count }}
+                    </div>
+                    <div class="overview-label">Pending</div>
+                </div>
+                <div class="overview-card failed">
+                    <div class="overview-count">
+                        {% set failed_count = 0 %}
+                        {% for assessment in conformity_assessments %}
+                            {% if assessment.assessment_result == 'failed' %}
+                                {% set failed_count = failed_count + 1 %}
+                            {% endif %}
+                        {% endfor %}
+                        {{ failed_count }}
+                    </div>
+                    <div class="overview-label">Failed</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Conformity Assessment Procedures -->
+        <section class="section">
+            <h2 class="section-title">2. Conformity Assessment Procedures (Article 43)</h2>
+
+            <h3 class="subsection-title">Available Procedures</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Procedure Type</th>
+                        <th>Article Reference</th>
+                        <th>Applicable To</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><span class="type-badge type-internal">Internal Control</span></td>
+                        <td>Annex VI</td>
+                        <td>Most high-risk AI systems</td>
+                        <td>Provider's internal quality management and technical documentation review</td>
+                    </tr>
+                    <tr>
+                        <td><span class="type-badge type-notified">Notified Body</span></td>
+                        <td>Annex VII</td>
+                        <td>Biometric systems, certain high-risk categories</td>
+                        <td>Third-party assessment by accredited notified body</td>
+                    </tr>
+                    <tr>
+                        <td><span class="type-badge type-qms">Quality Management</span></td>
+                        <td>Article 17</td>
+                        <td>All high-risk AI systems</td>
+                        <td>Quality management system assessment and certification</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3 class="subsection-title">Conformity Assessment Procedure</h3>
+            <div class="procedure-flow">
+                <div class="procedure-step">
+                    <div class="procedure-step-number">1</div>
+                    <div class="procedure-step-title">Technical Documentation</div>
+                </div>
+                <div class="procedure-arrow">&rarr;</div>
+                <div class="procedure-step">
+                    <div class="procedure-step-number">2</div>
+                    <div class="procedure-step-title">Requirements Check</div>
+                </div>
+                <div class="procedure-arrow">&rarr;</div>
+                <div class="procedure-step">
+                    <div class="procedure-step-number">3</div>
+                    <div class="procedure-step-title">QMS Verification</div>
+                </div>
+                <div class="procedure-arrow">&rarr;</div>
+                <div class="procedure-step">
+                    <div class="procedure-step-number">4</div>
+                    <div class="procedure-step-title">Declaration</div>
+                </div>
+                <div class="procedure-arrow">&rarr;</div>
+                <div class="procedure-step">
+                    <div class="procedure-step-number">5</div>
+                    <div class="procedure-step-title">CE Marking</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Assessment Summary Table -->
+        <section class="section">
+            <h2 class="section-title">3. Conformity Assessments Summary</h2>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Assessment ID</th>
+                        <th>AI System</th>
+                        <th>Assessment Type</th>
+                        <th>Notified Body</th>
+                        <th>Date</th>
+                        <th>Result</th>
+                        <th>Certificate</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for assessment in conformity_assessments %}
+                    <tr>
+                        <td><code>{{ assessment.assessment_id }}</code></td>
+                        <td><strong>{{ assessment.system_id }}</strong></td>
+                        <td>
+                            {% if assessment.assessment_type == 'internal_control' %}
+                            <span class="type-badge type-internal">Internal</span>
+                            {% elif assessment.assessment_type == 'notified_body' %}
+                            <span class="type-badge type-notified">Notified Body</span>
+                            {% else %}
+                            <span class="type-badge type-qms">QMS</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ assessment.notified_body | default_value('N/A') }}</td>
+                        <td>{{ assessment.assessment_date | format_date }}</td>
+                        <td>
+                            {% if assessment.assessment_result == 'passed' %}
+                            <span class="assessment-badge assessment-passed">Passed</span>
+                            {% elif assessment.assessment_result == 'pending' %}
+                            <span class="assessment-badge assessment-pending">Pending</span>
+                            {% else %}
+                            <span class="assessment-badge assessment-failed">Failed</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ assessment.certificate_number | default_value('Pending') }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" style="text-align: center; font-style: italic; color: #71767a;">
+                            No conformity assessments documented. Assessment data will appear here when provided.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Detailed Assessments -->
+        <section class="section">
+            <h2 class="section-title">4. Detailed Conformity Assessments</h2>
+
+            {% for assessment in conformity_assessments %}
+            <div class="assessment-card">
+                <div class="assessment-header">
+                    <div>
+                        <h3 class="assessment-title">{{ assessment.system_id }}</h3>
+                        <span class="assessment-id">Assessment ID: {{ assessment.assessment_id }}</span>
+                    </div>
+                    <div>
+                        {% if assessment.assessment_result == 'passed' %}
+                        <span class="assessment-badge assessment-passed">Passed</span>
+                        {% elif assessment.assessment_result == 'pending' %}
+                        <span class="assessment-badge assessment-pending">Pending</span>
+                        {% else %}
+                        <span class="assessment-badge assessment-failed">Failed</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="assessment-body">
+                    <!-- Left Column -->
+                    <div>
+                        <!-- Assessment Details -->
+                        <div class="assessment-section">
+                            <div class="assessment-section-title">Assessment Details</div>
+                            <div class="entity-field">
+                                <div class="entity-field-label">Assessment Type</div>
+                                <div class="entity-field-value">
+                                    {% if assessment.assessment_type == 'internal_control' %}
+                                    Internal Control (Annex VI)
+                                    {% elif assessment.assessment_type == 'notified_body' %}
+                                    Notified Body (Annex VII)
+                                    {% else %}
+                                    Quality Management System
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="entity-field">
+                                <div class="entity-field-label">Assessment Date</div>
+                                <div class="entity-field-value">{{ assessment.assessment_date | format_date }}</div>
+                            </div>
+                            {% if assessment.notified_body %}
+                            <div class="entity-field">
+                                <div class="entity-field-label">Notified Body</div>
+                                <div class="entity-field-value">{{ assessment.notified_body }}</div>
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Requirements Checked -->
+                        <div class="assessment-section">
+                            <div class="assessment-section-title">Requirements Verified</div>
+                            {% if assessment.requirements_checked %}
+                            <ul class="requirements-checklist">
+                                {% for requirement in assessment.requirements_checked %}
+                                <li>
+                                    <span>{{ requirement }}</span>
+                                    <span class="check-icon passed">&#10003;</span>
+                                </li>
+                                {% endfor %}
+                            </ul>
+                            {% else %}
+                            <p style="color: #71767a; font-style: italic;">No requirements documented</p>
+                            {% endif %}
+                        </div>
+
+                        <!-- Certificate Information -->
+                        {% if assessment.certificate_number %}
+                        <div class="certificate-box">
+                            <h3>Certificate of Conformity</h3>
+                            <div class="certificate-number">{{ assessment.certificate_number }}</div>
+                            <p>
+                                <strong>Valid Until:</strong>
+                                {{ assessment.certificate_expiry | format_date | default_value('Not specified') }}
+                            </p>
+                            {% if assessment.eu_declaration_reference %}
+                            <p style="margin-top: 10px;">
+                                <strong>Declaration Reference:</strong> {{ assessment.eu_declaration_reference }}
+                            </p>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Right Column -->
+                    <div>
+                        <!-- Nonconformities -->
+                        {% if assessment.nonconformities %}
+                        <div class="nonconformity-alert">
+                            <h4>Nonconformities Identified</h4>
+                            <ul style="margin-top: 8px; padding-left: 20px;">
+                                {% for nc in assessment.nonconformities %}
+                                <li style="margin-bottom: 8px;">{{ nc }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        {% endif %}
+
+                        <!-- Corrective Actions -->
+                        {% if assessment.corrective_actions %}
+                        <div class="corrective-actions">
+                            <h4>Corrective Actions Required</h4>
+                            <ul style="margin-top: 8px; padding-left: 20px;">
+                                {% for action in assessment.corrective_actions %}
+                                <li style="margin-bottom: 8px;">{{ action }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        {% endif %}
+
+                        <!-- EU AI Act Requirements Status -->
+                        <div class="assessment-section">
+                            <div class="assessment-section-title">High-Risk AI Requirements (Art. 8-15)</div>
+                            <ul class="requirements-checklist">
+                                <li>
+                                    <span>Risk Management System (Art. 9)</span>
+                                    <span class="requirement-status">
+                                        {% if 'risk_management' in assessment.requirements_checked %}
+                                        <span class="check-icon passed">&#10003;</span>
+                                        {% else %}
+                                        <span class="check-icon pending">?</span>
+                                        {% endif %}
+                                    </span>
+                                </li>
+                                <li>
+                                    <span>Data Governance (Art. 10)</span>
+                                    <span class="requirement-status">
+                                        {% if 'data_governance' in assessment.requirements_checked %}
+                                        <span class="check-icon passed">&#10003;</span>
+                                        {% else %}
+                                        <span class="check-icon pending">?</span>
+                                        {% endif %}
+                                    </span>
+                                </li>
+                                <li>
+                                    <span>Technical Documentation (Art. 11)</span>
+                                    <span class="requirement-status">
+                                        {% if 'technical_documentation' in assessment.requirements_checked %}
+                                        <span class="check-icon passed">&#10003;</span>
+                                        {% else %}
+                                        <span class="check-icon pending">?</span>
+                                        {% endif %}
+                                    </span>
+                                </li>
+                                <li>
+                                    <span>Record-Keeping (Art. 12)</span>
+                                    <span class="requirement-status">
+                                        {% if 'record_keeping' in assessment.requirements_checked %}
+                                        <span class="check-icon passed">&#10003;</span>
+                                        {% else %}
+                                        <span class="check-icon pending">?</span>
+                                        {% endif %}
+                                    </span>
+                                </li>
+                                <li>
+                                    <span>Transparency (Art. 13)</span>
+                                    <span class="requirement-status">
+                                        {% if 'transparency' in assessment.requirements_checked %}
+                                        <span class="check-icon passed">&#10003;</span>
+                                        {% else %}
+                                        <span class="check-icon pending">?</span>
+                                        {% endif %}
+                                    </span>
+                                </li>
+                                <li>
+                                    <span>Human Oversight (Art. 14)</span>
+                                    <span class="requirement-status">
+                                        {% if 'human_oversight' in assessment.requirements_checked %}
+                                        <span class="check-icon passed">&#10003;</span>
+                                        {% else %}
+                                        <span class="check-icon pending">?</span>
+                                        {% endif %}
+                                    </span>
+                                </li>
+                                <li>
+                                    <span>Accuracy & Robustness (Art. 15)</span>
+                                    <span class="requirement-status">
+                                        {% if 'accuracy_robustness' in assessment.requirements_checked %}
+                                        <span class="check-icon passed">&#10003;</span>
+                                        {% else %}
+                                        <span class="check-icon pending">?</span>
+                                        {% endif %}
+                                    </span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="summary-box">
+                <p style="text-align: center; font-style: italic;">
+                    No conformity assessments documented. Detailed assessment data will appear here when provided.
+                </p>
+            </div>
+            {% endfor %}
+        </section>
+
+        <!-- EU Declarations of Conformity -->
+        <section class="section">
+            <h2 class="section-title">5. EU Declarations of Conformity (Article 47)</h2>
+
+            {% for declaration in declarations_of_conformity %}
+            <div class="declaration-box">
+                <div class="declaration-header">
+                    <h3>EU Declaration of Conformity</h3>
+                    <p>Pursuant to Article 47 of Regulation (EU) 2024/1689</p>
+                </div>
+
+                <div class="entity-details" style="margin-bottom: 20px;">
+                    <div class="entity-field">
+                        <div class="entity-field-label">Declaration ID</div>
+                        <div class="entity-field-value">{{ declaration.declaration_id }}</div>
+                    </div>
+                    <div class="entity-field">
+                        <div class="entity-field-label">AI System</div>
+                        <div class="entity-field-value">{{ declaration.system_name }} ({{ declaration.system_id }})</div>
+                    </div>
+                    <div class="entity-field">
+                        <div class="entity-field-label">Provider</div>
+                        <div class="entity-field-value">{{ declaration.provider_info.name | default_value('N/A') }}</div>
+                    </div>
+                    <div class="entity-field">
+                        <div class="entity-field-label">Address</div>
+                        <div class="entity-field-value">{{ declaration.provider_info.address | default_value('N/A') }}</div>
+                    </div>
+                    <div class="entity-field">
+                        <div class="entity-field-label">Declaration Date</div>
+                        <div class="entity-field-value">{{ declaration.declaration_date | format_date }}</div>
+                    </div>
+                    <div class="entity-field">
+                        <div class="entity-field-label">Conformity Assessment Reference</div>
+                        <div class="entity-field-value">{{ declaration.conformity_assessment_reference | default_value('N/A') }}</div>
+                    </div>
+                </div>
+
+                {% if declaration.applicable_legislation %}
+                <div style="margin-bottom: 15px;">
+                    <strong>Applicable EU Legislation:</strong>
+                    <ul style="margin-top: 8px; padding-left: 20px;">
+                        {% for legislation in declaration.applicable_legislation %}
+                        <li>{{ legislation }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+
+                {% if declaration.harmonised_standards %}
+                <div style="margin-bottom: 15px;">
+                    <strong>Harmonised Standards Applied:</strong>
+                    <ul style="margin-top: 8px; padding-left: 20px;">
+                        {% for standard in declaration.harmonised_standards %}
+                        <li>{{ standard }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+
+                {% if declaration.notified_body_number %}
+                <div style="margin-bottom: 15px;">
+                    <strong>Notified Body Number:</strong> {{ declaration.notified_body_number }}
+                </div>
+                {% endif %}
+
+                {% if declaration.ce_marking_applied %}
+                <div style="text-align: center; margin: 25px 0;">
+                    <div class="ce-marking">CE</div>
+                    <p style="color: var(--success-color); font-weight: 600;">CE Marking Applied</p>
+                </div>
+                {% endif %}
+
+                <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid var(--border-color);">
+                    <p><strong>Signed on behalf of:</strong> {{ declaration.provider_info.name | default_value('Provider') }}</p>
+                    <div style="margin-top: 30px;">
+                        <p><strong>Name:</strong> {{ declaration.signatory_name | default_value('___________________') }}</p>
+                        <p><strong>Position:</strong> {{ declaration.signatory_position | default_value('___________________') }}</p>
+                        <p><strong>Date:</strong> {{ declaration.declaration_date | format_date }}</p>
+                        <p style="margin-top: 20px;"><strong>Signature:</strong> _____________________________</p>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="summary-box">
+                <p style="text-align: center; font-style: italic;">
+                    No EU Declarations of Conformity documented. Declaration data will appear here when provided.
+                </p>
+            </div>
+            {% endfor %}
+        </section>
+
+        <!-- Quality Management System -->
+        <section class="section">
+            <h2 class="section-title">6. Quality Management System (Article 17)</h2>
+
+            {% if qms %}
+            <div class="entity-card">
+                <h3>Quality Management System Status</h3>
+                <div class="entity-details">
+                    <div class="entity-field">
+                        <div class="entity-field-label">QMS ID</div>
+                        <div class="entity-field-value">{{ qms.qms_id }}</div>
+                    </div>
+                    <div class="entity-field">
+                        <div class="entity-field-label">Implementation Status</div>
+                        <div class="entity-field-value">
+                            {% if qms.is_implemented %}
+                            <span class="status-badge status-compliant">Fully Implemented</span>
+                            {% else %}
+                            <span class="status-badge status-pending">In Progress</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="entity-field">
+                        <div class="entity-field-label">Last Audit Date</div>
+                        <div class="entity-field-value">{{ qms.last_audit_date | format_date | default_value('Not yet audited') }}</div>
+                    </div>
+                    <div class="entity-field">
+                        <div class="entity-field-label">Certification Reference</div>
+                        <div class="entity-field-value">{{ qms.certification_reference | default_value('N/A') }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <h3 class="subsection-title">QMS Procedures</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Procedure</th>
+                        <th>Article Reference</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Design Procedures</td>
+                        <td>Art. 17(1)(a)</td>
+                        <td>{{ qms.design_procedures | default_value('Not documented') }}</td>
+                    </tr>
+                    <tr>
+                        <td>Development Procedures</td>
+                        <td>Art. 17(1)(b)</td>
+                        <td>{{ qms.development_procedures | default_value('Not documented') }}</td>
+                    </tr>
+                    <tr>
+                        <td>Data Management</td>
+                        <td>Art. 17(1)(c)</td>
+                        <td>{{ qms.data_management_procedures | default_value('Not documented') }}</td>
+                    </tr>
+                    <tr>
+                        <td>Risk Management</td>
+                        <td>Art. 17(1)(d)</td>
+                        <td>{{ qms.risk_management_procedures | default_value('Not documented') }}</td>
+                    </tr>
+                    <tr>
+                        <td>Post-Market Monitoring</td>
+                        <td>Art. 17(1)(e)</td>
+                        <td>{{ qms.post_market_monitoring | default_value('Not documented') }}</td>
+                    </tr>
+                    <tr>
+                        <td>Incident Reporting</td>
+                        <td>Art. 17(1)(f)</td>
+                        <td>{{ qms.incident_reporting_procedures | default_value('Not documented') }}</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            {% if qms.policies_documentation %}
+            <h3 class="subsection-title">Documented Policies</h3>
+            <ul style="padding-left: 25px;">
+                {% for policy in qms.policies_documentation %}
+                <li style="margin-bottom: 8px;">{{ policy }}</li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+
+            {% else %}
+            <div class="summary-box">
+                <p style="text-align: center; font-style: italic;">
+                    No Quality Management System data provided. QMS details will appear here when documented.
+                </p>
+            </div>
+            {% endif %}
+        </section>
+
+        <!-- Report Footer -->
+        <footer class="report-footer">
+            <p>
+                <strong>EU AI Act Conformity Assessment Report</strong>
+                <br>
+                {{ organization_name | default_value('Organization') }} | Generated: {{ generated_at | format_datetime }}
+                <br>
+                Document Version: {{ document_version | default_value('1.0') }} | Generator Version: {{ generator_version | default_value('1.0.0') }}
+            </p>
+            <div class="legal-notice">
+                <strong>Legal Notice:</strong> This document has been generated to support EU AI Act (Regulation (EU) 2024/1689)
+                conformity assessment requirements. Conformity assessments must be performed in accordance with the procedures
+                set out in Articles 43 and Annexes VI/VII. For systems requiring notified body involvement, ensure the notified
+                body is properly accredited and designated. This document should be reviewed by qualified AI governance personnel.
+                <br><br>
+                ACGS-2 Enterprise Guardrails Platform - Compliance Documentation Service
+            </div>
+        </footer>
+    </div>
+</body>
+</html>

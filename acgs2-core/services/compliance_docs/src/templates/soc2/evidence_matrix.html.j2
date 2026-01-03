@@ -1,0 +1,1073 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SOC 2 Evidence Matrix - {{ organization_name | default_value }}</title>
+    <style>
+        :root {
+            --primary-color: #1a365d;
+            --secondary-color: #2c5282;
+            --success-color: #276749;
+            --warning-color: #c05621;
+            --danger-color: #c53030;
+            --info-color: #2b6cb0;
+            --light-gray: #f7fafc;
+            --border-color: #e2e8f0;
+
+            /* TSC-specific colors */
+            --tsc-security: #2b6cb0;
+            --tsc-availability: #276749;
+            --tsc-processing: #6b46c1;
+            --tsc-confidentiality: #c05621;
+            --tsc-privacy: #702459;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #2d3748;
+            background-color: #fff;
+            font-size: 10pt;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 30px;
+        }
+
+        /* Header */
+        .report-header {
+            text-align: center;
+            border-bottom: 3px solid var(--primary-color);
+            padding-bottom: 25px;
+            margin-bottom: 30px;
+        }
+
+        .report-header h1 {
+            color: var(--primary-color);
+            font-size: 24pt;
+            margin-bottom: 8px;
+        }
+
+        .report-header h2 {
+            color: var(--secondary-color);
+            font-size: 14pt;
+            font-weight: normal;
+        }
+
+        .report-meta {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+
+        .report-meta-item {
+            text-align: center;
+        }
+
+        .report-meta-label {
+            font-size: 8pt;
+            color: #718096;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .report-meta-value {
+            font-size: 10pt;
+            color: var(--primary-color);
+            font-weight: 600;
+        }
+
+        /* Section */
+        .section {
+            margin-bottom: 30px;
+            page-break-inside: avoid;
+        }
+
+        .section-title {
+            color: var(--primary-color);
+            font-size: 14pt;
+            border-bottom: 2px solid var(--secondary-color);
+            padding-bottom: 8px;
+            margin-bottom: 15px;
+        }
+
+        .subsection-title {
+            color: var(--secondary-color);
+            font-size: 12pt;
+            margin: 15px 0 10px 0;
+        }
+
+        /* Summary Stats */
+        .summary-stats {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin: 20px 0;
+            padding: 20px;
+            background: var(--light-gray);
+            border-radius: 8px;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 12px;
+            background: white;
+            border-radius: 6px;
+            min-width: 100px;
+            border: 1px solid var(--border-color);
+        }
+
+        .stat-value {
+            font-size: 20pt;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+
+        .stat-label {
+            font-size: 8pt;
+            color: #718096;
+            text-transform: uppercase;
+        }
+
+        /* TSC Badges */
+        .tsc-badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 8pt;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .tsc-security { background-color: var(--tsc-security); color: white; }
+        .tsc-availability { background-color: var(--tsc-availability); color: white; }
+        .tsc-processing-integrity { background-color: var(--tsc-processing); color: white; }
+        .tsc-confidentiality { background-color: var(--tsc-confidentiality); color: white; }
+        .tsc-privacy { background-color: var(--tsc-privacy); color: white; }
+
+        /* Status Badges */
+        .status-badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 8pt;
+            font-weight: 600;
+        }
+
+        .status-effective { background-color: #c6f6d5; color: #276749; }
+        .status-ineffective { background-color: #fed7d7; color: #c53030; }
+        .status-not-tested { background-color: #fefcbf; color: #975a16; }
+        .status-partial { background-color: #feebc8; color: #c05621; }
+        .status-pending { background-color: #e2e8f0; color: #4a5568; }
+
+        /* Evidence Type Badges */
+        .evidence-type {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 7pt;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .evidence-policy { background-color: #bee3f8; color: #2a4365; }
+        .evidence-procedure { background-color: #c6f6d5; color: #22543d; }
+        .evidence-screenshot { background-color: #faf089; color: #744210; }
+        .evidence-log { background-color: #e9d8fd; color: #44337a; }
+        .evidence-config { background-color: #fed7e2; color: #702459; }
+        .evidence-report { background-color: #b2f5ea; color: #234e52; }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+            font-size: 9pt;
+        }
+
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            text-align: left;
+            vertical-align: top;
+        }
+
+        th {
+            background-color: var(--primary-color);
+            color: white;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 8pt;
+            letter-spacing: 0.5px;
+        }
+
+        tr:nth-child(even) {
+            background-color: var(--light-gray);
+        }
+
+        tr:hover {
+            background-color: #edf2f7;
+        }
+
+        /* Evidence Matrix Specific */
+        .evidence-matrix {
+            overflow-x: auto;
+        }
+
+        .evidence-matrix table {
+            min-width: 100%;
+        }
+
+        .control-col {
+            width: 120px;
+            min-width: 120px;
+        }
+
+        .tsc-col {
+            width: 60px;
+            text-align: center;
+        }
+
+        .evidence-col {
+            width: 200px;
+        }
+
+        .status-col {
+            width: 100px;
+            text-align: center;
+        }
+
+        .date-col {
+            width: 90px;
+        }
+
+        /* Evidence Details */
+        .evidence-item {
+            margin-bottom: 8px;
+            padding: 6px;
+            background: white;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+        }
+
+        .evidence-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .evidence-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+
+        .evidence-item-title {
+            font-weight: 600;
+            color: var(--primary-color);
+            font-size: 9pt;
+        }
+
+        .evidence-item-desc {
+            font-size: 8pt;
+            color: #4a5568;
+        }
+
+        .evidence-item-meta {
+            font-size: 7pt;
+            color: #718096;
+            margin-top: 4px;
+        }
+
+        /* Collection Points */
+        .collection-point {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 10px;
+            padding: 10px;
+            background: white;
+            border-radius: 6px;
+            border-left: 3px solid var(--primary-color);
+        }
+
+        .collection-point-number {
+            background: var(--primary-color);
+            color: white;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10pt;
+            font-weight: 700;
+            margin-right: 12px;
+            flex-shrink: 0;
+        }
+
+        .collection-point-content {
+            flex: 1;
+        }
+
+        .collection-point-title {
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 4px;
+        }
+
+        .collection-point-desc {
+            font-size: 9pt;
+            color: #4a5568;
+        }
+
+        /* Coverage Indicator */
+        .coverage-bar {
+            width: 100%;
+            height: 16px;
+            background-color: #e2e8f0;
+            border-radius: 8px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .coverage-fill {
+            height: 100%;
+            border-radius: 8px;
+        }
+
+        .coverage-high { background-color: var(--success-color); }
+        .coverage-medium { background-color: var(--warning-color); }
+        .coverage-low { background-color: var(--danger-color); }
+
+        .coverage-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 8pt;
+            font-weight: 600;
+            color: white;
+        }
+
+        /* Summary Box */
+        .summary-box {
+            background-color: var(--light-gray);
+            border: 1px solid var(--border-color);
+            border-left: 4px solid var(--primary-color);
+            padding: 15px;
+            margin: 15px 0;
+        }
+
+        .summary-box p {
+            margin-bottom: 10px;
+        }
+
+        .summary-box p:last-child {
+            margin-bottom: 0;
+        }
+
+        /* Legend */
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            padding: 15px;
+            background: var(--light-gray);
+            border-radius: 6px;
+            margin: 20px 0;
+        }
+
+        .legend-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .legend-title {
+            font-size: 9pt;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 4px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 8pt;
+        }
+
+        /* Gap Analysis */
+        .gap-item {
+            margin-bottom: 12px;
+            padding: 12px;
+            background: white;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            border-left: 3px solid var(--danger-color);
+        }
+
+        .gap-item-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .gap-item-control {
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+
+        .gap-item-priority {
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-size: 8pt;
+            font-weight: 600;
+        }
+
+        .priority-high { background: #fed7d7; color: #c53030; }
+        .priority-medium { background: #feebc8; color: #c05621; }
+        .priority-low { background: #fefcbf; color: #975a16; }
+
+        .gap-item-desc {
+            font-size: 9pt;
+            color: #4a5568;
+        }
+
+        /* Footer */
+        .report-footer {
+            margin-top: 40px;
+            padding-top: 15px;
+            border-top: 2px solid var(--border-color);
+            text-align: center;
+            font-size: 8pt;
+            color: #718096;
+        }
+
+        /* Print Styles */
+        @media print {
+            .container {
+                max-width: 100%;
+                padding: 15px;
+            }
+
+            .section {
+                page-break-inside: avoid;
+            }
+
+            tr {
+                page-break-inside: avoid;
+            }
+
+            .evidence-matrix {
+                overflow-x: visible;
+            }
+        }
+
+        /* Responsive */
+        @media screen and (max-width: 768px) {
+            .evidence-matrix {
+                overflow-x: auto;
+            }
+
+            .summary-stats {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .stat-item {
+                width: 100%;
+                max-width: 200px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Report Header -->
+        <header class="report-header">
+            <h1>SOC 2 Evidence Collection Matrix</h1>
+            <h2>{{ organization_name | default_value('Organization Name') }}</h2>
+            <div class="report-meta">
+                <div class="report-meta-item">
+                    <div class="report-meta-label">Report Type</div>
+                    <div class="report-meta-value">{{ report_type | default_value('Type II') }}</div>
+                </div>
+                <div class="report-meta-item">
+                    <div class="report-meta-label">Audit Period</div>
+                    <div class="report-meta-value">
+                        {{ audit_period_start | format_date }} - {{ audit_period_end | format_date }}
+                    </div>
+                </div>
+                <div class="report-meta-item">
+                    <div class="report-meta-label">Generated</div>
+                    <div class="report-meta-value">{{ generated_at | format_datetime }}</div>
+                </div>
+                <div class="report-meta-item">
+                    <div class="report-meta-label">Document Version</div>
+                    <div class="report-meta-value">{{ document_version | default_value('1.0') }}</div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Executive Summary -->
+        <section class="section">
+            <h2 class="section-title">Evidence Collection Summary</h2>
+            <div class="summary-box">
+                <p>
+                    This evidence matrix documents all collected evidence supporting SOC 2 Type II
+                    control effectiveness across the five Trust Service Criteria. The matrix provides
+                    auditors with a comprehensive view of evidence types, collection dates, and
+                    design/operating effectiveness assessments.
+                </p>
+            </div>
+
+            <div class="summary-stats">
+                <div class="stat-item">
+                    <div class="stat-value">{{ total_evidence_items | default_value('0') }}</div>
+                    <div class="stat-label">Total Evidence Items</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">{{ controls_covered | default_value('0') }}</div>
+                    <div class="stat-label">Controls Covered</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">{{ evidence_coverage | default_value('0') }}%</div>
+                    <div class="stat-label">Evidence Coverage</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">{{ gaps_identified | default_value('0') }}</div>
+                    <div class="stat-label">Gaps Identified</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">{{ exceptions_noted | default_value('0') }}</div>
+                    <div class="stat-label">Exceptions Noted</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Legend -->
+        <section class="section">
+            <h2 class="section-title">Matrix Legend</h2>
+            <div class="legend">
+                <div class="legend-group">
+                    <div class="legend-title">Trust Service Criteria</div>
+                    <div class="legend-item"><span class="tsc-badge tsc-security">CC</span> Security (Common Criteria)</div>
+                    <div class="legend-item"><span class="tsc-badge tsc-availability">A</span> Availability</div>
+                    <div class="legend-item"><span class="tsc-badge tsc-processing-integrity">PI</span> Processing Integrity</div>
+                    <div class="legend-item"><span class="tsc-badge tsc-confidentiality">C</span> Confidentiality</div>
+                    <div class="legend-item"><span class="tsc-badge tsc-privacy">P</span> Privacy</div>
+                </div>
+                <div class="legend-group">
+                    <div class="legend-title">Evidence Types</div>
+                    <div class="legend-item"><span class="evidence-type evidence-policy">Policy</span> Policy Documents</div>
+                    <div class="legend-item"><span class="evidence-type evidence-procedure">Procedure</span> Operating Procedures</div>
+                    <div class="legend-item"><span class="evidence-type evidence-screenshot">Screenshot</span> System Screenshots</div>
+                    <div class="legend-item"><span class="evidence-type evidence-log">Log</span> Audit Logs</div>
+                    <div class="legend-item"><span class="evidence-type evidence-config">Config</span> Configuration Files</div>
+                    <div class="legend-item"><span class="evidence-type evidence-report">Report</span> System Reports</div>
+                </div>
+                <div class="legend-group">
+                    <div class="legend-title">Effectiveness Status</div>
+                    <div class="legend-item"><span class="status-badge status-effective">Effective</span> Control operating effectively</div>
+                    <div class="legend-item"><span class="status-badge status-partial">Partial</span> Partially effective</div>
+                    <div class="legend-item"><span class="status-badge status-ineffective">Ineffective</span> Control not effective</div>
+                    <div class="legend-item"><span class="status-badge status-not-tested">Not Tested</span> Pending assessment</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Evidence Matrix by TSC -->
+        <section class="section">
+            <h2 class="section-title">Evidence Matrix by Trust Service Criteria</h2>
+
+            {% for tsc in trust_service_criteria %}
+            <div style="margin-bottom: 30px;">
+                <h3 class="subsection-title">
+                    {% if tsc.criteria == 'security' %}
+                    <span class="tsc-badge tsc-security">CC</span>
+                    {% elif tsc.criteria == 'availability' %}
+                    <span class="tsc-badge tsc-availability">A</span>
+                    {% elif tsc.criteria == 'processing_integrity' %}
+                    <span class="tsc-badge tsc-processing-integrity">PI</span>
+                    {% elif tsc.criteria == 'confidentiality' %}
+                    <span class="tsc-badge tsc-confidentiality">C</span>
+                    {% elif tsc.criteria == 'privacy' %}
+                    <span class="tsc-badge tsc-privacy">P</span>
+                    {% endif %}
+                    {{ tsc.name | default_value('Trust Service Criteria') }}
+                </h3>
+
+                <div class="evidence-matrix">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th class="control-col">Control ID</th>
+                                <th>Control Description</th>
+                                <th class="evidence-col">Evidence Collected</th>
+                                <th class="status-col">Design Eff.</th>
+                                <th class="status-col">Operating Eff.</th>
+                                <th class="date-col">Last Tested</th>
+                                <th>Notes</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for control in tsc.controls %}
+                            <tr>
+                                <td>
+                                    <strong>{{ control.control_id | control_id }}</strong>
+                                </td>
+                                <td>{{ control.description | default_value }}</td>
+                                <td>
+                                    {% if control.evidence %}
+                                        {% for evidence in control.evidence %}
+                                        <div class="evidence-item">
+                                            <div class="evidence-item-header">
+                                                <span class="evidence-item-title">{{ evidence.title | default_value }}</span>
+                                                {% if evidence.type == 'policy' %}
+                                                <span class="evidence-type evidence-policy">Policy</span>
+                                                {% elif evidence.type == 'procedure' %}
+                                                <span class="evidence-type evidence-procedure">Procedure</span>
+                                                {% elif evidence.type == 'screenshot' %}
+                                                <span class="evidence-type evidence-screenshot">Screenshot</span>
+                                                {% elif evidence.type == 'log' %}
+                                                <span class="evidence-type evidence-log">Log</span>
+                                                {% elif evidence.type == 'config' %}
+                                                <span class="evidence-type evidence-config">Config</span>
+                                                {% elif evidence.type == 'report' %}
+                                                <span class="evidence-type evidence-report">Report</span>
+                                                {% else %}
+                                                <span class="evidence-type">{{ evidence.type | default_value }}</span>
+                                                {% endif %}
+                                            </div>
+                                            <div class="evidence-item-desc">{{ evidence.description | default_value }}</div>
+                                            <div class="evidence-item-meta">
+                                                Collected: {{ evidence.collected_at | format_date }} |
+                                                Ref: {{ evidence.reference | default_value }}
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    {% else %}
+                                    <span style="color: var(--warning-color); font-style: italic;">No evidence collected</span>
+                                    {% endif %}
+                                </td>
+                                <td class="status-col">
+                                    {% if control.design_effectiveness == 'effective' %}
+                                    <span class="status-badge status-effective">Effective</span>
+                                    {% elif control.design_effectiveness == 'partially_effective' %}
+                                    <span class="status-badge status-partial">Partial</span>
+                                    {% elif control.design_effectiveness == 'ineffective' %}
+                                    <span class="status-badge status-ineffective">Ineffective</span>
+                                    {% else %}
+                                    <span class="status-badge status-not-tested">Not Tested</span>
+                                    {% endif %}
+                                </td>
+                                <td class="status-col">
+                                    {% if control.operating_effectiveness == 'effective' %}
+                                    <span class="status-badge status-effective">Effective</span>
+                                    {% elif control.operating_effectiveness == 'partially_effective' %}
+                                    <span class="status-badge status-partial">Partial</span>
+                                    {% elif control.operating_effectiveness == 'ineffective' %}
+                                    <span class="status-badge status-ineffective">Ineffective</span>
+                                    {% else %}
+                                    <span class="status-badge status-not-tested">Not Tested</span>
+                                    {% endif %}
+                                </td>
+                                <td class="date-col">{{ control.last_tested | format_date }}</td>
+                                <td>
+                                    {% if control.notes %}
+                                    {{ control.notes }}
+                                    {% elif control.exceptions_noted and control.exceptions_noted > 0 %}
+                                    <span style="color: var(--danger-color);">
+                                        {{ control.exceptions_noted }} exception(s) noted
+                                    </span>
+                                    {% else %}
+                                    -
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="7" style="text-align: center; font-style: italic; color: #718096;">
+                                    No controls defined for this criteria.
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- TSC Coverage Summary -->
+                <div style="display: flex; gap: 20px; margin-top: 10px;">
+                    <div style="flex: 1;">
+                        <span style="font-size: 8pt; color: #718096; text-transform: uppercase;">Evidence Coverage</span>
+                        <div class="coverage-bar">
+                            <div class="coverage-fill {% if tsc.coverage >= 80 %}coverage-high{% elif tsc.coverage >= 50 %}coverage-medium{% else %}coverage-low{% endif %}"
+                                 style="width: {{ tsc.coverage | default_value('0') }}%;">
+                            </div>
+                            <span class="coverage-text">{{ tsc.coverage | default_value('0') }}%</span>
+                        </div>
+                    </div>
+                    <div style="text-align: right;">
+                        <span style="font-size: 8pt; color: #718096;">Controls: {{ tsc.controls | length if tsc.controls else '0' }}</span>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <!-- Default TSC sections when no data provided -->
+            {% set default_tsc = [
+                {'criteria': 'security', 'name': 'Security (Common Criteria)', 'badge': 'CC'},
+                {'criteria': 'availability', 'name': 'Availability', 'badge': 'A'},
+                {'criteria': 'processing_integrity', 'name': 'Processing Integrity', 'badge': 'PI'},
+                {'criteria': 'confidentiality', 'name': 'Confidentiality', 'badge': 'C'},
+                {'criteria': 'privacy', 'name': 'Privacy', 'badge': 'P'}
+            ] %}
+            {% for tsc in default_tsc %}
+            <div style="margin-bottom: 30px;">
+                <h3 class="subsection-title">
+                    {% if tsc.criteria == 'security' %}
+                    <span class="tsc-badge tsc-security">{{ tsc.badge }}</span>
+                    {% elif tsc.criteria == 'availability' %}
+                    <span class="tsc-badge tsc-availability">{{ tsc.badge }}</span>
+                    {% elif tsc.criteria == 'processing_integrity' %}
+                    <span class="tsc-badge tsc-processing-integrity">{{ tsc.badge }}</span>
+                    {% elif tsc.criteria == 'confidentiality' %}
+                    <span class="tsc-badge tsc-confidentiality">{{ tsc.badge }}</span>
+                    {% elif tsc.criteria == 'privacy' %}
+                    <span class="tsc-badge tsc-privacy">{{ tsc.badge }}</span>
+                    {% endif %}
+                    {{ tsc.name }}
+                </h3>
+                <div class="evidence-matrix">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th class="control-col">Control ID</th>
+                                <th>Control Description</th>
+                                <th class="evidence-col">Evidence Collected</th>
+                                <th class="status-col">Design Eff.</th>
+                                <th class="status-col">Operating Eff.</th>
+                                <th class="date-col">Last Tested</th>
+                                <th>Notes</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td colspan="7" style="text-align: center; font-style: italic; color: #718096;">
+                                    Evidence data will be displayed when provided to the template.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% endfor %}
+            {% endfor %}
+        </section>
+
+        <!-- Evidence Collection Points -->
+        <section class="section">
+            <h2 class="section-title">Evidence Collection Points</h2>
+            <p style="margin-bottom: 15px;">
+                The following collection points define where and how evidence should be gathered
+                for SOC 2 Type II assessments:
+            </p>
+
+            {% if collection_points %}
+                {% for point in collection_points %}
+                <div class="collection-point">
+                    <div class="collection-point-number">{{ loop.index }}</div>
+                    <div class="collection-point-content">
+                        <div class="collection-point-title">{{ point.title | default_value }}</div>
+                        <div class="collection-point-desc">{{ point.description | default_value }}</div>
+                        {% if point.sources %}
+                        <div style="margin-top: 8px; font-size: 8pt; color: #718096;">
+                            <strong>Sources:</strong> {{ point.sources | join(', ') }}
+                        </div>
+                        {% endif %}
+                        {% if point.frequency %}
+                        <div style="font-size: 8pt; color: #718096;">
+                            <strong>Collection Frequency:</strong> {{ point.frequency }}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+            <!-- Default Collection Points -->
+            <div class="collection-point">
+                <div class="collection-point-number">1</div>
+                <div class="collection-point-content">
+                    <div class="collection-point-title">Policy Documentation</div>
+                    <div class="collection-point-desc">
+                        Collect approved security policies, procedures, and standards that
+                        demonstrate management's commitment to security and compliance.
+                    </div>
+                    <div style="margin-top: 8px; font-size: 8pt; color: #718096;">
+                        <strong>Sources:</strong> Document management system, SharePoint, Confluence
+                    </div>
+                    <div style="font-size: 8pt; color: #718096;">
+                        <strong>Collection Frequency:</strong> Annually or upon policy update
+                    </div>
+                </div>
+            </div>
+            <div class="collection-point">
+                <div class="collection-point-number">2</div>
+                <div class="collection-point-content">
+                    <div class="collection-point-title">Access Control Evidence</div>
+                    <div class="collection-point-desc">
+                        Gather user access reviews, role assignments, and authentication
+                        configurations demonstrating logical access controls.
+                    </div>
+                    <div style="margin-top: 8px; font-size: 8pt; color: #718096;">
+                        <strong>Sources:</strong> IAM systems, Active Directory, SSO provider
+                    </div>
+                    <div style="font-size: 8pt; color: #718096;">
+                        <strong>Collection Frequency:</strong> Quarterly access reviews, real-time for changes
+                    </div>
+                </div>
+            </div>
+            <div class="collection-point">
+                <div class="collection-point-number">3</div>
+                <div class="collection-point-content">
+                    <div class="collection-point-title">Change Management Records</div>
+                    <div class="collection-point-desc">
+                        Document change requests, approvals, testing evidence, and
+                        deployment records for system and application changes.
+                    </div>
+                    <div style="margin-top: 8pt; font-size: 8pt; color: #718096;">
+                        <strong>Sources:</strong> JIRA, ServiceNow, GitHub, CI/CD pipelines
+                    </div>
+                    <div style="font-size: 8pt; color: #718096;">
+                        <strong>Collection Frequency:</strong> Per change, with monthly summaries
+                    </div>
+                </div>
+            </div>
+            <div class="collection-point">
+                <div class="collection-point-number">4</div>
+                <div class="collection-point-content">
+                    <div class="collection-point-title">Security Monitoring Logs</div>
+                    <div class="collection-point-desc">
+                        Collect security event logs, SIEM alerts, and incident response
+                        documentation demonstrating continuous monitoring.
+                    </div>
+                    <div style="margin-top: 8pt; font-size: 8pt; color: #718096;">
+                        <strong>Sources:</strong> SIEM, CloudWatch, Datadog, PagerDuty
+                    </div>
+                    <div style="font-size: 8pt; color: #718096;">
+                        <strong>Collection Frequency:</strong> Real-time logging, weekly reviews
+                    </div>
+                </div>
+            </div>
+            <div class="collection-point">
+                <div class="collection-point-number">5</div>
+                <div class="collection-point-content">
+                    <div class="collection-point-title">Vulnerability Management</div>
+                    <div class="collection-point-desc">
+                        Document vulnerability scans, penetration test results, and
+                        remediation tracking to demonstrate risk management.
+                    </div>
+                    <div style="margin-top: 8pt; font-size: 8pt; color: #718096;">
+                        <strong>Sources:</strong> Qualys, Nessus, HackerOne, remediation tickets
+                    </div>
+                    <div style="font-size: 8pt; color: #718096;">
+                        <strong>Collection Frequency:</strong> Weekly scans, annual penetration tests
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </section>
+
+        <!-- Evidence Gaps -->
+        <section class="section">
+            <h2 class="section-title">Evidence Gaps Analysis</h2>
+
+            {% if evidence_gaps %}
+                {% for gap in evidence_gaps %}
+                <div class="gap-item">
+                    <div class="gap-item-header">
+                        <span class="gap-item-control">
+                            {{ gap.control_id | control_id }} - {{ gap.control_name | default_value }}
+                        </span>
+                        {% if gap.priority == 'high' %}
+                        <span class="gap-item-priority priority-high">High Priority</span>
+                        {% elif gap.priority == 'medium' %}
+                        <span class="gap-item-priority priority-medium">Medium Priority</span>
+                        {% else %}
+                        <span class="gap-item-priority priority-low">Low Priority</span>
+                        {% endif %}
+                    </div>
+                    <div class="gap-item-desc">
+                        <strong>Gap:</strong> {{ gap.description | default_value }}
+                    </div>
+                    {% if gap.remediation %}
+                    <div class="gap-item-desc" style="margin-top: 8px;">
+                        <strong>Remediation:</strong> {{ gap.remediation }}
+                    </div>
+                    {% endif %}
+                    {% if gap.target_date %}
+                    <div style="font-size: 8pt; color: #718096; margin-top: 4px;">
+                        <strong>Target Date:</strong> {{ gap.target_date | format_date }}
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            {% else %}
+            <div class="summary-box" style="border-left-color: var(--success-color);">
+                <p>
+                    <strong>No evidence gaps identified.</strong> All controls have adequate evidence
+                    documentation for SOC 2 Type II assessment.
+                </p>
+            </div>
+            {% endif %}
+        </section>
+
+        <!-- Testing Samples Summary -->
+        <section class="section">
+            <h2 class="section-title">Testing Samples Summary</h2>
+            <p style="margin-bottom: 15px;">
+                Summary of sample sizes used for operating effectiveness testing:
+            </p>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Control Area</th>
+                        <th>Population Size</th>
+                        <th>Sample Size</th>
+                        <th>Sample Method</th>
+                        <th>Exceptions</th>
+                        <th>Exception Rate</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for sample in testing_samples %}
+                    <tr>
+                        <td><strong>{{ sample.control_area | default_value }}</strong></td>
+                        <td>{{ sample.population_size | default_value }}</td>
+                        <td>{{ sample.sample_size | default_value }}</td>
+                        <td>{{ sample.sample_method | default_value }}</td>
+                        <td>
+                            {% if sample.exceptions > 0 %}
+                            <span style="color: var(--danger-color); font-weight: 600;">{{ sample.exceptions }}</span>
+                            {% else %}
+                            <span style="color: var(--success-color);">0</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% set rate = (sample.exceptions / sample.sample_size * 100) if sample.sample_size and sample.sample_size > 0 else 0 %}
+                            {% if rate > 10 %}
+                            <span style="color: var(--danger-color); font-weight: 600;">{{ rate | round(1) }}%</span>
+                            {% elif rate > 5 %}
+                            <span style="color: var(--warning-color);">{{ rate | round(1) }}%</span>
+                            {% else %}
+                            <span style="color: var(--success-color);">{{ rate | round(1) }}%</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" style="text-align: center; font-style: italic; color: #718096;">
+                            Testing sample data will be displayed when provided to the template.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Appendix: Evidence Type Definitions -->
+        <section class="section">
+            <h2 class="section-title">Appendix: Evidence Type Definitions</h2>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 150px;">Evidence Type</th>
+                        <th>Definition</th>
+                        <th style="width: 200px;">Examples</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><span class="evidence-type evidence-policy">Policy</span></td>
+                        <td>
+                            Formal documents that establish management's intent and direction
+                            for security and compliance requirements.
+                        </td>
+                        <td>Information Security Policy, Acceptable Use Policy, Data Classification Policy</td>
+                    </tr>
+                    <tr>
+                        <td><span class="evidence-type evidence-procedure">Procedure</span></td>
+                        <td>
+                            Documented steps and processes that implement policy requirements
+                            and guide operational activities.
+                        </td>
+                        <td>Incident Response Procedures, Change Management Process, Access Request Workflow</td>
+                    </tr>
+                    <tr>
+                        <td><span class="evidence-type evidence-screenshot">Screenshot</span></td>
+                        <td>
+                            Visual captures of system configurations, settings, and controls
+                            demonstrating implementation status.
+                        </td>
+                        <td>Firewall rules, MFA configuration, Password policy settings</td>
+                    </tr>
+                    <tr>
+                        <td><span class="evidence-type evidence-log">Log</span></td>
+                        <td>
+                            System-generated records of activities, events, and transactions
+                            providing audit trail evidence.
+                        </td>
+                        <td>Access logs, Audit trails, Security event logs, Change logs</td>
+                    </tr>
+                    <tr>
+                        <td><span class="evidence-type evidence-config">Config</span></td>
+                        <td>
+                            Configuration files and settings that define system behavior
+                            and security controls.
+                        </td>
+                        <td>Infrastructure as Code, Security group rules, Application settings</td>
+                    </tr>
+                    <tr>
+                        <td><span class="evidence-type evidence-report">Report</span></td>
+                        <td>
+                            Generated reports from tools and systems that summarize
+                            compliance status and control effectiveness.
+                        </td>
+                        <td>Vulnerability scan reports, Access review reports, Compliance dashboards</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Report Footer -->
+        <footer class="report-footer">
+            <p>
+                <strong>SOC 2 Evidence Collection Matrix</strong>
+                <br>
+                {{ organization_name | default_value('Organization') }} | Generated: {{ generated_at | format_datetime }}
+                <br>
+                Document Version: {{ document_version | default_value('1.0') }} | Generator Version: {{ generator_version | default_value('1.0.0') }}
+            </p>
+            <p style="margin-top: 10px; font-size: 7pt;">
+                This document is confidential and intended for compliance assessment purposes only.
+                <br>
+                ACGS-2 Enterprise Guardrails Platform - Compliance Documentation Service
+            </p>
+        </footer>
+    </div>
+</body>
+</html>

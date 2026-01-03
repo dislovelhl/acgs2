@@ -1,0 +1,1010 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GDPR Article 30(1) Records of Processing Activities - {{ organization_name | default_value }}</title>
+    <style>
+        :root {
+            --primary-color: #1a4480;
+            --secondary-color: #2c608a;
+            --success-color: #2e8540;
+            --warning-color: #e66f0e;
+            --danger-color: #d63e04;
+            --info-color: #00bcd4;
+            --light-gray: #f5f7f8;
+            --border-color: #dfe1e2;
+            --gdpr-blue: #003399;
+            --eu-gold: #ffcc00;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #1b1b1b;
+            background-color: #fff;
+            font-size: 11pt;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 40px;
+        }
+
+        /* Header Styles */
+        .report-header {
+            text-align: center;
+            border-bottom: 4px solid var(--gdpr-blue);
+            padding-bottom: 30px;
+            margin-bottom: 40px;
+        }
+
+        .report-header h1 {
+            color: var(--gdpr-blue);
+            font-size: 24pt;
+            margin-bottom: 5px;
+        }
+
+        .report-header h2 {
+            color: var(--secondary-color);
+            font-size: 16pt;
+            font-weight: normal;
+            margin-bottom: 10px;
+        }
+
+        .report-header .regulation-ref {
+            color: #71767a;
+            font-size: 10pt;
+            font-style: italic;
+        }
+
+        .report-meta {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin-top: 25px;
+            flex-wrap: wrap;
+        }
+
+        .report-meta-item {
+            text-align: center;
+        }
+
+        .report-meta-label {
+            font-size: 9pt;
+            color: #71767a;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .report-meta-value {
+            font-size: 11pt;
+            color: var(--primary-color);
+            font-weight: 600;
+        }
+
+        /* Section Styles */
+        .section {
+            margin-bottom: 40px;
+            page-break-inside: avoid;
+        }
+
+        .section-title {
+            color: var(--gdpr-blue);
+            font-size: 16pt;
+            border-bottom: 2px solid var(--secondary-color);
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+
+        .subsection-title {
+            color: var(--secondary-color);
+            font-size: 13pt;
+            margin: 20px 0 15px 0;
+        }
+
+        /* Table Styles */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 10pt;
+        }
+
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 12px;
+            text-align: left;
+            vertical-align: top;
+        }
+
+        th {
+            background-color: var(--gdpr-blue);
+            color: white;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 9pt;
+            letter-spacing: 0.5px;
+        }
+
+        tr:nth-child(even) {
+            background-color: var(--light-gray);
+        }
+
+        tr:hover {
+            background-color: #e8f0f8;
+        }
+
+        /* Entity Card */
+        .entity-card {
+            background: white;
+            border: 1px solid var(--border-color);
+            border-left: 4px solid var(--gdpr-blue);
+            border-radius: 4px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .entity-card h3 {
+            color: var(--gdpr-blue);
+            margin-bottom: 15px;
+        }
+
+        .entity-details {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+
+        .entity-field {
+            margin-bottom: 10px;
+        }
+
+        .entity-field-label {
+            font-size: 9pt;
+            color: #71767a;
+            text-transform: uppercase;
+            margin-bottom: 3px;
+        }
+
+        .entity-field-value {
+            color: #1b1b1b;
+            font-weight: 500;
+        }
+
+        /* Status Badges */
+        .status-badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 3px;
+            font-size: 9pt;
+            font-weight: 600;
+        }
+
+        .status-active { background-color: #d4edda; color: var(--success-color); }
+        .status-inactive { background-color: #f8d7da; color: var(--danger-color); }
+        .status-pending { background-color: #fff3cd; color: #856404; }
+        .status-implemented { background-color: #cce5ff; color: #004085; }
+
+        /* Lawful Basis Tags */
+        .basis-tag {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 9pt;
+            font-weight: 600;
+            margin: 2px;
+        }
+
+        .basis-consent { background-color: #d4edda; color: var(--success-color); }
+        .basis-contract { background-color: #cce5ff; color: #004085; }
+        .basis-legal { background-color: #e2e3e5; color: #383d41; }
+        .basis-vital { background-color: #f8d7da; color: var(--danger-color); }
+        .basis-public { background-color: #d1ecf1; color: #0c5460; }
+        .basis-legitimate { background-color: #fff3cd; color: #856404; }
+
+        /* Data Category Tags */
+        .category-tag {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 8pt;
+            font-weight: 500;
+            margin: 2px;
+            background-color: #e8f4fd;
+            color: var(--primary-color);
+        }
+
+        .category-special {
+            background-color: #f8d7da;
+            color: var(--danger-color);
+        }
+
+        /* Activity Card */
+        .activity-card {
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 25px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .activity-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .activity-title {
+            color: var(--gdpr-blue);
+            font-size: 14pt;
+            margin: 0;
+        }
+
+        .activity-id {
+            color: #71767a;
+            font-size: 10pt;
+            font-family: monospace;
+        }
+
+        .activity-body {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+        }
+
+        .activity-section {
+            margin-bottom: 15px;
+        }
+
+        .activity-section-title {
+            font-size: 10pt;
+            font-weight: 600;
+            color: var(--secondary-color);
+            text-transform: uppercase;
+            margin-bottom: 8px;
+            padding-bottom: 5px;
+            border-bottom: 1px dashed var(--border-color);
+        }
+
+        /* Summary Box */
+        .summary-box {
+            background-color: var(--light-gray);
+            border: 1px solid var(--border-color);
+            border-left: 4px solid var(--gdpr-blue);
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .summary-stats {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 15px 20px;
+            background: white;
+            border-radius: 8px;
+            min-width: 130px;
+        }
+
+        .stat-value {
+            font-size: 24pt;
+            font-weight: 700;
+            color: var(--gdpr-blue);
+        }
+
+        .stat-label {
+            font-size: 9pt;
+            color: #71767a;
+            text-transform: uppercase;
+        }
+
+        /* Recipient and Retention Tables */
+        .sub-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 9pt;
+        }
+
+        .sub-table th {
+            background-color: var(--secondary-color);
+            padding: 8px;
+        }
+
+        .sub-table td {
+            padding: 8px;
+        }
+
+        /* Transfer Warning */
+        .transfer-warning {
+            background-color: #fff3cd;
+            border: 1px solid #ffc107;
+            border-radius: 4px;
+            padding: 10px;
+            margin: 10px 0;
+            font-size: 9pt;
+        }
+
+        .transfer-warning strong {
+            color: #856404;
+        }
+
+        /* Security Measures List */
+        .security-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .security-list li {
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .security-list li:last-child {
+            border-bottom: none;
+        }
+
+        .security-category {
+            font-size: 8pt;
+            padding: 2px 6px;
+            border-radius: 3px;
+            background-color: #e8f4fd;
+            color: var(--primary-color);
+        }
+
+        /* Footer */
+        .report-footer {
+            margin-top: 60px;
+            padding-top: 20px;
+            border-top: 2px solid var(--border-color);
+            text-align: center;
+            font-size: 9pt;
+            color: #71767a;
+        }
+
+        .legal-notice {
+            background-color: #f5f7f8;
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 4px;
+            font-size: 8pt;
+        }
+
+        /* Print Styles */
+        @media print {
+            .container {
+                max-width: 100%;
+                padding: 20px;
+            }
+
+            .section {
+                page-break-inside: avoid;
+            }
+
+            .activity-card {
+                page-break-inside: avoid;
+            }
+
+            tr {
+                page-break-inside: avoid;
+            }
+        }
+
+        /* Full Width Sections */
+        .full-width {
+            grid-column: 1 / -1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Report Header -->
+        <header class="report-header">
+            <h1>Records of Processing Activities</h1>
+            <h2>Article 30(1) - Controller Record</h2>
+            <p class="regulation-ref">General Data Protection Regulation (EU) 2016/679</p>
+            <div class="report-meta">
+                <div class="report-meta-item">
+                    <div class="report-meta-label">Controller</div>
+                    <div class="report-meta-value">{{ organization_name | default_value('Organization Name') }}</div>
+                </div>
+                <div class="report-meta-item">
+                    <div class="report-meta-label">Record Version</div>
+                    <div class="report-meta-value">{{ document_version | default_value('1.0') }}</div>
+                </div>
+                <div class="report-meta-item">
+                    <div class="report-meta-label">Generated</div>
+                    <div class="report-meta-value">{{ generated_at | format_datetime }}</div>
+                </div>
+                <div class="report-meta-item">
+                    <div class="report-meta-label">Record Period</div>
+                    <div class="report-meta-value">
+                        {{ reporting_period_start | format_date }} - {{ reporting_period_end | format_date }}
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Controller Details -->
+        <section class="section">
+            <h2 class="section-title">1. Controller Information</h2>
+            <p>
+                Pursuant to Article 30(1)(a) of the GDPR, the following identifies the data controller
+                and where applicable, the joint controller, the controller's representative, and the data protection officer.
+            </p>
+
+            <div class="entity-card">
+                <h3>Data Controller</h3>
+                <div class="entity-details">
+                    <div class="entity-field">
+                        <div class="entity-field-label">Controller Name</div>
+                        <div class="entity-field-value">{{ controller_record.controller_name | default_value('Controller name not specified') }}</div>
+                    </div>
+                    <div class="entity-field">
+                        <div class="entity-field-label">Role</div>
+                        <div class="entity-field-value">
+                            {% if controller_record.role == 'controller' %}
+                            <span class="status-badge status-active">Data Controller</span>
+                            {% elif controller_record.role == 'joint_controller' %}
+                            <span class="status-badge status-pending">Joint Controller</span>
+                            {% else %}
+                            <span class="status-badge status-active">{{ controller_record.role | default_value('Controller') }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="entity-field">
+                        <div class="entity-field-label">Contact Name</div>
+                        <div class="entity-field-value">{{ controller_record.controller_contact.name | default_value('N/A') }}</div>
+                    </div>
+                    <div class="entity-field">
+                        <div class="entity-field-label">Contact Email</div>
+                        <div class="entity-field-value">{{ controller_record.controller_contact.email | default_value('N/A') }}</div>
+                    </div>
+                    <div class="entity-field">
+                        <div class="entity-field-label">Contact Phone</div>
+                        <div class="entity-field-value">{{ controller_record.controller_contact.phone | default_value('N/A') }}</div>
+                    </div>
+                    <div class="entity-field">
+                        <div class="entity-field-label">Address</div>
+                        <div class="entity-field-value">{{ controller_record.controller_contact.address | default_value('N/A') }}</div>
+                    </div>
+                </div>
+            </div>
+
+            {% if controller_record.joint_controllers %}
+            <h3 class="subsection-title">Joint Controllers</h3>
+            {% for joint in controller_record.joint_controllers %}
+            <div class="entity-card">
+                <h3>Joint Controller {{ loop.index }}</h3>
+                <div class="entity-details">
+                    <div class="entity-field">
+                        <div class="entity-field-label">Name</div>
+                        <div class="entity-field-value">{{ joint.name | default_value('N/A') }}</div>
+                    </div>
+                    <div class="entity-field">
+                        <div class="entity-field-label">Email</div>
+                        <div class="entity-field-value">{{ joint.email | default_value('N/A') }}</div>
+                    </div>
+                    <div class="entity-field">
+                        <div class="entity-field-label">Phone</div>
+                        <div class="entity-field-value">{{ joint.phone | default_value('N/A') }}</div>
+                    </div>
+                    <div class="entity-field">
+                        <div class="entity-field-label">Address</div>
+                        <div class="entity-field-value">{{ joint.address | default_value('N/A') }}</div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+            {% endif %}
+
+            {% if controller_record.representative %}
+            <div class="entity-card">
+                <h3>EU Representative (Article 27)</h3>
+                <div class="entity-details">
+                    <div class="entity-field">
+                        <div class="entity-field-label">Name</div>
+                        <div class="entity-field-value">{{ controller_record.representative.name | default_value('N/A') }}</div>
+                    </div>
+                    <div class="entity-field">
+                        <div class="entity-field-label">Email</div>
+                        <div class="entity-field-value">{{ controller_record.representative.email | default_value('N/A') }}</div>
+                    </div>
+                    <div class="entity-field">
+                        <div class="entity-field-label">Phone</div>
+                        <div class="entity-field-value">{{ controller_record.representative.phone | default_value('N/A') }}</div>
+                    </div>
+                    <div class="entity-field">
+                        <div class="entity-field-label">Address</div>
+                        <div class="entity-field-value">{{ controller_record.representative.address | default_value('N/A') }}</div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            {% if controller_record.dpo %}
+            <div class="entity-card">
+                <h3>Data Protection Officer (Article 37-39)</h3>
+                <div class="entity-details">
+                    <div class="entity-field">
+                        <div class="entity-field-label">DPO Name</div>
+                        <div class="entity-field-value">{{ controller_record.dpo.name | default_value('N/A') }}</div>
+                    </div>
+                    <div class="entity-field">
+                        <div class="entity-field-label">Email</div>
+                        <div class="entity-field-value">{{ controller_record.dpo.email | default_value('N/A') }}</div>
+                    </div>
+                    <div class="entity-field">
+                        <div class="entity-field-label">Phone</div>
+                        <div class="entity-field-value">{{ controller_record.dpo.phone | default_value('N/A') }}</div>
+                    </div>
+                    <div class="entity-field">
+                        <div class="entity-field-label">DPO Mandatory</div>
+                        <div class="entity-field-value">
+                            {% if controller_record.dpo.is_required %}
+                            <span class="status-badge status-active">Yes</span>
+                            {% else %}
+                            <span class="status-badge status-pending">Voluntary</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% if controller_record.dpo.appointment_date %}
+                    <div class="entity-field">
+                        <div class="entity-field-label">Appointment Date</div>
+                        <div class="entity-field-value">{{ controller_record.dpo.appointment_date | format_date }}</div>
+                    </div>
+                    {% endif %}
+                    {% if controller_record.dpo.registration_reference %}
+                    <div class="entity-field">
+                        <div class="entity-field-label">Registration Reference</div>
+                        <div class="entity-field-value">{{ controller_record.dpo.registration_reference }}</div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </section>
+
+        <!-- Processing Activities Summary -->
+        <section class="section">
+            <h2 class="section-title">2. Summary of Processing Activities</h2>
+            <div class="summary-box">
+                <p>
+                    This section provides an overview of all processing activities carried out by the controller.
+                    Article 30(1) requires the controller to maintain records of processing activities under its responsibility.
+                </p>
+                <div class="summary-stats">
+                    <div class="stat-item">
+                        <div class="stat-value">{{ controller_record.processing_activities | length if controller_record.processing_activities else '0' }}</div>
+                        <div class="stat-label">Total Activities</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">
+                            {% set active_count = 0 %}
+                            {% for activity in controller_record.processing_activities %}
+                                {% if activity.status == 'active' %}
+                                    {% set active_count = active_count + 1 %}
+                                {% endif %}
+                            {% endfor %}
+                            {{ active_count }}
+                        </div>
+                        <div class="stat-label">Active</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">
+                            {% set special_count = 0 %}
+                            {% for activity in controller_record.processing_activities %}
+                                {% if activity.special_categories %}
+                                    {% set special_count = special_count + 1 %}
+                                {% endif %}
+                            {% endfor %}
+                            {{ special_count }}
+                        </div>
+                        <div class="stat-label">Special Categories</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">
+                            {% set dpia_count = 0 %}
+                            {% for activity in controller_record.processing_activities %}
+                                {% if activity.dpia_required %}
+                                    {% set dpia_count = dpia_count + 1 %}
+                                {% endif %}
+                            {% endfor %}
+                            {{ dpia_count }}
+                        </div>
+                        <div class="stat-label">DPIA Required</div>
+                    </div>
+                </div>
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Activity ID</th>
+                        <th>Activity Name</th>
+                        <th>Purposes</th>
+                        <th>Lawful Basis</th>
+                        <th>Data Subjects</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for activity in controller_record.processing_activities %}
+                    <tr>
+                        <td><code>{{ activity.activity_id }}</code></td>
+                        <td><strong>{{ activity.name }}</strong></td>
+                        <td>
+                            {% for purpose in activity.purposes %}
+                            <div>{{ purpose }}</div>
+                            {% endfor %}
+                        </td>
+                        <td>
+                            {% for basis in activity.lawful_basis %}
+                            {% if basis == 'consent' %}
+                            <span class="basis-tag basis-consent">Consent</span>
+                            {% elif basis == 'contract' %}
+                            <span class="basis-tag basis-contract">Contract</span>
+                            {% elif basis == 'legal_obligation' %}
+                            <span class="basis-tag basis-legal">Legal Obligation</span>
+                            {% elif basis == 'vital_interests' %}
+                            <span class="basis-tag basis-vital">Vital Interests</span>
+                            {% elif basis == 'public_task' %}
+                            <span class="basis-tag basis-public">Public Task</span>
+                            {% elif basis == 'legitimate_interests' %}
+                            <span class="basis-tag basis-legitimate">Legitimate Interests</span>
+                            {% else %}
+                            <span class="basis-tag">{{ basis }}</span>
+                            {% endif %}
+                            {% endfor %}
+                        </td>
+                        <td>
+                            {% for subject in activity.data_subject_categories %}
+                            <span class="category-tag">{{ subject | replace('_', ' ') | title }}</span>
+                            {% endfor %}
+                        </td>
+                        <td>
+                            {% if activity.status == 'active' %}
+                            <span class="status-badge status-active">Active</span>
+                            {% elif activity.status == 'inactive' %}
+                            <span class="status-badge status-inactive">Inactive</span>
+                            {% else %}
+                            <span class="status-badge status-pending">{{ activity.status | title }}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" style="text-align: center; font-style: italic; color: #71767a;">
+                            No processing activities documented. Please add processing activity data.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Detailed Processing Activities -->
+        <section class="section">
+            <h2 class="section-title">3. Detailed Processing Activities</h2>
+            <p>
+                This section contains the detailed Article 30(1) information for each processing activity,
+                including purposes, data categories, recipients, retention periods, and security measures.
+            </p>
+
+            {% for activity in controller_record.processing_activities %}
+            <div class="activity-card">
+                <div class="activity-header">
+                    <div>
+                        <h3 class="activity-title">{{ activity.name }}</h3>
+                        <span class="activity-id">ID: {{ activity.activity_id }}</span>
+                    </div>
+                    <div>
+                        {% if activity.status == 'active' %}
+                        <span class="status-badge status-active">Active</span>
+                        {% elif activity.status == 'inactive' %}
+                        <span class="status-badge status-inactive">Inactive</span>
+                        {% else %}
+                        <span class="status-badge status-pending">{{ activity.status | title }}</span>
+                        {% endif %}
+                        {% if activity.special_categories %}
+                        <span class="status-badge" style="background-color: #f8d7da; color: #d63e04;">Special Categories</span>
+                        {% endif %}
+                        {% if activity.dpia_required %}
+                        <span class="status-badge" style="background-color: #fff3cd; color: #856404;">DPIA Required</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="activity-body">
+                    <!-- Left Column -->
+                    <div>
+                        <!-- Description -->
+                        <div class="activity-section">
+                            <div class="activity-section-title">Description</div>
+                            <p>{{ activity.description | default_value('No description provided') }}</p>
+                        </div>
+
+                        <!-- Article 30(1)(b) - Purposes of Processing -->
+                        <div class="activity-section">
+                            <div class="activity-section-title">Purposes of Processing (Art. 30(1)(b))</div>
+                            <ul>
+                                {% for purpose in activity.purposes %}
+                                <li>{{ purpose }}</li>
+                                {% else %}
+                                <li style="color: #71767a; font-style: italic;">No purposes specified</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+
+                        <!-- Lawful Basis -->
+                        <div class="activity-section">
+                            <div class="activity-section-title">Lawful Basis (Art. 6)</div>
+                            <div>
+                                {% for basis in activity.lawful_basis %}
+                                {% if basis == 'consent' %}
+                                <span class="basis-tag basis-consent">Consent (Art. 6(1)(a))</span>
+                                {% elif basis == 'contract' %}
+                                <span class="basis-tag basis-contract">Contract (Art. 6(1)(b))</span>
+                                {% elif basis == 'legal_obligation' %}
+                                <span class="basis-tag basis-legal">Legal Obligation (Art. 6(1)(c))</span>
+                                {% elif basis == 'vital_interests' %}
+                                <span class="basis-tag basis-vital">Vital Interests (Art. 6(1)(d))</span>
+                                {% elif basis == 'public_task' %}
+                                <span class="basis-tag basis-public">Public Task (Art. 6(1)(e))</span>
+                                {% elif basis == 'legitimate_interests' %}
+                                <span class="basis-tag basis-legitimate">Legitimate Interests (Art. 6(1)(f))</span>
+                                {% else %}
+                                <span class="basis-tag">{{ basis }}</span>
+                                {% endif %}
+                                {% endfor %}
+                            </div>
+                            {% if activity.lawful_basis_details %}
+                            <p style="margin-top: 10px; font-size: 10pt; color: #5c5c5c;">
+                                {{ activity.lawful_basis_details }}
+                            </p>
+                            {% endif %}
+                        </div>
+
+                        <!-- Article 30(1)(c) - Categories of Data Subjects -->
+                        <div class="activity-section">
+                            <div class="activity-section-title">Categories of Data Subjects (Art. 30(1)(c))</div>
+                            <div>
+                                {% for subject in activity.data_subject_categories %}
+                                <span class="category-tag">{{ subject | replace('_', ' ') | title }}</span>
+                                {% else %}
+                                <span style="color: #71767a; font-style: italic;">No data subjects specified</span>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <!-- Article 30(1)(c) - Categories of Personal Data -->
+                        <div class="activity-section">
+                            <div class="activity-section-title">Categories of Personal Data (Art. 30(1)(c))</div>
+                            <div>
+                                {% for category in activity.data_categories %}
+                                {% if category in ['biometric', 'health', 'racial_ethnic', 'political_opinions', 'religious_beliefs', 'trade_union', 'sexual_orientation', 'criminal_records'] %}
+                                <span class="category-tag category-special">{{ category | replace('_', ' ') | title }}</span>
+                                {% else %}
+                                <span class="category-tag">{{ category | replace('_', ' ') | title }}</span>
+                                {% endif %}
+                                {% else %}
+                                <span style="color: #71767a; font-style: italic;">No data categories specified</span>
+                                {% endfor %}
+                            </div>
+                            {% if activity.special_categories %}
+                            <p style="margin-top: 10px; font-size: 10pt; color: var(--danger-color);">
+                                <strong>Special Category Data (Art. 9):</strong> {{ activity.special_categories_basis | default_value('Basis not specified') }}
+                            </p>
+                            {% endif %}
+                        </div>
+
+                        <!-- Data Sources -->
+                        {% if activity.data_sources %}
+                        <div class="activity-section">
+                            <div class="activity-section-title">Data Sources</div>
+                            <ul>
+                                {% for source in activity.data_sources %}
+                                <li>{{ source }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Right Column -->
+                    <div>
+                        <!-- Article 30(1)(d) - Recipients -->
+                        <div class="activity-section">
+                            <div class="activity-section-title">Recipients of Personal Data (Art. 30(1)(d))</div>
+                            {% if activity.recipients %}
+                            <table class="sub-table">
+                                <thead>
+                                    <tr>
+                                        <th>Recipient</th>
+                                        <th>Category</th>
+                                        <th>Country</th>
+                                        <th>Purpose</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for recipient in activity.recipients %}
+                                    <tr>
+                                        <td>{{ recipient.name }}</td>
+                                        <td>{{ recipient.category | default_value('N/A') }}</td>
+                                        <td>
+                                            {{ recipient.country | default_value('N/A') }}
+                                            {% if recipient.is_third_country %}
+                                            <span style="color: var(--warning-color);">(Third Country)</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ recipient.purpose | default_value('N/A') }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                            {% else %}
+                            <p style="color: #71767a; font-style: italic;">No recipients specified</p>
+                            {% endif %}
+
+                            <!-- Article 30(1)(e) - International Transfers -->
+                            {% set third_country_transfers = [] %}
+                            {% for recipient in activity.recipients %}
+                                {% if recipient.is_third_country %}
+                                    {% if third_country_transfers.append(recipient) %}{% endif %}
+                                {% endif %}
+                            {% endfor %}
+                            {% if third_country_transfers %}
+                            <div class="transfer-warning">
+                                <strong>Third Country Transfers (Art. 30(1)(e)):</strong>
+                                <ul style="margin-top: 8px;">
+                                    {% for transfer in third_country_transfers %}
+                                    <li>
+                                        {{ transfer.name }} ({{ transfer.country }}) -
+                                        Transfer Mechanism: {{ transfer.transfer_mechanism | replace('_', ' ') | title }}
+                                    </li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Article 30(1)(f) - Retention Periods -->
+                        <div class="activity-section">
+                            <div class="activity-section-title">Retention Periods (Art. 30(1)(f))</div>
+                            {% if activity.retention_policies %}
+                            <table class="sub-table">
+                                <thead>
+                                    <tr>
+                                        <th>Data Category</th>
+                                        <th>Retention Period</th>
+                                        <th>Basis</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for retention in activity.retention_policies %}
+                                    <tr>
+                                        <td>{{ retention.data_category | replace('_', ' ') | title }}</td>
+                                        <td>{{ retention.retention_period }}</td>
+                                        <td>{{ retention.retention_basis | default_value('N/A') }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                            {% else %}
+                            <p style="color: #71767a; font-style: italic;">No retention policies specified</p>
+                            {% endif %}
+                        </div>
+
+                        <!-- Article 30(1)(g) - Security Measures -->
+                        <div class="activity-section">
+                            <div class="activity-section-title">Security Measures (Art. 30(1)(g))</div>
+                            {% if activity.security_measures %}
+                            <ul class="security-list">
+                                {% for measure in activity.security_measures %}
+                                <li>
+                                    <span>
+                                        <strong>{{ measure.name }}</strong>
+                                        {% if measure.description %}<br><small>{{ measure.description }}</small>{% endif %}
+                                    </span>
+                                    <span class="security-category">{{ measure.category }}</span>
+                                </li>
+                                {% endfor %}
+                            </ul>
+                            {% else %}
+                            <p style="color: #71767a; font-style: italic;">No security measures specified</p>
+                            {% endif %}
+                        </div>
+
+                        <!-- Additional Information -->
+                        <div class="activity-section">
+                            <div class="activity-section-title">Additional Information</div>
+                            {% if activity.automated_decision_making %}
+                            <p><strong>Automated Decision-Making:</strong> Yes</p>
+                            {% if activity.automated_decision_details %}
+                            <p style="font-size: 10pt;">{{ activity.automated_decision_details }}</p>
+                            {% endif %}
+                            {% endif %}
+                            {% if activity.dpia_reference %}
+                            <p><strong>DPIA Reference:</strong> {{ activity.dpia_reference }}</p>
+                            {% endif %}
+                            {% if activity.system_references %}
+                            <p><strong>Systems:</strong> {{ activity.system_references | join(', ') }}</p>
+                            {% endif %}
+                            {% if activity.last_review_date %}
+                            <p><strong>Last Review:</strong> {{ activity.last_review_date | format_date }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="summary-box">
+                <p style="text-align: center; font-style: italic;">
+                    No processing activities documented. Processing activity data will be displayed here
+                    when processing_activities data is provided to the template.
+                </p>
+            </div>
+            {% endfor %}
+        </section>
+
+        <!-- Article Reference -->
+        <section class="section">
+            <h2 class="section-title">Appendix: Article 30 Reference</h2>
+
+            <h3 class="subsection-title">Article 30(1) - Records of Processing Activities (Controller)</h3>
+            <p>
+                Each controller and, where applicable, the controller's representative, shall maintain a record
+                of processing activities under its responsibility. That record shall contain all of the following information:
+            </p>
+            <ol style="margin: 15px 0; padding-left: 25px;">
+                <li style="margin-bottom: 8px;"><strong>(a)</strong> The name and contact details of the controller and, where applicable, the joint controller, the controller's representative and the data protection officer</li>
+                <li style="margin-bottom: 8px;"><strong>(b)</strong> The purposes of the processing</li>
+                <li style="margin-bottom: 8px;"><strong>(c)</strong> A description of the categories of data subjects and of the categories of personal data</li>
+                <li style="margin-bottom: 8px;"><strong>(d)</strong> The categories of recipients to whom the personal data have been or will be disclosed including recipients in third countries or international organisations</li>
+                <li style="margin-bottom: 8px;"><strong>(e)</strong> Where applicable, transfers of personal data to a third country or an international organisation, including the identification of that third country or international organisation and the documentation of suitable safeguards</li>
+                <li style="margin-bottom: 8px;"><strong>(f)</strong> Where possible, the envisaged time limits for erasure of the different categories of data</li>
+                <li style="margin-bottom: 8px;"><strong>(g)</strong> Where possible, a general description of the technical and organisational security measures referred to in Article 32(1)</li>
+            </ol>
+        </section>
+
+        <!-- Report Footer -->
+        <footer class="report-footer">
+            <p>
+                <strong>GDPR Article 30(1) Records of Processing Activities</strong>
+                <br>
+                {{ organization_name | default_value('Organization') }} | Generated: {{ generated_at | format_datetime }}
+                <br>
+                Document Version: {{ document_version | default_value('1.0') }} | Generator Version: {{ generator_version | default_value('1.0.0') }}
+            </p>
+            <div class="legal-notice">
+                <strong>Legal Notice:</strong> This document has been generated to support GDPR Article 30 compliance requirements.
+                It should be reviewed by qualified data protection personnel to ensure accuracy and completeness.
+                The controller is responsible for maintaining these records and making them available to the supervisory authority on request.
+                This document is confidential and intended for internal compliance purposes.
+                <br><br>
+                ACGS-2 Enterprise Guardrails Platform - Compliance Documentation Service
+            </div>
+        </footer>
+    </div>
+</body>
+</html>

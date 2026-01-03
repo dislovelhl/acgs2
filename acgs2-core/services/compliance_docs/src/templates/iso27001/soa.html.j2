@@ -1,0 +1,1116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ISO 27001:2022 Statement of Applicability - {{ organization_name | default_value }}</title>
+    <style>
+        :root {
+            --primary-color: #1a365d;
+            --secondary-color: #2c5282;
+            --success-color: #276749;
+            --warning-color: #c05621;
+            --danger-color: #c53030;
+            --info-color: #2b6cb0;
+            --light-gray: #f7fafc;
+            --border-color: #e2e8f0;
+
+            /* Theme-specific colors */
+            --theme-organizational: #2b6cb0;
+            --theme-people: #276749;
+            --theme-physical: #6b46c1;
+            --theme-technological: #c05621;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #2d3748;
+            background-color: #fff;
+            font-size: 10pt;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px;
+        }
+
+        /* Header Styles */
+        .report-header {
+            text-align: center;
+            border-bottom: 3px solid var(--primary-color);
+            padding-bottom: 30px;
+            margin-bottom: 40px;
+        }
+
+        .report-header h1 {
+            color: var(--primary-color);
+            font-size: 26pt;
+            margin-bottom: 10px;
+        }
+
+        .report-header h2 {
+            color: var(--secondary-color);
+            font-size: 16pt;
+            font-weight: normal;
+            margin-bottom: 20px;
+        }
+
+        .report-meta {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .report-meta-item {
+            text-align: center;
+        }
+
+        .report-meta-label {
+            font-size: 8pt;
+            color: #718096;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .report-meta-value {
+            font-size: 10pt;
+            color: var(--primary-color);
+            font-weight: 600;
+        }
+
+        /* Section Styles */
+        .section {
+            margin-bottom: 40px;
+            page-break-inside: avoid;
+        }
+
+        .section-title {
+            color: var(--primary-color);
+            font-size: 14pt;
+            border-bottom: 2px solid var(--secondary-color);
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+
+        .subsection-title {
+            color: var(--secondary-color);
+            font-size: 12pt;
+            margin: 20px 0 15px 0;
+        }
+
+        /* Table Styles */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 9pt;
+        }
+
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 8px 10px;
+            text-align: left;
+            vertical-align: top;
+        }
+
+        th {
+            background-color: var(--primary-color);
+            color: white;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 8pt;
+            letter-spacing: 0.5px;
+        }
+
+        tr:nth-child(even) {
+            background-color: var(--light-gray);
+        }
+
+        tr:hover {
+            background-color: #edf2f7;
+        }
+
+        /* SoA Table Specific */
+        .soa-table {
+            font-size: 8pt;
+        }
+
+        .soa-table th {
+            font-size: 7pt;
+            padding: 6px 8px;
+            text-align: center;
+        }
+
+        .soa-table td {
+            padding: 6px 8px;
+        }
+
+        .soa-table .control-id-col {
+            width: 60px;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        .soa-table .control-title-col {
+            width: 180px;
+        }
+
+        .soa-table .applicable-col {
+            width: 60px;
+            text-align: center;
+        }
+
+        .soa-table .status-col {
+            width: 80px;
+            text-align: center;
+        }
+
+        .soa-table .justification-col {
+            width: auto;
+        }
+
+        /* Theme Badges */
+        .theme-badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 8pt;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .theme-organizational { background-color: var(--theme-organizational); color: white; }
+        .theme-people { background-color: var(--theme-people); color: white; }
+        .theme-physical { background-color: var(--theme-physical); color: white; }
+        .theme-technological { background-color: var(--theme-technological); color: white; }
+
+        /* Applicability Indicators */
+        .applicable-yes {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background-color: var(--success-color);
+            color: white;
+            text-align: center;
+            line-height: 20px;
+            font-weight: bold;
+            font-size: 10pt;
+        }
+
+        .applicable-no {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background-color: var(--danger-color);
+            color: white;
+            text-align: center;
+            line-height: 20px;
+            font-weight: bold;
+            font-size: 10pt;
+        }
+
+        .applicable-partial {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background-color: var(--warning-color);
+            color: white;
+            text-align: center;
+            line-height: 20px;
+            font-weight: bold;
+            font-size: 10pt;
+        }
+
+        /* Status Badges */
+        .status-badge {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 7pt;
+            font-weight: 600;
+        }
+
+        .status-implemented { background-color: #c6f6d5; color: #276749; }
+        .status-in-progress { background-color: #feebc8; color: #c05621; }
+        .status-planned { background-color: #bee3f8; color: #2a4365; }
+        .status-not-implemented { background-color: #fed7d7; color: #c53030; }
+        .status-excluded { background-color: #e2e8f0; color: #4a5568; }
+
+        /* Summary Box */
+        .summary-box {
+            background-color: var(--light-gray);
+            border: 1px solid var(--border-color);
+            border-left: 4px solid var(--primary-color);
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .summary-stats {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 12px;
+            background: white;
+            border-radius: 8px;
+            min-width: 100px;
+        }
+
+        .stat-value {
+            font-size: 20pt;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+
+        .stat-label {
+            font-size: 8pt;
+            color: #718096;
+            text-transform: uppercase;
+        }
+
+        /* Document Control Box */
+        .document-control {
+            background: white;
+            border: 2px solid var(--primary-color);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+
+        .document-control-title {
+            color: var(--primary-color);
+            font-size: 12pt;
+            font-weight: 600;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .document-control-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+
+        .document-control-item {
+            display: flex;
+            gap: 10px;
+        }
+
+        .document-control-label {
+            font-size: 9pt;
+            color: #718096;
+            font-weight: 600;
+            min-width: 120px;
+        }
+
+        .document-control-value {
+            font-size: 9pt;
+            color: #2d3748;
+        }
+
+        /* Approval Section */
+        .approval-section {
+            margin-top: 40px;
+            page-break-inside: avoid;
+        }
+
+        .approval-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .approval-table td {
+            border: 1px solid var(--border-color);
+            padding: 15px;
+            vertical-align: top;
+        }
+
+        .approval-role {
+            font-weight: 600;
+            color: var(--primary-color);
+            font-size: 10pt;
+        }
+
+        .approval-field {
+            margin-top: 10px;
+        }
+
+        .approval-label {
+            font-size: 8pt;
+            color: #718096;
+            text-transform: uppercase;
+        }
+
+        .signature-line {
+            border-bottom: 1px solid #2d3748;
+            height: 30px;
+            margin-top: 5px;
+        }
+
+        /* Footer */
+        .report-footer {
+            margin-top: 60px;
+            padding-top: 20px;
+            border-top: 2px solid var(--border-color);
+            text-align: center;
+            font-size: 8pt;
+            color: #718096;
+        }
+
+        /* Print Styles */
+        @media print {
+            .container {
+                max-width: 100%;
+                padding: 15px;
+            }
+
+            .section {
+                page-break-inside: avoid;
+            }
+
+            body {
+                font-size: 8pt;
+            }
+
+            .soa-table {
+                font-size: 7pt;
+            }
+
+            table {
+                page-break-inside: auto;
+            }
+
+            tr {
+                page-break-inside: avoid;
+            }
+        }
+
+        /* Theme Section Header */
+        .theme-section-header {
+            background: linear-gradient(to right, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 12px 15px;
+            margin: 25px 0 15px 0;
+            border-radius: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .theme-section-title {
+            font-size: 11pt;
+            font-weight: 600;
+        }
+
+        .theme-section-stats {
+            font-size: 9pt;
+        }
+
+        /* Risk Treatment Options */
+        .risk-treatment-tag {
+            display: inline-block;
+            padding: 2px 5px;
+            margin: 1px;
+            border-radius: 2px;
+            font-size: 6pt;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .treatment-accept { background-color: #c6f6d5; color: #276749; }
+        .treatment-mitigate { background-color: #bee3f8; color: #2a4365; }
+        .treatment-transfer { background-color: #feebc8; color: #c05621; }
+        .treatment-avoid { background-color: #fed7d7; color: #c53030; }
+
+        /* Legend Box */
+        .legend-box {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            background: var(--light-gray);
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+
+        .legend-section {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .legend-title {
+            font-size: 9pt;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 8px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 5px;
+            font-size: 8pt;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Report Header -->
+        <header class="report-header">
+            <h1>Statement of Applicability</h1>
+            <h2>{{ organization_name | default_value('Organization Name') }}</h2>
+            <p style="font-size: 11pt; color: var(--secondary-color);">ISO/IEC 27001:2022 Information Security Management System</p>
+            <div class="report-meta">
+                <div class="report-meta-item">
+                    <div class="report-meta-label">Document ID</div>
+                    <div class="report-meta-value">{{ document_id | default_value('SOA-001') }}</div>
+                </div>
+                <div class="report-meta-item">
+                    <div class="report-meta-label">Version</div>
+                    <div class="report-meta-value">{{ document_version | default_value('1.0') }}</div>
+                </div>
+                <div class="report-meta-item">
+                    <div class="report-meta-label">Effective Date</div>
+                    <div class="report-meta-value">{{ effective_date | format_date }}</div>
+                </div>
+                <div class="report-meta-item">
+                    <div class="report-meta-label">Next Review</div>
+                    <div class="report-meta-value">{{ next_review_date | format_date }}</div>
+                </div>
+                <div class="report-meta-item">
+                    <div class="report-meta-label">Classification</div>
+                    <div class="report-meta-value">{{ classification | default_value('Confidential') }}</div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Document Control -->
+        <div class="document-control">
+            <div class="document-control-title">Document Control Information</div>
+            <div class="document-control-grid">
+                <div class="document-control-item">
+                    <span class="document-control-label">Document Owner:</span>
+                    <span class="document-control-value">{{ document_owner | default_value('Information Security Manager') }}</span>
+                </div>
+                <div class="document-control-item">
+                    <span class="document-control-label">Document Author:</span>
+                    <span class="document-control-value">{{ document_author | default_value('ISMS Team') }}</span>
+                </div>
+                <div class="document-control-item">
+                    <span class="document-control-label">ISMS Scope:</span>
+                    <span class="document-control-value">{{ isms_scope | default_value('Enterprise Information Security Management System') }}</span>
+                </div>
+                <div class="document-control-item">
+                    <span class="document-control-label">Risk Assessment Ref:</span>
+                    <span class="document-control-value">{{ risk_assessment_reference | default_value('RA-001') }}</span>
+                </div>
+                <div class="document-control-item">
+                    <span class="document-control-label">Last Updated:</span>
+                    <span class="document-control-value">{{ generated_at | format_datetime }}</span>
+                </div>
+                <div class="document-control-item">
+                    <span class="document-control-label">Approval Status:</span>
+                    <span class="document-control-value">
+                        {% if approval_status == 'approved' %}
+                        <span class="status-badge status-implemented">Approved</span>
+                        {% elif approval_status == 'pending' %}
+                        <span class="status-badge status-in-progress">Pending Approval</span>
+                        {% else %}
+                        <span class="status-badge status-planned">Draft</span>
+                        {% endif %}
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Executive Summary -->
+        <section class="section">
+            <h2 class="section-title">Executive Summary</h2>
+            <div class="summary-box">
+                <p>
+                    This Statement of Applicability (SoA) documents the organization's decisions regarding
+                    the applicability of ISO 27001:2022 Annex A controls within the scope of the Information
+                    Security Management System (ISMS). The SoA provides justification for control inclusion
+                    or exclusion based on the organization's risk assessment and treatment decisions.
+                </p>
+                <div class="summary-stats">
+                    <div class="stat-item">
+                        <div class="stat-value">93</div>
+                        <div class="stat-label">Total Controls</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">{{ controls_applicable | default_value('0') }}</div>
+                        <div class="stat-label">Applicable</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">{{ controls_excluded | default_value('0') }}</div>
+                        <div class="stat-label">Excluded</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">{{ controls_implemented | default_value('0') }}</div>
+                        <div class="stat-label">Implemented</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">{{ implementation_percentage | default_value('0') }}%</div>
+                        <div class="stat-label">Implementation</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Legend -->
+        <section class="section">
+            <h2 class="section-title">Legend</h2>
+            <div class="legend-box">
+                <div class="legend-section">
+                    <div class="legend-title">Applicability</div>
+                    <div class="legend-item"><span class="applicable-yes">&#10003;</span> Applicable - Control is in scope</div>
+                    <div class="legend-item"><span class="applicable-no">&#10007;</span> Not Applicable - Control is excluded</div>
+                    <div class="legend-item"><span class="applicable-partial">P</span> Partially Applicable</div>
+                </div>
+                <div class="legend-section">
+                    <div class="legend-title">Implementation Status</div>
+                    <div class="legend-item"><span class="status-badge status-implemented">Implemented</span> Fully implemented and operational</div>
+                    <div class="legend-item"><span class="status-badge status-in-progress">In Progress</span> Currently being implemented</div>
+                    <div class="legend-item"><span class="status-badge status-planned">Planned</span> Scheduled for implementation</div>
+                    <div class="legend-item"><span class="status-badge status-not-implemented">Not Implemented</span> Not yet started</div>
+                    <div class="legend-item"><span class="status-badge status-excluded">Excluded</span> Not applicable to scope</div>
+                </div>
+                <div class="legend-section">
+                    <div class="legend-title">Risk Treatment</div>
+                    <div class="legend-item"><span class="risk-treatment-tag treatment-mitigate">Mitigate</span> Risk reduced by control</div>
+                    <div class="legend-item"><span class="risk-treatment-tag treatment-accept">Accept</span> Risk accepted within tolerance</div>
+                    <div class="legend-item"><span class="risk-treatment-tag treatment-transfer">Transfer</span> Risk transferred to third party</div>
+                    <div class="legend-item"><span class="risk-treatment-tag treatment-avoid">Avoid</span> Risk avoided by not engaging</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Statement of Applicability Matrix -->
+        <section class="section">
+            <h2 class="section-title">Statement of Applicability Matrix</h2>
+
+            <!-- Organizational Controls (A.5) -->
+            <div class="theme-section-header" style="background: linear-gradient(to right, var(--theme-organizational), #4299e1);">
+                <span class="theme-section-title">A.5 Organizational Controls (37 controls)</span>
+                <span class="theme-section-stats">
+                    {% if theme_summary and theme_summary.organizational %}
+                    {{ theme_summary.organizational.applicable }} Applicable | {{ theme_summary.organizational.implemented }} Implemented
+                    {% else %}
+                    - Applicable | - Implemented
+                    {% endif %}
+                </span>
+            </div>
+
+            <table class="soa-table">
+                <thead>
+                    <tr>
+                        <th class="control-id-col">Control</th>
+                        <th class="control-title-col">Control Title</th>
+                        <th class="applicable-col">Applicable</th>
+                        <th class="status-col">Status</th>
+                        <th class="justification-col">Justification / Implementation Notes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if soa_controls and soa_controls.organizational %}
+                    {% for control in soa_controls.organizational %}
+                    <tr>
+                        <td class="control-id-col">{{ control.control_id | control_id('ISO27001') }}</td>
+                        <td class="control-title-col">{{ control.title | default_value }}</td>
+                        <td class="applicable-col">
+                            {% if control.is_applicable == true %}
+                            <span class="applicable-yes">&#10003;</span>
+                            {% elif control.is_applicable == false %}
+                            <span class="applicable-no">&#10007;</span>
+                            {% else %}
+                            <span class="applicable-partial">P</span>
+                            {% endif %}
+                        </td>
+                        <td class="status-col">
+                            {% if control.status == 'implemented' %}
+                            <span class="status-badge status-implemented">Implemented</span>
+                            {% elif control.status == 'in_progress' %}
+                            <span class="status-badge status-in-progress">In Progress</span>
+                            {% elif control.status == 'planned' %}
+                            <span class="status-badge status-planned">Planned</span>
+                            {% elif control.status == 'excluded' %}
+                            <span class="status-badge status-excluded">Excluded</span>
+                            {% else %}
+                            <span class="status-badge status-not-implemented">Not Impl.</span>
+                            {% endif %}
+                        </td>
+                        <td class="justification-col">{{ control.justification | default_value('No justification provided') }}</td>
+                    </tr>
+                    {% endfor %}
+                    {% else %}
+                    <!-- Default Organizational Controls -->
+                    <tr><td class="control-id-col">A.5.1</td><td class="control-title-col">Policies for information security</td><td class="applicable-col"><span class="applicable-yes">&#10003;</span></td><td class="status-col"><span class="status-badge status-planned">Planned</span></td><td class="justification-col">Required for ISMS governance framework</td></tr>
+                    <tr><td class="control-id-col">A.5.2</td><td class="control-title-col">Information security roles and responsibilities</td><td class="applicable-col"><span class="applicable-yes">&#10003;</span></td><td class="status-col"><span class="status-badge status-planned">Planned</span></td><td class="justification-col">Required to define security accountability</td></tr>
+                    <tr><td class="control-id-col">A.5.3</td><td class="control-title-col">Segregation of duties</td><td class="applicable-col"><span class="applicable-yes">&#10003;</span></td><td class="status-col"><span class="status-badge status-planned">Planned</span></td><td class="justification-col">Required to prevent conflict of interest</td></tr>
+                    <tr><td class="control-id-col">A.5.4</td><td class="control-title-col">Management responsibilities</td><td class="applicable-col"><span class="applicable-yes">&#10003;</span></td><td class="status-col"><span class="status-badge status-planned">Planned</span></td><td class="justification-col">Required for management commitment</td></tr>
+                    <tr><td class="control-id-col">A.5.5</td><td class="control-title-col">Contact with authorities</td><td class="applicable-col"><span class="applicable-yes">&#10003;</span></td><td class="status-col"><span class="status-badge status-planned">Planned</span></td><td class="justification-col">Required for regulatory compliance</td></tr>
+                    <tr><td class="control-id-col">A.5.6</td><td class="control-title-col">Contact with special interest groups</td><td class="applicable-col"><span class="applicable-yes">&#10003;</span></td><td class="status-col"><span class="status-badge status-planned">Planned</span></td><td class="justification-col">Required for threat intelligence sharing</td></tr>
+                    <tr><td class="control-id-col">A.5.7</td><td class="control-title-col">Threat intelligence</td><td class="applicable-col"><span class="applicable-yes">&#10003;</span></td><td class="status-col"><span class="status-badge status-planned">Planned</span></td><td class="justification-col">Required for proactive security posture</td></tr>
+                    <tr><td class="control-id-col">A.5.8</td><td class="control-title-col">Information security in project management</td><td class="applicable-col"><span class="applicable-yes">&#10003;</span></td><td class="status-col"><span class="status-badge status-planned">Planned</span></td><td class="justification-col">Required for secure development lifecycle</td></tr>
+                    <tr><td class="control-id-col">A.5.9</td><td class="control-title-col">Inventory of information and other associated assets</td><td class="applicable-col"><span class="applicable-yes">&#10003;</span></td><td class="status-col"><span class="status-badge status-planned">Planned</span></td><td class="justification-col">Required for asset management</td></tr>
+                    <tr><td class="control-id-col">A.5.10</td><td class="control-title-col">Acceptable use of information and other associated assets</td><td class="applicable-col"><span class="applicable-yes">&#10003;</span></td><td class="status-col"><span class="status-badge status-planned">Planned</span></td><td class="justification-col">Required for user behavior guidelines</td></tr>
+                    <tr><td class="control-id-col">A.5.11</td><td class="control-title-col">Return of assets</td><td class="applicable-col"><span class="applicable-yes">&#10003;</span></td><td class="status-col"><span class="status-badge status-planned">Planned</span></td><td class="justification-col">Required for offboarding process</td></tr>
+                    <tr><td class="control-id-col">A.5.12</td><td class="control-title-col">Classification of information</td><td class="applicable-col"><span class="applicable-yes">&#10003;</span></td><td class="status-col"><span class="status-badge status-planned">Planned</span></td><td class="justification-col">Required for data protection</td></tr>
+                    <tr><td class="control-id-col">A.5.13</td><td class="control-title-col">Labelling of information</td><td class="applicable-col"><span class="applicable-yes">&#10003;</span></td><td class="status-col"><span class="status-badge status-planned">Planned</span></td><td class="justification-col">Required for data handling</td></tr>
+                    <tr><td class="control-id-col">A.5.14</td><td class="control-title-col">Information transfer</td><td class="applicable-col"><span class="applicable-yes">&#10003;</span></td><td class="status-col"><span class="status-badge status-planned">Planned</span></td><td class="justification-col">Required for secure data exchange</td></tr>
+                    <tr><td class="control-id-col">A.5.15</td><td class="control-title-col">Access control</td><td class="applicable-col"><span class="applicable-yes">&#10003;</span></td><td class="status-col"><span class="status-badge status-planned">Planned</span></td><td class="justification-col">Required for access management</td></tr>
+                    <tr><td class="control-id-col">A.5.16</td><td class="control-title-col">Identity management</td><td class="applicable-col"><span class="applicable-yes">&#10003;</span></td><td class="status-col"><span class="status-badge status-planned">Planned</span></td><td class="justification-col">Required for user lifecycle management</td></tr>
+                    <tr><td class="control-id-col">A.5.17</td><td class="control-title-col">Authentication information</td><td class="applicable-col"><span class="applicable-yes">&#10003;</span></td><td class="status-col"><span class="status-badge status-planned">Planned</span></td><td class="justification-col">Required for credential management</td></tr>
+                    <tr><td class="control-id-col">A.5.18</td><td class="control-title-col">Access rights</td><td class="applicable-col"><span class="applicable-yes">&#10003;</span></td><td class="status-col"><span class="status-badge status-planned">Planned</span></td><td class="justification-col">Required for least privilege principle</td></tr>
+                    <tr><td class="control-id-col">A.5.19</td><td class="control-title-col">Information security in supplier relationships</td><td class="applicable-col"><span class="applicable-yes">&#10003;</span></td><td class="status-col"><span class="status-badge status-planned">Planned</span></td><td class="justification-col">Required for third-party risk management</td></tr>
+                    <tr><td class="control-id-col">A.5.20</td><td class="control-title-col">Addressing information security within supplier agreements</td><td class="applicable-col"><span class="applicable-yes">&#10003;</span></td><td class="status-col"><span class="status-badge status-planned">Planned</span></td><td class="justification-col">Required for contractual security</td></tr>
+                    <tr><td class="control-id-col">A.5.21</td><td class="control-title-col">Managing information security in the ICT supply chain</td><td class="applicable-col"><span class="applicable-yes">&#10003;</span></td><td class="status-col"><span class="status-badge status-planned">Planned</span></td><td class="justification-col">Required for supply chain security</td></tr>
+                    <tr><td class="control-id-col">A.5.22</td><td class="control-title-col">Monitoring, review and change management of supplier services</td><td class="applicable-col"><span class="applicable-yes">&#10003;</span></td><td class="status-col"><span class="status-badge status-planned">Planned</span></td><td class="justification-col">Required for ongoing supplier management</td></tr>
+                    <tr><td class="control-id-col">A.5.23</td><td class="control-title-col">Information security for use of cloud services</td><td class="applicable-col"><span class="applicable-yes">&#10003;</span></td><td class="status-col"><span class="status-badge status-planned">Planned</span></td><td class="justification-col">Required for cloud security</td></tr>
+                    <tr><td class="control-id-col">A.5.24</td><td class="control-title-col">Information security incident management planning and preparation</td><td class="applicable-col"><span class="applicable-yes">&#10003;</span></td><td class="status-col"><span class="status-badge status-planned">Planned</span></td><td class="justification-col">Required for incident response</td></tr>
+                    <tr><td class="control-id-col">A.5.25</td><td class="control-title-col">Assessment and decision on information security events</td><td class="applicable-col"><span class="applicable-yes">&#10003;</span></td><td class="status-col"><span class="status-badge status-planned">Planned</span></td><td class="justification-col">Required for event triage</td></tr>
+                    <tr><td class="control-id-col">A.5.26</td><td class="control-title-col">Response to information security incidents</td><td class="applicable-col"><span class="applicable-yes">&#10003;</span></td><td class="status-col"><span class="status-badge status-planned">Planned</span></td><td class="justification-col">Required for incident handling</td></tr>
+                    <tr><td class="control-id-col">A.5.27</td><td class="control-title-col">Learning from information security incidents</td><td class="applicable-col"><span class="applicable-yes">&#10003;</span></td><td class="status-col"><span class="status-badge status-planned">Planned</span></td><td class="justification-col">Required for continuous improvement</td></tr>
+                    <tr><td class="control-id-col">A.5.28</td><td class="control-title-col">Collection of evidence</td><td class="applicable-col"><span class="applicable-yes">&#10003;</span></td><td class="status-col"><span class="status-badge status-planned">Planned</span></td><td class="justification-col">Required for forensic capability</td></tr>
+                    <tr><td class="control-id-col">A.5.29</td><td class="control-title-col">Information security during disruption</td><td class="applicable-col"><span class="applicable-yes">&#10003;</span></td><td class="status-col"><span class="status-badge status-planned">Planned</span></td><td class="justification-col">Required for business continuity</td></tr>
+                    <tr><td class="control-id-col">A.5.30</td><td class="control-title-col">ICT readiness for business continuity</td><td class="applicable-col"><span class="applicable-yes">&#10003;</span></td><td class="status-col"><span class="status-badge status-planned">Planned</span></td><td class="justification-col">Required for IT disaster recovery</td></tr>
+                    <tr><td class="control-id-col">A.5.31</td><td class="control-title-col">Legal, statutory, regulatory and contractual requirements</td><td class="applicable-col"><span class="applicable-yes">&#10003;</span></td><td class="status-col"><span class="status-badge status-planned">Planned</span></td><td class="justification-col">Required for compliance management</td></tr>
+                    <tr><td class="control-id-col">A.5.32</td><td class="control-title-col">Intellectual property rights</td><td class="applicable-col"><span class="applicable-yes">&#10003;</span></td><td class="status-col"><span class="status-badge status-planned">Planned</span></td><td class="justification-col">Required for IP protection</td></tr>
+                    <tr><td class="control-id-col">A.5.33</td><td class="control-title-col">Protection of records</td><td class="applicable-col"><span class="applicable-yes">&#10003;</span></td><td class="status-col"><span class="status-badge status-planned">Planned</span></td><td class="justification-col">Required for records management</td></tr>
+                    <tr><td class="control-id-col">A.5.34</td><td class="control-title-col">Privacy and protection of PII</td><td class="applicable-col"><span class="applicable-yes">&#10003;</span></td><td class="status-col"><span class="status-badge status-planned">Planned</span></td><td class="justification-col">Required for data privacy</td></tr>
+                    <tr><td class="control-id-col">A.5.35</td><td class="control-title-col">Independent review of information security</td><td class="applicable-col"><span class="applicable-yes">&#10003;</span></td><td class="status-col"><span class="status-badge status-planned">Planned</span></td><td class="justification-col">Required for independent assessment</td></tr>
+                    <tr><td class="control-id-col">A.5.36</td><td class="control-title-col">Compliance with policies, rules and standards</td><td class="applicable-col"><span class="applicable-yes">&#10003;</span></td><td class="status-col"><span class="status-badge status-planned">Planned</span></td><td class="justification-col">Required for policy compliance</td></tr>
+                    <tr><td class="control-id-col">A.5.37</td><td class="control-title-col">Documented operating procedures</td><td class="applicable-col"><span class="applicable-yes">&#10003;</span></td><td class="status-col"><span class="status-badge status-planned">Planned</span></td><td class="justification-col">Required for operational consistency</td></tr>
+                    {% endif %}
+                </tbody>
+            </table>
+
+            <!-- People Controls (A.6) -->
+            <div class="theme-section-header" style="background: linear-gradient(to right, var(--theme-people), #48bb78);">
+                <span class="theme-section-title">A.6 People Controls (8 controls)</span>
+                <span class="theme-section-stats">
+                    {% if theme_summary and theme_summary.people %}
+                    {{ theme_summary.people.applicable }} Applicable | {{ theme_summary.people.implemented }} Implemented
+                    {% else %}
+                    - Applicable | - Implemented
+                    {% endif %}
+                </span>
+            </div>
+
+            <table class="soa-table">
+                <thead>
+                    <tr>
+                        <th class="control-id-col">Control</th>
+                        <th class="control-title-col">Control Title</th>
+                        <th class="applicable-col">Applicable</th>
+                        <th class="status-col">Status</th>
+                        <th class="justification-col">Justification / Implementation Notes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if soa_controls and soa_controls.people %}
+                    {% for control in soa_controls.people %}
+                    <tr>
+                        <td class="control-id-col">{{ control.control_id | control_id('ISO27001') }}</td>
+                        <td class="control-title-col">{{ control.title | default_value }}</td>
+                        <td class="applicable-col">
+                            {% if control.is_applicable == true %}
+                            <span class="applicable-yes">&#10003;</span>
+                            {% elif control.is_applicable == false %}
+                            <span class="applicable-no">&#10007;</span>
+                            {% else %}
+                            <span class="applicable-partial">P</span>
+                            {% endif %}
+                        </td>
+                        <td class="status-col">
+                            {% if control.status == 'implemented' %}
+                            <span class="status-badge status-implemented">Implemented</span>
+                            {% elif control.status == 'in_progress' %}
+                            <span class="status-badge status-in-progress">In Progress</span>
+                            {% elif control.status == 'planned' %}
+                            <span class="status-badge status-planned">Planned</span>
+                            {% elif control.status == 'excluded' %}
+                            <span class="status-badge status-excluded">Excluded</span>
+                            {% else %}
+                            <span class="status-badge status-not-implemented">Not Impl.</span>
+                            {% endif %}
+                        </td>
+                        <td class="justification-col">{{ control.justification | default_value('No justification provided') }}</td>
+                    </tr>
+                    {% endfor %}
+                    {% else %}
+                    <!-- Default People Controls -->
+                    <tr><td class="control-id-col">A.6.1</td><td class="control-title-col">Screening</td><td class="applicable-col"><span class="applicable-yes">&#10003;</span></td><td class="status-col"><span class="status-badge status-planned">Planned</span></td><td class="justification-col">Required for pre-employment verification</td></tr>
+                    <tr><td class="control-id-col">A.6.2</td><td class="control-title-col">Terms and conditions of employment</td><td class="applicable-col"><span class="applicable-yes">&#10003;</span></td><td class="status-col"><span class="status-badge status-planned">Planned</span></td><td class="justification-col">Required for contractual security obligations</td></tr>
+                    <tr><td class="control-id-col">A.6.3</td><td class="control-title-col">Information security awareness, education and training</td><td class="applicable-col"><span class="applicable-yes">&#10003;</span></td><td class="status-col"><span class="status-badge status-planned">Planned</span></td><td class="justification-col">Required for security culture</td></tr>
+                    <tr><td class="control-id-col">A.6.4</td><td class="control-title-col">Disciplinary process</td><td class="applicable-col"><span class="applicable-yes">&#10003;</span></td><td class="status-col"><span class="status-badge status-planned">Planned</span></td><td class="justification-col">Required for policy enforcement</td></tr>
+                    <tr><td class="control-id-col">A.6.5</td><td class="control-title-col">Responsibilities after termination or change of employment</td><td class="applicable-col"><span class="applicable-yes">&#10003;</span></td><td class="status-col"><span class="status-badge status-planned">Planned</span></td><td class="justification-col">Required for offboarding security</td></tr>
+                    <tr><td class="control-id-col">A.6.6</td><td class="control-title-col">Confidentiality or non-disclosure agreements</td><td class="applicable-col"><span class="applicable-yes">&#10003;</span></td><td class="status-col"><span class="status-badge status-planned">Planned</span></td><td class="justification-col">Required for confidentiality protection</td></tr>
+                    <tr><td class="control-id-col">A.6.7</td><td class="control-title-col">Remote working</td><td class="applicable-col"><span class="applicable-yes">&#10003;</span></td><td class="status-col"><span class="status-badge status-planned">Planned</span></td><td class="justification-col">Required for remote work security</td></tr>
+                    <tr><td class="control-id-col">A.6.8</td><td class="control-title-col">Information security event reporting</td><td class="applicable-col"><span class="applicable-yes">&#10003;</span></td><td class="status-col"><span class="status-badge status-planned">Planned</span></td><td class="justification-col">Required for incident detection</td></tr>
+                    {% endif %}
+                </tbody>
+            </table>
+
+            <!-- Physical Controls (A.7) -->
+            <div class="theme-section-header" style="background: linear-gradient(to right, var(--theme-physical), #805ad5);">
+                <span class="theme-section-title">A.7 Physical Controls (14 controls)</span>
+                <span class="theme-section-stats">
+                    {% if theme_summary and theme_summary.physical %}
+                    {{ theme_summary.physical.applicable }} Applicable | {{ theme_summary.physical.implemented }} Implemented
+                    {% else %}
+                    - Applicable | - Implemented
+                    {% endif %}
+                </span>
+            </div>
+
+            <table class="soa-table">
+                <thead>
+                    <tr>
+                        <th class="control-id-col">Control</th>
+                        <th class="control-title-col">Control Title</th>
+                        <th class="applicable-col">Applicable</th>
+                        <th class="status-col">Status</th>
+                        <th class="justification-col">Justification / Implementation Notes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if soa_controls and soa_controls.physical %}
+                    {% for control in soa_controls.physical %}
+                    <tr>
+                        <td class="control-id-col">{{ control.control_id | control_id('ISO27001') }}</td>
+                        <td class="control-title-col">{{ control.title | default_value }}</td>
+                        <td class="applicable-col">
+                            {% if control.is_applicable == true %}
+                            <span class="applicable-yes">&#10003;</span>
+                            {% elif control.is_applicable == false %}
+                            <span class="applicable-no">&#10007;</span>
+                            {% else %}
+                            <span class="applicable-partial">P</span>
+                            {% endif %}
+                        </td>
+                        <td class="status-col">
+                            {% if control.status == 'implemented' %}
+                            <span class="status-badge status-implemented">Implemented</span>
+                            {% elif control.status == 'in_progress' %}
+                            <span class="status-badge status-in-progress">In Progress</span>
+                            {% elif control.status == 'planned' %}
+                            <span class="status-badge status-planned">Planned</span>
+                            {% elif control.status == 'excluded' %}
+                            <span class="status-badge status-excluded">Excluded</span>
+                            {% else %}
+                            <span class="status-badge status-not-implemented">Not Impl.</span>
+                            {% endif %}
+                        </td>
+                        <td class="justification-col">{{ control.justification | default_value('No justification provided') }}</td>
+                    </tr>
+                    {% endfor %}
+                    {% else %}
+                    <!-- Default Physical Controls -->
+                    <tr><td class="control-id-col">A.7.1</td><td class="control-title-col">Physical security perimeters</td><td class="applicable-col"><span class="applicable-yes">&#10003;</span></td><td class="status-col"><span class="status-badge status-planned">Planned</span></td><td class="justification-col">Required for facility security</td></tr>
+                    <tr><td class="control-id-col">A.7.2</td><td class="control-title-col">Physical entry</td><td class="applicable-col"><span class="applicable-yes">&#10003;</span></td><td class="status-col"><span class="status-badge status-planned">Planned</span></td><td class="justification-col">Required for access control</td></tr>
+                    <tr><td class="control-id-col">A.7.3</td><td class="control-title-col">Securing offices, rooms and facilities</td><td class="applicable-col"><span class="applicable-yes">&#10003;</span></td><td class="status-col"><span class="status-badge status-planned">Planned</span></td><td class="justification-col">Required for workspace security</td></tr>
+                    <tr><td class="control-id-col">A.7.4</td><td class="control-title-col">Physical security monitoring</td><td class="applicable-col"><span class="applicable-yes">&#10003;</span></td><td class="status-col"><span class="status-badge status-planned">Planned</span></td><td class="justification-col">Required for surveillance</td></tr>
+                    <tr><td class="control-id-col">A.7.5</td><td class="control-title-col">Protecting against physical and environmental threats</td><td class="applicable-col"><span class="applicable-yes">&#10003;</span></td><td class="status-col"><span class="status-badge status-planned">Planned</span></td><td class="justification-col">Required for environmental protection</td></tr>
+                    <tr><td class="control-id-col">A.7.6</td><td class="control-title-col">Working in secure areas</td><td class="applicable-col"><span class="applicable-yes">&#10003;</span></td><td class="status-col"><span class="status-badge status-planned">Planned</span></td><td class="justification-col">Required for secure area procedures</td></tr>
+                    <tr><td class="control-id-col">A.7.7</td><td class="control-title-col">Clear desk and clear screen</td><td class="applicable-col"><span class="applicable-yes">&#10003;</span></td><td class="status-col"><span class="status-badge status-planned">Planned</span></td><td class="justification-col">Required for visual data protection</td></tr>
+                    <tr><td class="control-id-col">A.7.8</td><td class="control-title-col">Equipment siting and protection</td><td class="applicable-col"><span class="applicable-yes">&#10003;</span></td><td class="status-col"><span class="status-badge status-planned">Planned</span></td><td class="justification-col">Required for equipment security</td></tr>
+                    <tr><td class="control-id-col">A.7.9</td><td class="control-title-col">Security of assets off-premises</td><td class="applicable-col"><span class="applicable-yes">&#10003;</span></td><td class="status-col"><span class="status-badge status-planned">Planned</span></td><td class="justification-col">Required for mobile asset protection</td></tr>
+                    <tr><td class="control-id-col">A.7.10</td><td class="control-title-col">Storage media</td><td class="applicable-col"><span class="applicable-yes">&#10003;</span></td><td class="status-col"><span class="status-badge status-planned">Planned</span></td><td class="justification-col">Required for media handling</td></tr>
+                    <tr><td class="control-id-col">A.7.11</td><td class="control-title-col">Supporting utilities</td><td class="applicable-col"><span class="applicable-yes">&#10003;</span></td><td class="status-col"><span class="status-badge status-planned">Planned</span></td><td class="justification-col">Required for utility protection</td></tr>
+                    <tr><td class="control-id-col">A.7.12</td><td class="control-title-col">Cabling security</td><td class="applicable-col"><span class="applicable-yes">&#10003;</span></td><td class="status-col"><span class="status-badge status-planned">Planned</span></td><td class="justification-col">Required for infrastructure security</td></tr>
+                    <tr><td class="control-id-col">A.7.13</td><td class="control-title-col">Equipment maintenance</td><td class="applicable-col"><span class="applicable-yes">&#10003;</span></td><td class="status-col"><span class="status-badge status-planned">Planned</span></td><td class="justification-col">Required for equipment reliability</td></tr>
+                    <tr><td class="control-id-col">A.7.14</td><td class="control-title-col">Secure disposal or re-use of equipment</td><td class="applicable-col"><span class="applicable-yes">&#10003;</span></td><td class="status-col"><span class="status-badge status-planned">Planned</span></td><td class="justification-col">Required for secure disposal</td></tr>
+                    {% endif %}
+                </tbody>
+            </table>
+
+            <!-- Technological Controls (A.8) -->
+            <div class="theme-section-header" style="background: linear-gradient(to right, var(--theme-technological), #ed8936);">
+                <span class="theme-section-title">A.8 Technological Controls (34 controls)</span>
+                <span class="theme-section-stats">
+                    {% if theme_summary and theme_summary.technological %}
+                    {{ theme_summary.technological.applicable }} Applicable | {{ theme_summary.technological.implemented }} Implemented
+                    {% else %}
+                    - Applicable | - Implemented
+                    {% endif %}
+                </span>
+            </div>
+
+            <table class="soa-table">
+                <thead>
+                    <tr>
+                        <th class="control-id-col">Control</th>
+                        <th class="control-title-col">Control Title</th>
+                        <th class="applicable-col">Applicable</th>
+                        <th class="status-col">Status</th>
+                        <th class="justification-col">Justification / Implementation Notes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if soa_controls and soa_controls.technological %}
+                    {% for control in soa_controls.technological %}
+                    <tr>
+                        <td class="control-id-col">{{ control.control_id | control_id('ISO27001') }}</td>
+                        <td class="control-title-col">{{ control.title | default_value }}</td>
+                        <td class="applicable-col">
+                            {% if control.is_applicable == true %}
+                            <span class="applicable-yes">&#10003;</span>
+                            {% elif control.is_applicable == false %}
+                            <span class="applicable-no">&#10007;</span>
+                            {% else %}
+                            <span class="applicable-partial">P</span>
+                            {% endif %}
+                        </td>
+                        <td class="status-col">
+                            {% if control.status == 'implemented' %}
+                            <span class="status-badge status-implemented">Implemented</span>
+                            {% elif control.status == 'in_progress' %}
+                            <span class="status-badge status-in-progress">In Progress</span>
+                            {% elif control.status == 'planned' %}
+                            <span class="status-badge status-planned">Planned</span>
+                            {% elif control.status == 'excluded' %}
+                            <span class="status-badge status-excluded">Excluded</span>
+                            {% else %}
+                            <span class="status-badge status-not-implemented">Not Impl.</span>
+                            {% endif %}
+                        </td>
+                        <td class="justification-col">{{ control.justification | default_value('No justification provided') }}</td>
+                    </tr>
+                    {% endfor %}
+                    {% else %}
+                    <!-- Default Technological Controls -->
+                    <tr><td class="control-id-col">A.8.1</td><td class="control-title-col">User endpoint devices</td><td class="applicable-col"><span class="applicable-yes">&#10003;</span></td><td class="status-col"><span class="status-badge status-planned">Planned</span></td><td class="justification-col">Required for endpoint security</td></tr>
+                    <tr><td class="control-id-col">A.8.2</td><td class="control-title-col">Privileged access rights</td><td class="applicable-col"><span class="applicable-yes">&#10003;</span></td><td class="status-col"><span class="status-badge status-planned">Planned</span></td><td class="justification-col">Required for privileged access management</td></tr>
+                    <tr><td class="control-id-col">A.8.3</td><td class="control-title-col">Information access restriction</td><td class="applicable-col"><span class="applicable-yes">&#10003;</span></td><td class="status-col"><span class="status-badge status-planned">Planned</span></td><td class="justification-col">Required for data access control</td></tr>
+                    <tr><td class="control-id-col">A.8.4</td><td class="control-title-col">Access to source code</td><td class="applicable-col"><span class="applicable-yes">&#10003;</span></td><td class="status-col"><span class="status-badge status-planned">Planned</span></td><td class="justification-col">Required for code repository security</td></tr>
+                    <tr><td class="control-id-col">A.8.5</td><td class="control-title-col">Secure authentication</td><td class="applicable-col"><span class="applicable-yes">&#10003;</span></td><td class="status-col"><span class="status-badge status-planned">Planned</span></td><td class="justification-col">Required for strong authentication</td></tr>
+                    <tr><td class="control-id-col">A.8.6</td><td class="control-title-col">Capacity management</td><td class="applicable-col"><span class="applicable-yes">&#10003;</span></td><td class="status-col"><span class="status-badge status-planned">Planned</span></td><td class="justification-col">Required for resource planning</td></tr>
+                    <tr><td class="control-id-col">A.8.7</td><td class="control-title-col">Protection against malware</td><td class="applicable-col"><span class="applicable-yes">&#10003;</span></td><td class="status-col"><span class="status-badge status-planned">Planned</span></td><td class="justification-col">Required for malware defense</td></tr>
+                    <tr><td class="control-id-col">A.8.8</td><td class="control-title-col">Management of technical vulnerabilities</td><td class="applicable-col"><span class="applicable-yes">&#10003;</span></td><td class="status-col"><span class="status-badge status-planned">Planned</span></td><td class="justification-col">Required for vulnerability management</td></tr>
+                    <tr><td class="control-id-col">A.8.9</td><td class="control-title-col">Configuration management</td><td class="applicable-col"><span class="applicable-yes">&#10003;</span></td><td class="status-col"><span class="status-badge status-planned">Planned</span></td><td class="justification-col">Required for configuration control</td></tr>
+                    <tr><td class="control-id-col">A.8.10</td><td class="control-title-col">Information deletion</td><td class="applicable-col"><span class="applicable-yes">&#10003;</span></td><td class="status-col"><span class="status-badge status-planned">Planned</span></td><td class="justification-col">Required for data lifecycle management</td></tr>
+                    <tr><td class="control-id-col">A.8.11</td><td class="control-title-col">Data masking</td><td class="applicable-col"><span class="applicable-yes">&#10003;</span></td><td class="status-col"><span class="status-badge status-planned">Planned</span></td><td class="justification-col">Required for data protection in non-prod</td></tr>
+                    <tr><td class="control-id-col">A.8.12</td><td class="control-title-col">Data leakage prevention</td><td class="applicable-col"><span class="applicable-yes">&#10003;</span></td><td class="status-col"><span class="status-badge status-planned">Planned</span></td><td class="justification-col">Required for DLP controls</td></tr>
+                    <tr><td class="control-id-col">A.8.13</td><td class="control-title-col">Information backup</td><td class="applicable-col"><span class="applicable-yes">&#10003;</span></td><td class="status-col"><span class="status-badge status-planned">Planned</span></td><td class="justification-col">Required for data recovery</td></tr>
+                    <tr><td class="control-id-col">A.8.14</td><td class="control-title-col">Redundancy of information processing facilities</td><td class="applicable-col"><span class="applicable-yes">&#10003;</span></td><td class="status-col"><span class="status-badge status-planned">Planned</span></td><td class="justification-col">Required for high availability</td></tr>
+                    <tr><td class="control-id-col">A.8.15</td><td class="control-title-col">Logging</td><td class="applicable-col"><span class="applicable-yes">&#10003;</span></td><td class="status-col"><span class="status-badge status-planned">Planned</span></td><td class="justification-col">Required for audit trail</td></tr>
+                    <tr><td class="control-id-col">A.8.16</td><td class="control-title-col">Monitoring activities</td><td class="applicable-col"><span class="applicable-yes">&#10003;</span></td><td class="status-col"><span class="status-badge status-planned">Planned</span></td><td class="justification-col">Required for security monitoring</td></tr>
+                    <tr><td class="control-id-col">A.8.17</td><td class="control-title-col">Clock synchronization</td><td class="applicable-col"><span class="applicable-yes">&#10003;</span></td><td class="status-col"><span class="status-badge status-planned">Planned</span></td><td class="justification-col">Required for log correlation</td></tr>
+                    <tr><td class="control-id-col">A.8.18</td><td class="control-title-col">Use of privileged utility programs</td><td class="applicable-col"><span class="applicable-yes">&#10003;</span></td><td class="status-col"><span class="status-badge status-planned">Planned</span></td><td class="justification-col">Required for utility control</td></tr>
+                    <tr><td class="control-id-col">A.8.19</td><td class="control-title-col">Installation of software on operational systems</td><td class="applicable-col"><span class="applicable-yes">&#10003;</span></td><td class="status-col"><span class="status-badge status-planned">Planned</span></td><td class="justification-col">Required for change management</td></tr>
+                    <tr><td class="control-id-col">A.8.20</td><td class="control-title-col">Networks security</td><td class="applicable-col"><span class="applicable-yes">&#10003;</span></td><td class="status-col"><span class="status-badge status-planned">Planned</span></td><td class="justification-col">Required for network protection</td></tr>
+                    <tr><td class="control-id-col">A.8.21</td><td class="control-title-col">Security of network services</td><td class="applicable-col"><span class="applicable-yes">&#10003;</span></td><td class="status-col"><span class="status-badge status-planned">Planned</span></td><td class="justification-col">Required for network service security</td></tr>
+                    <tr><td class="control-id-col">A.8.22</td><td class="control-title-col">Segregation of networks</td><td class="applicable-col"><span class="applicable-yes">&#10003;</span></td><td class="status-col"><span class="status-badge status-planned">Planned</span></td><td class="justification-col">Required for network segmentation</td></tr>
+                    <tr><td class="control-id-col">A.8.23</td><td class="control-title-col">Web filtering</td><td class="applicable-col"><span class="applicable-yes">&#10003;</span></td><td class="status-col"><span class="status-badge status-planned">Planned</span></td><td class="justification-col">Required for web access control</td></tr>
+                    <tr><td class="control-id-col">A.8.24</td><td class="control-title-col">Use of cryptography</td><td class="applicable-col"><span class="applicable-yes">&#10003;</span></td><td class="status-col"><span class="status-badge status-planned">Planned</span></td><td class="justification-col">Required for encryption controls</td></tr>
+                    <tr><td class="control-id-col">A.8.25</td><td class="control-title-col">Secure development life cycle</td><td class="applicable-col"><span class="applicable-yes">&#10003;</span></td><td class="status-col"><span class="status-badge status-planned">Planned</span></td><td class="justification-col">Required for SDLC security</td></tr>
+                    <tr><td class="control-id-col">A.8.26</td><td class="control-title-col">Application security requirements</td><td class="applicable-col"><span class="applicable-yes">&#10003;</span></td><td class="status-col"><span class="status-badge status-planned">Planned</span></td><td class="justification-col">Required for application security</td></tr>
+                    <tr><td class="control-id-col">A.8.27</td><td class="control-title-col">Secure system architecture and engineering principles</td><td class="applicable-col"><span class="applicable-yes">&#10003;</span></td><td class="status-col"><span class="status-badge status-planned">Planned</span></td><td class="justification-col">Required for security architecture</td></tr>
+                    <tr><td class="control-id-col">A.8.28</td><td class="control-title-col">Secure coding</td><td class="applicable-col"><span class="applicable-yes">&#10003;</span></td><td class="status-col"><span class="status-badge status-planned">Planned</span></td><td class="justification-col">Required for secure development</td></tr>
+                    <tr><td class="control-id-col">A.8.29</td><td class="control-title-col">Security testing in development and acceptance</td><td class="applicable-col"><span class="applicable-yes">&#10003;</span></td><td class="status-col"><span class="status-badge status-planned">Planned</span></td><td class="justification-col">Required for security testing</td></tr>
+                    <tr><td class="control-id-col">A.8.30</td><td class="control-title-col">Outsourced development</td><td class="applicable-col"><span class="applicable-yes">&#10003;</span></td><td class="status-col"><span class="status-badge status-planned">Planned</span></td><td class="justification-col">Required for vendor development security</td></tr>
+                    <tr><td class="control-id-col">A.8.31</td><td class="control-title-col">Separation of development, test and production environments</td><td class="applicable-col"><span class="applicable-yes">&#10003;</span></td><td class="status-col"><span class="status-badge status-planned">Planned</span></td><td class="justification-col">Required for environment segregation</td></tr>
+                    <tr><td class="control-id-col">A.8.32</td><td class="control-title-col">Change management</td><td class="applicable-col"><span class="applicable-yes">&#10003;</span></td><td class="status-col"><span class="status-badge status-planned">Planned</span></td><td class="justification-col">Required for change control</td></tr>
+                    <tr><td class="control-id-col">A.8.33</td><td class="control-title-col">Test information</td><td class="applicable-col"><span class="applicable-yes">&#10003;</span></td><td class="status-col"><span class="status-badge status-planned">Planned</span></td><td class="justification-col">Required for test data protection</td></tr>
+                    <tr><td class="control-id-col">A.8.34</td><td class="control-title-col">Protection of information systems during audit testing</td><td class="applicable-col"><span class="applicable-yes">&#10003;</span></td><td class="status-col"><span class="status-badge status-planned">Planned</span></td><td class="justification-col">Required for audit security</td></tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Excluded Controls Summary -->
+        <section class="section">
+            <h2 class="section-title">Excluded Controls Summary</h2>
+            <p style="margin-bottom: 15px;">
+                The following controls have been determined not applicable based on the organization's
+                risk assessment and ISMS scope. Each exclusion includes a documented justification.
+            </p>
+
+            {% if excluded_controls %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Control ID</th>
+                        <th>Control Title</th>
+                        <th>Exclusion Justification</th>
+                        <th>Approved By</th>
+                        <th>Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for control in excluded_controls %}
+                    <tr>
+                        <td>{{ control.control_id | control_id('ISO27001') }}</td>
+                        <td>{{ control.title | default_value }}</td>
+                        <td>{{ control.exclusion_justification | default_value }}</td>
+                        <td>{{ control.approved_by | default_value }}</td>
+                        <td>{{ control.approval_date | format_date }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="summary-box" style="border-left-color: var(--success-color);">
+                <p>
+                    No controls have been excluded from the scope of this ISMS. All 93 Annex A controls
+                    are applicable and will be addressed through the organization's risk treatment plan.
+                </p>
+            </div>
+            {% endif %}
+        </section>
+
+        <!-- Approval Section -->
+        <section class="section approval-section">
+            <h2 class="section-title">Document Approval</h2>
+            <p style="margin-bottom: 20px;">
+                This Statement of Applicability has been reviewed and approved by the following
+                responsible parties. Approval signifies agreement with control applicability
+                decisions and implementation status.
+            </p>
+
+            <table class="approval-table">
+                <tr>
+                    <td style="width: 50%;">
+                        <div class="approval-role">ISMS Manager</div>
+                        <div class="approval-field">
+                            <div class="approval-label">Name</div>
+                            <div class="signature-line">{{ isms_manager_name | default_value('') }}</div>
+                        </div>
+                        <div class="approval-field">
+                            <div class="approval-label">Signature</div>
+                            <div class="signature-line"></div>
+                        </div>
+                        <div class="approval-field">
+                            <div class="approval-label">Date</div>
+                            <div class="signature-line">{{ isms_manager_approval_date | format_date }}</div>
+                        </div>
+                    </td>
+                    <td style="width: 50%;">
+                        <div class="approval-role">Information Security Officer</div>
+                        <div class="approval-field">
+                            <div class="approval-label">Name</div>
+                            <div class="signature-line">{{ iso_name | default_value('') }}</div>
+                        </div>
+                        <div class="approval-field">
+                            <div class="approval-label">Signature</div>
+                            <div class="signature-line"></div>
+                        </div>
+                        <div class="approval-field">
+                            <div class="approval-label">Date</div>
+                            <div class="signature-line">{{ iso_approval_date | format_date }}</div>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="2">
+                        <div class="approval-role">Executive Management Approval</div>
+                        <div class="approval-field">
+                            <div class="approval-label">Name</div>
+                            <div class="signature-line">{{ exec_name | default_value('') }}</div>
+                        </div>
+                        <div class="approval-field">
+                            <div class="approval-label">Title</div>
+                            <div class="signature-line">{{ exec_title | default_value('') }}</div>
+                        </div>
+                        <div class="approval-field">
+                            <div class="approval-label">Signature</div>
+                            <div class="signature-line"></div>
+                        </div>
+                        <div class="approval-field">
+                            <div class="approval-label">Date</div>
+                            <div class="signature-line">{{ exec_approval_date | format_date }}</div>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+        </section>
+
+        <!-- Document History -->
+        <section class="section">
+            <h2 class="section-title">Document History</h2>
+            {% if document_history %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Version</th>
+                        <th>Date</th>
+                        <th>Author</th>
+                        <th>Changes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for entry in document_history %}
+                    <tr>
+                        <td>{{ entry.version | default_value }}</td>
+                        <td>{{ entry.date | format_date }}</td>
+                        <td>{{ entry.author | default_value }}</td>
+                        <td>{{ entry.changes | default_value }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Version</th>
+                        <th>Date</th>
+                        <th>Author</th>
+                        <th>Changes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>1.0</td>
+                        <td>{{ generated_at | format_date }}</td>
+                        <td>{{ document_author | default_value('ISMS Team') }}</td>
+                        <td>Initial document creation</td>
+                    </tr>
+                </tbody>
+            </table>
+            {% endif %}
+        </section>
+
+        <!-- Report Footer -->
+        <footer class="report-footer">
+            <p>
+                <strong>ISO 27001:2022 Statement of Applicability</strong>
+                <br>
+                {{ organization_name | default_value('Organization') }} | Generated: {{ generated_at | format_datetime }}
+                <br>
+                Document ID: {{ document_id | default_value('SOA-001') }} | Version: {{ document_version | default_value('1.0') }}
+            </p>
+            <p style="margin-top: 15px; font-size: 7pt;">
+                This document is confidential and intended for ISMS management purposes only.
+                Unauthorized distribution is prohibited. The Statement of Applicability is a
+                mandatory ISO 27001 requirement and must be kept up to date.
+                <br>
+                ACGS-2 Enterprise Guardrails Platform - Compliance Documentation Service
+            </p>
+        </footer>
+    </div>
+</body>
+</html>

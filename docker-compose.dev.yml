@@ -128,44 +128,28 @@ services:
     networks:
       - acgs-dev
 
-  # HITL Approvals Service for human-in-the-loop decision workflows
-  hitl-approvals:
+  # Compliance Documentation Service
+  compliance-docs:
     build:
-      context: ./acgs2-core/services/hitl-approvals
-      dockerfile: Dockerfile
+      context: ./acgs2-core/services/compliance_docs
+      dockerfile: Dockerfile.dev
     ports:
-      - "${HITL_APPROVALS_PORT:-8003}:8003"
+      - "8100:8100"
+    env_file:
+      - .env.dev
     environment:
-      # Service configuration
-      - HITL_APPROVALS_PORT=${HITL_APPROVALS_PORT:-8003}
-      - HITL_APPROVALS_HOST=0.0.0.0
-      - ENVIRONMENT=${ENVIRONMENT:-development}
-
-      # Infrastructure connections
-      - REDIS_URL=${REDIS_URL}
-      - KAFKA_BOOTSTRAP_SERVERS=${KAFKA_BOOTSTRAP_SERVERS:-kafka:29092}
-      - OPA_URL=${OPA_URL}
-      - AGENT_BUS_URL=${AGENT_BUS_URL}
-      - AUDIT_SERVICE_URL=${AUDIT_SERVICE_URL:-http://audit-service:8080}
-
-      # Notification integrations (configure in .env for your environment)
-      - SLACK_WEBHOOK_URL=${SLACK_WEBHOOK_URL:-}
-      - MS_TEAMS_WEBHOOK_URL=${MS_TEAMS_WEBHOOK_URL:-}
-      - PAGERDUTY_ROUTING_KEY=${PAGERDUTY_ROUTING_KEY:-}
-
-      # Escalation policies
-      - DEFAULT_ESCALATION_TIMEOUT_MINUTES=${DEFAULT_ESCALATION_TIMEOUT_MINUTES:-30}
-      - CRITICAL_ESCALATION_TIMEOUT_MINUTES=${CRITICAL_ESCALATION_TIMEOUT_MINUTES:-15}
-      - EMERGENCY_ESCALATION_TIMEOUT_MINUTES=${EMERGENCY_ESCALATION_TIMEOUT_MINUTES:-60}
-    depends_on:
-      - redis
-      - kafka
-      - opa
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8003/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+      # Service-specific configuration
+      - ACGS_ENV=${ACGS_ENV:-development}
+      # Pass through centralized config
+      - CONSTITUTIONAL_HASH=${CONSTITUTIONAL_HASH:-cdd01ef066bc6cf2}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      # Compliance-specific environment variables
+      - COMPLIANCE_TEMPLATES_PATH=${COMPLIANCE_TEMPLATES_PATH:-/app/src/templates}
+      - COMPLIANCE_OUTPUT_PATH=${COMPLIANCE_OUTPUT_PATH:-/tmp/compliance-reports}
+      - COMPLIANCE_CLEANUP_INTERVAL=${COMPLIANCE_CLEANUP_INTERVAL:-3600}
+    volumes:
+      - ./acgs2-core/services/compliance_docs:/app
+      - /app/__pycache__
     networks:
       - acgs-dev
 

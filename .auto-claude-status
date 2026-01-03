@@ -1,25 +1,25 @@
 {
   "active": true,
-  "spec": "001-llm-based-intent-classification-for-high-ambiguity",
-  "state": "complete",
+  "spec": "003-enterprise-compliance-documentation-templates",
+  "state": "building",
   "subtasks": {
-    "completed": 16,
-    "total": 16,
-    "in_progress": 0,
+    "completed": 20,
+    "total": 39,
+    "in_progress": 1,
     "failed": 0
   },
   "phase": {
-    "current": "Performance and Security Validation",
-    "id": 5,
-    "total": 3
+    "current": "Testing & Quality Assurance",
+    "id": null,
+    "total": 6
   },
   "workers": {
     "active": 0,
     "max": 1
   },
   "session": {
-    "number": 1,
-    "started_at": "2026-01-03T04:37:46.363519"
+    "number": 402,
+    "started_at": "2026-01-03T08:53:51.832254"
   },
-  "last_update": "2026-01-03T04:55:58.036267"
+  "last_update": "2026-01-03T11:20:14.872423"
 }
