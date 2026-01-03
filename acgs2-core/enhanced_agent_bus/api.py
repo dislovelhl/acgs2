@@ -159,22 +159,6 @@ async def global_exception_handler(request: Request, exc: Exception):
 # Global agent bus instance - simplified for development
 agent_bus = None
 
-# Message type handlers registry
-MESSAGE_HANDLERS: Dict[MessageTypeEnum, str] = {
-    MessageTypeEnum.COMMAND: "process_command",
-    MessageTypeEnum.QUERY: "process_query",
-    MessageTypeEnum.RESPONSE: "process_response",
-    MessageTypeEnum.EVENT: "process_event",
-    MessageTypeEnum.NOTIFICATION: "process_notification",
-    MessageTypeEnum.HEARTBEAT: "process_heartbeat",
-    MessageTypeEnum.GOVERNANCE_REQUEST: "process_governance_request",
-    MessageTypeEnum.GOVERNANCE_RESPONSE: "process_governance_response",
-    MessageTypeEnum.CONSTITUTIONAL_VALIDATION: "process_constitutional_validation",
-    MessageTypeEnum.TASK_REQUEST: "process_task_request",
-    MessageTypeEnum.TASK_RESPONSE: "process_task_response",
-    MessageTypeEnum.AUDIT_LOG: "process_audit_log",
-}
-
 
 # ===== Message Type Definitions =====
 
@@ -194,6 +178,23 @@ class MessageTypeEnum(str, Enum):
     TASK_REQUEST = "task_request"
     TASK_RESPONSE = "task_response"
     AUDIT_LOG = "audit_log"
+
+
+# Message type handlers registry - must be defined after MessageTypeEnum
+MESSAGE_HANDLERS: Dict[MessageTypeEnum, str] = {
+    MessageTypeEnum.COMMAND: "process_command",
+    MessageTypeEnum.QUERY: "process_query",
+    MessageTypeEnum.RESPONSE: "process_response",
+    MessageTypeEnum.EVENT: "process_event",
+    MessageTypeEnum.NOTIFICATION: "process_notification",
+    MessageTypeEnum.HEARTBEAT: "process_heartbeat",
+    MessageTypeEnum.GOVERNANCE_REQUEST: "process_governance_request",
+    MessageTypeEnum.GOVERNANCE_RESPONSE: "process_governance_response",
+    MessageTypeEnum.CONSTITUTIONAL_VALIDATION: "process_constitutional_validation",
+    MessageTypeEnum.TASK_REQUEST: "process_task_request",
+    MessageTypeEnum.TASK_RESPONSE: "process_task_response",
+    MessageTypeEnum.AUDIT_LOG: "process_audit_log",
+}
 
 
 class PriorityEnum(str, Enum):
