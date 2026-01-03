@@ -96,6 +96,12 @@ from .retry import (
     WebhookRetryError,
 )
 
+# Import validation exceptions
+from .validation import (
+    ConfigValidationError,
+    ValidationError,
+)
+
 # Export all exceptions
 __all__ = [
     "BaseIntegrationServiceError",
@@ -121,6 +127,9 @@ __all__ = [
     "WebhookDeliveryError",  # Backward compatibility alias
     "WebhookTimeoutError",  # Backward compatibility alias
     "WebhookConnectionError",  # Backward compatibility alias
+    # Validation exceptions
+    "ValidationError",
+    "ConfigValidationError",
 ]
 
 # Version information
