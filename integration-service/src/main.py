@@ -7,11 +7,13 @@ import logging
 import os
 from contextlib import asynccontextmanager
 
+import redis.asyncio as redis
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .api.health import configure_health_router
 from .api.health import router as health_router
+from .api.import_router import router as import_router
 from .api.policy_check import router as policy_check_router
 from .api.webhooks import router as webhooks_router
 
@@ -34,10 +36,15 @@ KAFKA_BOOTSTRAP = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092")
 # CORS configuration
 CORS_ORIGINS = os.getenv("CORS_ORIGINS", "*").split(",")
 
+# Redis client for job tracking
+redis_client = None
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan manager"""
+    global redis_client
+
     # Startup
     logger.info(f"Starting {SERVICE_NAME} v{SERVICE_VERSION}")
     logger.info(f"Environment: {ENVIRONMENT}")
@@ -55,9 +62,21 @@ async def lifespan(app: FastAPI):
         opa_url=OPA_URL,
     )
 
+    # Initialize Redis for job tracking
+    try:
+        redis_client = redis.from_url(REDIS_URL, encoding="utf-8", decode_responses=True)
+        await redis_client.ping()
+        logger.info(f"Redis connected for job tracking: {REDIS_URL}")
+    except Exception as e:
+        logger.warning(f"Redis connection failed: {e}. Job tracking will use in-memory storage.")
+        redis_client = None
+
     yield
 
     # Shutdown
+    if redis_client:
+        await redis_client.close()
+        logger.info("Redis connection closed")
     logger.info(f"Shutting down {SERVICE_NAME}")
 
 
@@ -81,6 +100,7 @@ app.add_middleware(
 
 # Include routers
 app.include_router(health_router)
+app.include_router(import_router)
 app.include_router(policy_check_router)
 app.include_router(webhooks_router)
 
