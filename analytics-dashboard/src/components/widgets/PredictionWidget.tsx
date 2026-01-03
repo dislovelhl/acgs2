@@ -183,7 +183,7 @@ const CustomTooltip = memo(function CustomTooltip({
  * - Shows summary statistics and trend direction
  * - Supports manual refresh
  */
-export function PredictionWidget(): JSX.Element {
+export const PredictionWidget = memo(function PredictionWidget(): JSX.Element {
   const [data, setData] = useState<PredictionsResponse | null>(null);
   const [loadingState, setLoadingState] = useState<LoadingState>("idle");
   const [error, setError] = useState<string | null>(null);
@@ -546,6 +546,6 @@ export function PredictionWidget(): JSX.Element {
       </div>
     </div>
   );
-}
+});
 
 export default PredictionWidget;
