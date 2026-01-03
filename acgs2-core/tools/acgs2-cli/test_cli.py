@@ -2,18 +2,26 @@
 """
 ACGS-2 CLI Tool Test Script
 Constitutional Hash: cdd01ef066bc6cf2
+
+SECURITY: Uses shell=False for subprocess calls to prevent command injection.
 """
 
+import shlex
 import subprocess
 import sys
 from pathlib import Path
 
 
-def run_command(cmd, description):
-    """Run a command and return success status"""
+def run_command(cmd_args: list, description: str) -> bool:
+    """Run a command and return success status.
+
+    SECURITY: Uses shell=False to prevent command injection attacks.
+    Args must be passed as a list of strings.
+    """
     print(f"🧪 Testing: {description}")
     try:
-        result = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=30)
+        # SECURITY: shell=False prevents command injection
+        result = subprocess.run(cmd_args, capture_output=True, text=True, timeout=30)
         if result.returncode == 0:
             print(f"✅ {description}: PASSED")
             return True
@@ -23,6 +31,9 @@ def run_command(cmd, description):
             return False
     except subprocess.TimeoutExpired:
         print(f"❌ {description}: TIMEOUT")
+        return False
+    except FileNotFoundError:
+        print(f"❌ {description}: COMMAND NOT FOUND")
         return False
     except Exception as e:
         print(f"❌ {description}: ERROR - {e}")
@@ -41,18 +52,19 @@ def main():
 
     # Test 1: CLI help
     total_tests += 1
-    if run_command("acgs2-cli --help", "CLI help command"):
+    if run_command(["acgs2-cli", "--help"], "CLI help command"):
         tests_passed += 1
 
     # Test 2: CLI version
     total_tests += 1
-    if run_command("acgs2-cli version", "CLI version command"):
+    if run_command(["acgs2-cli", "version"], "CLI version command"):
         tests_passed += 1
 
     # Test 3: CLI health check (will fail without running services, but should show proper error)
     total_tests += 1
+    # SECURITY: shell=False to prevent command injection
     result = subprocess.run(
-        "acgs2-cli health", shell=True, capture_output=True, text=True, timeout=10
+        ["acgs2-cli", "health"], capture_output=True, text=True, timeout=10
     )
     if "Health check failed" in result.stderr or "Connection refused" in result.stderr:
         print("✅ CLI health check: PASSED (expected failure without services)")
@@ -64,22 +76,22 @@ def main():
 
     # Test 4: HITL commands help
     total_tests += 1
-    if run_command("acgs2-cli hitl --help", "HITL commands help"):
+    if run_command(["acgs2-cli", "hitl", "--help"], "HITL commands help"):
         tests_passed += 1
 
     # Test 5: ML commands help
     total_tests += 1
-    if run_command("acgs2-cli ml --help", "ML commands help"):
+    if run_command(["acgs2-cli", "ml", "--help"], "ML commands help"):
         tests_passed += 1
 
     # Test 6: Policy commands help
     total_tests += 1
-    if run_command("acgs2-cli policy --help", "Policy commands help"):
+    if run_command(["acgs2-cli", "policy", "--help"], "Policy commands help"):
         tests_passed += 1
 
     # Test 7: Playground help
     total_tests += 1
-    if run_command("acgs2-cli playground --help", "Playground command help"):
+    if run_command(["acgs2-cli", "playground", "--help"], "Playground command help"):
         tests_passed += 1
 
     # Summary

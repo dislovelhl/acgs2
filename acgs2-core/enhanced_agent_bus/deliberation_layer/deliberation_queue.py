@@ -92,7 +92,16 @@ class DeliberationQueue:
     """
     Queue for managing messages that require human-in-the-loop or
     multi-agent deliberation.
+
+    PERFORMANCE OPTIMIZATION:
+    - Uses partitioned locks to reduce contention (4 partitions by default)
+    - Partition selection based on task_id hash for consistent routing
+    - Enables parallel processing of tasks in different partitions
+    - Target: >6000 RPS throughput with P99 latency <1ms
     """
+
+    # Number of partitions for reduced lock contention
+    NUM_PARTITIONS = 4
 
     def __init__(
         self,
@@ -114,13 +123,24 @@ class DeliberationQueue:
             "consensus_reached": 0,
             "avg_processing_time": 0.0,
         }
-        self._lock = asyncio.Lock()
+        # PERFORMANCE: Partitioned locks for reduced contention
+        # Use multiple locks to allow parallel operations on different task partitions
+        self._partition_locks = [asyncio.Lock() for _ in range(self.NUM_PARTITIONS)]
+        self._lock = asyncio.Lock()  # Global lock for stats and persistence only
         self._shutdown = False  # Shutdown flag for clean task termination
         self._shutdown_event = asyncio.Event()  # Event for immediate task wakeup on shutdown
         # Register this instance for global cleanup
         _all_queue_instances.append(self)
         if self.persistence_path:
             self._load_tasks()
+
+    def _get_partition_lock(self, task_id: str) -> asyncio.Lock:
+        """Get the partition lock for a given task_id.
+
+        Uses hash-based routing for consistent partition assignment.
+        """
+        partition_idx = hash(task_id) % self.NUM_PARTITIONS
+        return self._partition_locks[partition_idx]
 
     def _load_tasks(self):
         """Load tasks from persistent storage."""
@@ -152,33 +172,50 @@ class DeliberationQueue:
         requires_multi_agent_vote: bool = False,
         timeout_seconds: Optional[int] = None,
     ) -> str:
-        """Enqueue a message for deliberation."""
-        async with self._lock:
-            task_id = str(uuid.uuid4())
-            timeout = timeout_seconds or self.default_timeout
+        """Enqueue a message for deliberation.
 
-            task = DeliberationTask(
-                task_id=task_id,
-                message=message,
-                timeout_seconds=timeout,
-                required_votes=5 if requires_multi_agent_vote else 0,  # Match test expectation 5
-                consensus_threshold=self.consensus_threshold,
-                metadata={
-                    "requires_human": requires_human_review,
-                    "requires_vote": requires_multi_agent_vote,
-                },
-            )
+        PERFORMANCE: Uses partitioned lock to reduce contention.
+        Only the partition containing this task is locked, allowing
+        parallel enqueue operations on other partitions.
+        """
+        task_id = str(uuid.uuid4())
+        timeout = timeout_seconds or self.default_timeout
 
+        task = DeliberationTask(
+            task_id=task_id,
+            message=message,
+            timeout_seconds=timeout,
+            required_votes=5 if requires_multi_agent_vote else 0,  # Match test expectation 5
+            consensus_threshold=self.consensus_threshold,
+            metadata={
+                "requires_human": requires_human_review,
+                "requires_vote": requires_multi_agent_vote,
+            },
+        )
+
+        # Use partition lock for task insertion (allows parallel inserts to other partitions)
+        partition_lock = self._get_partition_lock(task_id)
+        async with partition_lock:
             self.tasks[task_id] = task
+
+        # Use global lock only for stats update (minimal critical section)
+        async with self._lock:
             self.stats["total_queued"] += 1
 
-            # Start background processing (e.g. timeout monitor)
-            proc_task = asyncio.create_task(self._monitor_task(task_id))
-            self.processing_tasks.append(proc_task)
+        # Start background processing (e.g. timeout monitor) - non-blocking
+        proc_task = asyncio.create_task(self._monitor_task(task_id))
+        self.processing_tasks.append(proc_task)
 
-            self._save_tasks()
-            logger.info(f"Message {message.message_id} enqueued for deliberation (Task {task_id})")
-            return task_id
+        # Persist asynchronously if needed (non-blocking)
+        if self.persistence_path:
+            asyncio.create_task(self._async_save_tasks())
+
+        logger.info(f"Message {message.message_id} enqueued for deliberation (Task {task_id})")
+        return task_id
+
+    async def _async_save_tasks(self):
+        """Asynchronously save tasks to persistent storage."""
+        await asyncio.to_thread(self._save_tasks)
 
     async def enqueue(self, *args, **kwargs) -> str:
         """Alias for enqueue_for_deliberation."""
@@ -306,8 +343,13 @@ class DeliberationQueue:
     async def submit_agent_vote(
         self, item_id: str, agent_id: str, vote: VoteType, reasoning: str, confidence: float = 1.0
     ) -> bool:
-        """Submit an agent's vote (test compatibility)."""
-        async with self._lock:
+        """Submit an agent's vote.
+
+        PERFORMANCE: Uses partitioned lock for task access,
+        global lock only for stats updates.
+        """
+        partition_lock = self._get_partition_lock(item_id)
+        async with partition_lock:
             task = self.tasks.get(item_id)
             if not task or task.is_complete:
                 return False
@@ -323,10 +365,14 @@ class DeliberationQueue:
             # Check for consensus
             if self._check_consensus(task):
                 task.status = DeliberationStatus.APPROVED  # Or specific consensus state
-                self.stats["approved"] += 1
+                # Update stats with global lock
+                async with self._lock:
+                    self.stats["approved"] += 1
 
-            self._save_tasks()
-            return True
+        # Persist asynchronously
+        if self.persistence_path:
+            asyncio.create_task(self._async_save_tasks())
+        return True
 
     def _check_consensus(self, task: DeliberationTask) -> bool:
         """Internal consensus checking logic."""
@@ -341,12 +387,14 @@ class DeliberationQueue:
     async def submit_human_decision(
         self, item_id: str, reviewer: str, decision: DeliberationStatus, reasoning: str
     ) -> bool:
-        """Submit human decision (test compatibility)."""
-        async with self._lock:
+        """Submit human decision.
+
+        PERFORMANCE: Uses partitioned lock for task access,
+        global lock only for stats updates.
+        """
+        partition_lock = self._get_partition_lock(item_id)
+        async with partition_lock:
             task = self.tasks.get(item_id)
-            # Some tests expect specific status check? Let's check test_deliberation_queue_module.py
-            # If item not UNDER_REVIEW, fails?
-            # I'll just check existence and completeness.
             if not task or task.is_complete:
                 return False
 
@@ -359,13 +407,17 @@ class DeliberationQueue:
             task.human_reasoning = reasoning
             task.status = decision
 
+        # Update stats with global lock (minimal critical section)
+        async with self._lock:
             if get_enum_value(decision) == DeliberationStatus.APPROVED.value:
                 self.stats["approved"] += 1
             else:
                 self.stats["rejected"] += 1
 
-            self._save_tasks()
-            return True
+        # Persist asynchronously
+        if self.persistence_path:
+            asyncio.create_task(self._async_save_tasks())
+        return True
 
     def _save_tasks(self):
         """Save current tasks to persistent storage."""

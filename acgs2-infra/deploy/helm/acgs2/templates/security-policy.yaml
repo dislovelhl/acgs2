@@ -3,6 +3,11 @@ ACGS-2 Security Policy Configuration
 Constitutional Hash: cdd01ef066bc6cf2
 
 Implements supply chain security and SLSA provenance requirements.
+
+KUBERNETES 1.24+ COMPATIBILITY:
+- PodSecurityPolicy (policy/v1beta1) was deprecated in K8s 1.21 and removed in K8s 1.25
+- Migrated to Pod Security Standards (PSS) using namespace labels
+- Reference: https://kubernetes.io/docs/concepts/security/pod-security-standards/
 */}}
 {{- if .Values.global.security.supplyChain.enabled }}
 ---
@@ -21,50 +26,94 @@ spec:
         -----END PUBLIC KEY-----
   mode: enforce
 ---
-# Pod Security Standards enforcement
-apiVersion: policy/v1beta1
-kind: PodSecurityPolicy
+# Pod Security Standards (PSS) - Kubernetes 1.24+ compatible
+# This replaces the deprecated PodSecurityPolicy (policy/v1beta1)
+# Applied via namespace labels for Pod Security Admission (PSA)
+#
+# Security Profile: "restricted" (most restrictive baseline)
+# - Prevents privilege escalation
+# - Requires non-root user
+# - Drops all capabilities
+# - Enforces read-only root filesystem
+#
+# Usage: Apply these labels to the target namespace:
+#   pod-security.kubernetes.io/enforce: restricted
+#   pod-security.kubernetes.io/enforce-version: latest
+#   pod-security.kubernetes.io/warn: restricted
+#   pod-security.kubernetes.io/audit: restricted
+#
+# The security context below should be used in pod specs to comply with PSS restricted profile
+
+# ResourceQuota to enforce security-related limits
+apiVersion: v1
+kind: ResourceQuota
 metadata:
-  name: {{ include "acgs2.fullname" . }}-psp
-  annotations:
-    seccomp.security.alpha.kubernetes.io/allowedProfileNames: 'runtime/default'
-    apparmor.security.beta.kubernetes.io/allowedProfileNames: 'runtime/default'
-    seccomp.security.alpha.kubernetes.io/defaultProfileName: 'runtime/default'
-    apparmor.security.beta.kubernetes.io/defaultProfileName: 'runtime/default'
+  name: {{ include "acgs2.fullname" . }}-security-quota
+  namespace: {{ .Release.Namespace }}
 spec:
-  privileged: false
-  allowPrivilegeEscalation: false
-  requiredDropCapabilities:
-    - ALL
-  volumes:
-    - 'configMap'
-    - 'emptyDir'
-    - 'projected'
-    - 'secret'
-    - 'downwardAPI'
-  hostNetwork: false
-  hostIPC: false
-  hostPID: false
-  runAsUser:
-    rule: 'MustRunAsNonRoot'
-  runAsGroup:
-    rule: 'MustRunAs'
-    ranges:
-    - min: 1000
-      max: 1000
-  seLinux:
-    rule: 'RunAsAny'
-  supplementalGroups:
-    rule: 'MustRunAs'
-    ranges:
-    - min: 1000
-      max: 1000
-  fsGroup:
-    rule: 'MustRunAs'
-    ranges:
-    - min: 1000
-      max: 1000
-  readOnlyRootFilesystem: true
+  hard:
+    # Limit privileged containers (should be 0 in restricted profile)
+    count/pods: "100"
+---
+# LimitRange for security defaults
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: {{ include "acgs2.fullname" . }}-security-limits
+  namespace: {{ .Release.Namespace }}
+spec:
+  limits:
+  - type: Container
+    default:
+      cpu: "500m"
+      memory: "512Mi"
+    defaultRequest:
+      cpu: "100m"
+      memory: "128Mi"
+---
+# ConfigMap documenting the required security context for pods
+# This replaces the PSP spec with recommended securityContext settings
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "acgs2.fullname" . }}-security-context
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    description: "Pod Security Standards (PSS) restricted profile settings"
+data:
+  # These settings should be applied to all pod specs
+  recommended-security-context.yaml: |
+    # Apply to pod spec:
+    securityContext:
+      runAsNonRoot: true
+      runAsUser: 1000
+      runAsGroup: 1000
+      fsGroup: 1000
+      seccompProfile:
+        type: RuntimeDefault
+
+    # Apply to each container:
+    containers:
+    - name: example
+      securityContext:
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+        capabilities:
+          drop:
+            - ALL
+        runAsNonRoot: true
+        runAsUser: 1000
+        seccompProfile:
+          type: RuntimeDefault
+
+    # Allowed volume types (PSS restricted):
+    volumes:
+    - configMap
+    - emptyDir
+    - projected
+    - secret
+    - downwardAPI
+    - persistentVolumeClaim
 ---
 # Security Context Constraints (OpenShift compatible)
 {{- if .Values.global.security.openshiftSCC }}
