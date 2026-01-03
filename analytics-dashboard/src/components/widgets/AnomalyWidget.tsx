@@ -7,7 +7,7 @@
  * - Affected metrics details
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { memo, useCallback, useEffect, useState } from "react";
 import {
   AlertCircle,
   AlertTriangle,
@@ -147,7 +147,7 @@ function formatAffectedMetrics(
  * - Supports severity filtering
  * - Shows affected metrics for each anomaly
  */
-export function AnomalyWidget(): JSX.Element {
+function AnomalyWidgetComponent(): JSX.Element {
   const [data, setData] = useState<AnomaliesResponse | null>(null);
   const [loadingState, setLoadingState] = useState<LoadingState>("idle");
   const [error, setError] = useState<string | null>(null);
@@ -467,5 +467,12 @@ export function AnomalyWidget(): JSX.Element {
     </div>
   );
 }
+
+/**
+ * Memoized AnomalyWidget to prevent unnecessary re-renders
+ * The component has no props, so it will only re-render when its internal state changes
+ */
+export const AnomalyWidget = memo(AnomalyWidgetComponent);
+AnomalyWidget.displayName = "AnomalyWidget";
 
 export default AnomalyWidget;
