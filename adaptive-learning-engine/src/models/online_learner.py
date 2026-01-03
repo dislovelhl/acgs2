@@ -296,24 +296,201 @@ class OnlineLearner:
         Returns:
             Composed pipeline with preprocessing and model.
         """
-        # Select the base model
+        # ONLINE LEARNING ALGORITHMS
+        # ===========================
+        # River provides several online classification algorithms that update their
+        # weights incrementally with each sample (one at a time). Unlike batch ML
+        # which trains on entire datasets, these models learn continuously from
+        # streaming data.
+        #
+        # Key Property: Each algorithm processes samples individually and updates
+        # weights immediately. This enables:
+        # - Memory efficiency (no need to store training data)
+        # - Real-time adaptation (immediate response to new patterns)
+        # - Concept drift handling (continuous weight updates track distribution shift)
+
+        # Select the base model based on configuration
         if self.model_type == ModelType.LOGISTIC_REGRESSION:
-            model = linear_model.LogisticRegression(
-                optimizer=optim.SGD(self.learning_rate),
-                l2=self.l2_regularization,
-            )
-        elif self.model_type == ModelType.PERCEPTRON:
-            model = linear_model.Perceptron(l2=self.l2_regularization)
-        elif self.model_type == ModelType.PA_CLASSIFIER:
-            model = linear_model.PAClassifier(C=self.learning_rate)
-        else:
-            # Default to logistic regression
+            # LOGISTIC REGRESSION WITH SGD
+            # ============================
+            # Online logistic regression uses Stochastic Gradient Descent (SGD) to
+            # update weights incrementally with each training sample.
+            #
+            # Algorithm:
+            # ----------
+            # For each sample (x, y):
+            #   1. Compute prediction: p(y=1|x) = σ(w·x) where σ = sigmoid function
+            #   2. Calculate gradient: ∇L = (p - y) * x  (negative log-likelihood)
+            #   3. Update weights: w ← w - η * ∇L  (η = learning_rate)
+            #   4. Apply L2 regularization: w ← w * (1 - η*λ)  (λ = l2_regularization)
+            #
+            # SGD Properties:
+            # - Incremental updates: Weights adjust with every sample (not batches)
+            # - Stochastic: Each update uses one sample's gradient (noisy but fast)
+            # - Convergence: In online setting, tracks moving target (non-stationary)
+            # - L2 regularization: Prevents overfitting by penalizing large weights
+            #
+            # Why SGD for Online Learning?
+            # - Immediate weight updates (no waiting for batch accumulation)
+            # - Low memory footprint (single sample gradient)
+            # - Adaptive to drift (recent samples influence current weights more)
+            # - Probabilistic outputs (predict_proba gives calibrated confidences)
+            #
+            # Hyperparameters:
+            # - learning_rate (η): Step size for weight updates (default: 0.1)
+            #   - Too high: Unstable, oscillates around optimal weights
+            #   - Too low: Slow adaptation, can't track drift
+            # - l2_regularization (λ): Weight penalty strength (default: 0.01)
+            #   - Prevents overfitting to recent samples
+            #   - Smooths decision boundary for better generalization
             model = linear_model.LogisticRegression(
                 optimizer=optim.SGD(self.learning_rate),
                 l2=self.l2_regularization,
             )
 
-        # Build pipeline with preprocessing
+        elif self.model_type == ModelType.PERCEPTRON:
+            # PERCEPTRON (ONLINE MISTAKE-DRIVEN LEARNING)
+            # ============================================
+            # The Perceptron is the simplest online learning algorithm, updating
+            # weights only when it makes a mistake (prediction ≠ true label).
+            #
+            # Algorithm:
+            # ----------
+            # For each sample (x, y):
+            #   1. Compute prediction: ŷ = sign(w·x)  (binary: -1 or +1)
+            #   2. If ŷ ≠ y (mistake):
+            #      - Update: w ← w + y*x  (move weights toward correct class)
+            #   3. If ŷ = y (correct):
+            #      - No update (weights unchanged)
+            #   4. Apply L2 regularization: w ← w * (1 - λ)
+            #
+            # Mistake-Driven Learning:
+            # - Conservative updates: Only changes weights when wrong
+            # - Aggressive corrections: Full sample vector added/subtracted
+            # - No learning rate: Updates are unscaled (fixed step size)
+            # - Deterministic: Same samples → same final weights (if linearly separable)
+            #
+            # Perceptron Convergence Theorem:
+            # - If data is linearly separable, Perceptron converges in finite steps
+            # - In online setting with drift, never fully converges (intentional)
+            # - Continuous adaptation as distribution shifts
+            #
+            # Advantages:
+            # - Extremely fast (no probability calculations)
+            # - Simple and robust (few hyperparameters)
+            # - Memory-efficient (just weight vector)
+            #
+            # Disadvantages:
+            # - No probability estimates (hard classifications only)
+            # - Struggles with non-separable data (no margin concept)
+            # - Can be unstable with conflicting labels (no confidence weighting)
+            #
+            # Hyperparameters:
+            # - l2_regularization (λ): Weight decay to prevent unbounded growth
+            #   - Critical for non-stationary data (prevents old patterns dominating)
+            model = linear_model.Perceptron(l2=self.l2_regularization)
+
+        elif self.model_type == ModelType.PA_CLASSIFIER:
+            # PASSIVE-AGGRESSIVE CLASSIFIER (MARGIN-BASED ONLINE LEARNING)
+            # ============================================================
+            # Passive-Aggressive (PA) algorithm balances stability and adaptability
+            # by using margin-based updates with controlled aggressiveness.
+            #
+            # Algorithm:
+            # ----------
+            # For each sample (x, y):
+            #   1. Compute margin: m = y * (w·x)  (signed distance from decision boundary)
+            #   2. Compute loss: ℓ = max(0, 1 - m)  (hinge loss, 0 if margin ≥ 1)
+            #   3. If ℓ > 0 (margin violated):
+            #      - Compute step size: τ = ℓ / (||x||² + 1/(2C))
+            #      - Update: w ← w + τ * y * x
+            #   4. If ℓ = 0 (sufficient margin):
+            #      - No update (passive)
+            #
+            # Passive-Aggressive Philosophy:
+            # - PASSIVE when margin ≥ 1: Don't update if prediction is confident and correct
+            # - AGGRESSIVE when margin < 1: Update to achieve margin of at least 1
+            # - Bounded aggressiveness: C parameter limits maximum step size
+            #
+            # Margin-Based Updates:
+            # - Similar to online SVM (hinge loss, margin optimization)
+            # - Loss = 0 when margin ≥ 1 (correct with confidence)
+            # - Loss increases as margin decreases (closer to boundary or wrong side)
+            # - Update magnitude proportional to loss (larger errors → larger updates)
+            #
+            # C Parameter (Aggressiveness Control):
+            # - C controls the trade-off between stability and adaptation
+            # - Large C (e.g., 1.0):
+            #   - More aggressive updates (larger step sizes)
+            #   - Faster adaptation to new patterns
+            #   - Risk: Overfitting to outliers or label noise
+            # - Small C (e.g., 0.01):
+            #   - More conservative updates (smaller step sizes)
+            #   - Smoother decision boundary
+            #   - Risk: Slow adaptation to concept drift
+            # - Default: C = learning_rate (typically 0.1)
+            #   - Balances adaptation speed with robustness
+            #
+            # Advantages Over Perceptron:
+            # - Margin awareness: Distinguishes "barely correct" from "confidently correct"
+            # - Controlled updates: C prevents excessive weight changes from outliers
+            # - Better calibration: Maintains decision boundary margins for robustness
+            #
+            # When to Use PA Classifier:
+            # - Non-stationary data with occasional label noise (C provides robustness)
+            # - When you need faster adaptation than logistic regression (no probability overhead)
+            # - Binary classification with clear decision boundaries
+            #
+            # Hyperparameters:
+            # - C: Aggressiveness parameter (step size limiter)
+            #   - Typically 0.01-1.0 range
+            #   - We use learning_rate for consistency across models
+            model = linear_model.PAClassifier(C=self.learning_rate)
+
+        else:
+            # Default to logistic regression (most robust for governance)
+            model = linear_model.LogisticRegression(
+                optimizer=optim.SGD(self.learning_rate),
+                l2=self.l2_regularization,
+            )
+
+        # FEATURE PREPROCESSING: ONLINE STANDARDSCALER
+        # ============================================
+        # StandardScaler normalizes features to zero mean and unit variance,
+        # critical for linear models where feature scales affect learning.
+        #
+        # Why Standardization Matters:
+        # - Linear models (LogReg, Perceptron, PA) compute w·x as weighted sum
+        # - Features with large scales (e.g., counts in 1000s) dominate small scales (e.g., ratios 0-1)
+        # - Unstandardized features cause:
+        #   (1) Slow convergence (gradient descent takes tiny steps on small features)
+        #   (2) Poor generalization (weights overfit to large-scale features)
+        #   (3) Numerical instability (overflow/underflow in exp() for logistic regression)
+        #
+        # Online StandardScaler:
+        # - Computes running mean and variance incrementally (Welford's algorithm)
+        # - Updates statistics with each sample: μ_new = μ_old + (x - μ_old)/n
+        # - Transforms: z = (x - μ) / σ  (zero mean, unit variance)
+        # - Memory efficient: Stores only μ, σ, n (not entire dataset)
+        #
+        # Behavior During Cold Start:
+        # - First sample: Cannot standardize (no variance yet)
+        # - Early samples: High variance in normalization (statistics unstable)
+        # - After ~100 samples: Statistics stabilize, normalization becomes reliable
+        # - This is why min_training_samples=1000 ensures stable model before ACTIVE
+        #
+        # Handling Distribution Shift:
+        # - StandardScaler adapts to changing distributions (unlike batch preprocessing)
+        # - Mean and variance track recent data trends
+        # - Prevents feature scaling from becoming stale as data drifts
+        # - Trade-off: Past and present samples normalized differently
+        #
+        # Pipeline Composition:
+        # River's Pipeline applies transformations sequentially:
+        #   1. StandardScaler.learn_one(x) → updates mean/variance statistics
+        #   2. StandardScaler.transform_one(x) → z = normalized features
+        #   3. Model.learn_one(z, y) → trains on normalized features
+        #   4. For prediction: x → normalize → predict (consistent transformation)
         pipeline = compose.Pipeline(
             ("scaler", preprocessing.StandardScaler()),
             ("model", model),
