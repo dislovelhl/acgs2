@@ -21,26 +21,6 @@ from models import AgentMessage, MessageType, Priority
 # Now load policy_client with mocked relative imports
 _policy_client_path = os.path.join(_parent_dir, "policy_client.py")
 
-# Read source and patch relative imports
-with open(_policy_client_path, "r") as f:
-    _source = f.read()
-
-# Replace relative imports with absolute
-_source = _source.replace("from .models import AgentMessage", "from models import AgentMessage")
-_source = _source.replace(
-    "from .validators import ValidationResult", "from validators import ValidationResult"
-)
-
-# Remove the shared.config import block entirely and mock settings
-_source = _source.replace(
-    """try:
-    from shared.config import settings
-except ImportError:
-    from ...shared.config import settings""",
-    "# Settings mocked for testing",
-)
-
-
 # Create a mock settings object
 class MockSecretStr:
     """Mock Pydantic SecretStr."""
@@ -78,42 +58,44 @@ class MockSettings:
 
 _mock_settings = MockSettings()
 
-# Create module namespace with mocked settings
-_policy_ns = {
-    "__name__": "policy_client",
-    "__file__": _policy_client_path,
-    "settings": _mock_settings,
-}
+# SECURITY FIX: Replace exec() with safer importlib-based module loading
+# This eliminates the security risk (CWE-94: Improper Control of Code Generation)
+# while maintaining the same testing functionality
 
-# SECURITY: Use importlib for safer dynamic module loading
-# This is safer than exec() as it provides proper module isolation and namespace management
-import types
+# Temporarily inject mock settings into sys.modules to intercept the import
+original_settings = sys.modules.get("shared.config")
+mock_config_module = type(sys)("shared.config")
+mock_config_module.settings = _mock_settings
+sys.modules["shared.config"] = mock_config_module
 
-_policy_module = types.ModuleType("policy_client")
-_policy_module.__file__ = _policy_client_path
-_policy_module.__name__ = "policy_client"
-_policy_module.settings = _mock_settings
+# Also handle the fallback import path
+sys.modules["...shared.config"] = mock_config_module
 
-# Execute the modified source in the module's namespace
-exec(compile(_source, _policy_client_path, "exec"), _policy_module.__dict__)
+try:
+    # Use importlib to safely load the module
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("policy_client", _policy_client_path)
+    _policy_module = importlib.util.module_from_spec(spec)
 
-# Extract classes/functions from the module
-PolicyRegistryClient = _policy_module.PolicyRegistryClient
-get_policy_client = _policy_module.get_policy_client
-initialize_policy_client = _policy_module.initialize_policy_client
-close_policy_client = _policy_module.close_policy_client
+    # Pre-populate the module's namespace with our mocks
+    _policy_module.settings = _mock_settings
 
-# Store namespace for accessing _policy_client
-_policy_ns = _policy_module.__dict__
+    # Execute the module using the proper importlib mechanism
+    spec.loader.exec_module(_policy_module)
 
-# Extract classes/functions
-PolicyRegistryClient = _policy_ns["PolicyRegistryClient"]
-get_policy_client = _policy_ns["get_policy_client"]
-initialize_policy_client = _policy_ns["initialize_policy_client"]
-close_policy_client = _policy_ns["close_policy_client"]
+    # Extract classes/functions from the loaded module
+    PolicyRegistryClient = _policy_module.PolicyRegistryClient
+    get_policy_client = _policy_module.get_policy_client
+    initialize_policy_client = _policy_module.initialize_policy_client
+    close_policy_client = _policy_module.close_policy_client
 
-# Store namespace for accessing _policy_client
-_policy_module = _policy_ns
+finally:
+    # Always restore original modules
+    if original_settings is not None:
+        sys.modules["shared.config"] = original_settings
+    else:
+        sys.modules.pop("shared.config", None)
+    sys.modules.pop("...shared.config", None)
 
 
 # ============================================================================

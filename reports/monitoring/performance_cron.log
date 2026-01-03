@@ -1,0 +1,69 @@
+⚡ ACGS-2 Performance Regression Testing
+========================================
+📁 Project Root: /home/dislove/document/acgs2
+📁 Results Dir: /home/dislove/document/acgs2/reports/performance
+
+🎯 Performance Targets:
+  - P99 Latency: < 0.328ms
+  - Throughput: > 2605 RPS
+  - Cache Hit Rate: > 0.95
+  - Memory Usage: < 4.0MB per pod
+  - CPU Usage: < 75.0%
+
+🔍 Checking Service Health...
+----------------------------
+[0;32m✅ Agent Bus: Healthy[0m
+[0;32m✅ API Gateway: Healthy[0m
+[0;32m✅ OPA: Healthy[0m
+
+🏃 Running Performance Benchmark...
+-----------------------------------
+Running 30-second performance benchmark with 50 concurrent users...
+2026-01-03 00:00:01,918 - INFO - Starting ACGS-2 performance benchmark with constitutional hash: cdd01ef066bc6cf2
+2026-01-03 00:00:01,918 - INFO - Phase 1: System warm-up
+2026-01-03 00:00:01,934 - INFO - Warm-up complete: 50/50 requests successful
+2026-01-03 00:00:06,940 - INFO - Phase 2: Latency benchmarking
+Latency test:   0%|          | 0/100 [00:00<?, ?it/s]Latency test: 100%|██████████| 100/100 [00:00<00:00, 2798.85it/s]
+2026-01-03 00:00:06,990 - INFO - P99 latency: 1.225ms (target: 0.278ms)
+2026-01-03 00:00:06,990 - INFO - Phase 3: Throughput benchmarking
+2026-01-03 00:00:06,990 - INFO - Testing throughput at 1000 RPS
+2026-01-03 00:00:07,193 - INFO - Testing throughput at 2000 RPS
+2026-01-03 00:00:07,615 - INFO - Testing throughput at 3000 RPS
+2026-01-03 00:00:08,247 - INFO - Testing throughput at 4000 RPS
+2026-01-03 00:00:09,154 - INFO - Testing throughput at 5000 RPS
+2026-01-03 00:00:10,242 - INFO - Testing throughput at 6000 RPS
+2026-01-03 00:00:11,614 - INFO - Testing throughput at 7000 RPS
+2026-01-03 00:00:13,167 - INFO - Max throughput achieved: 4931 RPS (target: 6310 RPS)
+2026-01-03 00:00:13,172 - INFO - Phase 4: Sustained load testing
+2026-01-03 00:00:54,758 - INFO - Sustained load test: 2000.00 RPS, success rate: 100.00%
+2026-01-03 00:00:54,759 - INFO - Phase 5: Resource usage validation
+2026-01-03 00:00:54,763 - INFO - 
+================================================================================
+2026-01-03 00:00:54,763 - INFO - ACGS-2 PERFORMANCE BENCHMARK RESULTS
+2026-01-03 00:00:54,763 - INFO - ================================================================================
+2026-01-03 00:00:54,763 - INFO - Constitutional Hash: cdd01ef066bc6cf2
+2026-01-03 00:00:54,763 - INFO - Timestamp: 2026-01-03T05:00:54.763616+00:00
+2026-01-03 00:00:54,763 - ERROR - Overall Result: FAILED
+2026-01-03 00:00:54,763 - INFO - Tests Passed: 3/5
+2026-01-03 00:00:54,763 - INFO - 
+2026-01-03 00:00:54,763 - INFO -   p99_latency_ms: 1.225 (target: 0.278) ❌ FAIL
+2026-01-03 00:00:54,764 - INFO -   throughput_rps: 4931.116 (target: 6310.000) ❌ FAIL
+2026-01-03 00:00:54,764 - INFO -   sustained_throughput_rps: 2000.000 (target: 1800.000) ✅ PASS
+2026-01-03 00:00:54,764 - INFO -   memory_usage_mb: 2.500 (target: 4.000) ✅ PASS
+2026-01-03 00:00:54,764 - INFO -   cpu_utilization_percent: 45.000 (target: 75.000) ✅ PASS
+2026-01-03 00:00:54,764 - INFO - 
+2026-01-03 00:00:54,764 - INFO - RECOMMENDATIONS:
+2026-01-03 00:00:54,764 - INFO -   • P99 latency (1.225ms) exceeds target (0.278ms). Consider optimizing message processing pipeline or caching.
+2026-01-03 00:00:54,764 - INFO -   • Throughput (4931 RPS) below target (6310 RPS). Consider horizontal scaling or async processing improvements.
+
+📊 Analyzing Results...
+----------------------
+Performance Test Results:
+=========================
+❌ FAIL p99_latency_ms: 1.224687099456787 (target: 0.278)
+❌ FAIL throughput_rps: 4931.116333697399 (target: 6310)
+✅ PASS sustained_throughput_rps: 2000.0 (target: 1800.0)
+✅ PASS memory_usage_mb: 2.5 (target: 4.0)
+✅ PASS cpu_utilization_percent: 45.0 (target: 75.0)
+
+[0;31m⚠️  Performance regression detected[0m

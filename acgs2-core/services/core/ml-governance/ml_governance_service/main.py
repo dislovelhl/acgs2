@@ -7,6 +7,7 @@ Constitutional Hash: cdd01ef066bc6cf2
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
+import os
 
 app = FastAPI(
     title="ACGS-2 ML Governance Service",
@@ -14,13 +15,30 @@ app = FastAPI(
     description="Adaptive ML models with feedback loops and drift detection",
 )
 
-# Middleware
+# Configure CORS based on environment for security
+cors_origins = os.getenv("CORS_ALLOWED_ORIGINS", "").split(",")
+if not cors_origins or cors_origins == [""]:
+    # Default secure configuration - no external origins allowed
+    cors_origins = []
+
+# Allow localhost for development (but not in production)
+if os.getenv("ENVIRONMENT", "").lower() == "development":
+    cors_origins.extend(
+        [
+            "http://localhost:3000",
+            "http://localhost:8080",
+            "http://127.0.0.1:3000",
+            "http://127.0.0.1:8080",
+        ]
+    )
+
+# Middleware with secure CORS configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=cors_origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "X-Correlation-ID"],
 )
 
 
