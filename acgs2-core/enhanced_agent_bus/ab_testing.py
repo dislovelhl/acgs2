@@ -1,0 +1,1068 @@
+"""
+ACGS-2 A/B Testing Framework Module
+Constitutional Hash: cdd01ef066bc6cf2
+
+Implements A/B testing framework for comparing champion vs candidate model versions
+with traffic routing based on hash(request_id) and comprehensive metrics tracking.
+
+Key Features:
+- Traffic routing: 90% champion / 10% candidate (configurable via AB_TEST_SPLIT)
+- Deterministic routing based on hash(request_id) for consistent user experience
+- Per-cohort metrics tracking (accuracy, latency, throughput)
+- Model comparison and validation before promotion
+- Integration with MLflow for model loading via champion/candidate aliases
+
+Configuration:
+- AB_TEST_SPLIT: Fraction of traffic to route to candidate model (default: 0.1)
+- CHAMPION_ALIAS: MLflow alias for production model (default: 'champion')
+- CANDIDATE_ALIAS: MLflow alias for testing model (default: 'candidate')
+- AB_TEST_MIN_SAMPLES: Minimum samples before allowing promotion (default: 1000)
+
+Usage:
+    from ab_testing import ABTestRouter, get_ab_test_router
+
+    # Initialize router
+    router = get_ab_test_router()
+
+    # Route request and get prediction
+    result = router.route_and_predict(request_id="req-123", features=features)
+
+    # Record outcome for metrics
+    router.record_outcome(request_id="req-123", predicted=result.prediction, actual=1)
+
+    # Check if candidate is ready for promotion
+    comparison = router.compare_metrics()
+    if comparison.candidate_is_better and comparison.is_significant:
+        router.promote_candidate()
+"""
+
+from __future__ import annotations
+
+import hashlib
+import logging
+import os
+import time
+from dataclasses import dataclass, field
+from datetime import datetime, timezone
+from enum import Enum
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
+
+# Type checking imports for static analysis
+if TYPE_CHECKING:
+    import numpy.typing as npt
+
+# Optional numpy support
+try:
+    import numpy as np_module
+
+    NUMPY_AVAILABLE = True
+except ImportError:
+    NUMPY_AVAILABLE = False
+    np_module = None
+
+logger = logging.getLogger(__name__)
+
+# Configuration from environment
+AB_TEST_SPLIT = float(os.getenv("AB_TEST_SPLIT", "0.1"))
+CHAMPION_ALIAS = os.getenv("CHAMPION_ALIAS", "champion")
+CANDIDATE_ALIAS = os.getenv("CANDIDATE_ALIAS", "candidate")
+AB_TEST_MIN_SAMPLES = int(os.getenv("AB_TEST_MIN_SAMPLES", "1000"))
+AB_TEST_CONFIDENCE_LEVEL = float(os.getenv("AB_TEST_CONFIDENCE_LEVEL", "0.95"))
+AB_TEST_MIN_IMPROVEMENT = float(os.getenv("AB_TEST_MIN_IMPROVEMENT", "0.01"))
+MODEL_REGISTRY_NAME = os.getenv("MODEL_REGISTRY_NAME", "governance_impact_scorer")
+
+
+class CohortType(str, Enum):
+    """Type of A/B test cohort for traffic routing."""
+
+    CHAMPION = "champion"
+    CANDIDATE = "candidate"
+
+
+class PromotionStatus(str, Enum):
+    """Status of model promotion validation."""
+
+    READY = "ready"  # Candidate is ready for promotion
+    NOT_READY = "not_ready"  # Insufficient samples or validation
+    BLOCKED = "blocked"  # Candidate performance is worse
+    PROMOTED = "promoted"  # Candidate was promoted to champion
+    ERROR = "error"  # Error during promotion
+
+
+class ComparisonResult(str, Enum):
+    """Result of model comparison."""
+
+    CANDIDATE_BETTER = "candidate_better"
+    CHAMPION_BETTER = "champion_better"
+    NO_DIFFERENCE = "no_difference"
+    INSUFFICIENT_DATA = "insufficient_data"
+
+
+@dataclass
+class CohortMetrics:
+    """Metrics for a single A/B test cohort."""
+
+    cohort: CohortType
+    request_count: int = 0
+    correct_predictions: int = 0
+    total_predictions: int = 0
+    accuracy: float = 0.0
+    total_latency_ms: float = 0.0
+    min_latency_ms: float = float("inf")
+    max_latency_ms: float = 0.0
+    p50_latency_ms: float = 0.0
+    p95_latency_ms: float = 0.0
+    p99_latency_ms: float = 0.0
+    errors: int = 0
+    first_request_at: Optional[datetime] = None
+    last_request_at: Optional[datetime] = None
+    latencies: List[float] = field(default_factory=list)
+
+    @property
+    def avg_latency_ms(self) -> float:
+        """Calculate average latency in milliseconds."""
+        if self.request_count == 0:
+            return 0.0
+        return self.total_latency_ms / self.request_count
+
+    def record_request(
+        self,
+        latency_ms: float,
+        prediction: Any = None,
+        actual: Any = None,
+        is_error: bool = False,
+    ) -> None:
+        """
+        Record a request to this cohort.
+
+        Args:
+            latency_ms: Request latency in milliseconds
+            prediction: Predicted value (optional)
+            actual: Actual value for accuracy calculation (optional)
+            is_error: Whether the request resulted in an error
+        """
+        now = datetime.now(timezone.utc)
+
+        self.request_count += 1
+        self.total_latency_ms += latency_ms
+
+        # Track latency bounds
+        if latency_ms < self.min_latency_ms:
+            self.min_latency_ms = latency_ms
+        if latency_ms > self.max_latency_ms:
+            self.max_latency_ms = latency_ms
+
+        # Store latencies for percentile calculation
+        self.latencies.append(latency_ms)
+
+        # Track timestamps
+        if self.first_request_at is None:
+            self.first_request_at = now
+        self.last_request_at = now
+
+        # Track errors
+        if is_error:
+            self.errors += 1
+            return
+
+        # Track predictions and accuracy
+        if prediction is not None:
+            self.total_predictions += 1
+            if actual is not None and prediction == actual:
+                self.correct_predictions += 1
+                self.accuracy = self.correct_predictions / self.total_predictions
+
+    def calculate_percentiles(self) -> None:
+        """Calculate latency percentiles from recorded latencies."""
+        if not self.latencies:
+            return
+
+        sorted_latencies = sorted(self.latencies)
+        n = len(sorted_latencies)
+
+        # Calculate percentiles
+        self.p50_latency_ms = sorted_latencies[int(n * 0.50)] if n > 0 else 0.0
+        self.p95_latency_ms = sorted_latencies[int(n * 0.95)] if n > 0 else 0.0
+        self.p99_latency_ms = sorted_latencies[int(n * 0.99)] if n > 0 else 0.0
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert metrics to dictionary for serialization."""
+        self.calculate_percentiles()
+        return {
+            "cohort": self.cohort.value,
+            "request_count": self.request_count,
+            "correct_predictions": self.correct_predictions,
+            "total_predictions": self.total_predictions,
+            "accuracy": self.accuracy,
+            "avg_latency_ms": self.avg_latency_ms,
+            "min_latency_ms": self.min_latency_ms if self.min_latency_ms != float("inf") else 0.0,
+            "max_latency_ms": self.max_latency_ms,
+            "p50_latency_ms": self.p50_latency_ms,
+            "p95_latency_ms": self.p95_latency_ms,
+            "p99_latency_ms": self.p99_latency_ms,
+            "errors": self.errors,
+            "error_rate": self.errors / self.request_count if self.request_count > 0 else 0.0,
+            "first_request_at": (
+                self.first_request_at.isoformat() if self.first_request_at else None
+            ),
+            "last_request_at": self.last_request_at.isoformat() if self.last_request_at else None,
+        }
+
+
+@dataclass
+class RoutingResult:
+    """Result of A/B test traffic routing."""
+
+    cohort: CohortType
+    request_id: str
+    model_version: Optional[int] = None
+    routed_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+
+
+@dataclass
+class PredictionResult:
+    """Result of an A/B test prediction."""
+
+    prediction: Any
+    cohort: CohortType
+    request_id: str
+    latency_ms: float
+    model_version: Optional[int] = None
+    confidence: Optional[float] = None
+    probabilities: Optional[Dict[Any, float]] = None
+    error: Optional[str] = None
+
+
+@dataclass
+class MetricsComparison:
+    """Comparison between champion and candidate metrics."""
+
+    champion_metrics: CohortMetrics
+    candidate_metrics: CohortMetrics
+    result: ComparisonResult
+    accuracy_delta: float = 0.0
+    latency_delta_ms: float = 0.0
+    sample_size_champion: int = 0
+    sample_size_candidate: int = 0
+    is_significant: bool = False
+    candidate_is_better: bool = False
+    recommendation: str = ""
+    compared_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert comparison to dictionary for serialization."""
+        return {
+            "result": self.result.value,
+            "accuracy_delta": self.accuracy_delta,
+            "latency_delta_ms": self.latency_delta_ms,
+            "sample_size_champion": self.sample_size_champion,
+            "sample_size_candidate": self.sample_size_candidate,
+            "is_significant": self.is_significant,
+            "candidate_is_better": self.candidate_is_better,
+            "recommendation": self.recommendation,
+            "compared_at": self.compared_at.isoformat(),
+            "champion_metrics": self.champion_metrics.to_dict(),
+            "candidate_metrics": self.candidate_metrics.to_dict(),
+        }
+
+
+@dataclass
+class PromotionResult:
+    """Result of promoting candidate to champion."""
+
+    status: PromotionStatus
+    previous_champion_version: Optional[int] = None
+    new_champion_version: Optional[int] = None
+    comparison: Optional[MetricsComparison] = None
+    error_message: Optional[str] = None
+    promoted_at: Optional[datetime] = None
+
+
+class ABTestRouter:
+    """
+    A/B testing router for comparing champion vs candidate models.
+
+    Routes traffic between champion and candidate models using deterministic
+    hashing of request_id for consistent user experience. Tracks per-cohort
+    metrics for performance comparison.
+
+    Traffic Split:
+    - Champion: (1 - AB_TEST_SPLIT) fraction (default 90%)
+    - Candidate: AB_TEST_SPLIT fraction (default 10%)
+
+    Usage:
+        router = ABTestRouter()
+
+        # Route request
+        routing = router.route(request_id="req-123")
+
+        # Make prediction using routed model
+        prediction = router.predict(routing, features)
+
+        # Or use convenience method
+        result = router.route_and_predict(request_id="req-123", features=features)
+
+        # Record outcome for accuracy tracking
+        router.record_outcome(request_id="req-123", predicted=0, actual=1)
+
+        # Compare performance
+        comparison = router.compare_metrics()
+    """
+
+    def __init__(
+        self,
+        candidate_split: float = AB_TEST_SPLIT,
+        champion_alias: str = CHAMPION_ALIAS,
+        candidate_alias: str = CANDIDATE_ALIAS,
+        min_samples: int = AB_TEST_MIN_SAMPLES,
+        confidence_level: float = AB_TEST_CONFIDENCE_LEVEL,
+        min_improvement: float = AB_TEST_MIN_IMPROVEMENT,
+        model_registry_name: str = MODEL_REGISTRY_NAME,
+        champion_model: Optional[Any] = None,
+        candidate_model: Optional[Any] = None,
+        version_manager: Optional[Any] = None,
+    ):
+        """
+        Initialize the A/B test router.
+
+        Args:
+            candidate_split: Fraction of traffic to route to candidate (0.0 to 1.0)
+            champion_alias: MLflow alias for champion model
+            candidate_alias: MLflow alias for candidate model
+            min_samples: Minimum samples per cohort before allowing promotion
+            confidence_level: Confidence level for statistical significance
+            min_improvement: Minimum accuracy improvement required for promotion
+            model_registry_name: Name of the model in MLflow registry
+            champion_model: Pre-loaded champion model (optional)
+            candidate_model: Pre-loaded candidate model (optional)
+            version_manager: MLflowVersionManager instance (optional, creates if None)
+        """
+        if not 0.0 <= candidate_split <= 1.0:
+            raise ValueError(f"candidate_split must be between 0 and 1, got {candidate_split}")
+
+        self.candidate_split = candidate_split
+        self.champion_alias = champion_alias
+        self.candidate_alias = candidate_alias
+        self.min_samples = min_samples
+        self.confidence_level = confidence_level
+        self.min_improvement = min_improvement
+        self.model_registry_name = model_registry_name
+
+        # Model instances
+        self._champion_model = champion_model
+        self._candidate_model = candidate_model
+        self._champion_version: Optional[int] = None
+        self._candidate_version: Optional[int] = None
+
+        # Version manager for MLflow integration
+        self._version_manager = version_manager
+
+        # Per-cohort metrics
+        self._champion_metrics = CohortMetrics(cohort=CohortType.CHAMPION)
+        self._candidate_metrics = CohortMetrics(cohort=CohortType.CANDIDATE)
+
+        # Request tracking for outcome recording
+        self._request_cohorts: Dict[str, CohortType] = {}
+        self._request_predictions: Dict[str, Any] = {}
+
+        # State
+        self._initialized = False
+        self._ab_test_active = True
+
+        logger.info(
+            f"ABTestRouter initialized: "
+            f"champion_split={(1 - candidate_split):.0%}, "
+            f"candidate_split={candidate_split:.0%}, "
+            f"min_samples={min_samples}"
+        )
+
+    def _ensure_initialized(self) -> None:
+        """Ensure models are loaded and router is ready."""
+        if self._initialized:
+            return
+
+        # Try to load version manager if not provided
+        if self._version_manager is None:
+            try:
+                from ml_versioning import MLflowVersionManager
+
+                self._version_manager = MLflowVersionManager(
+                    model_name=self.model_registry_name,
+                    champion_alias=self.champion_alias,
+                    candidate_alias=self.candidate_alias,
+                )
+            except ImportError:
+                logger.warning(
+                    "MLflowVersionManager not available. "
+                    "Using provided models or no-model routing."
+                )
+
+        # Load models if not provided
+        self._load_models()
+        self._initialized = True
+
+    def _load_models(self) -> None:
+        """Load champion and candidate models from MLflow."""
+        if self._version_manager is None:
+            logger.debug("No version manager available, skipping model loading")
+            return
+
+        # Load champion model
+        if self._champion_model is None:
+            try:
+                champion_info = self._version_manager.get_version_by_alias(self.champion_alias)
+                if champion_info:
+                    self._champion_model = self._version_manager.get_champion_model()
+                    self._champion_version = champion_info.version
+                    logger.info(f"Loaded champion model version {self._champion_version}")
+            except Exception as e:
+                logger.warning(f"Failed to load champion model: {e}")
+
+        # Load candidate model
+        if self._candidate_model is None:
+            try:
+                candidate_info = self._version_manager.get_version_by_alias(self.candidate_alias)
+                if candidate_info:
+                    self._candidate_model = self._version_manager.get_candidate_model()
+                    self._candidate_version = candidate_info.version
+                    logger.info(f"Loaded candidate model version {self._candidate_version}")
+            except Exception as e:
+                logger.debug(f"No candidate model available: {e}")
+
+    def route(self, request_id: str) -> RoutingResult:
+        """
+        Route a request to champion or candidate based on hash.
+
+        Uses deterministic hashing of request_id to ensure consistent routing
+        for the same request across multiple calls.
+
+        Args:
+            request_id: Unique identifier for the request
+
+        Returns:
+            RoutingResult with cohort assignment
+        """
+        # Compute deterministic hash value [0, 1)
+        hash_value = self._compute_hash_value(request_id)
+
+        # Route based on hash value
+        if hash_value < self.candidate_split and self._ab_test_active:
+            cohort = CohortType.CANDIDATE
+            version = self._candidate_version
+        else:
+            cohort = CohortType.CHAMPION
+            version = self._champion_version
+
+        # Track routing for outcome recording
+        self._request_cohorts[request_id] = cohort
+
+        return RoutingResult(
+            cohort=cohort,
+            request_id=request_id,
+            model_version=version,
+        )
+
+    def _compute_hash_value(self, request_id: str) -> float:
+        """
+        Compute a deterministic hash value in [0, 1) for routing.
+
+        Args:
+            request_id: Request identifier to hash
+
+        Returns:
+            Float value in [0, 1) range
+        """
+        # Use MD5 for fast, deterministic hashing (not for security)
+        hash_bytes = hashlib.md5(request_id.encode(), usedforsecurity=False).digest()
+        # Use first 8 bytes as unsigned int
+        hash_int = int.from_bytes(hash_bytes[:8], byteorder="big")
+        # Normalize to [0, 1)
+        return hash_int / (2**64)
+
+    def predict(
+        self,
+        routing: RoutingResult,
+        features: Union[Dict[str, float], List[float], npt.NDArray[Any]],
+    ) -> PredictionResult:
+        """
+        Make a prediction using the routed model.
+
+        Args:
+            routing: Routing result from route()
+            features: Feature values for prediction
+
+        Returns:
+            PredictionResult with prediction and metrics
+        """
+        self._ensure_initialized()
+
+        start_time = time.perf_counter()
+
+        try:
+            # Select model based on cohort
+            if routing.cohort == CohortType.CANDIDATE:
+                model = self._candidate_model
+                metrics = self._candidate_metrics
+            else:
+                model = self._champion_model
+                metrics = self._champion_metrics
+
+            # Make prediction
+            prediction = None
+            confidence = None
+            probabilities = None
+
+            if model is not None:
+                # Convert features to array if needed
+                features_array = self._to_array(features)
+
+                # Get prediction
+                prediction = model.predict([features_array])[0]
+
+                # Get probabilities if available
+                if hasattr(model, "predict_proba"):
+                    proba = model.predict_proba([features_array])[0]
+                    confidence = float(max(proba))
+                    if hasattr(model, "classes_"):
+                        probabilities = dict(zip(model.classes_, proba.tolist(), strict=True))
+
+            latency_ms = (time.perf_counter() - start_time) * 1000
+
+            # Record metrics
+            metrics.record_request(latency_ms=latency_ms, prediction=prediction)
+
+            # Store prediction for outcome tracking
+            self._request_predictions[routing.request_id] = prediction
+
+            return PredictionResult(
+                prediction=prediction,
+                cohort=routing.cohort,
+                request_id=routing.request_id,
+                latency_ms=latency_ms,
+                model_version=routing.model_version,
+                confidence=confidence,
+                probabilities=probabilities,
+            )
+
+        except Exception as e:
+            latency_ms = (time.perf_counter() - start_time) * 1000
+            metrics.record_request(latency_ms=latency_ms, is_error=True)
+
+            logger.error(f"Prediction error for cohort {routing.cohort.value}: {e}")
+
+            return PredictionResult(
+                prediction=None,
+                cohort=routing.cohort,
+                request_id=routing.request_id,
+                latency_ms=latency_ms,
+                model_version=routing.model_version,
+                error=str(e),
+            )
+
+    def route_and_predict(
+        self,
+        request_id: str,
+        features: Union[Dict[str, float], List[float], npt.NDArray[Any]],
+    ) -> PredictionResult:
+        """
+        Convenience method to route and predict in one call.
+
+        Args:
+            request_id: Unique request identifier
+            features: Feature values for prediction
+
+        Returns:
+            PredictionResult with prediction and metrics
+        """
+        routing = self.route(request_id)
+        return self.predict(routing, features)
+
+    def record_outcome(
+        self,
+        request_id: str,
+        predicted: Any,
+        actual: Any,
+    ) -> bool:
+        """
+        Record the actual outcome for a request to track accuracy.
+
+        Args:
+            request_id: Request identifier from original prediction
+            predicted: Predicted value
+            actual: Actual value (ground truth)
+
+        Returns:
+            True if outcome was recorded, False if request not found
+        """
+        cohort = self._request_cohorts.get(request_id)
+        if cohort is None:
+            logger.debug(f"Request {request_id} not found in routing history")
+            return False
+
+        # Get metrics for cohort
+        if cohort == CohortType.CANDIDATE:
+            metrics = self._candidate_metrics
+        else:
+            metrics = self._champion_metrics
+
+        # Update accuracy
+        metrics.total_predictions += 1
+        if predicted == actual:
+            metrics.correct_predictions += 1
+        metrics.accuracy = metrics.correct_predictions / metrics.total_predictions
+
+        logger.debug(
+            f"Recorded outcome for {request_id} ({cohort.value}): "
+            f"predicted={predicted}, actual={actual}"
+        )
+
+        return True
+
+    def compare_metrics(self) -> MetricsComparison:
+        """
+        Compare champion and candidate metrics.
+
+        Returns:
+            MetricsComparison with statistical analysis
+        """
+        champion = self._champion_metrics
+        candidate = self._candidate_metrics
+
+        # Calculate deltas
+        accuracy_delta = candidate.accuracy - champion.accuracy
+        latency_delta = candidate.avg_latency_ms - champion.avg_latency_ms
+
+        # Determine if we have enough data
+        has_enough_data = (
+            champion.total_predictions >= self.min_samples
+            and candidate.total_predictions >= self.min_samples
+        )
+
+        if not has_enough_data:
+            result = ComparisonResult.INSUFFICIENT_DATA
+            is_significant = False
+            candidate_is_better = False
+            recommendation = (
+                f"Need more samples. Champion: {champion.total_predictions}/{self.min_samples}, "
+                f"Candidate: {candidate.total_predictions}/{self.min_samples}"
+            )
+        else:
+            # Check for statistical significance (simplified)
+            # In production, use proper statistical tests (e.g., chi-squared, t-test)
+            is_significant = self._check_significance(champion, candidate)
+
+            if accuracy_delta > self.min_improvement and is_significant:
+                result = ComparisonResult.CANDIDATE_BETTER
+                candidate_is_better = True
+                recommendation = (
+                    f"Candidate shows {accuracy_delta:.2%} accuracy improvement. "
+                    f"Consider promoting to champion."
+                )
+            elif accuracy_delta < -self.min_improvement and is_significant:
+                result = ComparisonResult.CHAMPION_BETTER
+                candidate_is_better = False
+                recommendation = (
+                    f"Champion outperforms candidate by {-accuracy_delta:.2%}. " f"Do not promote."
+                )
+            else:
+                result = ComparisonResult.NO_DIFFERENCE
+                candidate_is_better = False
+                recommendation = (
+                    "No significant difference between models. "
+                    "Continue testing or evaluate other factors."
+                )
+
+        return MetricsComparison(
+            champion_metrics=champion,
+            candidate_metrics=candidate,
+            result=result,
+            accuracy_delta=accuracy_delta,
+            latency_delta_ms=latency_delta,
+            sample_size_champion=champion.total_predictions,
+            sample_size_candidate=candidate.total_predictions,
+            is_significant=is_significant,
+            candidate_is_better=candidate_is_better,
+            recommendation=recommendation,
+        )
+
+    def _check_significance(
+        self,
+        champion: CohortMetrics,
+        candidate: CohortMetrics,
+    ) -> bool:
+        """
+        Check for statistical significance between cohorts.
+
+        Uses a simplified significance test based on sample size and
+        effect size. For production, consider using scipy.stats for
+        proper statistical tests.
+
+        Args:
+            champion: Champion cohort metrics
+            candidate: Candidate cohort metrics
+
+        Returns:
+            True if difference is statistically significant
+        """
+        # Simplified significance check based on sample size and effect size
+        # Minimum effect size threshold
+        min_effect = self.min_improvement
+
+        # Calculate effect size
+        accuracy_diff = abs(candidate.accuracy - champion.accuracy)
+
+        # Check if effect is large enough and samples are sufficient
+        if accuracy_diff >= min_effect:
+            # Simple heuristic: require both cohorts to have 2x min samples
+            # for significance claim
+            if (
+                champion.total_predictions >= self.min_samples * 2
+                and candidate.total_predictions >= self.min_samples * 2
+            ):
+                return True
+
+        return False
+
+    def promote_candidate(self, force: bool = False) -> PromotionResult:
+        """
+        Promote candidate model to champion.
+
+        Validates that candidate meets promotion criteria before promoting.
+        Uses MLflow alias switching for zero-downtime promotion.
+
+        Args:
+            force: If True, bypass validation checks
+
+        Returns:
+            PromotionResult with status and details
+        """
+        comparison = self.compare_metrics()
+
+        # Validate promotion criteria
+        if not force:
+            if comparison.result == ComparisonResult.INSUFFICIENT_DATA:
+                return PromotionResult(
+                    status=PromotionStatus.NOT_READY,
+                    comparison=comparison,
+                    error_message="Insufficient data for promotion decision",
+                )
+
+            if not comparison.candidate_is_better:
+                return PromotionResult(
+                    status=PromotionStatus.BLOCKED,
+                    comparison=comparison,
+                    error_message=f"Candidate is not better than champion: {comparison.result.value}",
+                )
+
+        # Attempt promotion via version manager
+        if self._version_manager is None:
+            return PromotionResult(
+                status=PromotionStatus.ERROR,
+                comparison=comparison,
+                error_message="Version manager not available for promotion",
+            )
+
+        try:
+            # Promote candidate to champion alias
+            success = self._version_manager.promote_candidate_to_champion()
+
+            if success:
+                promoted_at = datetime.now(timezone.utc)
+
+                # Swap models (old_champion kept for potential debugging)
+                old_version = self._champion_version
+
+                self._champion_model = self._candidate_model
+                self._champion_version = self._candidate_version
+                self._candidate_model = None
+                self._candidate_version = None
+
+                # Reset metrics for new test period
+                self._reset_metrics()
+
+                logger.info(
+                    f"Promoted candidate (v{self._champion_version}) to champion. "
+                    f"Previous champion: v{old_version}"
+                )
+
+                return PromotionResult(
+                    status=PromotionStatus.PROMOTED,
+                    previous_champion_version=old_version,
+                    new_champion_version=self._champion_version,
+                    comparison=comparison,
+                    promoted_at=promoted_at,
+                )
+            else:
+                return PromotionResult(
+                    status=PromotionStatus.ERROR,
+                    comparison=comparison,
+                    error_message="MLflow alias switch failed",
+                )
+
+        except Exception as e:
+            logger.error(f"Promotion failed: {e}")
+            return PromotionResult(
+                status=PromotionStatus.ERROR,
+                comparison=comparison,
+                error_message=str(e),
+            )
+
+    def _reset_metrics(self) -> None:
+        """Reset cohort metrics for a new test period."""
+        self._champion_metrics = CohortMetrics(cohort=CohortType.CHAMPION)
+        self._candidate_metrics = CohortMetrics(cohort=CohortType.CANDIDATE)
+        self._request_cohorts.clear()
+        self._request_predictions.clear()
+        logger.info("A/B test metrics reset")
+
+    def _to_array(
+        self,
+        x: Union[Dict[str, float], List[float], npt.NDArray[Any]],
+    ) -> npt.NDArray[Any]:
+        """Convert features to numpy array for sklearn models."""
+        if np_module is None:
+            # Return as list if numpy not available
+            if isinstance(x, dict):
+                return list(x.values())
+            return list(x)
+
+        if isinstance(x, dict):
+            return np_module.array(list(x.values()))
+        elif hasattr(x, "__array__"):
+            return np_module.asarray(x)
+        else:
+            return np_module.array(x)
+
+    def set_champion_model(self, model: Any, version: Optional[int] = None) -> None:
+        """
+        Set the champion model directly.
+
+        Args:
+            model: sklearn-compatible model
+            version: Optional version number
+        """
+        self._champion_model = model
+        self._champion_version = version
+        logger.info(f"Champion model set (version: {version})")
+
+    def set_candidate_model(self, model: Any, version: Optional[int] = None) -> None:
+        """
+        Set the candidate model directly.
+
+        Args:
+            model: sklearn-compatible model
+            version: Optional version number
+        """
+        self._candidate_model = model
+        self._candidate_version = version
+        logger.info(f"Candidate model set (version: {version})")
+
+    def set_ab_test_active(self, active: bool) -> None:
+        """
+        Enable or disable A/B testing.
+
+        When disabled, all traffic goes to champion.
+
+        Args:
+            active: Whether A/B testing is active
+        """
+        self._ab_test_active = active
+        logger.info(f"A/B testing {'enabled' if active else 'disabled'}")
+
+    def get_champion_metrics(self) -> CohortMetrics:
+        """Get current champion cohort metrics."""
+        return self._champion_metrics
+
+    def get_candidate_metrics(self) -> CohortMetrics:
+        """Get current candidate cohort metrics."""
+        return self._candidate_metrics
+
+    def get_metrics_summary(self) -> Dict[str, Any]:
+        """
+        Get summary of all A/B test metrics.
+
+        Returns:
+            Dictionary with metrics for both cohorts
+        """
+        self._champion_metrics.calculate_percentiles()
+        self._candidate_metrics.calculate_percentiles()
+
+        return {
+            "ab_test_active": self._ab_test_active,
+            "candidate_split": self.candidate_split,
+            "champion": self._champion_metrics.to_dict(),
+            "candidate": self._candidate_metrics.to_dict(),
+            "champion_version": self._champion_version,
+            "candidate_version": self._candidate_version,
+            "has_champion_model": self._champion_model is not None,
+            "has_candidate_model": self._candidate_model is not None,
+        }
+
+    def get_traffic_distribution(self, n_requests: int = 1000) -> Dict[str, Any]:
+        """
+        Verify traffic distribution by simulating routing.
+
+        Args:
+            n_requests: Number of requests to simulate
+
+        Returns:
+            Dictionary with distribution statistics
+        """
+        champion_count = 0
+        candidate_count = 0
+
+        for i in range(n_requests):
+            routing = self.route(f"test-{i}")
+            if routing.cohort == CohortType.CHAMPION:
+                champion_count += 1
+            else:
+                candidate_count += 1
+
+        # Clear test requests from tracking
+        for i in range(n_requests):
+            self._request_cohorts.pop(f"test-{i}", None)
+
+        actual_candidate_split = candidate_count / n_requests
+        expected_candidate_split = self.candidate_split
+
+        return {
+            "n_requests": n_requests,
+            "champion_count": champion_count,
+            "candidate_count": candidate_count,
+            "actual_champion_split": champion_count / n_requests,
+            "actual_candidate_split": actual_candidate_split,
+            "expected_candidate_split": expected_candidate_split,
+            "variance": abs(actual_candidate_split - expected_candidate_split),
+            "within_tolerance": abs(actual_candidate_split - expected_candidate_split) < 0.02,
+        }
+
+
+# Module-level instances
+_ab_test_router: Optional[ABTestRouter] = None
+
+
+def get_ab_test_router(
+    candidate_split: float = AB_TEST_SPLIT,
+    min_samples: int = AB_TEST_MIN_SAMPLES,
+) -> ABTestRouter:
+    """
+    Get the global A/B test router instance.
+
+    Args:
+        candidate_split: Fraction of traffic for candidate model
+        min_samples: Minimum samples before allowing promotion
+
+    Returns:
+        Initialized ABTestRouter
+    """
+    global _ab_test_router
+
+    if _ab_test_router is None:
+        _ab_test_router = ABTestRouter(
+            candidate_split=candidate_split,
+            min_samples=min_samples,
+        )
+
+    return _ab_test_router
+
+
+def route_request(request_id: str) -> RoutingResult:
+    """
+    Route a request using the global router.
+
+    Args:
+        request_id: Unique request identifier
+
+    Returns:
+        RoutingResult with cohort assignment
+    """
+    router = get_ab_test_router()
+    return router.route(request_id)
+
+
+def route_and_predict(
+    request_id: str,
+    features: Union[Dict[str, float], List[float]],
+) -> PredictionResult:
+    """
+    Route and predict using the global router.
+
+    Args:
+        request_id: Unique request identifier
+        features: Feature values for prediction
+
+    Returns:
+        PredictionResult with prediction and cohort
+    """
+    router = get_ab_test_router()
+    return router.route_and_predict(request_id, features)
+
+
+def get_ab_test_metrics() -> Dict[str, Any]:
+    """
+    Get A/B test metrics from the global router.
+
+    Returns:
+        Dictionary with metrics summary
+    """
+    router = get_ab_test_router()
+    return router.get_metrics_summary()
+
+
+def compare_models() -> MetricsComparison:
+    """
+    Compare champion and candidate metrics.
+
+    Returns:
+        MetricsComparison with analysis
+    """
+    router = get_ab_test_router()
+    return router.compare_metrics()
+
+
+def promote_candidate_model(force: bool = False) -> PromotionResult:
+    """
+    Promote candidate to champion.
+
+    Args:
+        force: Bypass validation checks
+
+    Returns:
+        PromotionResult with status
+    """
+    router = get_ab_test_router()
+    return router.promote_candidate(force=force)
+
+
+# Export key classes and functions
+__all__ = [
+    # Enums
+    "CohortType",
+    "PromotionStatus",
+    "ComparisonResult",
+    # Data Classes
+    "CohortMetrics",
+    "RoutingResult",
+    "PredictionResult",
+    "MetricsComparison",
+    "PromotionResult",
+    # Main Class
+    "ABTestRouter",
+    # Configuration
+    "AB_TEST_SPLIT",
+    "CHAMPION_ALIAS",
+    "CANDIDATE_ALIAS",
+    "AB_TEST_MIN_SAMPLES",
+    "AB_TEST_CONFIDENCE_LEVEL",
+    "AB_TEST_MIN_IMPROVEMENT",
+    "MODEL_REGISTRY_NAME",
+    # Availability
+    "NUMPY_AVAILABLE",
+    # Convenience Functions
+    "get_ab_test_router",
+    "route_request",
+    "route_and_predict",
+    "get_ab_test_metrics",
+    "compare_models",
+    "promote_candidate_model",
+]
