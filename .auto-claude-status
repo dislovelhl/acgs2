@@ -1,0 +1,25 @@
+{
+  "active": true,
+  "spec": "019-advanced-analytics-and-insights-dashboard",
+  "state": "complete",
+  "subtasks": {
+    "completed": 23,
+    "total": 23,
+    "in_progress": 0,
+    "failed": 0
+  },
+  "phase": {
+    "current": "Integration & Testing",
+    "id": null,
+    "total": 4
+  },
+  "workers": {
+    "active": 0,
+    "max": 1
+  },
+  "session": {
+    "number": 18,
+    "started_at": "2026-01-03T08:54:04.012080"
+  },
+  "last_update": "2026-01-03T09:01:28.120613"
+}

@@ -1,3 +1,7 @@
+import { getLogger } from '../../../../../../sdk/typescript/src/utils/logger';
+const logger = getLogger('verify_dashboard_integration');
+
+
 /**
  * Dashboard → Analytics-API Integration Verification Script
  *
@@ -347,56 +351,56 @@ async function verifyExportPdfEndpoint(): Promise<VerificationResult> {
   }
 }
 
-/**
- * Runs all verification checks
- */
-async function runVerification(): Promise<VerificationReport> {
-  console.log("=" .repeat(60));
-  console.log("Dashboard → Analytics-API Integration Verification");
+  logger.info("=" .repeat(60);
+  logger.info("Dashboard → Analytics-API Integration Verification";
+  logger.info("=" .repeat(60);
+  logger.info(`API Base URL: ${API_BASE_URL}`;
+  logger.info(`Timestamp: ${new Date().toISOString()}`;
+  logger.info("";
   console.log("=" .repeat(60));
   console.log(`API Base URL: ${API_BASE_URL}`);
   console.log(`Timestamp: ${new Date().toISOString()}`);
   console.log("");
-
+  logger.info("1. Verifying GET /insights endpoint...";
   const results: VerificationResult[] = [];
-
+  logger.info(`   ${results[results.length - 1].status.toUpperCase()}: ${results[results.length - 1].message}`;
   // Verify each endpoint
-  console.log("1. Verifying GET /insights endpoint...");
+  logger.info("2. Verifying GET /anomalies endpoint...";
   results.push(await verifyInsightsEndpoint());
-  console.log(`   ${results[results.length - 1].status.toUpperCase()}: ${results[results.length - 1].message}`);
+  logger.info(`   ${results[results.length - 1].status.toUpperCase()}: ${results[results.length - 1].message}`;
 
-  console.log("2. Verifying GET /anomalies endpoint...");
+  logger.info("3. Verifying GET /predictions endpoint...";
   results.push(await verifyAnomaliesEndpoint());
-  console.log(`   ${results[results.length - 1].status.toUpperCase()}: ${results[results.length - 1].message}`);
+  logger.info(`   ${results[results.length - 1].status.toUpperCase()}: ${results[results.length - 1].message}`;
 
-  console.log("3. Verifying GET /predictions endpoint...");
+  logger.info("4. Verifying POST /query endpoint...";
   results.push(await verifyPredictionsEndpoint());
-  console.log(`   ${results[results.length - 1].status.toUpperCase()}: ${results[results.length - 1].message}`);
+  logger.info(`   ${results[results.length - 1].status.toUpperCase()}: ${results[results.length - 1].message}`;
 
-  console.log("4. Verifying POST /query endpoint...");
+  logger.info("5. Verifying POST /export/pdf endpoint...";
   results.push(await verifyQueryEndpoint());
-  console.log(`   ${results[results.length - 1].status.toUpperCase()}: ${results[results.length - 1].message}`);
+  logger.info(`   ${results[results.length - 1].status.toUpperCase()}: ${results[results.length - 1].message}`;
 
   console.log("5. Verifying POST /export/pdf endpoint...");
   results.push(await verifyExportPdfEndpoint());
   console.log(`   ${results[results.length - 1].status.toUpperCase()}: ${results[results.length - 1].message}`);
 
-  // Generate report
-  const passed = results.filter((r) => r.status === "pass").length;
-  const failed = results.filter((r) => r.status === "fail").length;
-
-  console.log("");
-  console.log("=" .repeat(60));
-  console.log("VERIFICATION SUMMARY");
-  console.log("=" .repeat(60));
+  logger.info("";
+  logger.info("=" .repeat(60);
+  logger.info("VERIFICATION SUMMARY";
+  logger.info("=" .repeat(60);
+  logger.info(`Total Checks: ${results.length}`;
+  logger.info(`Passed: ${passed}`;
+  logger.info(`Failed: ${failed}`;
+  logger.info(`Status: ${failed === 0 ? "ALL CHECKS PASSED" : "SOME CHECKS FAILED"}`;
   console.log(`Total Checks: ${results.length}`);
   console.log(`Passed: ${passed}`);
-  console.log(`Failed: ${failed}`);
-  console.log(`Status: ${failed === 0 ? "ALL CHECKS PASSED" : "SOME CHECKS FAILED"}`);
+    logger.info("";
+    logger.info("Failed checks:";
 
   if (failed > 0) {
     console.log("");
-    console.log("Failed checks:");
+        logger.info(`  - ${r.endpoint}: ${r.message}`;
     results
       .filter((r) => r.status === "fail")
       .forEach((r) => {
