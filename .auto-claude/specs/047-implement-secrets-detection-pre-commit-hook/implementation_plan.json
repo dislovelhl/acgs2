@@ -46,7 +46,9 @@
           "subtask_id": "1.3",
           "title": "Design hook strategy",
           "description": "Design multi-layered approach: gitleaks for general scanning, custom hook for ACGS-2 specific patterns",
-          "status": "pending",
+          "status": "completed",
+          "completed_at": "2026-01-03T21:40:00.000Z",
+          "notes": "Completed comprehensive hook strategy design. Created detailed strategy document covering multi-layered approach (gitleaks + custom ACGS-2 hook), file scanning/exclusion strategy, performance optimizations (<5s target), three-tier allow-list system, context-aware validation, phased rollout plan, and success metrics. Key decision: Single source of truth using CREDENTIAL_PATTERNS from secrets_manager.py. Document: hook-strategy.md",
           "acceptance_criteria": [
             "Documented hook strategy with rationale",
             "List of files/patterns to scan vs exclude",
