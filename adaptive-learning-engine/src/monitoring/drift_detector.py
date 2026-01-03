@@ -399,7 +399,20 @@ class DriftDetector:
                     and self._last_report_cache is not None
                 ):
                     logger.debug("Returning cached drift result")
-                    return self._last_report_cache
+                    # Update timestamp to reflect when check was requested, not when it was computed
+                    cached_result = self._last_report_cache
+                    return DriftResult(
+                        status=cached_result.status,
+                        drift_detected=cached_result.drift_detected,
+                        drift_score=cached_result.drift_score,
+                        drift_threshold=cached_result.drift_threshold,
+                        columns_drifted=cached_result.columns_drifted,
+                        column_drift_scores=cached_result.column_drift_scores,
+                        reference_size=cached_result.reference_size,
+                        current_size=cached_result.current_size,
+                        timestamp=timestamp,  # Use current request time
+                        message=cached_result.message,
+                    )
 
             try:
                 # Convert to DataFrames (with caching)
