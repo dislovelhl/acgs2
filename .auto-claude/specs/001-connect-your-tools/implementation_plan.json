@@ -144,16 +144,17 @@
         {
           "id": "2.2",
           "description": "Implement webhook signature verification middleware",
-          "status": "pending",
+          "status": "completed",
           "dependencies": [
             "1.6",
             "2.1"
           ],
           "estimated_hours": 3,
-          "notes": "Create src/integrations/linear/webhook_auth.py. Implement HMAC-SHA256 signature verification using LINEAR_WEBHOOK_SECRET. Follow existing webhook security patterns.",
+          "notes": "\u2705 Successfully implemented Linear webhook signature verification middleware at integration-service/src/integrations/linear/webhook_auth.py. Created comprehensive authentication module with:\n- verify_linear_webhook_signature: FastAPI dependency for webhook authentication returning AuthResult\n- verify_linear_webhook_signature_strict: Simpler dependency for blocking unauthorized requests\n- verify_linear_signature_sync: Synchronous verification for testing and utilities\n- get_linear_webhook_handler: Factory function for configured HmacAuthHandler\n- is_linear_webhook_configured: Configuration check utility\n- LinearWebhookAuthError: Custom exception class\n- format_linear_signature_for_logging: Safe signature logging utility\n\nImplementation follows existing patterns from src/webhooks/auth.py using HmacAuthHandler with HMAC-SHA256 algorithm. Uses LINEAR_WEBHOOK_SECRET from config (via get_linear_config()). Includes comprehensive error handling, logging, and security features (constant-time comparison, proper exception handling). All functions exported in __init__.py. Committed with hash 4ad73d13e, all pre-commit hooks passed (ruff, bandit, etc.).",
           "files_to_modify": [
             "integration-service/src/integrations/linear/webhook_auth.py"
-          ]
+          ],
+          "updated_at": "2026-01-03T22:09:43.086305+00:00"
         },
         {
           "id": "2.3",
@@ -654,6 +655,6 @@
     "Implement proper deduplication to prevent infinite sync loops",
     "Use Redis locks to prevent race conditions during bidirectional sync"
   ],
-  "last_updated": "2026-01-03T22:06:26.187853+00:00",
+  "last_updated": "2026-01-03T22:09:43.086310+00:00",
   "recoveryNote": "Task recovered from stuck state at 2026-01-03T22:00:00.431Z"
 }
