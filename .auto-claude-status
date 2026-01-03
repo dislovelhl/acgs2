@@ -1,25 +1,25 @@
 {
   "active": true,
   "spec": "020-multi-region-global-deployment-support",
-  "state": "building",
+  "state": "complete",
   "subtasks": {
-    "completed": 12,
+    "completed": 25,
     "total": 25,
-    "in_progress": 1,
+    "in_progress": 0,
     "failed": 0
   },
   "phase": {
-    "current": "Traffic Management and Regional Failover",
+    "current": "Integration Testing and Documentation",
     "id": null,
-    "total": 3
+    "total": 6
   },
   "workers": {
     "active": 0,
     "max": 1
   },
   "session": {
-    "number": 648,
-    "started_at": "2026-01-02T09:56:26.090586"
+    "number": 20,
+    "started_at": "2026-01-03T08:54:11.221496"
   },
-  "last_update": "2026-01-02T15:07:45.603743"
+  "last_update": "2026-01-03T09:20:12.741640"
 }
