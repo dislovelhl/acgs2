@@ -824,7 +824,13 @@ async def send_message(
     - X-RateLimit-Limit: Maximum requests per minute
     - X-RateLimit-Remaining: Remaining requests in current window
     - X-RateLimit-Reset: Seconds until rate limit window resets
+
+    Latency tracking is included in response details:
+    - details.latency_ms: Request processing latency in milliseconds
     """
+    # Track request latency (following pattern from message_processor.py)
+    start = time.perf_counter()
+
     # Add rate limit headers to response
     _, remaining, reset_time, _ = rate_limit_info
     response.headers["X-RateLimit-Limit"] = str(RATE_LIMIT_REQUESTS_PER_MINUTE)
@@ -888,11 +894,14 @@ async def send_message(
 
         background_tasks.add_task(process_message_with_processor, agent_message)
 
+        # Calculate request latency in milliseconds (following pattern from message_processor.py)
+        latency_ms = (time.perf_counter() - start) * 1000
+
         return MessageResponse(
             message_id=message_id,
             status="accepted",
             timestamp=timestamp.isoformat(),
-            details={"message_type": request.message_type},
+            details={"message_type": request.message_type, "latency_ms": round(latency_ms, 3)},
         )
 
     except Exception as e:
