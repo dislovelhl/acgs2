@@ -1,0 +1,25 @@
+{
+  "active": true,
+  "spec": "007-hitl-workflow-automation-and-approval-chains",
+  "state": "building",
+  "subtasks": {
+    "completed": 23,
+    "total": 24,
+    "in_progress": 1,
+    "failed": 0
+  },
+  "phase": {
+    "current": "Service Integration",
+    "id": null,
+    "total": 3
+  },
+  "workers": {
+    "active": 0,
+    "max": 1
+  },
+  "session": {
+    "number": 397,
+    "started_at": "2026-01-03T08:53:53.831076"
+  },
+  "last_update": "2026-01-03T11:20:15.074024"
+}
