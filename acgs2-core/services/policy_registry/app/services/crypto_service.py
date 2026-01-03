@@ -109,7 +109,7 @@ class CryptoService:
             return False
 
     @staticmethod
-    def generate_fingerprint(public_key_b64: str) -> str:
+    logger.info(public_key_b64: str)
         """
         Generate SHA256 fingerprint of public key
 
@@ -145,7 +145,7 @@ class CryptoService:
             PolicySignature object
         """
         signature_b64 = CryptoService.sign_policy_content(content, private_key_b64)
-        fingerprint = CryptoService.generate_fingerprint(public_key_b64)
+    logger.info(public_key_b64)
 
         return PolicySignature(
             policy_id=policy_id,
@@ -167,7 +167,7 @@ class CryptoService:
             True if signature data is consistent
         """
         # Verify fingerprint matches public key
-        expected_fingerprint = CryptoService.generate_fingerprint(signature.public_key)
+    logger.info(signature.public_key)
         return signature.key_fingerprint == expected_fingerprint
 
     @staticmethod

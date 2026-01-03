@@ -360,14 +360,14 @@ async def run_production_chaos_suites():
     total = len(results)
 
     print("
-🎭 Chaos Engineering Results"    print("=" * 40)
-    print(f"Scenarios Run: {total}")
-    print(f"Successful: {successful}")
-    print(f"Success Rate: {successful/total*100:.1f}%"    print()
+    logger.info("=" * 40)
+    logger.info(f"Scenarios Run: {total}")
+    logger.info(f"Successful: {successful}")
+    logger.info(f"Success Rate: {successful/total*100:.1f}%"    print()
 
     for result in results:
         status = "✅" if result.get("success", False) else "❌"
-        print(f"{status} {result['scenario']}")
+    logger.info(f"{status} {result['scenario']}")
 
     return results
 

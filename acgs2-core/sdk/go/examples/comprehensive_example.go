@@ -6,7 +6,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/acgs/sdk-go"
+	"acgs2-sdk-go"
 )
 
 func main() {

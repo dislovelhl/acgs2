@@ -45,11 +45,62 @@ asyncio.run(main())
 - **Async/Await**: Built on httpx for high-performance async operations
 - **Type-Safe**: Full type hints with Pydantic validation
 - **Constitutional Compliance**: Built-in constitutional hash validation
-- **Comprehensive Services**: Policy, Agent, Compliance, Audit, Governance, HITL Approvals, and ML Governance
+- **Comprehensive Services**: Policy Registry, API Gateway, Agent, Compliance, Audit, Governance, HITL Approvals, and ML Governance
 - **Automatic Retry**: Configurable retry with exponential backoff
 - **Python 3.11+**: Modern Python with the latest language features
 
 ## Services
+
+### Policy Registry Service
+
+```python
+from acgs2_sdk import PolicyRegistryService
+
+policy_registry = client.policy_registry
+
+# List policies
+policies = await policy_registry.list_policies(limit=10)
+
+# Create a policy
+policy = await policy_registry.create_policy(
+    name="security-policy",
+    rules=[{"effect": "allow", "principal": "user:*", "action": "read"}],
+    description="Basic security policy"
+)
+
+# Verify policy compliance
+result = await policy_registry.verify_policy(policy.id, {"input": {"user": "alice"}})
+
+# Manage policy bundles
+bundles = await policy_registry.list_bundles()
+bundle = await policy_registry.create_bundle(
+    name="security-bundle",
+    policies=[policy.id]
+)
+```
+
+### API Gateway Service
+
+```python
+from acgs2_sdk import APIGatewayService
+
+gateway = client.api_gateway
+
+# Health check
+health = await gateway.health_check()
+
+# Submit feedback
+feedback = await gateway.submit_feedback(
+    user_id="user123",
+    category="feature",
+    rating=5,
+    title="Great SDK!",
+    description="Easy to use and well-documented"
+)
+
+# Service discovery
+services = await gateway.list_services()
+```
 
 ### Policy Service
 

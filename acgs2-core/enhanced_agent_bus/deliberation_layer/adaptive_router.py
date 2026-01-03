@@ -133,7 +133,7 @@ class AdaptiveRouter:
             from .impact_scorer import get_impact_scorer
 
             scorer = get_impact_scorer()
-            message.impact_score = scorer.calculate_impact_score(message.content, context)
+            message.impact_score = await scorer.calculate_impact_score_async(message.content, context)
             logger.debug(
                 f"Calculated impact score {message.impact_score:.3f} for message {message.message_id}"
             )
