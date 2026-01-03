@@ -16,8 +16,7 @@ import { http, HttpResponse } from "msw";
 import { server } from "../../../test/mocks/server";
 import { errorHandlers } from "../../../test/mocks/handlers";
 import { AnomalyWidget } from "../AnomalyWidget";
-
-const API_BASE_URL = "http://localhost:8080";
+import { API_BASE_URL } from "../../../lib";
 
 describe("AnomalyWidget", () => {
   describe("Loading State", () => {
