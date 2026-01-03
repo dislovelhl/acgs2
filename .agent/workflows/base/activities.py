@@ -292,8 +292,8 @@ class DefaultActivities(BaseActivities):
         ).hexdigest()[:16]
 
         logger.warning(
-            f"Workflow {workflow_id}: Audit recorded (MOCK - not blockchain-anchored): {audit_hash} "
-            "- WARNING: allow_mock_audit=True should not be used in production"
+            f"Workflow {workflow_id}: Audit recorded (MOCK - not blockchain-anchored): "
+            f"{audit_hash} - WARNING: allow_mock_audit=True should not be used in production"
         )
         return f"mock:{audit_hash}"  # Prefix with 'mock:' to clearly identify
 

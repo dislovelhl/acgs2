@@ -6,7 +6,6 @@ Constitutional Hash: cdd01ef066bc6cf2
 import pytest
 from prometheus_client import REGISTRY
 
-from ..base.context import WorkflowContext
 from ..base.step import WorkflowStep
 from ..base.workflow import BaseWorkflow
 
@@ -28,7 +27,6 @@ class MockWorkflow(BaseWorkflow):
 async def test_workflow_metrics_emission():
     """Test that metrics are emitted on workflow execution."""
     workflow = MockWorkflow()
-    ctx = WorkflowContext.create()
 
     # Execute workflow
     await workflow.run({})

@@ -21,9 +21,7 @@ from sklearn.preprocessing import StandardScaler
 # Constitutional imports
 try:
     from .exceptions import (
-        ConstitutionalValidationError,
         GovernanceError,
-        ImpactAssessmentError,
     )
 except ImportError:
     from exceptions import (

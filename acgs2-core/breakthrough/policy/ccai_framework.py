@@ -286,7 +286,8 @@ class CCAIFramework:
 
         if session.current_phase != DeliberationPhase.PROPOSAL_SUBMISSION:
             raise ValueError(
-                f"Session {session_id} not accepting proposals (phase: {session.current_phase.value})"
+                f"Session {session_id} not accepting proposals "
+                f"(phase: {session.current_phase.value})"
             )
 
         proposal = Proposal(
@@ -608,7 +609,6 @@ class CCAIFramework:
         self, proposal: Proposal, session: DeliberationSession
     ) -> None:
         """Calculate consensus score for a proposal."""
-        total_stakeholders = len(session.stakeholders)
         votes_for = len(proposal.votes_for)
         votes_against = len(proposal.votes_against)
         abstentions = len(proposal.abstentions)
@@ -650,7 +650,8 @@ class CCAIFramework:
             if proposal.consensus_score >= self.consensus_threshold:
                 session.decisions_made.append(proposal)
                 logger.info(
-                    f"Proposal {proposal.proposal_id} approved with consensus {proposal.consensus_score:.2f}"
+                    f"Proposal {proposal.proposal_id} approved with consensus "
+                    f"{proposal.consensus_score:.2f}"
                 )
 
                 # Update stakeholder consensus contributions

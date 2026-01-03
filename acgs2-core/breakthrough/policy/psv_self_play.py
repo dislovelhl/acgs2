@@ -278,7 +278,8 @@ class PSVSelfPlay:
         self.active_round = round_obj
 
         logger.info(
-            f"Started self-play round {round_obj.round_id} with {len(round_obj.challenges)} challenges"
+            f"Started self-play round {round_obj.round_id} with "
+            f"{len(round_obj.challenges)} challenges"
         )
         return round_obj
 
@@ -655,8 +656,9 @@ class PSVSelfPlay:
 
         logger.info(
             f"Completed self-improvement session: "
-            f"{session_results['challenges_solved']}/{session_results['total_challenges']} challenges solved, "
-            f"success rate improvement: {session_results['success_rate_improvement']:.3f}"
+            f"{session_results['challenges_solved']}/{session_results['total_challenges']} "
+            f"challenges solved, success rate improvement: "
+            f"{session_results['success_rate_improvement']:.3f}"
         )
 
         return session_results

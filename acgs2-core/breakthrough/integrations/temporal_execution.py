@@ -609,7 +609,8 @@ class TemporalWorkflowEngine:
                     )
 
                     logger.info(
-                        f"Applied adaptation strategy {strategy.strategy_id} to workflow {snapshot.workflow_id}"
+                        f"Applied adaptation strategy {strategy.strategy_id} "
+                        f"to workflow {snapshot.workflow_id}"
                     )
                     return adaptation
 

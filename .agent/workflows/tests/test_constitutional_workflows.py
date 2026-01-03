@@ -95,7 +95,8 @@ class TestConstitutionalValidationWorkflow:
         )
 
         # In the current implementation of ConstitutionalValidationWorkflow.execute,
-        # it returns early on HASH_CHECK or INTEGRITY_CHECK failure if require_strict_compliance is True.
+        # it returns early on HASH_CHECK or INTEGRITY_CHECK failure if
+        # require_strict_compliance is True.
         # If False, it continues.
 
         # If hash check failed but non-strict, it continues to integrity.

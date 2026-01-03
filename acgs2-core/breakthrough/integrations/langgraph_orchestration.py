@@ -226,7 +226,10 @@ class GovernanceGraph:
             routes: Mapping of route keys to target nodes
         """
         for route_key, target in routes.items():
-            condition = lambda state, key=route_key: router(state) == key
+
+            def condition(state, key=route_key):
+                return router(state) == key
+
             edge = GraphEdge(source=source, target=target, condition=condition)
             self._edges.append(edge)
         return self

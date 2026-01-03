@@ -217,7 +217,7 @@ class DafnyProAnnotator:
 
         # Extract policy structure
         package_match = re.search(r"package\s+([\w.]+)", rego_policy)
-        package_name = package_match.group(1) if package_match else "policy"
+        _package_name = package_match.group(1) if package_match else "policy"  # noqa: F841
 
         # Generate Dafny method with annotations
         dafny_spec = f'''

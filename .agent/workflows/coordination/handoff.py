@@ -14,7 +14,7 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Callable, Dict, List, Optional
 
-from ..base.result import WorkflowResult
+from ..base.result import WorkflowResult, WorkflowStatus
 from ..base.workflow import BaseWorkflow
 
 try:
@@ -156,7 +156,7 @@ class HandoffWorkflow(BaseWorkflow):
         """
         task_id = input.get("task_id", "")
         provided_state = input.get("state", {})
-        reason = input.get("reason", "")
+        _reason = input.get("reason", "")  # noqa: F841
 
         logger.info(
             f"Handoff {self._handoff_id}: Starting transfer from "
@@ -331,6 +331,14 @@ class HandoffWorkflow(BaseWorkflow):
             execution_time_ms=self.context.get_elapsed_time_ms(),
             constitutional_hash=self.constitutional_hash,
             errors=self._errors,
+        )
+
+        return WorkflowResult(
+            workflow_id=self._handoff_id,
+            status=WorkflowStatus.FAILED,
+            output=handoff_result.to_dict(),
+            execution_time_ms=self.context.get_elapsed_time_ms(),
+            steps_completed=self._stages_completed,
         )
 
         return WorkflowResult.failure(

@@ -323,7 +323,8 @@ class TestDAGOptimization:
         # Let's try a simple meaningful priority test
         # A -> B -> C -> D (Chain length 4)
         # E -> F (Chain length 2)
-        # Both A and E are ready initially. A should be picked first because it's the head of a longer chain.
+        # Both A and E are ready initially. A should be picked first because it's
+        # the head of a longer chain.
 
         # Structure:
         # A -> B -> C -> D

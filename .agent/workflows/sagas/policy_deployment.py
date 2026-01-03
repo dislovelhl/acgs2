@@ -3,7 +3,8 @@ Policy Deployment Saga
 Constitutional Hash: cdd01ef066bc6cf2
 
 A distributed transaction workflow for deploying governance policies.
-Ensures atomicity: either the policy is fully deployed and verified, or rolled back to previous state.
+Ensures atomicity: either the policy is fully deployed and verified,
+or rolled back to previous state.
 """
 
 import json
@@ -98,7 +99,7 @@ class PolicyDeploymentSaga(BaseSaga):
     async def _deploy_policy(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
         """Write the new policy to the registry."""
         policy_id = input_data.get("policy_id")
-        new_content = input_data.get("policy_content")
+        _new_content = input_data.get("policy_content")  # noqa: F841
 
         # Simulate deployment failure for testing
         if input_data.get("simulate_deploy_failure"):

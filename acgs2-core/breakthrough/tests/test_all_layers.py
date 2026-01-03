@@ -77,9 +77,9 @@ def test_integrations():
     mcp = ACGS2MCPServer()
     assert mcp.constitutional_hash == CONSTITUTIONAL_HASH
 
-    classifier = ConstitutionalClassifier()
-    graph = GovernanceGraph()
-    guardrails = ConstitutionalGuardrails()
+    _classifier = ConstitutionalClassifier()  # noqa: F841
+    _graph = GovernanceGraph()  # noqa: F841
+    _guardrails = ConstitutionalGuardrails()  # noqa: F841
 
     print("✅ Integrations: MCP, Classifiers, LangGraph, Guardrails - PASSED")
 

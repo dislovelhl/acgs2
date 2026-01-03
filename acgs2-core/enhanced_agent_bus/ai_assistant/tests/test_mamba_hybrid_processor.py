@@ -39,8 +39,8 @@ class TestMambaConfig:
         assert config.d_state == 128
         assert config.num_mamba_layers == 6
         assert config.max_context_length == 4_000_000
-        assert config.use_shared_attention == True
-        assert config.jrt_enabled == True
+        assert config.use_shared_attention is True
+        assert config.jrt_enabled is True
         assert config.critical_sections_repeat == 3
         assert config.constitutional_hash == CONSTITUTIONAL_HASH
 

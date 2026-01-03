@@ -81,6 +81,7 @@ class TestPolicyDeploymentSaga:
             context, {"policy_id": "pol-123", "policy_content": {"unsafe": "true"}}
         )
 
-        # Expect FAILED because validation fail has no compensations (it's the first step/step failure before any compensated steps)
+        # Expect FAILED because validation fail has no compensations (it's the first
+        # step/step failure before any compensated steps)
         assert result.status == SagaStatus.FAILED
         assert "Policy contains unsafe directives" in str(result.errors[0])
