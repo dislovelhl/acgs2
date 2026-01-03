@@ -1,0 +1,154 @@
+# ACGS-2 Adaptive Learning Engine - Project Configuration
+# Real-time adaptive learning with online ML, drift detection, and model versioning
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "adaptive-learning-engine"
+version = "0.1.0"
+description = "ACGS-2 Adaptive Learning Engine with real-time online learning, drift detection, and model versioning"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+authors = [
+    {name = "ACGS Team"}
+]
+dependencies = [
+    # Web framework
+    "fastapi>=0.115.0",
+    "uvicorn>=0.30.0",
+    "pydantic>=2.8.0",
+    # Online learning
+    "river>=0.21.0",
+    # Drift detection
+    "evidently>=0.4.0",
+    # Model versioning
+    "mlflow>=2.15.0",
+    # Metrics
+    "prometheus-client>=0.21.0",
+    # Data processing
+    "pandas>=2.0.0",
+    "numpy>=1.24.0",
+    # Integration
+    "httpx>=0.27.0",
+    "redis>=5.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.23.0",
+    "pytest-cov>=4.1.0",
+    "pytest-mock>=3.11.0",
+    "black>=24.0.0",
+    "ruff>=0.5.0",
+    "mypy>=1.10.0",
+    "safety>=3.0.0",
+    "bandit>=1.7.0",
+    "httpx>=0.27.0",
+]
+
+[tool.setuptools]
+packages = [
+    "src",
+    "src.api",
+    "src.models",
+    "src.monitoring",
+    "src.registry",
+    "src.safety",
+]
+
+[tool.setuptools.package-dir]
+"" = "."
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+testpaths = ["tests"]
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+asyncio_mode = "auto"
+addopts = [
+    "-v",
+    "--strict-markers",
+    "--tb=short",
+    "-ra",
+]
+markers = [
+    "asyncio: mark test as async",
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks tests requiring external services",
+    "e2e: marks end-to-end tests",
+]
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::PendingDeprecationWarning",
+]
+
+[tool.coverage.run]
+source = ["src"]
+branch = true
+relative_files = true
+dynamic_context = "test_function"
+omit = [
+    "tests/*",
+    "*/__pycache__/*",
+    "*.pyc",
+    "venv/*",
+    ".venv/*",
+    "*/tests/*",
+    "conftest.py",
+    "**/conftest.py",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "if typing.TYPE_CHECKING:",
+]
+fail_under = 95
+show_missing = true
+precision = 2
+
+[tool.coverage.html]
+directory = "htmlcov"
+
+[tool.coverage.xml]
+output = "coverage.xml"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+lint.select = ["E", "F", "B", "I"]
+lint.ignore = [
+    "E501",   # line too long, handled by black
+    "B008",   # function call in default argument - valid for FastAPI Depends()
+]
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401"]
+"tests/*" = ["F841", "F401", "I001"]
+"*/tests/*" = ["F841", "F401", "I001"]
+"**/test_*.py" = ["F841", "F401", "I001"]
+"**/*_test.py" = ["F841", "F401", "I001"]
+
+[tool.black]
+line-length = 100
+target-version = ['py311']
+
+[tool.mypy]
+strict = true
+ignore_missing_imports = true
+exclude = ["venv", ".venv", "tests"]
+check_untyped_defs = true
+disallow_any_generics = false
+disallow_incomplete_defs = false
+disallow_untyped_defs = false
+no_implicit_optional = false
