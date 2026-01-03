@@ -28,8 +28,15 @@ import time
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Any, Awaitable, Callable, Dict, List, Optional, Set, Tuple
+from typing import Awaitable, Callable, Dict, List, Optional, Set, Tuple, Union
 
+from ...shared.types import (
+    AuditTrail,
+    ConfigDict,
+    JSONDict,
+    StepResult,
+    WorkflowState as WorkflowStateData,
+)
 from .. import CONSTITUTIONAL_HASH
 from ..temporal.time_r1_engine import EventType, TimeR1Engine
 
@@ -74,11 +81,11 @@ class TemporalConstraintSpec:
     """Specification for a temporal constraint."""
 
     constraint_type: TemporalConstraint
-    parameter: Any  # Time duration, deadline, etc.
+    parameter: Union[int, float, datetime]  # Time duration, deadline, etc.
     strictness: float = 1.0  # How strictly to enforce (0.0-1.0)
     adaptation_allowed: bool = True  # Can adapt if violated
 
-    def is_violated(self, current_time: float, execution_state: Dict[str, Any]) -> bool:
+    def is_violated(self, current_time: float, execution_state: WorkflowStateData) -> bool:
         """Check if constraint is currently violated."""
         if self.constraint_type == TemporalConstraint.DEADLINE:
             start_time = execution_state.get("start_time", current_time)
@@ -104,13 +111,13 @@ class WorkflowStep:
 
     step_id: str
     name: str
-    executor: Callable[[Dict[str, Any]], Awaitable[Dict[str, Any]]]
+    executor: Callable[[WorkflowStateData], Awaitable[StepResult]]
     temporal_constraints: List[TemporalConstraintSpec] = field(default_factory=list)
     dependencies: Set[str] = field(default_factory=set)  # Step IDs this depends on
-    retry_policy: Dict[str, Any] = field(
+    retry_policy: ConfigDict = field(
         default_factory=lambda: {"max_attempts": 3, "backoff_factor": 2.0, "initial_delay": 1.0}
     )
-    compensator: Optional[Callable[[Dict[str, Any]], Awaitable[None]]] = None
+    compensator: Optional[Callable[[WorkflowStateData], Awaitable[None]]] = None
 
     def __post_init__(self):
         if not self.step_id:
@@ -129,9 +136,9 @@ class ExecutionSnapshot:
     completed_steps: Set[str]
     pending_steps: Set[str]
     failed_steps: Dict[str, str]  # step_id -> error_message
-    execution_data: Dict[str, Any]
-    temporal_violations: List[Dict[str, Any]]
-    adaptation_history: List[Dict[str, Any]]
+    execution_data: WorkflowStateData  # Changed from Dict[str, Any]
+    temporal_violations: List[JSONDict]
+    adaptation_history: AuditTrail
 
     def __post_init__(self):
         if not self.snapshot_id:
@@ -146,7 +153,7 @@ class AdaptationStrategy:
 
     strategy_id: str
     trigger_condition: Callable[[ExecutionSnapshot], bool]
-    adaptation_action: Callable[[ExecutionSnapshot], Awaitable[Dict[str, Any]]]
+    adaptation_action: Callable[[ExecutionSnapshot], Awaitable[JSONDict]]
     expected_improvement: float  # Expected improvement in success rate
     risk_level: str  # "low", "medium", "high"
 
@@ -197,7 +204,7 @@ class TemporalWorkflowEngine:
 
         # Recovery and adaptation state
         self.recovery_attempts: Dict[str, int] = {}
-        self.adaptation_history: Dict[str, List[Dict[str, Any]]] = {}
+        self.adaptation_history: Dict[str, AuditTrail] = {}
 
         # Performance tracking
         self._stats = {
@@ -219,7 +226,7 @@ class TemporalWorkflowEngine:
         """Initialize default adaptation strategies."""
 
         # Strategy 1: Timeout adaptation - reduce complexity when timing out
-        async def timeout_adaptation(snapshot: ExecutionSnapshot) -> Dict[str, Any]:
+        async def timeout_adaptation(snapshot: ExecutionSnapshot) -> JSONDict:
             """Adapt workflow when experiencing timeouts."""
             # Reduce retry counts, increase timeouts, simplify steps
             adaptations = {
@@ -242,7 +249,7 @@ class TemporalWorkflowEngine:
         self.adaptation_strategies.append(timeout_strategy)
 
         # Strategy 2: Resource exhaustion adaptation - add resource checks
-        async def resource_adaptation(snapshot: ExecutionSnapshot) -> Dict[str, Any]:
+        async def resource_adaptation(snapshot: ExecutionSnapshot) -> JSONDict:
             """Adapt workflow when resources are exhausted."""
             adaptations = {
                 "action": "add_resource_checks",
@@ -264,7 +271,7 @@ class TemporalWorkflowEngine:
         self.adaptation_strategies.append(resource_strategy)
 
         # Strategy 3: Dependency failure adaptation - add redundancy
-        async def dependency_adaptation(snapshot: ExecutionSnapshot) -> Dict[str, Any]:
+        async def dependency_adaptation(snapshot: ExecutionSnapshot) -> JSONDict:
             """Adapt workflow when dependencies fail."""
             adaptations = {
                 "action": "add_redundancy",
@@ -355,8 +362,8 @@ class TemporalWorkflowEngine:
         return False
 
     async def execute_workflow(
-        self, workflow_id: str, initial_data: Optional[Dict[str, Any]] = None
-    ) -> Tuple[bool, Dict[str, Any]]:
+        self, workflow_id: str, initial_data: Optional[WorkflowStateData] = None
+    ) -> Tuple[bool, StepResult]:
         """
         Execute a temporal workflow with antifragile properties.
 
@@ -418,7 +425,7 @@ class TemporalWorkflowEngine:
 
     async def _execute_with_adaptation(
         self, execution_id: str, snapshot: ExecutionSnapshot, workflow: List[WorkflowStep]
-    ) -> Dict[str, Any]:
+    ) -> StepResult:
         """Execute workflow with automatic adaptation under stress."""
         start_time = time.time()
         step_map = {s.step_id: s for s in workflow}
@@ -499,7 +506,7 @@ class TemporalWorkflowEngine:
 
     async def _execute_step_with_recovery(
         self, step: WorkflowStep, snapshot: ExecutionSnapshot
-    ) -> Dict[str, Any]:
+    ) -> StepResult:
         """Execute a workflow step with retry and recovery."""
         max_attempts = step.retry_policy["max_attempts"]
         backoff_factor = step.retry_policy["backoff_factor"]
@@ -556,7 +563,7 @@ class TemporalWorkflowEngine:
 
         return False
 
-    async def _validate_constitutional_compliance(self, step: WorkflowStep, result: Any) -> bool:
+    async def _validate_constitutional_compliance(self, step: WorkflowStep, result: StepResult) -> bool:
         """Validate that step execution maintains constitutional compliance."""
         # Check constitutional hash consistency
         if hasattr(result, "get") and result.get("constitutional_hash") != CONSTITUTIONAL_HASH:
@@ -568,7 +575,7 @@ class TemporalWorkflowEngine:
 
     async def _check_temporal_constraints(
         self, snapshot: ExecutionSnapshot, workflow: List[WorkflowStep]
-    ) -> List[Dict[str, Any]]:
+    ) -> List[JSONDict]:
         """Check for temporal constraint violations in the current execution."""
         violations = []
         current_time = time.time()
@@ -590,7 +597,7 @@ class TemporalWorkflowEngine:
 
         return violations
 
-    async def _attempt_adaptation(self, snapshot: ExecutionSnapshot) -> Optional[Dict[str, Any]]:
+    async def _attempt_adaptation(self, snapshot: ExecutionSnapshot) -> Optional[JSONDict]:
         """Attempt to adapt workflow based on current issues."""
         for strategy in self.adaptation_strategies:
             if strategy.should_trigger(snapshot):
@@ -621,7 +628,7 @@ class TemporalWorkflowEngine:
         return None
 
     async def _attempt_step_recovery(
-        self, step: WorkflowStep, snapshot: ExecutionSnapshot, step_result: Dict[str, Any]
+        self, step: WorkflowStep, snapshot: ExecutionSnapshot, step_result: StepResult
     ) -> bool:
         """Attempt to recover from a failed step."""
         if step.compensator:
@@ -663,8 +670,8 @@ class TemporalWorkflowEngine:
             self._stats["avg_execution_time"] = (old_avg * (n - 1) + execution_time) / n
 
     async def resume_execution(
-        self, execution_id: str, adaptations: Optional[Dict[str, Any]] = None
-    ) -> Tuple[bool, Dict[str, Any]]:
+        self, execution_id: str, adaptations: Optional[JSONDict] = None
+    ) -> Tuple[bool, StepResult]:
         """
         Resume a suspended or failed execution with optional adaptations.
 
@@ -694,7 +701,7 @@ class TemporalWorkflowEngine:
 
         return await self._execute_with_adaptation(execution_id, snapshot, workflow)
 
-    def get_execution_status(self, execution_id: str) -> Optional[Dict[str, Any]]:
+    def get_execution_status(self, execution_id: str) -> Optional[JSONDict]:
         """Get status of a workflow execution."""
         execution = self.active_executions.get(execution_id) or self.completed_executions.get(
             execution_id
@@ -717,7 +724,7 @@ class TemporalWorkflowEngine:
             "last_updated": execution.timestamp,
         }
 
-    def get_engine_stats(self) -> Dict[str, Any]:
+    def get_engine_stats(self) -> JSONDict:
         """Get temporal workflow engine statistics."""
         total_executions = self._stats["total_executions"]
         success_rate = 0.0
@@ -738,7 +745,7 @@ class TemporalWorkflowEngine:
             "constitutional_hash": CONSTITUTIONAL_HASH,
         }
 
-    async def analyze_antifragility(self) -> Dict[str, Any]:
+    async def analyze_antifragility(self) -> JSONDict:
         """Analyze how well the system improves under stress."""
         analysis = {
             "stress_resilience": {},
