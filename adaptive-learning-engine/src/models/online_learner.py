@@ -711,23 +711,179 @@ class OnlineLearner:
                     except Exception as e:
                         logger.debug(f"Could not update accuracy metrics: {e}")
 
-                # Apply time-weighted learning if weight provided
+                # TIME-WEIGHTED LEARNING FOR NON-STATIONARY ENVIRONMENTS
+                # =======================================================
+                # In governance systems, data is non-stationary (distribution shifts over time):
+                # - Policies evolve (new regulations, organizational changes)
+                # - User behavior adapts (learning patterns, adversarial probing)
+                # - Context shifts (seasonal patterns, staffing changes)
+                #
+                # Recent samples are more representative of current patterns than old samples.
+                # Time-weighted learning gives higher importance to recent data, enabling
+                # faster adaptation to distribution shift while retaining some historical knowledge.
+                #
+                # EXPONENTIAL TIME DECAY (time_decay_factor = 0.99)
+                # --------------------------------------------------
+                # Sample weights decay exponentially with time:
+                #   weight(t) = decay_factor^(current_time - sample_time)
+                #
+                # Example with decay_factor = 0.99:
+                # - Sample from 1 time unit ago:    weight = 0.99^1  ≈ 0.990 (99% importance)
+                # - Sample from 10 time units ago:  weight = 0.99^10 ≈ 0.904 (90% importance)
+                # - Sample from 100 time units ago: weight = 0.99^100 ≈ 0.366 (37% importance)
+                # - Sample from 500 time units ago: weight = 0.99^500 ≈ 0.007 (0.7% importance)
+                #
+                # Why decay_factor = 0.99?
+                # -------------------------
+                # This value provides a balance between adaptation and stability:
+                #
+                # 1. HALF-LIFE CALCULATION
+                #    - Half-life = ln(0.5) / ln(decay_factor) = 69 samples
+                #    - Samples older than 69 time units have <50% weight
+                #    - Samples older than 500 time units are effectively forgotten (<1% weight)
+                #
+                # 2. RESPONSIVENESS TO DRIFT
+                #    - Decay = 0.99: Moderate adaptation (half-life ~70 samples)
+                #      → Balanced for governance (responds to policy changes without overreacting)
+                #    - Decay = 0.95: Fast adaptation (half-life ~14 samples)
+                #      → Too sensitive for governance (overreacts to noise, unstable)
+                #    - Decay = 0.999: Slow adaptation (half-life ~693 samples)
+                #      → Too slow for governance (misses important policy shifts)
+                #
+                # 3. STABILITY VS. PLASTICITY TRADE-OFF
+                #    - High decay (→1.0): More stable (retains historical patterns longer)
+                #      - Advantage: Robust to noise and temporary anomalies
+                #      - Disadvantage: Slow to adapt to genuine distribution shifts
+                #    - Low decay (→0.0): More plastic (forgets history quickly)
+                #      - Advantage: Fast adaptation to new patterns
+                #      - Disadvantage: Unstable, sensitive to outliers
+                #    - 0.99 balances: Adapts within ~100 samples while filtering noise
+                #
+                # 4. GOVERNANCE-SPECIFIC RATIONALE
+                #    - Policy changes are gradual (weeks-months), not instant
+                #    - 0.99 decay tracks policy evolution without catastrophic forgetting
+                #    - Prevents adversarial actors from rapidly manipulating model with bursts
+                #    - Maintains audit trail (old patterns influence model for ~500 samples)
+                #
+                # Theoretical Foundation: Concept Drift Adaptation
+                # --------------------------------------------------
+                # Time-weighted learning is a common approach for concept drift (non-stationary
+                # distributions). Key theoretical results:
+                #
+                # - Gama et al. (2014): Exponential decay minimizes regret in shifting environments
+                # - Bifet & Gavaldà (2007): Adaptive windowing with decay provides logarithmic bounds
+                # - Klinkenberg (2004): Weighted instances improve accuracy under gradual drift
+                #
+                # Alternative: Fixed sliding window (e.g., last 1000 samples)
+                # - Advantages: Clear temporal boundary, easier to reason about
+                # - Disadvantages: Abrupt forgetting (sample 1001 → 0% weight instantly)
+                # - Exponential decay is smoother (gradual forgetting prevents instability)
+                #
+                # SAMPLE_WEIGHT APPROXIMATION
+                # ============================
+                # River's learn_one() API does NOT natively support sample weights (unlike
+                # scikit-learn's fit() which accepts sample_weight parameter). To implement
+                # time-weighted learning, we approximate sample weights using two strategies:
+                #
+                # Strategy 1: Multiple Learning for Weights > 1.0
+                # ------------------------------------------------
+                # For sample_weight = w > 1.0:
+                # - Learn from the same sample ⌊w⌋ times (rounded down)
+                # - Example: weight = 2.7 → learn 2 times
+                #
+                # Intuition: Learning twice from a sample is equivalent to encountering it twice
+                # in the stream, which increases its influence on model weights.
+                #
+                # Mathematical Equivalence (for SGD):
+                # - Single update with weight w:  θ_new = θ_old - η * w * ∇L(x, y)
+                # - k separate updates:           θ_new = θ_old - η * Σ[i=1 to k] ∇L(x, y)
+                # - For k = ⌊w⌋, this approximates w * ∇L(x, y)
+                #
+                # Limitations:
+                # - Integer approximation (weight 2.7 → 2 instead of exact 2.7)
+                # - Computationally expensive for large weights (weight 100 → 100 learn_one calls)
+                # - Not exact for non-linear updates (Perceptron, PA may behave differently)
+                #
+                # Strategy 2: Probabilistic Learning for Weights < 1.0
+                # -----------------------------------------------------
+                # For sample_weight = w < 1.0:
+                # - Learn with probability = w (Bernoulli trial)
+                # - Example: weight = 0.3 → 30% chance of learning, 70% chance of skipping
+                #
+                # Intuition: Old samples should occasionally be ignored to "forget" outdated patterns.
+                # Probabilistic learning achieves this in expectation.
+                #
+                # Mathematical Equivalence (in expectation):
+                # - Learning with probability p: E[update] = p * ∇L(x, y)
+                # - Equivalent to weight w = p in expectation
+                # - Law of Large Numbers: Over many samples, average effect = p * gradient
+                #
+                # Example with time_decay_factor = 0.99:
+                # - Sample from 100 time units ago: weight = 0.99^100 ≈ 0.366
+                # - 36.6% probability of learning from this sample
+                # - 63.4% probability of skipping (forgetting old pattern)
+                #
+                # Limitations:
+                # - Stochastic (randomness introduces variance in model updates)
+                # - Small weights (e.g., 0.01) rarely trigger learning (only 1% of the time)
+                # - Not deterministic (same data → different models due to random sampling)
+                #
+                # Why This Approximation Works in Practice
+                # ------------------------------------------
+                # For online learning with time decay:
+                # - Most samples have weight ≈ 1.0 (recent samples)
+                # - Very old samples (weight < 0.1) contribute minimally anyway
+                # - Randomness in probabilistic learning averages out over stream
+                # - Net effect: Recent samples dominate (high weight), old samples fade (low weight)
+                #
+                # Production Considerations
+                # --------------------------
+                # - For governance, determinism is preferred (same data → same model)
+                # - If reproducibility is critical, use fixed time windows instead of probabilistic decay
+                # - For drift adaptation, probabilistic decay is acceptable (streaming setting)
+                #
+                # References
+                # ----------
+                # - Gama, J., et al. (2014): "A Survey on Concept Drift Adaptation"
+                #   https://doi.org/10.1145/2523813
+                # - Bifet, A., & Gavaldà, R. (2007): "Learning from Time-Changing Data with
+                #   Adaptive Windowing" (ADWIN algorithm)
+                # - Klinkenberg, R. (2004): "Learning Drifting Concepts: Example Selection vs.
+                #   Example Weighting" (demonstrates weighted instances improve drift adaptation)
+
                 if sample_weight is not None and sample_weight != 1.0:
-                    # River doesn't directly support sample weights in learn_one
-                    # We approximate by learning multiple times for weight > 1
-                    # or using a probability for weight < 1
                     if sample_weight > 1.0:
-                        # Learn multiple times (rounded)
+                        # STRATEGY 1: Multiple learning iterations for weights > 1.0
+                        # -----------------------------------------------------------
+                        # Approximate sample_weight by learning multiple times from the sample.
+                        # Round down to nearest integer: weight 2.7 → learn 2 times.
+                        #
+                        # This increases the sample's influence on model weights, simulating
+                        # encountering it multiple times in the stream (importance sampling).
                         for _ in range(int(sample_weight)):
                             self._model.learn_one(x, y)
                     elif sample_weight > 0:
-                        # Learn with probability = weight
+                        # STRATEGY 2: Probabilistic learning for weights < 1.0
+                        # -----------------------------------------------------
+                        # Learn from sample with probability = sample_weight (Bernoulli trial).
+                        # Example: weight = 0.3 → 30% chance of learning, 70% chance of skipping.
+                        #
+                        # This achieves weight = w in expectation: E[update] = w * gradient.
+                        # Over many samples, the law of large numbers ensures correct weighting.
+                        #
+                        # Effect: Old samples (low weight due to decay) are probabilistically
+                        # forgotten, enabling adaptation to distribution shift.
                         import random
 
                         if random.random() < sample_weight:
                             self._model.learn_one(x, y)
                 else:
-                    # Standard learning
+                    # STANDARD LEARNING (sample_weight = 1.0 or None)
+                    # ------------------------------------------------
+                    # Most samples use standard learning (weight = 1.0), which means:
+                    # - Recent samples (no decay applied yet)
+                    # - Equal importance (no time-weighting configured)
+                    # - Standard online learning (one update per sample)
                     self._model.learn_one(x, y)
 
                 # Update state
