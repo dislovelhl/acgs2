@@ -43,6 +43,9 @@ cryptography>=46.0.3
 # Authentication
 PyJWT>=2.10.0
 
+# JWT encoding/decoding for shared auth module
+python-jose[cryptography]>=3.3.0
+
 # =============================================================================
 # SIEM Integrations
 # =============================================================================
