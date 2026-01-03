@@ -6,7 +6,7 @@ This module provides authentication handlers for SSO integration,
 supporting both OpenID Connect (OIDC) and SAML 2.0 protocols.
 
 Usage:
-    from shared.auth import OIDCHandler, SAMLHandler, JITProvisioner
+    from shared.auth import OIDCHandler, SAMLHandler, JITProvisioner, RoleMapper
     from shared.auth.oidc_handler import OIDCConfig
     from shared.auth.saml_config import SAMLSPConfig, SAMLIdPConfig
 
@@ -58,16 +58,29 @@ Usage:
 
     if result.created:
         print(f"New user created: {result.user['email']}")
+
+    # --- Role Mapping ---
+    # Map IdP groups to ACGS-2 roles
+    role_mapper = RoleMapper()
+
+    roles = role_mapper.map_groups(
+        groups=["Engineering", "Administrators"],
+        provider_name="okta"
+    )
 """
 
 from .oidc_handler import OIDCHandler
 from .provisioning import JITProvisioner, ProvisioningResult, get_provisioner
+from .role_mapper import MappingResult, RoleMapper, get_role_mapper
 from .saml_handler import SAMLHandler
 
 __all__ = [
     "JITProvisioner",
+    "MappingResult",
     "OIDCHandler",
     "ProvisioningResult",
+    "RoleMapper",
     "SAMLHandler",
     "get_provisioner",
+    "get_role_mapper",
 ]
