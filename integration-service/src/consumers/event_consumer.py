@@ -15,14 +15,12 @@ from typing import Any, Callable, Coroutine, Dict, List, Optional, Set
 from uuid import uuid4
 
 from aiokafka import AIOKafkaConsumer
-from aiokafka.errors import (
-    KafkaConnectionError,
-    KafkaError,
-    OffsetOutOfRangeError,
-)
+from aiokafka.errors import KafkaConnectionError, KafkaError, OffsetOutOfRangeError
+from aiokafka.structs import ConsumerRecord
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from ..integrations.base import EventSeverity, IntegrationEvent
+from ..types import ConfigDict as ConfigDictType, EventData, JSONDict
 
 logger = logging.getLogger(__name__)
 
@@ -103,7 +101,7 @@ class GovernanceEvent(BaseModel):
     # Event details
     title: str = Field(..., description="Event title/summary")
     description: Optional[str] = Field(None, description="Detailed description")
-    details: Dict[str, Any] = Field(
+    details: EventData = Field(
         default_factory=dict, description="Additional event details"
     )
 
@@ -266,7 +264,7 @@ class EventConsumerMetrics(BaseModel):
         if lag > self.max_lag_observed:
             self.max_lag_observed = lag
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> JSONDict:
         """Convert metrics to dictionary."""
         return self.model_dump()
 
@@ -747,12 +745,12 @@ class EventConsumer:
 
         logger.info("Consumption loop terminated")
 
-    async def _poll_messages(self) -> List[Any]:
+    async def _poll_messages(self) -> List[ConsumerRecord]:
         """
         Poll Kafka for messages.
 
         Returns:
-            List of message records
+            List of Kafka consumer records
         """
         if not self._consumer:
             return []
@@ -768,7 +766,7 @@ class EventConsumer:
             )
 
             messages = []
-            for tp, records in batch.items():
+            for _tp, records in batch.items():
                 messages.extend(records)
 
             return messages
@@ -776,12 +774,12 @@ class EventConsumer:
         except asyncio.TimeoutError:
             return []
 
-    async def _process_message(self, message: Any) -> None:
+    async def _process_message(self, message: ConsumerRecord) -> None:
         """
         Process a single Kafka message.
 
         Args:
-            message: Kafka message record
+            message: Kafka consumer record
         """
         start_time = datetime.now(timezone.utc)
 
@@ -818,12 +816,12 @@ class EventConsumer:
             self._metrics.record_event_failed()
             logger.exception(f"Error processing message: {e}")
 
-    def _parse_message(self, message: Any) -> Optional[GovernanceEvent]:
+    def _parse_message(self, message: ConsumerRecord) -> Optional[GovernanceEvent]:
         """
         Parse a Kafka message into a GovernanceEvent.
 
         Args:
-            message: Kafka message record
+            message: Kafka consumer record
 
         Returns:
             Parsed GovernanceEvent or None if parsing fails
@@ -962,7 +960,7 @@ class EventConsumer:
 
         return False
 
-    def _build_consumer_config(self) -> Dict[str, Any]:
+    def _build_consumer_config(self) -> ConfigDictType:
         """
         Build Kafka consumer configuration dictionary.
 
@@ -1039,7 +1037,7 @@ class EventConsumer:
 
         return lag
 
-    def get_health_status(self) -> Dict[str, Any]:
+    def get_health_status(self) -> JSONDict:
         """
         Get consumer health status.
 
