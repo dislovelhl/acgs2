@@ -22,9 +22,10 @@
 7. [Working with the Agent Bus](#working-with-the-agent-bus)
 8. [Constitutional Governance Basics](#constitutional-governance-basics)
 9. [Interactive Experimentation](#interactive-experimentation)
-10. [Next Steps](#next-steps)
-11. [Troubleshooting](#troubleshooting)
-12. [Feedback](#feedback)
+10. [Video Tutorials](#video-tutorials)
+11. [Next Steps](#next-steps)
+12. [Troubleshooting](#troubleshooting)
+13. [Feedback](#feedback)
 
 ---
 
@@ -1165,6 +1166,45 @@ if __name__ == "__main__":
 
 ---
 
+## Video Tutorials
+
+Prefer watching to reading? We've created video walkthroughs to guide you through ACGS-2.
+
+### Available Videos
+
+| Video | Duration | Description |
+|-------|----------|-------------|
+| **Quickstart Walkthrough** | 8 min | Complete walkthrough from clone to first policy evaluation |
+| **Example Project Deep Dive** | 12 min | Building and understanding governance policies |
+| **Jupyter Notebook Tutorial** | 10 min | Interactive policy experimentation with visualizations |
+
+### Quickstart Walkthrough Video
+
+<!-- VIDEO_PLACEHOLDER: Replace with actual video embed once recorded -->
+<!-- Expected: YouTube embed or video player link -->
+
+> **Video Coming Soon**: The quickstart walkthrough video is being produced.
+>
+> In the meantime, follow the written guide above, or view the [video script](./video-scripts/01-quickstart-walkthrough.md) to see what will be covered.
+
+**What You'll Learn:**
+- Setting up your development environment (2 min)
+- Starting ACGS-2 services with Docker Compose (2 min)
+- Evaluating your first governance policy (2 min)
+- Testing policy violations and debugging (2 min)
+
+### Video Production Status
+
+| Video | Script | Recording | Editing | Published |
+|-------|--------|-----------|---------|-----------|
+| Quickstart Walkthrough | ✅ Complete | 🔄 Pending | ⏳ Waiting | ⏳ Waiting |
+| Example Project Deep Dive | 🔄 In Progress | ⏳ Waiting | ⏳ Waiting | ⏳ Waiting |
+| Jupyter Notebook Tutorial | 🔄 In Progress | ⏳ Waiting | ⏳ Waiting | ⏳ Waiting |
+
+> **Contributors**: Want to help record these videos? See the [video scripts directory](./video-scripts/) for scripts and production guidelines.
+
+---
+
 ## Next Steps
 
 Congratulations! You've completed the ACGS-2 quickstart. Here's where to go next:
@@ -1181,9 +1221,9 @@ Congratulations! You've completed the ACGS-2 quickstart. Here's where to go next
    - [Governance Visualization](../../notebooks/02-governance-visualization.ipynb)
 
 3. **Watch Video Tutorials**
-   - [Quickstart Walkthrough](#) (Coming Soon)
-   - [Example Project Deep Dive](#) (Coming Soon)
-   - [Jupyter Notebook Tutorial](#) (Coming Soon)
+   - [Quickstart Walkthrough](#video-tutorials) - 8-minute walkthrough of this guide
+   - [Example Project Deep Dive](#video-tutorials) - Building real governance policies
+   - [Jupyter Notebook Tutorial](#video-tutorials) - Interactive policy experimentation
 
 ### Learning Paths
 
