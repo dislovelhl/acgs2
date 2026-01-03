@@ -1,7 +1,7 @@
 # ACGS-2 Developer Onboarding Docker Compose
 # Streamlined setup for developers to get started with policy evaluation in <30 minutes
 # Constitutional Hash: cdd01ef066bc6cf2
-# Version: 1.1.0
+# Version: 1.2.0
 #
 # Usage: docker compose up -d
 #
@@ -12,7 +12,20 @@
 #   - Kafka: Event-driven messaging (port 29092)
 #   - Zookeeper: Kafka coordination (port 2181)
 #
-# Documentation: docs/quickstart/README.md
+# Cross-Platform Compatibility:
+#   - Linux: Tested on Ubuntu 20.04+, Debian 11+, Fedora 38+
+#   - macOS: Tested on macOS 12+ (Intel and Apple Silicon)
+#   - Windows: Tested with Docker Desktop + WSL 2 (recommended)
+#
+# Volume Mount Notes:
+#   - Uses relative paths (./) for cross-platform compatibility
+#   - Avoid Windows absolute paths (C:\path) - use WSL paths (/mnt/c/...)
+#   - Read-only mounts (:ro) work on all platforms
+#
+# Documentation:
+#   - Quickstart: docs/quickstart/README.md
+#   - Cross-Platform Testing: docs/cross-platform-testing.md
+#   - Troubleshooting: docs/quickstart/troubleshooting.md
 
 services:
   # Open Policy Agent for policy decisions

@@ -2,8 +2,8 @@
 
 <!-- Constitutional Hash: cdd01ef066bc6cf2 -->
 
-> **Version**: 1.0.0
-> **Last Updated**: 2025-01-02
+> **Version**: 1.1.0
+> **Last Updated**: 2025-01-03
 > **Purpose**: Comprehensive troubleshooting for common ACGS-2 issues
 
 ## Table of Contents
@@ -683,6 +683,10 @@ EOF
 ---
 
 ## Platform-Specific Issues
+
+> **See Also:** For comprehensive cross-platform testing and verification, refer to
+> [Cross-Platform Testing Guide](../cross-platform-testing.md) and run
+> `./scripts/cross-platform-test.sh` to validate your environment.
 
 ### Windows Issues
 
