@@ -18,6 +18,13 @@ from .pdf_generator import (
     generate_pdf,
     generate_pdf_to_buffer,
 )
+from .xlsx_generator import (
+    ComplianceXLSXGenerator,
+    ComplianceXLSXStyles,
+    XLSXTableBuilder,
+    generate_xlsx,
+    generate_xlsx_to_buffer,
+)
 
 __all__ = [
     # PDF Generator
@@ -32,4 +39,10 @@ __all__ = [
     "DOCXTableBuilder",
     "generate_docx",
     "generate_docx_to_buffer",
+    # XLSX Generator
+    "ComplianceXLSXGenerator",
+    "ComplianceXLSXStyles",
+    "XLSXTableBuilder",
+    "generate_xlsx",
+    "generate_xlsx_to_buffer",
 ]
