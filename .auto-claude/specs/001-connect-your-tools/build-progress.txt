@@ -18,10 +18,10 @@ Implementation of Linear integration into ACGS2 integration-service to enable bi
 
 ## Phase Status
 
-### Phase 1: Foundation & Setup (2/8 subtasks complete)
+### Phase 1: Foundation & Setup (3/8 subtasks complete)
 - [✅] 1.1 - Verify package availability on PyPI
 - [✅] 1.2 - Verify Linear GraphQL API documentation
-- [ ] 1.3 - Verify GitHub, GitLab, Slack API documentation
+- [✅] 1.3 - Verify GitHub, GitLab, Slack API documentation
 - [ ] 1.4 - Add Linear dependencies to requirements.txt
 - [ ] 1.5 - Update .env.example with Linear variables
 - [ ] 1.6 - Create Linear configuration class
@@ -87,14 +87,22 @@ All package names, versions, and API patterns in the spec are based on research 
    - Report: linear-api-verification.md
    - ⚠️ Manual verification required before implementation
 
+✅ **Task 1.3 Complete** (2026-01-03): GitHub, GitLab, Slack API verification documented
+   - GitHub: REST API + GraphQL, Bearer token auth, 5000 req/hr rate limit
+   - GitLab: REST API v4, PRIVATE-TOKEN auth, 300 req/min rate limit
+   - Slack: Web API, Bot token (xoxb-*) auth, tiered rate limits
+   - Webhook signatures: GitHub (HMAC-SHA256), GitLab (simple token), Slack (HMAC-SHA256)
+   - Library patterns: PyGithub, python-gitlab, slack-sdk (AsyncWebClient)
+   - Report: github-gitlab-slack-api-verification.md
+   - ⚠️ Manual verification required before implementation
+
 ## Next Steps
 
-1. **NEXT: TASK 1.3**: Verify GitHub, GitLab, and Slack API documentation
-   - Confirm GitHub REST/GraphQL API patterns
-   - Verify GitLab API v4 endpoints
-   - Check Slack Block Kit and Webhooks API
+1. **NEXT: TASK 1.4**: Add Linear dependencies to requirements.txt
+   - Add: gql[all]>=3.5.0, PyGithub>=2.1.0, python-gitlab>=4.4.0, slack-sdk>=3.33.0
+   - Follow existing requirements.txt format
 
-2. After all API verifications, proceed to task 1.4 (Add dependencies)
+2. After dependencies added, proceed to task 1.5 (Update .env.example)
 
 3. Follow the implementation plan sequentially, respecting task dependencies
 
@@ -122,5 +130,5 @@ All package names, versions, and API patterns in the spec are based on research 
 
 ---
 
-**Last Updated:** 2026-01-03T21:45:00.000Z
-**Plan Status:** In Progress - Phase 1 (2/8 tasks complete)
+**Last Updated:** 2026-01-03T22:00:00.000Z
+**Plan Status:** In Progress - Phase 1 (3/8 tasks complete)
