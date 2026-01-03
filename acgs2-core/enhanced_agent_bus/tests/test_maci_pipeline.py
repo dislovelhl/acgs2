@@ -1,24 +1,18 @@
 """Tests for MACI Verification Pipeline."""
 
-import asyncio
-import logging
-from datetime import datetime
-
 import pytest
-
-# Configure logging for tests
-logger = logging.getLogger(__name__)
-
+import asyncio
+from datetime import datetime
 from enhanced_agent_bus.verification.maci_pipeline import (
-    CONSTITUTIONAL_HASH,
-    AgentRole,
-    ConstitutionalPrinciple,
-    ExecutiveAgent,
-    GovernanceDecision,
-    JudicialAgent,
-    LegislativeAgent,
     MACIVerificationPipeline,
+    ExecutiveAgent,
+    LegislativeAgent,
+    JudicialAgent,
+    GovernanceDecision,
     VerificationResult,
+    ConstitutionalPrinciple,
+    AgentRole,
+    CONSTITUTIONAL_HASH
 )
 
 
@@ -33,20 +27,20 @@ class TestMACIAgents:
                 id="principle-1",
                 text="All governance decisions must prioritize user safety",
                 category="safety",
-                priority=10,
+                priority=10
             ),
             ConstitutionalPrinciple(
                 id="principle-2",
                 text="Decisions affecting multiple stakeholders require consensus",
                 category="governance",
-                priority=8,
+                priority=8
             ),
             ConstitutionalPrinciple(
                 id="principle-3",
                 text="Emergency actions may bypass standard procedures",
                 category="emergency",
-                priority=9,
-            ),
+                priority=9
+            )
         ]
 
     @pytest.fixture
@@ -59,8 +53,8 @@ class TestMACIAgents:
                 "impact_assessment": {"severity": "high"},
                 "stakeholders": ["users", "admins", "developers"],
                 "emergency": False,
-                "resources_required": ["compute", "storage", "network"],
-            },
+                "resources_required": ["compute", "storage", "network"]
+            }
         )
 
     def test_executive_agent_initialization(self):
@@ -124,7 +118,8 @@ class TestMACIAgents:
         legislative_response = await LegislativeAgent().respond_to_decision(sample_decision)
 
         response = await agent.respond_to_decision(
-            sample_decision, context_responses=[executive_response, legislative_response]
+            sample_decision,
+            context_responses=[executive_response, legislative_response]
         )
 
         assert response.agent_role == AgentRole.JUDICIAL
@@ -150,20 +145,20 @@ class TestMACIVerificationPipeline:
                 id="safety-first",
                 text="User safety is the highest priority",
                 category="safety",
-                priority=10,
+                priority=10
             ),
             ConstitutionalPrinciple(
                 id="consensus-required",
                 text="Major decisions require stakeholder consensus",
                 category="governance",
-                priority=8,
+                priority=8
             ),
             ConstitutionalPrinciple(
                 id="emergency-override",
                 text="Emergency conditions allow procedure bypass",
                 category="emergency",
-                priority=9,
-            ),
+                priority=9
+            )
         ]
 
     def test_pipeline_initialization(self, pipeline):
@@ -184,11 +179,13 @@ class TestMACIVerificationPipeline:
         context = {
             "impact_assessment": {"severity": "medium"},
             "stakeholders": ["users", "security_team"],
-            "emergency": False,
+            "emergency": False
         }
 
         decision, verification = await pipeline.propose_and_verify_decision(
-            action=action, context=context, proposed_by="test-agent"
+            action=action,
+            context=context,
+            proposed_by="test-agent"
         )
 
         # Check decision
@@ -213,11 +210,12 @@ class TestMACIVerificationPipeline:
         context = {
             "emergency": True,
             "emergency_justification": "Active security breach detected",
-            "impact_assessment": {"severity": "critical"},
+            "impact_assessment": {"severity": "critical"}
         }
 
         decision, verification = await pipeline.propose_and_verify_decision(
-            action=action, context=context
+            action=action,
+            context=context
         )
 
         assert decision.action == action
@@ -229,19 +227,14 @@ class TestMACIVerificationPipeline:
         action = "System-wide policy change"
         context = {
             "impact_assessment": {"severity": "critical"},
-            "stakeholders": [
-                "users",
-                "admins",
-                "developers",
-                "auditors",
-                "executives",
-            ],  # 5 stakeholders
+            "stakeholders": ["users", "admins", "developers", "auditors", "executives"],  # 5 stakeholders
             "emergency": False,
-            "resources_required": ["all"],
+            "resources_required": ["all"]
         }
 
         decision, verification = await pipeline.propose_and_verify_decision(
-            action=action, context=context
+            action=action,
+            context=context
         )
 
         # High-impact decisions should be carefully analyzed
@@ -250,8 +243,8 @@ class TestMACIVerificationPipeline:
     def test_pipeline_stats(self, pipeline):
         """Test pipeline statistics generation."""
         stats = pipeline.get_pipeline_stats()
-        assert "total_decisions" in stats
-        assert stats["total_decisions"] == 0  # No decisions processed yet
+        assert 'total_decisions' in stats
+        assert stats['total_decisions'] == 0  # No decisions processed yet
 
     @pytest.mark.asyncio
     async def test_pipeline_stats_after_decisions(self, pipeline):
@@ -260,18 +253,18 @@ class TestMACIVerificationPipeline:
         decisions = [
             ("Safe action", {"impact_assessment": {"severity": "low"}}),
             ("Risky action", {"impact_assessment": {"severity": "critical"}}),
-            ("Emergency action", {"emergency": True, "emergency_justification": "Valid reason"}),
+            ("Emergency action", {"emergency": True, "emergency_justification": "Valid reason"})
         ]
 
         for action, context in decisions:
             await pipeline.propose_and_verify_decision(action, context)
 
         stats = pipeline.get_pipeline_stats()
-        assert stats["total_decisions"] == 3
-        assert "compliance_rate" in stats
-        assert "average_confidence" in stats
-        assert 0.0 <= stats["compliance_rate"] <= 1.0
-        assert 0.0 <= stats["average_confidence"] <= 1.0
+        assert stats['total_decisions'] == 3
+        assert 'compliance_rate' in stats
+        assert 'average_confidence' in stats
+        assert 0.0 <= stats['compliance_rate'] <= 1.0
+        assert 0.0 <= stats['average_confidence'] <= 1.0
 
 
 class TestConstitutionalPrinciples:
@@ -280,7 +273,10 @@ class TestConstitutionalPrinciples:
     def test_principle_creation(self):
         """Test constitutional principle creation."""
         principle = ConstitutionalPrinciple(
-            id="test-principle", text="This is a test principle", category="test", priority=5
+            id="test-principle",
+            text="This is a test principle",
+            category="test",
+            priority=5
         )
 
         assert principle.id == "test-principle"
@@ -291,14 +287,20 @@ class TestConstitutionalPrinciples:
 
     def test_principle_hash_consistency(self):
         """Test that principle hash is consistent."""
-        principle1 = ConstitutionalPrinciple(id="test", text="content", category="cat", priority=1)
-        principle2 = ConstitutionalPrinciple(id="test", text="content", category="cat", priority=1)
+        principle1 = ConstitutionalPrinciple(
+            id="test", text="content", category="cat", priority=1
+        )
+        principle2 = ConstitutionalPrinciple(
+            id="test", text="content", category="cat", priority=1
+        )
 
         assert principle1.hash == principle2.hash
 
     def test_principle_hash_changes(self):
         """Test that hash changes when content changes."""
-        principle1 = ConstitutionalPrinciple(id="test", text="content", category="cat", priority=1)
+        principle1 = ConstitutionalPrinciple(
+            id="test", text="content", category="cat", priority=1
+        )
         principle2 = ConstitutionalPrinciple(
             id="test", text="different content", category="cat", priority=1
         )
@@ -315,7 +317,7 @@ class TestGovernanceDecision:
             id="test-decision",
             action="Test action",
             context={"key": "value"},
-            proposed_by="test-agent",
+            proposed_by="test-agent"
         )
 
         assert decision.id == "test-decision"
@@ -326,15 +328,23 @@ class TestGovernanceDecision:
 
     def test_decision_hash(self):
         """Test decision hash generation."""
-        decision = GovernanceDecision(id="test", action="action", context={"test": True})
+        decision = GovernanceDecision(
+            id="test",
+            action="action",
+            context={"test": True}
+        )
 
         assert decision.decision_hash is not None
         assert len(decision.decision_hash) == 16
 
     def test_decision_hash_consistency(self):
         """Test that identical decisions have same hash."""
-        decision1 = GovernanceDecision(id="test", action="action", context={"same": True})
-        decision2 = GovernanceDecision(id="test", action="action", context={"same": True})
+        decision1 = GovernanceDecision(
+            id="test", action="action", context={"same": True}
+        )
+        decision2 = GovernanceDecision(
+            id="test", action="action", context={"same": True}
+        )
 
         # Note: timestamps might differ, so hashes might be different
         # This is expected behavior for decision integrity
@@ -353,7 +363,7 @@ class TestIntegration:
             ),
             ConstitutionalPrinciple(
                 id="consensus", text="Consensus required", category="governance", priority=8
-            ),
+            )
         ]
 
         pipeline = MACIVerificationPipeline()
@@ -365,8 +375,8 @@ class TestIntegration:
             context={
                 "impact_assessment": {"severity": "medium"},
                 "stakeholders": ["users", "developers"],
-                "emergency": False,
-            },
+                "emergency": False
+            }
         )
 
         # Verify all components
