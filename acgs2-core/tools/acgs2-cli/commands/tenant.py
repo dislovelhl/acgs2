@@ -26,17 +26,33 @@ def tenant(ctx):
 @click.option("--organization", help="Organization name")
 @click.option("--org-size", help="Organization size (1-10, 11-50, 51-200, 201-1000, 1000+)")
 @click.option("--industry", help="Industry sector")
-@click.option("--tier", type=click.Choice(["free", "professional", "enterprise", "enterprise_plus"]),
-              default="free", help="Service tier")
+@click.option(
+    "--tier",
+    type=click.Choice(["free", "professional", "enterprise", "enterprise_plus"]),
+    default="free",
+    help="Service tier",
+)
 @click.option("--data-residency", help="Data residency region")
 @click.option("--compliance", help="Comma-separated compliance requirements (SOC2,GDPR,HIPAA)")
 @click.option("--created-by", required=True, help="User ID creating the tenant")
 @click.option("--owned-by", help="Organization/user that owns the tenant")
 @click.pass_context
-def create_tenant(ctx, name: str, display_name: str, contact_email: str, contact_name: str | None,
-                 contact_phone: str | None, organization: str | None, org_size: str | None,
-                 industry: str | None, tier: str, data_residency: str | None,
-                 compliance: str | None, created_by: str, owned_by: str | None):
+def create_tenant(
+    ctx,
+    name: str,
+    display_name: str,
+    contact_email: str,
+    contact_name: str | None,
+    contact_phone: str | None,
+    organization: str | None,
+    org_size: str | None,
+    industry: str | None,
+    tier: str,
+    data_residency: str | None,
+    compliance: str | None,
+    created_by: str,
+    owned_by: str | None,
+):
     """Create a new tenant"""
 
     async def create():
@@ -65,7 +81,9 @@ def create_tenant(ctx, name: str, display_name: str, contact_email: str, contact
                 if data_residency:
                     tenant_data["data_residency"] = data_residency
                 if compliance:
-                    tenant_data["compliance_requirements"] = [req.strip() for req in compliance.split(",")]
+                    tenant_data["compliance_requirements"] = [
+                        req.strip() for req in compliance.split(",")
+                    ]
                 if owned_by:
                     tenant_data["owned_by"] = owned_by
 
@@ -120,11 +138,13 @@ def list_tenants(ctx, status: str | None, tier: str | None, limit: int):
                         "active": "green",
                         "suspended": "yellow",
                         "pending": "blue",
-                        "deactivated": "red"
+                        "deactivated": "red",
                     }.get(tenant["status"], "white")
 
                     click.secho(f"• {tenant['id']}", fg=status_color, nl=False)
-                    click.echo(f" | {tenant['name']} | {tenant['displayName']} | {tenant['tier']} | {tenant['status']}")
+                    click.echo(
+                        f" | {tenant['name']} | {tenant['displayName']} | {tenant['tier']} | {tenant['status']}"
+                    )
 
         except Exception as e:
             click.secho(f"❌ Failed to list tenants: {e}", fg="red")
@@ -151,7 +171,9 @@ def show_tenant(ctx, tenant_id: str):
                 click.echo(f"Name: {tenant['name']}")
                 click.echo(f"Status: {tenant['status']}")
                 click.echo(f"Tier: {tenant['tier']}")
-                click.echo(f"Contact: {tenant.get('contactName', 'N/A')} <{tenant['contactEmail']}>")
+                click.echo(
+                    f"Contact: {tenant.get('contactName', 'N/A')} <{tenant['contactEmail']}>"
+                )
 
                 if tenant.get("organizationName"):
                     click.echo(f"Organization: {tenant['organizationName']}")
@@ -167,8 +189,12 @@ def show_tenant(ctx, tenant_id: str):
                 click.echo(f"  Users: {tenant['currentUsers']}/{tenant['maxUsers']}")
                 click.echo(f"  Policies: {tenant['currentPolicies']}/{tenant['maxPolicies']}")
                 click.echo(f"  Models: {tenant['currentModels']}/{tenant['maxModels']}")
-                click.echo(f"  Approvals/Month: {tenant['approvalsThisMonth']}/{tenant['maxApprovalsPerMonth']}")
-                click.echo(f"  Storage: {tenant['storageUsedGb']:.2f}/{tenant['storageLimitGb']} GB")
+                click.echo(
+                    f"  Approvals/Month: {tenant['approvalsThisMonth']}/{tenant['maxApprovalsPerMonth']}"
+                )
+                click.echo(
+                    f"  Storage: {tenant['storageUsedGb']:.2f}/{tenant['storageLimitGb']} GB"
+                )
 
         except Exception as e:
             click.secho(f"❌ Failed to get tenant: {e}", fg="red")
@@ -189,8 +215,7 @@ def activate_tenant(ctx, tenant_id: str, activated_by: str):
             sdk_config = ctx.obj["sdk_config"]
             async with create_client(sdk_config) as client:
                 response = await client.post(
-                    f"/api/v1/tenants/{tenant_id}/activate",
-                    params={"activatedBy": activated_by}
+                    f"/api/v1/tenants/{tenant_id}/activate", params={"activatedBy": activated_by}
                 )
                 tenant = response.data
 
@@ -220,7 +245,7 @@ def suspend_tenant(ctx, tenant_id: str, reason: str, suspended_by: str):
             async with create_client(sdk_config) as client:
                 response = await client.post(
                     f"/api/v1/tenants/{tenant_id}/suspend",
-                    params={"reason": reason, "suspendedBy": suspended_by}
+                    params={"reason": reason, "suspendedBy": suspended_by},
                 )
                 tenant = response.data
 
@@ -243,17 +268,15 @@ def suspend_tenant(ctx, tenant_id: str, reason: str, suspended_by: str):
 def delete_tenant(ctx, tenant_id: str, deleted_by: str, force: bool):
     """Delete/deactivate a tenant"""
 
-    if not force:
-        if not click.confirm(f"Are you sure you want to delete tenant {tenant_id}?"):
-            return
+    if not force and not click.confirm(f"Are you sure you want to delete tenant {tenant_id}?"):
+        return
 
     async def delete():
         try:
             sdk_config = ctx.obj["sdk_config"]
             async with create_client(sdk_config) as client:
                 await client.delete(
-                    f"/api/v1/tenants/{tenant_id}",
-                    params={"deletedBy": deleted_by}
+                    f"/api/v1/tenants/{tenant_id}", params={"deletedBy": deleted_by}
                 )
 
                 click.secho("🗑️  Tenant deleted successfully!", fg="red")
@@ -319,7 +342,7 @@ def check_quota(ctx, tenant_id: str, resource: str, amount: int):
             async with create_client(sdk_config) as client:
                 response = await client.get(
                     f"/api/v1/tenants/{tenant_id}/quotas/check",
-                    params={"resource_type": resource, "amount": amount}
+                    params={"resource_type": resource, "amount": amount},
                 )
                 quota = response.data
 
@@ -346,23 +369,22 @@ def check_quota(ctx, tenant_id: str, resource: str, amount: int):
 @click.option("--resource-id", help="Specific resource ID")
 @click.option("--permission", required=True, help="Required permission")
 @click.pass_context
-def check_access(ctx, tenant_id: str, user: str, resource_type: str,
-                resource_id: str | None, permission: str):
+def check_access(
+    ctx, tenant_id: str, user: str, resource_type: str, resource_id: str | None, permission: str
+):
     """Check if user has access to specific resource"""
 
     async def check():
         try:
             sdk_config = ctx.obj["sdk_config"]
             async with create_client(sdk_config) as client:
-                params = {
-                    "userId": user,
-                    "resource_type": resource_type,
-                    "permission": permission
-                }
+                params = {"userId": user, "resource_type": resource_type, "permission": permission}
                 if resource_id:
                     params["resource_id"] = resource_id
 
-                response = await client.get(f"/api/v1/tenants/{tenant_id}/access/check", params=params)
+                response = await client.get(
+                    f"/api/v1/tenants/{tenant_id}/access/check", params=params
+                )
                 access = response.data
 
                 status_icon = "✅" if access["allowed"] else "❌"
@@ -395,8 +417,16 @@ def check_access(ctx, tenant_id: str, user: str, resource_type: str,
 @click.option("--permissions", required=True, help="Comma-separated permissions")
 @click.option("--granted-by", required=True, help="User ID granting access")
 @click.pass_context
-def grant_access(ctx, tenant_id: str, user: str, resource_type: str,
-                resource_id: str | None, role: str, permissions: str, granted_by: str):
+def grant_access(
+    ctx,
+    tenant_id: str,
+    user: str,
+    resource_type: str,
+    resource_id: str | None,
+    role: str,
+    permissions: str,
+    granted_by: str,
+):
     """Grant access to a resource"""
 
     async def grant():
@@ -408,12 +438,14 @@ def grant_access(ctx, tenant_id: str, user: str, resource_type: str,
                     "resource_type": resource_type,
                     "role": role,
                     "permissions": [p.strip() for p in permissions.split(",")],
-                    "grantedBy": granted_by
+                    "grantedBy": granted_by,
                 }
                 if resource_id:
                     params["resource_id"] = resource_id
 
-                response = await client.post(f"/api/v1/tenants/{tenant_id}/access/grant", params=params)
+                response = await client.post(
+                    f"/api/v1/tenants/{tenant_id}/access/grant", params=params
+                )
                 policy = response.data
 
                 click.secho("🔐 Access granted successfully!", fg="green")
