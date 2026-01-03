@@ -30,7 +30,7 @@ const ResponsiveGridLayout = WidthProvider(Responsive);
 const LAYOUT_STORAGE_KEY = "acgs-analytics-dashboard-layout";
 
 /** Widget identifiers */
-type WidgetId = "insights" | "anomalies" | "predictions";
+type WidgetId = "insights" | "anomalies" | "predictions" | "compliance";
 
 /** Widget configuration */
 interface WidgetConfig {
