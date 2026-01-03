@@ -12,6 +12,8 @@
 
 import { describe, it, expect } from "vitest";
 import { render, screen, waitFor, fireEvent } from "@testing-library/react";
+import { http, HttpResponse } from "msw";
+import { server } from "../../../test/mocks/server";
 import { ComplianceWidget } from "../ComplianceWidget";
 
 const API_BASE_URL = "http://localhost:8080";
@@ -171,6 +173,40 @@ describe("ComplianceWidget", () => {
       expect(
         screen.queryByText("Admin API endpoint accessible without MFA")
       ).not.toBeInTheDocument();
+    });
+  });
+
+  describe("Empty State", () => {
+    it("shows 100% compliant message when no violations detected", async () => {
+      // Override handler to return 100% compliance with no violations
+      server.use(
+        http.get(`${API_BASE_URL}/compliance`, () => {
+          return HttpResponse.json({
+            analysis_timestamp: new Date().toISOString(),
+            overall_score: 100,
+            trend: "stable" as const,
+            violations_by_severity: {
+              critical: 0,
+              high: 0,
+              medium: 0,
+              low: 0,
+            },
+            total_violations: 0,
+            recent_violations: [],
+            frameworks_analyzed: ["SOC2", "HIPAA", "PCI-DSS", "GDPR"],
+          });
+        })
+      );
+
+      render(<ComplianceWidget />);
+
+      await waitFor(() => {
+        expect(screen.getByText("100% Compliant")).toBeInTheDocument();
+      });
+
+      expect(
+        screen.getByText("No policy violations detected")
+      ).toBeInTheDocument();
     });
   });
 });
