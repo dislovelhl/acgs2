@@ -1,34 +1,443 @@
-postgresql:
-  primary:
-    configuration: |
-      wal_level = replica
-      max_wal_senders = 10
-      max_replication_slots = 5
-      wal_keep_size = 512MB
-    pgHbaConfiguration: |
-      host replication replication_user all scram-sha-256
-    extraEnvVars:
-      - name: POSTGRESQL_REPLICATION_MODE
-        value: "primary"
+# PostgreSQL Primary Helm Values for Multi-Region Deployment
+# Bitnami PostgreSQL Chart: https://github.com/bitnami/charts/tree/main/bitnami/postgresql
+# Region: Primary (us-east-1)
+# Purpose: Cross-region physical streaming replication primary instance
 
-  replication:
-    enabled: true
-    user: replication_user
-    password: "${POSTGRESQL_REPLICATION_PASSWORD}"
-    readReplicas: 0
+# Global configuration
+global:
+  postgresql:
+    auth:
+      # Use existing secrets for production deployments
+      existingSecret: "postgresql-primary-credentials"
+      secretKeys:
+        adminPasswordKey: "postgres-password"
+        userPasswordKey: "password"
+        replicationPasswordKey: "replication-password"
+  storageClass: ""  # Use cluster default or specify region-specific storage class
 
-  metrics:
+# Architecture configuration
+# standalone: Single primary node (replicas deployed separately in other regions)
+architecture: standalone
+
+# Authentication configuration
+auth:
+  # Database superuser password (via secret)
+  postgresPassword: ""
+  # Application user
+  username: acgs
+  password: ""
+  database: acgs
+  # Replication user for cross-region streaming
+  replicationUsername: replication_user
+  replicationPassword: ""
+  # Use existing secret for all credentials
+  existingSecret: "postgresql-primary-credentials"
+
+# Primary instance configuration
+primary:
+  # Naming
+  name: primary
+
+  # PostgreSQL configuration for streaming replication
+  # These settings enable WAL streaming to standby replicas
+  configuration: |
+    # Replication settings (required for cross-region streaming)
+    wal_level = replica
+    max_wal_senders = 10
+    max_replication_slots = 5
+    wal_keep_size = 512MB
+
+    # Connection settings
+    listen_addresses = '*'
+    max_connections = 200
+
+    # Performance tuning for replication
+    synchronous_commit = on
+    wal_compression = on
+
+    # Logging for replication monitoring
+    log_replication_commands = on
+    log_connections = on
+    log_disconnections = on
+
+    # Checkpoint settings for WAL management
+    checkpoint_timeout = 5min
+    checkpoint_completion_target = 0.9
+    max_wal_size = 2GB
+    min_wal_size = 512MB
+
+    # Statement logging for audit
+    log_statement = 'ddl'
+    log_min_duration_statement = 1000
+
+  # Host-based authentication for replication
+  # Allow standby replicas to connect for streaming replication
+  pgHbaConfiguration: |
+    # TYPE  DATABASE        USER                 ADDRESS                 METHOD
+    # Local connections
+    local   all             all                                          scram-sha-256
+    # IPv4 local connections
+    host    all             all                  127.0.0.1/32            scram-sha-256
+    # IPv4 connections from pods in the same namespace
+    host    all             all                  10.0.0.0/8              scram-sha-256
+    # IPv4 connections from pods in any namespace (for cross-namespace access)
+    host    all             all                  0.0.0.0/0               scram-sha-256
+    # Replication connections from standby replicas (cross-region via Istio East-West Gateway)
+    host    replication     replication_user     0.0.0.0/0               scram-sha-256
+    # Replication connections for IPv6
+    host    replication     replication_user     ::/0                    scram-sha-256
+
+  # Initialization scripts for setting up replication
+  initdb:
+    scripts:
+      init-replication.sql: |
+        -- Create replication slot for each standby region
+        -- Slots prevent WAL deletion until standby confirms receipt
+        SELECT pg_create_physical_replication_slot('standby_eu_west_1', true);
+        SELECT pg_create_physical_replication_slot('standby_ap_southeast_1', true);
+
+        -- Grant replication privileges
+        ALTER USER replication_user REPLICATION;
+
+        -- Create monitoring schema for custom metrics
+        CREATE SCHEMA IF NOT EXISTS monitoring;
+
+        -- View for replication status (used by Prometheus metrics)
+        CREATE OR REPLACE VIEW monitoring.replication_status AS
+        SELECT
+          application_name,
+          client_addr,
+          state,
+          sync_state,
+          sent_lsn,
+          write_lsn,
+          flush_lsn,
+          replay_lsn,
+          EXTRACT(EPOCH FROM replay_lag) AS replay_lag_seconds,
+          EXTRACT(EPOCH FROM write_lag) AS write_lag_seconds,
+          EXTRACT(EPOCH FROM flush_lag) AS flush_lag_seconds
+        FROM pg_stat_replication;
+
+        -- View for replication slots (for disk usage monitoring)
+        CREATE OR REPLACE VIEW monitoring.replication_slots AS
+        SELECT
+          slot_name,
+          slot_type,
+          active,
+          pg_wal_lsn_diff(pg_current_wal_lsn(), restart_lsn) AS retained_bytes,
+          pg_size_pretty(pg_wal_lsn_diff(pg_current_wal_lsn(), restart_lsn)) AS retained_size
+        FROM pg_replication_slots;
+
+  # Extra environment variables
+  extraEnvVars:
+    - name: POSTGRESQL_REPLICATION_MODE
+      value: "primary"
+    - name: POSTGRESQL_CLUSTER_APP_NAME
+      value: "acgs-primary-us-east-1"
+    - name: REGION_NAME
+      value: "us-east-1"
+
+  # Resource allocation
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      cpu: 2000m
+      memory: 4Gi
+
+  # Persistence configuration
+  persistence:
     enabled: true
-    customMetrics:
-      pg_replication_slots:
-        query: "SELECT slot_name, active, pg_wal_lsn_diff(pg_current_wal_lsn(), restart_lsn) as retained_bytes FROM pg_replication_slots;"
-        metrics:
-          - slot_name:
-              usage: "LABEL"
-              description: "Name of the replication slot"
-          - active:
-              usage: "GAUGE"
-              description: "Whether the slot is active"
-          - retained_bytes:
-              usage: "GAUGE"
-              description: "Bytes of WAL retained by this slot"
+    size: 100Gi
+    storageClass: ""
+    accessModes:
+      - ReadWriteOnce
+    annotations:
+      helm.sh/resource-policy: keep
+
+  # Pod security context
+  podSecurityContext:
+    enabled: true
+    fsGroup: 1001
+    runAsUser: 1001
+    runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault
+
+  # Container security context
+  containerSecurityContext:
+    enabled: true
+    runAsUser: 1001
+    runAsNonRoot: true
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: false
+    capabilities:
+      drop:
+        - ALL
+
+  # Pod labels for Istio and multi-region identification
+  podLabels:
+    app.kubernetes.io/component: database
+    topology.istio.io/network: network1
+    acgs.io/region: us-east-1
+    acgs.io/role: primary
+
+  # Pod annotations
+  podAnnotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "9187"
+    sidecar.istio.io/inject: "true"
+
+  # Service configuration
+  service:
+    type: ClusterIP
+    ports:
+      postgresql: 5432
+    annotations:
+      # For cross-region access via Istio
+      networking.istio.io/exportTo: "*"
+
+  # Liveness and readiness probes
+  livenessProbe:
+    enabled: true
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 6
+    successThreshold: 1
+
+  readinessProbe:
+    enabled: true
+    initialDelaySeconds: 5
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 6
+    successThreshold: 1
+
+  # Node affinity for region placement
+  affinity:
+    nodeAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          preference:
+            matchExpressions:
+              - key: topology.kubernetes.io/region
+                operator: In
+                values:
+                  - us-east-1
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchLabels:
+                app.kubernetes.io/name: postgresql
+            topologyKey: kubernetes.io/hostname
+
+  # Priority class for database workloads
+  priorityClassName: "system-cluster-critical"
+
+# Read replicas disabled - cross-region standbys deployed separately
+readReplicas:
+  replicaCount: 0
+
+# Prometheus metrics exporter
+metrics:
+  enabled: true
+
+  image:
+    registry: docker.io
+    repository: bitnami/postgres-exporter
+    tag: "0.15.0"
+    pullPolicy: IfNotPresent
+
+  # Service for metrics
+  service:
+    ports:
+      metrics: 9187
+    annotations:
+      prometheus.io/scrape: "true"
+      prometheus.io/port: "9187"
+
+  # ServiceMonitor for Prometheus Operator
+  serviceMonitor:
+    enabled: true
+    namespace: ""
+    interval: 30s
+    scrapeTimeout: 10s
+    labels:
+      release: prometheus
+    annotations: {}
+
+  # Custom metrics for replication monitoring
+  # These queries are executed by postgres_exporter
+  customMetrics:
+    # Replication lag metrics
+    pg_replication:
+      query: |
+        SELECT
+          application_name,
+          client_addr,
+          state,
+          CASE WHEN state = 'streaming' THEN 1 ELSE 0 END AS is_streaming,
+          COALESCE(EXTRACT(EPOCH FROM replay_lag), 0) AS replay_lag_seconds,
+          COALESCE(EXTRACT(EPOCH FROM write_lag), 0) AS write_lag_seconds,
+          COALESCE(EXTRACT(EPOCH FROM flush_lag), 0) AS flush_lag_seconds,
+          pg_wal_lsn_diff(sent_lsn, replay_lsn) AS replay_lag_bytes
+        FROM pg_stat_replication
+      master: true
+      metrics:
+        - application_name:
+            usage: "LABEL"
+            description: "Name of the standby application"
+        - client_addr:
+            usage: "LABEL"
+            description: "IP address of the standby"
+        - state:
+            usage: "LABEL"
+            description: "Current state of the replication connection"
+        - is_streaming:
+            usage: "GAUGE"
+            description: "Whether the standby is actively streaming (1=yes, 0=no)"
+        - replay_lag_seconds:
+            usage: "GAUGE"
+            description: "Time lag for replay on the standby in seconds"
+        - write_lag_seconds:
+            usage: "GAUGE"
+            description: "Time lag for write on the standby in seconds"
+        - flush_lag_seconds:
+            usage: "GAUGE"
+            description: "Time lag for flush on the standby in seconds"
+        - replay_lag_bytes:
+            usage: "GAUGE"
+            description: "Lag in bytes between sent and replayed LSN"
+
+    # Replication slots metrics (for disk usage monitoring)
+    pg_replication_slots:
+      query: |
+        SELECT
+          slot_name,
+          slot_type,
+          CASE WHEN active THEN 1 ELSE 0 END AS active,
+          pg_wal_lsn_diff(pg_current_wal_lsn(), restart_lsn) AS retained_bytes,
+          pg_wal_lsn_diff(pg_current_wal_lsn(), confirmed_flush_lsn) AS pending_bytes
+        FROM pg_replication_slots
+        WHERE slot_type = 'physical'
+      master: true
+      metrics:
+        - slot_name:
+            usage: "LABEL"
+            description: "Name of the replication slot"
+        - slot_type:
+            usage: "LABEL"
+            description: "Type of replication slot (physical/logical)"
+        - active:
+            usage: "GAUGE"
+            description: "Whether the slot is active (1=yes, 0=no)"
+        - retained_bytes:
+            usage: "GAUGE"
+            description: "Bytes of WAL retained by this slot"
+        - pending_bytes:
+            usage: "GAUGE"
+            description: "Bytes of WAL pending confirmation"
+
+    # WAL statistics for monitoring disk usage
+    pg_stat_wal:
+      query: |
+        SELECT
+          wal_records,
+          wal_fpi,
+          wal_bytes,
+          wal_buffers_full,
+          wal_write,
+          wal_sync,
+          EXTRACT(EPOCH FROM wal_write_time) AS wal_write_time_seconds,
+          EXTRACT(EPOCH FROM wal_sync_time) AS wal_sync_time_seconds
+        FROM pg_stat_wal
+      master: true
+      metrics:
+        - wal_records:
+            usage: "COUNTER"
+            description: "Total number of WAL records generated"
+        - wal_fpi:
+            usage: "COUNTER"
+            description: "Total number of WAL full page images generated"
+        - wal_bytes:
+            usage: "COUNTER"
+            description: "Total amount of WAL generated in bytes"
+        - wal_buffers_full:
+            usage: "COUNTER"
+            description: "Number of times WAL data was written because buffers were full"
+        - wal_write:
+            usage: "COUNTER"
+            description: "Number of times WAL buffers were written to disk"
+        - wal_sync:
+            usage: "COUNTER"
+            description: "Number of times WAL files were synced to disk"
+        - wal_write_time_seconds:
+            usage: "COUNTER"
+            description: "Time spent writing WAL buffers in seconds"
+        - wal_sync_time_seconds:
+            usage: "COUNTER"
+            description: "Time spent syncing WAL files in seconds"
+
+  # Resource limits for exporter
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 256Mi
+
+# Volume permissions init container
+volumePermissions:
+  enabled: false
+
+# Network policy
+networkPolicy:
+  enabled: true
+  allowExternal: true
+  # Allow connections from standby replicas in other regions
+  # and from application pods
+  ingressRules:
+    primaryAccessOnlyFrom:
+      enabled: true
+      namespaceSelector:
+        matchLabels:
+          acgs.io/access-postgresql: "true"
+      podSelector: {}
+
+# TLS configuration
+tls:
+  enabled: true
+  autoGenerated: false
+  # Use cert-manager issued certificates
+  certificatesSecret: "postgresql-primary-tls"
+  certFilename: "tls.crt"
+  certKeyFilename: "tls.key"
+  certCAFilename: "ca.crt"
+
+# Backup configuration (for disaster recovery)
+backup:
+  enabled: false
+  # Configure external backup solution (e.g., pgBackRest, WAL-G)
+  # This is handled separately for cross-region replication
+
+# Pod Disruption Budget
+pdb:
+  create: true
+  minAvailable: 1
+  maxUnavailable: ""
+
+# Audit logging
+audit:
+  logHostname: true
+  logConnections: true
+  logDisconnections: true
+  pgAuditLog: "write, ddl"
+  pgAuditLogCatalog: "on"
+  clientMinMessages: "error"
+  logLinePrefix: "%t [%p]: [%l-1] db=%d,user=%u,app=%a,client=%h "
+  logTimezone: "UTC"

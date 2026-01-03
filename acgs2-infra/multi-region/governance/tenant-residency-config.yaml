@@ -1,228 +1,700 @@
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: tenant-residency-config
-  namespace: default
-  labels:
-    acgs2/component: governance
-    acgs2/multi-region: enabled
-data:
-  # Tenant to region mapping with compliance requirements
-  tenant-residency-mapping.json: |
-    {
-      "tenant-config": {
-        "description": "ACGS-2 tenant data residency configuration",
-        "version": "1.0",
-        "last-updated": "2025-01-02T10:00:00Z",
-        "tenants": {
-          "acme-corp": {
-            "region": "us-east-1",
-            "compliance": ["CCPA", "SOX"],
-            "data-classification": "PII",
-            "restrictions": [
-              "no-data-export-without-consent",
-              "local-processing-required",
-              "audit-trail-required"
-            ],
-            "backup-regions": ["us-west-2"]
-          },
-          "eu-mega-corp": {
-            "region": "eu-west-1",
-            "compliance": ["GDPR", "EU-AI-Act"],
-            "data-classification": "PII-Sensitive",
-            "restrictions": [
-              "no-cross-border-data-transfer",
-              "eu-data-stays-in-eu",
-              "right-to-erasure",
-              "consent-management-required"
-            ],
-            "backup-regions": []
-          },
-          "china-tech-ltd": {
-            "region": "cn-north-1",
-            "compliance": ["PIPL"],
-            "data-classification": "PII-Sensitive",
-            "restrictions": [
-              "data-localization-required",
-              "no-international-transfer",
-              "local-storage-mandatory"
-            ],
-            "backup-regions": ["cn-north-2"]
-          },
-          "global-startup": {
-            "region": "us-east-1",
-            "compliance": ["CCPA"],
-            "data-classification": "Standard",
-            "restrictions": [
-              "audit-trail-required"
-            ],
-            "backup-regions": ["eu-west-1", "ap-southeast-1"]
-          },
-          "healthcare-plus": {
-            "region": "us-east-1",
-            "compliance": ["HIPAA", "CCPA"],
-            "data-classification": "PHI",
-            "restrictions": [
-              "no-data-export-without-consent",
-              "audit-trail-required",
-              "encryption-at-rest-required",
-              "access-logging-required"
-            ],
-            "backup-regions": ["us-west-2"]
-          }
-        },
-        "regions": {
-          "us-east-1": {
-            "display-name": "US East (N. Virginia)",
-            "sovereignty-zone": "us",
-            "compliance-frameworks": ["CCPA", "SOX", "HIPAA"],
-            "data-centers": ["us-east-1a", "us-east-1b", "us-east-1c"],
-            "network-latency-ms": 0
-          },
-          "eu-west-1": {
-            "display-name": "EU West (Ireland)",
-            "sovereignty-zone": "eu",
-            "compliance-frameworks": ["GDPR", "EU-AI-Act"],
-            "data-centers": ["eu-west-1a", "eu-west-1b", "eu-west-1c"],
-            "network-latency-ms": 80
-          },
-          "cn-north-1": {
-            "display-name": "China North (Beijing)",
-            "sovereignty-zone": "cn",
-            "compliance-frameworks": ["PIPL"],
-            "data-centers": ["cn-north-1a", "cn-north-1b"],
-            "network-latency-ms": 200
-          },
-          "ap-southeast-1": {
-            "display-name": "Asia Pacific (Singapore)",
-            "sovereignty-zone": "ap",
-            "compliance-frameworks": ["PDPA"],
-            "data-centers": ["ap-southeast-1a", "ap-southeast-1b", "ap-southeast-1c"],
-            "network-latency-ms": 150
-          }
-        },
-        "compliance-rules": {
-          "GDPR": {
-            "description": "General Data Protection Regulation",
-            "jurisdiction": "European Union",
-            "key-requirements": [
-              "Data minimization",
-              "Purpose limitation",
-              "Storage limitation",
-              "Right to erasure",
-              "Data portability"
-            ],
-            "prohibited-regions": ["us-east-1", "cn-north-1", "ap-southeast-1"]
-          },
-          "CCPA": {
-            "description": "California Consumer Privacy Act",
-            "jurisdiction": "California, USA",
-            "key-requirements": [
-              "Right to know",
-              "Right to delete",
-              "Right to opt-out",
-              "Non-discrimination"
-            ],
-            "allowed-regions": ["us-east-1", "us-west-2"]
-          },
-          "PIPL": {
-            "description": "Personal Information Protection Law",
-            "jurisdiction": "People's Republic of China",
-            "key-requirements": [
-              "Data localization",
-              "Security assessment",
-              "Personal information impact assessment",
-              "Cross-border transfer restrictions"
-            ],
-            "required-regions": ["cn-north-1", "cn-north-2"]
-          },
-          "HIPAA": {
-            "description": "Health Insurance Portability and Accountability Act",
-            "jurisdiction": "United States",
-            "key-requirements": [
-              "Privacy Rule",
-              "Security Rule",
-              "Breach Notification Rule"
-            ],
-            "allowed-regions": ["us-east-1", "us-west-2"]
-          }
-        }
-      }
-    }
+# Tenant Data Residency ConfigMap
+# Multi-Region Global Deployment Support
+#
+# This ConfigMap defines tenant-to-region mappings and compliance requirements
+# for data residency enforcement. Used by:
+# - OPA admission controller for pod placement validation
+# - Istio AuthorizationPolicy for cross-region access control
+# - Compliance verification CronJobs for GDPR/PIPL auditing
+#
+# Schema: tenant-id: {region: "region-name", compliance: ["FRAMEWORK1", "FRAMEWORK2"]}
 ---
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: residency-policy-templates
-  namespace: default
+  name: tenant-residency-config
+  namespace: acgs-system
   labels:
-    acgs2/component: governance
-    acgs2/multi-region: enabled
+    app.kubernetes.io/name: tenant-residency
+    app.kubernetes.io/component: governance
+    app.kubernetes.io/part-of: acgs2-multi-region
+    acgs.io/feature: data-residency
+  annotations:
+    acgs.io/config-version: "1.0.0"
+    acgs.io/last-updated: "2026-01-02"
+    description: "Tenant data residency configuration for multi-region deployment"
 data:
-  # OPA policy templates for different compliance frameworks
-  gdpr-policy-template.rego: |
-    package acgs2.residency.gdpr
+  # =============================================================================
+  # TENANT RESIDENCY MAPPINGS
+  # =============================================================================
+  # Each tenant is mapped to a primary region with associated compliance frameworks.
+  # Format: YAML structure with tenant ID as key
+  #
+  # Fields:
+  #   region: Primary data residency region (must match region-definitions)
+  #   compliance: List of applicable compliance frameworks
+  #   data_classification: Data sensitivity level (public, internal, confidential, restricted)
+  #   cross_region_allowed: Whether data can be replicated to other regions
+  #   failover_regions: Ordered list of allowed failover regions (if cross_region_allowed)
+  #   retention_days: Data retention period in days
+  #   encryption_required: Whether data must be encrypted at rest
+  #
+  tenant-residency.yaml: |
+    version: "1.0"
+    schema_version: "2026-01-02"
 
-    # GDPR Data Residency Policy
-    allow_data_access {
-      input.tenant.region == "eu-west-1"
-      input.request.region == "eu-west-1"
-      input.data.classification != "sensitive"
-    }
+    tenants:
+      # ---------------------------------------------------------------------
+      # European Union Tenants (GDPR + EU AI Act)
+      # ---------------------------------------------------------------------
+      eu-enterprise-001:
+        region: "eu-west-1"
+        compliance:
+          - "GDPR"
+          - "EU-AI-Act"
+        data_classification: "confidential"
+        cross_region_allowed: false
+        failover_regions: []
+        retention_days: 2555  # 7 years for GDPR compliance
+        encryption_required: true
+        contact_email: "dpo@eu-enterprise-001.example.com"
 
-    allow_data_access {
-      input.tenant.region == "eu-west-1"
-      input.request.region == "eu-west-1"
-      input.data.classification == "sensitive"
-      input.user.consent == true
-      input.user.age >= 16
-    }
+      eu-healthcare-002:
+        region: "eu-west-1"
+        compliance:
+          - "GDPR"
+          - "EU-AI-Act"
+          - "HIPAA-EU"
+        data_classification: "restricted"
+        cross_region_allowed: false
+        failover_regions: []
+        retention_days: 3650  # 10 years for healthcare
+        encryption_required: true
+        contact_email: "dpo@eu-healthcare-002.example.com"
 
-    # Cross-border transfers require explicit consent
-    allow_cross_border {
-      input.source_region == "eu-west-1"
-      input.destination_region != "eu-west-1"
-      input.data_impact_assessment_completed == true
-      input.legal_basis == "consent"
-    }
+      eu-financial-003:
+        region: "eu-west-1"
+        compliance:
+          - "GDPR"
+          - "EU-AI-Act"
+          - "PSD2"
+        data_classification: "restricted"
+        cross_region_allowed: false
+        failover_regions: []
+        retention_days: 2555
+        encryption_required: true
+        contact_email: "compliance@eu-financial-003.example.com"
 
-  ccpa-policy-template.rego: |
-    package acgs2.residency.ccpa
+      # ---------------------------------------------------------------------
+      # United States Tenants
+      # ---------------------------------------------------------------------
+      us-enterprise-001:
+        region: "us-east-1"
+        compliance:
+          - "SOC2"
+          - "NIST-RMF"
+        data_classification: "confidential"
+        cross_region_allowed: true
+        failover_regions:
+          - "us-west-2"
+        retention_days: 1825  # 5 years
+        encryption_required: true
+        contact_email: "security@us-enterprise-001.example.com"
 
-    # CCPA Data Residency Policy
-    allow_data_processing {
-      input.tenant.region == "us-east-1"
-      input.request.region == "us-east-1"
-    }
+      us-government-002:
+        region: "us-east-1"
+        compliance:
+          - "FedRAMP"
+          - "NIST-RMF"
+          - "ITAR"
+        data_classification: "restricted"
+        cross_region_allowed: false
+        failover_regions: []
+        retention_days: 2555
+        encryption_required: true
+        contact_email: "isso@us-government-002.example.gov"
 
-    allow_data_sale {
-      input.user.opt_out != true
-      input.notice_provided == true
-    }
+      us-healthcare-003:
+        region: "us-east-1"
+        compliance:
+          - "HIPAA"
+          - "HITECH"
+          - "SOC2"
+        data_classification: "restricted"
+        cross_region_allowed: true
+        failover_regions:
+          - "us-west-2"
+        retention_days: 2190  # 6 years for HIPAA
+        encryption_required: true
+        contact_email: "hipaa@us-healthcare-003.example.com"
 
-    allow_data_deletion {
-      input.user.request_deletion == true
-      input.retention_period_expired == true
-    }
+      # ---------------------------------------------------------------------
+      # China Tenants (PIPL + CSL)
+      # ---------------------------------------------------------------------
+      cn-enterprise-001:
+        region: "cn-north-1"
+        compliance:
+          - "PIPL"
+          - "CSL"
+          - "MLPS"
+        data_classification: "confidential"
+        cross_region_allowed: false
+        failover_regions: []
+        retention_days: 1095  # 3 years minimum for PIPL
+        encryption_required: true
+        contact_email: "security@cn-enterprise-001.example.cn"
 
-  pipl-policy-template.rego: |
-    package acgs2.residency.pipl
+      cn-financial-002:
+        region: "cn-north-1"
+        compliance:
+          - "PIPL"
+          - "CSL"
+          - "MLPS"
+          - "CBRC"
+        data_classification: "restricted"
+        cross_region_allowed: false
+        failover_regions: []
+        retention_days: 1825
+        encryption_required: true
+        contact_email: "compliance@cn-financial-002.example.cn"
 
-    # PIPL Data Residency Policy
-    allow_data_processing {
-      input.tenant.region == "cn-north-1"
-      input.request.region == "cn-north-1"
-      input.security_assessment_completed == true
-    }
+      # ---------------------------------------------------------------------
+      # Asia-Pacific Tenants
+      # ---------------------------------------------------------------------
+      ap-enterprise-001:
+        region: "ap-southeast-1"
+        compliance:
+          - "PDPA"
+          - "ISO27001"
+        data_classification: "confidential"
+        cross_region_allowed: true
+        failover_regions:
+          - "ap-northeast-1"
+        retention_days: 1825
+        encryption_required: true
+        contact_email: "dpo@ap-enterprise-001.example.sg"
 
-    allow_cross_border {
-      input.destination_region == "cn-north-1"
-      input.personal_info_impact_assessment_completed == true
-      input.user.consent == true
-    }
+      jp-enterprise-001:
+        region: "ap-northeast-1"
+        compliance:
+          - "APPI"
+          - "ISO27001"
+        data_classification: "confidential"
+        cross_region_allowed: true
+        failover_regions:
+          - "ap-southeast-1"
+        retention_days: 1825
+        encryption_required: true
+        contact_email: "privacy@jp-enterprise-001.example.jp"
 
-    # Data localization requirement
-    data_localization_required {
-      input.data.contains_personal_info == true
-      input.data.sensitivity == "high"
-    }
+      # ---------------------------------------------------------------------
+      # Global Tenants (Multi-Region Allowed)
+      # ---------------------------------------------------------------------
+      global-enterprise-001:
+        region: "us-east-1"
+        compliance:
+          - "SOC2"
+          - "ISO27001"
+        data_classification: "internal"
+        cross_region_allowed: true
+        failover_regions:
+          - "eu-west-1"
+          - "ap-southeast-1"
+        retention_days: 1095
+        encryption_required: true
+        contact_email: "security@global-enterprise-001.example.com"
+
+  # =============================================================================
+  # REGION DEFINITIONS
+  # =============================================================================
+  # Available deployment regions with their compliance capabilities
+  #
+  region-definitions.yaml: |
+    version: "1.0"
+
+    regions:
+      us-east-1:
+        display_name: "US East (N. Virginia)"
+        data_residency_zone: "us"
+        supported_compliance:
+          - "SOC2"
+          - "HIPAA"
+          - "HITECH"
+          - "FedRAMP"
+          - "NIST-RMF"
+          - "ITAR"
+          - "ISO27001"
+        kubernetes_cluster: "cluster1"
+        istio_network: "network1"
+        topology_labels:
+          topology.kubernetes.io/region: "us-east-1"
+          topology.kubernetes.io/zone: "us-east-1a"
+          topology.istio.io/network: "network1"
+        postgresql_endpoint: "postgresql-primary.database.svc.cluster.local"
+        kafka_bootstrap: "kafka-us-east:29092"
+
+      us-west-2:
+        display_name: "US West (Oregon)"
+        data_residency_zone: "us"
+        supported_compliance:
+          - "SOC2"
+          - "HIPAA"
+          - "HITECH"
+          - "ISO27001"
+        kubernetes_cluster: "cluster3"
+        istio_network: "network3"
+        topology_labels:
+          topology.kubernetes.io/region: "us-west-2"
+          topology.kubernetes.io/zone: "us-west-2a"
+          topology.istio.io/network: "network3"
+        postgresql_endpoint: "postgresql-standby.database.svc.cluster.local"
+        kafka_bootstrap: "kafka-us-west:29092"
+
+      eu-west-1:
+        display_name: "EU West (Ireland)"
+        data_residency_zone: "eu"
+        supported_compliance:
+          - "GDPR"
+          - "EU-AI-Act"
+          - "PSD2"
+          - "HIPAA-EU"
+          - "ISO27001"
+        kubernetes_cluster: "cluster2"
+        istio_network: "network2"
+        topology_labels:
+          topology.kubernetes.io/region: "eu-west-1"
+          topology.kubernetes.io/zone: "eu-west-1a"
+          topology.istio.io/network: "network2"
+        postgresql_endpoint: "postgresql-standby.database.svc.cluster.local"
+        kafka_bootstrap: "kafka-eu-west:29092"
+        gdpr_specific:
+          data_protection_authority: "Irish Data Protection Commission"
+          lead_supervisory_authority: true
+
+      cn-north-1:
+        display_name: "China North (Beijing)"
+        data_residency_zone: "cn"
+        supported_compliance:
+          - "PIPL"
+          - "CSL"
+          - "MLPS"
+          - "CBRC"
+        kubernetes_cluster: "cluster4"
+        istio_network: "network4"
+        topology_labels:
+          topology.kubernetes.io/region: "cn-north-1"
+          topology.kubernetes.io/zone: "cn-north-1a"
+          topology.istio.io/network: "network4"
+        postgresql_endpoint: "postgresql-cn-primary.database.svc.cluster.local"
+        kafka_bootstrap: "kafka-cn-north:29092"
+        pipl_specific:
+          cross_border_transfer_allowed: false
+          security_assessment_required: true
+
+      ap-southeast-1:
+        display_name: "Asia Pacific (Singapore)"
+        data_residency_zone: "ap"
+        supported_compliance:
+          - "PDPA"
+          - "ISO27001"
+          - "SOC2"
+        kubernetes_cluster: "cluster5"
+        istio_network: "network5"
+        topology_labels:
+          topology.kubernetes.io/region: "ap-southeast-1"
+          topology.kubernetes.io/zone: "ap-southeast-1a"
+          topology.istio.io/network: "network5"
+        postgresql_endpoint: "postgresql-standby.database.svc.cluster.local"
+        kafka_bootstrap: "kafka-ap-southeast:29092"
+
+      ap-northeast-1:
+        display_name: "Asia Pacific (Tokyo)"
+        data_residency_zone: "ap"
+        supported_compliance:
+          - "APPI"
+          - "ISO27001"
+          - "SOC2"
+        kubernetes_cluster: "cluster6"
+        istio_network: "network6"
+        topology_labels:
+          topology.kubernetes.io/region: "ap-northeast-1"
+          topology.kubernetes.io/zone: "ap-northeast-1a"
+          topology.istio.io/network: "network6"
+        postgresql_endpoint: "postgresql-standby.database.svc.cluster.local"
+        kafka_bootstrap: "kafka-ap-northeast:29092"
+
+  # =============================================================================
+  # COMPLIANCE FRAMEWORK DEFINITIONS
+  # =============================================================================
+  # Detailed compliance framework requirements for policy enforcement
+  #
+  compliance-frameworks.yaml: |
+    version: "1.0"
+
+    frameworks:
+      GDPR:
+        full_name: "General Data Protection Regulation"
+        jurisdiction: "European Union"
+        enforcement_authority: "National Data Protection Authorities"
+        requirements:
+          data_residency: "EU member states or adequacy decision countries"
+          cross_border_transfer: "Requires legal basis (SCCs, BCRs, adequacy)"
+          encryption_at_rest: true
+          encryption_in_transit: true
+          access_logging: true
+          data_subject_rights: true
+          breach_notification_hours: 72
+          dpo_required: true
+          privacy_impact_assessment: true
+        allowed_regions:
+          - "eu-west-1"
+        prohibited_regions:
+          - "cn-north-1"
+
+      EU-AI-Act:
+        full_name: "European Union Artificial Intelligence Act"
+        jurisdiction: "European Union"
+        enforcement_authority: "AI Office"
+        requirements:
+          risk_classification: true
+          transparency_obligations: true
+          human_oversight: true
+          accuracy_requirements: true
+          robustness_testing: true
+          conformity_assessment: true
+          eu_database_registration: true
+        allowed_regions:
+          - "eu-west-1"
+        ai_specific:
+          high_risk_categories:
+            - "biometric_identification"
+            - "critical_infrastructure"
+            - "education"
+            - "employment"
+            - "essential_services"
+            - "law_enforcement"
+            - "migration"
+            - "justice"
+
+      PIPL:
+        full_name: "Personal Information Protection Law"
+        jurisdiction: "People's Republic of China"
+        enforcement_authority: "Cyberspace Administration of China"
+        requirements:
+          data_residency: "Mainland China only"
+          cross_border_transfer: "Prohibited without security assessment"
+          encryption_at_rest: true
+          encryption_in_transit: true
+          access_logging: true
+          consent_required: true
+          security_assessment: true
+          local_representative: true
+        allowed_regions:
+          - "cn-north-1"
+        prohibited_regions:
+          - "us-east-1"
+          - "us-west-2"
+          - "eu-west-1"
+          - "ap-southeast-1"
+          - "ap-northeast-1"
+
+      CSL:
+        full_name: "Cybersecurity Law of China"
+        jurisdiction: "People's Republic of China"
+        enforcement_authority: "Cyberspace Administration of China"
+        requirements:
+          data_localization: true
+          network_security: true
+          real_name_verification: true
+          security_review: true
+          incident_reporting: true
+        allowed_regions:
+          - "cn-north-1"
+
+      HIPAA:
+        full_name: "Health Insurance Portability and Accountability Act"
+        jurisdiction: "United States"
+        enforcement_authority: "HHS Office for Civil Rights"
+        requirements:
+          phi_protection: true
+          access_controls: true
+          audit_trails: true
+          encryption_required: true
+          baa_required: true
+          minimum_necessary: true
+          breach_notification_days: 60
+        allowed_regions:
+          - "us-east-1"
+          - "us-west-2"
+
+      FedRAMP:
+        full_name: "Federal Risk and Authorization Management Program"
+        jurisdiction: "United States Federal Government"
+        enforcement_authority: "GSA/OMB"
+        requirements:
+          authorization_level: "Moderate or High"
+          continuous_monitoring: true
+          incident_response: true
+          vulnerability_scanning: true
+          penetration_testing: true
+          us_persons_only: true
+        allowed_regions:
+          - "us-east-1"
+        prohibited_regions:
+          - "eu-west-1"
+          - "cn-north-1"
+          - "ap-southeast-1"
+          - "ap-northeast-1"
+
+      SOC2:
+        full_name: "Service Organization Control 2"
+        jurisdiction: "Global"
+        enforcement_authority: "AICPA"
+        requirements:
+          security: true
+          availability: true
+          processing_integrity: true
+          confidentiality: true
+          privacy: true
+          annual_audit: true
+        allowed_regions:
+          - "us-east-1"
+          - "us-west-2"
+          - "eu-west-1"
+          - "ap-southeast-1"
+          - "ap-northeast-1"
+
+      NIST-RMF:
+        full_name: "NIST Risk Management Framework"
+        jurisdiction: "United States"
+        enforcement_authority: "NIST/OMB"
+        requirements:
+          categorize_system: true
+          select_controls: true
+          implement_controls: true
+          assess_controls: true
+          authorize_system: true
+          monitor_continuously: true
+        allowed_regions:
+          - "us-east-1"
+          - "us-west-2"
+
+  # =============================================================================
+  # DATA RESIDENCY POLICIES
+  # =============================================================================
+  # Default policies for data residency enforcement
+  #
+  residency-policies.yaml: |
+    version: "1.0"
+
+    policies:
+      # Default policy for unknown tenants
+      default:
+        action: "deny"
+        reason: "Tenant not registered in residency configuration"
+
+      # Policy for cross-region data access
+      cross_region_access:
+        default_action: "deny"
+        exceptions:
+          - condition: "tenant.cross_region_allowed == true"
+            action: "allow"
+            audit: true
+          - condition: "request.type == 'disaster_recovery'"
+            action: "allow"
+            audit: true
+            requires_approval: true
+
+      # Policy for data replication
+      data_replication:
+        default_action: "deny"
+        allowed_scenarios:
+          - name: "failover_replication"
+            condition: "target_region in tenant.failover_regions"
+            encryption_required: true
+          - name: "backup_replication"
+            condition: "tenant.cross_region_allowed == true"
+            encryption_required: true
+            retention_limited: true
+
+      # Policy for API access from different regions
+      api_access:
+        default_action: "allow_local_only"
+        cross_region_rules:
+          - source_zone: "eu"
+            target_zone: "us"
+            action: "deny"
+            reason: "GDPR cross-border restriction"
+          - source_zone: "cn"
+            target_zone: "*"
+            action: "deny"
+            reason: "PIPL data localization"
+          - source_zone: "us"
+            target_zone: "eu"
+            action: "conditional"
+            condition: "has_sccs_agreement"
+
+      # Audit requirements by compliance framework
+      audit_requirements:
+        GDPR:
+          log_all_access: true
+          log_retention_days: 2555
+          include_data_subject_id: true
+          pseudonymize_logs: true
+        PIPL:
+          log_all_access: true
+          log_retention_days: 1095
+          local_storage_only: true
+        HIPAA:
+          log_all_access: true
+          log_retention_days: 2190
+          include_phi_access: true
+        FedRAMP:
+          log_all_access: true
+          log_retention_days: 1095
+          us_storage_only: true
+          siem_integration: true
+
+    # Namespace labeling requirements for data residency
+    namespace_labels:
+      required:
+        - "data-residency"
+        - "tenant-id"
+        - "compliance-frameworks"
+      format:
+        data-residency: "eu|us|cn|ap"
+        tenant-id: "^[a-z0-9-]+$"
+        compliance-frameworks: "comma-separated list"
+      validation:
+        strict: true
+        reject_unlabeled: true
+
+  # =============================================================================
+  # OPA INTEGRATION CONFIGURATION
+  # =============================================================================
+  # Configuration for OPA policy engine integration
+  #
+  opa-integration.yaml: |
+    version: "1.0"
+
+    opa:
+      policy_package: "acgs.residency"
+      decision_path: "/v1/data/acgs/residency/allow"
+
+      # Input schema for OPA queries
+      input_schema:
+        tenant_id:
+          type: "string"
+          required: true
+        requested_region:
+          type: "string"
+          required: true
+        operation:
+          type: "string"
+          enum: ["deploy", "access", "replicate", "migrate"]
+          required: true
+        resource_type:
+          type: "string"
+          enum: ["pod", "service", "data", "secret"]
+          required: false
+          default: "pod"
+
+      # Expected output schema
+      output_schema:
+        allow:
+          type: "boolean"
+        reason:
+          type: "string"
+        violations:
+          type: "array"
+          items:
+            type: "string"
+        compliance_checks:
+          type: "object"
+
+      # Admission controller configuration
+      admission:
+        enabled: true
+        fail_open: false
+        timeout_seconds: 5
+        namespaces:
+          include:
+            - "acgs-*"
+            - "tenant-*"
+          exclude:
+            - "kube-system"
+            - "istio-system"
+
+      # Decision logging for compliance
+      decision_logging:
+        enabled: true
+        console: false
+        remote:
+          url: "http://audit-service.acgs-system:8080/v1/decisions"
+          credentials_secret: "opa-audit-credentials"
+---
+# =============================================================================
+# NAMESPACE FOR GOVERNANCE RESOURCES
+# =============================================================================
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: acgs-system
+  labels:
+    app.kubernetes.io/name: acgs-system
+    app.kubernetes.io/part-of: acgs2-multi-region
+    istio-injection: enabled
+    data-residency: "global"
+  annotations:
+    description: "ACGS-2 system namespace for governance and compliance resources"
+---
+# =============================================================================
+# CONFIGMAP FOR QUICK TENANT LOOKUP
+# =============================================================================
+# Simplified tenant-to-region mapping for fast lookups by admission controllers
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tenant-region-lookup
+  namespace: acgs-system
+  labels:
+    app.kubernetes.io/name: tenant-region-lookup
+    app.kubernetes.io/component: governance
+    app.kubernetes.io/part-of: acgs2-multi-region
+data:
+  # Simple key-value mapping for fast lookups
+  # Format: tenant-id=region
+  tenant-region-map: |
+    eu-enterprise-001=eu-west-1
+    eu-healthcare-002=eu-west-1
+    eu-financial-003=eu-west-1
+    us-enterprise-001=us-east-1
+    us-government-002=us-east-1
+    us-healthcare-003=us-east-1
+    cn-enterprise-001=cn-north-1
+    cn-financial-002=cn-north-1
+    ap-enterprise-001=ap-southeast-1
+    jp-enterprise-001=ap-northeast-1
+    global-enterprise-001=us-east-1
+
+  # Region to data residency zone mapping
+  region-zone-map: |
+    us-east-1=us
+    us-west-2=us
+    eu-west-1=eu
+    cn-north-1=cn
+    ap-southeast-1=ap
+    ap-northeast-1=ap
+
+  # Compliance framework to allowed regions mapping
+  compliance-region-map: |
+    GDPR=eu-west-1
+    EU-AI-Act=eu-west-1
+    PIPL=cn-north-1
+    CSL=cn-north-1
+    HIPAA=us-east-1,us-west-2
+    FedRAMP=us-east-1
+    SOC2=us-east-1,us-west-2,eu-west-1,ap-southeast-1,ap-northeast-1
+    NIST-RMF=us-east-1,us-west-2
+    PDPA=ap-southeast-1
+    APPI=ap-northeast-1

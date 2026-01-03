@@ -1,0 +1,357 @@
+# =============================================================================
+# DestinationRule for claude-flow Service - Locality-Aware Load Balancing
+# =============================================================================
+# This DestinationRule configures locality-aware load balancing and outlier
+# detection for the claude-flow service to achieve <60s RTO for regional failover.
+#
+# Traffic Distribution:
+#   - 80% to local region (same locality)
+#   - 20% to remote region (cross-cluster failover)
+#
+# Failover Configuration:
+#   - Consecutive errors: 3 (triggers ejection)
+#   - Detection interval: 10s
+#   - Base ejection time: 30s
+#   - Expected RTO: ~55s (3*5s + 10s + 30s + 10s readiness)
+#
+# Usage:
+#   kubectl apply -f claude-flow-destination-rule.yaml --context=region1
+#   kubectl apply -f claude-flow-destination-rule.yaml --context=region2
+#
+# Prerequisites:
+#   - Istio service mesh deployed (istio-operator-region1.yaml/region2.yaml)
+#   - claude-flow service deployed (claude-flow-deployment.yaml)
+#   - Pods labeled with topology.kubernetes.io/region
+#
+# References:
+#   - https://istio.io/latest/docs/reference/config/networking/destination-rule/
+#   - https://istio.io/latest/docs/tasks/traffic-management/locality-load-balancing/
+# =============================================================================
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: claude-flow-locality-lb
+  namespace: acgs-services
+  labels:
+    app.kubernetes.io/name: claude-flow-destination-rule
+    app.kubernetes.io/component: traffic-management
+    app.kubernetes.io/part-of: acgs2
+    app.kubernetes.io/managed-by: kubectl
+    # Multi-region traffic management labels
+    acgs.io/traffic-policy: locality-aware
+    acgs.io/failover-enabled: "true"
+  annotations:
+    # Constitutional governance tracking
+    acgs.io/constitutional-hash: "claude-flow-dr-v1"
+    # Traffic management metadata
+    acgs.io/rto-target: "<60s"
+    acgs.io/traffic-distribution: "80-20-local-remote"
+spec:
+  # Target service host - must match service FQDN
+  host: claude-flow.acgs-services.svc.cluster.local
+
+  # ---------------------------------------------------------------------------
+  # Traffic Policy
+  # ---------------------------------------------------------------------------
+  trafficPolicy:
+    # -------------------------------------------------------------------------
+    # Load Balancer Configuration with Locality-Aware Routing
+    # -------------------------------------------------------------------------
+    loadBalancer:
+      # Use ROUND_ROBIN as the base algorithm
+      simple: ROUND_ROBIN
+
+      # Locality-based load balancing settings
+      localityLbSetting:
+        # Enable locality-aware load balancing
+        enabled: true
+
+        # Distribution rules: route traffic based on source locality
+        # Traffic from US-East routes 80% local, 20% to EU-West for resilience
+        distribute:
+          # Traffic originating from US-East (us-east-1)
+          - from: "us-east-1/*"
+            to:
+              "us-east-1/*": 80
+              "eu-west-1/*": 20
+          # Traffic originating from EU-West (eu-west-1)
+          - from: "eu-west-1/*"
+            to:
+              "eu-west-1/*": 80
+              "us-east-1/*": 20
+          # Traffic originating from AP-Southeast (future region)
+          - from: "ap-southeast-1/*"
+            to:
+              "ap-southeast-1/*": 80
+              "us-east-1/*": 10
+              "eu-west-1/*": 10
+
+        # Failover configuration for when local endpoints are unavailable
+        # Order matters: failover happens in sequence
+        failover:
+          # US-East fails over to EU-West first
+          - from: us-east-1
+            to: eu-west-1
+          # EU-West fails over to US-East first
+          - from: eu-west-1
+            to: us-east-1
+          # AP-Southeast fails over to US-East first
+          - from: ap-southeast-1
+            to: us-east-1
+
+        # Failover priority labels (Kubernetes node labels)
+        # Used when 'distribute' is not specified
+        failoverPriority:
+          - "topology.kubernetes.io/region"
+          - "topology.kubernetes.io/zone"
+
+    # -------------------------------------------------------------------------
+    # Outlier Detection for Fast Failover (<60s RTO)
+    # -------------------------------------------------------------------------
+    # This configuration achieves ~55s RTO:
+    # - Detection: 3 errors * 5s timeout = 15s
+    # - Interval check: 10s
+    # - Ejection: 30s base time
+    # - Pod readiness: ~10s
+    # Total: 15s + 10s + 30s = 55s (within 60s target)
+    outlierDetection:
+      # Number of consecutive gateway errors (502, 503, 504) before ejection
+      # Lower value = faster detection, but more sensitive to transient failures
+      consecutiveGatewayErrors: 3
+
+      # Number of consecutive 5xx errors before ejection
+      consecutive5xxErrors: 3
+
+      # Number of consecutive local origin failures before ejection
+      # (connection errors, timeouts at proxy level)
+      consecutiveLocalOriginFailures: 3
+
+      # Time interval between ejection analysis sweeps
+      # Lower value = faster detection, more CPU overhead
+      interval: 10s
+
+      # Minimum ejection duration
+      # Actual duration = baseEjectionTime * ejection_count (up to maxEjectionPercent)
+      baseEjectionTime: 30s
+
+      # Maximum percentage of hosts that can be ejected from the load balancing pool
+      # Set to 100% to allow full failover to other regions
+      maxEjectionPercent: 100
+
+      # Minimum percentage of healthy hosts required
+      # Set to 0 to allow operation even with few healthy hosts
+      minHealthPercent: 0
+
+      # Split external and local origin errors
+      # Enables differentiation between upstream failures and local proxy issues
+      splitExternalLocalOriginErrors: true
+
+    # -------------------------------------------------------------------------
+    # Connection Pool Settings
+    # -------------------------------------------------------------------------
+    # Optimize connection handling for cross-region latency
+    connectionPool:
+      # TCP connection settings
+      tcp:
+        # Maximum number of TCP connections to the destination
+        maxConnections: 100
+
+        # TCP connection timeout
+        connectTimeout: 10s
+
+        # TCP keep-alive configuration
+        tcpKeepalive:
+          # Enable TCP keepalive
+          probes: 3
+          time: 60s
+          interval: 10s
+
+      # HTTP connection settings
+      http:
+        # Maximum number of pending HTTP requests
+        h2UpgradePolicy: UPGRADE
+
+        # Maximum requests per connection
+        maxRequestsPerConnection: 100
+
+        # Maximum number of active requests
+        maxRetries: 3
+
+        # Idle timeout for connections
+        idleTimeout: 300s
+
+        # Use HTTP/2 for better performance
+        useClientProtocol: true
+
+    # -------------------------------------------------------------------------
+    # TLS/mTLS Configuration
+    # -------------------------------------------------------------------------
+    # Enforce mutual TLS for secure cross-region communication
+    tls:
+      # ISTIO_MUTUAL: Istio manages certificates automatically
+      mode: ISTIO_MUTUAL
+
+  # ---------------------------------------------------------------------------
+  # Subset Definitions for Traffic Splitting
+  # ---------------------------------------------------------------------------
+  # Define subsets based on region labels for canary/blue-green deployments
+  subsets:
+    # US-East region subset
+    - name: us-east-1
+      labels:
+        acgs.io/region: us-east-1
+      trafficPolicy:
+        loadBalancer:
+          simple: ROUND_ROBIN
+        connectionPool:
+          tcp:
+            maxConnections: 100
+          http:
+            maxRequestsPerConnection: 100
+
+    # EU-West region subset
+    - name: eu-west-1
+      labels:
+        acgs.io/region: eu-west-1
+      trafficPolicy:
+        loadBalancer:
+          simple: ROUND_ROBIN
+        connectionPool:
+          tcp:
+            maxConnections: 100
+          http:
+            maxRequestsPerConnection: 100
+
+    # AP-Southeast region subset (future expansion)
+    - name: ap-southeast-1
+      labels:
+        acgs.io/region: ap-southeast-1
+      trafficPolicy:
+        loadBalancer:
+          simple: ROUND_ROBIN
+        connectionPool:
+          tcp:
+            maxConnections: 100
+          http:
+            maxRequestsPerConnection: 100
+
+    # Stable version subset for production traffic
+    - name: stable
+      labels:
+        app.kubernetes.io/version: "1.0.0"
+
+    # Canary version subset for progressive rollouts
+    - name: canary
+      labels:
+        acgs.io/deployment-stage: canary
+---
+# =============================================================================
+# VirtualService for claude-flow Traffic Routing
+# =============================================================================
+# Companion VirtualService for advanced routing scenarios including:
+# - Retry policies with timeout configuration
+# - Fault injection for chaos engineering
+# - Header-based routing for testing
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: claude-flow-routing
+  namespace: acgs-services
+  labels:
+    app.kubernetes.io/name: claude-flow-virtualservice
+    app.kubernetes.io/component: traffic-management
+    app.kubernetes.io/part-of: acgs2
+  annotations:
+    acgs.io/constitutional-hash: "claude-flow-vs-v1"
+spec:
+  # Apply to internal service mesh traffic
+  hosts:
+    - claude-flow.acgs-services.svc.cluster.local
+
+  # HTTP routing rules
+  http:
+    # -------------------------------------------------------------------------
+    # Canary Traffic Rule (Header-Based)
+    # -------------------------------------------------------------------------
+    # Route traffic with X-Canary header to canary subset
+    - name: canary-traffic
+      match:
+        - headers:
+            x-canary:
+              exact: "true"
+      route:
+        - destination:
+            host: claude-flow.acgs-services.svc.cluster.local
+            subset: canary
+          weight: 100
+      retries:
+        attempts: 3
+        perTryTimeout: 5s
+        retryOn: "connect-failure,refused-stream,unavailable,cancelled,retriable-4xx,retriable-status-codes"
+        retryRemoteLocalities: true
+
+    # -------------------------------------------------------------------------
+    # Region-Specific Traffic Rule (Header-Based)
+    # -------------------------------------------------------------------------
+    # Allow explicit region routing via X-Target-Region header
+    - name: region-override
+      match:
+        - headers:
+            x-target-region:
+              exact: "us-east-1"
+      route:
+        - destination:
+            host: claude-flow.acgs-services.svc.cluster.local
+            subset: us-east-1
+          weight: 100
+      retries:
+        attempts: 3
+        perTryTimeout: 5s
+        retryOn: "connect-failure,refused-stream,unavailable,cancelled"
+        retryRemoteLocalities: true
+
+    - name: region-override-eu
+      match:
+        - headers:
+            x-target-region:
+              exact: "eu-west-1"
+      route:
+        - destination:
+            host: claude-flow.acgs-services.svc.cluster.local
+            subset: eu-west-1
+          weight: 100
+      retries:
+        attempts: 3
+        perTryTimeout: 5s
+        retryOn: "connect-failure,refused-stream,unavailable,cancelled"
+        retryRemoteLocalities: true
+
+    # -------------------------------------------------------------------------
+    # Default Traffic Rule
+    # -------------------------------------------------------------------------
+    # Standard traffic uses locality-aware load balancing from DestinationRule
+    - name: default-traffic
+      route:
+        - destination:
+            host: claude-flow.acgs-services.svc.cluster.local
+            subset: stable
+          weight: 100
+      # Retry configuration for resilience
+      retries:
+        # Number of retry attempts
+        attempts: 3
+        # Timeout per retry attempt
+        perTryTimeout: 5s
+        # Conditions that trigger a retry
+        retryOn: "connect-failure,refused-stream,unavailable,cancelled,retriable-4xx,retriable-status-codes"
+        # Enable retries to remote localities (other regions)
+        retryRemoteLocalities: true
+      # Overall request timeout (should be > attempts * perTryTimeout)
+      timeout: 30s
+      # Mirror traffic to canary for shadow testing (optional)
+      # Uncomment to enable shadow traffic
+      # mirror:
+      #   host: claude-flow.acgs-services.svc.cluster.local
+      #   subset: canary
+      # mirrorPercentage:
+      #   value: 1.0

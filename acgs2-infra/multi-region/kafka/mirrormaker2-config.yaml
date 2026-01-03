@@ -1,0 +1,838 @@
+# MirrorMaker 2 ConfigMap for Topic Replication
+# Constitutional Hash: multi-region-mm2-config-v1
+#
+# This ConfigMap provides comprehensive topic replication configuration for
+# Kafka MirrorMaker 2 cross-region event streaming. It includes:
+# - Topic-specific replication settings
+# - Consumer group offset synchronization
+# - Multi-region cluster configurations
+# - Topic filtering and transformation rules
+# - Monitoring and operational parameters
+#
+# Topics Replicated:
+# - acgs.agent.messages: Agent-to-agent communication messages
+# - acgs.agent.events: System events and state changes
+# - acgs.agent.dlq: Dead letter queue for failed message processing
+#
+# Usage:
+#   # Apply to us-east-1 region
+#   kubectl apply -f mirrormaker2-config.yaml --context=region1
+#
+#   # Apply to eu-west-1 region (override region-specific values)
+#   kubectl apply -f mirrormaker2-config.yaml --context=region2
+#   kubectl patch configmap mirrormaker2-topics -n kafka-system \
+#     -p '{"data":{"region.name":"eu-west-1","source.cluster.alias":"us-east-1"}}'
+#
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mirrormaker2-topics
+  namespace: kafka-system
+  labels:
+    app.kubernetes.io/name: mirrormaker2
+    app.kubernetes.io/component: topic-replication
+    app.kubernetes.io/part-of: acgs2
+    acgs.io/config-type: topic-replication
+  annotations:
+    # Constitutional governance tracking
+    acgs.io/constitutional-hash: "multi-region-mm2-config-v1"
+    acgs.io/config-version: "1.0.0"
+    acgs.io/last-updated: "2026-01-03"
+data:
+  # =============================================================================
+  # REGION CONFIGURATION
+  # =============================================================================
+  # Override these values per-region using Kustomize overlays or kubectl patch
+
+  region.name: "us-east-1"
+  region.network: "network1"
+  region.cluster: "cluster1"
+
+  # Cluster aliases for MirrorMaker 2 replication
+  source.cluster.alias: "eu-west-1"
+  target.cluster.alias: "us-east-1"
+
+  # Kafka bootstrap servers (region-specific)
+  source.kafka.bootstrap: "kafka.eu-west-1.svc.cluster.global:9093"
+  target.kafka.bootstrap: "kafka.kafka-system.svc.cluster.local:9093"
+
+  # =============================================================================
+  # TOPIC REPLICATION CONFIGURATION
+  # =============================================================================
+
+  # Topics to replicate from source cluster
+  # Format: comma-separated list of topic names or regex patterns
+  topics.whitelist: |
+    acgs.agent.messages
+    acgs.agent.events
+    acgs.agent.dlq
+    acgs.audit.events
+    acgs.compliance.reports
+
+  # Topics to exclude from replication (takes precedence over whitelist)
+  # Format: comma-separated list of topic names or regex patterns
+  topics.blacklist: |
+    __consumer_offsets
+    __transaction_state
+    mirrormaker2-.*
+    _schemas
+    _confluent-.*
+
+  # Topic configuration as YAML for structured access
+  topics.yaml: |
+    # ACGS Agent Bus Topics - Critical for cross-region agent communication
+    agent_messages:
+      name: acgs.agent.messages
+      source_partitions: 12
+      target_partitions: 12
+      replication_factor: 3
+      min_insync_replicas: 2
+      retention_ms: 604800000  # 7 days
+      cleanup_policy: delete
+      compression_type: lz4
+      priority: critical
+      compliance:
+        - SOC2
+        - GDPR
+      data_classification: internal
+
+    agent_events:
+      name: acgs.agent.events
+      source_partitions: 8
+      target_partitions: 8
+      replication_factor: 3
+      min_insync_replicas: 2
+      retention_ms: 2592000000  # 30 days
+      cleanup_policy: delete
+      compression_type: snappy
+      priority: high
+      compliance:
+        - SOC2
+        - GDPR
+        - EU-AI-Act
+      data_classification: internal
+
+    agent_dlq:
+      name: acgs.agent.dlq
+      source_partitions: 4
+      target_partitions: 4
+      replication_factor: 3
+      min_insync_replicas: 1
+      retention_ms: 7776000000  # 90 days
+      cleanup_policy: delete
+      compression_type: gzip
+      priority: medium
+      compliance:
+        - SOC2
+      data_classification: internal
+
+    audit_events:
+      name: acgs.audit.events
+      source_partitions: 6
+      target_partitions: 6
+      replication_factor: 3
+      min_insync_replicas: 2
+      retention_ms: 31536000000  # 1 year
+      cleanup_policy: delete
+      compression_type: gzip
+      priority: critical
+      compliance:
+        - SOC2
+        - GDPR
+        - EU-AI-Act
+        - NIST-RMF
+      data_classification: confidential
+
+    compliance_reports:
+      name: acgs.compliance.reports
+      source_partitions: 4
+      target_partitions: 4
+      replication_factor: 3
+      min_insync_replicas: 2
+      retention_ms: 94608000000  # 3 years
+      cleanup_policy: compact
+      compression_type: gzip
+      priority: high
+      compliance:
+        - SOC2
+        - GDPR
+        - EU-AI-Act
+        - PIPL
+        - NIST-RMF
+      data_classification: confidential
+
+  # =============================================================================
+  # CONSUMER GROUP SYNCHRONIZATION
+  # =============================================================================
+
+  # Consumer groups to sync offsets for (for failover scenarios)
+  consumer.groups: |
+    acgs-agent-bus
+    acgs-event-processor
+    acgs-dlq-handler
+    acgs-audit-consumer
+    acgs-compliance-consumer
+
+  # Consumer group configuration as YAML
+  consumer.groups.yaml: |
+    groups:
+      - name: acgs-agent-bus
+        topics:
+          - acgs.agent.messages
+        auto_offset_reset: earliest
+        session_timeout_ms: 30000
+        heartbeat_interval_ms: 10000
+        max_poll_records: 500
+        enable_auto_commit: false
+        sync_offsets: true
+
+      - name: acgs-event-processor
+        topics:
+          - acgs.agent.events
+          - acgs.audit.events
+        auto_offset_reset: earliest
+        session_timeout_ms: 45000
+        heartbeat_interval_ms: 15000
+        max_poll_records: 1000
+        enable_auto_commit: false
+        sync_offsets: true
+
+      - name: acgs-dlq-handler
+        topics:
+          - acgs.agent.dlq
+        auto_offset_reset: earliest
+        session_timeout_ms: 60000
+        heartbeat_interval_ms: 20000
+        max_poll_records: 100
+        enable_auto_commit: false
+        sync_offsets: true
+
+      - name: acgs-audit-consumer
+        topics:
+          - acgs.audit.events
+        auto_offset_reset: earliest
+        session_timeout_ms: 30000
+        heartbeat_interval_ms: 10000
+        max_poll_records: 500
+        enable_auto_commit: false
+        sync_offsets: true
+
+      - name: acgs-compliance-consumer
+        topics:
+          - acgs.compliance.reports
+        auto_offset_reset: earliest
+        session_timeout_ms: 30000
+        heartbeat_interval_ms: 10000
+        max_poll_records: 200
+        enable_auto_commit: false
+        sync_offsets: true
+
+  # =============================================================================
+  # REPLICATION POLICY CONFIGURATION
+  # =============================================================================
+
+  # Replication policy class
+  replication.policy.class: "org.apache.kafka.connect.mirror.DefaultReplicationPolicy"
+
+  # Topic name separator (source-cluster.topic-name)
+  replication.policy.separator: "."
+
+  # Replication factor for replicated topics in target cluster
+  replication.factor: "3"
+
+  # Whether to sync topic configurations from source
+  sync.topic.configs.enabled: "true"
+
+  # Whether to sync topic ACLs from source (disabled for security)
+  sync.topic.acls.enabled: "false"
+
+  # Topic configuration overrides for replicated topics
+  topic.config.overrides: |
+    # Retention settings (match source or override)
+    retention.ms=-1
+    # Compression (use source settings)
+    compression.type=producer
+    # Min ISR for reliability
+    min.insync.replicas=2
+
+  # =============================================================================
+  # REFRESH AND DISCOVERY INTERVALS
+  # =============================================================================
+
+  # How often to refresh topic list from source cluster (seconds)
+  refresh.topics.interval.seconds: "60"
+
+  # How often to refresh consumer group list (seconds)
+  refresh.groups.interval.seconds: "60"
+
+  # How often to emit checkpoints for offset translation (seconds)
+  emit.checkpoints.interval.seconds: "60"
+
+  # How often to emit heartbeats for monitoring (seconds)
+  emit.heartbeats.interval.seconds: "5"
+
+  # How often to sync consumer group offsets (seconds)
+  sync.group.offsets.interval.seconds: "60"
+
+  # =============================================================================
+  # PERFORMANCE TUNING
+  # =============================================================================
+
+  # Number of tasks for source connector (parallelism)
+  tasks.max.source: "4"
+
+  # Number of tasks for checkpoint connector
+  tasks.max.checkpoint: "1"
+
+  # Number of tasks for heartbeat connector
+  tasks.max.heartbeat: "1"
+
+  # Producer settings for reliability
+  producer.acks: "all"
+  producer.retries: "2147483647"
+  producer.max.in.flight.requests: "1"
+  producer.enable.idempotence: "true"
+  producer.batch.size: "16384"
+  producer.linger.ms: "10"
+  producer.buffer.memory: "33554432"
+  producer.compression.type: "lz4"
+
+  # Consumer settings
+  consumer.auto.offset.reset: "earliest"
+  consumer.session.timeout.ms: "30000"
+  consumer.heartbeat.interval.ms: "10000"
+  consumer.max.poll.records: "500"
+  consumer.max.poll.interval.ms: "300000"
+  consumer.fetch.min.bytes: "1"
+  consumer.fetch.max.wait.ms: "500"
+
+  # Offset flush settings for durability
+  offset.flush.interval.ms: "10000"
+  offset.flush.timeout.ms: "5000"
+
+  # =============================================================================
+  # MONITORING AND ALERTING THRESHOLDS
+  # =============================================================================
+
+  # Replication lag thresholds (milliseconds)
+  monitoring.lag.warning.ms: "30000"
+  monitoring.lag.critical.ms: "60000"
+
+  # Heartbeat monitoring
+  monitoring.heartbeat.missing.threshold.seconds: "30"
+
+  # Checkpoint monitoring
+  monitoring.checkpoint.missing.threshold.seconds: "120"
+
+  # Record rate thresholds (records per second)
+  monitoring.record.rate.min: "1"
+  monitoring.record.rate.max: "100000"
+
+  # Byte rate thresholds (bytes per second)
+  monitoring.byte.rate.warning: "10485760"
+  monitoring.byte.rate.critical: "104857600"
+
+  # Monitoring configuration as YAML
+  monitoring.yaml: |
+    metrics:
+      scrape_interval: 30s
+      scrape_timeout: 10s
+      evaluation_interval: 30s
+
+    alerts:
+      replication_lag:
+        warning:
+          threshold_ms: 30000
+          duration: 5m
+          severity: warning
+        critical:
+          threshold_ms: 60000
+          duration: 2m
+          severity: critical
+
+      connector_status:
+        down:
+          duration: 5m
+          severity: critical
+
+      no_replication:
+        duration: 10m
+        severity: warning
+
+      heartbeat_missing:
+        duration: 5m
+        severity: critical
+
+      pod_count_low:
+        min_replicas: 2
+        duration: 5m
+        severity: warning
+
+    recording_rules:
+      - name: mirrormaker2_replication_lag_avg
+        expr: avg(kafka_connect_mirror_replication_latency_ms)
+      - name: mirrormaker2_replication_lag_max
+        expr: max(kafka_connect_mirror_replication_latency_ms)
+      - name: mirrormaker2_record_rate
+        expr: rate(kafka_connect_mirror_record_count[5m])
+      - name: mirrormaker2_byte_rate
+        expr: rate(kafka_connect_mirror_byte_rate[5m])
+
+  # =============================================================================
+  # SECURITY CONFIGURATION
+  # =============================================================================
+
+  # Security protocol for Kafka connections
+  security.protocol: "SSL"
+
+  # TLS/SSL configuration paths
+  ssl.truststore.location: "/tls/truststore.jks"
+  ssl.keystore.location: "/tls/keystore.jks"
+
+  # SASL configuration (if using SASL_SSL)
+  sasl.mechanism: "SCRAM-SHA-512"
+  sasl.jaas.config.template: |
+    org.apache.kafka.common.security.scram.ScramLoginModule required
+    username="${SASL_USERNAME}"
+    password="${SASL_PASSWORD}";
+
+  # =============================================================================
+  # DISASTER RECOVERY CONFIGURATION
+  # =============================================================================
+
+  # Failover configuration
+  failover.enabled: "true"
+  failover.auto.enabled: "false"
+  failover.manual.confirmation.required: "true"
+
+  # RTO/RPO targets
+  recovery.rto.target.seconds: "60"
+  recovery.rpo.target.seconds: "30"
+
+  # Failover procedure as YAML
+  failover.procedure.yaml: |
+    manual_failover:
+      description: "Manual failover procedure for cross-region Kafka"
+      prerequisites:
+        - Verify source region is truly unavailable
+        - Confirm data integrity in target region
+        - Notify operations team
+      steps:
+        - step: 1
+          action: "Stop producers in source region"
+          command: "kubectl scale deployment --replicas=0 -l app=agent-bus -n acgs2 --context=region1"
+        - step: 2
+          action: "Wait for in-flight messages to replicate"
+          command: "sleep 30"
+        - step: 3
+          action: "Verify consumer group offsets are synced"
+          command: "kafka-consumer-groups.sh --bootstrap-server ${TARGET_KAFKA_BOOTSTRAP} --describe --group acgs-agent-bus"
+        - step: 4
+          action: "Update consumers to use target cluster"
+          command: "kubectl patch configmap acgs2-config -p '{\"data\":{\"kafka-bootstrap-servers\":\"${TARGET_KAFKA_BOOTSTRAP}\"}}'"
+        - step: 5
+          action: "Start consumers in target region"
+          command: "kubectl rollout restart deployment -l app=agent-bus -n acgs2 --context=region2"
+        - step: 6
+          action: "Verify message flow in target region"
+          command: "kafka-console-consumer.sh --bootstrap-server ${TARGET_KAFKA_BOOTSTRAP} --topic acgs.agent.messages --max-messages 1"
+      rollback:
+        - step: 1
+          action: "Restore source region connectivity"
+        - step: 2
+          action: "Wait for replication to catch up"
+        - step: 3
+          action: "Switch consumers back to source region"
+        - step: 4
+          action: "Resume normal operations"
+
+---
+# =============================================================================
+# MULTI-REGION CLUSTER CONFIGURATION
+# =============================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mirrormaker2-clusters
+  namespace: kafka-system
+  labels:
+    app.kubernetes.io/name: mirrormaker2
+    app.kubernetes.io/component: cluster-config
+    app.kubernetes.io/part-of: acgs2
+  annotations:
+    acgs.io/constitutional-hash: "multi-region-mm2-config-v1"
+data:
+  # Cluster definitions as YAML for all regions
+  clusters.yaml: |
+    clusters:
+      us-east-1:
+        alias: us-east-1
+        bootstrap_servers: kafka.kafka-system.svc.cluster.local:9093
+        network: network1
+        region: us-east-1
+        zone: us-east-1a
+        is_primary: true
+        security_protocol: SSL
+        ssl:
+          truststore_location: /tls/truststore.jks
+          keystore_location: /tls/keystore.jks
+        topics:
+          - acgs.agent.messages
+          - acgs.agent.events
+          - acgs.agent.dlq
+          - acgs.audit.events
+          - acgs.compliance.reports
+        replicate_to:
+          - eu-west-1
+          - ap-southeast-1
+
+      eu-west-1:
+        alias: eu-west-1
+        bootstrap_servers: kafka.eu-west-1.svc.cluster.global:9093
+        network: network2
+        region: eu-west-1
+        zone: eu-west-1a
+        is_primary: false
+        security_protocol: SSL
+        ssl:
+          truststore_location: /tls/truststore.jks
+          keystore_location: /tls/keystore.jks
+        topics:
+          - acgs.agent.messages
+          - acgs.agent.events
+          - acgs.agent.dlq
+          - acgs.audit.events
+          - acgs.compliance.reports
+        replicate_to:
+          - us-east-1
+          - ap-southeast-1
+        compliance:
+          - GDPR
+          - EU-AI-Act
+
+      ap-southeast-1:
+        alias: ap-southeast-1
+        bootstrap_servers: kafka.ap-southeast-1.svc.cluster.global:9093
+        network: network3
+        region: ap-southeast-1
+        zone: ap-southeast-1a
+        is_primary: false
+        security_protocol: SSL
+        ssl:
+          truststore_location: /tls/truststore.jks
+          keystore_location: /tls/keystore.jks
+        topics:
+          - acgs.agent.messages
+          - acgs.agent.events
+          - acgs.agent.dlq
+          - acgs.audit.events
+          - acgs.compliance.reports
+        replicate_to:
+          - us-east-1
+          - eu-west-1
+        compliance:
+          - PDPA
+
+    replication_topology:
+      # Active-Active bidirectional replication
+      mode: active-active
+      # All regions replicate to all other regions
+      mesh: true
+      # Topic naming convention: <source-alias>.<topic-name>
+      naming_policy: default
+      separator: "."
+
+    failover_priority:
+      # Priority order for failover (highest priority first)
+      us-east-1: 1
+      eu-west-1: 2
+      ap-southeast-1: 3
+
+    network_topology:
+      # Istio network labels for each cluster
+      network1: us-east-1
+      network2: eu-west-1
+      network3: ap-southeast-1
+      # East-West Gateway ports
+      gateway_port: 15443
+      # Cross-cluster DNS suffix
+      dns_suffix: "svc.cluster.global"
+
+  # Per-region bootstrap server lookup
+  cluster.us-east-1.bootstrap: "kafka.kafka-system.svc.cluster.local:9093"
+  cluster.eu-west-1.bootstrap: "kafka.eu-west-1.svc.cluster.global:9093"
+  cluster.ap-southeast-1.bootstrap: "kafka.ap-southeast-1.svc.cluster.global:9093"
+
+---
+# =============================================================================
+# TOPIC AUTO-CREATION CONFIGURATION
+# =============================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mirrormaker2-topic-creation
+  namespace: kafka-system
+  labels:
+    app.kubernetes.io/name: mirrormaker2
+    app.kubernetes.io/component: topic-creation
+    app.kubernetes.io/part-of: acgs2
+  annotations:
+    acgs.io/constitutional-hash: "multi-region-mm2-config-v1"
+data:
+  # Topic creation defaults for replicated topics
+  topic.creation.default.yaml: |
+    # Default settings for new replicated topics
+    defaults:
+      partitions: 6
+      replication_factor: 3
+      configs:
+        min.insync.replicas: 2
+        retention.ms: 604800000  # 7 days
+        cleanup.policy: delete
+        compression.type: producer
+        segment.bytes: 1073741824  # 1GB
+        segment.ms: 86400000  # 1 day
+
+    # Topic-specific overrides
+    overrides:
+      acgs.agent.messages:
+        partitions: 12
+        configs:
+          retention.ms: 604800000  # 7 days
+          compression.type: lz4
+
+      acgs.agent.events:
+        partitions: 8
+        configs:
+          retention.ms: 2592000000  # 30 days
+          compression.type: snappy
+
+      acgs.agent.dlq:
+        partitions: 4
+        configs:
+          retention.ms: 7776000000  # 90 days
+          compression.type: gzip
+
+      acgs.audit.events:
+        partitions: 6
+        configs:
+          retention.ms: 31536000000  # 1 year
+          compression.type: gzip
+
+      acgs.compliance.reports:
+        partitions: 4
+        configs:
+          retention.ms: 94608000000  # 3 years
+          cleanup.policy: compact
+          compression.type: gzip
+
+  # Topic naming convention documentation
+  topic.naming.convention: |
+    # Replicated Topic Naming Convention
+    # ==================================
+    #
+    # MirrorMaker 2 uses the DefaultReplicationPolicy which prefixes
+    # replicated topics with the source cluster alias.
+    #
+    # Original Topic: acgs.agent.messages
+    # Replicated Topic in us-east-1: eu-west-1.acgs.agent.messages
+    # Replicated Topic in eu-west-1: us-east-1.acgs.agent.messages
+    #
+    # This allows consumers to distinguish between local and replicated
+    # topics, and supports active-active replication patterns.
+    #
+    # Consumer Applications:
+    # - To consume from local topics: subscribe to "acgs.agent.messages"
+    # - To consume from all regions: subscribe to ".*acgs.agent.messages"
+    # - To consume from specific region: subscribe to "eu-west-1.acgs.agent.messages"
+
+---
+# =============================================================================
+# OPERATIONAL SCRIPTS AND PROCEDURES
+# =============================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mirrormaker2-operations
+  namespace: kafka-system
+  labels:
+    app.kubernetes.io/name: mirrormaker2
+    app.kubernetes.io/component: operations
+    app.kubernetes.io/part-of: acgs2
+  annotations:
+    acgs.io/constitutional-hash: "multi-region-mm2-config-v1"
+data:
+  # Script to check replication status
+  check-replication-status.sh: |
+    #!/bin/bash
+    # Check MirrorMaker 2 Replication Status
+    # Usage: ./check-replication-status.sh
+
+    set -euo pipefail
+
+    CONNECT_URL="${CONNECT_URL:-http://mirrormaker2.kafka-system.svc.cluster.local:8083}"
+
+    echo "=== MirrorMaker 2 Replication Status ==="
+    echo ""
+
+    # Check connector status
+    echo "Connectors:"
+    curl -s "${CONNECT_URL}/connectors" | jq -r '.[]' | while read connector; do
+      status=$(curl -s "${CONNECT_URL}/connectors/${connector}/status" | jq -r '.connector.state')
+      echo "  - ${connector}: ${status}"
+    done
+    echo ""
+
+    # Check task status
+    echo "Tasks:"
+    curl -s "${CONNECT_URL}/connectors" | jq -r '.[]' | while read connector; do
+      curl -s "${CONNECT_URL}/connectors/${connector}/status" | jq -r '.tasks[] | "  - \(.id): \(.state)"'
+    done
+    echo ""
+
+    # Check replication lag from Prometheus metrics
+    echo "Replication Lag (last value):"
+    if command -v promtool &> /dev/null; then
+      curl -s "http://prometheus.monitoring.svc.cluster.local:9090/api/v1/query?query=kafka_connect_mirror_replication_latency_ms" | \
+        jq -r '.data.result[] | "  - \(.metric.source) -> \(.metric.target): \(.value[1])ms"'
+    else
+      echo "  (promtool not available, check Prometheus directly)"
+    fi
+
+  # Script to trigger connector restart
+  restart-connectors.sh: |
+    #!/bin/bash
+    # Restart MirrorMaker 2 Connectors
+    # Usage: ./restart-connectors.sh [connector-name]
+
+    set -euo pipefail
+
+    CONNECT_URL="${CONNECT_URL:-http://mirrormaker2.kafka-system.svc.cluster.local:8083}"
+    CONNECTOR="${1:-all}"
+
+    restart_connector() {
+      local name=$1
+      echo "Restarting connector: ${name}"
+      curl -s -X POST "${CONNECT_URL}/connectors/${name}/restart"
+      echo " - Done"
+    }
+
+    if [ "${CONNECTOR}" = "all" ]; then
+      echo "Restarting all connectors..."
+      curl -s "${CONNECT_URL}/connectors" | jq -r '.[]' | while read connector; do
+        restart_connector "${connector}"
+      done
+    else
+      restart_connector "${CONNECTOR}"
+    fi
+
+    echo ""
+    echo "Waiting for connectors to stabilize..."
+    sleep 10
+
+    echo ""
+    echo "Current connector status:"
+    curl -s "${CONNECT_URL}/connectors" | jq -r '.[]' | while read connector; do
+      status=$(curl -s "${CONNECT_URL}/connectors/${connector}/status" | jq -r '.connector.state')
+      echo "  - ${connector}: ${status}"
+    done
+
+  # Script to validate topic replication
+  validate-replication.sh: |
+    #!/bin/bash
+    # Validate MirrorMaker 2 Topic Replication
+    # Usage: ./validate-replication.sh
+
+    set -euo pipefail
+
+    SOURCE_BOOTSTRAP="${SOURCE_KAFKA_BOOTSTRAP:-kafka.eu-west-1.svc.cluster.global:9093}"
+    TARGET_BOOTSTRAP="${TARGET_KAFKA_BOOTSTRAP:-kafka.kafka-system.svc.cluster.local:9093}"
+    TOPICS="acgs.agent.messages acgs.agent.events acgs.agent.dlq"
+
+    echo "=== MirrorMaker 2 Replication Validation ==="
+    echo ""
+    echo "Source: ${SOURCE_BOOTSTRAP}"
+    echo "Target: ${TARGET_BOOTSTRAP}"
+    echo ""
+
+    # Check if topics exist in source
+    echo "Source Topics:"
+    for topic in ${TOPICS}; do
+      if kafka-topics.sh --bootstrap-server "${SOURCE_BOOTSTRAP}" --describe --topic "${topic}" &>/dev/null; then
+        echo "  [OK] ${topic}"
+      else
+        echo "  [MISSING] ${topic}"
+      fi
+    done
+    echo ""
+
+    # Check if replicated topics exist in target
+    echo "Replicated Topics in Target:"
+    SOURCE_ALIAS="${SOURCE_CLUSTER_ALIAS:-eu-west-1}"
+    for topic in ${TOPICS}; do
+      replicated_topic="${SOURCE_ALIAS}.${topic}"
+      if kafka-topics.sh --bootstrap-server "${TARGET_BOOTSTRAP}" --describe --topic "${replicated_topic}" &>/dev/null; then
+        echo "  [OK] ${replicated_topic}"
+      else
+        echo "  [MISSING] ${replicated_topic}"
+      fi
+    done
+    echo ""
+
+    # Compare message counts (approximate)
+    echo "Message Count Comparison:"
+    for topic in ${TOPICS}; do
+      source_count=$(kafka-run-class.sh kafka.tools.GetOffsetShell --broker-list "${SOURCE_BOOTSTRAP}" --topic "${topic}" 2>/dev/null | awk -F: '{sum += $3} END {print sum}' || echo "N/A")
+      replicated_topic="${SOURCE_ALIAS}.${topic}"
+      target_count=$(kafka-run-class.sh kafka.tools.GetOffsetShell --broker-list "${TARGET_BOOTSTRAP}" --topic "${replicated_topic}" 2>/dev/null | awk -F: '{sum += $3} END {print sum}' || echo "N/A")
+      echo "  ${topic}:"
+      echo "    Source: ${source_count}"
+      echo "    Target: ${target_count}"
+    done
+
+  # Consumer group offset sync verification
+  verify-offset-sync.sh: |
+    #!/bin/bash
+    # Verify Consumer Group Offset Synchronization
+    # Usage: ./verify-offset-sync.sh [group-name]
+
+    set -euo pipefail
+
+    TARGET_BOOTSTRAP="${TARGET_KAFKA_BOOTSTRAP:-kafka.kafka-system.svc.cluster.local:9093}"
+    GROUP="${1:-acgs-agent-bus}"
+    SOURCE_ALIAS="${SOURCE_CLUSTER_ALIAS:-eu-west-1}"
+
+    echo "=== Consumer Group Offset Sync Verification ==="
+    echo ""
+    echo "Group: ${GROUP}"
+    echo "Source Alias: ${SOURCE_ALIAS}"
+    echo ""
+
+    # Check checkpoint topic for offset translation
+    CHECKPOINT_TOPIC="${SOURCE_ALIAS}.checkpoints.internal"
+
+    echo "Checkpoint Topic: ${CHECKPOINT_TOPIC}"
+    if kafka-topics.sh --bootstrap-server "${TARGET_BOOTSTRAP}" --describe --topic "${CHECKPOINT_TOPIC}" &>/dev/null; then
+      echo "  [OK] Checkpoint topic exists"
+
+      # Get latest checkpoints
+      echo ""
+      echo "Latest Checkpoints:"
+      kafka-console-consumer.sh \
+        --bootstrap-server "${TARGET_BOOTSTRAP}" \
+        --topic "${CHECKPOINT_TOPIC}" \
+        --from-beginning \
+        --max-messages 10 \
+        --property print.key=true 2>/dev/null | tail -5
+    else
+      echo "  [WARNING] Checkpoint topic not found"
+    fi
+    echo ""
+
+    # Check consumer group offsets in target
+    echo "Consumer Group Offsets in Target:"
+    kafka-consumer-groups.sh \
+      --bootstrap-server "${TARGET_BOOTSTRAP}" \
+      --describe \
+      --group "${GROUP}" 2>/dev/null || echo "  (Group not found or no active consumers)"

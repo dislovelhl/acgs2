@@ -1,25 +1,25 @@
 {
   "active": true,
-  "spec": "019-advanced-analytics-and-insights-dashboard",
+  "spec": "020-multi-region-global-deployment-support",
   "state": "complete",
   "subtasks": {
-    "completed": 23,
-    "total": 23,
+    "completed": 25,
+    "total": 25,
     "in_progress": 0,
     "failed": 0
   },
   "phase": {
-    "current": "Integration & Testing",
+    "current": "Integration Testing and Documentation",
     "id": null,
-    "total": 4
+    "total": 6
   },
   "workers": {
     "active": 0,
     "max": 1
   },
   "session": {
-    "number": 18,
-    "started_at": "2026-01-03T08:54:04.012080"
+    "number": 20,
+    "started_at": "2026-01-03T08:54:11.221496"
   },
-  "last_update": "2026-01-03T09:01:28.120613"
+  "last_update": "2026-01-03T09:20:12.741640"
 }
