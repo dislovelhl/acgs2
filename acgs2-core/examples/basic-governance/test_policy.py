@@ -52,21 +52,21 @@ except ImportError:
 def test_policy_evaluation():
     """Test the basic governance policy with various inputs"""
 
-    logger.info("Testing Basic Governance Policy")
-    logger.info("=" * 40)
+    print("Testing Basic Governance Policy")
+    print("=" * 40)
     print()
 
     # Initialize OPA client
     policy_path = Path(__file__).parent / "policy.rego"
     if not policy_path.exists():
-    logger.info(f"❌ Policy file not found: {policy_path}")
+        print(f"❌ Policy file not found: {policy_path}")
         return False
 
     try:
         client = OPAClient(str(policy_path))
     except Exception as e:
-    logger.info(f"❌ Failed to initialize OPA client: {e}")
-    logger.info("Using mock client for demonstration...")
+        print(f"❌ Failed to initialize OPA client: {e}")
+        print("Using mock client for demonstration...")
         client = MockOPAClient(str(policy_path))
 
     # Test cases
@@ -117,7 +117,7 @@ def test_policy_evaluation():
     total_tests = len(test_cases)
 
     for i, test_case in enumerate(test_cases, 1):
-    logger.info(f"Test {i}: {test_case['name']}")
+        print(f"Test {i}: {test_case['name']}")
 
         try:
             result = client.evaluate_policy(test_case['input'])
@@ -128,20 +128,20 @@ def test_policy_evaluation():
             else:
                 print("  ❌ FAILED"                print(f"    Expected: allow={test_case['expected_allow']}, Got: allow={allow}")
                 if result.get('violations'):
-    logger.info(f"    Violations: {result['violations']}")
+                    print(f"    Violations: {result['violations']}")
 
         except Exception as e:
-    logger.info(f"  ❌ ERROR: {e}")
+            print(f"  ❌ ERROR: {e}")
 
         print()
 
-    logger.info(f"Results: {passed_tests}/{total_tests} tests passed")
+    print(f"Results: {passed_tests}/{total_tests} tests passed")
 
     if passed_tests == total_tests:
-    logger.info("🎉 All tests passed! Your basic governance policy is working correctly.")
+        print("🎉 All tests passed! Your basic governance policy is working correctly.")
         return True
     else:
-    logger.info("❌ Some tests failed. Check the policy logic and test inputs.")
+        print("❌ Some tests failed. Check the policy logic and test inputs.")
         return False
 
 
@@ -152,11 +152,11 @@ def main():
     if not success:
         sys.exit(1)
 
-    logger.info("\nNext Steps:")
-    logger.info("1. Try modifying the policy to add new content categories")
-    logger.info("2. Experiment with different confidence thresholds")
-    logger.info("3. Add user role-based permissions")
-    logger.info("4. Check out other examples in the examples/ directory")
+    print("\nNext Steps:")
+    print("1. Try modifying the policy to add new content categories")
+    print("2. Experiment with different confidence thresholds")
+    print("3. Add user role-based permissions")
+    print("4. Check out other examples in the examples/ directory")
 
 
 if __name__ == "__main__":

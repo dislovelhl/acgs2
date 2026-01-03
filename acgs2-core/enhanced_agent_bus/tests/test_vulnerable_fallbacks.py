@@ -53,20 +53,20 @@ builtins.__import__ = blocking_import
 
 try:
     import enhanced_agent_bus.deliberation_layer.integration
-    log_warning(logger, "ERROR: Import succeeded when it should have failed")
+    logger.error("ERROR: Import succeeded when it should have failed", file=sys.stderr)
     sys.exit(1)
 except RuntimeError as e:
     if "CRITICAL" in str(e) or "missing" in str(e).lower():
-    log_warning(logger, f"OK: Got expected RuntimeError: {e}")
+        logger.error(f"OK: Got expected RuntimeError: {e}", file=sys.stderr)
         sys.exit(0)
-    log_warning(logger, f"ERROR: Unexpected RuntimeError: {e}")
+    logger.error(f"ERROR: Unexpected RuntimeError: {e}", file=sys.stderr)
     sys.exit(2)
 except ImportError as e:
     # ImportError is also acceptable - shows fail-closed behavior
-    log_warning(logger, f"OK: Got ImportError (fail-closed): {e}")
+    logger.error(f"OK: Got ImportError (fail-closed): {e}", file=sys.stderr)
     sys.exit(0)
 except Exception as e:
-    log_warning(logger, f"ERROR: Unexpected exception type {type(e).__name__}: {e}")
+    logger.error(f"ERROR: Unexpected exception type {type(e).__name__}: {e}", file=sys.stderr)
     sys.exit(3)
 """
 

@@ -22,13 +22,5 @@
     "previous_hash": "cad6d8c972ac99ab93dbd7ca415b34c586de8223e5b318751f24cb41a67dfb09",
     "constitutional_hash": "cdd01ef066bc6cf2",
     "hash": "55f2ea19c31ad71574e67c96cf888550874a2b3f149124cd9c6eab4a92ab2a45"
-  },
-  {
-    "index": 3,
-    "timestamp": "2026-01-02T22:40:08.985038+00:00",
-    "root_hash": "9a14a8b0063c8651d941aa883439d9a1c44c1576ff8ed6be51a2ccd2ee33551b",
-    "previous_hash": "55f2ea19c31ad71574e67c96cf888550874a2b3f149124cd9c6eab4a92ab2a45",
-    "constitutional_hash": "cdd01ef066bc6cf2",
-    "hash": "a322e0d04dca065135ea0d9bf1c18ff6db7672a23c86a76835a4d61297d8b026"
   }
 ]

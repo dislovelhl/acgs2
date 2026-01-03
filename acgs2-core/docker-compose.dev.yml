@@ -192,31 +192,6 @@ services:
       timeout: 5s
       retries: 3
 
-  ml-governance:
-    build:
-      context: ./services/ml_governance
-      dockerfile: Dockerfile.dev
-    ports:
-      - "8400:8400"
-    environment:
-      - ENVIRONMENT=development
-      - REDIS_URL=redis://redis:6379/0
-      - TENANT_ID=acgs-dev
-    volumes:
-      - ./services/ml_governance:/app
-      - /app/__pycache__
-      - ml_models:/tmp/ml_models
-    depends_on:
-      redis:
-        condition: service_healthy
-    networks:
-      - acgs-dev
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8400/health"]
-      interval: 15s
-      timeout: 10s
-      retries: 3
-
   # Development Tools
   jupyter:
     image: jupyter/scipy-notebook:python-3.11
@@ -237,7 +212,6 @@ services:
 
 volumes:
   redis_data:
-  ml_models:
 
 networks:
   acgs-dev:
