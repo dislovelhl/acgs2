@@ -4059,6 +4059,2499 @@ curl http://localhost:8001/health
 
 ---
 
+### ACGS-3102: ContainerStartupError
+
+**Severity**: CRITICAL
+**Impact**: Service-Unavailable
+**Exception**: N/A (Docker-level error)
+
+**Description**: Container failed to start. The container was created but the application inside could not start successfully.
+
+**Common Causes**:
+- Missing or invalid environment variables
+- Port conflicts within the container
+- Volume mount errors preventing access to required files
+- Application code errors on startup
+- Insufficient resources (memory, CPU)
+- Database connection failures during initialization
+- Missing dependencies or misconfigured paths
+
+**Symptoms**:
+```
+Container exited with code 1
+Container exits immediately after starting
+docker-compose up shows repeated restarts
+Container status: Exited (1)
+Logs show application startup errors
+```
+
+**Resolution**:
+
+1. **Check container logs**:
+   ```bash
+   # View logs for the failed container
+   docker-compose logs <service-name>
+
+   # Follow logs in real-time
+   docker-compose logs -f <service-name>
+
+   # Get last 50 lines
+   docker logs --tail 50 <container-id>
+   ```
+
+2. **Verify environment variables**:
+   ```bash
+   # Check environment variables in container
+   docker-compose config
+
+   # Verify .env file exists and is loaded
+   cat .env
+
+   # Check for missing required variables
+   grep -E "REQUIRED_|DATABASE_|REDIS_" .env
+   ```
+
+3. **Check resource constraints**:
+   ```bash
+   # Inspect container configuration
+   docker inspect <container-id>
+
+   # Check resource limits
+   docker stats --no-stream
+
+   # View OOM events
+   dmesg | grep -i oom
+   ```
+
+4. **Test container interactively**:
+   ```bash
+   # Start container with shell override
+   docker-compose run --rm <service-name> /bin/bash
+
+   # Manually run startup command to see errors
+   python main.py  # or whatever the startup command is
+   ```
+
+5. **Verify port conflicts**:
+   ```bash
+   # Check if ports are already in use inside container
+   docker-compose ps
+   netstat -tulpn | grep <port>
+   ```
+
+6. **Check volume mounts**:
+   ```bash
+   # Verify volume mounts are accessible
+   docker-compose run --rm <service-name> ls -la /path/to/mount
+
+   # Check permissions
+   docker-compose run --rm <service-name> ls -la /app
+   ```
+
+7. **Rebuild and restart**:
+   ```bash
+   # Rebuild container from scratch
+   docker-compose build --no-cache <service-name>
+   docker-compose up -d <service-name>
+   ```
+
+**Example - Missing Environment Variable**:
+```bash
+# Container exits with code 1
+docker-compose logs enhanced-agent-bus
+# Error: KeyError: 'CONSTITUTIONAL_HASH'
+
+# Add missing variable to .env
+echo "CONSTITUTIONAL_HASH=cdd01ef066bc6cf2" >> .env
+
+# Recreate container
+docker-compose up -d enhanced-agent-bus
+
+# Verify startup
+docker-compose logs -f enhanced-agent-bus
+```
+
+**Frequency**: Common
+
+**Related Errors**: ACGS-1101, ACGS-3301, ACGS-3104, ACGS-3105
+
+---
+
+### ACGS-3103: ImagePullError
+
+**Severity**: CRITICAL
+**Impact**: Deployment-Blocking
+**Exception**: N/A (Docker/Kubernetes infrastructure error)
+
+**Description**: Failed to pull container image from registry. This prevents deployment from starting.
+
+**Common Causes**:
+- Network connectivity issues to container registry
+- Registry authentication failures
+- Image tag or version doesn't exist
+- Wrong registry URL or credentials
+- Corporate proxy blocking registry access
+- Rate limiting from public registries (Docker Hub)
+- Registry temporarily unavailable
+
+**Symptoms**:
+```
+Error response from daemon: pull access denied
+manifest unknown: manifest unknown
+no basic auth credentials
+TLS handshake timeout
+dial tcp: lookup registry-1.docker.io: no such host
+toomanyrequests: You have reached your pull rate limit
+```
+
+**Resolution**:
+
+1. **Verify network connectivity**:
+   ```bash
+   # Test connectivity to Docker Hub
+   curl -I https://registry-1.docker.io/v2/
+
+   # Test connectivity to custom registry
+   curl -I https://your-registry.example.com/v2/
+
+   # Check DNS resolution
+   nslookup registry-1.docker.io
+   ```
+
+2. **Authenticate to registry**:
+   ```bash
+   # Login to Docker Hub
+   docker login
+   # Enter username and password
+
+   # Login to custom registry
+   docker login your-registry.example.com
+
+   # Login with token (CI/CD)
+   echo "$REGISTRY_TOKEN" | docker login -u username --password-stdin
+   ```
+
+3. **Verify image exists**:
+   ```bash
+   # Check if image and tag exist
+   docker pull <image>:<tag>
+
+   # List available tags (if you have access)
+   curl -s https://registry.hub.docker.com/v2/repositories/<image>/tags/ | jq
+   ```
+
+4. **Check proxy configuration**:
+   ```bash
+   # Configure Docker to use proxy
+   # Edit ~/.docker/config.json or /etc/systemd/system/docker.service.d/http-proxy.conf
+
+   # For systemd (Linux):
+   sudo mkdir -p /etc/systemd/system/docker.service.d
+   sudo cat > /etc/systemd/system/docker.service.d/http-proxy.conf <<EOF
+   [Service]
+   Environment="HTTP_PROXY=http://proxy.example.com:8080"
+   Environment="HTTPS_PROXY=http://proxy.example.com:8080"
+   Environment="NO_PROXY=localhost,127.0.0.1"
+   EOF
+
+   sudo systemctl daemon-reload
+   sudo systemctl restart docker
+   ```
+
+5. **Handle rate limiting (Docker Hub)**:
+   ```bash
+   # Authenticate to increase rate limit
+   docker login
+
+   # Use mirror or cache
+   # Edit /etc/docker/daemon.json:
+   {
+     "registry-mirrors": ["https://your-mirror.example.com"]
+   }
+
+   sudo systemctl restart docker
+   ```
+
+6. **Retry with different registry**:
+   ```bash
+   # Pull from alternative registry
+   docker pull ghcr.io/<org>/<image>:<tag>
+
+   # Or build locally instead
+   docker-compose build
+   ```
+
+**Example - Authentication Failure**:
+```bash
+# Image pull fails
+docker pull your-registry.example.com/acgs2/agent-bus:latest
+# Error: pull access denied
+
+# Login to registry
+docker login your-registry.example.com
+Username: youruser
+Password: ********
+
+# Retry pull
+docker pull your-registry.example.com/acgs2/agent-bus:latest
+# Success
+
+# Restart deployment
+docker-compose up -d
+```
+
+**Frequency**: Occasional
+
+**Related Errors**: ACGS-3201, ACGS-3203, ACGS-3402
+
+---
+
+### ACGS-3104: VolumeMountError
+
+**Severity**: HIGH
+**Impact**: Deployment-Blocking
+**Exception**: N/A (Docker/Kubernetes infrastructure error)
+
+**Description**: Failed to mount volume to container. This prevents container from accessing required files or persistent data.
+
+**Common Causes**:
+- Mount path doesn't exist on host
+- Insufficient permissions on host path
+- SELinux blocking volume mount (Linux)
+- Path syntax incorrect (Windows paths)
+- Volume driver not available
+- Concurrent access conflicts
+- Read-only filesystem
+
+**Symptoms**:
+```
+Error response from daemon: error while creating mount source path
+Permission denied
+invalid mount config for type "bind": bind source path does not exist
+Error: failed to create shim: OCI runtime create failed: runc create failed
+SELinux is preventing docker from read access on the directory
+```
+
+**Resolution**:
+
+1. **Verify path exists**:
+   ```bash
+   # Check if mount path exists
+   ls -la /path/to/mount
+
+   # Create if missing
+   mkdir -p /path/to/mount
+
+   # Check docker-compose.yml for correct paths
+   cat docker-compose.yml | grep -A 5 volumes:
+   ```
+
+2. **Fix permissions**:
+   ```bash
+   # Set correct permissions on host
+   sudo chmod 755 /path/to/mount
+
+   # Change ownership if needed
+   sudo chown -R $USER:$USER /path/to/mount
+
+   # For specific Docker user (e.g., UID 1000)
+   sudo chown -R 1000:1000 /path/to/mount
+   ```
+
+3. **Handle SELinux (Linux)**:
+   ```bash
+   # Check SELinux status
+   getenforce
+
+   # Add SELinux label to directory
+   sudo chcon -Rt svirt_sandbox_file_t /path/to/mount
+
+   # Or use :z or :Z suffix in docker-compose.yml
+   volumes:
+     - /path/to/mount:/container/path:z
+
+   # Temporarily disable for testing (not recommended for production)
+   sudo setenforce 0
+   ```
+
+4. **Fix Windows path issues**:
+   ```bash
+   # Use forward slashes in docker-compose.yml
+   volumes:
+     - C:/Users/username/data:/app/data
+
+   # Or use environment variable
+   volumes:
+     - ${PWD}/data:/app/data
+   ```
+
+5. **Check volume driver**:
+   ```bash
+   # List volume drivers
+   docker volume ls
+
+   # Inspect volume
+   docker volume inspect <volume-name>
+
+   # Create volume explicitly
+   docker volume create --name <volume-name>
+   ```
+
+6. **Test mount interactively**:
+   ```bash
+   # Test mount with simple container
+   docker run --rm -v /path/to/mount:/test:ro alpine ls -la /test
+
+   # Check if files are accessible
+   docker-compose run --rm <service> ls -la /mounted/path
+   ```
+
+**Example - SELinux Blocking Mount**:
+```bash
+# Container fails to start
+docker-compose up -d hitl-approvals
+# Error: Permission denied
+
+# Check SELinux
+getenforce
+# Enforcing
+
+# Add SELinux label
+sudo chcon -Rt svirt_sandbox_file_t ./data/hitl-approvals
+
+# Or update docker-compose.yml
+volumes:
+  - ./data/hitl-approvals:/app/data:z
+
+# Restart
+docker-compose up -d hitl-approvals
+```
+
+**Frequency**: Common (especially Linux/SELinux)
+
+**Related Errors**: ACGS-3102, ACGS-8301, ACGS-8101
+
+---
+
+### ACGS-3105: ContainerOOMError
+
+**Severity**: HIGH
+**Impact**: Service-Crash
+**Exception**: N/A (Kernel OOM killer)
+
+**Description**: Container killed due to out-of-memory condition (exit code 137). The Linux kernel OOM killer terminated the container when it exceeded memory limits.
+
+**Common Causes**:
+- Memory limit set too low for workload
+- Memory leak in application
+- Excessive concurrent requests
+- Large dataset loaded into memory
+- Insufficient swap space
+- Gradual memory growth over time
+- Spike in traffic causing memory spike
+
+**Symptoms**:
+```
+Container exited with code 137
+OOMKilled: true
+Reason: OOMKilled
+dmesg: Out of memory: Kill process
+Container keeps restarting with 137 exit code
+Memory usage at 100% before crash
+```
+
+**Resolution**:
+
+1. **Confirm OOM kill**:
+   ```bash
+   # Check exit code
+   docker inspect <container-id> | jq '.[0].State'
+   # ExitCode: 137 indicates OOM kill
+
+   # Check kernel logs
+   dmesg | grep -i "oom\|killed"
+   dmesg | grep -i "<container-name>"
+
+   # Check Docker events
+   docker events --filter 'event=oom' --since '1h'
+   ```
+
+2. **Analyze memory usage**:
+   ```bash
+   # Monitor memory usage
+   docker stats <container-name>
+
+   # Check memory limit
+   docker inspect <container-id> | jq '.[0].HostConfig.Memory'
+
+   # View memory trends
+   docker logs <container-id> | grep -i memory
+   ```
+
+3. **Increase memory limit**:
+   ```bash
+   # Update docker-compose.yml
+   services:
+     enhanced-agent-bus:
+       deploy:
+         resources:
+           limits:
+             memory: 2G  # Increased from 1G
+           reservations:
+             memory: 1G
+
+   # Restart with new limits
+   docker-compose up -d
+   ```
+
+4. **Optimize application**:
+   ```bash
+   # Profile memory usage
+   # For Python: use memory_profiler
+   pip install memory-profiler
+   python -m memory_profiler your_script.py
+
+   # Check for memory leaks
+   # Monitor over time and look for steady growth
+   docker stats --no-stream <container-name>
+   ```
+
+5. **Add swap (if appropriate)**:
+   ```bash
+   # Allow container to use swap (Docker)
+   services:
+     your-service:
+       deploy:
+         resources:
+           limits:
+             memory: 1G
+       mem_swappiness: 60  # Allow swap usage
+   ```
+
+6. **Implement graceful degradation**:
+   ```bash
+   # Add memory limits with buffer
+   # Set limit higher than reservation
+   deploy:
+     resources:
+       limits:
+         memory: 2G      # Hard limit
+       reservations:
+         memory: 1G      # Soft limit
+
+   # Implement memory monitoring in application
+   # to shed load before OOM
+   ```
+
+7. **Scale horizontally**:
+   ```bash
+   # Instead of increasing memory, add more instances
+   docker-compose up -d --scale enhanced-agent-bus=3
+
+   # Or in Kubernetes
+   kubectl scale deployment enhanced-agent-bus --replicas=3
+   ```
+
+**Example - OPA Memory Exhaustion**:
+```bash
+# OPA container keeps crashing
+docker-compose logs opa
+# Last logs before crash...
+
+# Check exit code
+docker inspect $(docker-compose ps -q opa) | jq '.[0].State.ExitCode'
+# 137
+
+# Check OOM in dmesg
+dmesg | grep opa
+# Out of memory: Killed process 1234 (opa)
+
+# Increase memory limit in docker-compose.yml
+services:
+  opa:
+    deploy:
+      resources:
+        limits:
+          memory: 512M  # Increased from 256M
+        reservations:
+          memory: 256M
+
+# Restart
+docker-compose up -d opa
+
+# Monitor
+docker stats opa
+```
+
+**Frequency**: Common (production, high load)
+
+**Related Errors**: ACGS-3502, ACGS-7301, ACGS-3501
+
+---
+
+### ACGS-3201: NetworkConnectivityError
+
+**Severity**: CRITICAL
+**Impact**: Service-Unavailable
+**Exception**: N/A (Network-level error)
+
+**Description**: Network connectivity lost between services or to external resources. This is a general network failure.
+
+**Common Causes**:
+- Network interface down
+- Docker network misconfiguration
+- Firewall blocking traffic
+- Network partition in distributed system
+- DNS resolution failure
+- Routing table issues
+- Network driver failure
+
+**Symptoms**:
+```
+Connection refused
+Connection timed out
+No route to host
+Network is unreachable
+Cannot resolve hostname
+curl: (7) Failed to connect
+```
+
+**Resolution**:
+
+1. **Check Docker network**:
+   ```bash
+   # List Docker networks
+   docker network ls
+
+   # Inspect network
+   docker network inspect <network-name>
+
+   # Check if containers are on same network
+   docker inspect <container-id> | jq '.[0].NetworkSettings.Networks'
+   ```
+
+2. **Test connectivity**:
+   ```bash
+   # Test from host
+   curl http://localhost:8000/health
+
+   # Test from container to container
+   docker exec <container-1> curl http://<container-2>:8000/health
+
+   # Test DNS resolution
+   docker exec <container> nslookup <service-name>
+   docker exec <container> ping <service-name>
+   ```
+
+3. **Recreate Docker network**:
+   ```bash
+   # Stop all containers
+   docker-compose down
+
+   # Remove network
+   docker network rm <network-name>
+
+   # Recreate
+   docker-compose up -d
+   ```
+
+4. **Check firewall**:
+   ```bash
+   # Check iptables (Linux)
+   sudo iptables -L -n
+
+   # Check firewalld
+   sudo firewall-cmd --list-all
+
+   # Temporarily disable for testing (not recommended)
+   sudo systemctl stop firewalld
+   ```
+
+5. **Verify network configuration**:
+   ```bash
+   # Check docker-compose network config
+   cat docker-compose.yml | grep -A 5 networks:
+
+   # Ensure all services use same network
+   networks:
+     acgs2-network:
+       driver: bridge
+   ```
+
+**Example - Service Cannot Reach OPA**:
+```bash
+# Agent bus cannot reach OPA
+docker-compose logs enhanced-agent-bus
+# ConnectionError: Cannot connect to OPA at http://opa:8181
+
+# Test connectivity
+docker exec enhanced-agent-bus curl http://opa:8181/health
+# curl: (6) Could not resolve host: opa
+
+# Check network
+docker network inspect acgs2_default
+
+# Recreate network
+docker-compose down
+docker-compose up -d
+
+# Verify
+docker exec enhanced-agent-bus curl http://opa:8181/health
+# OK
+```
+
+**Frequency**: Occasional
+
+**Related Errors**: ACGS-3202, ACGS-3204, ACGS-4101, ACGS-4201
+
+---
+
+### ACGS-3202: DNSResolutionError
+
+**Severity**: HIGH
+**Impact**: Service-Degraded
+**Exception**: N/A (DNS infrastructure error)
+
+**Description**: DNS resolution failed - unable to resolve hostname to IP address.
+
+**Common Causes**:
+- DNS server unavailable
+- Docker DNS misconfiguration
+- /etc/resolv.conf issues
+- Network connectivity to DNS server lost
+- Hostname doesn't exist
+- DNS cache poisoning
+- Corporate DNS restrictions
+
+**Symptoms**:
+```
+could not resolve host: <hostname>
+dial tcp: lookup <hostname>: no such host
+getaddrinfo: Name or service not known
+temporary failure in name resolution
+```
+
+**Resolution**:
+
+1. **Test DNS resolution**:
+   ```bash
+   # From host
+   nslookup google.com
+   dig google.com
+
+   # From container
+   docker exec <container> nslookup google.com
+   docker exec <container> cat /etc/resolv.conf
+   ```
+
+2. **Check Docker DNS configuration**:
+   ```bash
+   # Inspect container DNS settings
+   docker inspect <container> | jq '.[0].HostConfig.Dns'
+   docker inspect <container> | jq '.[0].HostConfig.DnsSearch'
+
+   # Check Docker daemon DNS
+   cat /etc/docker/daemon.json
+   ```
+
+3. **Configure custom DNS**:
+   ```bash
+   # Update /etc/docker/daemon.json
+   {
+     "dns": ["8.8.8.8", "8.8.4.4"]
+   }
+
+   # Restart Docker
+   sudo systemctl restart docker
+
+   # Or in docker-compose.yml
+   services:
+     your-service:
+       dns:
+         - 8.8.8.8
+         - 8.8.4.4
+   ```
+
+4. **Use IP addresses instead** (temporary workaround):
+   ```bash
+   # Get service IP
+   docker inspect <container> | jq '.[0].NetworkSettings.Networks[].IPAddress'
+
+   # Update connection string to use IP
+   # Instead of: http://opa:8181
+   # Use: http://172.18.0.5:8181
+   ```
+
+5. **Check /etc/hosts**:
+   ```bash
+   # View container hosts file
+   docker exec <container> cat /etc/hosts
+
+   # Add custom entry in docker-compose.yml
+   services:
+     your-service:
+       extra_hosts:
+         - "opa:172.18.0.5"
+   ```
+
+**Example - Cannot Resolve Service Name**:
+```bash
+# Service cannot resolve Redis
+docker exec hitl-approvals nslookup redis
+# Server: 127.0.0.11
+# ** server can't find redis: NXDOMAIN
+
+# Check if Redis is running
+docker-compose ps redis
+# redis   Up
+
+# Verify they're on same network
+docker network inspect acgs2_default | jq '.[0].Containers'
+
+# Restart both services
+docker-compose restart redis hitl-approvals
+
+# Verify DNS now works
+docker exec hitl-approvals nslookup redis
+# Name: redis
+# Address: 172.18.0.3
+```
+
+**Frequency**: Occasional
+
+**Related Errors**: ACGS-3201, ACGS-3203
+
+---
+
+### ACGS-3203: ProxyConfigurationError
+
+**Severity**: MEDIUM
+**Impact**: Deployment-Blocking (if external registry/APIs required)
+**Exception**: N/A (Network configuration error)
+
+**Description**: Proxy misconfigured, preventing access to external resources through corporate proxy.
+
+**Common Causes**:
+- Missing proxy environment variables
+- Incorrect proxy URL or credentials
+- Proxy not configured for Docker daemon
+- No-proxy settings incomplete
+- Proxy authentication failure
+- SSL/TLS proxy inspection issues
+
+**Symptoms**:
+```
+ProxyError: Cannot connect to proxy
+407 Proxy Authentication Required
+SSL certificate verification failed
+dial tcp: lookup proxy.example.com: no such host
+Connection to proxy refused
+```
+
+**Resolution**:
+
+1. **Set proxy environment variables**:
+   ```bash
+   # Add to .env file
+   HTTP_PROXY=http://proxy.example.com:8080
+   HTTPS_PROXY=http://proxy.example.com:8080
+   NO_PROXY=localhost,127.0.0.1,.example.com
+
+   # With authentication
+   HTTP_PROXY=http://username:password@proxy.example.com:8080
+   ```
+
+2. **Configure Docker daemon proxy**:
+   ```bash
+   # Create systemd override
+   sudo mkdir -p /etc/systemd/system/docker.service.d
+
+   # Create proxy config
+   sudo cat > /etc/systemd/system/docker.service.d/http-proxy.conf <<EOF
+   [Service]
+   Environment="HTTP_PROXY=http://proxy.example.com:8080"
+   Environment="HTTPS_PROXY=http://proxy.example.com:8080"
+   Environment="NO_PROXY=localhost,127.0.0.1,docker-registry.example.com"
+   EOF
+
+   # Reload and restart
+   sudo systemctl daemon-reload
+   sudo systemctl restart docker
+   ```
+
+3. **Configure Docker client proxy** (for builds):
+   ```bash
+   # Edit ~/.docker/config.json
+   {
+     "proxies": {
+       "default": {
+         "httpProxy": "http://proxy.example.com:8080",
+         "httpsProxy": "http://proxy.example.com:8080",
+         "noProxy": "localhost,127.0.0.1"
+       }
+     }
+   }
+   ```
+
+4. **Pass proxy to containers**:
+   ```bash
+   # In docker-compose.yml
+   services:
+     your-service:
+       environment:
+         - HTTP_PROXY=http://proxy.example.com:8080
+         - HTTPS_PROXY=http://proxy.example.com:8080
+         - NO_PROXY=localhost,127.0.0.1,opa,redis,kafka
+   ```
+
+5. **Handle SSL inspection**:
+   ```bash
+   # Add corporate CA certificate
+   # Copy certificate to container
+   COPY corporate-ca.crt /usr/local/share/ca-certificates/
+   RUN update-ca-certificates
+
+   # Or disable SSL verification (not recommended)
+   export CURL_CA_BUNDLE=/path/to/ca-bundle.crt
+   ```
+
+**Example - Cannot Pull Images Through Proxy**:
+```bash
+# Image pull fails
+docker pull redis:7-alpine
+# Error: dial tcp: lookup registry-1.docker.io
+
+# Configure Docker daemon proxy
+sudo mkdir -p /etc/systemd/system/docker.service.d
+sudo nano /etc/systemd/system/docker.service.d/http-proxy.conf
+# [Service]
+# Environment="HTTP_PROXY=http://proxy.corp.example.com:8080"
+# Environment="HTTPS_PROXY=http://proxy.corp.example.com:8080"
+# Environment="NO_PROXY=localhost,127.0.0.1"
+
+# Restart Docker
+sudo systemctl daemon-reload
+sudo systemctl restart docker
+
+# Retry pull
+docker pull redis:7-alpine
+# Success
+```
+
+**Frequency**: Occasional (corporate environments)
+
+**Related Errors**: ACGS-3103, ACGS-3201
+
+---
+
+### ACGS-3204: NetworkPartitionError
+
+**Severity**: CRITICAL
+**Impact**: Service-Unavailable
+**Exception**: N/A (Network infrastructure failure)
+
+**Description**: Network partition detected - part of the distributed system cannot communicate with another part.
+
+**Common Causes**:
+- Network switch failure
+- Firewall rule changes
+- Network segmentation issues
+- Cloud provider network issues
+- Split-brain scenario in distributed system
+- Chaos engineering test (intentional)
+
+**Symptoms**:
+```
+Cluster split detected
+Cannot reach quorum
+Partitioned from coordinator
+Majority of nodes unreachable
+Network partition detected in logs
+Health checks failing for subset of nodes
+```
+
+**Resolution**:
+
+1. **Detect partition**:
+   ```bash
+   # Check node connectivity
+   kubectl get nodes
+
+   # Check pod connectivity
+   kubectl get pods -o wide
+
+   # Test connectivity between nodes
+   ping <node-ip>
+
+   # Check Kafka cluster status
+   docker exec kafka kafka-topics.sh --bootstrap-server localhost:9092 --describe
+   ```
+
+2. **Verify network configuration**:
+   ```bash
+   # Check network routes
+   ip route show
+
+   # Check iptables rules
+   sudo iptables -L -n
+
+   # Check network interfaces
+   ip addr show
+   ```
+
+3. **Restore connectivity**:
+   ```bash
+   # Restart networking
+   sudo systemctl restart networking
+
+   # Restart network manager
+   sudo systemctl restart NetworkManager
+
+   # Flush iptables (if safe)
+   sudo iptables -F
+   ```
+
+4. **Handle split-brain** (if applicable):
+   ```bash
+   # Force rejoin to cluster
+   # (specific to your distributed system)
+
+   # For Kafka
+   docker exec kafka kafka-broker-api-versions.sh --bootstrap-server localhost:9092
+
+   # For PostgreSQL replication
+   # Promote standby or re-sync from primary
+   ```
+
+5. **Monitor and alert**:
+   ```bash
+   # Set up network monitoring
+   # Alert on packet loss >1%
+   # Alert on latency >100ms
+   # Alert on network interface status changes
+   ```
+
+**Example - Chaos Engineering Network Partition**:
+```bash
+# During chaos test, network partition injected
+# Redis and Kafka temporarily unreachable
+
+# Check connectivity
+docker exec enhanced-agent-bus curl http://redis:6379
+# Connection refused
+
+# Partition heals automatically after test
+# Verify services recover
+docker exec enhanced-agent-bus curl http://redis:6379
+# OK
+
+# Check logs for automatic recovery
+docker-compose logs enhanced-agent-bus | grep -i "redis.*recovered"
+```
+
+**Frequency**: Rare (testing or emergencies)
+
+**Related Errors**: ACGS-3201, ACGS-4201, ACGS-4301
+
+---
+
+### ACGS-3302: PortBindingError
+
+**Severity**: CRITICAL
+**Impact**: Deployment-Blocking
+**Exception**: N/A (Docker/OS-level error)
+
+**Description**: Failed to bind to port due to insufficient permissions or system restrictions.
+
+**Common Causes**:
+- Attempting to bind to privileged port (<1024) without root
+- Port reserved by operating system
+- Container running as non-root user
+- SELinux/AppArmor restrictions
+- Port binding disabled in Docker configuration
+
+**Symptoms**:
+```
+Error: permission denied while trying to connect to port
+bind: permission denied
+cannot bind to port 80: Permission denied
+Error starting userland proxy: listen tcp4 0.0.0.0:80: bind: permission denied
+```
+
+**Resolution**:
+
+1. **Use non-privileged ports**:
+   ```bash
+   # Change port to >1024 in docker-compose.yml
+   services:
+     api-gateway:
+       ports:
+         - "8080:8080"  # Instead of 80:8080
+
+   # Or use host port >1024, map to container port 80
+   ports:
+     - "8080:80"
+   ```
+
+2. **Grant CAP_NET_BIND_SERVICE capability**:
+   ```bash
+   # Allow non-root user to bind privileged ports
+   # In docker-compose.yml
+   services:
+     api-gateway:
+       cap_add:
+         - NET_BIND_SERVICE
+   ```
+
+3. **Run container as root** (not recommended):
+   ```bash
+   # In docker-compose.yml
+   services:
+     your-service:
+       user: root
+   ```
+
+4. **Use sysctl to allow port binding**:
+   ```bash
+   # Allow non-root to bind ports <1024 (Linux)
+   sudo sysctl net.ipv4.ip_unprivileged_port_start=80
+
+   # Make permanent
+   echo "net.ipv4.ip_unprivileged_port_start=80" | sudo tee -a /etc/sysctl.conf
+   sudo sysctl -p
+   ```
+
+5. **Check SELinux/AppArmor**:
+   ```bash
+   # Check SELinux
+   getenforce
+   sudo ausearch -m avc -ts recent
+
+   # Add policy or use permissive mode for testing
+   sudo setenforce 0
+
+   # Check AppArmor
+   sudo aa-status
+   ```
+
+**Example - Cannot Bind to Port 80**:
+```bash
+# Service fails to bind port 80
+docker-compose up api-gateway
+# Error: bind: permission denied
+
+# Change to unprivileged port
+# Edit docker-compose.yml
+services:
+  api-gateway:
+    ports:
+      - "8080:8080"  # Changed from 80:8080
+
+# Restart
+docker-compose up -d api-gateway
+
+# Access on new port
+curl http://localhost:8080/health
+```
+
+**Frequency**: Occasional (production deployments)
+
+**Related Errors**: ACGS-3301, ACGS-8301
+
+---
+
+### ACGS-3303: PortAccessError
+
+**Severity**: MEDIUM
+**Impact**: Development-Issue (not blocking for production)
+**Exception**: N/A (Network configuration issue)
+
+**Description**: Cannot access service on port from host machine, despite service running.
+
+**Common Causes**:
+- Port not exposed in docker-compose.yml
+- Firewall blocking port on host
+- Service listening on 127.0.0.1 instead of 0.0.0.0
+- Wrong URL scheme (http vs https)
+- Docker/host network confusion
+- Port forwarding not configured (remote access)
+
+**Symptoms**:
+```
+curl: (7) Failed to connect to localhost port 8000
+Connection refused from host
+Service accessible from container but not from host
+Browser cannot load http://localhost:8000
+```
+
+**Resolution**:
+
+1. **Verify port is exposed**:
+   ```bash
+   # Check docker-compose.yml
+   cat docker-compose.yml | grep -A 3 "ports:"
+
+   # Should have port mapping like:
+   ports:
+     - "8000:8000"  # host:container
+
+   # Check running containers
+   docker-compose ps
+   docker ps --format "table {{.Names}}\t{{.Ports}}"
+   ```
+
+2. **Verify service is listening on 0.0.0.0**:
+   ```bash
+   # Check what service is listening on
+   docker exec <container> netstat -tlnp
+
+   # Should show 0.0.0.0:8000, not 127.0.0.1:8000
+
+   # Update application to listen on all interfaces
+   # For Python: app.run(host='0.0.0.0', port=8000)
+   # For Node: app.listen(8000, '0.0.0.0')
+   ```
+
+3. **Check firewall**:
+   ```bash
+   # Linux
+   sudo ufw status
+   sudo ufw allow 8000
+
+   # macOS
+   sudo /usr/libexec/ApplicationFirewall/socketfilterfw --getglobalstate
+
+   # Windows
+   netsh advfirewall firewall add rule name="Port 8000" dir=in action=allow protocol=TCP localport=8000
+   ```
+
+4. **Test connectivity**:
+   ```bash
+   # Test from host
+   curl http://localhost:8000/health
+
+   # Test from another container
+   docker run --rm --network acgs2_default curlimages/curl curl http://enhanced-agent-bus:8000/health
+
+   # Check if service is accessible inside container
+   docker exec enhanced-agent-bus curl http://localhost:8000/health
+   ```
+
+5. **Fix port mapping**:
+   ```bash
+   # Add port mapping to docker-compose.yml
+   services:
+     enhanced-agent-bus:
+       ports:
+         - "8000:8000"
+
+   # Recreate container
+   docker-compose up -d enhanced-agent-bus
+
+   # Verify
+   curl http://localhost:8000/health
+   ```
+
+**Example - Port Not Exposed**:
+```bash
+# Cannot access agent bus from host
+curl http://localhost:8000/health
+# curl: (7) Failed to connect
+
+# Check port mapping
+docker ps | grep agent-bus
+# No 8000 in PORTS column
+
+# Add port mapping to docker-compose.yml
+services:
+  enhanced-agent-bus:
+    ports:
+      - "8000:8000"
+
+# Recreate
+docker-compose up -d enhanced-agent-bus
+
+# Verify
+curl http://localhost:8000/health
+# {"status": "healthy"}
+```
+
+**Frequency**: Common (development)
+
+**Related Errors**: ACGS-3301, ACGS-3302
+
+---
+
+### ACGS-3401: PodCrashLoopBackOffError
+
+**Severity**: CRITICAL
+**Impact**: Service-Unavailable
+**Exception**: N/A (Kubernetes infrastructure state)
+
+**Description**: Kubernetes pod is in a crash loop - it starts, crashes, restarts repeatedly with exponential backoff.
+
+**Common Causes**:
+- Application startup failure
+- Missing ConfigMap or Secret
+- Liveness probe failing too quickly
+- Image entrypoint/command error
+- Resource constraints (memory/CPU)
+- Database not ready during startup
+- Missing dependencies
+
+**Symptoms**:
+```
+kubectl get pods
+NAME                        READY   STATUS             RESTARTS
+enhanced-agent-bus-xxx      0/1     CrashLoopBackOff   5
+
+Events:
+  Back-off restarting failed container
+  Error: ImagePullBackOff
+  Liveness probe failed
+```
+
+**Resolution**:
+
+1. **Check pod status and logs**:
+   ```bash
+   # Get pod status
+   kubectl get pods
+   kubectl describe pod <pod-name>
+
+   # View logs from current container
+   kubectl logs <pod-name>
+
+   # View logs from previous container (after crash)
+   kubectl logs <pod-name> --previous
+
+   # Follow logs
+   kubectl logs -f <pod-name>
+   ```
+
+2. **Check recent events**:
+   ```bash
+   # View pod events
+   kubectl describe pod <pod-name> | grep -A 10 Events:
+
+   # View all events in namespace
+   kubectl get events --sort-by='.lastTimestamp'
+   ```
+
+3. **Verify ConfigMaps and Secrets**:
+   ```bash
+   # List ConfigMaps
+   kubectl get configmaps
+
+   # List Secrets
+   kubectl get secrets
+
+   # Check if referenced ConfigMap exists
+   kubectl describe pod <pod-name> | grep configmap
+   kubectl get configmap <configmap-name>
+
+   # Check Secret
+   kubectl get secret <secret-name>
+   ```
+
+4. **Check resource limits**:
+   ```bash
+   # View pod resource requests/limits
+   kubectl describe pod <pod-name> | grep -A 5 "Limits:\|Requests:"
+
+   # Check node resources
+   kubectl top nodes
+   kubectl top pods
+
+   # Describe node
+   kubectl describe node <node-name>
+   ```
+
+5. **Adjust liveness probe**:
+   ```bash
+   # Edit deployment to increase probe delay
+   kubectl edit deployment <deployment-name>
+
+   # Increase initialDelaySeconds
+   livenessProbe:
+     httpGet:
+       path: /health
+       port: 8000
+     initialDelaySeconds: 60  # Increased from 10
+     periodSeconds: 10
+     timeoutSeconds: 5
+     failureThreshold: 3
+   ```
+
+6. **Test pod interactively**:
+   ```bash
+   # Run pod with shell override
+   kubectl run debug-pod --rm -it --image=<your-image> -- /bin/bash
+
+   # Or create debug container in pod
+   kubectl debug <pod-name> -it --image=<your-image>
+   ```
+
+7. **Fix and redeploy**:
+   ```bash
+   # Update deployment
+   kubectl apply -f deployment.yaml
+
+   # Or rollback to previous version
+   kubectl rollout undo deployment/<deployment-name>
+
+   # Watch rollout status
+   kubectl rollout status deployment/<deployment-name>
+   ```
+
+**Example - Missing ConfigMap**:
+```bash
+# Pod in CrashLoopBackOff
+kubectl get pods
+# enhanced-agent-bus-xxx   0/1   CrashLoopBackOff
+
+# Check logs
+kubectl logs enhanced-agent-bus-xxx --previous
+# Error: Config file /config/app-config.yaml not found
+
+# Check ConfigMap
+kubectl get configmap agent-bus-config
+# Error: configmap "agent-bus-config" not found
+
+# Create missing ConfigMap
+kubectl create configmap agent-bus-config \
+  --from-file=app-config.yaml=./config/app-config.yaml
+
+# Wait for pod to restart
+kubectl get pods -w
+# enhanced-agent-bus-xxx   1/1   Running
+```
+
+**Frequency**: Very common (Kubernetes deployments)
+
+**Related Errors**: ACGS-3402, ACGS-3403, ACGS-3102, ACGS-1101
+
+---
+
+### ACGS-3402: ImagePullBackOffError
+
+**Severity**: CRITICAL
+**Impact**: Deployment-Blocking
+**Exception**: N/A (Kubernetes infrastructure error)
+
+**Description**: Kubernetes cannot pull container image - pod stuck in ImagePullBackOff state with exponential backoff.
+
+**Common Causes**:
+- Image doesn't exist in registry
+- Registry authentication failure
+- Wrong image tag or name
+- ImagePullSecret missing or invalid
+- Registry unreachable
+- Rate limiting from public registry
+
+**Symptoms**:
+```
+kubectl get pods
+NAME                        READY   STATUS              RESTARTS
+app-xxx                     0/1     ImagePullBackOff    0
+
+Events:
+  Failed to pull image "registry.example.com/app:v1.2.3": rpc error
+  Back-off pulling image "registry.example.com/app:v1.2.3"
+  Error: ErrImagePull
+```
+
+**Resolution**:
+
+1. **Check image pull status**:
+   ```bash
+   # Get pod details
+   kubectl describe pod <pod-name>
+
+   # Look for Events section
+   kubectl describe pod <pod-name> | grep -A 10 "Events:"
+
+   # Check image pull errors
+   kubectl get events | grep -i "pull\|image"
+   ```
+
+2. **Verify image exists**:
+   ```bash
+   # Try pulling image manually
+   docker pull <image>:<tag>
+
+   # Check image name and tag
+   kubectl get deployment <deployment-name> -o yaml | grep image:
+
+   # Verify image in registry (if accessible)
+   curl -u username:password https://registry.example.com/v2/<image>/tags/list
+   ```
+
+3. **Check ImagePullSecret**:
+   ```bash
+   # List secrets
+   kubectl get secrets
+
+   # Check if ImagePullSecret exists
+   kubectl get secret <imagepullsecret-name>
+
+   # Verify secret is referenced in deployment
+   kubectl get deployment <deployment-name> -o yaml | grep imagePullSecrets -A 2
+   ```
+
+4. **Create ImagePullSecret**:
+   ```bash
+   # Create secret for private registry
+   kubectl create secret docker-registry regcred \
+     --docker-server=registry.example.com \
+     --docker-username=<username> \
+     --docker-password=<password> \
+     --docker-email=<email>
+
+   # Or from Docker config
+   kubectl create secret generic regcred \
+     --from-file=.dockerconfigjson=$HOME/.docker/config.json \
+     --type=kubernetes.io/dockerconfigjson
+   ```
+
+5. **Update deployment to use secret**:
+   ```bash
+   # Edit deployment
+   kubectl edit deployment <deployment-name>
+
+   # Add imagePullSecrets
+   spec:
+     template:
+       spec:
+         imagePullSecrets:
+         - name: regcred
+         containers:
+         - name: app
+           image: registry.example.com/app:v1.2.3
+   ```
+
+6. **Verify image pull works**:
+   ```bash
+   # Delete pod to force new pull
+   kubectl delete pod <pod-name>
+
+   # Watch pod status
+   kubectl get pods -w
+
+   # Should change from ImagePullBackOff to Running
+   ```
+
+**Example - Missing ImagePullSecret**:
+```bash
+# Pod stuck in ImagePullBackOff
+kubectl describe pod enhanced-agent-bus-xxx
+# Failed to pull image: authentication required
+
+# Create ImagePullSecret
+kubectl create secret docker-registry regcred \
+  --docker-server=ghcr.io \
+  --docker-username=$GITHUB_USERNAME \
+  --docker-password=$GITHUB_TOKEN \
+  --docker-email=$GITHUB_EMAIL
+
+# Update deployment
+kubectl patch deployment enhanced-agent-bus -p '
+{
+  "spec": {
+    "template": {
+      "spec": {
+        "imagePullSecrets": [{"name": "regcred"}]
+      }
+    }
+  }
+}'
+
+# Verify pod starts
+kubectl get pods -w
+# enhanced-agent-bus-xxx   1/1   Running
+```
+
+**Frequency**: Common (Kubernetes with private registries)
+
+**Related Errors**: ACGS-3103, ACGS-3401
+
+---
+
+### ACGS-3403: PersistentVolumeError
+
+**Severity**: HIGH
+**Impact**: Deployment-Blocking
+**Exception**: N/A (Kubernetes infrastructure error)
+
+**Description**: PersistentVolume or PersistentVolumeClaim issues preventing pod from mounting storage.
+
+**Common Causes**:
+- PersistentVolumeClaim not bound to PersistentVolume
+- StorageClass misconfigured or missing
+- Insufficient storage available
+- Access mode mismatch
+- Volume still attached to another node
+- Dynamic provisioning failure
+
+**Symptoms**:
+```
+kubectl get pods
+NAME        READY   STATUS              RESTARTS
+app-xxx     0/1     ContainerCreating   0
+
+kubectl describe pod:
+  FailedMount: Unable to attach or mount volumes
+  PersistentVolumeClaim is not bound: "data-pvc"
+  waiting for a volume to be created
+```
+
+**Resolution**:
+
+1. **Check PVC status**:
+   ```bash
+   # List PVCs
+   kubectl get pvc
+
+   # Check PVC details
+   kubectl describe pvc <pvc-name>
+
+   # Should show:
+   # Status: Bound
+   # Volume: <pv-name>
+   ```
+
+2. **Check PV status**:
+   ```bash
+   # List PVs
+   kubectl get pv
+
+   # Check PV details
+   kubectl describe pv <pv-name>
+
+   # Status should be: Bound
+   # Claim should match your PVC
+   ```
+
+3. **Check StorageClass**:
+   ```bash
+   # List StorageClasses
+   kubectl get storageclass
+
+   # Check default StorageClass
+   kubectl get storageclass -o yaml | grep "is-default-class: \"true\""
+
+   # Verify PVC uses correct StorageClass
+   kubectl get pvc <pvc-name> -o yaml | grep storageClassName
+   ```
+
+4. **Fix PVC/PV binding**:
+   ```bash
+   # If PVC is Pending, check events
+   kubectl describe pvc <pvc-name>
+
+   # Create PV manually if needed
+   cat <<EOF | kubectl apply -f -
+   apiVersion: v1
+   kind: PersistentVolume
+   metadata:
+     name: manual-pv
+   spec:
+     capacity:
+       storage: 10Gi
+     accessModes:
+       - ReadWriteOnce
+     persistentVolumeReclaimPolicy: Retain
+     storageClassName: manual
+     hostPath:
+       path: /mnt/data
+   EOF
+   ```
+
+5. **Check node attachment**:
+   ```bash
+   # Check which node has volume attached
+   kubectl get pods -o wide
+
+   # Describe node
+   kubectl describe node <node-name>
+
+   # Detach volume if stuck (cloud provider specific)
+   # AWS: aws ec2 detach-volume --volume-id vol-xxx
+   # GCP: gcloud compute instances detach-disk
+   ```
+
+6. **Recreate PVC** (if safe):
+   ```bash
+   # Delete pod
+   kubectl delete pod <pod-name>
+
+   # Delete PVC (WARNING: data loss if not backed up)
+   kubectl delete pvc <pvc-name>
+
+   # Recreate PVC
+   kubectl apply -f pvc.yaml
+
+   # Verify binding
+   kubectl get pvc
+   ```
+
+**Example - PVC Not Bound**:
+```bash
+# Pod stuck in ContainerCreating
+kubectl get pods
+# hitl-approvals-xxx   0/1   ContainerCreating
+
+# Check PVC
+kubectl get pvc
+# NAME              STATUS    VOLUME   CAPACITY
+# postgres-pvc      Pending
+
+# Describe PVC
+kubectl describe pvc postgres-pvc
+# Events: waiting for first consumer to be created before binding
+
+# Check StorageClass
+kubectl get storageclass
+# No default StorageClass found
+
+# Create or set default StorageClass
+kubectl patch storageclass standard -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
+
+# Delete pod to retry
+kubectl delete pod hitl-approvals-xxx
+
+# Watch PVC bind
+kubectl get pvc -w
+# postgres-pvc   Bound   pvc-xxx   10Gi
+```
+
+**Frequency**: Common (Kubernetes with persistent storage)
+
+**Related Errors**: ACGS-3401, ACGS-3104
+
+---
+
+### ACGS-3404: ServiceUnavailableError
+
+**Severity**: CRITICAL
+**Impact**: Service-Unavailable
+**Exception**: `ServiceUnavailableError` (sdk)
+**Location**: `acgs2-core/sdk/python/acgs2_sdk/exceptions.py`
+
+**Description**: Service is unavailable - typically HTTP 503 status code. The service cannot handle requests temporarily.
+
+**Common Causes**:
+- Service overloaded or at capacity
+- Upstream dependency failure
+- Health check failing
+- Circuit breaker open
+- Rate limiting active
+- Deployment in progress
+- Database connection pool exhausted
+
+**Symptoms**:
+```
+HTTP 503 Service Unavailable
+ServiceUnavailableError raised in SDK
+Retry-After header in response
+Service health check returning unhealthy
+Circuit breaker: OPEN
+```
+
+**Resolution**:
+
+1. **Check service health**:
+   ```bash
+   # Check health endpoint
+   curl http://localhost:8000/health
+
+   # Check Kubernetes pod status
+   kubectl get pods
+   kubectl describe pod <pod-name>
+
+   # Check Docker container
+   docker-compose ps
+   docker-compose logs <service-name>
+   ```
+
+2. **Check upstream dependencies**:
+   ```bash
+   # Test database
+   docker exec postgres psql -U postgres -c "SELECT 1"
+
+   # Test Redis
+   docker exec redis redis-cli PING
+
+   # Test Kafka
+   docker exec kafka kafka-broker-api-versions.sh --bootstrap-server localhost:9092
+
+   # Test OPA
+   curl http://localhost:8181/health
+   ```
+
+3. **Check resource utilization**:
+   ```bash
+   # Docker stats
+   docker stats --no-stream
+
+   # Kubernetes resources
+   kubectl top pods
+   kubectl top nodes
+
+   # Check connection pool
+   docker exec <service> ps aux | wc -l
+   ```
+
+4. **Check circuit breaker status**:
+   ```bash
+   # View application metrics/status
+   curl http://localhost:8000/metrics | grep circuit_breaker
+
+   # Check logs for circuit breaker events
+   docker-compose logs <service> | grep -i "circuit.*open"
+   ```
+
+5. **Scale service if overloaded**:
+   ```bash
+   # Docker Compose
+   docker-compose up -d --scale <service>=3
+
+   # Kubernetes
+   kubectl scale deployment <deployment> --replicas=3
+   ```
+
+6. **Restart service**:
+   ```bash
+   # Docker Compose
+   docker-compose restart <service>
+
+   # Kubernetes
+   kubectl rollout restart deployment/<deployment>
+   ```
+
+**Example - Service Overloaded**:
+```bash
+# Service returning 503
+curl http://localhost:8000/api/approvals
+# HTTP/1.1 503 Service Unavailable
+
+# Check logs
+docker-compose logs enhanced-agent-bus
+# Connection pool exhausted, max 100 connections
+
+# Check stats
+docker stats enhanced-agent-bus
+# CPU: 95%, Memory: 1.8GB/2GB
+
+# Scale horizontally
+docker-compose up -d --scale enhanced-agent-bus=3
+
+# Verify load distributed
+curl http://localhost:8000/health
+# {"status": "healthy", "connections": 45}
+```
+
+**Frequency**: Occasional (high load, deployments)
+
+**Related Errors**: ACGS-7401, ACGS-3504, ACGS-4301
+
+---
+
+### ACGS-3501: CPUExhaustionError
+
+**Severity**: HIGH
+**Impact**: Performance-Degradation
+**Exception**: N/A (Resource limit)
+
+**Description**: CPU limit reached - container or pod is CPU-throttled.
+
+**Common Causes**:
+- CPU limit set too low
+- Excessive computation or processing
+- Inefficient algorithms or code
+- Sudden traffic spike
+- Background tasks consuming CPU
+
+**Symptoms**:
+```
+High CPU usage (95-100%)
+Slow response times
+CPU throttling in metrics
+Container CPU usage at limit
+Application timeouts
+```
+
+**Resolution**:
+
+1. **Monitor CPU usage**:
+   ```bash
+   # Docker
+   docker stats <container-name>
+
+   # Kubernetes
+   kubectl top pods
+   kubectl top nodes
+
+   # Detailed metrics
+   docker inspect <container> | jq '.[0].HostConfig.CpuQuota'
+   ```
+
+2. **Increase CPU limit**:
+   ```bash
+   # docker-compose.yml
+   services:
+     your-service:
+       deploy:
+         resources:
+           limits:
+             cpus: '2.0'  # Increased from 1.0
+           reservations:
+             cpus: '1.0'
+
+   # Restart
+   docker-compose up -d
+   ```
+
+3. **Profile application**:
+   ```bash
+   # Python profiling
+   python -m cProfile -o output.prof your_script.py
+
+   # Analyze profile
+   python -m pstats output.prof
+
+   # Or use py-spy for live profiling
+   py-spy top --pid <process-id>
+   ```
+
+4. **Optimize code**:
+   - Identify CPU-intensive operations
+   - Add caching for repeated computations
+   - Use more efficient algorithms
+   - Offload heavy processing to background tasks
+
+5. **Scale horizontally**:
+   ```bash
+   # Add more instances instead of increasing CPU
+   docker-compose up -d --scale <service>=3
+
+   # Kubernetes
+   kubectl scale deployment <deployment> --replicas=3
+   ```
+
+**Example**:
+```bash
+# Check CPU usage
+docker stats enhanced-agent-bus
+# CPU: 98%
+
+# Increase CPU limit
+# Edit docker-compose.yml
+services:
+  enhanced-agent-bus:
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+
+# Restart
+docker-compose up -d enhanced-agent-bus
+
+# Verify
+docker stats enhanced-agent-bus
+# CPU: 45%
+```
+
+**Frequency**: Occasional (high load)
+
+**Related Errors**: ACGS-3502, ACGS-7101, ACGS-7201
+
+---
+
+### ACGS-3502: MemoryExhaustionError
+
+**Severity**: HIGH
+**Impact**: Service-Crash
+**Exception**: N/A (Resource limit)
+
+**Description**: Memory limit reached or approaching limit. May lead to OOM kill (ACGS-3105).
+
+**Common Causes**:
+- Memory limit set too low
+- Memory leak in application
+- Large datasets in memory
+- Insufficient garbage collection
+- Caching too much data
+
+**Symptoms**:
+```
+Memory usage at or near limit
+Slow performance
+Swapping activity
+OOMKilled status
+Container restarts with exit code 137
+```
+
+**Resolution**:
+
+1. **Monitor memory**:
+   ```bash
+   # Docker
+   docker stats <container-name>
+
+   # Kubernetes
+   kubectl top pods
+
+   # Check memory limit
+   docker inspect <container> | jq '.[0].HostConfig.Memory'
+   ```
+
+2. **Increase memory limit**:
+   ```bash
+   # docker-compose.yml
+   services:
+     your-service:
+       deploy:
+         resources:
+           limits:
+             memory: 2G  # Increased from 1G
+           reservations:
+             memory: 1G
+
+   docker-compose up -d
+   ```
+
+3. **Profile memory usage**:
+   ```bash
+   # Python memory profiler
+   pip install memory-profiler
+   python -m memory_profiler your_script.py
+
+   # Check for memory leaks
+   docker logs <container> | grep -i "memory\|oom"
+   ```
+
+4. **Optimize application**:
+   - Fix memory leaks
+   - Implement streaming for large datasets
+   - Add cache eviction policies
+   - Use memory-efficient data structures
+
+**Frequency**: Common (production, high load)
+
+**Related Errors**: ACGS-3105, ACGS-3501, ACGS-7301
+
+---
+
+### ACGS-3503: DiskFullError
+
+**Severity**: CRITICAL
+**Impact**: Service-Crash
+**Exception**: N/A (Filesystem error)
+
+**Description**: Disk space exhausted - no space left on device.
+
+**Common Causes**:
+- Excessive logging
+- Large database growth
+- Docker image/container accumulation
+- Volume filling up
+- Temp files not cleaned
+
+**Symptoms**:
+```
+No space left on device
+write /var/lib/docker: no space left on device
+ENOSPC: no space left on device
+Container exits due to disk full
+```
+
+**Resolution**:
+
+1. **Check disk usage**:
+   ```bash
+   # Overall disk usage
+   df -h
+
+   # Docker disk usage
+   docker system df
+
+   # Find large directories
+   du -sh /* | sort -hr | head -10
+   ```
+
+2. **Clean Docker resources**:
+   ```bash
+   # Remove unused containers, images, networks
+   docker system prune -a
+
+   # Remove unused volumes (WARNING: data loss)
+   docker volume prune
+
+   # Clean build cache
+   docker builder prune
+   ```
+
+3. **Rotate logs**:
+   ```bash
+   # Configure log rotation in docker-compose.yml
+   services:
+     your-service:
+       logging:
+         driver: "json-file"
+         options:
+           max-size: "10m"
+           max-file: "3"
+   ```
+
+4. **Expand disk** (if possible):
+   - Add more storage to VM
+   - Resize volume in cloud provider
+   - Move data to larger volume
+
+**Frequency**: Occasional (production, long-running)
+
+**Related Errors**: ACGS-7301, ACGS-3502
+
+---
+
+### ACGS-3504: ConnectionPoolExhaustedError
+
+**Severity**: HIGH
+**Impact**: Service-Degraded
+**Exception**: N/A (Connection pool limit)
+
+**Description**: Connection pool is full - no available connections for new requests.
+
+**Common Causes**:
+- Pool size too small for load
+- Connections not being released
+- Connection leaks in code
+- Slow queries holding connections
+- Sudden traffic spike
+
+**Symptoms**:
+```
+Connection pool timeout
+All connections in use
+QueuePool limit exceeded
+Waiting for available connection
+TimeoutError: could not obtain connection
+```
+
+**Resolution**:
+
+1. **Increase pool size**:
+   ```bash
+   # Environment variable
+   DATABASE_POOL_SIZE=50  # Increased from 20
+   DATABASE_MAX_OVERFLOW=10
+
+   # Or in application config
+   engine = create_engine(
+       database_url,
+       pool_size=50,
+       max_overflow=10
+   )
+   ```
+
+2. **Check for connection leaks**:
+   ```bash
+   # Monitor active connections
+   docker exec postgres psql -U postgres -c "
+     SELECT count(*) FROM pg_stat_activity;
+   "
+
+   # Find long-running queries
+   docker exec postgres psql -U postgres -c "
+     SELECT pid, query, state, state_change
+     FROM pg_stat_activity
+     WHERE state != 'idle'
+     ORDER BY state_change;
+   "
+   ```
+
+3. **Optimize connection usage**:
+   - Use connection pooling properly
+   - Ensure connections are released in `finally` blocks
+   - Add timeouts to queries
+   - Use connection recycling
+
+**Frequency**: Occasional (high concurrency)
+
+**Related Errors**: ACGS-4301, ACGS-3404, ACGS-7201
+
+---
+
+### ACGS-3601: AWSConfigurationError
+
+**Severity**: HIGH
+**Impact**: Deployment-Blocking
+**Exception**: N/A (Cloud provider configuration)
+
+**Description**: AWS-specific configuration error preventing deployment.
+
+**Common Causes**:
+- Invalid AWS credentials
+- Incorrect IAM permissions
+- Wrong region configuration
+- VPC/subnet misconfiguration
+- Security group rules blocking access
+
+**Symptoms**:
+```
+InvalidClientTokenId
+AccessDenied
+UnauthorizedOperation
+VPC not found
+Subnet not available in AZ
+```
+
+**Resolution**:
+
+1. **Verify AWS credentials**:
+   ```bash
+   # Check credentials
+   aws sts get-caller-identity
+
+   # Configure credentials
+   aws configure
+   ```
+
+2. **Check IAM permissions**:
+   ```bash
+   # Test specific permission
+   aws iam simulate-principal-policy \
+     --policy-source-arn <user-arn> \
+     --action-names ec2:RunInstances
+   ```
+
+3. **Verify region and resources**:
+   ```bash
+   # Check region
+   aws configure get region
+
+   # List VPCs
+   aws ec2 describe-vpcs
+
+   # Check subnet availability
+   aws ec2 describe-subnets --filters "Name=vpc-id,Values=<vpc-id>"
+   ```
+
+**Frequency**: Occasional (AWS deployments)
+
+**Related Errors**: ACGS-3602, ACGS-3603
+
+---
+
+### ACGS-3602: GCPConfigurationError
+
+**Severity**: HIGH
+**Impact**: Deployment-Blocking
+**Exception**: N/A (Cloud provider configuration)
+
+**Description**: GCP-specific configuration error preventing deployment.
+
+**Common Causes**:
+- Invalid GCP credentials
+- Project ID incorrect
+- API not enabled
+- Network/firewall misconfiguration
+- Quota exceeded
+
+**Symptoms**:
+```
+Permission denied
+Project not found
+API [service.googleapis.com] not enabled
+Quota exceeded
+Invalid network configuration
+```
+
+**Resolution**:
+
+1. **Verify credentials**:
+   ```bash
+   # Check authentication
+   gcloud auth list
+
+   # Login
+   gcloud auth login
+
+   # Set project
+   gcloud config set project <project-id>
+   ```
+
+2. **Enable required APIs**:
+   ```bash
+   # List enabled APIs
+   gcloud services list
+
+   # Enable API
+   gcloud services enable compute.googleapis.com
+   gcloud services enable container.googleapis.com
+   ```
+
+3. **Check quotas**:
+   ```bash
+   # View quotas
+   gcloud compute project-info describe --project=<project-id>
+
+   # Request quota increase if needed
+   ```
+
+**Frequency**: Occasional (GCP deployments)
+
+**Related Errors**: ACGS-3601, ACGS-3603
+
+---
+
+### ACGS-3603: AzureConfigurationError
+
+**Severity**: HIGH
+**Impact**: Deployment-Blocking
+**Exception**: N/A (Cloud provider configuration)
+
+**Description**: Azure-specific configuration error preventing deployment.
+
+**Common Causes**:
+- Invalid Azure credentials
+- Subscription not found
+- Resource group missing
+- Network configuration issues
+- Permission errors
+
+**Symptoms**:
+```
+AuthenticationFailed
+SubscriptionNotFound
+ResourceGroupNotFound
+InvalidResourceReference
+Authorization failed
+```
+
+**Resolution**:
+
+1. **Verify credentials**:
+   ```bash
+   # Check login
+   az account show
+
+   # Login
+   az login
+
+   # Set subscription
+   az account set --subscription <subscription-id>
+   ```
+
+2. **Verify resources**:
+   ```bash
+   # List resource groups
+   az group list
+
+   # Check resource group
+   az group show --name <resource-group>
+   ```
+
+3. **Check permissions**:
+   ```bash
+   # List role assignments
+   az role assignment list --assignee <user-email>
+   ```
+
+**Frequency**: Occasional (Azure deployments)
+
+**Related Errors**: ACGS-3601, ACGS-3602
+
+---
+
+### ACGS-3701: ApplicationFailoverError
+
+**Severity**: HIGH
+**Impact**: Service-Interruption
+**Exception**: N/A (Multi-region failover scenario)
+
+**Description**: Application-level failover failed during multi-region failover procedure.
+
+**RTO Target**: < 60 seconds
+
+**Common Causes**:
+- VirtualService weights not updating in Istio
+- Envoy proxy not reflecting configuration changes
+- Service mesh connectivity issues
+- DNS propagation delays
+- Health checks failing in target region
+
+**Symptoms**:
+```
+Traffic not redirecting to backup region
+Istio VirtualService weights unchanged
+Envoy endpoints stale
+503 errors during failover window
+Health checks timeout in secondary region
+```
+
+**Resolution**:
+
+1. **Verify Istio VirtualService**:
+   ```bash
+   # Check VirtualService configuration
+   kubectl get virtualservice -n acgs2-prod
+
+   # Verify weights
+   kubectl get virtualservice enhanced-agent-bus -o yaml | grep weight
+
+   # Should show shifted weights:
+   # - destination: primary-cluster
+   #   weight: 0
+   # - destination: secondary-cluster
+   #   weight: 100
+   ```
+
+2. **Force Envoy config reload**:
+   ```bash
+   # Restart Envoy sidecars
+   kubectl rollout restart deployment -n acgs2-prod
+
+   # Or kill individual Envoy containers
+   kubectl exec <pod> -c istio-proxy -- pkill envoy
+   ```
+
+3. **Check service mesh connectivity**:
+   ```bash
+   # Test connectivity from primary to secondary
+   kubectl exec -it <pod> -c app -- curl http://enhanced-agent-bus.secondary.svc.cluster.local/health
+
+   # Check Istio pilot logs
+   kubectl logs -n istio-system <istiod-pod>
+   ```
+
+4. **Manual traffic shift**:
+   ```bash
+   # Update VirtualService manually
+   kubectl patch virtualservice enhanced-agent-bus -p '
+   {
+     "spec": {
+       "http": [{
+         "route": [{
+           "destination": {"host": "enhanced-agent-bus.secondary"},
+           "weight": 100
+         }]
+       }]
+     }
+   }'
+   ```
+
+**Example - Failover During Regional Outage**:
+```bash
+# Primary region unhealthy, initiate failover
+./scripts/failover-to-secondary.sh
+
+# Check VirtualService weights
+kubectl get virtualservice enhanced-agent-bus -o yaml
+# weight: 0 (primary), weight: 100 (secondary)
+
+# But traffic still going to primary
+curl http://enhanced-agent-bus.example.com/health
+# Error: Connection timeout (primary region down)
+
+# Force Envoy refresh
+kubectl rollout restart deployment enhanced-agent-bus -n acgs2-prod
+
+# Verify failover
+curl http://enhanced-agent-bus.example.com/health
+# {"status": "healthy", "region": "us-west-2"}
+# Success - now serving from secondary
+
+# Monitor RTO
+# Total failover time: 45 seconds (within 60s target)
+```
+
+**Frequency**: Rare (multi-region emergency)
+
+**Related Errors**: ACGS-3702, ACGS-4311, ACGS-4211
+
+---
+
+### ACGS-3702: RegionalSyncError
+
+**Severity**: HIGH
+**Impact**: Data-Consistency-Risk
+**Exception**: N/A (Multi-region data sync)
+
+**Description**: Regional synchronization error - data not in sync between regions.
+
+**Common Causes**:
+- Database replication lag
+- Kafka MirrorMaker failure
+- Network partition between regions
+- Replication bandwidth insufficient
+- Cross-region latency high
+
+**Symptoms**:
+```
+Replication lag > threshold
+MirrorMaker consumer lag high
+Data inconsistency between regions
+Stale reads from secondary region
+Sync status: DEGRADED
+```
+
+**Resolution**:
+
+1. **Check replication lag**:
+   ```bash
+   # PostgreSQL replication lag
+   docker exec postgres psql -U postgres -c "
+     SELECT
+       application_name,
+       state,
+       sync_state,
+       pg_wal_lsn_diff(pg_current_wal_lsn(), replay_lsn) AS lag_bytes
+     FROM pg_stat_replication;
+   "
+
+   # Should be < 1MB for RPO < 1 minute
+   ```
+
+2. **Check Kafka MirrorMaker**:
+   ```bash
+   # Check consumer lag
+   kafka-consumer-groups.sh \
+     --bootstrap-server localhost:9092 \
+     --group mirror-maker \
+     --describe
+
+   # Lag should be < 1000 messages
+   ```
+
+3. **Monitor cross-region network**:
+   ```bash
+   # Test latency between regions
+   ping <secondary-region-endpoint>
+
+   # Check bandwidth
+   iperf3 -c <secondary-region-endpoint>
+   ```
+
+4. **Resolve sync issues**:
+   ```bash
+   # Restart replication if stalled
+   # PostgreSQL
+   docker exec postgres psql -U postgres -c "
+     SELECT pg_reload_conf();
+   "
+
+   # Kafka MirrorMaker
+   kubectl rollout restart deployment kafka-mirror-maker
+   ```
+
+**Frequency**: Occasional (multi-region)
+
+**Related Errors**: ACGS-3701, ACGS-4311, ACGS-4211
+
+---
+
 ## ACGS-4xxx: Service Integration Errors
 
 **Category Description**: Errors related to external service integrations (Redis, Kafka, PostgreSQL, OPA).
