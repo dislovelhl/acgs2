@@ -19,17 +19,29 @@ try:
     from .deliberation_queue import DeliberationStatus, get_deliberation_queue
     from .impact_scorer import calculate_message_impact
     from .intent_classifier import IntentClassifier, IntentType
+    from ..config import BusConfiguration
 except (ImportError, ValueError):
     # Fallback for direct execution or testing
     try:
         from deliberation_queue import DeliberationStatus, get_deliberation_queue  # type: ignore
         from impact_scorer import calculate_message_impact  # type: ignore
         from intent_classifier import IntentClassifier, IntentType  # type: ignore
+        try:
+            from ..config import BusConfiguration
+        except (ImportError, ValueError):
+            from config import BusConfiguration  # type: ignore
     except ImportError:
         # For tests that use dynamic loading
         calculate_message_impact = None  # type: ignore
         get_deliberation_queue = None  # type: ignore
         DeliberationStatus = None  # type: ignore
+        try:
+            from ..config import BusConfiguration
+        except (ImportError, ValueError):
+            try:
+                from config import BusConfiguration # type: ignore
+            except ImportError:
+                BusConfiguration = None
 
 
 logger = logging.getLogger(__name__)
@@ -53,6 +65,7 @@ class AdaptiveRouter:
         impact_threshold: float = 0.8,
         deliberation_timeout: int = 300,
         enable_learning: bool = True,
+        config: Optional[BusConfiguration] = None,
     ):
         """Initializes the adaptive router.
 
@@ -64,6 +77,13 @@ class AdaptiveRouter:
             enable_learning (bool): Whether to enable adaptive threshold learning.
                 Defaults to True.
         """
+        if config:
+            self.config = config
+        elif BusConfiguration:
+            self.config = BusConfiguration.from_environment()
+        else:
+            self.config = None
+            logger.warning("BusConfiguration not available, initializing with None")
         self.impact_threshold = impact_threshold
         self.deliberation_timeout = deliberation_timeout
         self.enable_learning = enable_learning
@@ -84,8 +104,8 @@ class AdaptiveRouter:
         # Get deliberation queue
         self.deliberation_queue = get_deliberation_queue()
 
-        # Initialize Intent Classifier
-        self.intent_classifier = IntentClassifier()
+        # Initialize Intent Classifier with config
+        self.intent_classifier = IntentClassifier(config=self.config)
 
     async def route_message(
         self, message: AgentMessage, context: Optional[Dict[str, Any]] = None
@@ -120,8 +140,8 @@ class AdaptiveRouter:
         impact_score = message.impact_score
         impact_score = message.impact_score
 
-        # Start SDPC Phase 1: Intent Classification
-        intent = self.intent_classifier.classify(str(message.content))
+        # Start SDPC Phase 1: Intent Classification (Async)
+        intent = await self.intent_classifier.classify_async(str(message.content))
         logger.debug(f"Message {message.message_id} classified as {intent.value}")
 
         # Intent-driven threshold adjustments

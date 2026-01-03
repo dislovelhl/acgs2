@@ -1,3 +1,6 @@
+import logging
+
+logger = logging.getLogger(__name__)
 """
 ACGS-2 Adaptive Governance Tests
 Constitutional Hash: cdd01ef066bc6cf2
@@ -379,23 +382,23 @@ class TestAdaptiveGovernance:
 
 if __name__ == "__main__":
     # Run basic smoke tests
-    print("Running Adaptive Governance smoke tests...")
+    logging.info("Running Adaptive Governance smoke tests...")
 
     # Test basic imports
     try:
         from enhanced_agent_bus.adaptive_governance import AdaptiveGovernanceEngine
 
-        print("✅ Imports successful")
+        logging.info("✅ Imports successful")
     except ImportError as e:
-        print(f"❌ Import failed: {e}")
+        logging.error(f"❌ Import failed: {e}")
         exit(1)
 
     # Test basic instantiation
     try:
         engine = AdaptiveGovernanceEngine("test-hash")
-        print("✅ Engine instantiation successful")
+        logging.info("✅ Engine instantiation successful")
     except Exception as e:
-        print(f"❌ Engine instantiation failed: {e}")
+        logging.error(f"❌ Engine instantiation failed: {e}")
         exit(1)
 
-    print("✅ All smoke tests passed!")
+    logging.info("✅ All smoke tests passed!")

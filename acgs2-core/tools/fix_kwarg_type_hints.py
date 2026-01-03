@@ -185,7 +185,7 @@ def main():
 
     logging.info("ACGS-2 Keyword Argument Type Hint Repair Tool")
     logging.info(f"Constitutional Hash: {CONSTITUTIONAL_HASH}")
-    print()
+    logging.info("")
 
     total_files = 0
     modified_files = 0
