@@ -11,16 +11,24 @@ Key Points:
 - AdaptiveRandomForest (ARF) handles concept drift naturally
 - Expect poor initial performance until ~1000+ samples seen
 - All preprocessing must be online/incremental (no batch StandardScaler)
+
+Kafka Integration:
+- FeedbackKafkaConsumer subscribes to governance.feedback.v1 topic
+- Consumer group 'river-learner' ensures single processing of events
+- Events are fed to OnlineLearningPipeline for incremental model updates
 """
 
 from __future__ import annotations
 
+import asyncio
+import json
 import logging
 import os
+import re
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Union
 
 # Type checking imports for static analysis
 if TYPE_CHECKING:
@@ -50,6 +58,15 @@ except ImportError:
     river_preprocessing = None
     river_stats = None
 
+# Optional Kafka support
+try:
+    from aiokafka import AIOKafkaConsumer
+
+    KAFKA_AVAILABLE = True
+except ImportError:
+    KAFKA_AVAILABLE = False
+    AIOKafkaConsumer = None
+
 logger = logging.getLogger(__name__)
 
 # Configuration from environment
@@ -58,6 +75,13 @@ RIVER_N_MODELS = int(os.getenv("RIVER_N_MODELS", "10"))
 RIVER_SEED = int(os.getenv("RIVER_SEED", "42"))
 MIN_SAMPLES_FOR_PREDICTION = int(os.getenv("MIN_SAMPLES_FOR_PREDICTION", "500"))
 ENABLE_COLD_START_FALLBACK = os.getenv("ENABLE_COLD_START_FALLBACK", "true").lower() == "true"
+
+# Kafka configuration from environment
+KAFKA_BOOTSTRAP = os.getenv("KAFKA_BOOTSTRAP", "localhost:9092")
+KAFKA_TOPIC_FEEDBACK = os.getenv("KAFKA_TOPIC_FEEDBACK", "governance.feedback.v1")
+KAFKA_CONSUMER_GROUP = os.getenv("KAFKA_CONSUMER_GROUP", "river-learner")
+KAFKA_AUTO_OFFSET_RESET = os.getenv("KAFKA_AUTO_OFFSET_RESET", "earliest")
+KAFKA_MAX_POLL_RECORDS = int(os.getenv("KAFKA_MAX_POLL_RECORDS", "100"))
 
 
 class ModelType(str, Enum):
@@ -705,9 +729,342 @@ class OnlineLearningPipeline:
         logger.info("Online learning pipeline reset")
 
 
+@dataclass
+class ConsumerStats:
+    """Statistics for Kafka consumer."""
+
+    messages_received: int = 0
+    messages_processed: int = 0
+    messages_failed: int = 0
+    samples_learned: int = 0
+    last_offset: int = 0
+    last_message_at: Optional[datetime] = None
+    consumer_lag: int = 0
+    status: str = "stopped"
+
+
+class FeedbackKafkaConsumer:
+    """
+    Kafka consumer for feedback events to feed the online learning pipeline.
+
+    Subscribes to the governance.feedback.v1 topic and feeds feedback events
+    to the OnlineLearningPipeline for incremental model updates using River.
+
+    Usage:
+        pipeline = OnlineLearningPipeline(feature_names=["f1", "f2"])
+        consumer = FeedbackKafkaConsumer(pipeline)
+
+        # Start consuming in background
+        await consumer.start()
+
+        # Consumer runs continuously, call stop to shutdown
+        await consumer.stop()
+    """
+
+    def __init__(
+        self,
+        pipeline: Optional[OnlineLearningPipeline] = None,
+        bootstrap_servers: Optional[str] = None,
+        topic: Optional[str] = None,
+        group_id: Optional[str] = None,
+        auto_offset_reset: str = KAFKA_AUTO_OFFSET_RESET,
+        max_poll_records: int = KAFKA_MAX_POLL_RECORDS,
+        on_message_callback: Optional[Callable[[Dict[str, Any]], None]] = None,
+    ):
+        """
+        Initialize the Kafka consumer for feedback events.
+
+        Args:
+            pipeline: OnlineLearningPipeline to feed feedback to (creates default if None)
+            bootstrap_servers: Kafka bootstrap servers (defaults to KAFKA_BOOTSTRAP env var)
+            topic: Kafka topic to consume from (defaults to KAFKA_TOPIC_FEEDBACK env var)
+            group_id: Consumer group ID (defaults to KAFKA_CONSUMER_GROUP env var)
+            auto_offset_reset: Where to start reading when no offset exists (earliest/latest)
+            max_poll_records: Maximum records to poll in a single call
+            on_message_callback: Optional callback for each message (for custom processing)
+        """
+        self.bootstrap_servers = bootstrap_servers or KAFKA_BOOTSTRAP
+        self.topic = topic or KAFKA_TOPIC_FEEDBACK
+        self.group_id = group_id or KAFKA_CONSUMER_GROUP
+        self.auto_offset_reset = auto_offset_reset
+        self.max_poll_records = max_poll_records
+        self.on_message_callback = on_message_callback
+
+        # Initialize or get pipeline
+        self._pipeline = pipeline
+        self._consumer: Optional[Any] = None
+        self._running = False
+        self._consume_task: Optional[asyncio.Task[None]] = None
+        self._lock = asyncio.Lock()
+
+        # Statistics tracking
+        self._stats = ConsumerStats()
+
+    def _check_dependencies(self) -> bool:
+        """Check that required dependencies are available."""
+        if not KAFKA_AVAILABLE:
+            logger.error(
+                "aiokafka not installed. FeedbackKafkaConsumer unavailable. "
+                "Install with: pip install aiokafka"
+            )
+            return False
+
+        if not RIVER_AVAILABLE:
+            logger.error(
+                "River not installed. FeedbackKafkaConsumer requires River for online learning. "
+                "Install with: pip install river"
+            )
+            return False
+
+        return True
+
+    async def start(self) -> bool:
+        """
+        Start the Kafka consumer.
+
+        Returns:
+            True if consumer started successfully, False otherwise
+        """
+        if not self._check_dependencies():
+            return False
+
+        async with self._lock:
+            if self._running:
+                logger.debug("FeedbackKafkaConsumer already running")
+                return True
+
+            try:
+                # Initialize pipeline if not provided
+                if self._pipeline is None:
+                    self._pipeline = get_online_learning_pipeline()
+
+                # Create consumer
+                self._consumer = AIOKafkaConsumer(
+                    self.topic,
+                    bootstrap_servers=self.bootstrap_servers,
+                    group_id=self.group_id,
+                    auto_offset_reset=self.auto_offset_reset,
+                    max_poll_records=self.max_poll_records,
+                    value_deserializer=lambda v: json.loads(v.decode("utf-8")),
+                    key_deserializer=lambda k: k.decode("utf-8") if k else None,
+                    enable_auto_commit=True,
+                    auto_commit_interval_ms=5000,
+                )
+
+                await self._consumer.start()
+                self._running = True
+                self._stats.status = "running"
+
+                # Start consume loop in background
+                self._consume_task = asyncio.create_task(self._consume_loop())
+
+                logger.info(
+                    f"FeedbackKafkaConsumer started: "
+                    f"servers={self._sanitize_bootstrap(self.bootstrap_servers)}, "
+                    f"topic={self.topic}, group_id={self.group_id}"
+                )
+                return True
+
+            except Exception as e:
+                logger.error(f"Failed to start FeedbackKafkaConsumer: {self._sanitize_error(e)}")
+                self._consumer = None
+                self._stats.status = "error"
+                return False
+
+    async def stop(self) -> None:
+        """Stop the Kafka consumer and clean up resources."""
+        async with self._lock:
+            if not self._running:
+                return
+
+            self._running = False
+            self._stats.status = "stopping"
+
+            # Cancel consume task
+            if self._consume_task:
+                self._consume_task.cancel()
+                try:
+                    await self._consume_task
+                except asyncio.CancelledError:
+                    pass
+                self._consume_task = None
+
+            # Stop consumer
+            if self._consumer:
+                try:
+                    await self._consumer.stop()
+                    logger.info("FeedbackKafkaConsumer stopped")
+                except Exception as e:
+                    logger.warning(
+                        f"Error stopping FeedbackKafkaConsumer: {self._sanitize_error(e)}"
+                    )
+                finally:
+                    self._consumer = None
+
+            self._stats.status = "stopped"
+
+    async def _consume_loop(self) -> None:
+        """Main consume loop for processing feedback events."""
+        logger.info(f"Starting consume loop for topic {self.topic}")
+
+        try:
+            async for msg in self._consumer:
+                if not self._running:
+                    break
+
+                try:
+                    await self._process_message(msg)
+                except Exception as e:
+                    logger.error(f"Error processing message: {self._sanitize_error(e)}")
+                    self._stats.messages_failed += 1
+
+        except asyncio.CancelledError:
+            logger.info("Consume loop cancelled")
+            raise
+        except Exception as e:
+            logger.error(f"Consume loop error: {self._sanitize_error(e)}")
+            self._stats.status = "error"
+
+    async def _process_message(self, msg: Any) -> None:
+        """
+        Process a single Kafka message.
+
+        Args:
+            msg: Kafka message with value containing feedback event
+        """
+        self._stats.messages_received += 1
+        self._stats.last_offset = msg.offset
+        self._stats.last_message_at = datetime.now(timezone.utc)
+
+        try:
+            # Parse feedback event from message
+            event_data = msg.value
+
+            # Call custom callback if provided
+            if self.on_message_callback:
+                self.on_message_callback(event_data)
+
+            # Extract features and outcome for learning
+            features = event_data.get("features")
+            outcome = self._extract_outcome(event_data)
+            decision_id = event_data.get("decision_id")
+
+            if features and outcome is not None:
+                # Feed to online learning pipeline
+                result = self._pipeline.learn_from_feedback(
+                    features=features,
+                    outcome=outcome,
+                    decision_id=decision_id,
+                )
+
+                if result.success:
+                    self._stats.samples_learned += 1
+                    logger.debug(
+                        f"Learned from feedback for decision {decision_id}, "
+                        f"total samples: {result.total_samples}"
+                    )
+                else:
+                    logger.warning(
+                        f"Failed to learn from feedback for decision {decision_id}: "
+                        f"{result.error_message}"
+                    )
+
+            self._stats.messages_processed += 1
+
+        except Exception as e:
+            logger.error(f"Error processing feedback message: {self._sanitize_error(e)}")
+            self._stats.messages_failed += 1
+            raise
+
+    def _extract_outcome(self, event_data: Dict[str, Any]) -> Optional[Any]:
+        """
+        Extract the outcome/target value from a feedback event.
+
+        Args:
+            event_data: Feedback event dictionary
+
+        Returns:
+            Outcome value for learning, or None if not available
+        """
+        # Try actual_impact first (float)
+        actual_impact = event_data.get("actual_impact")
+        if actual_impact is not None:
+            return float(actual_impact)
+
+        # Try outcome status (categorical)
+        outcome = event_data.get("outcome")
+        if outcome:
+            # Map outcome status to numeric for classifier
+            outcome_map = {
+                "success": 1,
+                "failure": 0,
+                "partial": 0.5,
+                "unknown": None,
+            }
+            return outcome_map.get(outcome)
+
+        # Try feedback type (binary)
+        feedback_type = event_data.get("feedback_type")
+        if feedback_type:
+            # Map feedback type to binary for classifier
+            feedback_map = {
+                "positive": 1,
+                "negative": 0,
+                "neutral": 0.5,
+                "correction": None,  # Correction needs special handling
+            }
+            return feedback_map.get(feedback_type)
+
+        return None
+
+    def _sanitize_error(self, error: Exception) -> str:
+        """Strip sensitive metadata from error messages."""
+        error_msg = str(error)
+        # Remove potential bootstrap server details if they contain secrets
+        error_msg = re.sub(r"bootstrap_servers='[^']+'", "bootstrap_servers='REDACTED'", error_msg)
+        error_msg = re.sub(r"password='[^']+'", "password='REDACTED'", error_msg)
+        return error_msg
+
+    def _sanitize_bootstrap(self, servers: str) -> str:
+        """Sanitize bootstrap servers for logging (show host, hide port details)."""
+        parts = servers.split(",")
+        sanitized = []
+        for part in parts:
+            host = part.split(":")[0] if ":" in part else part
+            sanitized.append(f"{host}:****")
+        return ",".join(sanitized)
+
+    def get_stats(self) -> ConsumerStats:
+        """
+        Get current consumer statistics.
+
+        Returns:
+            ConsumerStats with current metrics
+        """
+        # Update consumer lag if possible
+        if self._pipeline:
+            pipeline_stats = self._pipeline.get_stats()
+            self._stats.samples_learned = pipeline_stats.get("learning_stats", {}).get(
+                "samples_learned", 0
+            )
+
+        return self._stats
+
+    @property
+    def is_running(self) -> bool:
+        """Check if the consumer is running."""
+        return self._running
+
+    @property
+    def pipeline(self) -> Optional[OnlineLearningPipeline]:
+        """Get the online learning pipeline."""
+        return self._pipeline
+
+
 # Module-level instances
 _online_learning_adapter: Optional[RiverSklearnAdapter] = None
 _online_learning_pipeline: Optional[OnlineLearningPipeline] = None
+_feedback_kafka_consumer: Optional[FeedbackKafkaConsumer] = None
 
 
 def get_online_learning_adapter(
@@ -783,6 +1140,63 @@ def learn_from_feedback_event(
     return pipeline.learn_from_feedback(features, outcome, decision_id)
 
 
+async def get_feedback_kafka_consumer(
+    pipeline: Optional[OnlineLearningPipeline] = None,
+) -> FeedbackKafkaConsumer:
+    """
+    Get or create the global FeedbackKafkaConsumer instance.
+
+    Args:
+        pipeline: Optional OnlineLearningPipeline to use
+
+    Returns:
+        Initialized FeedbackKafkaConsumer
+    """
+    global _feedback_kafka_consumer
+
+    if _feedback_kafka_consumer is None:
+        _feedback_kafka_consumer = FeedbackKafkaConsumer(pipeline=pipeline)
+
+    return _feedback_kafka_consumer
+
+
+async def start_feedback_consumer(
+    pipeline: Optional[OnlineLearningPipeline] = None,
+) -> bool:
+    """
+    Start the global feedback Kafka consumer.
+
+    Args:
+        pipeline: Optional OnlineLearningPipeline to use
+
+    Returns:
+        True if consumer started successfully, False otherwise
+    """
+    consumer = await get_feedback_kafka_consumer(pipeline)
+    return await consumer.start()
+
+
+async def stop_feedback_consumer() -> None:
+    """Stop the global feedback Kafka consumer."""
+    global _feedback_kafka_consumer
+
+    if _feedback_kafka_consumer is not None:
+        await _feedback_kafka_consumer.stop()
+        _feedback_kafka_consumer = None
+
+
+def get_consumer_stats() -> Optional[ConsumerStats]:
+    """
+    Get statistics from the global feedback consumer.
+
+    Returns:
+        ConsumerStats if consumer exists, None otherwise
+    """
+    if _feedback_kafka_consumer is not None:
+        return _feedback_kafka_consumer.get_stats()
+    return None
+
+
 # Export key classes and functions
 __all__ = [
     # Enums
@@ -792,20 +1206,30 @@ __all__ = [
     "LearningStats",
     "PredictionResult",
     "LearningResult",
+    "ConsumerStats",
     # Main Classes
     "RiverSklearnAdapter",
     "OnlineLearningPipeline",
+    "FeedbackKafkaConsumer",
     # Availability Flags
     "RIVER_AVAILABLE",
     "NUMPY_AVAILABLE",
+    "KAFKA_AVAILABLE",
     # Configuration
     "RIVER_MODEL_TYPE",
     "RIVER_N_MODELS",
     "RIVER_SEED",
     "MIN_SAMPLES_FOR_PREDICTION",
     "ENABLE_COLD_START_FALLBACK",
+    "KAFKA_BOOTSTRAP",
+    "KAFKA_TOPIC_FEEDBACK",
+    "KAFKA_CONSUMER_GROUP",
     # Convenience Functions
     "get_online_learning_adapter",
     "get_online_learning_pipeline",
     "learn_from_feedback_event",
+    "get_feedback_kafka_consumer",
+    "start_feedback_consumer",
+    "stop_feedback_consumer",
+    "get_consumer_stats",
 ]
