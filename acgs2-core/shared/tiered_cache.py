@@ -48,13 +48,71 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, List, Optional, TypeVar
 
+from shared.cache_metrics import (
+    CACHE_ENTRIES,
+    CACHE_HITS_TOTAL,
+    CACHE_MISSES_TOTAL,
+    L1_LATENCY,
+    L2_LATENCY,
+    L3_LATENCY,
+    record_cache_hit,
+    record_cache_latency,
+    record_cache_miss,
+    record_demotion,
+    record_fallback,
+    record_promotion,
+    set_tier_health,
+    update_cache_size,
+)
 from shared.l1_cache import L1Cache
+from shared.metrics import (
+    _get_or_create_counter,
+    _get_or_create_gauge,
+)
 from shared.redis_config import (
     CONSTITUTIONAL_HASH,
     RedisConfig,
     RedisHealthState,
     get_redis_config,
 )
+
+# ============================================================================
+# Tiered Cache Prometheus Metrics
+# ============================================================================
+
+# Redis failure counter
+TIERED_CACHE_REDIS_FAILURES = _get_or_create_counter(
+    "tiered_cache_redis_failures_total",
+    "Total Redis failures in tiered cache",
+    ["cache_name"],
+)
+
+# Degraded mode gauge (1 = degraded, 0 = normal)
+TIERED_CACHE_DEGRADED = _get_or_create_gauge(
+    "tiered_cache_degraded",
+    "Whether tiered cache is running in degraded mode (1=degraded, 0=normal)",
+    ["cache_name"],
+)
+
+# ============================================================================
+# Backward Compatibility Aliases
+# These provide backward compatibility for any code using the old metric names
+# ============================================================================
+
+# Per-tier hit/miss counters - now use cache_metrics.py centralized metrics
+TIERED_CACHE_HITS = CACHE_HITS_TOTAL
+TIERED_CACHE_MISSES = CACHE_MISSES_TOTAL
+
+# Per-tier size gauges - now use cache_metrics.py centralized metrics
+TIERED_CACHE_SIZE = CACHE_ENTRIES
+
+# Tier-specific latency histograms from cache_metrics.py
+# These have optimized bucket configurations for each tier's latency profile
+TIERED_CACHE_LATENCY = {
+    "L1": L1_LATENCY,  # Buckets: [0.00001, 0.00005, 0.0001, 0.0005, 0.001] (sub-ms)
+    "L2": L2_LATENCY,  # Buckets: [0.001, 0.005, 0.01, 0.025, 0.05, 0.1] (1-100ms)
+    "L3": L3_LATENCY,  # Buckets: [0.01, 0.05, 0.1, 0.25, 0.5, 1.0] (10-1000ms)
+}
 
 try:
     import redis.asyncio as aioredis
@@ -239,6 +297,11 @@ class TieredCacheManager:
         # Register for Redis health changes
         self._redis_config.register_health_callback(self._on_redis_health_change)
 
+        # Initialize tier health metrics - L1 and L3 always healthy at startup
+        set_tier_health("L1", True)
+        if self.config.l3_enabled:
+            set_tier_health("L3", True)
+
         logger.info(
             f"[{CONSTITUTIONAL_HASH}] TieredCacheManager '{name}' initialized: "
             f"L1(maxsize={self.config.l1_maxsize}, ttl={self.config.l1_ttl}s), "
@@ -260,6 +323,13 @@ class TieredCacheManager:
                 f"running in degraded mode (L1 + L3 only)"
             )
             self._l2_degraded = True
+            # Set L2 tier health to unhealthy
+            set_tier_health("L2", False)
+            TIERED_CACHE_DEGRADED.labels(cache_name=self.name).set(1)
+        else:
+            # Set L2 tier health to healthy
+            set_tier_health("L2", True)
+            TIERED_CACHE_DEGRADED.labels(cache_name=self.name).set(0)
 
         return l2_ready
 
@@ -307,12 +377,20 @@ class TieredCacheManager:
         if new_state == RedisHealthState.UNHEALTHY:
             self._l2_degraded = True
             self._last_l2_failure = time.time()
+            # Update degraded mode gauge and tier health
+            TIERED_CACHE_DEGRADED.labels(cache_name=self.name).set(1)
+            set_tier_health("L2", False)
+            # Record fallback event
+            record_fallback("L2", "L3", self.name)
             logger.warning(
                 f"[{CONSTITUTIONAL_HASH}] Redis unhealthy, switching to degraded mode (L1 + L3)"
             )
         elif new_state == RedisHealthState.HEALTHY and self._l2_degraded:
             self._l2_degraded = False
             self._last_l2_failure = 0.0
+            # Update degraded mode gauge and tier health
+            TIERED_CACHE_DEGRADED.labels(cache_name=self.name).set(0)
+            set_tier_health("L2", True)
             logger.info(
                 f"[{CONSTITUTIONAL_HASH}] Redis recovered, resuming normal tiered operation"
             )
@@ -346,6 +424,9 @@ class TieredCacheManager:
             await self._l2_client.ping()
             self._l2_degraded = False
             self._last_l2_failure = 0.0
+            # Update degraded mode gauge and tier health
+            TIERED_CACHE_DEGRADED.labels(cache_name=self.name).set(0)
+            set_tier_health("L2", True)
             logger.info(
                 f"[{CONSTITUTIONAL_HASH}] L2 Redis connection recovered, "
                 f"resuming normal tiered operation"
@@ -516,8 +597,12 @@ class TieredCacheManager:
                 logger.warning(f"[{CONSTITUTIONAL_HASH}] L2 delete failed for key '{key}': {e}")
                 with self._stats_lock:
                     self._stats.redis_failures += 1
+                # Emit Redis failure metric
+                TIERED_CACHE_REDIS_FAILURES.labels(cache_name=self.name).inc()
                 self._l2_degraded = True
                 self._last_l2_failure = time.time()
+                # Update degraded mode gauge
+                TIERED_CACHE_DEGRADED.labels(cache_name=self.name).set(1)
 
         # Delete from L3
         with self._l3_lock:
@@ -558,8 +643,12 @@ class TieredCacheManager:
                 logger.warning(f"[{CONSTITUTIONAL_HASH}] L2 exists check failed: {e}")
                 with self._stats_lock:
                     self._stats.redis_failures += 1
+                # Emit Redis failure metric
+                TIERED_CACHE_REDIS_FAILURES.labels(cache_name=self.name).inc()
                 self._l2_degraded = True
                 self._last_l2_failure = time.time()
+                # Update degraded mode gauge
+                TIERED_CACHE_DEGRADED.labels(cache_name=self.name).set(1)
 
         # Check L3
         with self._l3_lock:
@@ -644,13 +733,27 @@ class TieredCacheManager:
 
     def _get_from_l1(self, key: str) -> Optional[Any]:
         """Get from L1 (in-process cache)."""
+        start_time = time.perf_counter()
         value = self._l1_cache.get(key)
+        duration = time.perf_counter() - start_time
+
+        # Record operation duration using tier-specific histogram with optimized buckets
+        record_cache_latency("L1", self.name, "get", duration)
+
         with self._stats_lock:
             if value is not None:
                 self._stats.l1_hits += 1
                 self._update_tier(key, CacheTier.L1)
+                # Emit hit metric using cache_metrics helper
+                record_cache_hit("L1", self.name, "get")
             else:
                 self._stats.l1_misses += 1
+                # Emit miss metric using cache_metrics helper
+                record_cache_miss("L1", self.name, "get")
+
+        # Update size gauge using cache_metrics helper
+        update_cache_size("L1", self.name, 0, self._l1_cache.size)
+
         return self._deserialize(value) if value is not None else None
 
     async def _get_from_l2(self, key: str) -> Optional[Any]:
@@ -663,26 +766,49 @@ class TieredCacheManager:
             if self._should_try_l2_recovery():
                 await self._try_l2_recovery()
             if self._l2_degraded:
+                # Record fallback event when L2 is unavailable
+                record_fallback("L2", "L3", self.name)
                 return None
 
+        start_time = time.perf_counter()
         try:
             cached_json = await self._l2_client.get(key)
+            duration = time.perf_counter() - start_time
+
+            # Record operation duration using tier-specific histogram
+            record_cache_latency("L2", self.name, "get", duration)
+
             if cached_json:
                 cached = json.loads(cached_json)
                 with self._stats_lock:
                     self._stats.l2_hits += 1
                 self._update_tier(key, CacheTier.L2)
+                # Emit hit metric using cache_metrics helper
+                record_cache_hit("L2", self.name, "get")
                 return cached.get("data")
             else:
                 with self._stats_lock:
                     self._stats.l2_misses += 1
+                # Emit miss metric using cache_metrics helper
+                record_cache_miss("L2", self.name, "get")
         except Exception as e:
+            duration = time.perf_counter() - start_time
+            # Record operation duration even on failure
+            record_cache_latency("L2", self.name, "get", duration)
+
             logger.warning(f"[{CONSTITUTIONAL_HASH}] L2 get failed for key '{key}': {e}")
             with self._stats_lock:
                 self._stats.redis_failures += 1
+            # Emit Redis failure metric
+            TIERED_CACHE_REDIS_FAILURES.labels(cache_name=self.name).inc()
             # Enter degraded mode - operations continue via L1 + L3
             self._l2_degraded = True
             self._last_l2_failure = time.time()
+            # Update degraded mode gauge and tier health
+            TIERED_CACHE_DEGRADED.labels(cache_name=self.name).set(1)
+            set_tier_health("L2", False)
+            # Record fallback event
+            record_fallback("L2", "L3", self.name)
 
         return None
 
@@ -691,33 +817,60 @@ class TieredCacheManager:
         if not self.config.l3_enabled:
             return None
 
+        start_time = time.perf_counter()
         with self._l3_lock:
             if key in self._l3_cache:
                 cached = self._l3_cache[key]
                 # Check TTL
                 if time.time() - cached.get("timestamp", 0) < self.config.l3_ttl:
+                    duration = time.perf_counter() - start_time
+                    # Record operation duration using tier-specific histogram
+                    record_cache_latency("L3", self.name, "get", duration)
+
                     with self._stats_lock:
                         self._stats.l3_hits += 1
                     self._update_tier(key, CacheTier.L3)
+                    # Emit hit metric using cache_metrics helper
+                    record_cache_hit("L3", self.name, "get")
+                    # Update size gauge using cache_metrics helper
+                    update_cache_size("L3", self.name, 0, len(self._l3_cache))
                     return cached.get("data")
                 else:
                     # Expired, remove
                     del self._l3_cache[key]
 
+            duration = time.perf_counter() - start_time
+            # Record operation duration using tier-specific histogram
+            record_cache_latency("L3", self.name, "get", duration)
+
             with self._stats_lock:
                 self._stats.l3_misses += 1
+            # Emit miss metric using cache_metrics helper
+            record_cache_miss("L3", self.name, "get")
+            # Update size gauge using cache_metrics helper
+            update_cache_size("L3", self.name, 0, len(self._l3_cache))
 
         return None
 
     def _set_in_l1(self, key: str, value: Any) -> None:
         """Set in L1 (in-process cache)."""
+        start_time = time.perf_counter()
         self._l1_cache.set(key, value)
+        duration = time.perf_counter() - start_time
+
+        # Record operation duration using tier-specific histogram
+        record_cache_latency("L1", self.name, "set", duration)
+
+        # Update size gauge using cache_metrics helper
+        update_cache_size("L1", self.name, 0, self._l1_cache.size)
+
         self._update_tier(key, CacheTier.L1)
 
     async def _set_in_l2(self, key: str, value: Any, ttl: Optional[int] = None) -> None:
         """Set in L2 (Redis cache) with graceful degradation to L3."""
         if not self._l2_client:
             # No Redis client, fall back to L3
+            record_fallback("L2", "L3", self.name)
             self._set_in_l3(key, value, ttl)
             return
 
@@ -727,22 +880,40 @@ class TieredCacheManager:
                 await self._try_l2_recovery()
             if self._l2_degraded:
                 # Still degraded, fall back to L3
+                record_fallback("L2", "L3", self.name)
                 self._set_in_l3(key, value, ttl)
                 return
 
         effective_ttl = ttl or self.config.l2_ttl
         cache_data = {"data": value, "timestamp": time.time()}
 
+        start_time = time.perf_counter()
         try:
             await self._l2_client.setex(key, effective_ttl, json.dumps(cache_data))
+            duration = time.perf_counter() - start_time
+
+            # Record operation duration using tier-specific histogram
+            record_cache_latency("L2", self.name, "set", duration)
+
             self._update_tier(key, CacheTier.L2)
         except Exception as e:
+            duration = time.perf_counter() - start_time
+            # Record operation duration even on failure
+            record_cache_latency("L2", self.name, "set", duration)
+
             logger.warning(f"[{CONSTITUTIONAL_HASH}] L2 set failed for key '{key}': {e}")
             with self._stats_lock:
                 self._stats.redis_failures += 1
+            # Emit Redis failure metric
+            TIERED_CACHE_REDIS_FAILURES.labels(cache_name=self.name).inc()
             # Enter degraded mode and fall back to L3
             self._l2_degraded = True
             self._last_l2_failure = time.time()
+            # Update degraded mode gauge and tier health
+            TIERED_CACHE_DEGRADED.labels(cache_name=self.name).set(1)
+            set_tier_health("L2", False)
+            # Record fallback event
+            record_fallback("L2", "L3", self.name)
             self._set_in_l3(key, value, ttl)
 
     def _set_in_l3(self, key: str, value: Any, ttl: Optional[int] = None) -> None:
@@ -756,8 +927,18 @@ class TieredCacheManager:
             "ttl": ttl or self.config.l3_ttl,
         }
 
+        start_time = time.perf_counter()
         with self._l3_lock:
             self._l3_cache[key] = cache_data
+            l3_size = len(self._l3_cache)
+        duration = time.perf_counter() - start_time
+
+        # Record operation duration using tier-specific histogram
+        record_cache_latency("L3", self.name, "set", duration)
+
+        # Update size gauge using cache_metrics helper
+        update_cache_size("L3", self.name, 0, l3_size)
+
         self._update_tier(key, CacheTier.L3)
 
     # -------------------------------------------------------------------------
@@ -791,10 +972,13 @@ class TieredCacheManager:
                 record.accesses_per_minute >= self.config.promotion_threshold
                 and record.current_tier != CacheTier.L1
             ):
+                from_tier = record.current_tier.value
                 self._set_in_l1(key, self._serialize(value))
                 record.current_tier = CacheTier.L1
                 with self._stats_lock:
                     self._stats.promotions += 1
+                # Emit promotion metric using cache_metrics helper
+                record_promotion(from_tier, "L1", self.name)
                 logger.debug(
                     f"[{CONSTITUTIONAL_HASH}] Promoted key '{key}' to L1 "
                     f"(accesses/min: {record.accesses_per_minute})"
@@ -817,9 +1001,12 @@ class TieredCacheManager:
                 record.accesses_per_minute >= self.config.promotion_threshold
                 and record.current_tier != CacheTier.L1
             ):
+                from_tier = record.current_tier.value
                 record.current_tier = CacheTier.L1
                 with self._stats_lock:
                     self._stats.promotions += 1
+                # Emit promotion metric using cache_metrics helper
+                record_promotion(from_tier, "L1", self.name)
                 logger.debug(
                     f"[{CONSTITUTIONAL_HASH}] Key '{key}' marked for L1 tier "
                     f"(accesses/min: {record.accesses_per_minute})"
@@ -852,8 +1039,9 @@ class TieredCacheManager:
                     keys_to_demote.append((key, record))
 
         for key, record in keys_to_demote:
-            # Get value from current tier
+            # Get value from current tier and track original tier for metrics
             value = None
+            from_tier = record.current_tier.value
             if record.current_tier == CacheTier.L1:
                 value = self._l1_cache.get(key)
                 if value is not None:
@@ -875,6 +1063,8 @@ class TieredCacheManager:
                         self._access_records[key].current_tier = CacheTier.L3
                 with self._stats_lock:
                     self._stats.demotions += 1
+                # Emit demotion metric using cache_metrics helper
+                record_demotion(from_tier, "L3", self.name)
                 demoted += 1
 
         if demoted > 0:
@@ -994,13 +1184,21 @@ class TieredCacheManager:
         # Not degraded, verify connection is still good
         try:
             await self._l2_client.ping()
+            set_tier_health("L2", True)
             return True
         except Exception as e:
             logger.warning(f"[{CONSTITUTIONAL_HASH}] L2 health check failed: {e}")
             with self._stats_lock:
                 self._stats.redis_failures += 1
+            # Emit Redis failure metric
+            TIERED_CACHE_REDIS_FAILURES.labels(cache_name=self.name).inc()
             self._l2_degraded = True
             self._last_l2_failure = time.time()
+            # Update degraded mode gauge and tier health
+            TIERED_CACHE_DEGRADED.labels(cache_name=self.name).set(1)
+            set_tier_health("L2", False)
+            # Record fallback event
+            record_fallback("L2", "L3", self.name)
             return False
 
     def __repr__(self) -> str:
