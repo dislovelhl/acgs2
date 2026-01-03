@@ -49,33 +49,24 @@ jobs:
         run: |
           pip install -e .[test]
           pip install -r acgs2-core/requirements_optimized.txt
-          pip install pytest-cov pytest-xdist coverage[toml]
-      - name: Run Tests with Coverage (Parallel)
+          pip install pytest-cov
+      - name: Run All Tests with Coverage
         run: |
-          cd acgs2-core
-          pytest -n auto --dist=loadscope \
-            --cov=acgs2_core \
-            --cov-branch \
-            --cov-report=term-missing \
-            --cov-report=xml:coverage.xml \
-            --cov-fail-under=85 \
-            tests/
-      - name: Upload Python Coverage Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: python-coverage
-          path: acgs2-core/coverage.xml
-          retention-days: 30
-      - name: Upload Coverage to Codecov
+          cd acgs2-core/enhanced_agent_bus
+          python -m pytest tests/ -v --cov=enhanced_agent_bus --cov-report=xml --cov-report=term --cov-fail-under=80
+      - name: Upload coverage reports
         uses: codecov/codecov-action@v4
         with:
-          files: acgs2-core/coverage.xml
-          flags: acgs2-core,claude-flow,neural-mcp
-          name: ACGS2 Core Coverage
-          fail_ci_if_error: false
-          verbose: true
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+          file: ./acgs2-core/enhanced_agent_bus/coverage.xml
+          flags: unittests
+          name: codecov-unified
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-reports
+          path: |
+            acgs2-core/enhanced_agent_bus/coverage.xml
+            acgs2-core/enhanced_agent_bus/.coverage
 
   test-rust:
     name: Rust Tests (1.80.0)

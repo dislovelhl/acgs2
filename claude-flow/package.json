@@ -47,23 +47,5 @@
     "coordination"
   ],
   "author": "ACGS-2 Team",
-  "license": "MIT",
-  "jest": {
-    "preset": "ts-jest",
-    "testEnvironment": "node",
-    "roots": [
-      "<rootDir>/src"
-    ],
-    "testMatch": [
-      "**/__tests__/**/*.test.ts",
-      "**/__tests__/**/*.e2e.test.ts",
-      "**/__tests__/**/*.perf.test.ts"
-    ],
-    "collectCoverageFrom": [
-      "src/**/*.ts",
-      "!src/**/*.d.ts",
-      "!src/**/__tests__/**"
-    ],
-    "testTimeout": 10000
-  }
+  "license": "MIT"
 }
