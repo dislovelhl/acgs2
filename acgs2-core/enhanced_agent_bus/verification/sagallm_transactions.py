@@ -543,19 +543,19 @@ def get_saga_engine() -> SagaLLMEngine:
 if __name__ == "__main__":
     # Example usage and testing
     async def main():
-        print("Testing SagaLLM Transaction Engine...")
+        logger.info("Testing SagaLLM Transaction Engine...")
 
         engine = SagaLLMEngine()
 
         # Test engine status
         status = await engine.get_engine_status()
-        print(f"✅ Engine status: {status['status']}")
-        print(f"✅ Constitutional hash: {status['constitutional_hash']}")
+        logger.info(f"✅ Engine status: {status['status']}")
+        logger.info(f"✅ Constitutional hash: {status['constitutional_hash']}")
 
         # Test transaction creation
         transaction = engine.create_transaction("Test governance decision")
-        print(f"✅ Transaction created: {transaction.transaction_id}")
-        print(f"✅ Initial state: {transaction.state.value}")
+        logger.info(f"✅ Transaction created: {transaction.transaction_id}")
+        logger.info(f"✅ Initial state: {transaction.state.value}")
 
         # Test adding actions
         async def mock_execute():
