@@ -15,6 +15,34 @@ npx claude-flow
 - Node.js 16+
 - Python 3.8+
 - ACGS-2 core system installed and accessible
+- Redis 6.0+ (required for persistent memory feature)
+
+## Environment Variables
+
+Configure the following environment variables for persistent memory:
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `REDIS_URL` | No | `redis://localhost:6379` | Redis connection URL. Use `redis://` for development, `rediss://` for production (TLS) |
+| `REDIS_PASSWORD` | Production | - | Redis authentication password (required for production environments) |
+| `MEMORY_DEFAULT_TTL_SECONDS` | No | `86400` | Default time-to-live for memory entries (24 hours) |
+| `MEMORY_MAX_RECONNECT_ATTEMPTS` | No | `10` | Maximum reconnection attempts before failure |
+| `MEMORY_KEY_PREFIX` | No | `claude-flow:` | Prefix for all Redis keys |
+
+### Development Environment
+
+```bash
+# No authentication required
+export REDIS_URL="redis://localhost:6379"
+```
+
+### Production Environment
+
+```bash
+# TLS enabled with authentication
+export REDIS_URL="rediss://redis:6380/0"
+export REDIS_PASSWORD="your-secure-password"
+```
 
 ## Usage
 
@@ -165,6 +193,41 @@ The CLI tool bridges Node.js with the Python-based ACGS-2 EnhancedAgentBus:
 2. **Service Layer** (Node.js): Business logic and Python process management
 3. **Integration Layer** (Python): Direct interface with EnhancedAgentBus
 4. **ACGS-2 Core** (Python): Agent registration and constitutional validation
+
+## Persistent Memory
+
+Claude Flow includes Redis-backed persistent memory for maintaining governance state across sessions and service restarts. This enables adaptive governance through continuous learning from historical decisions.
+
+### Features
+
+- **State Persistence**: Governance decisions and agent state survive service restarts and pod rescheduling
+- **TTL Support**: Automatic expiration of memory entries with configurable time-to-live
+- **Graceful Degradation**: Service continues operating in degraded mode if Redis is unavailable
+- **TLS Support**: Automatic detection of `rediss://` URLs for production TLS connections
+- **Connection Pooling**: Single shared Redis client instance for optimal performance
+- **Non-Blocking Operations**: Uses SCAN for pattern-based operations (never KEYS)
+
+### Performance
+
+- **Latency Target**: <10ms for get/set operations (p95)
+- **Reconnection**: Exponential backoff with configurable max attempts
+- **Batch Processing**: Cleanup operations process keys in batches of 100
+
+### Usage
+
+The `--memory` flag enables persistent memory when initializing a swarm:
+
+```bash
+# Enable persistent memory with swarm initialization
+npx claude-flow swarm init --memory
+
+# Combine with other options
+npx claude-flow swarm init --topology hierarchical --memory --github
+```
+
+### Operations Documentation
+
+For detailed backup/restore procedures and troubleshooting, see [MEMORY_OPERATIONS.md](docs/MEMORY_OPERATIONS.md).
 
 ## Error Handling
 

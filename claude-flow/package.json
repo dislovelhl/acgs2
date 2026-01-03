@@ -13,6 +13,10 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
+    "test:e2e": "jest --testMatch='**/*.e2e.test.ts'",
+    "test:e2e:real": "RUN_REAL_REDIS_TESTS=true jest --testMatch='**/*.e2e.test.ts'",
+    "test:perf": "jest --testMatch='**/*.perf.test.ts' --verbose",
+    "test:perf:real": "RUN_REAL_REDIS_TESTS=true jest --testMatch='**/*.perf.test.ts' --verbose",
     "clean": "rm -rf dist"
   },
   "dependencies": {
@@ -20,7 +24,7 @@
     "chalk": "^5.3.0",
     "commander": "^12.0.0",
     "ora": "^8.0.1",
-    "winston": "^3.11.0"
+    "redis": "^4.6.0"
   },
   "devDependencies": {
     "@types/dotenv": "^6.1.1",
@@ -43,5 +47,23 @@
     "coordination"
   ],
   "author": "ACGS-2 Team",
-  "license": "MIT"
+  "license": "MIT",
+  "jest": {
+    "preset": "ts-jest",
+    "testEnvironment": "node",
+    "roots": [
+      "<rootDir>/src"
+    ],
+    "testMatch": [
+      "**/__tests__/**/*.test.ts",
+      "**/__tests__/**/*.e2e.test.ts",
+      "**/__tests__/**/*.perf.test.ts"
+    ],
+    "collectCoverageFrom": [
+      "src/**/*.ts",
+      "!src/**/*.d.ts",
+      "!src/**/__tests__/**"
+    ],
+    "testTimeout": 10000
+  }
 }
