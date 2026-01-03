@@ -641,15 +641,15 @@ class SplunkAdapter(BaseIntegration):
 
         return splunk_payload
 
-    async def send_events_batch(
+    async def _do_send_events_batch(
         self,
         events: List[IntegrationEvent],
     ) -> List[IntegrationResult]:
         """
-        Send multiple events to Splunk in a batch.
+        Send multiple events to Splunk in a batch using HEC.
 
-        Optimizes delivery by sending multiple events in a single HEC request,
-        reducing network overhead and improving throughput.
+        Implements Splunk-specific batch delivery using newline-delimited JSON
+        format for the HEC endpoint. Provides all-or-nothing batch semantics.
 
         Args:
             events: List of governance events to send
@@ -658,16 +658,13 @@ class SplunkAdapter(BaseIntegration):
             List of IntegrationResults for each event
 
         Raises:
-            AuthenticationError: If not authenticated
+            RateLimitError: If rate limited by Splunk
             DeliveryError: If batch delivery fails
         """
-        if not self._authenticated:
-            raise AuthenticationError("Integration is not authenticated", self.name)
-
         if not events:
             return []
 
-        logger.debug(f"Sending batch of {len(events)} events to Splunk")
+        logger.debug(f"Sending batch of {len(events)} events to Splunk HEC")
 
         try:
             client = await self.get_http_client()
@@ -695,11 +692,19 @@ class SplunkAdapter(BaseIntegration):
             except json.JSONDecodeError:
                 pass
 
+            # Handle rate limiting
+            if response.status_code == 429:
+                retry_after = int(response.headers.get("Retry-After", 60))
+                raise RateLimitError(
+                    "Splunk HEC rate limit exceeded",
+                    self.name,
+                    retry_after=retry_after,
+                )
+
+            # Handle success
             if response.status_code == 200 and response_data.get("code") == 0:
                 # All events succeeded
-                self._events_sent += len(events)
-                self._last_success = datetime.now(timezone.utc)
-
+                logger.debug(f"Batch of {len(events)} events sent to Splunk successfully")
                 return [
                     IntegrationResult(
                         success=True,
@@ -709,38 +714,89 @@ class SplunkAdapter(BaseIntegration):
                     )
                     for event in events
                 ]
-            else:
-                # Batch failed - return failures for all events
-                error_msg = response_data.get("text", "Batch delivery failed")
-                self._events_failed += len(events)
-                self._last_failure = datetime.now(timezone.utc)
 
-                return [
-                    IntegrationResult(
-                        success=False,
-                        integration_name=self.name,
-                        operation="send_event",
-                        error_code="BATCH_FAILED",
-                        error_message=error_msg,
+            # Handle errors
+            error_msg = response_data.get("text", "Batch delivery failed")
+            error_code = response_data.get("code", 0)
+
+            if response.status_code == 400:
+                if error_code == 7:
+                    raise DeliveryError(
+                        f"Index '{self.splunk_credentials.index}' not found",
+                        self.name,
+                        details={"splunk_code": error_code},
                     )
-                    for _ in events
-                ]
+                elif error_code == 6:
+                    raise DeliveryError(
+                        "Invalid event data format",
+                        self.name,
+                        details={"splunk_code": error_code},
+                    )
+                else:
+                    raise DeliveryError(
+                        f"HEC error: {error_msg}",
+                        self.name,
+                        details={"splunk_code": error_code, "text": error_msg},
+                    )
 
-        except Exception as e:
-            # Return failures for all events
-            self._events_failed += len(events)
-            self._last_failure = datetime.now(timezone.utc)
+            elif response.status_code == 401:
+                raise AuthenticationError(
+                    "HEC token authentication failed",
+                    self.name,
+                )
 
+            elif response.status_code == 403:
+                raise DeliveryError(
+                    "HEC token lacks write permission",
+                    self.name,
+                    details={"status_code": 403},
+                )
+
+            elif response.status_code == 503:
+                raise DeliveryError(
+                    "Splunk HEC is temporarily unavailable",
+                    self.name,
+                    details={"status_code": 503, "should_retry": True},
+                )
+
+            # Generic error case
+            logger.warning(
+                f"Splunk batch delivery failed with status {response.status_code}: {error_msg}"
+            )
             return [
                 IntegrationResult(
                     success=False,
                     integration_name=self.name,
                     operation="send_event",
-                    error_code="BATCH_ERROR",
-                    error_message=str(e),
+                    error_code="BATCH_FAILED",
+                    error_message=error_msg,
                 )
                 for _ in events
             ]
+
+        except (RateLimitError, AuthenticationError, DeliveryError):
+            # Re-raise these specific exceptions for retry logic
+            raise
+
+        except httpx.TimeoutException as e:
+            raise DeliveryError(
+                f"Request timed out: {str(e)}",
+                self.name,
+                details={"should_retry": True},
+            ) from e
+
+        except httpx.NetworkError as e:
+            raise DeliveryError(
+                f"Network error: {str(e)}",
+                self.name,
+                details={"should_retry": True},
+            ) from e
+
+        except Exception as e:
+            raise DeliveryError(
+                f"Unexpected error during batch delivery: {str(e)}",
+                self.name,
+            ) from e
 
     async def _do_test_connection(self) -> IntegrationResult:
         """
