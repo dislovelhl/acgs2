@@ -32,7 +32,7 @@ try:
             return _original_async_client_init(self, *args, **kwargs)
 
         httpx.AsyncClient.__init__ = _patched_async_client_init
-except Exception:
+except Exception:  # nosec B110 - Monkey patching for httpx compatibility
     pass
 
 # Solana & Solders Primitives

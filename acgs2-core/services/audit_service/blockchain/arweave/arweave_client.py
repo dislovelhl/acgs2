@@ -268,8 +268,9 @@ class ArweaveClient:
                 "status": "confirmed",
                 "block_height": 1234567,
                 "block_hash": (
-                    f"block_{hash(transaction_id) & "
-                    f"0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF:064x}"
+                    f"block_{hash(transaction_id) & 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF:064x}"[
+                        :64
+                    ]
                 ),
                 "confirmations": 10,
             }
