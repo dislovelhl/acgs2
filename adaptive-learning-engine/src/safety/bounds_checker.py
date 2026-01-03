@@ -552,21 +552,330 @@ class SafetyBoundsChecker:
             self._total_checks += 1
             self._last_check_time = time.time()
 
-            # FAILURE MODE: SKIPPED_COLD_START
+            # FAILURE MODE: SKIPPED_COLD_START (Cold Start Safety Bypass)
+            # ============================================================
+            #
+            # During model initialization (cold start), the model has insufficient training
+            # samples for reliable accuracy estimation. Safety checks are bypassed during
+            # this phase to prevent false alarms from statistical noise and premature
+            # circuit breaker activation.
+            #
+            # WHY SKIP SAFETY CHECKS DURING COLD START?
+            # ==========================================
+            #
+            # 1. STATISTICAL UNRELIABILITY:
+            #    With few samples (n < 100), accuracy estimates have high variance and
+            #    are not statistically significant. Random fluctuations dominate signal.
+            #
+            #    Standard Error (SE) of Accuracy Estimate:
+            #      SE = sqrt(p * (1-p) / n)
+            #
+            #    Where:
+            #      - p = true accuracy (unknown, assume ~0.85 for governance models)
+            #      - n = sample count
+            #      - SE = standard error of the accuracy estimate
+            #
+            #    Cold Start Examples (n < 100):
+            #      - n=10:  SE = sqrt(0.85*0.15/10)  ≈ 0.113 (±11.3% margin of error!)
+            #      - n=25:  SE = sqrt(0.85*0.15/25)  ≈ 0.071 (±7.1% margin of error)
+            #      - n=50:  SE = sqrt(0.85*0.15/50)  ≈ 0.050 (±5.0% margin of error)
+            #
+            #    With n=10, measured 75% accuracy could represent true accuracy anywhere
+            #    from 64% to 86% (75% ± 11.3% at 95% CI). This massive uncertainty makes
+            #    safety checks meaningless - failures would be mostly random noise.
+            #
+            # 2. RISK OF FALSE CIRCUIT BREAKER TRIPS:
+            #    If safety checks run during cold start, high variance could trigger
+            #    consecutive failures purely from statistical noise, causing the circuit
+            #    breaker to open (PAUSED state) before the model has a chance to stabilize.
+            #
+            #    Scenario Without Cold Start Skip:
+            #      Check 1 (n=20): Measured 78% accuracy (SE±9%) → FAILED_ACCURACY
+            #      Check 2 (n=40): Measured 81% accuracy (SE±6%) → FAILED_ACCURACY
+            #      Check 3 (n=60): Measured 83% accuracy (SE±5%) → FAILED_ACCURACY
+            #      Result: Circuit breaker OPENS (3 consecutive failures)
+            #      Reality: Model was actually improving (78%→81%→83%) but high variance
+            #               caused all checks to fail threshold (85%). Model never got
+            #               chance to reach statistical stability.
+            #
+            #    With Cold Start Skip:
+            #      Check 1 (n=20): SKIPPED_COLD_START (neutral, doesn't count as failure)
+            #      Check 2 (n=40): SKIPPED_COLD_START (neutral, doesn't count as failure)
+            #      Check 3 (n=60): SKIPPED_COLD_START (neutral, doesn't check yet)
+            #      Check 4 (n=120): Measured 87% accuracy → PASSED (circuit stays closed)
+            #      Result: Model reaches statistical stability before safety validation begins
+            #
+            # 3. COORDINATION WITH MODEL WARMING PHASE:
+            #    OnlineLearner transitions through states: COLD_START → WARMING → ACTIVE
+            #    The WARMING state persists until min_training_samples=1000 is reached,
+            #    during which:
+            #      - StandardScaler statistics are stabilizing (mean/variance estimates)
+            #      - Model weights are converging through gradient descent
+            #      - Predictions are unreliable and should not be used for production
+            #
+            #    SafetyBoundsChecker's min_samples_for_check=100 is deliberately set
+            #    LOWER than OnlineLearner's min_training_samples=1000 to provide early
+            #    safety validation during the WARMING phase:
+            #
+            #    Sample Count Timeline:
+            #      n=0-99:    COLD_START state, safety checks SKIPPED (too unstable)
+            #      n=100-999: WARMING state, safety checks ACTIVE (early validation)
+            #      n=1000+:   ACTIVE state, safety checks ACTIVE (production validation)
+            #
+            #    This staged approach allows safety checks to begin validating model
+            #    quality during the warming phase (100-999 samples) while still
+            #    preventing premature failures during extreme cold start (0-99 samples).
+            #
+            # WHY MIN_SAMPLES_FOR_CHECK = 100 SPECIFICALLY?
+            # ==============================================
+            #
+            # The threshold of 100 samples balances statistical significance with
+            # responsive safety validation. It's chosen based on several factors:
+            #
+            # 1. STATISTICAL SIGNIFICANCE (Primary Justification):
+            #
+            #    Standard Error at n=100:
+            #      SE = sqrt(0.85 * 0.15 / 100) = sqrt(0.1275 / 100) = sqrt(0.001275) ≈ 0.036
+            #
+            #    This means at 100 samples:
+            #      - Standard error: ±3.6%
+            #      - 95% Confidence Interval: ±1.96 * 0.036 ≈ ±7% (about ±0.07)
+            #      - Measured 85% accuracy likely represents true accuracy in [78%, 92%] range
+            #
+            #    Comparison to Accuracy Threshold (85%):
+            #      - Threshold: 85% minimum required accuracy
+            #      - SE at n=100: ±3.6%
+            #      - If measured accuracy is exactly 85%, true accuracy is likely 81-89%
+            #      - This provides reasonable confidence that measured accuracy reflects reality
+            #
+            #    With n=100, the standard error (3.6%) is small enough that:
+            #      - True failures (model actually below 85%) will be detected reliably
+            #      - False alarms from noise are reduced (but circuit breaker's consecutive
+            #        failure requirement provides additional filtering)
+            #
+            # 2. CENTRAL LIMIT THEOREM CONVERGENCE:
+            #
+            #    The Central Limit Theorem (CLT) states that sample means approach a
+            #    normal distribution as sample size increases. For binary classification
+            #    accuracy (Bernoulli trials):
+            #      - n=30: CLT starts to apply (rough approximation)
+            #      - n=50: Better convergence to normal distribution
+            #      - n=100: Strong convergence, reliable confidence intervals
+            #
+            #    At n=100, we can reliably use normal distribution approximations for
+            #    confidence intervals, making statistical tests (like comparing accuracy
+            #    to threshold) mathematically sound.
+            #
+            # 3. TRADE-OFF: EARLY WARNING VS. FALSE ALARMS
+            #
+            #    Lower Threshold (e.g., n=50):
+            #      Advantages:
+            #        - Earlier safety validation (detects problems sooner)
+            #        - Shorter cold start period (safety checks begin at 50 samples)
+            #      Disadvantages:
+            #        - SE ≈ 5% (higher variance, more noise)
+            #        - More false alarms during model initialization
+            #        - Circuit breaker may trip on statistical noise (despite consecutive
+            #          failure filtering, 3 consecutive noisy checks could still fail)
+            #      Use case: High-risk governance where immediate validation is critical
+            #
+            #    Higher Threshold (e.g., n=200):
+            #      Advantages:
+            #        - SE ≈ 2.5% (lower variance, more reliable estimates)
+            #        - Fewer false alarms (very stable accuracy measurement)
+            #        - Strong statistical confidence in threshold violations
+            #      Disadvantages:
+            #        - Delayed safety validation (checks don't start until 200 samples)
+            #        - Model could degrade during samples 100-199 without detection
+            #        - Longer exposure window if model is fundamentally broken
+            #      Use case: Low-risk systems where stability > responsiveness
+            #
+            #    Optimal n=100:
+            #      - Balances responsiveness (checks start at 100 samples) with reliability
+            #        (SE ≈ 3.6% is acceptable for safety decisions with circuit breaker)
+            #      - SE of 3.6% means ~16% false alarm rate per check, but consecutive
+            #        failure requirement (3 strikes) reduces cumulative false alarm rate
+            #        to 0.16^3 ≈ 0.4% (highly unlikely to trip circuit breaker on noise)
+            #      - Detects real issues within 100-300 samples (1-3 checks if consecutive)
+            #        while maintaining statistical rigor
+            #
+            # 4. ALIGNMENT WITH DOMAIN STANDARDS:
+            #
+            #    Machine Learning Evaluation Best Practices:
+            #      - Scikit-learn cross-validation typically uses k=5 or k=10 folds
+            #      - With 1000-sample dataset, each fold has 100-200 test samples
+            #      - n=100 aligns with minimum fold size for reliable evaluation
+            #
+            #    Statistical Testing Standards:
+            #      - Psychology/social sciences: n=30 minimum (CLT approximation)
+            #      - Medical trials: n=100+ for Phase II studies (preliminary efficacy)
+            #      - A/B testing: n=100+ per variant for basic significance tests
+            #      - n=100 is widely recognized as "sufficient for initial analysis"
+            #
+            #    Governance-Specific Considerations:
+            #      - With 10% minority class (rare access patterns), n=100 provides
+            #        ~10 samples from minority class (borderline sufficient)
+            #      - Below n=100, minority class may have <5 samples (unreliable metrics)
+            #      - At n=100, both classes have enough samples for basic validation
+            #
+            # 5. COORDINATION WITH ONLINELEARNER STATE TRANSITIONS:
+            #
+            #    OnlineLearner State Machine:
+            #      - COLD_START:  0-999 samples (model not production-ready)
+            #      - WARMING:     100-999 samples (model stabilizing but not ready)
+            #      - ACTIVE:      1000+ samples (model production-ready)
+            #
+            #    SafetyBoundsChecker Integration:
+            #      - n=0-99:   SKIPPED_COLD_START (no safety checks, model too unstable)
+            #      - n=100-999: WARMING safety validation (early checks during stabilization)
+            #      - n=1000+:  ACTIVE safety validation (production checks)
+            #
+            #    Why min_samples_for_check (100) < min_training_samples (1000)?
+            #    ---------------------------------------------------------------
+            #
+            #    This intentional gap (100 vs 1000) serves two critical purposes:
+            #
+            #    a) EARLY ANOMALY DETECTION DURING WARMING:
+            #       If the model is fundamentally broken (bad hyperparameters, corrupted
+            #       data pipeline, severe distribution mismatch), we want to detect this
+            #       during the WARMING phase (100-999 samples) rather than waiting until
+            #       ACTIVE state (1000+ samples).
+            #
+            #       Example: Data Pipeline Corruption
+            #         - Model trained with features not being normalized correctly
+            #         - By n=100, accuracy might be obviously bad (e.g., 60%)
+            #         - Safety check at n=100 detects: FAILED_ACCURACY (60% < 85%)
+            #         - Circuit breaker WARNING issued (1/3 failures)
+            #         - Operators alerted early to investigate data pipeline
+            #         - Without early checks, model would continue to n=1000 with
+            #           bad data, wasting 900 more samples and operator time
+            #
+            #    b) PROGRESSIVE VALIDATION PHILOSOPHY:
+            #       Safety validation doesn't need the same confidence level as
+            #       production deployment. The circuit breaker provides defense-in-depth:
+            #         - Single failure at n=100: WARNING (could be noise, keep watching)
+            #         - Two failures at n=100, n=200: WARNING (pattern emerging)
+            #         - Three failures at n=100, n=200, n=300: PAUSED (systematic issue)
+            #
+            #       Even with higher variance at n=100 (SE≈3.6%), the consecutive failure
+            #       requirement (3 strikes) filters out transient noise. Real systematic
+            #       issues will fail consistently across multiple checks.
+            #
+            #    c) RISK MITIGATION DURING WARMING:
+            #       The WARMING phase (100-999 samples) is higher risk than ACTIVE:
+            #         - StandardScaler statistics still converging (unstable normalization)
+            #         - Model weights still adjusting (gradient descent not converged)
+            #         - Predictions unreliable (not used for production yet)
+            #
+            #       Starting safety checks at n=100 provides oversight during this risky
+            #       phase, even though the model isn't production-ready. If safety checks
+            #       fail during WARMING, it's a signal to investigate before reaching ACTIVE.
+            #
+            #    Example Integration Flow:
+            #      n=50:   OnlineLearner: COLD_START, SafetyBoundsChecker: SKIPPED
+            #              → Model too unstable for any validation
+            #
+            #      n=150:  OnlineLearner: WARMING, SafetyBoundsChecker: ACTIVE
+            #              → Safety check runs: 87% accuracy → PASSED
+            #              → Model is warming but showing good signs (above 85% threshold)
+            #              → Continue warming phase with safety oversight
+            #
+            #      n=250:  OnlineLearner: WARMING, SafetyBoundsChecker: ACTIVE
+            #              → Safety check runs: 82% accuracy → FAILED_ACCURACY
+            #              → Circuit breaker: WARNING (1/3 failures)
+            #              → Alert: "Model accuracy dropped during warming - investigate"
+            #              → Operator checks data pipeline, finds normalization bug
+            #
+            #      n=1000: OnlineLearner: ACTIVE, SafetyBoundsChecker: ACTIVE
+            #              → Model now production-ready (if safety checks passed)
+            #              → Both systems agree: model is stable and safe
+            #
+            # 6. WHAT HAPPENS DURING SKIP (Neutral Result):
+            #
+            #    When sample_count < min_samples_for_check (n < 100):
+            #      - Return: SKIPPED_COLD_START result
+            #      - passed=True: Allows model swap to proceed (not blocking)
+            #      - Does NOT increment consecutive_failures counter
+            #      - Does NOT reset consecutive_failures counter
+            #      - Circuit breaker state UNCHANGED (stays in current state)
+            #      - No alerts generated (neither warning nor critical)
+            #
+            #    This neutral behavior is critical because:
+            #      - Cold start is expected and normal (not a failure)
+            #      - Shouldn't penalize model for being new (not fair to increment failures)
+            #      - Shouldn't reward model for being untested (not safe to reset failures)
+            #      - Circuit breaker should remain in previous state until real validation
+            #
+            #    Neutral Result Philosophy:
+            #      - PASSED (passed=False, failures reset): Model validated as safe
+            #      - FAILED (passed=False, failures increment): Model validated as unsafe
+            #      - SKIPPED (passed=True, failures unchanged): Model not yet validated
+            #
+            #    The passed=True allows ModelManager to swap the model during cold start
+            #    (not blocking deployment), but the neutral circuit breaker state ensures
+            #    previous safety context is preserved (don't erase history of failures
+            #    just because a new untested model arrived).
+            #
+            # 7. PRODUCTION IMPACT OF THRESHOLD CHOICE:
+            #
+            #    In a typical governance deployment with 100 requests/hour:
+            #      - Time to 100 samples: ~1 hour (assuming 100% feedback rate)
+            #      - Cold start duration: 1 hour of SKIPPED safety checks
+            #      - WARMING phase: 1-10 hours (100-1000 samples)
+            #
+            #    With min_samples_for_check=50 (too low):
+            #      - Cold start duration: 30 minutes
+            #      - Advantage: 30 minutes faster initial validation
+            #      - Disadvantage: Higher false alarm rate during 30-60 min window
+            #                     (SE≈5% means ~20% false alarm rate per check)
+            #      - Risk: Could trigger circuit breaker on noise, requiring manual force_resume
+            #
+            #    With min_samples_for_check=200 (too high):
+            #      - Cold start duration: 2 hours
+            #      - Advantage: Very low false alarm rate (SE≈2.5%)
+            #      - Disadvantage: Model could degrade for 1 extra hour without detection
+            #                     (samples 100-199 have no safety oversight)
+            #      - Risk: Broken model has more time to impact production before detection
+            #
+            #    Optimal min_samples_for_check=100:
+            #      - Cold start duration: 1 hour (reasonable for new model initialization)
+            #      - SE≈3.6% provides acceptable confidence (not perfect, but good enough
+            #        with consecutive failure filtering from circuit breaker)
+            #      - Balances early detection (starts at 1 hour) with reliability
+            #        (false alarms filtered by 3-strike rule)
+            #
+            # SUMMARY: Cold Start Skip Logic
+            # ===============================
+            #
+            # During cold start (n < 100 samples), safety checks are bypassed because:
+            #   1. Statistical unreliability: SE≈11% at n=10, too much noise
+            #   2. Risk of false circuit breaker trips: Noise could trigger 3 consecutive failures
+            #   3. Coordination with WARMING phase: Checks begin during stabilization (100-999)
+            #
+            # The threshold min_samples_for_check=100 is optimal because:
+            #   1. Statistical significance: SE≈3.6%, acceptable for safety decisions
+            #   2. CLT convergence: n=100 provides reliable normal approximation
+            #   3. Early warning: Checks start during WARMING phase (before production)
+            #   4. Domain standards: Aligns with ML evaluation best practices (k-fold CV)
+            #   5. Coordination: Provides safety oversight during model stabilization
+            #
+            # During skip (n < 100):
+            #   - Returns SKIPPED_COLD_START (neutral result)
+            #   - passed=True (allows model swap, doesn't block deployment)
+            #   - Circuit breaker state UNCHANGED (preserves safety context)
+            #   - No alerts generated (cold start is expected, not a failure)
+            #
+            # This approach prevents false alarms during model initialization while
+            # enabling early detection of systematic issues during the warming phase.
             #
             # Get sample count to determine if model has enough data for safety check
-            # During cold start (few samples), accuracy is unreliable due to high variance
             try:
                 sample_count = model.get_sample_count()
             except (AttributeError, TypeError):
+                # Model doesn't implement get_sample_count() - assume 0 samples (cold start)
                 sample_count = 0
 
-            # Skip check during cold start (insufficient samples)
-            # Why min_samples_for_check=100?
-            # - Statistical significance: Accuracy estimate has SE ≈ sqrt(p(1-p)/n)
-            #   With n=100, SE ≈ 0.05 (5% margin of error at 95% CI)
-            # - Prevents false alarms during model initialization
-            # - Coordinated with OnlineLearner's min_training_samples for consistency
+            # COLD START SKIP: Bypass safety checks if insufficient samples for reliable validation
             if sample_count < self.min_samples_for_check:
                 # Return neutral result (not pass/fail, just skipped)
                 # Does NOT affect consecutive failure counter
