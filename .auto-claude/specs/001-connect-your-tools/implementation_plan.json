@@ -159,16 +159,17 @@
         {
           "id": "2.3",
           "description": "Create Linear webhook endpoint handler",
-          "status": "pending",
+          "status": "completed",
           "dependencies": [
             "2.1",
             "2.2"
           ],
           "estimated_hours": 4,
-          "notes": "Create src/api/linear_webhooks.py. Implement POST /webhooks/linear endpoint. Verify signature, parse payload, return 200 OK within 3 seconds, queue processing.",
+          "notes": "\u2705 Successfully created Linear webhook endpoint handler at integration-service/src/api/linear_webhooks.py. Implemented POST /webhooks/linear endpoint with HMAC signature verification using verify_linear_webhook_signature dependency, POST /webhooks/linear/test endpoint for testing without verification, and GET /webhooks/linear/status endpoint for monitoring. Fast response (<3 seconds) achieved with background event queueing using in-memory queue. Comprehensive event parsing for Issue, Comment, and StatusChange events with detailed logging. Proper error handling with graceful degradation for malformed payloads. Updated src/main.py to register Linear webhook router and src/api/__init__.py to export linear_webhooks_router. All pre-commit hooks passed. Committed with hash 7aebc7369.",
           "files_to_modify": [
             "integration-service/src/api/linear_webhooks.py"
-          ]
+          ],
+          "updated_at": "2026-01-03T22:13:37.532530+00:00"
         },
         {
           "id": "2.4",
@@ -655,6 +656,6 @@
     "Implement proper deduplication to prevent infinite sync loops",
     "Use Redis locks to prevent race conditions during bidirectional sync"
   ],
-  "last_updated": "2026-01-03T22:09:43.086310+00:00",
+  "last_updated": "2026-01-03T22:13:37.532539+00:00",
   "recoveryNote": "Task recovered from stuck state at 2026-01-03T22:00:00.431Z"
 }
