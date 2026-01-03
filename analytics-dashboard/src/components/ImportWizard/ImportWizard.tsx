@@ -107,7 +107,6 @@ function StepIndicator({
         {steps.map((step, index) => {
           const isCompleted = index < currentStep;
           const isCurrent = index === currentStep;
-          const isUpcoming = index > currentStep;
 
           return (
             <div key={step.title} className="flex items-center flex-1">
@@ -209,10 +208,14 @@ export function ImportWizard({
 
   /**
    * Update import configuration
+   * TODO: Pass to step components when implemented
    */
   const updateConfig = useCallback((updates: Partial<ImportConfig>) => {
     setImportConfig((prev) => ({ ...prev, ...updates }));
   }, []);
+
+  // Suppress unused warning - will be used when step components are integrated
+  void updateConfig;
 
   /**
    * Check if current step is valid and can proceed
