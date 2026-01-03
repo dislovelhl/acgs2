@@ -1,0 +1,220 @@
+# ACGS-2 Prometheus Alert Rules
+# Constitutional Hash: cdd01ef066bc6cf2
+
+groups:
+  # ============================================================================
+  # Service Health Alerts
+  # ============================================================================
+
+  - name: service_health
+    rules:
+      - alert: ServiceDown
+        expr: up == 0
+        for: 5m
+        labels:
+          severity: critical
+          category: availability
+        annotations:
+          summary: "Service {{ $labels.job }} is down"
+          description: "Service {{ $labels.job }} has been down for more than 5 minutes."
+          runbook_url: "https://docs.acgs2.com/runbooks/service-down"
+
+      - alert: ServiceRestarting
+        expr: rate(process_start_time_seconds[5m]) > 0
+        for: 1m
+        labels:
+          severity: warning
+          category: availability
+        annotations:
+          summary: "Service {{ $labels.job }} restarted"
+          description: "Service {{ $labels.job }} has restarted in the last 5 minutes."
+          runbook_url: "https://docs.acgs2.com/runbooks/service-restart"
+
+  # ============================================================================
+  # HTTP Service Alerts
+  # ============================================================================
+
+  - name: http_alerts
+    rules:
+      - alert: HighErrorRate
+        expr: rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m]) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+          category: errors
+        annotations:
+          summary: "High error rate on {{ $labels.service }}"
+          description: "Error rate > 5% for {{ $labels.service }} over the last 5 minutes."
+          runbook_url: "https://docs.acgs2.com/runbooks/high-error-rate"
+
+      - alert: HighLatency
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 5
+        for: 5m
+        labels:
+          severity: warning
+          category: performance
+        annotations:
+          summary: "High latency on {{ $labels.service }}"
+          description: "95th percentile latency > 5s for {{ $labels.service }}."
+          runbook_url: "https://docs.acgs2.com/runbooks/high-latency"
+
+      - alert: HighRequestRate
+        expr: rate(http_requests_total[5m]) > 1000
+        for: 2m
+        labels:
+          severity: info
+          category: capacity
+        annotations:
+          summary: "High request rate on {{ $labels.service }}"
+          description: "Request rate > 1000 RPS for {{ $labels.service }}."
+
+  # ============================================================================
+  # Constitutional Compliance Alerts
+  # ============================================================================
+
+  - name: constitutional_alerts
+    rules:
+      - alert: ConstitutionalViolation
+        expr: rate(constitutional_violations_total[5m]) > 0
+        for: 1m
+        labels:
+          severity: critical
+          category: security
+        annotations:
+          summary: "Constitutional violation detected"
+          description: "Constitutional violation in {{ $labels.service }}: {{ $labels.violation_type }}"
+          runbook_url: "https://docs.acgs2.com/runbooks/constitutional-violation"
+
+      - alert: ConstitutionalValidationFailure
+        expr: rate(constitutional_validations_total{result="failure"}[5m]) > 0
+        for: 2m
+        labels:
+          severity: warning
+          category: security
+        annotations:
+          summary: "Constitutional validation failure"
+          description: "Constitutional validation failing in {{ $labels.service }}."
+          runbook_url: "https://docs.acgs2.com/runbooks/validation-failure"
+
+  # ============================================================================
+  # Resource Usage Alerts
+  # ============================================================================
+
+  - name: resource_alerts
+    rules:
+      - alert: HighMemoryUsage
+        expr: (1 - (avg_over_time(process_resident_memory_bytes[5m]) / process_virtual_memory_bytes)) * 100 > 90
+        for: 5m
+        labels:
+          severity: warning
+          category: resources
+        annotations:
+          summary: "High memory usage on {{ $labels.job }}"
+          description: "Memory usage > 90% for {{ $labels.job }}."
+          runbook_url: "https://docs.acgs2.com/runbooks/high-memory"
+
+      - alert: HighCPUUsage
+        expr: rate(process_cpu_user_seconds_total[5m]) / rate(process_cpu_seconds_total[5m]) > 0.8
+        for: 5m
+        labels:
+          severity: warning
+          category: resources
+        annotations:
+          summary: "High CPU usage on {{ $labels.job }}"
+          description: "CPU usage > 80% for {{ $labels.job }}."
+          runbook_url: "https://docs.acgs2.com/runbooks/high-cpu"
+
+  # ============================================================================
+  # Queue and Message Alerts
+  # ============================================================================
+
+  - name: queue_alerts
+    rules:
+      - alert: HighQueueDepth
+        expr: message_queue_depth > 1000
+        for: 5m
+        labels:
+          severity: warning
+          category: performance
+        annotations:
+          summary: "High queue depth"
+          description: "Queue depth > 1000 for {{ $labels.queue_name }}."
+          runbook_url: "https://docs.acgs2.com/runbooks/high-queue-depth"
+
+      - alert: MessageProcessingFailure
+        expr: rate(messages_total{status="error"}[5m]) / rate(messages_total[5m]) > 0.1
+        for: 5m
+        labels:
+          severity: critical
+          category: errors
+        annotations:
+          summary: "High message processing error rate"
+          description: "Message error rate > 10% for {{ $labels.message_type }}."
+          runbook_url: "https://docs.acgs2.com/runbooks/message-processing-failure"
+
+  # ============================================================================
+  # Business Logic Alerts
+  # ============================================================================
+
+  - name: business_alerts
+    rules:
+      - alert: HITLApprovalTimeout
+        expr: increase(hitl_approvals_timeout_total[1h]) > 5
+        for: 10m
+        labels:
+          severity: warning
+          category: business
+        annotations:
+          summary: "High HITL approval timeout rate"
+          description: "More than 5 HITL approvals timed out in the last hour."
+          runbook_url: "https://docs.acgs2.com/runbooks/approval-timeout"
+
+      - alert: AuditLogFailure
+        expr: rate(audit_log_write_failures_total[5m]) > 0
+        for: 2m
+        labels:
+          severity: critical
+          category: compliance
+        annotations:
+          summary: "Audit log write failure"
+          description: "Failed to write to audit log in {{ $labels.service }}."
+          runbook_url: "https://docs.acgs2.com/runbooks/audit-failure"
+
+  # ============================================================================
+  # Infrastructure Alerts
+  # ============================================================================
+
+  - name: infrastructure_alerts
+    rules:
+      - alert: RedisConnectionFailure
+        expr: redis_connected_clients == 0
+        for: 2m
+        labels:
+          severity: critical
+          category: infrastructure
+        annotations:
+          summary: "Redis connection failure"
+          description: "No Redis connections available."
+          runbook_url: "https://docs.acgs2.com/runbooks/redis-failure"
+
+      - alert: KafkaBrokerDown
+        expr: kafka_server_broker_state != 3
+        for: 5m
+        labels:
+          severity: critical
+          category: infrastructure
+        annotations:
+          summary: "Kafka broker down"
+          description: "Kafka broker is not in running state."
+          runbook_url: "https://docs.acgs2.com/runbooks/kafka-broker-down"
+
+      - alert: OPAUnavailable
+        expr: up{job="opa"} == 0
+        for: 5m
+        labels:
+          severity: critical
+          category: security
+        annotations:
+          summary: "OPA policy engine unavailable"
+          description: "Open Policy Agent is down - policy enforcement disabled."
+          runbook_url: "https://docs.acgs2.com/runbooks/opa-unavailable"

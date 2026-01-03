@@ -54,7 +54,7 @@ async def example_1_basic_latency_injection():
             await asyncio.sleep(delay / 1000.0)
 
         elapsed_ms = (time.time() - start) * 1000
-        logger.info(f"Message {i+1} processed in {elapsed_ms:.1f}ms")
+        logger.info(f"Message {i + 1} processed in {elapsed_ms:.1f}ms")
 
         await asyncio.sleep(0.5)
 
@@ -80,7 +80,7 @@ async def example_2_error_injection_resilience():
         target="agent_bus", error_rate=0.5, error_type=ConnectionError, duration_s=10.0
     )
 
-    logger.info(f"Injecting errors at {scenario.error_rate*100}% rate")
+    logger.info(f"Injecting errors at {scenario.error_rate * 100}% rate")
 
     # Simulate operations with error injection
     successful = 0
@@ -91,14 +91,14 @@ async def example_2_error_injection_resilience():
             # Check if error should be injected
             error_type = engine.should_inject_error("agent_bus")
             if error_type:
-                raise error_type(f"Chaos-injected error for operation {i+1}")
+                raise error_type(f"Chaos-injected error for operation {i + 1}")
 
             # Simulate successful operation
-            logger.info(f"Operation {i+1}: SUCCESS")
+            logger.info(f"Operation {i + 1}: SUCCESS")
             successful += 1
 
         except Exception as e:
-            logger.warning(f"Operation {i+1}: FAILED - {e}")
+            logger.warning(f"Operation {i + 1}: FAILED - {e}")
             failed += 1
 
         await asyncio.sleep(0.2)
@@ -108,7 +108,7 @@ async def example_2_error_injection_resilience():
     success_rate = (successful / total) * 100 if total > 0 else 0
 
     logger.info(f"\nResults: {successful}/{total} successful ({success_rate:.1f}%)")
-    logger.info(f"Failed: {failed}/{total} ({100-success_rate:.1f}%)")
+    logger.info(f"Failed: {failed}/{total} ({100 - success_rate:.1f}%)")
 
     await engine.deactivate_scenario(scenario.name)
 
@@ -133,7 +133,7 @@ async def example_3_circuit_breaker_testing():
     # Simulate operations while circuit is open
     logger.info("\nAttempting operations with circuit OPEN:")
     for i in range(5):
-        logger.warning(f"Operation {i+1}: Circuit OPEN - request rejected")
+        logger.warning(f"Operation {i + 1}: Circuit OPEN - request rejected")
         await asyncio.sleep(0.5)
 
     # Wait for circuit to close
@@ -143,7 +143,7 @@ async def example_3_circuit_breaker_testing():
     # Verify circuit closed and operations succeed
     logger.info("\nAttempting operations after circuit recovery:")
     for i in range(3):
-        logger.info(f"Operation {i+1}: Circuit CLOSED - request successful")
+        logger.info(f"Operation {i + 1}: Circuit CLOSED - request successful")
         await asyncio.sleep(0.3)
 
     await engine.deactivate_scenario(scenario.name)
@@ -178,12 +178,12 @@ async def example_4_multiple_concurrent_chaos():
         # Check latency injection
         latency = engine.should_inject_latency("service1")
         if latency > 0:
-            logger.info(f"Op {i+1}: Latency detected ({latency}ms)")
+            logger.info(f"Op {i + 1}: Latency detected ({latency}ms)")
 
         # Check error injection
         error = engine.should_inject_error("service2")
         if error:
-            logger.warning(f"Op {i+1}: Error detected ({error.__name__})")
+            logger.warning(f"Op {i + 1}: Error detected ({error.__name__})")
 
         await asyncio.sleep(0.3)
 
@@ -222,7 +222,7 @@ async def example_5_chaos_context_manager():
         # Run operations with chaos active
         for i in range(5):
             delay = engine.should_inject_latency("test_service")
-            logger.info(f"Operation {i+1}: Latency={delay}ms")
+            logger.info(f"Operation {i + 1}: Latency={delay}ms")
             await asyncio.sleep(0.3)
 
     logger.info("Chaos is CLEANED UP outside context")
@@ -247,7 +247,7 @@ async def example_6_gradual_degradation():
     error_rates = [0.1, 0.3, 0.5, 0.7, 0.9]
 
     for rate in error_rates:
-        logger.info(f"\nTesting with {rate*100}% error rate:")
+        logger.info(f"\nTesting with {rate * 100}% error rate:")
 
         scenario = await engine.inject_errors(
             target="degradation_test", error_rate=rate, error_type=RuntimeError, duration_s=2.0

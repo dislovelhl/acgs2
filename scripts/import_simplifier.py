@@ -43,7 +43,6 @@ def simplify_imports_in_file(file_path: str, dry_run: bool = True) -> Dict[str, 
                     and all(isinstance(elt, ast.Name) for elt in handler.type.elts)
                     and {elt.id for elt in handler.type.elts} == {"ImportError", "ValueError"}
                 ):
-
                     # Check if try block has imports and handler has fallback imports
                     try_imports = [
                         stmt for stmt in node.body if isinstance(stmt, (ast.Import, ast.ImportFrom))

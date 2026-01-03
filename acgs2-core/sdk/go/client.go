@@ -40,7 +40,7 @@ func NewClient(config ClientConfig) *ACGS2Client {
 // SendMessage sends a message to the agent bus
 func (c *ACGS2Client) SendMessage(ctx context.Context, msg AgentMessage) (*ValidationResult, error) {
 	url := fmt.Sprintf("%s/v1/messages", c.config.BaseURL)
-	
+
 	jsonData, err := json.Marshal(msg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal message: %w", err)
@@ -74,6 +74,9 @@ func (c *ACGS2Client) SendMessage(ctx context.Context, msg AgentMessage) (*Valid
 // setHeaders adds authentication and tenant headers to the request
 func (c *ACGS2Client) setHeaders(req *http.Request) {
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-Constitutional-Hash", "cdd01ef066bc6cf2")
+	req.Header.Set("X-SDK-Version", "2.0.0")
+	req.Header.Set("X-SDK-Language", "go")
 	if c.config.APIKey != "" {
 		req.Header.Set("X-API-Key", c.config.APIKey)
 	}
@@ -91,23 +94,23 @@ func (c *ACGS2Client) RegisterAgentAsync(ctx context.Context, agentID string) <-
 	go func() {
 		defer close(errCh)
 		url := fmt.Sprintf("%s/v1/agents/register", c.config.BaseURL)
-		
+
 		reg := map[string]string{
 			"agent_id":  agentID,
 			"tenant_id": c.config.TenantID,
 		}
-		
+
 		jsonData, _ := json.Marshal(reg)
 		req, _ := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(jsonData))
 		c.setHeaders(req)
-		
+
 		resp, err := c.httpClient.Do(req)
 		if err != nil {
 			errCh <- err
 			return
 		}
 		defer resp.Body.Close()
-		
+
 		if resp.StatusCode != http.StatusOK {
 			errCh <- fmt.Errorf("registration failed with status: %d", resp.StatusCode)
 		}

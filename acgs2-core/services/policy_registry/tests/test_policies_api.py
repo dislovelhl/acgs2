@@ -67,6 +67,14 @@ class MockPolicy:
             "constitutional_hash": self.constitutional_hash,
         }
 
+    def model_dump(self):
+        return self.dict()
+
+    def model_dump_json(self):
+        import json
+
+        return json.dumps(self.dict())
+
 
 class MockPolicyVersion:
     """Mock PolicyVersion model for testing."""
@@ -97,6 +105,14 @@ class MockPolicyVersion:
             "created_at": self.created_at.isoformat(),
             "is_active": self.is_active,
         }
+
+    def model_dump(self):
+        return self.dict()
+
+    def model_dump_json(self):
+        import json
+
+        return json.dumps(self.dict())
 
 
 # =============================================================================
@@ -720,7 +736,7 @@ class TestConstitutionalCompliance:
         )
 
         assert policy.constitutional_hash == CONSTITUTIONAL_HASH
-        assert policy.model_dump()["constitutional_hash"] == CONSTITUTIONAL_HASH
+        assert policy.dict()["constitutional_hash"] == CONSTITUTIONAL_HASH
 
 
 # =============================================================================

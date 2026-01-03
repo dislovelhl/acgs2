@@ -5,21 +5,43 @@ Simple development API gateway for routing requests to services
 
 import asyncio
 import json
-import logging
 from datetime import datetime, timezone
 from pathlib import Path
 
 import httpx
-from fastapi import BackgroundTasks, FastAPI, HTTPException, Request
+from fastapi import BackgroundTasks, FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
 from shared.config import settings
+from shared.metrics import (
+    create_metrics_endpoint,
+    set_service_info,
+    track_request_metrics,
+    HTTP_REQUESTS_TOTAL,
+    HTTP_REQUEST_DURATION,
+)
+from shared.logging import (
+    init_service_logging,
+    create_correlation_middleware,
+    log_request_start,
+    log_request_end,
+    log_error,
+    get_logger,
+)
+from shared.security.auth import (
+    AuthenticationMiddleware,
+    get_current_user_optional,
+    UserClaims,
+)
+from shared.security.rate_limiter import (
+    create_rate_limit_middleware,
+    add_rate_limit_headers,
+)
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+# Initialize structured logging
+logger = init_service_logging("api-gateway")
 
 app = FastAPI(
     title="ACGS-2 API Gateway",
@@ -35,6 +57,29 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Add correlation ID middleware
+app.middleware("http")(create_correlation_middleware())
+
+# Add rate limiting middleware
+app.middleware("http")(
+    create_rate_limit_middleware(
+        requests_per_minute=100,  # 100 requests per minute
+        burst_limit=20,  # Burst up to 20 requests
+    )
+)
+
+# Add authentication middleware
+app.add_middleware(AuthenticationMiddleware)
+
+# Add rate limit headers
+app.add_middleware(add_rate_limit_headers())
+
+# Initialize metrics
+set_service_info("api-gateway", "1.0.0")
+
+# Add metrics endpoint
+app.add_api_route("/metrics", create_metrics_endpoint())
 
 # Service URLs from centralized config
 AGENT_BUS_URL = settings.services.agent_bus_url
@@ -70,6 +115,7 @@ class FeedbackResponse(BaseModel):
 
 # Health check
 @app.get("/health")
+@track_request_metrics("api-gateway", "/health")
 async def health_check():
     """Health check endpoint"""
     return {"status": "healthy", "service": "api-gateway", "environment": ENVIRONMENT}
@@ -77,6 +123,7 @@ async def health_check():
 
 # User Feedback Collection
 @app.post("/feedback", response_model=FeedbackResponse)
+@track_request_metrics("api-gateway", "/feedback")
 async def submit_feedback(
     feedback: FeedbackRequest, request: Request, background_tasks: BackgroundTasks
 ):
@@ -106,7 +153,15 @@ async def submit_feedback(
         # Save feedback asynchronously
         background_tasks.add_task(save_feedback_to_file, feedback_record)
 
-        logger.info(f"Feedback submitted: {feedback_id} - {feedback.category}")
+        log_business_event(
+            logger,
+            event_type="feedback",
+            entity_type="submission",
+            entity_id=feedback_id,
+            action="submitted",
+            category=feedback.category,
+            rating=feedback.rating,
+        )
 
         return FeedbackResponse(
             feedback_id=feedback_id,
@@ -116,14 +171,28 @@ async def submit_feedback(
         )
 
     except Exception as e:
-        logger.error(f"Error processing feedback: {e}")
+        log_error(
+            logger,
+            e,
+            context={"operation": "feedback_submission", "user_id": feedback.user_id},
+            category=feedback.category,
+        )
         raise HTTPException(status_code=500, detail="Failed to process feedback")
 
 
 @app.get("/feedback/stats")
-async def get_feedback_stats():
+@track_request_metrics("api-gateway", "/feedback/stats")
+async def get_feedback_stats(user: UserClaims = Depends(get_current_user_optional)):
     """Get feedback statistics (admin endpoint)"""
     try:
+        # Log access for audit purposes
+        if user:
+            logger.info(
+                "Feedback stats accessed",
+                user_id=user.sub,
+                tenant_id=user.tenant_id,
+                roles=user.roles,
+            )
         # Count feedback files
         feedback_files = list(FEEDBACK_DIR.glob("*.json"))
         total_feedback = len(feedback_files)
@@ -163,6 +232,7 @@ async def get_feedback_stats():
 
 # Service discovery endpoint
 @app.get("/services")
+@track_request_metrics("api-gateway", "/services")
 async def list_services():
     """List available services"""
     services = {
@@ -179,7 +249,8 @@ async def list_services():
                     service_info["health"] = (
                         "healthy" if response.status_code == 200 else "unhealthy"
                     )
-            except:
+            except (httpx.RequestError, httpx.TimeoutException, Exception) as e:
+                logger.warning(f"Health check failed for {service_name}: {e}")
                 service_info["health"] = "unreachable"
 
     return services
@@ -197,6 +268,11 @@ async def proxy_to_agent_bus(request: Request, path: str):
     if request.url.query:
         target_url += f"?{request.url.query}"
 
+    import time
+
+    start_time = time.perf_counter()
+    status_code = 200
+
     try:
         # Get request body
         body = await request.body()
@@ -211,6 +287,8 @@ async def proxy_to_agent_bus(request: Request, path: str):
                 params=request.query_params,
             )
 
+            status_code = response.status_code
+
             # Return the response
             return JSONResponse(
                 status_code=response.status_code,
@@ -223,10 +301,24 @@ async def proxy_to_agent_bus(request: Request, path: str):
 
     except httpx.RequestError as e:
         logger.error(f"Request error: {e}")
+        status_code = 502
         raise HTTPException(status_code=502, detail="Service unavailable")
     except Exception as e:
         logger.error(f"Unexpected error: {e}")
+        status_code = 500
         raise HTTPException(status_code=500, detail="Internal server error")
+    finally:
+        # Track proxy request metrics
+        duration = time.perf_counter() - start_time
+        HTTP_REQUEST_DURATION.labels(
+            method=request.method, endpoint=f"/proxy/{path}", service="api-gateway"
+        ).observe(duration)
+        HTTP_REQUESTS_TOTAL.labels(
+            method=request.method,
+            endpoint=f"/proxy/{path}",
+            service="api-gateway",
+            status=str(status_code),
+        ).inc()
 
 
 async def save_feedback_to_file(feedback_record: dict):

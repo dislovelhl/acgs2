@@ -29,7 +29,7 @@ class ASCVerifier:
         Verify content consistency using multi-sample semantic overlap.
         Only active for FACTUAL and REASONING intents.
         """
-        if intent not in [IntentType.FACTUAL, IntentType.REASONING]:
+        if intent.value not in [IntentType.FACTUAL.value, IntentType.REASONING.value]:
             return {"is_valid": True, "confidence": 1.0, "reason": "ASC skipped for intent"}
 
         logger.info(f"Executing ASC verification for {intent.value} intent")

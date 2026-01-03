@@ -20,10 +20,12 @@ if enhanced_agent_bus_dir not in sys.path:
     sys.path.insert(0, enhanced_agent_bus_dir)
 
 
-def _load_module(name, path):
-    """Load a module directly from path."""
+def _load_module(name, path, package=None):
+    """Load a module directly from path with optional package context."""
     spec = importlib.util.spec_from_file_location(name, path)
     module = importlib.util.module_from_spec(spec)
+    if package:
+        module.__package__ = package
     sys.modules[name] = module
     spec.loader.exec_module(module)
     return module
@@ -34,28 +36,34 @@ deliberation_layer_dir = os.path.join(enhanced_agent_bus_dir, "deliberation_laye
 if deliberation_layer_dir not in sys.path:
     sys.path.insert(0, deliberation_layer_dir)
 
-# Load base models first
-_models = _load_module("models", os.path.join(enhanced_agent_bus_dir, "models.py"))
+# Load base models and config first
+_models = _load_module(
+    "models", os.path.join(enhanced_agent_bus_dir, "models.py"), "enhanced_agent_bus"
+)
+_config = _load_module(
+    "config", os.path.join(enhanced_agent_bus_dir, "config.py"), "enhanced_agent_bus"
+)
 
 
 # Create mock parent package that can function as a Python package
-class MockEnhancedAgentBus:
-    """Mock package for import system."""
+class MockPackage:
+    def __init__(self, name, path):
+        self.__name__ = name
+        self.__path__ = [path]
+        self.__package__ = name
+        self.__spec__ = importlib.util.spec_from_file_location(
+            name, os.path.join(path, "__init__.py")
+        )
+        if self.__spec__:
+            self.__spec__.submodule_search_locations = [path]
 
-    __path__ = [enhanced_agent_bus_dir]
-    __name__ = "enhanced_agent_bus"
-    __file__ = os.path.join(enhanced_agent_bus_dir, "__init__.py")
-    __spec__ = None
-    __loader__ = None
-    __package__ = "enhanced_agent_bus"
 
-
-mock_parent = MockEnhancedAgentBus()
-mock_parent.models = _models
-
-# Patch sys.modules for imports
-sys.modules["enhanced_agent_bus"] = mock_parent
+sys.modules["enhanced_agent_bus"] = MockPackage("enhanced_agent_bus", enhanced_agent_bus_dir)
+sys.modules["enhanced_agent_bus.deliberation_layer"] = MockPackage(
+    "enhanced_agent_bus.deliberation_layer", deliberation_layer_dir
+)
 sys.modules["enhanced_agent_bus.models"] = _models
+sys.modules["enhanced_agent_bus.config"] = _config
 
 # Import from models
 AgentMessage = _models.AgentMessage
@@ -100,22 +108,73 @@ class MockImpactScorerModule:
 
 sys.modules["impact_scorer"] = MockImpactScorerModule()
 
-# Load other dependency modules
-_adaptive_router = _load_module(
-    "adaptive_router", os.path.join(deliberation_layer_dir, "adaptive_router.py")
-)
+# Load dependency modules in correct order with full package names
 _deliberation_queue = _load_module(
-    "deliberation_queue", os.path.join(deliberation_layer_dir, "deliberation_queue.py")
+    "enhanced_agent_bus.deliberation_layer.deliberation_queue",
+    os.path.join(deliberation_layer_dir, "deliberation_queue.py"),
+    "enhanced_agent_bus.deliberation_layer",
 )
+# Alias for fallback imports
+sys.modules["deliberation_queue"] = _deliberation_queue
+
+_intent_classifier = _load_module(
+    "enhanced_agent_bus.deliberation_layer.intent_classifier",
+    os.path.join(deliberation_layer_dir, "intent_classifier.py"),
+    "enhanced_agent_bus.deliberation_layer",
+)
+sys.modules["intent_classifier"] = _intent_classifier
+
+_adaptive_router = _load_module(
+    "enhanced_agent_bus.deliberation_layer.adaptive_router",
+    os.path.join(deliberation_layer_dir, "adaptive_router.py"),
+    "enhanced_agent_bus.deliberation_layer",
+)
+sys.modules["adaptive_router"] = _adaptive_router
+
 _llm_assistant = _load_module(
-    "llm_assistant", os.path.join(deliberation_layer_dir, "llm_assistant.py")
+    "enhanced_agent_bus.deliberation_layer.llm_assistant",
+    os.path.join(deliberation_layer_dir, "llm_assistant.py"),
+    "enhanced_agent_bus.deliberation_layer",
 )
+sys.modules["llm_assistant"] = _llm_assistant
+
 _redis_integration = _load_module(
-    "redis_integration", os.path.join(deliberation_layer_dir, "redis_integration.py")
+    "enhanced_agent_bus.deliberation_layer.redis_integration",
+    os.path.join(deliberation_layer_dir, "redis_integration.py"),
+    "enhanced_agent_bus.deliberation_layer",
 )
+sys.modules["redis_integration"] = _redis_integration
 
 # Load the actual integration module
-_integration = _load_module("integration", os.path.join(deliberation_layer_dir, "integration.py"))
+_integration = _load_module(
+    "enhanced_agent_bus.deliberation_layer.integration",
+    os.path.join(deliberation_layer_dir, "integration.py"),
+    "enhanced_agent_bus.deliberation_layer",
+)
+sys.modules["integration"] = _integration
+
+# Patch dependencies in the loaded modules if they fell back to None due to dynamic loading
+for mod in [_adaptive_router, _integration]:
+    if getattr(mod, "get_deliberation_queue", None) is None:
+        mod.get_deliberation_queue = _deliberation_queue.get_deliberation_queue
+    if getattr(mod, "DeliberationStatus", None) is None:
+        mod.DeliberationStatus = _deliberation_queue.DeliberationStatus
+    if getattr(mod, "get_adaptive_router", None) is None and hasattr(
+        _adaptive_router, "get_adaptive_router"
+    ):
+        mod.get_adaptive_router = _adaptive_router.get_adaptive_router
+    if getattr(mod, "get_impact_scorer", None) is None:
+        mod.get_impact_scorer = mock_get_impact_scorer
+    if getattr(mod, "get_llm_assistant", None) is None and hasattr(
+        _llm_assistant, "get_llm_assistant"
+    ):
+        mod.get_llm_assistant = _llm_assistant.get_llm_assistant
+    if getattr(mod, "calculate_message_impact", None) is None:
+        mod.calculate_message_impact = mock_calculate_message_impact
+    if getattr(mod, "IntentClassifier", None) is None:
+        mod.IntentClassifier = _intent_classifier.IntentClassifier
+    if getattr(mod, "IntentType", None) is None:
+        mod.IntentType = _intent_classifier.IntentType
 
 DeliberationLayer = _integration.DeliberationLayer
 get_deliberation_layer = _integration.get_deliberation_layer
@@ -390,7 +449,8 @@ class TestDependencyInjection:
         """Test OPA guard can be injected."""
         mock_guard = MagicMock()
         layer = DeliberationLayer(
-            opa_guard=mock_guard, enable_opa_guard=False  # Injection overrides flag
+            opa_guard=mock_guard,
+            enable_opa_guard=False,  # Injection overrides flag
         )
 
         assert layer.opa_guard is mock_guard

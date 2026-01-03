@@ -288,6 +288,15 @@ class AuditLedger:
                     f"[{CONSTITUTIONAL_HASH}] Error stopping BlockchainAnchorManager: {e}"
                 )
 
+        # Ensure worker is finished
+        if self._worker_task:
+            try:
+                # Give it a moment to finish draining if not already
+                await asyncio.wait_for(self._worker_task, timeout=2.0)
+            except (asyncio.TimeoutError, asyncio.CancelledError):
+                if not self._worker_task.done():
+                    self._worker_task.cancel()
+
         logger.info(f"[{CONSTITUTIONAL_HASH}] AuditLedger worker stopped")
 
     async def add_validation_result(self, validation_result: ValidationResult) -> str:
@@ -301,10 +310,20 @@ class AuditLedger:
 
     async def _processing_worker(self):
         """Background worker that builds batches and commits them."""
-        while self._running:
+        while self._running or not self._queue.empty():
             try:
                 # Get item from queue
-                entry_hash, vr, ts = await asyncio.wait_for(self._queue.get(), timeout=1.0)
+                try:
+                    # If not running, use a very short timeout to drain
+                    timeout = 1.0 if self._running else 0.1
+                    entry_hash, vr, ts = await asyncio.wait_for(self._queue.get(), timeout=timeout)
+                except asyncio.TimeoutError:
+                    # If we've been idle and have a partial batch, commit it?
+                    # For now, only commit if queue is empty or batch full
+                    if self.current_batch and (self._queue.empty() or not self._running):
+                        async with self._lock:
+                            await self._commit_batch()
+                    continue
 
                 async with self._lock:
                     entry = AuditEntry(validation_result=vr, hash=entry_hash, timestamp=ts)
@@ -751,7 +770,8 @@ class AuditLedger:
         while not self._queue.empty():
             try:
                 self._queue.get_nowait()
-            except asyncio.QueueEmpty:
+                self._queue.task_done()
+            except (asyncio.QueueEmpty, ValueError):
                 break
 
         # Reset state

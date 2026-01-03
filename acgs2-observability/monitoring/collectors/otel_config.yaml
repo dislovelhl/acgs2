@@ -1,0 +1,283 @@
+receivers:
+  # OTLP (OpenTelemetry Protocol) receivers for traces, metrics, and logs
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+        max_recv_msg_size: 4194304  # 4MB
+        max_concurrent_streams: 16
+      http:
+        endpoint: 0.0.0.0:4318
+        max_request_body_size: 4194304  # 4MB
+
+  # Prometheus receiver for existing metrics
+  prometheus:
+    config:
+      global:
+        scrape_interval: 15s
+      scrape_configs:
+        - job_name: 'acgs2-services'
+          static_configs:
+            - targets: ['localhost:8000', 'localhost:8001', 'localhost:8002', 'localhost:8084']
+          metrics_path: '/metrics'
+          scrape_interval: 15s
+        - job_name: 'acgs2-agent-bus'
+          static_configs:
+            - targets: ['localhost:8080']
+          metrics_path: '/metrics'
+          scrape_interval: 10s
+
+  # Host metrics receiver
+  hostmetrics:
+    collection_interval: 30s
+    scrapers:
+      cpu:
+      memory:
+      disk:
+      network:
+      filesystem:
+      system:
+
+  # Kafka receiver for agent bus events
+  kafka:
+    protocol_version: 2.8.0
+    brokers: ["localhost:9092"]
+    topic: "acgs2.events"
+    group_id: "otel-collector"
+    client_id: "acgs2-otel"
+    authentication:
+      tls:
+        ca_file: ""
+        cert_file: ""
+        key_file: ""
+    encoding: json
+
+processors:
+  # Batch processor for efficient processing
+  batch:
+    timeout: 10s
+    send_batch_size: 1024
+    send_batch_max_size: 2048
+
+  # Resource processor to add constitutional hash and tenant info
+  resource:
+    attributes:
+      - key: constitutional_hash
+        value: "cdd01ef066bc6cf2"
+        action: upsert
+      - key: service.name
+        value: "acgs2"
+        action: upsert
+      - key: service.version
+        value: "2.3.0"
+        action: upsert
+
+  # Attributes processor for governance-specific enrichment
+  attributes:
+    actions:
+      # Add tenant information from headers/context
+      - key: tenant.id
+        from_context: tenant_id
+        action: upsert
+      - key: user.id
+        from_context: user_id
+        action: upsert
+      # Add compliance tags
+      - key: compliance.gdpr
+        value: "true"
+        action: upsert
+      - key: compliance.soc2
+        value: "true"
+        action: upsert
+      - key: compliance.eu_ai_act
+        value: "true"
+        action: upsert
+
+  # Filter processor for noise reduction
+  filter:
+    logs:
+      exclude:
+        # Exclude health check logs
+        match_type: strict
+        resource_attributes:
+          - key: service.name
+            value: "health-check"
+    metrics:
+      exclude:
+        # Exclude debug metrics
+        match_type: regexp
+        metric_names:
+          - ".*debug.*"
+
+  # Transform processor for governance events
+  transform:
+    logs:
+      - set:
+          severity_text: SEVERITY_NUMBER
+        conditions:
+          - severity_number == 9
+          - severity_number == 10
+          - severity_number == 11
+          - severity_number == 12
+          - severity_number == 13
+          - severity_number == 14
+          - severity_number == 15
+          - severity_number == 16
+          - severity_number == 17
+          - severity_number == 18
+          - severity_number == 19
+          - severity_number == 20
+          - severity_number == 21
+          - severity_number == 22
+          - severity_number == 23
+          - severity_number == 24
+    metrics:
+      - rename:
+          from: "acgs2_governance_decisions_total"
+          to: "acgs2.governance.decisions.total"
+      - rename:
+          from: "acgs2_approval_workflows_total"
+          to: "acgs2.approvals.workflows.total"
+      - rename:
+          from: "acgs2_policy_violations_total"
+          to: "acgs2.policy.violations.total"
+
+  # Rate limiting processor for high-volume scenarios
+  ratelimit:
+    limit: 1000
+    burst: 2000
+    conditions:
+      - rate == 0
+
+exporters:
+  # Jaeger exporter for distributed tracing
+  jaeger:
+    endpoint: "jaeger:14250"
+    tls:
+      insecure: true
+
+  # Prometheus exporter for metrics aggregation
+  prometheus:
+    endpoint: "0.0.0.0:8889"
+    namespace: "acgs2"
+    send_timestamps: true
+    metric_expiration: 5m
+
+  # Splunk HEC exporter integration
+  splunk_hec:
+    token: "${SPLUNK_HEC_TOKEN}"
+    endpoint: "${SPLUNK_HEC_URL}/services/collector"
+    source: "otel:acgs2"
+    sourcetype: "otel:governance"
+    index: "acgs2_observability"
+    tls:
+      insecure_skip_verify: false
+    sending_queue:
+      queue_size: 10000
+    retry_on_failure:
+      enabled: true
+      initial_interval: 5s
+      max_interval: 30s
+      max_elapsed_time: 300s
+
+  # Datadog exporter for comprehensive monitoring
+  datadog:
+    api:
+      key: "${DD_API_KEY}"
+      site: "${DD_SITE:-datadoghq.com}"
+    traces:
+      span_name_remappings:
+        "acgs2.governance.decision": "governance.decision"
+        "acgs2.policy.evaluation": "policy.evaluation"
+    metrics:
+      histograms:
+        mode: "distributions"
+        send_aggregations: true
+    logs:
+      enabled: true
+      batch_wait: 5s
+
+  # Elasticsearch exporter for log aggregation
+  elasticsearch:
+    endpoints: ["${ELASTICSEARCH_URL:-https://localhost:9200}"]
+    index: "acgs2-observability-%{+yyyy.MM.dd}"
+    user: "${ELASTICSEARCH_USERNAME:-elastic}"
+    password: "${ELASTICSEARCH_PASSWORD}"
+    api_key: "${ELASTICSEARCH_API_KEY}"
+    tls:
+      insecure_skip_verify: false
+    sending_queue:
+      queue_size: 10000
+    retry_on_failure:
+      enabled: true
+      initial_interval: 5s
+      max_interval: 30s
+      max_elapsed_time: 300s
+
+  # File exporter for debugging and backup
+  file:
+    path: "/var/log/acgs2/otel-export.json"
+    format: json
+    rotation:
+      max_megabytes: 100
+      max_days: 7
+
+  # Logging exporter for local debugging
+  logging:
+    verbosity: normal
+
+extensions:
+  # Health check extension
+  health_check:
+    endpoint: "0.0.0.0:13133"
+
+  # Performance profiler
+  zpages:
+    endpoint: "0.0.0.0:55679"
+
+  # Service discovery
+  docker_observer:
+    refresh_interval: 5s
+    watch_observers: [ecs_task_observer]
+
+service:
+  extensions: [health_check, zpages, docker_observer]
+
+  pipelines:
+    # Traces pipeline
+    traces:
+      receivers: [otlp]
+      processors: [resource, attributes, batch]
+      exporters: [jaeger, datadog]
+
+    # Metrics pipeline
+    metrics:
+      receivers: [otlp, prometheus, hostmetrics]
+      processors: [resource, attributes, filter, transform, batch]
+      exporters: [prometheus, datadog]
+
+    # Logs pipeline
+    logs:
+      receivers: [otlp, kafka]
+      processors: [resource, attributes, filter, transform, batch]
+      exporters: [splunk_hec, datadog, elasticsearch]
+
+  # Telemetry for the collector itself
+  telemetry:
+    logs:
+      level: "info"
+    metrics:
+      level: "normal"
+      address: "0.0.0.0:8888"
+    traces:
+      propagators: [tracecontext, baggage]
+      processors: [batch]
+      exporters: [jaeger]
+
+# Configuration validation
+validation:
+  warnings:
+    # Allow unknown fields in development
+    ignore_unknown_fields: false
+  # Require all referenced components to be defined
+  require_all_components: true

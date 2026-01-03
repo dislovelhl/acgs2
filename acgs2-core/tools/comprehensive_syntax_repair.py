@@ -107,7 +107,7 @@ def fix_try_in_with_block(content: str) -> Tuple[str, int]:
             try:
                 with other:
                     pass
-            except:
+            except (httpx.RequestError, httpx.TimeoutException, Exception) as e:
                 ...
     """
     fixes = 0

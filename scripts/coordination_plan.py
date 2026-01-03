@@ -98,41 +98,41 @@ def main():
     if critical_tasks:
         print("\n🚨 CRITICAL PRIORITY TASKS (Execute Immediately):")
         for rec in critical_tasks:
-            print(f'\n{rec["id"]}: {rec["task"]}')
-            print(f'   Agent: {rec["agent_type"]} ({", ".join(rec["skills"])})')
-            print(f'   Effort: {rec["estimated_effort"]}')
-            print(f'   Impact: {rec["impact"]}')
-            print(f'   → {rec["description"]}')
+            print(f"\n{rec['id']}: {rec['task']}")
+            print(f"   Agent: {rec['agent_type']} ({', '.join(rec['skills'])})")
+            print(f"   Effort: {rec['estimated_effort']}")
+            print(f"   Impact: {rec['impact']}")
+            print(f"   → {rec['description']}")
 
     # Execute high priority tasks
     if high_tasks:
         print("\n⚠️  HIGH PRIORITY TASKS (Execute This Week):")
         for rec in high_tasks:
-            print(f'\n{rec["id"]}: {rec["task"]}')
-            print(f'   Agent: {rec["agent_type"]} ({", ".join(rec["skills"])})')
-            print(f'   Effort: {rec["estimated_effort"]}')
-            print(f'   Impact: {rec["impact"]}')
-            print(f'   → {rec["description"]}')
+            print(f"\n{rec['id']}: {rec['task']}")
+            print(f"   Agent: {rec['agent_type']} ({', '.join(rec['skills'])})")
+            print(f"   Effort: {rec['estimated_effort']}")
+            print(f"   Impact: {rec['impact']}")
+            print(f"   → {rec['description']}")
 
     # Execute medium priority tasks
     if medium_tasks:
         print("\n📋 MEDIUM PRIORITY TASKS (Execute This Month):")
         for rec in medium_tasks:
-            print(f'\n{rec["id"]}: {rec["task"]}')
-            print(f'   Agent: {rec["agent_type"]} ({", ".join(rec["skills"])})')
-            print(f'   Effort: {rec["estimated_effort"]}')
-            print(f'   Impact: {rec["impact"]}')
-            print(f'   → {rec["description"]}')
+            print(f"\n{rec['id']}: {rec['task']}")
+            print(f"   Agent: {rec['agent_type']} ({', '.join(rec['skills'])})")
+            print(f"   Effort: {rec['estimated_effort']}")
+            print(f"   Impact: {rec['impact']}")
+            print(f"   → {rec['description']}")
 
     # Execute low priority tasks
     if low_tasks:
         print("\n📝 LOW PRIORITY TASKS (Execute This Quarter):")
         for rec in low_tasks:
-            print(f'\n{rec["id"]}: {rec["task"]}')
-            print(f'   Agent: {rec["agent_type"]} ({", ".join(rec["skills"])})')
-            print(f'   Effort: {rec["estimated_effort"]}')
-            print(f'   Impact: {rec["impact"]}')
-            print(f'   → {rec["description"]}')
+            print(f"\n{rec['id']}: {rec['task']}")
+            print(f"   Agent: {rec['agent_type']} ({', '.join(rec['skills'])})")
+            print(f"   Effort: {rec['estimated_effort']}")
+            print(f"   Impact: {rec['impact']}")
+            print(f"   → {rec['description']}")
 
     print("\n📊 EXECUTION METRICS")
     print("-" * 20)

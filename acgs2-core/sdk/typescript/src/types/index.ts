@@ -70,6 +70,28 @@ export enum EventCategory {
   AUTHORIZATION = 'authorization',
   AUDIT = 'audit',
   SYSTEM = 'system',
+  ML_MODEL = 'ml_model',
+  PREDICTION = 'prediction',
+}
+
+export enum ModelTrainingStatus {
+  TRAINING = 'training',
+  COMPLETED = 'completed',
+  FAILED = 'failed',
+  STOPPED = 'stopped',
+}
+
+export enum DriftDirection {
+  NONE = 'none',
+  INCREASE = 'increase',
+  DECREASE = 'decrease',
+}
+
+export enum ABNTestStatus {
+  ACTIVE = 'active',
+  COMPLETED = 'completed',
+  PAUSED = 'paused',
+  CANCELLED = 'cancelled',
 }
 
 // =============================================================================
@@ -310,4 +332,121 @@ export interface QueryAuditEventsRequest extends PaginationParams {
   resource?: string;
   startTime?: string;
   endTime?: string;
+}
+
+// =============================================================================
+// ML Governance Types
+// =============================================================================
+
+export const MLModelSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  version: z.string(),
+  description: z.string().optional(),
+  modelType: z.string(),
+  framework: z.string(),
+  accuracyScore: z.number().optional(),
+  trainingStatus: z.nativeEnum(ModelTrainingStatus),
+  lastTrainedAt: z.string().optional(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+  constitutionalHash: ConstitutionalHashSchema,
+});
+
+export const ModelPredictionSchema = z.object({
+  id: z.string(),
+  modelId: z.string(),
+  modelVersion: z.string(),
+  inputFeatures: z.record(z.unknown()),
+  prediction: z.unknown(),
+  confidenceScore: z.number().optional(),
+  predictionMetadata: z.record(z.unknown()).optional(),
+  timestamp: z.string(),
+  constitutionalHash: ConstitutionalHashSchema,
+});
+
+export const DriftDetectionSchema = z.object({
+  modelId: z.string(),
+  driftScore: z.number(),
+  driftDirection: z.nativeEnum(DriftDirection),
+  baselineAccuracy: z.number(),
+  currentAccuracy: z.number(),
+  featuresAffected: z.array(z.string()),
+  detectedAt: z.string(),
+  recommendations: z.array(z.string()),
+  constitutionalHash: ConstitutionalHashSchema,
+});
+
+export const ABNTestSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  description: z.string().optional(),
+  modelAId: z.string(),
+  modelBId: z.string(),
+  status: z.nativeEnum(ABNTestStatus),
+  testDurationDays: z.number(),
+  trafficSplitPercentage: z.number(),
+  successMetric: z.string(),
+  createdAt: z.string(),
+  completedAt: z.string().optional(),
+  constitutionalHash: ConstitutionalHashSchema,
+});
+
+export const FeedbackSubmissionSchema = z.object({
+  id: z.string(),
+  predictionId: z.string().optional(),
+  modelId: z.string(),
+  feedbackType: z.string(),
+  feedbackValue: z.unknown(),
+  userId: z.string().optional(),
+  context: z.record(z.unknown()).optional(),
+  submittedAt: z.string(),
+  constitutionalHash: ConstitutionalHashSchema,
+});
+
+// Type exports
+export type MLModel = z.infer<typeof MLModelSchema>;
+export type ModelPrediction = z.infer<typeof ModelPredictionSchema>;
+export type DriftDetection = z.infer<typeof DriftDetectionSchema>;
+export type ABNTest = z.infer<typeof ABNTestSchema>;
+export type FeedbackSubmission = z.infer<typeof FeedbackSubmissionSchema>;
+
+// Request interfaces for ML Governance
+export interface CreateMLModelRequest {
+  name: string;
+  description?: string;
+  modelType: string;
+  framework: string;
+  initialAccuracyScore?: number;
+}
+
+export interface UpdateMLModelRequest {
+  name?: string;
+  description?: string;
+  accuracyScore?: number;
+}
+
+export interface MakePredictionRequest {
+  modelId: string;
+  features: Record<string, unknown>;
+  includeConfidence?: boolean;
+}
+
+export interface SubmitFeedbackRequest {
+  predictionId?: string;
+  modelId: string;
+  feedbackType: string;
+  feedbackValue: unknown;
+  userId?: string;
+  context?: Record<string, unknown>;
+}
+
+export interface CreateABNTestRequest {
+  name: string;
+  description?: string;
+  modelAId: string;
+  modelBId: string;
+  testDurationDays: number;
+  trafficSplitPercentage: number;
+  successMetric: string;
 }

@@ -1,0 +1,288 @@
+# ACGS-2 Development Environment
+# Simple setup for developers to get started quickly
+#
+# Usage:
+#   Start all services: docker-compose -f docker-compose.dev.yml up -d
+#   View logs: docker-compose -f docker-compose.dev.yml logs -f
+#   Stop services: docker-compose -f docker-compose.dev.yml down
+#
+# Services available at:
+# - API Gateway: http://localhost:8080
+# - Agent Bus: http://localhost:8000
+# - Compliance Docs: http://localhost:8100
+# - OPA: http://localhost:8181
+# - Redis: localhost:6379
+# - Kafka: localhost:9092
+
+version: '3.8'
+
+networks:
+  acgs-dev:
+    driver: bridge
+
+services:
+  # Infrastructure Services
+  redis:
+    image: redis:7.2-alpine
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    networks:
+      - acgs-dev
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    hostname: kafka
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,PLAINTEXT_INTERNAL://kafka:29092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+    depends_on:
+      zookeeper:
+        condition: service_started
+    networks:
+      - acgs-dev
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    hostname: zookeeper
+    ports:
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - acgs-dev
+
+  opa:
+    image: openpolicyagent/opa:0.64.0
+    ports:
+      - "8181:8181"
+    command:
+      - "run"
+      - "--server"
+      - "--log-level=info"
+      - "--set=decision_logs.console=true"
+      - "/policies"
+    volumes:
+      - ./policies:/policies:ro
+      - ./enhanced_agent_bus/policies:/enhanced_policies:ro
+    networks:
+      - acgs-dev
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8181/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # Application Services
+  api-gateway:
+    build:
+      context: ./services/api_gateway
+      dockerfile: Dockerfile.dev
+    ports:
+      - "8080:8080"
+    environment:
+      - ENVIRONMENT=development
+      - AGENT_BUS_URL=http://agent-bus:8000
+      - REDIS_URL=redis://redis:6379/0
+      - KAFKA_BOOTSTRAP=kafka:29092
+      - OPA_URL=http://opa:8181
+      - TENANT_ID=acgs-dev
+    volumes:
+      - ./services/api_gateway:/app
+      - /app/__pycache__
+    depends_on:
+      agent-bus:
+        condition: service_started
+      redis:
+        condition: service_healthy
+    networks:
+      - acgs-dev
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  agent-bus:
+    build:
+      context: ./enhanced_agent_bus
+      dockerfile: Dockerfile.dev
+    ports:
+      - "8000:8000"
+    environment:
+      - ENVIRONMENT=development
+      - REDIS_URL=redis://redis:6379/0
+      - KAFKA_BOOTSTRAP=kafka:29092
+      - OPA_URL=http://opa:8181
+      - TENANT_ID=acgs-dev
+    volumes:
+      - ./enhanced_agent_bus:/app
+      - /app/__pycache__
+    depends_on:
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+      opa:
+        condition: service_healthy
+    networks:
+      - acgs-dev
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  compliance-docs:
+    build:
+      context: ./services/compliance_docs
+      dockerfile: Dockerfile.dev
+    ports:
+      - "8100:8100"
+    environment:
+      - ENVIRONMENT=development
+      - TENANT_ID=acgs-dev
+    volumes:
+      - ./services/compliance_docs:/app
+      - /app/__pycache__
+    networks:
+      - acgs-dev
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8100/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  hitl-approvals:
+    build:
+      context: ./services/hitl_approvals
+      dockerfile: Dockerfile
+    ports:
+      - "8200:8200"
+    environment:
+      - ENVIRONMENT=development
+      - REDIS_URL=redis://redis:6379/0
+      - TENANT_ID=acgs-dev
+    volumes:
+      - ./services/hitl_approvals:/app
+      - /app/__pycache__
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - acgs-dev
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8200/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  audit-service:
+    build:
+      context: ./services/audit_service
+    ports:
+      - "8300:8084"
+    environment:
+      - ENVIRONMENT=development
+      - REDIS_URL=redis://redis:6379/0
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
+      - TENANT_ID=acgs-dev
+    volumes:
+      - ./services/audit_service:/app
+      - /app/__pycache__
+    depends_on:
+      - redis
+      - kafka
+    networks:
+      - acgs-dev
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8084/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  tenant-management:
+    build:
+      context: ./services/tenant_management
+    ports:
+      - "8500:8500"
+    environment:
+      - ENVIRONMENT=development
+      - REDIS_URL=redis://redis:6379/0
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
+      - TENANT_ID=acgs-dev
+    volumes:
+      - ./services/tenant_management:/app
+      - /app/__pycache__
+    depends_on:
+      - redis
+      - kafka
+    networks:
+      - acgs-dev
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8500/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  ml-governance:
+    build:
+      context: ./services/core/ml-governance/ml_governance_service
+      dockerfile: Dockerfile.dev
+    ports:
+      - "8400:8400"
+    environment:
+      - ENVIRONMENT=development
+      - REDIS_URL=redis://redis:6379/0
+      - TENANT_ID=acgs-dev
+    volumes:
+      - ./services/ml_governance:/app
+      - /app/__pycache__
+      - ml_models:/tmp/ml_models
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - acgs-dev
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8400/health"]
+      interval: 15s
+      timeout: 10s
+      retries: 3
+
+  # Development Tools
+  jupyter:
+    image: jupyter/scipy-notebook:python-3.11
+    ports:
+      - "8888:8888"
+    volumes:
+      - ./notebooks:/home/jovyan/notebooks
+      - ./examples:/home/jovyan/examples
+      - ./policies:/home/jovyan/policies
+    environment:
+      - JUPYTER_TOKEN=acgs2-dev
+      - JUPYTER_ENABLE_LAB=yes
+    command: start-notebook.py --NotebookApp.token='acgs2-dev'
+    networks:
+      - acgs-dev
+    profiles:
+      - dev-tools
+
+volumes:
+  redis_data:
+  ml_models:

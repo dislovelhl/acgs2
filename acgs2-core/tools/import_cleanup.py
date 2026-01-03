@@ -1,3 +1,6 @@
+import logging
+
+logger = logging.getLogger(__name__)
 #!/usr/bin/env python3
 """
 ACGS-2 Import Cleanup Tool
@@ -132,7 +135,7 @@ class ImportAnalyzer:
             return unused
 
         except Exception as e:
-            print(f"Error analyzing {file_path}: {e}", file=sys.stderr)
+            logging.error(f"Error analyzing {file_path}: {e}")
             return []
 
     def remove_unused_imports(self, file_path: str, dry_run: bool = False) -> Dict[str, any]:
@@ -176,7 +179,7 @@ class ImportAnalyzer:
             }
 
         except Exception as e:
-            print(f"Error modifying {file_path}: {e}", file=sys.stderr)
+            logging.error(f"Error modifying {file_path}: {e}")
             return {"changed": False, "removed_imports": [], "backup_content": None}
 
 
@@ -230,41 +233,43 @@ def main():
         unused = analyzer.find_unused_imports(file_path)
 
         if unused:
-            print(f"📁 {file_path}:")
+            logging.info(f"📁 {file_path}:")
             for name, line in unused:
-                print(f"  ❌ Line {line}: unused import '{name}'")
+                logging.info(f"  ❌ Line {line}: unused import '{name}'")
             total_issues += len(unused)
 
             if args.fix or args.dry_run:
                 result = analyzer.remove_unused_imports(file_path, dry_run=args.dry_run)
                 if result["changed"]:
                     files_changed += 1
-                    print("  ✅ Removed imports:")
+                    logging.info("  ✅ Removed imports:")
                     for imp in result["removed_imports"]:
-                        print(f"    - {imp}")
+                        logging.info(f"    - {imp}")
 
                     if args.dry_run:
-                        print("  💡 (dry run - no changes made)")
-                print()
+                        logging.info("  💡 (dry run - no changes made)")
+                    logging.info("")
 
     # Summary
-    print("\n📊 Summary:")
-    print(f"  Files checked: {len(files_to_check)}")
-    print(
+    logging.info("\n📊 Summary:")
+    logging.info(f"  Files checked: {len(files_to_check)}")
+    logging.info(
         f"  Files with issues: {len([f for f in files_to_check if analyzer.find_unused_imports(f)])}"
     )
-    print(f"  Total unused imports: {total_issues}")
+    logging.info(f"  Total unused imports: {total_issues}")
 
     if args.fix and files_changed > 0:
-        print(f"  Files modified: {files_changed}")
-        print("  ✅ Import cleanup completed!")
+        logging.info(f"  Files modified: {files_changed}")
+        logging.info("  ✅ Import cleanup completed!")
     elif args.dry_run and files_changed > 0:
-        print(f"  Files that would be modified: {files_changed}")
-        print("  💡 Run with --fix to apply changes")
+        logging.info(f"  Files that would be modified: {files_changed}")
+        logging.info("  💡 Run with --fix to apply changes")
 
     if total_issues > 0 and not (args.fix or args.dry_run):
-        print("\n💡 To fix automatically: python3 tools/import_cleanup.py --fix [files...]")
-        print("💡 To see what would change: python3 tools/import_cleanup.py --dry-run [files...]")
+        logging.info("\n💡 To fix automatically: python3 tools/import_cleanup.py --fix [files...]")
+        logging.info(
+            "💡 To see what would change: python3 tools/import_cleanup.py --dry-run [files...]"
+        )
 
     # Exit with error code if issues found and not fixing
     if total_issues > 0 and not args.fix and not args.dry_run:

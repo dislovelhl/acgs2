@@ -1,4 +1,5 @@
 import logging
+import time
 from typing import Any, Dict, List, Optional
 
 try:
@@ -27,6 +28,14 @@ except ImportError:
         from utils import get_iso_timestamp  # type: ignore
 
 logger = logging.getLogger(__name__)
+
+try:
+    from observability.telemetry import MetricsRegistry
+except ImportError:
+    try:
+        from ..observability.telemetry import MetricsRegistry
+    except (ImportError, ValueError):
+        MetricsRegistry = None
 
 
 # Mock classes for test friendliness when LangChain is missing
@@ -94,14 +103,80 @@ class LLMAssistant:
     async def _invoke_llm(self, prompt_tmpl: str, **kwargs) -> Dict[str, Any]:
         if not self.llm:
             return {}
+
+        metrics_registry = (
+            MetricsRegistry(service_name="llm-assistant") if MetricsRegistry else None
+        )
+
+        start_time = time.time()
         try:
             prompt = ChatPromptTemplate.from_template(prompt_tmpl)
             resp = await self.llm.ainvoke(
                 prompt.format_messages(**kwargs, constitutional_hash=CONSTITUTIONAL_HASH)
             )
-            return JsonOutputParser().parse(resp.content)
+            latency_ms = (time.time() - start_time) * 1000
+
+            # Record latency
+            if metrics_registry:
+                metrics_registry.record_latency(
+                    "llm_invocation_latency", latency_ms, {"model": self.model_name}
+                )
+
+            # Track tokens if available (LangChain ChatOpenAI response_metadata)
+            token_usage = {}
+            if hasattr(resp, "response_metadata") and "token_usage" in resp.response_metadata:
+                usage = resp.response_metadata["token_usage"]
+                token_usage = {
+                    "prompt_tokens": usage.get("prompt_tokens", 0),
+                    "completion_tokens": usage.get("completion_tokens", 0),
+                    "total_tokens": usage.get("total_tokens", 0),
+                }
+                if metrics_registry:
+                    metrics_registry.increment_counter(
+                        "llm_tokens_total", token_usage["total_tokens"], {"model": self.model_name}
+                    )
+                    metrics_registry.increment_counter(
+                        "llm_tokens_prompt",
+                        token_usage["prompt_tokens"],
+                        {"model": self.model_name},
+                    )
+                    metrics_registry.increment_counter(
+                        "llm_tokens_completion",
+                        token_usage["completion_tokens"],
+                        {"model": self.model_name},
+                    )
+
+            result = JsonOutputParser().parse(resp.content)
+            if isinstance(result, dict):
+                result["_metrics"] = {"latency_ms": latency_ms, "token_usage": token_usage}
+            return result
         except Exception as e:
-            logger.error(f"LLM invoke failed: {e}")
+            latency_ms = (time.time() - start_time) * 1000
+            logger.error(f"LLM invoke failed after {latency_ms:.2f}ms: {e}")
+            if metrics_registry:
+                metrics_registry.increment_counter(
+                    "llm_invocation_failure", 1, {"model": self.model_name, "error": str(type(e))}
+                )
+            return {}
+
+    async def ainvoke_multi_turn(
+        self, sys_prompt: str, messages: List[Dict[str, str]]
+    ) -> Dict[str, Any]:
+        """Invoke LLM with a list of messages for multi-turn support."""
+        if not self.llm:
+            return {}
+        try:
+            # Simple implementation for multi-turn
+            formatted_msgs = [f"System: {sys_prompt}"]
+            for msg in messages:
+                formatted_msgs.append(f"{msg['role'].capitalize()}: {msg['content']}")
+
+            prompt_text = "\n".join(formatted_msgs) + "\n\nReturn JSON with the analysis result."
+
+            # Use _invoke_llm with the full prompt text as template (since it's already formatted)
+            return await self._invoke_llm(prompt_text)
+        except Exception as e:
+            logger.error(f"LLM multi-turn invoke failed: {e}")
             return {}
 
     async def analyze_message_impact(self, message: AgentMessage) -> Dict[str, Any]:

@@ -38,13 +38,16 @@ acgs2-audit-backup-*.tar.gz
 
 # Virtual environments (additional patterns)
 venv/
+test_venv/
 enhanced_agent_bus/venv/
 acgs2-core/enhanced_agent_bus/venv/
+acgs2-core/enhanced_agent_bus/test_venv/
 
 # Large binaries in virtual environments
 **/venv/bin/z3
 **/venv/**/*.so
 **/venv/**/*.pyd
+**/test_venv/**/*.so
 
 # Auto Claude data directory
 .auto-claude/
@@ -53,6 +56,27 @@ acgs2-core/enhanced_agent_bus/venv/
 *.backup
 *_clean.py
 *.py.backup
+*.txt
+*.json
+!composer.json
+!package.json
+!tsconfig.json
+!roadmap.json
+!roadmap_discovery.json
+!competitor_analysis.json
+!project_index.json
+!.auto-claude/project_index.json
+!.auto-claude/roadmap/roadmap.json
+!.auto-claude/roadmap/roadmap_discovery.json
+!.auto-claude/roadmap/competitor_analysis.json
+!requirements.json
+!complexity_assessment.json
+!context.json
+!research.json
+!task_logs.json
+!task_metadata.json
+!implementation_plan.json
+!critique_report.json
 
 # Firebase logs
 firebase-debug.log

@@ -198,7 +198,6 @@ class StagingDeployment:
             )
 
             if result.returncode == 0:
-
                 # Wait for services to be ready
                 time.sleep(30)
 
@@ -261,7 +260,6 @@ class StagingDeployment:
             )
 
             if result.returncode == 0:
-
                 return {
                     "status": "success",
                     "database_ready": True,

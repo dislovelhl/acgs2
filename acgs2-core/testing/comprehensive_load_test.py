@@ -170,10 +170,10 @@ class EnhancedAgentBusLoadTester:
         self, iterations: int = 1000, concurrent_users: int = 10
     ) -> LoadTestResult:
         """Test message processing performance under load."""
-        logging.info(f"\n{'='*60}")
+        logging.info(f"\n{'=' * 60}")
         logging.info("Testing Enhanced Agent Bus Message Processing")
         logging.info(f"Iterations: {iterations}, Concurrent Users: {concurrent_users}")
-        logging.info(f"{'='*60}")
+        logging.info(f"{'=' * 60}")
 
         self.results = []
         self.errors = []
@@ -337,10 +337,10 @@ class DashboardAPILoadTester:
         self, iterations: int = 1000, concurrent_users: int = 10
     ) -> LoadTestResult:
         """Test dashboard overview endpoint."""
-        logging.info(f"\n{'='*60}")
+        logging.info(f"\n{'=' * 60}")
         logging.info("Testing Dashboard API /overview Endpoint")
         logging.info(f"Iterations: {iterations}, Concurrent Users: {concurrent_users}")
-        logging.info(f"{'='*60}")
+        logging.info(f"{'=' * 60}")
 
         if not AIOHTTP_AVAILABLE:
             logging.warning("Warning: aiohttp not available, using mock results")
@@ -502,11 +502,11 @@ class ComprehensiveLoadTestSuite:
         self, iterations: int = 1000, concurrent_users: int = 10
     ) -> LoadTestReport:
         """Run all load tests."""
-        logging.info(f"\n{'#'*60}")
+        logging.info(f"\n{'#' * 60}")
         logging.info("# ACGS-2 Comprehensive Load Test Suite")
         logging.info(f"# Constitutional Hash: {CONSTITUTIONAL_HASH}")
         logging.info(f"# Start Time: {datetime.now(timezone.utc)}")
-        logging.info(f"{'#'*60}")
+        logging.info(f"{'#' * 60}")
 
         start_time = datetime.now(timezone.utc)
         test_start_perf = time.perf_counter()
@@ -571,16 +571,16 @@ class ComprehensiveLoadTestSuite:
         """Print comprehensive test report."""
         summary = report.summary()
 
-        logging.info(f"\n{'='*60}")
+        logging.info(f"\n{'=' * 60}")
         logging.info("COMPREHENSIVE LOAD TEST REPORT")
-        logging.info(f"{'='*60}")
+        logging.info(f"{'=' * 60}")
         logging.info(f"Test Suite: {report.test_suite_name}")
         logging.info(f"Duration: {report.total_duration_seconds:.2f}s")
         logging.info(f"Constitutional Hash: {report.constitutional_hash}")
 
-        logging.info(f"\n{'='*60}")
+        logging.info(f"\n{'=' * 60}")
         logging.info("SUMMARY STATISTICS")
-        logging.info(f"{'='*60}")
+        logging.info(f"{'=' * 60}")
         logging.info(f"Total Tests: {summary['total_tests']}")
         logging.info(f"Total Iterations: {summary['total_iterations']}")
         logging.info(f"Total Successful: {summary['total_successful']}")
@@ -597,9 +597,9 @@ class ComprehensiveLoadTestSuite:
         logging.info(f"  Worst:   {summary['worst_throughput_rps']:.2f}")
         logging.info(f"  Average: {summary['avg_throughput_rps']:.2f}")
 
-        logging.info(f"\n{'='*60}")
+        logging.info(f"\n{'=' * 60}")
         logging.info("PERFORMANCE TARGET VALIDATION")
-        logging.info(f"{'='*60}")
+        logging.info(f"{'=' * 60}")
         logging.info(
             f"Tests Meeting Targets: {summary['tests_meeting_targets']}/{summary['total_tests']}"
         )
@@ -612,9 +612,9 @@ class ComprehensiveLoadTestSuite:
         logging.info(f"  Throughput:   > {MIN_THROUGHPUT_RPS} RPS")
         logging.info(f"  Cache Hit Rate: > {MIN_CACHE_HIT_RATE:.0%}")
 
-        logging.info(f"\n{'='*60}")
+        logging.info(f"\n{'=' * 60}")
         logging.info("BASELINE COMPARISON")
-        logging.info(f"{'='*60}")
+        logging.info(f"{'=' * 60}")
         logging.info("Baseline Metrics:")
         logging.info(f"  P99 Latency: {BASELINE_METRICS['p99_latency_ms']}ms")
         logging.info(f"  Throughput:  {BASELINE_METRICS['throughput_rps']} RPS")

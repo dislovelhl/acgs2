@@ -35,12 +35,12 @@ async def test_sdpc_phase3_evolution_loop():
     for i in range(2):
         processor._validation_cache.clear()
         await processor.process(message)
-        assert processor.evolution_controller.failure_history[IntentType.FACTUAL] == i + 1
+        assert processor.evolution_controller.failure_history[IntentType.FACTUAL.value] == i + 1
 
     # The 3rd failure should trigger mutation and reset history to 0
     processor._validation_cache.clear()
     await processor.process(message)
-    assert processor.evolution_controller.failure_history[IntentType.FACTUAL] == 0
+    assert processor.evolution_controller.failure_history[IntentType.FACTUAL.value] == 0
 
     # After 3 failures, mutation should be triggered
     mutations = processor.evolution_controller.get_mutations(IntentType.FACTUAL)
@@ -75,6 +75,6 @@ async def test_sdpc_phase3_reset_logic():
     await processor.process(message)
 
     # Failure history should be reset to 0
-    assert processor.evolution_controller.failure_history[IntentType.FACTUAL] == 0
+    assert processor.evolution_controller.failure_history[IntentType.FACTUAL.value] == 0
     # Mutation should still persist (long-term memory in this phase)
     assert len(processor.evolution_controller.get_mutations(IntentType.FACTUAL)) == 1

@@ -112,6 +112,21 @@ if HAS_PYDANTIC_SETTINGS:
             "http://localhost:8000", validation_alias="POLICY_REGISTRY_URL"
         )
         api_gateway_url: str = Field("http://localhost:8080", validation_alias="API_GATEWAY_URL")
+        tenant_management_url: str = Field(
+            "http://localhost:8500", validation_alias="TENANT_MANAGEMENT_URL"
+        )
+        hitl_approvals_url: str = Field(
+            "http://localhost:8200", validation_alias="HITL_APPROVALS_URL"
+        )
+        ml_governance_url: str = Field(
+            "http://localhost:8400", validation_alias="ML_GOVERNANCE_URL"
+        )
+        compliance_docs_url: str = Field(
+            "http://localhost:8100", validation_alias="COMPLIANCE_DOCS_URL"
+        )
+        audit_service_url: str = Field(
+            "http://localhost:8300", validation_alias="AUDIT_SERVICE_URL"
+        )
 
     class TelemetrySettings(BaseSettings):
         """OpenTelemetry and observability settings."""

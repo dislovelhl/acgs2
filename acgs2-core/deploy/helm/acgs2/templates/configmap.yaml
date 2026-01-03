@@ -1,0 +1,242 @@
+{{/*
+ConfigMaps for ACGS-2 Enterprise Configuration
+*/}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "acgs2.fullname" . }}-policies
+  labels:
+    {{- include "acgs2.labels" . | nindent 4 }}
+data:
+  # Constitutional AI Governance Policies
+  constitutional_policies.yaml: |
+    apiVersion: v1
+    kind: ConfigMap
+    metadata:
+      name: constitutional-policies
+    data:
+      constitution_hash: "{{ .Values.global.constitutionalHash }}"
+      governance_level: "{{ .Values.governance.level }}"
+      human_oversight_required: "{{ .Values.governance.humanOversightRequired }}"
+      max_automation_confidence: "{{ .Values.governance.maxAutomationConfidence }}"
+
+  # Enterprise Security Policies
+  security_policies.yaml: |
+    policies:
+      # Multi-tenant isolation
+      tenant_isolation:
+        enabled: true
+        strict_mode: {{ .Values.security.strictTenantIsolation }}
+        audit_all_access: true
+
+      # Encryption requirements
+      encryption:
+        at_rest: {{ .Values.security.encryptionAtRest }}
+        in_transit: {{ .Values.security.encryptionInTransit }}
+        key_rotation_days: {{ .Values.security.keyRotationDays }}
+
+      # Access control
+      rbac:
+        enabled: true
+        jwt_validation: true
+        session_timeout_minutes: {{ .Values.security.sessionTimeoutMinutes }}
+        max_login_attempts: {{ .Values.security.maxLoginAttempts }}
+
+  # Performance and Scalability Policies
+  performance_policies.yaml: |
+    performance:
+      # Latency targets (milliseconds)
+      targets:
+        p99_latency: 5
+        p95_latency: 3
+        p50_latency: 1
+
+      # Throughput targets
+      throughput:
+        min_rps: 100
+        max_rps: 10000
+
+      # Resource limits
+      resources:
+        max_cpu_percent: {{ .Values.performance.maxCpuPercent }}
+        max_memory_mb: {{ .Values.performance.maxMemoryMb }}
+        max_disk_mb: {{ .Values.performance.maxDiskMb }}
+
+      # Auto-scaling
+      autoscaling:
+        enabled: {{ .Values.performance.autoscaling.enabled }}
+        min_replicas: {{ .Values.performance.autoscaling.minReplicas }}
+        max_replicas: {{ .Values.performance.autoscaling.maxReplicas }}
+        target_cpu_percent: {{ .Values.performance.autoscaling.targetCpuPercent }}
+
+  # Compliance and Audit Policies
+  compliance_policies.yaml: |
+    compliance:
+      frameworks:
+        {{- range .Values.compliance.frameworks }}
+        - name: {{ .name }}
+          version: {{ .version | default "latest" }}
+          required: {{ .required | default true }}
+          audit_frequency: {{ .auditFrequency | default "monthly" }}
+        {{- end }}
+
+      audit:
+        retention_days: {{ .Values.compliance.auditRetentionDays }}
+        immutable_logs: {{ .Values.compliance.immutableLogs }}
+        real_time_monitoring: {{ .Values.compliance.realTimeMonitoring }}
+
+      reporting:
+        eu_ai_act: {{ .Values.compliance.euAiActReporting }}
+        nist_rmf: {{ .Values.compliance.nistRmfReporting }}
+        custom_reports: {{ .Values.compliance.customReports }}
+
+  # Monitoring and Alerting Policies
+  monitoring_policies.yaml: |
+    monitoring:
+      metrics:
+        collection_interval_seconds: {{ .Values.monitoring.metrics.collectionIntervalSeconds }}
+        retention_days: {{ .Values.monitoring.metrics.retentionDays }}
+
+      alerts:
+        {{- range .Values.monitoring.alerts.rules }}
+        - name: {{ .name }}
+          condition: {{ .condition }}
+          severity: {{ .severity }}
+          channels: {{ .channels | toJson }}
+        {{- end }}
+
+      dashboards:
+        enabled: {{ .Values.monitoring.dashboards.enabled }}
+        refresh_interval_seconds: {{ .Values.monitoring.dashboards.refreshIntervalSeconds }}
+
+  # Chaos Engineering Policies
+  chaos_policies.yaml: |
+    chaos:
+      enabled: {{ .Values.chaos.enabled }}
+      blast_radius: {{ .Values.chaos.blastRadius | toJson }}
+      experiment_duration_max_seconds: {{ .Values.chaos.experimentDurationMaxSeconds }}
+      recovery_timeout_seconds: {{ .Values.chaos.recoveryTimeoutSeconds }}
+
+      experiments:
+        {{- range .Values.chaos.experiments }}
+        - name: {{ .name }}
+          type: {{ .type }}
+          target_services: {{ .targetServices | toJson }}
+          failure_mode: {{ .failureMode }}
+          duration_seconds: {{ .durationSeconds }}
+        {{- end }}
+
+  # Backup and Disaster Recovery Policies
+  backup_policies.yaml: |
+    backup:
+      enabled: {{ .Values.backup.enabled }}
+      schedule: "{{ .Values.backup.schedule }}"
+      retention_days: {{ .Values.backup.retentionDays }}
+
+      targets:
+        {{- range .Values.backup.targets }}
+        - type: {{ .type }}
+          endpoint: {{ .endpoint }}
+          credentials_secret: {{ .credentialsSecret }}
+          encryption_key: {{ .encryptionKey }}
+        {{- end }}
+
+      disaster_recovery:
+        rto_minutes: {{ .Values.backup.disasterRecovery.rtoMinutes }}
+        rpo_minutes: {{ .Values.backup.disasterRecovery.rpoMinutes }}
+        failover_regions: {{ .Values.backup.disasterRecovery.failoverRegions | toJson }}
+---
+{{/*
+Enhanced Agent Bus Configuration
+*/}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "acgs2.fullname" . }}-enhanced-agent-bus-config
+  labels:
+    {{- include "acgs2.labels" . | nindent 4 }}
+data:
+  # Core configuration
+  config.yaml: |
+    # ACGS-2 Enhanced Agent Bus Configuration
+    constitutional_hash: "{{ .Values.global.constitutionalHash }}"
+    tenant_id: "{{ .Values.global.tenantId }}"
+    environment: "{{ .Values.global.env }}"
+
+    # Service configuration
+    service:
+      host: "0.0.0.0"
+      port: {{ .Values.enhancedAgentBus.service.port }}
+      workers: {{ .Values.enhancedAgentBus.workerProcesses }}
+      max_connections: {{ .Values.enhancedAgentBus.maxConnections }}
+
+    # Agent capabilities
+    agents:
+      maci_enabled: {{ .Values.maci.enabled }}
+      maci_strict_mode: {{ .Values.maci.strictMode }}
+      constitutional_validation: true
+      impact_scoring: true
+      deliberation_layer: true
+
+    # Message processing
+    messaging:
+      kafka_enabled: {{ .Values.kafka.enabled }}
+      redis_enabled: {{ .Values.redis.enabled }}
+      message_timeout_seconds: {{ .Values.messaging.messageTimeoutSeconds }}
+      max_message_size_bytes: {{ .Values.messaging.maxMessageSizeBytes }}
+      batch_size: {{ .Values.messaging.batchSize }}
+
+    # Security
+    security:
+      tls_enabled: {{ .Values.tls.enabled }}
+      jwt_validation: true
+      rate_limiting: true
+      audit_logging: true
+
+    # Performance
+    performance:
+      p99_latency_target_ms: 5
+      p95_latency_target_ms: 3
+      throughput_target_rps: {{ .Values.performance.throughputTargetRps }}
+
+    # Monitoring
+    monitoring:
+      prometheus_enabled: {{ .Values.monitoring.prometheus.enabled }}
+      metrics_interval_seconds: {{ .Values.monitoring.metrics.collectionIntervalSeconds }}
+      health_check_interval_seconds: {{ .Values.enhancedAgentBus.healthCheckIntervalSeconds }}
+
+    # Resilience
+    resilience:
+      circuit_breaker_enabled: true
+      chaos_testing_enabled: {{ .Values.chaos.enabled }}
+      graceful_shutdown_timeout_seconds: {{ .Values.enhancedAgentBus.gracefulShutdownTimeout }}
+
+  # Log configuration
+  logging.yaml: |
+    version: 1
+    disable_existing_loggers: false
+    formatters:
+      json:
+        class: pythonjsonlogger.jsonlogger.JsonFormatter
+        format: "%(asctime)s %(name)s %(levelname)s %(message)s"
+      standard:
+        format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    handlers:
+      console:
+        class: logging.StreamHandler
+        level: {{ .Values.enhancedAgentBus.logLevel | upper }}
+        formatter: {{ .Values.enhancedAgentBus.logFormat }}
+        stream: ext://sys.stdout
+      file:
+        class: logging.FileHandler
+        level: INFO
+        formatter: json
+        filename: /app/logs/acgs2.log
+    root:
+      level: {{ .Values.enhancedAgentBus.logLevel | upper }}
+      handlers: [console, file]
+    loggers:
+      acgs2:
+        level: {{ .Values.enhancedAgentBus.logLevel | upper }}
+        handlers: [console, file]
+        propagate: no

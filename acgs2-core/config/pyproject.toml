@@ -2,3 +2,59 @@
 [build-system]
 requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
+
+[tool.coverage.run]
+source = ["acgs2_core", "enhanced_agent_bus", "shared"]
+branch = true
+relative_files = true
+dynamic_context = "test_function"
+omit = [
+    "*/tests/*",
+    "*/__pycache__/*",
+    "*.pyc",
+    "venv/*",
+    ".venv/*",
+    "*/venv/*",
+    "**/conftest.py",
+    "setup.py",
+    "examples/*",
+    "docs/*",
+    "scripts/*",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "if typing.TYPE_CHECKING:",
+    "except ImportError:",
+    "class .*\\bProtocol\\):",
+]
+fail_under = 75
+show_missing = true
+precision = 2
+skip_covered = false
+
+[tool.coverage.html]
+directory = "htmlcov"
+
+[tool.coverage.xml]
+output = "coverage.xml"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+lint.select = ["E", "F", "B", "I"]
+lint.ignore = [
+    "E501",   # line too long, handled by black
+    "E402",   # module level import not at top - intentional for try/except fallback patterns
+    "F403",   # star imports - intentional for re-export modules
+]
+
+[tool.black]
+line-length = 100
+target-version = ['py311']

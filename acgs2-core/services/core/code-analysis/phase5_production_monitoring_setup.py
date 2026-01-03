@@ -219,10 +219,10 @@ class ProductionMonitoringSetup:
                                 },
                                 "annotations": {
                                     "summary": (
-                                        "High latency detected in ACGS Code Analysis" " Engine"
+                                        "High latency detected in ACGS Code Analysis Engine"
                                     ),
                                     "description": (
-                                        "P99 latency is above 10ms for more than 2" " minutes"
+                                        "P99 latency is above 10ms for more than 2 minutes"
                                     ),
                                 },
                             },
@@ -237,7 +237,7 @@ class ProductionMonitoringSetup:
                                 "annotations": {
                                     "summary": ("Low throughput in ACGS Code Analysis Engine"),
                                     "description": (
-                                        "Request rate is below 10 RPS for more than 5" " minutes"
+                                        "Request rate is below 10 RPS for more than 5 minutes"
                                     ),
                                 },
                             },

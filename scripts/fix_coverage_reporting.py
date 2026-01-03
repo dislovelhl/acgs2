@@ -85,7 +85,7 @@ def analyze_coverage_accuracy():
     for component, stats in component_stats.items():
         if stats["lines"] > 0:
             coverage_pct = (stats["covered"] / stats["lines"]) * 100
-            print(f'  {component}: {stats["files"]} files, {coverage_pct:.1f}% coverage')
+            print(f"  {component}: {stats['files']} files, {coverage_pct:.1f}% coverage")
 
             if component != "other":  # Include in system total
                 total_system_lines += stats["lines"]

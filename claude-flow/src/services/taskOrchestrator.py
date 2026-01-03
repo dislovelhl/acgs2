@@ -206,7 +206,7 @@ def main():
     """Main entry point for the script"""
 
     if len(sys.argv) < 4:
-        error_msg = "Usage: python taskOrchestrator.py " "<task_description> <strategy> <priority>"
+        error_msg = "Usage: python taskOrchestrator.py <task_description> <strategy> <priority>"
         log_error_result(logger, error_msg)
         sys.exit(1)
 

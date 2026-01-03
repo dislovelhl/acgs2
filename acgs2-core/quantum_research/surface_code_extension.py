@@ -605,9 +605,7 @@ class CurriculumTrainer:
         logging.info("=" * 60)
 
         for stage, error_rate in enumerate(self.error_rates):
-            logging.error(
-                f"\nStage {stage + 1}/{self.num_stages}: " f"Error Rate = {error_rate:.4f}"
-            )
+            logging.error(f"\nStage {stage + 1}/{self.num_stages}: Error Rate = {error_rate:.4f}")
 
             # Create environment for this stage
             env = SurfaceCodeEnvironment(distance=self.distance, physical_error_rate=error_rate)
@@ -744,9 +742,9 @@ def run_surface_code_benchmark(
     results = {}
 
     for d in distances:
-        logging.info(f"\n{'='*60}")
+        logging.info(f"\n{'=' * 60}")
         logging.info(f"DISTANCE-{d} SURFACE CODE")
-        logging.info(f"{'='*60}")
+        logging.info(f"{'=' * 60}")
         logging.info(f"Data qubits: {d**2}, Syndrome bits: {d**2 - 1}")
         logging.error(f"Physical error rate: {error_rate:.2%}")
 
@@ -816,10 +814,10 @@ def run_surface_code_benchmark(
         # Print results
         logging.info(f"\nResults for Distance-{d}:")
         logging.info("  Neural Decoder:")
-        logging.error(f"    Logical Error Rate: {neural_logical_errors/num_samples:.4f}")
+        logging.error(f"    Logical Error Rate: {neural_logical_errors / num_samples:.4f}")
         logging.info(f"    Avg Latency: {neural_decoder.get_avg_inference_time_ns()} ns")
         logging.info("  MWPM Decoder:")
-        logging.error(f"    Logical Error Rate: {mwpm_logical_errors/num_samples:.4f}")
+        logging.error(f"    Logical Error Rate: {mwpm_logical_errors / num_samples:.4f}")
         logging.info(f"    Avg Latency: {mwpm_decoder.get_avg_inference_time_ns()} ns")
 
     # Summary

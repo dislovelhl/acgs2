@@ -288,7 +288,7 @@ def main():
     # Find all Python files
     python_files = list(base_dir.rglob("*.py"))
 
-    logging.info(f"Found {len(python_files)
+    logging.info(f"Found {len(python_files)} Python files to check")
 
     fixed = 0
     still_broken = []

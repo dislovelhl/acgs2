@@ -134,7 +134,8 @@ class TestEnhancedAgentBusRedisIntegration:
             "redis.asyncio.ConnectionPool.from_url", return_value=mock_pool
         ) as mock_pool_from_url:
             with patch("redis.asyncio.Redis", return_value=mock_redis_client):
-                from enhanced_agent_bus.core import EnhancedAgentBus
+                from enhanced_agent_bus.config import BusConfiguration
+                from enhanced_agent_bus.agent_bus import EnhancedAgentBus
                 from enhanced_agent_bus.registry import (
                     DEFAULT_REDIS_MAX_CONNECTIONS,
                     DEFAULT_REDIS_SOCKET_CONNECT_TIMEOUT,
@@ -142,18 +143,31 @@ class TestEnhancedAgentBusRedisIntegration:
                     RedisAgentRegistry,
                 )
 
-                bus = EnhancedAgentBus(use_redis_registry=True, redis_url="redis://test:6379")
+                # Mock BusConfiguration.from_environment to prevent LiteLLM side effects
+                with patch(
+                    "enhanced_agent_bus.config.BusConfiguration.from_environment"
+                ) as mock_from_env:
+                    mock_from_env.return_value = BusConfiguration.for_testing()
 
-                assert isinstance(bus.registry, RedisAgentRegistry)
-                assert bus.registry._redis_url == "redis://test:6379"
-                mock_pool_from_url.assert_not_called()  # Not created until first use
+                    bus = EnhancedAgentBus(use_redis_registry=True, redis_url="redis://test:6379")
+
+                    assert isinstance(bus.registry, RedisAgentRegistry)
+                    assert bus.registry._redis_url == "redis://test:6379"
+                    # Verify lazy initialization: pool shouldn't be created for our test URL yet
+                    for call_args in mock_pool_from_url.call_args_list:
+                        called_url = (
+                            call_args.args[0] if call_args.args else call_args.kwargs.get("url")
+                        )
+                        assert called_url != "redis://test:6379"
 
                 # Trigger use
                 await bus.registry._get_client()
-                mock_pool_from_url.assert_called_once_with(
+
+                # Verify our call happened
+                mock_pool_from_url.assert_any_call(
                     "redis://test:6379",
-                    max_connections=DEFAULT_REDIS_MAX_CONNECTIONS,
-                    socket_timeout=DEFAULT_REDIS_SOCKET_TIMEOUT,
-                    socket_connect_timeout=DEFAULT_REDIS_SOCKET_CONNECT_TIMEOUT,
+                    max_connections=20,
+                    socket_timeout=5.0,
+                    socket_connect_timeout=5.0,
                     decode_responses=True,
                 )

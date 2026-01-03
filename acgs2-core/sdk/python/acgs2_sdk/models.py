@@ -86,6 +86,34 @@ class EventCategory(str, Enum):
     AUTHORIZATION = "authorization"
     AUDIT = "audit"
     SYSTEM = "system"
+    ML_MODEL = "ml_model"
+    PREDICTION = "prediction"
+
+
+class ModelTrainingStatus(str, Enum):
+    """ML model training status."""
+
+    TRAINING = "training"
+    COMPLETED = "completed"
+    FAILED = "failed"
+    STOPPED = "stopped"
+
+
+class DriftDirection(str, Enum):
+    """Model drift direction."""
+
+    NONE = "none"
+    INCREASE = "increase"
+    DECREASE = "decrease"
+
+
+class ABNTestStatus(str, Enum):
+    """A/B test status."""
+
+    ACTIVE = "active"
+    COMPLETED = "completed"
+    PAUSED = "paused"
+    CANCELLED = "cancelled"
 
 
 # =============================================================================
@@ -283,6 +311,83 @@ class GovernanceDecision(ConstitutionalModel):
 
 
 # =============================================================================
+# ML Governance Models
+# =============================================================================
+
+
+class MLModel(ConstitutionalModel):
+    """ML model information."""
+
+    id: str
+    name: str
+    version: str
+    description: str | None = None
+    model_type: str = Field(alias="modelType")
+    framework: str
+    accuracy_score: float | None = Field(default=None, alias="accuracyScore")
+    training_status: ModelTrainingStatus = Field(alias="trainingStatus")
+    last_trained_at: datetime | None = Field(default=None, alias="lastTrainedAt")
+    created_at: datetime = Field(alias="createdAt")
+    updated_at: datetime = Field(alias="updatedAt")
+
+
+class ModelPrediction(ConstitutionalModel):
+    """ML model prediction result."""
+
+    id: str
+    model_id: str = Field(alias="modelId")
+    model_version: str = Field(alias="modelVersion")
+    input_features: dict[str, Any] = Field(alias="inputFeatures")
+    prediction: Any
+    confidence_score: float | None = Field(default=None, alias="confidenceScore")
+    prediction_metadata: dict[str, Any] | None = Field(default=None, alias="predictionMetadata")
+    timestamp: datetime
+
+
+class DriftDetection(ConstitutionalModel):
+    """Model drift detection result."""
+
+    model_id: str = Field(alias="modelId")
+    drift_score: float = Field(alias="driftScore")
+    drift_direction: DriftDirection = Field(alias="driftDirection")
+    baseline_accuracy: float = Field(alias="baselineAccuracy")
+    current_accuracy: float = Field(alias="currentAccuracy")
+    features_affected: list[str] = Field(alias="featuresAffected")
+    detected_at: datetime = Field(alias="detectedAt")
+    recommendations: list[str]
+
+
+class ABNTest(ConstitutionalModel):
+    """A/B test configuration."""
+
+    id: str
+    name: str
+    description: str | None = None
+    model_a_id: str = Field(alias="modelAId")
+    model_b_id: str = Field(alias="modelBId")
+    status: ABNTestStatus
+    test_duration_days: int = Field(alias="testDurationDays")
+    traffic_split_percentage: float = Field(alias="trafficSplitPercentage")  # A/B split
+    success_metric: str = Field(alias="successMetric")
+    created_at: datetime = Field(alias="createdAt")
+    completed_at: datetime | None = Field(default=None, alias="completedAt")
+
+
+class FeedbackSubmission(ConstitutionalModel):
+    """User feedback for model training."""
+
+    prediction_id: str | None = Field(default=None, alias="predictionId")
+    model_id: str = Field(alias="modelId")
+    feedback_type: str = Field(alias="feedbackType")  # "correction" | "rating" | "explanation"
+    feedback_value: Any = Field(
+        alias="feedbackValue"
+    )  # Correct value, rating score, or explanation
+    user_id: str | None = Field(default=None, alias="userId")
+    context: dict[str, Any] | None = None
+    submitted_at: datetime = Field(alias="submittedAt")
+
+
+# =============================================================================
 # Request Models
 # =============================================================================
 
@@ -365,5 +470,64 @@ class QueryAuditEventsRequest(BaseModel):
     page_size: int = Field(default=50, alias="pageSize")
     sort_by: str | None = Field(default=None, alias="sortBy")
     sort_order: str | None = Field(default=None, alias="sortOrder")
+
+    model_config = {"populate_by_name": True}
+
+
+class CreateMLModelRequest(BaseModel):
+    """Request to create/register an ML model."""
+
+    name: str
+    description: str | None = None
+    model_type: str = Field(alias="modelType")
+    framework: str
+    initial_accuracy_score: float | None = Field(default=None, alias="initialAccuracyScore")
+
+    model_config = {"populate_by_name": True}
+
+
+class UpdateMLModelRequest(BaseModel):
+    """Request to update an ML model."""
+
+    name: str | None = None
+    description: str | None = None
+    accuracy_score: float | None = Field(default=None, alias="accuracyScore")
+
+    model_config = {"populate_by_name": True}
+
+
+class MakePredictionRequest(BaseModel):
+    """Request to make a prediction with an ML model."""
+
+    model_id: str = Field(alias="modelId")
+    features: dict[str, Any]
+    include_confidence: bool | None = Field(default=None, alias="includeConfidence")
+
+    model_config = {"populate_by_name": True}
+
+
+class SubmitFeedbackRequest(BaseModel):
+    """Request to submit feedback for model training."""
+
+    prediction_id: str | None = Field(default=None, alias="predictionId")
+    model_id: str = Field(alias="modelId")
+    feedback_type: str = Field(alias="feedbackType")
+    feedback_value: Any = Field(alias="feedbackValue")
+    user_id: str | None = Field(default=None, alias="userId")
+    context: dict[str, Any] | None = None
+
+    model_config = {"populate_by_name": True}
+
+
+class CreateABNTestRequest(BaseModel):
+    """Request to create an A/B test."""
+
+    name: str
+    description: str | None = None
+    model_a_id: str = Field(alias="modelAId")
+    model_b_id: str = Field(alias="modelBId")
+    test_duration_days: int = Field(alias="testDurationDays")
+    traffic_split_percentage: float = Field(alias="trafficSplitPercentage")
+    success_metric: str = Field(alias="successMetric")
 
     model_config = {"populate_by_name": True}

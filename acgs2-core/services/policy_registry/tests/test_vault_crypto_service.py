@@ -63,7 +63,8 @@ class TestVaultConfig:
         }
 
         with patch.dict(os.environ, env_vars):
-            config = VaultConfig.from_env()
+            with patch("app.services.vault_models.global_settings", None):
+                config = VaultConfig.from_env()
 
             assert config.address == "http://vault.example.com:8200"
             assert config.token == "test-token-123"

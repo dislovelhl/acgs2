@@ -36,7 +36,6 @@ class ImportOptimizer(ast.NodeTransformer):
             and any(isinstance(stmt, (ast.Import, ast.ImportFrom)) for stmt in node.body)
             and len(node.handlers) == 1
         ):
-
             handler = node.handlers[0]
             if (
                 isinstance(handler.type, ast.Tuple)
@@ -44,7 +43,6 @@ class ImportOptimizer(ast.NodeTransformer):
                 and all(isinstance(elt, ast.Name) for elt in handler.type.elts)
                 and {elt.id for elt in handler.type.elts} == {"ImportError", "ValueError"}
             ):
-
                 # This is a complex import pattern - log it
                 self.complex_imports_found += 1
 
@@ -196,7 +194,7 @@ def generate_optimization_report(files_analysis: List[Dict[str, any]]) -> str:
                 + file_info["import_counts"]["from_imports"]
             )
 
-            report.append(f"#### {i+1}. {file_path}")
+            report.append(f"#### {i + 1}. {file_path}")
             report.append(f"- **Complexity Score:** {complexity}")
             report.append(f"- **Try/Except Blocks:** {try_blocks}")
             report.append(f"- **Total Imports:** {imports_count}")
@@ -261,7 +259,7 @@ def main():
             complexity = file_info["complexity_score"]
             try_blocks = file_info["try_blocks"]
 
-            print(f"  {i+1}. {file_path}")
+            print(f"  {i + 1}. {file_path}")
             print(f"     Complexity: {complexity}, Try/Except blocks: {try_blocks}")
         print()
 

@@ -1,4 +1,5 @@
 import logging
+
 #!/usr/bin/env python3
 """
 ACGS-2 End-to-End Test Suite
@@ -83,7 +84,7 @@ class E2ETestClient:
                 pass
 
         if unavailable:
-            logging.warning(f"Warning: Services unavailable: {', '.join(unavailable)
+            logging.warning(f"Warning: Services unavailable: {', '.join(unavailable)}")
             return False
         return True
 
@@ -244,9 +245,9 @@ class E2ETestClient:
             "required_fields"
         ]
         for field in expected_fields:
-            assert (
-                field in governance_response
-            ), f"Governance response missing required field: {field}"
+            assert field in governance_response, (
+                f"Governance response missing required field: {field}"
+            )
 
         assert (
             governance_response["decision"]
@@ -280,9 +281,9 @@ class TestE2EIntegration:
             result = await client.test_end_to_end_workflow()
 
             assert result["success"] == True, "End-to-end workflow should succeed"
-            assert (
-                result["total_latency_ms"] < 5000
-            ), f"Latency {result['total_latency_ms']}ms exceeds 5s threshold"
+            assert result["total_latency_ms"] < 5000, (
+                f"Latency {result['total_latency_ms']}ms exceeds 5s threshold"
+            )
             assert result["decision"] in [
                 "approved",
                 "rejected",
@@ -336,7 +337,7 @@ class TestE2EIntegration:
 
             # Query events
             query_response = await client.get_from_service(
-                "audit_ledger", f'/events?message_id={message["message_id"]}'
+                "audit_ledger", f"/events?message_id={message['message_id']}"
             )
             assert len(query_response.get("events", [])) > 0, "Should find recorded events"
 
@@ -371,9 +372,9 @@ class TestE2EIntegration:
             deliberation_response = await client.send_to_service(
                 "deliberation_layer", "/process", message
             )
-            assert (
-                deliberation_response["lane"] == "deliberation"
-            ), "High impact message should go to deliberation"
+            assert deliberation_response["lane"] == "deliberation", (
+                "High impact message should go to deliberation"
+            )
 
             item_id = deliberation_response.get("item_id")
             assert item_id, "Should have deliberation item ID"
@@ -418,7 +419,7 @@ class TestE2EIntegration:
             decisions = []
             for i in range(3):
                 message = client.create_test_message(
-                    "governance_request", content=f"Governance request {i+1} for data access"
+                    "governance_request", content=f"Governance request {i + 1} for data access"
                 )
 
                 result = await client.test_end_to_end_workflow()

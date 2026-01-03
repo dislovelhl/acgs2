@@ -24,6 +24,7 @@ try:
     from .models import CONSTITUTIONAL_HASH, AgentMessage, MessageStatus, MessageType, Priority
     from .utils import LRUCache
     from .validators import ValidationResult
+    from .config import BusConfiguration
 except (ImportError, ValueError):
     from imports import (
         CIRCUIT_BREAKER_ENABLED,  # type: ignore
@@ -42,6 +43,7 @@ except (ImportError, ValueError):
     from models import CONSTITUTIONAL_HASH, AgentMessage, MessageType, Priority  # type: ignore
     from utils import LRUCache  # type: ignore
     from validators import ValidationResult  # type: ignore
+    from config import BusConfiguration  # type: ignore
 
 logger = logging.getLogger(__name__)
 
@@ -146,10 +148,11 @@ class MessageProcessor:
                 from enhanced_agent_bus.sdpc.graph_check import GraphCheckVerifier  # type: ignore
                 from enhanced_agent_bus.sdpc.pacar_verifier import PACARVerifier  # type: ignore
 
-        self.intent_classifier = IntentClassifier()
+        self.config = kwargs.get("config") or BusConfiguration.from_environment()
+        self.intent_classifier = IntentClassifier(config=self.config)
         self.asc_verifier = ASCVerifier()
         self.graph_check = GraphCheckVerifier()
-        self.pacar_verifier = PACARVerifier()
+        self.pacar_verifier = PACARVerifier(config=self.config)
         self.evolution_controller = EvolutionController()
         self.ampo_engine = AMPOEngine(evolution_controller=self.evolution_controller)
         self._IntentType = IntentType
@@ -232,7 +235,7 @@ class MessageProcessor:
         # SDPC Logic (Phase 2/3)
         sdpc_metadata = {}
         content_str = str(msg.content)
-        intent = self.intent_classifier.classify(content_str)
+        intent = await self.intent_classifier.classify_async(content_str)
         # Handle case where impact_score is None or explicitly set to None
         impact_score = getattr(msg, "impact_score", 0.0)
         if impact_score is None:
@@ -240,8 +243,8 @@ class MessageProcessor:
 
         verifications = {}
         if (
-            intent in [self._IntentType.FACTUAL, self._IntentType.REASONING]
-            or "query" in content_str.lower()
+            intent.value in [self._IntentType.FACTUAL.value, self._IntentType.REASONING.value]
+            or impact_score >= 0.8
         ):
             sdpc_metadata["sdpc_intent"] = intent.value
             asc_res = await self.asc_verifier.verify(content_str, intent)
@@ -255,7 +258,9 @@ class MessageProcessor:
             verifications["graph"] = sdpc_metadata["sdpc_graph_grounded"]
 
         if impact_score > 0.8 or msg.message_type == MessageType.TASK_REQUEST:
-            pacar_res = await self.pacar_verifier.verify(content_str, intent.value)
+            pacar_res = await self.pacar_verifier.verify(
+                content_str, intent.value, session_id=msg.conversation_id
+            )
             sdpc_metadata["sdpc_pacar_valid"] = pacar_res.get("is_valid", False)
             sdpc_metadata["sdpc_pacar_confidence"] = pacar_res.get("confidence", 0.0)
             verifications["pacar"] = sdpc_metadata["sdpc_pacar_valid"]

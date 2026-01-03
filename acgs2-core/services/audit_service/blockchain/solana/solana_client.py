@@ -208,7 +208,7 @@ class SolanaClient:
                 if i < self.retry_count:
                     wait_time = self.retry_delay * (2**i)
                     logger.warning(
-                        f"[{CONSTITUTIONAL_HASH}] Solana RPC call '{func_name}' failed (attempt {i+1}): {e}. "
+                        f"[{CONSTITUTIONAL_HASH}] Solana RPC call '{func_name}' failed (attempt {i + 1}): {e}. "
                         f"Retrying in {wait_time:.1f}s..."
                     )
                     await asyncio.sleep(wait_time)
@@ -364,7 +364,8 @@ class SolanaClient:
                             if isinstance(ix.parsed, str):
                                 return json.loads(ix.parsed)
                             return ix.parsed
-                        except:
+                        except (json.JSONDecodeError, TypeError, ValueError) as e:
+                            logger.warning(f"Failed to parse memo data: {e}")
                             return {"raw_memo": ix.parsed}
             return None
         except Exception as e:
@@ -420,7 +421,7 @@ class SolanaClient:
                 await asyncio.sleep(delay)
             except Exception as e:
                 logger.warning(
-                    f"[{CONSTITUTIONAL_HASH}] Error checking signature status (attempt {i+1}): {e}"
+                    f"[{CONSTITUTIONAL_HASH}] Error checking signature status (attempt {i + 1}): {e}"
                 )
                 await asyncio.sleep(delay)
 
@@ -450,7 +451,8 @@ class SolanaClient:
                 balance_resp = await self._with_retry("get_balance", self._keypair.pubkey())
                 if balance_resp:
                     stats["wallet_balance_sol"] = balance_resp.value / 10**9
-            except:
+            except Exception as e:
+                logger.warning(f"Failed to get wallet balance: {e}")
                 stats["wallet_balance_sol"] = "error"
 
         return stats

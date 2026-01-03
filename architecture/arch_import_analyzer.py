@@ -312,7 +312,7 @@ def main():
     if results["circular_dependencies"]:
         print("🔄 CIRCULAR DEPENDENCIES FOUND:")
         for i, cycle in enumerate(results["circular_dependencies"][:5]):  # Show first 5
-            print(f"  Cycle {i+1}: {' -> '.join(cycle)}")
+            print(f"  Cycle {i + 1}: {' -> '.join(cycle)}")
         if len(results["circular_dependencies"]) > 5:
             print(f"  ... and {len(results['circular_dependencies']) - 5} more")
     else:

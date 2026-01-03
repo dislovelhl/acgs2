@@ -45,7 +45,7 @@ asyncio.run(main())
 - **Async/Await**: Built on httpx for high-performance async operations
 - **Type-Safe**: Full type hints with Pydantic validation
 - **Constitutional Compliance**: Built-in constitutional hash validation
-- **Comprehensive Services**: Policy, Agent, Compliance, Audit, and Governance
+- **Comprehensive Services**: Policy, Agent, Compliance, Audit, Governance, HITL Approvals, and ML Governance
 - **Automatic Retry**: Configurable retry with exponential backoff
 - **Python 3.11+**: Modern Python with the latest language features
 

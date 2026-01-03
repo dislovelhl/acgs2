@@ -8,10 +8,22 @@ from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from typing import Any, Dict, List
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
 
 from ..core.audit_ledger import AuditLedger
+from shared.metrics import (
+    create_metrics_endpoint,
+    set_service_info,
+    track_request_metrics,
+)
+from shared.logging import (
+    init_service_logging,
+    create_correlation_middleware,
+    log_business_event,
+    log_error,
+    get_logger,
+)
 
 # Centralized settings
 try:
@@ -20,9 +32,8 @@ except ImportError:
     # Fallback if shared not in path
     from ....shared.config import settings
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+# Initialize structured logging
+logger = init_service_logging("audit-service")
 
 # Global ledger instance
 ledger = AuditLedger()
@@ -60,19 +71,31 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Add correlation ID middleware
+app.middleware("http")(create_correlation_middleware())
+
+# Initialize metrics
+set_service_info("audit-service", "1.0.0")
+
+# Add metrics endpoint
+app.add_api_route("/metrics", create_metrics_endpoint())
+
 
 @app.get("/health/live")
+@track_request_metrics("audit-service", "/health/live")
 async def liveness_check():
     return {"status": "alive", "service": "audit-service"}
 
 
 @app.get("/stats")
+@track_request_metrics("audit-service", "/stats")
 async def get_stats():
     """Get audit ledger statistics"""
     return await ledger.get_ledger_stats()
 
 
 @app.get("/batch/{batch_id}")
+@track_request_metrics("audit-service", "/batch/{batch_id}")
 async def get_batch_entries(batch_id: str):
     """List all entries in a specific batch"""
     entries = await ledger.get_entries_by_batch(batch_id)
@@ -82,6 +105,7 @@ async def get_batch_entries(batch_id: str):
 
 
 @app.get("/batch/{batch_id}/root")
+@track_request_metrics("audit-service", "/batch/{batch_id}/root")
 async def get_batch_root(batch_id: str):
     """Get the Merkle root of a specific batch"""
     root = ledger.get_batch_root_hash(batch_id)
@@ -91,6 +115,7 @@ async def get_batch_root(batch_id: str):
 
 
 @app.post("/record")
+@track_request_metrics("audit-service", "/record")
 async def record_validation(result: Dict[str, Any]):
     """Record a validation result in the audit ledger"""
     try:
@@ -111,6 +136,7 @@ async def record_validation(result: Dict[str, Any]):
 
 
 @app.post("/verify")
+@track_request_metrics("audit-service", "/verify")
 async def verify_entry(entry_hash: str, merkle_proof: List[Any], root_hash: str):
     """Verify an inclusion proof for an entry hash"""
     is_valid = await ledger.verify_entry(entry_hash, merkle_proof, root_hash)

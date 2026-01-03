@@ -1,154 +1,548 @@
-# Production Helm Configuration for ACGS2
+# ACGS-2 Enterprise Helm Chart Values
 # Constitutional Hash: cdd01ef066bc6cf2
 
+# Global configuration
 global:
   env: production
-  tenant_id: acgs-main
-  constitutional_hash: cdd01ef066bc6cf2
+  tenantId: acgs2-main
+  constitutionalHash: cdd01ef066bc6cf2
+  imageRegistry: ""
+  imagePullSecrets: []
+  storageClass: ""
 
+# Image configuration
 image:
   repository: acgs2/agent-bus
-  tag: "v3.0.0"
+  tag: "3.0.0"
   pullPolicy: IfNotPresent
 
-# RBAC Configuration
+# Service account configuration
+serviceAccount:
+  create: true
+  name: ""
+  annotations: {}
+  automountServiceAccountToken: true
+
+# RBAC configuration
 rbac:
   create: true
-  serviceAccountName: acgs2-sa
+  serviceAccountName: ""
 
-# Network Policy
+# Network policy configuration
 networkPolicy:
   enabled: true
-  egress:
-    - kafka
-    - redis
-  ingress:
-    - opa
+  additionalIngressRules: []
+  additionalEgressRules: []
 
-# Kyverno Policy Enforcement
-kyverno:
-  enabled: true
-  policies:
-    - restrict-root-user
-    - require-ro-rootfs
-    - disallow-privilege-escalation
+# Enhanced Agent Bus configuration
+enhancedAgentBus:
+  replicaCount: 3
+  image:
+    repository: acgs2/enhanced-agent-bus
+    tag: "3.0.0"
+    pullPolicy: IfNotPresent
 
-# OPA Configuration (Pillar 1)
-opa:
-  enabled: True
-  port: 8181
-  securePort: 8443
-  tls:
-    enabled: True
-    certSecret: opa-tls-certs
-    mTLS: True
+  service:
+    type: ClusterIP
+    port: 8080
+    annotations: {}
+
   resources:
     limits:
-      cpu: 500m  # P99 <5ms
+      cpu: 2000m
+      memory: 4Gi
+    requests:
+      cpu: 1000m
+      memory: 2Gi
+
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+  priorityClassName: ""
+
+  # Application configuration
+  workerProcesses: 4
+  maxConnections: 1000
+  gracefulShutdownTimeout: 30
+  enableCors: true
+  corsOrigins: ["*"]
+
+  # Health checks
+  livenessProbe:
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+  readinessProbe:
+    initialDelaySeconds: 5
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 3
+
+  # Logging
+  logLevel: info
+  logFormat: json
+  healthCheckIntervalSeconds: 30
+
+  # Pod configuration
+  podAnnotations: {}
+  podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    runAsGroup: 1000
+  securityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - ALL
+    readOnlyRootFilesystem: true
+
+  # Extra configuration
+  extraEnvVars: []
+  extraVolumes: []
+  extraVolumeMounts: []
+  extraConfig: {}
+
+# Policy Registry configuration
+policyRegistry:
+  enabled: true
+  replicaCount: 2
+  image:
+    repository: acgs2/policy-registry
+    tag: "3.0.0"
+
+  service:
+    type: ClusterIP
+    port: 8000
+
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 2Gi
+    requests:
+      cpu: 500m
+      memory: 1Gi
+
+# Audit Service configuration
+auditService:
+  enabled: true
+  replicaCount: 2
+  image:
+    repository: acgs2/audit-service
+    tag: "3.0.0"
+
+  service:
+    type: ClusterIP
+    port: 8084
+
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 2Gi
+    requests:
+      cpu: 500m
+      memory: 1Gi
+
+# Tenant Management configuration
+tenantManagement:
+  enabled: true
+  replicaCount: 2
+  image:
+    repository: acgs2/tenant-management
+    tag: "3.0.0"
+
+  service:
+    type: ClusterIP
+    port: 8500
+
+  resources:
+    limits:
+      cpu: 500m
       memory: 1Gi
     requests:
       cpu: 250m
       memory: 512Mi
-  bundle:
-    path: "file:///policies"  # Mount new .rego policies
-    pollInterval: 10s
-    auth: false  # Local
 
-# Kafka Configuration (Pillar 2)
-kafka:
-  bootstrapServers: "kafka-cluster-kafka-bootstrap:9093"
-  securityProtocol: SSL
-  ssl:
-    caSecret: kafka-ca-cert
-    certSecret: kafka-client-cert
+# Agent Inventory configuration
+agentInventory:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: acgs2/agent-inventory
+    tag: "3.0.0"
+
+  service:
+    type: ClusterIP
+    port: 8600
+
+  resources:
+    limits:
+      cpu: 500m
+      memory: 1Gi
+    requests:
+      cpu: 250m
+      memory: 512Mi
+
+# API Gateway configuration
+apiGateway:
+  enabled: true
+  replicaCount: 3
+  image:
+    repository: acgs2/api-gateway
+    tag: "3.0.0"
+
+  service:
+    type: LoadBalancer
+    port: 443
+    annotations:
+      service.beta.kubernetes.io/aws-load-balancer-type: nlb
+      service.beta.kubernetes.io/aws-load-balancer-ssl-cert: "arn:aws:acm:region:account:certificate/certificate-id"
+
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 2Gi
+    requests:
+      cpu: 500m
+      memory: 1Gi
+
+# OpenTelemetry Collector configuration
+otelCollector:
+  enabled: true
+  image:
+    repository: otel/opentelemetry-collector
+    tag: "0.80.0"
+
+  config:
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+            endpoint: 0.0.0.0:4317
+          http:
+            endpoint: 0.0.0.0:4318
+      prometheus:
+        config:
+          scrape_configs:
+            - job_name: 'acgs2'
+              static_configs:
+                - targets: ['localhost:8000']
+    processors:
+      batch: {}
+      resource:
+        attributes:
+          - key: constitutional_hash
+            value: "cdd01ef066bc6cf2"
+            action: upsert
+    exporters:
+      jaeger:
+        endpoint: "jaeger:14250"
+      prometheus:
+        endpoint: "0.0.0.0:8889"
+    service:
+      pipelines:
+        traces:
+          receivers: [otlp]
+          processors: [resource, batch]
+          exporters: [jaeger]
+        metrics:
+          receivers: [otlp, prometheus]
+          processors: [resource, batch]
+          exporters: [prometheus]
+
+# OPA (Open Policy Agent) configuration
+opa:
+  enabled: true
+  image:
+    repository: openpolicyagent/opa
+    tag: "0.55.0"
+
+  service:
+    type: ClusterIP
+    port: 8181
+
+  config:
+    services:
+      acgs2:
+        url: http://acgs2-policy-registry:8000
+    bundles:
+      acgs2:
+        service: acgs2
+        resource: /api/v1/policies/bundle
+        persist: true
+        polling:
+          min_delay_seconds: 10
+          max_delay_seconds: 60
+
+# PostgreSQL configuration
+postgresql:
+  enabled: true
   auth:
-    enabled: True
+    postgresPassword: "change-me-in-production"
+    username: "acgs2"
+    password: "change-me-in-production"
+    database: "acgs2"
 
-# Redis Configuration (Pillar 2/3)
+  architecture: replication
+  replication:
+    enabled: true
+    readReplicas: 2
+
+  metrics:
+    enabled: true
+
+# Redis configuration
 redis:
-  url: "rediss://redis-cluster:6380/0"
-  ssl:
-    enabled: True
-    caSecret: redis-ca-cert
-  maxConnections: 100
+  enabled: true
+  auth:
+    enabled: true
+    password: "change-me-in-production"
 
-# Security Context for Pods
-securityContext:
-  runAsUser: 1000
-  runAsGroup: 1000
-  fsGroup: 1000
-  runAsNonRoot: true
+  architecture: replication
+  replica:
+    replicaCount: 3
 
-containerSecurityContext:
-  allowPrivilegeEscalation: false
-  capabilities:
-    drop:
-      - ALL
-  readOnlyRootFilesystem: true
+  metrics:
+    enabled: true
 
-# MACI Role Enforcement
-maci:
-  enabled: True
-  strictMode: True
-  roles:
-    executive:
-      replicaCount: 3
-    judicial:
-      replicaCount: 2
-    legislative:
-      replicaCount: 2
+# Kafka configuration
+kafka:
+  enabled: true
+  replicas: 3
+  controller:
+    replicaCount: 3
 
-# Monitoring and SLOs
+  listeners:
+    client:
+      protocol: PLAINTEXT
+    interbroker:
+      protocol: PLAINTEXT
+
+  metrics:
+    kafka:
+      enabled: true
+    jmx:
+      enabled: true
+
+# External database configuration (when not using built-in PostgreSQL)
+externalDatabase:
+  url: "postgresql://user:password@external-db:5432/acgs2"
+
+# External Redis configuration
+externalRedis:
+  url: "redis://external-redis:6379"
+
+# External Kafka configuration
+externalKafka:
+  bootstrapServers: "external-kafka:9092"
+
+# JWT configuration
+jwt:
+  secret: ""  # Will be auto-generated if empty
+  algorithm: HS256
+  issuer: "acgs2"
+  audience: "acgs2"
+
+# TLS configuration
+tls:
+  enabled: true
+  # Certificate data - should be provided via secrets
+  crt: ""
+  key: ""
+  ca: ""
+
+# SIEM integration
+siem:
+  enabled: true
+  splunk:
+    enabled: false
+    hecUrl: "https://splunk.example.com:8088"
+    hecToken: ""
+    index: "acgs2"
+  datadog:
+    enabled: false
+    apiKey: ""
+    site: "datadoghq.com"
+  elasticsearch:
+    enabled: false
+    url: "https://elasticsearch:9200"
+    username: ""
+    password: ""
+
+# Identity providers
+identityProviders:
+  enabled: true
+  okta:
+    enabled: false
+    domain: ""
+    clientId: ""
+    clientSecret: ""
+  azure:
+    enabled: false
+    tenantId: ""
+    clientId: ""
+    clientSecret: ""
+
+# Governance configuration
+governance:
+  level: "constitutional"
+  humanOversightRequired: true
+  maxAutomationConfidence: 0.8
+
+# Security configuration
+security:
+  strictTenantIsolation: true
+  encryptionAtRest: true
+  encryptionInTransit: true
+  keyRotationDays: 90
+  sessionTimeoutMinutes: 60
+  maxLoginAttempts: 5
+
+# Performance configuration
+performance:
+  maxCpuPercent: 80
+  maxMemoryMb: 4096
+  maxDiskMb: 10240
+  throughputTargetRps: 1000
+  autoscaling:
+    enabled: true
+    minReplicas: 1
+    maxReplicas: 10
+    targetCpuPercent: 70
+
+# Compliance configuration
+compliance:
+  frameworks:
+    - name: "SOC2"
+      version: "2022"
+      required: true
+      auditFrequency: "quarterly"
+    - name: "GDPR"
+      version: "2018"
+      required: true
+      auditFrequency: "annual"
+    - name: "EU_AI_ACT"
+      version: "2024"
+      required: false
+      auditFrequency: "annual"
+  auditRetentionDays: 2555
+  immutableLogs: true
+  realTimeMonitoring: true
+  euAiActReporting: true
+  nistRmfReporting: true
+  customReports: true
+
+# Monitoring configuration
 monitoring:
+  enabled: true
   prometheus:
-    enabled: True
+    enabled: true
     scrapeInterval: 15s
   grafana:
-    enabled: True
-    dashboardLabel: acgs2-dashboards
+    enabled: true
+    adminPassword: "change-me-in-production"
+  dashboards:
+    enabled: true
+    refreshIntervalSeconds: 30
+  metrics:
+    collectionIntervalSeconds: 15
+    retentionDays: 90
   alerts:
-    pd_integration_key: "REDACTED"
-    slo_threshold: 99.99
+    enabled: true
+    rules:
+      - name: "HighErrorRate"
+        condition: "rate(errors_total[5m]) > 0.1"
+        severity: "critical"
+        channels: ["pagerduty", "slack"]
+      - name: "HighLatency"
+        condition: "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 5"
+        severity: "warning"
+        channels: ["slack"]
+  pagerduty:
+    enabled: false
+    integrationKey: ""
+  slack:
+    enabled: false
+    webhookUrl: ""
+  opsgenie:
+    enabled: false
+    apiKey: ""
 
-# Resilience and Chaos (chaos exps integration)
+# Chaos engineering
 chaos:
-  enabled: True
-  engine_hash: cdd01ef066bc6cf2
-  blast_radius: ["agent-bus", "opa", "kafka"]
-  litmusIntegration: true  # K8s chaos-mesh compatible
+  enabled: false
+  blastRadius: ["agent-bus", "api-gateway"]
+  experimentDurationMaxSeconds: 300
+  recoveryTimeoutSeconds: 60
+  experiments:
+    - name: "network-latency"
+      type: "network"
+      targetServices: ["enhanced-agent-bus"]
+      failureMode: "latency"
+      durationSeconds: 60
 
+# Messaging configuration
+messaging:
+  messageTimeoutSeconds: 300
+  maxMessageSizeBytes: 10485760  # 10MB
+  batchSize: 100
+
+# Backup and disaster recovery
+backup:
+  enabled: true
+  schedule: "0 2 * * *"  # Daily at 2 AM
+  retentionDays: 30
+  targets:
+    - type: "s3"
+      endpoint: "s3://acgs2-backups"
+      credentialsSecret: "backup-s3-secret"
+      encryptionKey: "backup-key"
+  disasterRecovery:
+    rtoMinutes: 60
+    rpoMinutes: 15
+    failoverRegions: ["us-west-2", "us-east-1"]
+
+# Istio service mesh
 istio:
-  enabled: True
-  rateLimit:
-    qps: 100  # P99 <5ms
-    burst: 200
+  enabled: false
+  version: "1.18.0"
 
-# Ingress with TLS/mTLS (Phase 3.2 harden)
+# Kyverno policy engine
+kyverno:
+  enabled: false
+  version: "1.10.0"
+
+# Cert-manager
+certManager:
+  enabled: false
+  version: "v1.11.0"
+
+# Ingress configuration
 ingress:
   enabled: true
-  className: "istio-ingress"
+  className: "nginx"
   annotations:
-    cert-manager.io/cluster-issuer: "acgs-internal-issuer"
-    nginx.ingress.kubernetes.io/auth-tls-verify-client: "on"
-    nginx.ingress.kubernetes.io/auth-tls-secret: "acgs2/acgs2-ca-secret"
-    nginx.ingress.kubernetes.io/auth-tls-verify-depth: "1"
-  tls:
-    - secretName: acgs2-tls
-      hosts:
-        - acgs2.example.com
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
   hosts:
     - host: acgs2.example.com
       paths:
         - path: /
           pathType: Prefix
+  tls:
+    - secretName: acgs2-tls
+      hosts:
+        - acgs2.example.com
 
-# Pod Security Standards v1.28+ (non-root, no priv esc)
+# Pod security standards
 podSecurityStandards:
-  enforce:
-    version: v1.28
-  warn:
-    version: v1.28
-  audit:
-    version: v1.28
+  enabled: true
+  enforce: "restricted"
+  warn: "restricted"
+  audit: "restricted"
 
-# OPA Bundle ref integrated in existing opa section above
+# Node selectors, tolerations, and affinity
+nodeSelector: {}
+tolerations: []
+affinity: {}

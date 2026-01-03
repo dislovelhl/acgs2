@@ -327,6 +327,11 @@ class TestModuleExports:
         from enhanced_agent_bus.models import __all__
 
         expected = [
+            "MessageContent",
+            "SecurityContext",
+            "PerformanceMetrics",
+            "MetadataDict",
+            "EnumOrString",
             "CONSTITUTIONAL_HASH",
             "MessageType",
             "Priority",
@@ -336,5 +341,6 @@ class TestModuleExports:
             "RoutingContext",
             "AgentMessage",
             "DecisionLog",
+            "get_enum_value",
         ]
         assert set(__all__) == set(expected)

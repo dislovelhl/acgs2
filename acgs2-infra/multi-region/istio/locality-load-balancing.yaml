@@ -1,0 +1,123 @@
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: locality-lb
+  namespace: default
+spec:
+  host: "*.default.svc.cluster.local"
+  trafficPolicy:
+    loadBalancer:
+      localityLbSetting:
+        enabled: true
+        # Distribute traffic within regions first, failover to other regions
+        distribute:
+          # US East traffic distribution
+          - from: "us-east-1/*"
+            to:
+              "us-east-1/*": 80  # Prefer same region (80% of traffic)
+              "eu-west-1/*": 20  # Allow cross-region (20% of traffic for testing)
+          # EU West traffic distribution
+          - from: "eu-west-1/*"
+            to:
+              "eu-west-1/*": 80  # Prefer same region (80% of traffic)
+              "us-east-1/*": 20  # Allow cross-region (20% of traffic for testing)
+    # Outlier detection for regional failover
+    outlierDetection:
+      # Mark endpoint unhealthy after 3 consecutive errors
+      consecutiveErrors: 3
+      # Check every 10 seconds
+      interval: 10s
+      # Eject unhealthy endpoints for 30 seconds
+      baseEjectionTime: 30s
+      # Maximum ejection percentage
+      maxEjectionPercent: 50
+      # Minimum health percentage before starting ejection
+      minHealthPercent: 30
+---
+# Specific DestinationRule for claude-flow service
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: claude-flow-locality
+  namespace: default
+spec:
+  host: claude-flow.default.svc.cluster.local
+  trafficPolicy:
+    loadBalancer:
+      localityLbSetting:
+        enabled: true
+        distribute:
+          - from: "us-east-1/*"
+            to:
+              "us-east-1/*": 90  # Higher preference for local region
+              "eu-west-1/*": 10
+          - from: "eu-west-1/*"
+            to:
+              "eu-west-1/*": 90  # Higher preference for local region
+              "us-east-1/*": 10
+    outlierDetection:
+      consecutiveErrors: 3
+      interval: 10s
+      baseEjectionTime: 30s
+      maxEjectionPercent: 100  # Allow complete failover for critical service
+      minHealthPercent: 20
+---
+# Specific DestinationRule for acgs2-neural-mcp service
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: neural-mcp-locality
+  namespace: default
+spec:
+  host: acgs2-neural-mcp.default.svc.cluster.local
+  trafficPolicy:
+    loadBalancer:
+      localityLbSetting:
+        enabled: true
+        distribute:
+          - from: "us-east-1/*"
+            to:
+              "us-east-1/*": 95  # Very high preference for local region (critical service)
+              "eu-west-1/*": 5
+          - from: "eu-west-1/*"
+            to:
+              "eu-west-1/*": 95  # Very high preference for local region (critical service)
+              "us-east-1/*": 5
+    outlierDetection:
+      consecutiveErrors: 2  # More sensitive for critical service
+      interval: 5s  # Check more frequently
+      baseEjectionTime: 15s  # Shorter ejection time
+      maxEjectionPercent: 100
+      minHealthPercent: 10
+---
+# Global fail-safe DestinationRule for all services
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: global-failover-policy
+  namespace: istio-system
+spec:
+  host: "*.svc.cluster.local"
+  trafficPolicy:
+    # Connection pool settings for reliability
+    connectionPool:
+      tcp:
+        maxConnections: 100
+        connectTimeout: 5s
+      http:
+        http2MaxRequests: 100
+        maxRequestsPerConnection: 10
+        maxRetries: 3
+    # Load balancing policy
+    loadBalancer:
+      localityLbSetting:
+        enabled: true
+        failoverPriority:
+          - "us-east-1"
+          - "eu-west-1"
+    # Circuit breaker
+    outlierDetection:
+      consecutiveErrors: 5
+      interval: 30s
+      baseEjectionTime: 60s
+      maxEjectionPercent: 100

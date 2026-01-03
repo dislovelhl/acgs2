@@ -223,7 +223,7 @@ def main():
     logging.info(
         f"{'DRY RUN - No changes will be made' if args.dry_run else 'Processing files...'}"
     )
-    print()
+    logging.info("")
 
     total_files = 0
     modified_files = 0
@@ -256,7 +256,7 @@ def main():
                     action = "Would fix" if args.dry_run else "Fixed"
                     logging.info(f"  {action} {fixes} patterns in {filepath}")
 
-    print()
+    logging.info("")
     logging.info("Summary:")
     logging.info(f"  Files scanned: {total_files}")
     logging.info(f"  Files {'to be ' if args.dry_run else ''}modified: {modified_files}")

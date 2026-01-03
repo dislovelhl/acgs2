@@ -39,7 +39,6 @@ class ImportRefactorer(ast.NodeTransformer):
                 isinstance(stmt, (ast.Import, ast.ImportFrom)) for stmt in node.handlers[0].body
             )
         ):
-
             self.complex_patterns_found += 1
 
             # For now, we'll log these - the actual refactoring would need
@@ -156,7 +155,7 @@ def generate_refactoring_plan(candidates: List[Dict[str, any]]) -> str:
             file_path = candidate["file_path"]
             patterns = candidate["patterns"]
 
-            plan.append(f"### {i+1}. {Path(file_path).name}")
+            plan.append(f"### {i + 1}. {Path(file_path).name}")
             plan.append(f"- **File:** {file_path}")
             plan.append(f"- **Complexity Score:** {patterns['complexity_score']}")
             plan.append(f"- **Uses Centralized Imports:** {patterns['uses_centralized_imports']}")
@@ -228,7 +227,7 @@ def main():
             file_path = candidate["file_path"]
             patterns = candidate["patterns"]
 
-            print(f"  {i+1}. {Path(file_path).name}")
+            print(f"  {i + 1}. {Path(file_path).name}")
             print(
                 f"     Complexity: {patterns['complexity_score']}, Try/Except: {patterns['has_try_except_imports']}"
             )

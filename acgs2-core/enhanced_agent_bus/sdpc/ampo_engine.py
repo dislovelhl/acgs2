@@ -19,17 +19,17 @@ class AMPOEngine:
 
     def __init__(self, evolution_controller=None):
         self.branching_strategies = {
-            IntentType.FACTUAL: self._factual_branch,
-            IntentType.CREATIVE: self._creative_branch,
-            IntentType.REASONING: self._reasoning_branch,
-            IntentType.GENERAL: self._general_branch,
+            IntentType.FACTUAL.value: self._factual_branch,
+            IntentType.CREATIVE.value: self._creative_branch,
+            IntentType.REASONING.value: self._reasoning_branch,
+            IntentType.GENERAL.value: self._general_branch,
         }
         self.evolution_controller = evolution_controller
         logger.info("AMPOEngine initialized with Evolution support")
 
     def compile(self, intent: IntentType, content: str) -> str:
         """Compiles the optimal prompt based on intent and content."""
-        strategy = self.branching_strategies.get(intent, self._general_branch)
+        strategy = self.branching_strategies.get(intent.value, self._general_branch)
         base_prompt = strategy(content)
 
         # Phase 3: Inject dynamic mutations if available

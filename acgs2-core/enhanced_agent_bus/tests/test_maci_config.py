@@ -248,6 +248,11 @@ agents:
         """Test loading from environment variables."""
         loader = MACIConfigLoader()
 
+        # Patch global_settings to None to ensure env vars are used
+        import enhanced_agent_bus.maci_enforcement as maci_enforcement
+
+        monkeypatch.setattr(maci_enforcement, "global_settings", None)
+
         # Set environment variables
         monkeypatch.setenv("MACI_STRICT_MODE", "false")
         monkeypatch.setenv("MACI_DEFAULT_ROLE", "executive")

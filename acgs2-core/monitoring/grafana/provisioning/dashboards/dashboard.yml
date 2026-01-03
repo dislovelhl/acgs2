@@ -1,0 +1,13 @@
+# ACGS-2 Grafana Dashboard Provisioning
+# Constitutional Hash: cdd01ef066bc6cf2
+
+apiVersion: 1
+
+providers:
+  - name: 'ACGS-2 Dashboards'
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 10
+    allowUiUpdates: true
+    options:
+      path: /var/lib/grafana/dashboards

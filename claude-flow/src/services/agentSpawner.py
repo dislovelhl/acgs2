@@ -26,7 +26,9 @@ except ImportError as e:
     sys.exit(1)
 
 
-async def spawn_agent(agent_name: str, agent_type: str, skills: list, tenant_id: str = "default"):
+async def spawn_agent(
+    agent_name: str, agent_type: str, skills: list, tenant_id: str = "default", swarm_id: str = None
+):
     """Spawn an agent using the EnhancedAgentBus"""
     try:
         # Create bus instance
@@ -75,7 +77,7 @@ async def spawn_agent(agent_name: str, agent_type: str, skills: list, tenant_id:
                     "created_at": datetime.now().timestamp(),
                     "last_active": datetime.now().timestamp(),
                     "tenant_id": "default",
-                    "swarm_id": None,  # TODO: Associate with current swarm
+                    "swarm_id": swarm_id,  # Associate with current swarm
                 },
             )
 
@@ -120,7 +122,9 @@ async def _persist_agent_info(agent_id: str, agent_info: dict):
 def main():
     """Main entry point for the script"""
     if len(sys.argv) < 4:
-        error_msg = "Usage: python agentSpawner.py <agent_name> <agent_type> <skills_json>"
+        error_msg = (
+            "Usage: python agentSpawner.py <agent_name> <agent_type> <skills_json> [swarm_id]"
+        )
         log_error_result(logger, error_msg)
         sys.exit(1)
 
@@ -132,8 +136,11 @@ def main():
     except json.JSONDecodeError:
         skills = []
 
+    # Optional swarm_id parameter
+    swarm_id = sys.argv[4] if len(sys.argv) > 4 else None
+
     # Run the async function
-    result = asyncio.run(spawn_agent(agent_name, agent_type, skills))
+    result = asyncio.run(spawn_agent(agent_name, agent_type, skills, swarm_id=swarm_id))
     log_success_result(logger, result)
 
 

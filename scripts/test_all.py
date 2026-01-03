@@ -4,23 +4,32 @@ import subprocess
 import sys
 
 
-def run_test(name, path, env=None):
-    print(f"=== Running {name} Tests ===")
-    cmd = ["pytest", path, "-v", "--tb=short"]
-    try:
-        current_env = os.environ.copy()
-        if env:
-            current_env.update(env)
-        subprocess.check_call(cmd, env=current_env)
-        print(f"--- {name} Tests PASSED ---\n")
-        return True
-    except subprocess.CalledProcessError:
-        print(f"--- {name} Tests FAILED ---\n")
-        return False
-
-
 def main():
     root = os.getcwd()
+
+    # Detect virtual environment
+    venv_python = os.path.join(root, ".venv", "bin", "python")
+    if os.path.exists(venv_python):
+        print(f"Using virtual environment: {venv_python}")
+        python_exe = venv_python
+    else:
+        python_exe = sys.executable
+
+    def run_test(name, path, env=None):
+        print(f"=== Running {name} Tests ===")
+        cmd = [python_exe, "-m", "pytest", path, "-v", "--tb=short"]
+        try:
+            current_env = os.environ.copy()
+            if env:
+                current_env.update(env)
+            subprocess.check_call(cmd, env=current_env)
+            print(f"--- {name} Tests PASSED ---\n")
+            return True
+        except subprocess.CalledProcessError:
+            print(f"--- {name} Tests FAILED ---\n")
+            return False
+
+    core_path = os.path.join(root, "acgs2-core")
     core_path = os.path.join(root, "acgs2-core")
 
     # 1. Agent Workflows
@@ -31,7 +40,7 @@ def main():
     # 2. Performance
     perf_path = os.path.join(core_path, "testing/performance_test.py")
     print("=== Running Performance Tests ===")
-    perf_passed = subprocess.call(["python3", perf_path], env={"PYTHONPATH": core_path}) == 0
+    perf_passed = subprocess.call([python_exe, perf_path], env={"PYTHONPATH": core_path}) == 0
     print(f"--- Performance Tests {'PASSED' if perf_passed else 'FAILED'} ---\n")
 
     # 3. Enhanced Agent Bus

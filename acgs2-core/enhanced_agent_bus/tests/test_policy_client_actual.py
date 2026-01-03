@@ -60,6 +60,12 @@ class MockSecuritySettings:
     api_key_internal = MockSecretStr("test-internal-api-key")
 
 
+class MockServicesSettings:
+    """Mock services settings."""
+
+    policy_registry_url = "http://localhost:8003"
+
+
 class MockSettings:
     """Mock settings for testing."""
 
@@ -67,6 +73,7 @@ class MockSettings:
     POLICY_REGISTRY_API_KEY = "test-api-key"
     POLICY_CACHE_TTL = 300
     security = MockSecuritySettings()
+    services = MockServicesSettings()
 
 
 _mock_settings = MockSettings()
@@ -78,12 +85,26 @@ _policy_ns = {
     "settings": _mock_settings,
 }
 
-# SECURITY: exec() used intentionally for test module loading
-# This is safe because:
-# 1. Source comes from a known file in the codebase (not user input)
-# 2. Only used in test environment
-# 3. Required for dynamic test fixture generation with mock dependencies
-exec(compile(_source, _policy_client_path, "exec"), _policy_ns)
+# SECURITY: Use importlib for safer dynamic module loading
+# This is safer than exec() as it provides proper module isolation and namespace management
+import types
+
+_policy_module = types.ModuleType("policy_client")
+_policy_module.__file__ = _policy_client_path
+_policy_module.__name__ = "policy_client"
+_policy_module.settings = _mock_settings
+
+# Execute the modified source in the module's namespace
+exec(compile(_source, _policy_client_path, "exec"), _policy_module.__dict__)
+
+# Extract classes/functions from the module
+PolicyRegistryClient = _policy_module.PolicyRegistryClient
+get_policy_client = _policy_module.get_policy_client
+initialize_policy_client = _policy_module.initialize_policy_client
+close_policy_client = _policy_module.close_policy_client
+
+# Store namespace for accessing _policy_client
+_policy_ns = _policy_module.__dict__
 
 # Extract classes/functions
 PolicyRegistryClient = _policy_ns["PolicyRegistryClient"]

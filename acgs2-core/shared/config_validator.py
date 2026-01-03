@@ -1,3 +1,6 @@
+import logging
+
+logger = logging.getLogger(__name__)
 """
 ACGS-2 Configuration Validator
 Constitutional Hash: cdd01ef066bc6cf2
@@ -91,35 +94,35 @@ class ValidationResult:
 
     def print_report(self, verbose: bool = False):
         """Print a human-readable validation report."""
-        print("\n" + "=" * 60)
-        print("ACGS-2 Configuration Validation Report")
-        print(f"Constitutional Hash: {CONSTITUTIONAL_HASH}")
-        print("=" * 60)
-        print(f"\nEnvironment: {self.environment.value}")
-        print(f"Status: {'✓ VALID' if self.is_valid else '✗ INVALID'}")
+        logging.info("\n" + "=" * 60)
+        logging.info("ACGS-2 Configuration Validation Report")
+        logging.info(f"Constitutional Hash: {CONSTITUTIONAL_HASH}")
+        logging.info("=" * 60)
+        logging.info(f"\nEnvironment: {self.environment.value}")
+        logging.info(f"Status: {'✓ VALID' if self.is_valid else '✗ INVALID'}")
 
         if self.errors:
-            print(f"\n❌ Errors ({len(self.errors)}):")
+            logging.error(f"\n❌ Errors ({len(self.errors)}):")
             for issue in self.errors:
-                print(f"   • [{issue.category}] {issue.message}")
+                logging.info(f"   • [{issue.category}] {issue.message}")
                 if issue.fix_suggestion:
-                    print(f"     💡 Fix: {issue.fix_suggestion}")
+                    logging.info(f"     💡 Fix: {issue.fix_suggestion}")
 
         if self.warnings:
-            print(f"\n⚠️  Warnings ({len(self.warnings)}):")
+            logging.warning(f"\n⚠️  Warnings ({len(self.warnings)}):")
             for issue in self.warnings:
-                print(f"   • [{issue.category}] {issue.message}")
+                logging.info(f"   • [{issue.category}] {issue.message}")
                 if verbose and issue.fix_suggestion:
-                    print(f"     💡 Fix: {issue.fix_suggestion}")
+                    logging.info(f"     💡 Fix: {issue.fix_suggestion}")
 
         if verbose:
             info_issues = [i for i in self.issues if i.severity == ValidationSeverity.INFO]
             if info_issues:
-                print(f"\nℹ️  Info ({len(info_issues)}):")
+                logging.info(f"\nℹ️  Info ({len(info_issues)}):")
                 for issue in info_issues:
-                    print(f"   • [{issue.category}] {issue.message}")
+                    logging.info(f"   • [{issue.category}] {issue.message}")
 
-        print("\n" + "=" * 60)
+        logging.info("\n" + "=" * 60)
 
 
 class ConfigValidator:
@@ -320,8 +323,7 @@ class ConfigValidator:
                 category="config",
                 message="No .env file found",
                 fix_suggestion=(
-                    "Create .env from .env.dev template or "
-                    "configure environment variables directly"
+                    "Create .env from .env.dev template or configure environment variables directly"
                 ),
             )
         elif env_file.exists():
@@ -426,7 +428,7 @@ if __name__ == "__main__":
             ],
             "config": result.config_summary,
         }
-        print(json.dumps(output, indent=2))
+        logging.info(json.dumps(output, indent=2))
     else:
         result.print_report(verbose=args.verbose)
 

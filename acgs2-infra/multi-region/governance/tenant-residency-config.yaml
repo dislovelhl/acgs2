@@ -1,0 +1,228 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tenant-residency-config
+  namespace: default
+  labels:
+    acgs2/component: governance
+    acgs2/multi-region: enabled
+data:
+  # Tenant to region mapping with compliance requirements
+  tenant-residency-mapping.json: |
+    {
+      "tenant-config": {
+        "description": "ACGS-2 tenant data residency configuration",
+        "version": "1.0",
+        "last-updated": "2025-01-02T10:00:00Z",
+        "tenants": {
+          "acme-corp": {
+            "region": "us-east-1",
+            "compliance": ["CCPA", "SOX"],
+            "data-classification": "PII",
+            "restrictions": [
+              "no-data-export-without-consent",
+              "local-processing-required",
+              "audit-trail-required"
+            ],
+            "backup-regions": ["us-west-2"]
+          },
+          "eu-mega-corp": {
+            "region": "eu-west-1",
+            "compliance": ["GDPR", "EU-AI-Act"],
+            "data-classification": "PII-Sensitive",
+            "restrictions": [
+              "no-cross-border-data-transfer",
+              "eu-data-stays-in-eu",
+              "right-to-erasure",
+              "consent-management-required"
+            ],
+            "backup-regions": []
+          },
+          "china-tech-ltd": {
+            "region": "cn-north-1",
+            "compliance": ["PIPL"],
+            "data-classification": "PII-Sensitive",
+            "restrictions": [
+              "data-localization-required",
+              "no-international-transfer",
+              "local-storage-mandatory"
+            ],
+            "backup-regions": ["cn-north-2"]
+          },
+          "global-startup": {
+            "region": "us-east-1",
+            "compliance": ["CCPA"],
+            "data-classification": "Standard",
+            "restrictions": [
+              "audit-trail-required"
+            ],
+            "backup-regions": ["eu-west-1", "ap-southeast-1"]
+          },
+          "healthcare-plus": {
+            "region": "us-east-1",
+            "compliance": ["HIPAA", "CCPA"],
+            "data-classification": "PHI",
+            "restrictions": [
+              "no-data-export-without-consent",
+              "audit-trail-required",
+              "encryption-at-rest-required",
+              "access-logging-required"
+            ],
+            "backup-regions": ["us-west-2"]
+          }
+        },
+        "regions": {
+          "us-east-1": {
+            "display-name": "US East (N. Virginia)",
+            "sovereignty-zone": "us",
+            "compliance-frameworks": ["CCPA", "SOX", "HIPAA"],
+            "data-centers": ["us-east-1a", "us-east-1b", "us-east-1c"],
+            "network-latency-ms": 0
+          },
+          "eu-west-1": {
+            "display-name": "EU West (Ireland)",
+            "sovereignty-zone": "eu",
+            "compliance-frameworks": ["GDPR", "EU-AI-Act"],
+            "data-centers": ["eu-west-1a", "eu-west-1b", "eu-west-1c"],
+            "network-latency-ms": 80
+          },
+          "cn-north-1": {
+            "display-name": "China North (Beijing)",
+            "sovereignty-zone": "cn",
+            "compliance-frameworks": ["PIPL"],
+            "data-centers": ["cn-north-1a", "cn-north-1b"],
+            "network-latency-ms": 200
+          },
+          "ap-southeast-1": {
+            "display-name": "Asia Pacific (Singapore)",
+            "sovereignty-zone": "ap",
+            "compliance-frameworks": ["PDPA"],
+            "data-centers": ["ap-southeast-1a", "ap-southeast-1b", "ap-southeast-1c"],
+            "network-latency-ms": 150
+          }
+        },
+        "compliance-rules": {
+          "GDPR": {
+            "description": "General Data Protection Regulation",
+            "jurisdiction": "European Union",
+            "key-requirements": [
+              "Data minimization",
+              "Purpose limitation",
+              "Storage limitation",
+              "Right to erasure",
+              "Data portability"
+            ],
+            "prohibited-regions": ["us-east-1", "cn-north-1", "ap-southeast-1"]
+          },
+          "CCPA": {
+            "description": "California Consumer Privacy Act",
+            "jurisdiction": "California, USA",
+            "key-requirements": [
+              "Right to know",
+              "Right to delete",
+              "Right to opt-out",
+              "Non-discrimination"
+            ],
+            "allowed-regions": ["us-east-1", "us-west-2"]
+          },
+          "PIPL": {
+            "description": "Personal Information Protection Law",
+            "jurisdiction": "People's Republic of China",
+            "key-requirements": [
+              "Data localization",
+              "Security assessment",
+              "Personal information impact assessment",
+              "Cross-border transfer restrictions"
+            ],
+            "required-regions": ["cn-north-1", "cn-north-2"]
+          },
+          "HIPAA": {
+            "description": "Health Insurance Portability and Accountability Act",
+            "jurisdiction": "United States",
+            "key-requirements": [
+              "Privacy Rule",
+              "Security Rule",
+              "Breach Notification Rule"
+            ],
+            "allowed-regions": ["us-east-1", "us-west-2"]
+          }
+        }
+      }
+    }
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: residency-policy-templates
+  namespace: default
+  labels:
+    acgs2/component: governance
+    acgs2/multi-region: enabled
+data:
+  # OPA policy templates for different compliance frameworks
+  gdpr-policy-template.rego: |
+    package acgs2.residency.gdpr
+
+    # GDPR Data Residency Policy
+    allow_data_access {
+      input.tenant.region == "eu-west-1"
+      input.request.region == "eu-west-1"
+      input.data.classification != "sensitive"
+    }
+
+    allow_data_access {
+      input.tenant.region == "eu-west-1"
+      input.request.region == "eu-west-1"
+      input.data.classification == "sensitive"
+      input.user.consent == true
+      input.user.age >= 16
+    }
+
+    # Cross-border transfers require explicit consent
+    allow_cross_border {
+      input.source_region == "eu-west-1"
+      input.destination_region != "eu-west-1"
+      input.data_impact_assessment_completed == true
+      input.legal_basis == "consent"
+    }
+
+  ccpa-policy-template.rego: |
+    package acgs2.residency.ccpa
+
+    # CCPA Data Residency Policy
+    allow_data_processing {
+      input.tenant.region == "us-east-1"
+      input.request.region == "us-east-1"
+    }
+
+    allow_data_sale {
+      input.user.opt_out != true
+      input.notice_provided == true
+    }
+
+    allow_data_deletion {
+      input.user.request_deletion == true
+      input.retention_period_expired == true
+    }
+
+  pipl-policy-template.rego: |
+    package acgs2.residency.pipl
+
+    # PIPL Data Residency Policy
+    allow_data_processing {
+      input.tenant.region == "cn-north-1"
+      input.request.region == "cn-north-1"
+      input.security_assessment_completed == true
+    }
+
+    allow_cross_border {
+      input.destination_region == "cn-north-1"
+      input.personal_info_impact_assessment_completed == true
+      input.user.consent == true
+    }
+
+    # Data localization requirement
+    data_localization_required {
+      input.data.contains_personal_info == true
+      input.data.sensitivity == "high"
+    }

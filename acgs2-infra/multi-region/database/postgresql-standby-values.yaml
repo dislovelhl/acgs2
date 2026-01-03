@@ -1,0 +1,257 @@
+# Bitnami PostgreSQL Helm Chart Values for Standby Database (Region 2)
+# This configuration sets up PostgreSQL as a streaming replica of the primary
+
+# Global settings
+global:
+  postgresql:
+    auth:
+      postgresPassword: "postgres-password"  # Must match primary
+      username: "acgs2"
+      password: "acgs2-password"  # Must match primary
+      database: "acgs2"
+      replicationUsername: "replication_user"
+      replicationPassword: "replication-password"  # Must match primary
+
+# PostgreSQL specific configuration
+postgresql:
+  # Enable PostgreSQL server
+  enabled: true
+
+  # Image configuration
+  image:
+    registry: docker.io
+    repository: bitnami/postgresql
+    tag: 16.2.0
+    digest: ""
+    pullPolicy: IfNotPresent
+    pullSecrets: []
+    debug: false
+
+  # Architecture: replication for standby
+  architecture: replication
+
+  # Authentication configuration (must match primary)
+  auth:
+    enablePostgresUser: true
+    postgresPassword: "postgres-password"
+    username: "acgs2"
+    password: "acgs2-password"
+    database: "acgs2"
+    replicationUsername: "replication_user"
+    password: "replication-password"
+    existingSecret: ""
+
+  # Container ports
+  containerPorts:
+    postgresql: 5432
+
+  # Replication configuration
+  replication:
+    enabled: true
+    user: replication_user
+    password: replication-password
+    readReplicas: 0  # This is the standby replica itself
+    synchronizeWal: false  # Asynchronous replication
+    numSynchronousReplicas: 0
+
+  # PostgreSQL configuration for standby
+  postgresqlConfiguration: |
+    # Standby-specific configuration
+    hot_standby = on
+    hot_standby_feedback = on
+
+    # Replication settings
+    wal_receiver_timeout = 60s
+    wal_sender_timeout = 60s
+
+    # Performance tuning for read replica
+    shared_buffers = 256MB
+    effective_cache_size = 1GB
+    maintenance_work_mem = 64MB
+
+    # Logging for replication monitoring
+    log_line_prefix = '%t [%p]: [%l-1] user=%u,db=%d,app=%a,client=%h '
+    log_replication_commands = on
+
+  # Primary connection settings (for standby)
+  primary:
+    # Connection to primary database in Region 1
+    host: "postgresql-primary.database.svc.cluster.local"
+    port: 5432
+    user: replication_user
+    password: replication-password
+
+    # Replication slot for WAL management
+    replicationSlot: "acgs2_standby_slot"
+
+  # Standby-specific configuration
+  standby:
+    enabled: true
+
+  # Read replica configuration (disabled for standby)
+  readReplicas:
+    # No additional read replicas on the standby
+    replicas: 0
+
+  # Metrics configuration for standby monitoring
+  metrics:
+    enabled: true
+    image:
+      registry: docker.io
+      repository: bitnami/postgresql-exporter
+      tag: latest
+      pullPolicy: IfNotPresent
+    customMetrics:
+      # Replication lag monitoring (from standby perspective)
+      pg_replication_lag:
+        query: |
+          SELECT
+            application_name,
+            EXTRACT(EPOCH FROM (now() - replay_timestamp)) as lag_seconds
+          FROM pg_stat_replication
+          WHERE application_name = 'walreceiver'
+        metrics:
+          - application_name:
+              usage: "LABEL"
+              description: "Application name"
+          - lag_seconds:
+              usage: "GAUGE"
+              description: "Replication lag in seconds"
+
+      # Standby status monitoring
+      pg_standby_status:
+        query: |
+          SELECT
+            CASE WHEN pg_is_in_recovery() THEN 1 ELSE 0 END as is_standby,
+            CASE WHEN pg_is_in_recovery() THEN
+              EXTRACT(EPOCH FROM (now() - pg_last_xact_replay_timestamp()))
+            ELSE 0 END as replay_lag_seconds
+        metrics:
+          - is_standby:
+              usage: "GAUGE"
+              description: "Whether this is a standby instance (1) or primary (0)"
+          - replay_lag_seconds:
+              usage: "GAUGE"
+              description: "Time since last transaction replay on standby"
+
+  # Standby node affinity (prefer different availability zones than primary)
+  affinity:
+    nodeAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          preference:
+            matchExpressions:
+              - key: acgs2/database-role
+                operator: In
+                values:
+                  - standby
+              - key: topology.kubernetes.io/zone
+                operator: In
+                values:
+                  - eu-west-1a
+                  - eu-west-1b
+
+  # Pod disruption budget for standby
+  podDisruptionBudget:
+    enabled: true
+    minAvailable: 1
+
+  # Priority class for standby (lower than primary)
+  priorityClassName: "system-cluster-critical"
+
+  # Resource limits for standby
+  resources:
+    limits:
+      cpu: 1500m
+      memory: 3Gi
+    requests:
+      cpu: 300m
+      memory: 512Mi
+
+  # Persistence configuration for standby
+  persistence:
+    enabled: true
+    size: 50Gi
+    storageClass: "gp3"
+    accessModes:
+      - ReadWriteOnce
+    annotations: {}
+
+  # Extra volumes for standby
+  extraVolumes:
+    - name: postgresql-data
+      persistentVolumeClaim:
+        claimName: data-postgresql-standby-0
+
+  # Extra volume mounts
+  extraVolumeMounts:
+    - name: postgresql-data
+      mountPath: /bitnami/postgresql
+
+  # Service configuration (read-only for standby)
+  service:
+    type: ClusterIP
+    ports:
+      postgresql: 5432
+    annotations:
+      # Service annotations for cross-cluster discovery
+      service.beta.kubernetes.io/aws-load-balancer-cross-zone-load-balancing-enabled: "true"
+      service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+      # Mark as read-only service
+      acgs2/database-role: "standby"
+
+  # Network policy (stricter for standby)
+  networkPolicy:
+    enabled: true
+    allowExternal: false  # Only allow internal cluster access
+    additionalRules: []
+
+  # Security context
+  securityContext:
+    enabled: true
+    fsGroup: 1001
+    runAsUser: 1001
+
+  containerSecurityContext:
+    enabled: true
+    runAsUser: 1001
+    runAsNonRoot: true
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - ALL
+
+  # Pod security context
+  podSecurityContext:
+    enabled: true
+    fsGroup: 1001
+
+  # RBAC configuration
+  rbac:
+    create: true
+
+  # Service account
+  serviceAccount:
+    create: true
+    name: postgresql-standby
+    annotations: {}
+
+  # TLS configuration (optional, can be added later)
+  tls:
+    enabled: false
+
+# Volume permissions init container
+volumePermissions:
+  enabled: true
+  image:
+    registry: docker.io
+    repository: bitnami/bitnami-shell
+    tag: "11"
+    pullPolicy: IfNotPresent
+  resources:
+    limits: {}
+    requests: {}
+
+# Diagnostic mode (for troubleshooting)
+diagnosticMode:
+  enabled: false

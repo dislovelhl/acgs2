@@ -59,9 +59,7 @@ class ACGSCodeAnalysisClient:
                 data = await response.json()
 
                 if not self.verify_constitutional_compliance(data):
-                    msg = (
-                        "Constitutional compliance violation:" f" {data.get('constitutional_hash')}"
-                    )
+                    msg = f"Constitutional compliance violation: {data.get('constitutional_hash')}"
                     raise ValueError(msg)
 
                 return {
@@ -153,7 +151,7 @@ class ACGSCodeAnalysisClient:
             data = response.json()
 
             if not self.verify_constitutional_compliance(data):
-                msg = "Constitutional compliance violation:" f" {data.get('constitutional_hash')}"
+                msg = f"Constitutional compliance violation: {data.get('constitutional_hash')}"
                 raise ValueError(msg)
 
             return {
@@ -219,7 +217,6 @@ class IntegrationExamples:
                 search_results = []
 
                 for query in search_queries:
-
                     start_time = time.time()
                     result = await client.search_code(query, limit=5)
                     search_time = (time.time() - start_time) * 1000
@@ -297,7 +294,6 @@ class DatabaseManager:
                 analysis_results = []
 
                 for example in code_examples:
-
                     start_time = time.time()
                     result = await client.analyze_code(
                         example["code"],

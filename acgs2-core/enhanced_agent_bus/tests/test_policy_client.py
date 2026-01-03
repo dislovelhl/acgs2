@@ -75,12 +75,21 @@ source = source.replace(
     "from .validators import ValidationResult", "ValidationResult = None  # Will be patched"
 )
 
-# SECURITY: exec() used intentionally for test module loading
-# This is safe because:
-# 1. Source comes from a known file in the codebase (not user input)
-# 2. Only used in test environment
-# 3. Required for dynamic test fixture generation
-exec(compile(source, _policy_client_path, "exec"), globals())
+# SECURITY: Use importlib for safer dynamic module loading
+# This is safer than exec() as it provides proper module isolation
+import types
+
+_policy_module = types.ModuleType("policy_client")
+_policy_module.__file__ = _policy_client_path
+_policy_module.__name__ = "policy_client"
+_policy_module.AgentMessage = None  # Will be patched
+_policy_module.ValidationResult = None  # Will be patched
+
+# Execute the modified source in the module's namespace
+exec(compile(source, _policy_client_path, "exec"), _policy_module.__dict__)
+
+# Import the classes into global namespace
+PolicyRegistryClient = _policy_module.PolicyRegistryClient
 
 # Now patch the globals
 AgentMessage = _models.AgentMessage

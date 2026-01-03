@@ -2,7 +2,12 @@ import asyncio
 import os
 
 import pytest
-from services.audit_service.core.audit_ledger import AuditLedger, ValidationResult
+from services.audit_service.core.audit_ledger import (
+    AuditLedger,
+    ValidationResult,
+    AuditLedgerConfig,
+)
+from unittest.mock import patch
 
 
 @pytest.mark.asyncio
@@ -12,11 +17,17 @@ async def test_audit_ledger_persistence():
     if os.path.exists(persistence_file):
         os.remove(persistence_file)
 
-    # 1. Initialize ledger and add entries
-    ledger1 = AuditLedger(batch_size=2)
-    # Ensure it uses a fresh file if it falls back
-    ledger1.persistence_file = persistence_file
-    await ledger1.start()
+    # 1. Initialize ledger and add entries with Redis disabled
+    config = AuditLedgerConfig(
+        batch_size=2,
+        redis_url=None,
+        enable_blockchain_anchoring=False,
+        persistence_file=persistence_file,
+    )
+
+    with patch("redis.from_url", side_effect=Exception("Redis disabled for tests")):
+        ledger1 = AuditLedger(config=config)
+        await ledger1.start()
 
     vr1 = ValidationResult(is_valid=True, metadata={"msg": "first"})
     vr2 = ValidationResult(is_valid=True, metadata={"msg": "second"})
@@ -49,9 +60,9 @@ async def test_audit_ledger_persistence():
         assert os.path.exists(persistence_file)
 
     # 3. Initialize second ledger instance (simulated restart)
-    ledger2 = AuditLedger(batch_size=2)
-    ledger2.persistence_file = persistence_file
-    await ledger2.start()
+    with patch("redis.from_url", side_effect=Exception("Redis disabled for tests")):
+        ledger2 = AuditLedger(config=config)
+        await ledger2.start()
 
     # 4. Verify recovery
     stats2 = await ledger2.get_ledger_stats()

@@ -23,6 +23,8 @@ export {
   ComplianceService,
   AuditService,
   GovernanceService,
+  HITLApprovalsService,
+  MLGovernanceService,
   type AgentInfo,
   type AgentRegistration,
   type ComplianceReport,
@@ -54,6 +56,9 @@ export {
   ComplianceStatus,
   EventSeverity,
   EventCategory,
+  ModelTrainingStatus,
+  DriftDirection,
+  ABNTestStatus,
 
   // Zod Schemas
   ConstitutionalHashSchema,
@@ -63,6 +68,11 @@ export {
   ApprovalRequestSchema,
   AuditEventSchema,
   GovernanceDecisionSchema,
+  MLModelSchema,
+  ModelPredictionSchema,
+  DriftDetectionSchema,
+  ABNTestSchema,
+  FeedbackSubmissionSchema,
 
   // Inferred Types
   type AgentMessage,
@@ -71,6 +81,11 @@ export {
   type ApprovalRequest,
   type AuditEvent,
   type GovernanceDecision,
+  type MLModel,
+  type ModelPrediction,
+  type DriftDetection,
+  type ABNTest,
+  type FeedbackSubmission,
 
   // API Types
   type PaginationParams,
@@ -94,6 +109,11 @@ export {
   type SubmitApprovalDecision,
   type ValidateComplianceRequest,
   type QueryAuditEventsRequest,
+  type CreateMLModelRequest,
+  type UpdateMLModelRequest,
+  type MakePredictionRequest,
+  type SubmitFeedbackRequest,
+  type CreateABNTestRequest,
 } from './types';
 
 // =============================================================================
@@ -164,6 +184,8 @@ import { AgentService } from './services/agent';
 import { ComplianceService } from './services/compliance';
 import { AuditService } from './services/audit';
 import { GovernanceService } from './services/governance';
+import { HITLApprovalsService } from './services/hitl-approvals';
+import { MLGovernanceService } from './services/ml-governance';
 import { CONSTITUTIONAL_HASH } from './types';
 import { createLogger, silentLogger, Logger } from './utils';
 
@@ -188,6 +210,12 @@ export interface ACGS2SDK {
 
   /** Governance and approval service */
   governance: GovernanceService;
+
+  /** Human-in-the-Loop approval workflows service */
+  hitlApprovals: HITLApprovalsService;
+
+  /** ML governance and adaptive learning service */
+  mlGovernance: MLGovernanceService;
 
   /** Constitutional hash for this SDK instance */
   constitutionalHash: string;
@@ -228,6 +256,8 @@ export function createACGS2SDK(config: ClientConfig): ACGS2SDK {
     compliance: new ComplianceService(client),
     audit: new AuditService(client),
     governance: new GovernanceService(client),
+    hitlApprovals: new HITLApprovalsService(client),
+    mlGovernance: new MLGovernanceService(client),
     constitutionalHash: CONSTITUTIONAL_HASH,
     healthCheck: () => client.healthCheck(),
   };

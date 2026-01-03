@@ -477,8 +477,31 @@ class EnhancedAgentBus:
 
     async def broadcast_message(self, msg: AgentMessage) -> Dict[str, ValidationResult]:
         """Broadcast message to all agents in same tenant."""
-        # Implementation to deliver to all agents in same tenant
-        pass
+        msg.tenant_id = normalize_tenant_id(msg.tenant_id)
+        targets = [
+            aid
+            for aid, info in self._agents.items()
+            if info.get("tenant_id") == msg.tenant_id
+            or not msg.tenant_id
+            or msg.tenant_id == "none"
+        ]
+        results = {}
+        for aid in targets:
+            # Skip if sender is same as target? Usually yes for broadcast
+            if aid == msg.from_agent:
+                continue
+            # Avoid using to_dict_raw if not available, use properties
+            content = msg.content if hasattr(msg, "content") else {}
+            m = AgentMessage(
+                from_agent=msg.from_agent, message_type=msg.message_type, content=content
+            )
+            m.to_agent = aid
+            m.tenant_id = msg.tenant_id
+            m.constitutional_hash = msg.constitutional_hash
+            res = await self.send_message(m)
+            if res.is_valid:
+                results[aid] = res
+        return results
 
     # --- Adaptive Governance Integration ---
 
@@ -549,31 +572,6 @@ class EnhancedAgentBus:
             logger.error(f"Adaptive governance evaluation failed: {e}")
             # Fail-safe: allow message but log the error
             return True, f"Governance evaluation failed: {e}"
-        msg.tenant_id = normalize_tenant_id(msg.tenant_id)
-        targets = [
-            aid
-            for aid, info in self._agents.items()
-            if info.get("tenant_id") == msg.tenant_id
-            or not msg.tenant_id
-            or msg.tenant_id == "none"
-        ]
-        results = {}
-        for aid in targets:
-            # Skip if sender is same as target? Usually yes for broadcast
-            if aid == msg.from_agent:
-                continue
-            # Avoid using to_dict_raw if not available, use properties
-            content = msg.content if hasattr(msg, "content") else {}
-            m = AgentMessage(
-                from_agent=msg.from_agent, message_type=msg.message_type, content=content
-            )
-            m.to_agent = aid
-            m.tenant_id = msg.tenant_id
-            m.constitutional_hash = msg.constitutional_hash
-            res = await self.send_message(m)
-            if res.is_valid:
-                results[aid] = res
-        return results
 
     async def receive_message(self, timeout=1.0) -> Optional[AgentMessage]:
         try:

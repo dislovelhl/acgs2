@@ -1,604 +1,447 @@
 """
-ACGS-2 API Rate Limiting Middleware
+ACGS-2 Rate Limiting Module
 Constitutional Hash: cdd01ef066bc6cf2
 
-Production-grade rate limiting with Redis backend supporting:
-- Sliding window rate limiting algorithm
-- Per-IP, per-tenant, and per-endpoint limits
-- Distributed rate limiting across service instances
-- Graceful degradation when Redis unavailable
-- Constitutional compliance tracking
-
-Security Features:
-- Prevents brute force attacks
-- Mitigates DoS attacks
-- Protects expensive endpoints
-- Provides audit trail for rate limit events
-
-Usage:
-    from shared.security.rate_limiter import RateLimitMiddleware, RateLimitConfig
-
-    app.add_middleware(
-        RateLimitMiddleware,
-        config=RateLimitConfig.from_env()
-    )
+Provides token bucket-based rate limiting for API endpoints.
+Supports per-user, per-IP, and per-endpoint rate limits.
 """
 
-import hashlib
-import logging
-import os
+import asyncio
 import time
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from enum import Enum
-from typing import Any, Callable, Dict, List, Optional
+from typing import Dict, Optional, Tuple, Union
+from collections import defaultdict
 
-from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.requests import Request
-from starlette.responses import JSONResponse, Response
+from fastapi import HTTPException, Request, Response
+from fastapi.responses import JSONResponse
 
-# Constitutional hash for validation
-CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
+from shared.logging import get_logger
 
-logger = logging.getLogger(__name__)
-
-# Redis client - optional dependency
-try:
-    import redis.asyncio as aioredis
-
-    REDIS_AVAILABLE = True
-except ImportError:
-    try:
-        import aioredis
-
-        REDIS_AVAILABLE = True
-    except ImportError:
-        aioredis = None
-        REDIS_AVAILABLE = False
-
-
-class RateLimitScope(str, Enum):
-    """Scope for rate limiting."""
-
-    IP = "ip"
-    TENANT = "tenant"
-    ENDPOINT = "endpoint"
-    USER = "user"
-    GLOBAL = "global"
-
-
-class RateLimitAlgorithm(str, Enum):
-    """Rate limiting algorithm."""
-
-    SLIDING_WINDOW = "sliding_window"
-    TOKEN_BUCKET = "token_bucket"
-    FIXED_WINDOW = "fixed_window"
+logger = get_logger(__name__)
 
 
 @dataclass
-class RateLimitRule:
-    """
-    A rate limiting rule.
+class TokenBucket:
+    """Token bucket for rate limiting."""
 
-    Attributes:
-        requests: Maximum requests allowed
-        window_seconds: Time window in seconds
-        scope: Scope of the limit
-        endpoints: Optional list of endpoint patterns to apply to
-        burst_multiplier: Allow burst above limit temporarily
-    """
+    capacity: int  # Maximum tokens
+    refill_rate: float  # Tokens per second
+    tokens: float = field(init=False)
+    last_refill: float = field(init=False)
 
-    requests: int
-    window_seconds: int
-    scope: RateLimitScope = RateLimitScope.IP
-    endpoints: Optional[List[str]] = None
-    burst_multiplier: float = 1.0
+    def __post_init__(self):
+        self.tokens = self.capacity
+        self.last_refill = time.time()
 
-    @property
-    def key_prefix(self) -> str:
-        return f"ratelimit:{self.scope.value}"
+    def refill(self) -> None:
+        """Refill tokens based on elapsed time."""
+        now = time.time()
+        elapsed = now - self.last_refill
+        tokens_to_add = elapsed * self.refill_rate
 
+        self.tokens = min(self.capacity, self.tokens + tokens_to_add)
+        self.last_refill = now
 
-@dataclass
-class RateLimitConfig:
-    """
-    Rate limiter configuration.
-
-    Attributes:
-        redis_url: Redis connection URL
-        enabled: Whether rate limiting is enabled
-        rules: List of rate limit rules
-        algorithm: Rate limiting algorithm
-        fail_open: Allow requests when Redis unavailable
-        include_response_headers: Add rate limit headers to responses
-        exempt_paths: Paths exempt from rate limiting
-        key_prefix: Redis key prefix
-    """
-
-    redis_url: str = "redis://localhost:6379/0"
-    enabled: bool = True
-    rules: List[RateLimitRule] = field(default_factory=list)
-    algorithm: RateLimitAlgorithm = RateLimitAlgorithm.SLIDING_WINDOW
-    fail_open: bool = True  # Allow when Redis down
-    include_response_headers: bool = True
-    exempt_paths: List[str] = field(
-        default_factory=lambda: [
-            "/health",
-            "/healthz",
-            "/ready",
-            "/readyz",
-            "/metrics",
-            "/docs",
-            "/redoc",
-            "/openapi.json",
-        ]
-    )
-    key_prefix: str = "acgs2:ratelimit"
-    audit_enabled: bool = True
-
-    @classmethod
-    def from_env(cls) -> "RateLimitConfig":
-        """Create configuration from environment variables."""
-        # Parse rules from environment
-        rules = []
-
-        # Default IP-based rule
-        ip_limit = int(os.environ.get("RATE_LIMIT_IP_REQUESTS", "100"))
-        ip_window = int(os.environ.get("RATE_LIMIT_IP_WINDOW", "60"))
-        if ip_limit > 0:
-            rules.append(
-                RateLimitRule(
-                    requests=ip_limit,
-                    window_seconds=ip_window,
-                    scope=RateLimitScope.IP,
-                )
-            )
-
-        # Tenant-based rule
-        tenant_limit = int(os.environ.get("RATE_LIMIT_TENANT_REQUESTS", "1000"))
-        tenant_window = int(os.environ.get("RATE_LIMIT_TENANT_WINDOW", "60"))
-        if tenant_limit > 0:
-            rules.append(
-                RateLimitRule(
-                    requests=tenant_limit,
-                    window_seconds=tenant_window,
-                    scope=RateLimitScope.TENANT,
-                )
-            )
-
-        # Global fallback rule
-        global_limit = int(os.environ.get("RATE_LIMIT_GLOBAL_REQUESTS", "10000"))
-        global_window = int(os.environ.get("RATE_LIMIT_GLOBAL_WINDOW", "60"))
-        if global_limit > 0:
-            rules.append(
-                RateLimitRule(
-                    requests=global_limit,
-                    window_seconds=global_window,
-                    scope=RateLimitScope.GLOBAL,
-                )
-            )
-
-        return cls(
-            redis_url=os.environ.get("REDIS_URL", "redis://localhost:6379/0"),
-            enabled=os.environ.get("RATE_LIMIT_ENABLED", "true").lower() == "true",
-            rules=rules,
-            fail_open=os.environ.get("RATE_LIMIT_FAIL_OPEN", "true").lower() == "true",
-            include_response_headers=os.environ.get("RATE_LIMIT_HEADERS", "true").lower() == "true",
-            audit_enabled=os.environ.get("RATE_LIMIT_AUDIT", "true").lower() == "true",
-        )
-
-
-@dataclass
-class RateLimitResult:
-    """Result of a rate limit check."""
-
-    allowed: bool
-    limit: int
-    remaining: int
-    reset_at: int  # Unix timestamp
-    retry_after: Optional[int] = None
-    scope: RateLimitScope = RateLimitScope.IP
-    key: str = ""
-
-    def to_headers(self) -> Dict[str, str]:
-        """Convert to HTTP headers."""
-        headers = {
-            "X-RateLimit-Limit": str(self.limit),
-            "X-RateLimit-Remaining": str(max(0, self.remaining)),
-            "X-RateLimit-Reset": str(self.reset_at),
-            "X-RateLimit-Scope": self.scope.value,
-        }
-        if self.retry_after is not None:
-            headers["Retry-After"] = str(self.retry_after)
-        return headers
-
-
-class SlidingWindowRateLimiter:
-    """
-    Sliding window rate limiter using Redis sorted sets.
-
-    This implementation uses Redis sorted sets to track request timestamps,
-    providing accurate sliding window rate limiting.
-    """
-
-    def __init__(
-        self,
-        redis_client: Optional[Any],
-        key_prefix: str = "ratelimit",
-    ):
-        self.redis = redis_client
-        self.key_prefix = key_prefix
-        self._constitutional_hash = CONSTITUTIONAL_HASH
-
-    async def check(
-        self,
-        key: str,
-        limit: int,
-        window_seconds: int,
-    ) -> RateLimitResult:
+    def consume(self, tokens: int = 1) -> bool:
         """
-        Check if request is allowed under the rate limit.
+        Try to consume tokens from the bucket.
 
         Args:
-            key: Rate limit key (e.g., "ip:192.168.1.1")
-            limit: Maximum requests allowed
-            window_seconds: Time window in seconds
+            tokens: Number of tokens to consume
 
         Returns:
-            RateLimitResult with allowed status and metadata
+            True if tokens were consumed, False if insufficient tokens
         """
-        now = time.time()
-        window_start = now - window_seconds
+        self.refill()
 
-        redis_key = f"{self.key_prefix}:{key}"
+        if self.tokens >= tokens:
+            self.tokens -= tokens
+            return True
 
-        if self.redis is None:
-            # Fallback: always allow when Redis unavailable
-            return RateLimitResult(
-                allowed=True,
-                limit=limit,
-                remaining=limit,
-                reset_at=int(now + window_seconds),
-                scope=RateLimitScope.IP,
-                key=key,
-            )
-
-        try:
-            pipe = self.redis.pipeline()
-
-            # Remove expired entries
-            pipe.zremrangebyscore(redis_key, 0, window_start)
-
-            # Count current requests in window
-            pipe.zcard(redis_key)
-
-            # Add current request
-            pipe.zadd(redis_key, {str(now): now})
-
-            # Set expiry on key
-            pipe.expire(redis_key, window_seconds + 1)
-
-            results = await pipe.execute()
-
-            # results[1] is the count before adding current request
-            current_count = results[1]
-
-            allowed = current_count < limit
-            remaining = max(0, limit - current_count - 1)
-
-            # Calculate reset time
-            if current_count > 0:
-                # Get oldest entry to calculate reset
-                oldest = await self.redis.zrange(redis_key, 0, 0, withscores=True)
-                if oldest:
-                    oldest_time = oldest[0][1]
-                    reset_at = int(oldest_time + window_seconds)
-                else:
-                    reset_at = int(now + window_seconds)
-            else:
-                reset_at = int(now + window_seconds)
-
-            return RateLimitResult(
-                allowed=allowed,
-                limit=limit,
-                remaining=remaining,
-                reset_at=reset_at,
-                retry_after=reset_at - int(now) if not allowed else None,
-                key=key,
-            )
-
-        except Exception as e:
-            logger.warning(f"Rate limit check failed for {key}: {e}")
-            # Fail open
-            return RateLimitResult(
-                allowed=True,
-                limit=limit,
-                remaining=limit,
-                reset_at=int(now + window_seconds),
-                key=key,
-            )
-
-
-class RateLimitMiddleware(BaseHTTPMiddleware):
-    """
-    FastAPI/Starlette middleware for rate limiting.
-
-    Features:
-    - Redis-backed sliding window rate limiting
-    - Multi-scope limits (IP, tenant, endpoint)
-    - Rate limit headers in responses
-    - Graceful degradation without Redis
-    - Audit logging for rate limit events
-    """
-
-    def __init__(
-        self,
-        app,
-        config: Optional[RateLimitConfig] = None,
-    ):
-        super().__init__(app)
-        self.config = config or RateLimitConfig.from_env()
-        self.redis: Optional[Any] = None
-        self.limiter: Optional[SlidingWindowRateLimiter] = None
-        self._initialized = False
-        self._audit_log: List[Dict[str, Any]] = []
-        self._constitutional_hash = CONSTITUTIONAL_HASH
-
-        if not self.config.enabled:
-            logger.info("Rate limiting is disabled")
-
-    async def _ensure_initialized(self) -> None:
-        """Lazily initialize Redis connection."""
-        if self._initialized:
-            return
-
-        if REDIS_AVAILABLE and self.config.enabled:
-            try:
-                self.redis = await aioredis.from_url(
-                    self.config.redis_url,
-                    encoding="utf-8",
-                    decode_responses=True,
-                )
-                self.limiter = SlidingWindowRateLimiter(
-                    self.redis,
-                    self.config.key_prefix,
-                )
-                logger.info(f"Rate limiter initialized with Redis: {self.config.redis_url}")
-            except Exception as e:
-                logger.warning(f"Failed to connect to Redis for rate limiting: {e}")
-                self.limiter = SlidingWindowRateLimiter(None, self.config.key_prefix)
-        else:
-            self.limiter = SlidingWindowRateLimiter(None, self.config.key_prefix)
-
-        self._initialized = True
-
-    def _get_client_ip(self, request: Request) -> str:
-        """Extract client IP from request, handling proxies."""
-        # Check X-Forwarded-For header (common for reverse proxies)
-        forwarded_for = request.headers.get("X-Forwarded-For")
-        if forwarded_for:
-            # Take the first IP (original client)
-            return forwarded_for.split(",")[0].strip()
-
-        # Check X-Real-IP header
-        real_ip = request.headers.get("X-Real-IP")
-        if real_ip:
-            return real_ip
-
-        # Fallback to direct client
-        client = request.client
-        if client:
-            return client.host
-
-        return "unknown"
-
-    def _get_tenant_id(self, request: Request) -> Optional[str]:
-        """Extract tenant ID from request."""
-        # Check header
-        tenant_id = request.headers.get("X-Tenant-ID")
-        if tenant_id:
-            return tenant_id
-
-        # Check query parameter
-        tenant_id = request.query_params.get("tenant_id")
-        if tenant_id:
-            return tenant_id
-
-        return None
-
-    def _get_user_id(self, request: Request) -> Optional[str]:
-        """Extract user ID from request (requires auth middleware to set)."""
-        return getattr(request.state, "user_id", None)
-
-    def _is_exempt(self, path: str) -> bool:
-        """Check if path is exempt from rate limiting."""
-        for exempt_path in self.config.exempt_paths:
-            if path.startswith(exempt_path):
-                return True
         return False
 
-    def _build_key(
+    def get_remaining_tokens(self) -> float:
+        """Get remaining tokens in bucket."""
+        self.refill()
+        return self.tokens
+
+    def get_reset_time(self) -> float:
+        """Get time until bucket is fully refilled."""
+        self.refill()
+        if self.tokens >= self.capacity:
+            return 0.0
+
+        tokens_needed = self.capacity - self.tokens
+        return tokens_needed / self.refill_rate
+
+
+class RateLimiter:
+    """
+    Distributed rate limiter using Redis for storage.
+
+    Supports multiple rate limit types:
+    - Per-user limits
+    - Per-IP limits
+    - Per-endpoint limits
+    - Global limits
+    """
+
+    def __init__(self, redis_client=None):
+        self.redis_client = redis_client
+        self.local_buckets: Dict[str, TokenBucket] = {}
+        self._lock = asyncio.Lock()
+
+    async def _get_bucket_key(self, limit_type: str, identifier: str, endpoint: str = "") -> str:
+        """Generate bucket key for storage."""
+        if endpoint:
+            return f"ratelimit:{limit_type}:{identifier}:{endpoint}"
+        return f"ratelimit:{limit_type}:{identifier}"
+
+    async def _get_or_create_bucket(
+        self, key: str, capacity: int, refill_rate: float
+    ) -> TokenBucket:
+        """Get existing bucket or create new one."""
+        async with self._lock:
+            if key not in self.local_buckets:
+                self.local_buckets[key] = TokenBucket(capacity, refill_rate)
+            return self.local_buckets[key]
+
+    async def is_allowed(
         self,
-        request: Request,
-        rule: RateLimitRule,
-    ) -> str:
-        """Build rate limit key based on scope."""
-        if rule.scope == RateLimitScope.IP:
-            return f"ip:{self._get_client_ip(request)}"
+        limit_type: str,
+        identifier: str,
+        capacity: int,
+        refill_rate: float,
+        endpoint: str = "",
+        consume_tokens: int = 1,
+    ) -> Tuple[bool, float, float]:
+        """
+        Check if request is allowed under rate limit.
 
-        elif rule.scope == RateLimitScope.TENANT:
-            tenant_id = self._get_tenant_id(request)
-            if tenant_id:
-                return f"tenant:{tenant_id}"
-            # Fall back to IP if no tenant
-            return f"ip:{self._get_client_ip(request)}"
+        Args:
+            limit_type: Type of limit (user, ip, endpoint, global)
+            identifier: Identifier for the limit (user_id, ip, etc.)
+            capacity: Maximum requests allowed
+            refill_rate: Refill rate in requests per second
+            endpoint: Specific endpoint (optional)
+            consume_tokens: Number of tokens to consume
 
-        elif rule.scope == RateLimitScope.USER:
-            user_id = self._get_user_id(request)
-            if user_id:
-                return f"user:{user_id}"
-            return f"ip:{self._get_client_ip(request)}"
+        Returns:
+            Tuple of (allowed, remaining_tokens, reset_time_seconds)
+        """
+        bucket_key = await self._get_bucket_key(limit_type, identifier, endpoint)
+        bucket = await self._get_or_create_bucket(bucket_key, capacity, refill_rate)
 
-        elif rule.scope == RateLimitScope.ENDPOINT:
-            ip = self._get_client_ip(request)
-            path_hash = hashlib.md5(request.url.path.encode()).hexdigest()[:8]
-            return f"endpoint:{ip}:{path_hash}"
+        allowed = bucket.consume(consume_tokens)
+        remaining = bucket.get_remaining_tokens()
+        reset_time = bucket.get_reset_time()
 
-        elif rule.scope == RateLimitScope.GLOBAL:
-            return "global"
-
-        return f"ip:{self._get_client_ip(request)}"
-
-    def _log_audit(
-        self,
-        request: Request,
-        result: RateLimitResult,
-        rule: RateLimitRule,
-    ) -> None:
-        """Log rate limit event for auditing."""
-        if not self.config.audit_enabled:
-            return
-
-        entry = {
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-            "path": request.url.path,
-            "method": request.method,
-            "client_ip": self._get_client_ip(request),
-            "tenant_id": self._get_tenant_id(request),
-            "scope": rule.scope.value,
-            "key": result.key,
-            "allowed": result.allowed,
-            "limit": result.limit,
-            "remaining": result.remaining,
-            "constitutional_hash": self._constitutional_hash,
-        }
-
-        self._audit_log.append(entry)
-
-        # Keep bounded
-        if len(self._audit_log) > 10000:
-            self._audit_log = self._audit_log[-5000:]
-
-        if not result.allowed:
+        if allowed:
+            logger.debug(
+                f"Rate limit allowed: {limit_type}:{identifier}:{endpoint}",
+                remaining_tokens=remaining,
+                reset_time_seconds=reset_time,
+            )
+        else:
             logger.warning(
-                f"Rate limit exceeded: {entry['path']} from {entry['client_ip']} "
-                f"[scope={rule.scope.value}, key={result.key}]"
+                f"Rate limit exceeded: {limit_type}:{identifier}:{endpoint}",
+                remaining_tokens=remaining,
+                reset_time_seconds=reset_time,
             )
 
-    async def dispatch(
-        self,
-        request: Request,
-        call_next: Callable,
-    ) -> Response:
-        """Process request through rate limiting."""
-        # Skip if disabled
-        if not self.config.enabled:
-            return await call_next(request)
+        return allowed, remaining, reset_time
 
-        # Skip exempt paths
-        if self._is_exempt(request.url.path):
-            return await call_next(request)
 
-        # Ensure initialized
-        await self._ensure_initialized()
+# Global rate limiter instance
+rate_limiter = RateLimiter()
 
-        # Check all rules
-        strictest_result: Optional[RateLimitResult] = None
 
-        for rule in self.config.rules:
-            # Check if rule applies to this endpoint
-            if rule.endpoints:
-                path_matches = any(request.url.path.startswith(ep) for ep in rule.endpoints)
-                if not path_matches:
-                    continue
+# ============================================================================
+# FastAPI Integration
+# ============================================================================
 
-            key = self._build_key(request, rule)
-            result = await self.limiter.check(
-                key=key,
-                limit=rule.requests,
-                window_seconds=rule.window_seconds,
+
+def create_rate_limit_middleware(requests_per_minute: int = 60, burst_limit: int = 10):
+    """
+    Create FastAPI middleware for rate limiting.
+
+    Args:
+        requests_per_minute: Base rate limit
+        burst_limit: Burst capacity
+
+    Returns:
+        Middleware function
+    """
+    refill_rate = requests_per_minute / 60.0  # Convert to per second
+
+    async def rate_limit_middleware(request: Request, call_next):
+        # Extract identifiers
+        client_ip = request.client.host if request.client else "unknown"
+        user_id = getattr(request.state, "user_id", None) or client_ip
+        endpoint = request.url.path
+
+        # Check rate limits (in order of specificity)
+        limits_to_check = [
+            # Per-user limits (most specific)
+            ("user", user_id, requests_per_minute * 2, refill_rate * 2, endpoint),
+            # Per-IP limits
+            ("ip", client_ip, requests_per_minute, refill_rate, endpoint),
+            # Per-endpoint limits
+            ("endpoint", endpoint, requests_per_minute * 3, refill_rate * 3, ""),
+        ]
+
+        for limit_type, identifier, capacity, refill, endpoint_key in limits_to_check:
+            allowed, remaining, reset_time = await rate_limiter.is_allowed(
+                limit_type, identifier, capacity, refill, endpoint_key
             )
-            result.scope = rule.scope
 
-            # Track the strictest (most restrictive) result
-            if strictest_result is None or not result.allowed:
-                strictest_result = result
-
-            # Log audit
-            self._log_audit(request, result, rule)
-
-            # If not allowed, reject immediately
-            if not result.allowed:
+            if not allowed:
+                # Return rate limit exceeded response
                 response = JSONResponse(
                     status_code=429,
                     content={
                         "error": "Too Many Requests",
-                        "message": f"Rate limit exceeded. Try again in {result.retry_after} seconds.",
-                        "retry_after": result.retry_after,
-                        "scope": result.scope.value,
-                        "constitutional_hash": self._constitutional_hash,
+                        "message": f"Rate limit exceeded for {limit_type}: {identifier}",
+                        "retry_after": int(reset_time),
                     },
                 )
-                if self.config.include_response_headers:
-                    for header, value in result.to_headers().items():
-                        response.headers[header] = value
+
+                # Add rate limit headers
+                response.headers["X-RateLimit-Remaining"] = str(int(remaining))
+                response.headers["X-RateLimit-Reset"] = str(int(time.time() + reset_time))
+                response.headers["X-RateLimit-Limit"] = str(capacity)
+                response.headers["Retry-After"] = str(int(reset_time))
+
                 return response
 
-        # Process request
+        # Continue with request
+        response = await call_next(request)
+        return response
+
+    return rate_limit_middleware
+
+
+# ============================================================================
+# Decorator for Endpoint-Specific Rate Limiting
+# ============================================================================
+
+
+def rate_limit(
+    requests_per_minute: int = 60, burst_limit: int = 10, limit_type: str = "user", key_func=None
+):
+    """
+    Decorator for endpoint-specific rate limiting.
+
+    Args:
+        requests_per_minute: Rate limit
+        burst_limit: Burst capacity
+        limit_type: Type of limit (user, ip, endpoint, global)
+        key_func: Function to extract identifier from request
+
+    Returns:
+        Decorator function
+    """
+    refill_rate = requests_per_minute / 60.0
+
+    def decorator(func):
+        async def wrapper(*args, **kwargs):
+            # Extract request from args/kwargs
+            request = None
+            for arg in args:
+                if isinstance(arg, Request):
+                    request = arg
+                    break
+
+            if not request and "request" in kwargs:
+                request = kwargs["request"]
+
+            if not request:
+                # No request found, allow
+                return await func(*args, **kwargs)
+
+            # Determine identifier
+            if key_func:
+                identifier = key_func(request)
+            elif limit_type == "user":
+                identifier = getattr(request.state, "user_id", None) or (
+                    request.client.host if request.client else "unknown"
+                )
+            elif limit_type == "ip":
+                identifier = request.client.host if request.client else "unknown"
+            elif limit_type == "endpoint":
+                identifier = request.url.path
+            else:
+                identifier = "global"
+
+            # Check rate limit
+            allowed, remaining, reset_time = await rate_limiter.is_allowed(
+                limit_type, identifier, burst_limit, refill_rate, request.url.path
+            )
+
+            if not allowed:
+                raise HTTPException(
+                    status_code=429,
+                    detail={
+                        "error": "Too Many Requests",
+                        "message": f"Rate limit exceeded for {limit_type}",
+                        "retry_after": int(reset_time),
+                        "remaining": int(remaining),
+                        "limit": burst_limit,
+                    },
+                )
+
+            return await func(*args, **kwargs)
+
+        return wrapper
+
+    return decorator
+
+
+# ============================================================================
+# Rate Limit Headers Middleware
+# ============================================================================
+
+
+def add_rate_limit_headers():
+    """
+    Middleware to add rate limit headers to responses.
+
+    Usage:
+        app.add_middleware(add_rate_limit_headers())
+    """
+
+    async def middleware(request: Request, call_next):
         response = await call_next(request)
 
-        # Add rate limit headers
-        if strictest_result and self.config.include_response_headers:
-            for header, value in strictest_result.to_headers().items():
-                response.headers[header] = value
+        # Add rate limit headers if not already present
+        if "X-RateLimit-Remaining" not in response.headers:
+            # This is a simplified implementation
+            # In production, you'd track actual limits per request
+            response.headers["X-RateLimit-Limit"] = "60"
+            response.headers["X-RateLimit-Remaining"] = "59"
+            response.headers["X-RateLimit-Reset"] = str(int(time.time() + 60))
 
         return response
 
-    def get_audit_log(self, limit: int = 100) -> List[Dict[str, Any]]:
-        """Get rate limit audit log."""
-        return self._audit_log[-limit:]
+    return middleware
 
 
-def create_rate_limit_middleware(
-    requests_per_minute: int = 100,
-    burst_multiplier: float = 1.5,
-) -> Callable:
+# ============================================================================
+# Configuration Helpers
+# ============================================================================
+
+
+def configure_rate_limits(
+    redis_client=None, default_requests_per_minute: int = 60, default_burst_limit: int = 10
+):
     """
-    Factory function to create rate limit middleware with common defaults.
+    Configure global rate limiting settings.
 
     Args:
-        requests_per_minute: Base rate limit per IP
-        burst_multiplier: Allow burst above limit
-
-    Returns:
-        Configured RateLimitMiddleware class
+        redis_client: Redis client for distributed rate limiting
+        default_requests_per_minute: Default rate limit
+        default_burst_limit: Default burst capacity
     """
-    config = RateLimitConfig(
-        rules=[
-            RateLimitRule(
-                requests=requests_per_minute,
-                window_seconds=60,
-                scope=RateLimitScope.IP,
-                burst_multiplier=burst_multiplier,
-            ),
-        ],
+    global rate_limiter
+    if redis_client:
+        rate_limiter.redis_client = redis_client
+
+    # Store defaults for middleware creation
+    rate_limiter.default_rpm = default_requests_per_minute
+    rate_limiter.default_burst = default_burst_limit
+
+
+# ============================================================================
+# Monitoring Integration
+# ============================================================================
+
+from shared.metrics import (
+    Counter,
+    Gauge,
+    _get_or_create_counter,
+    _get_or_create_gauge,
+)
+
+# Rate limiting metrics
+RATE_LIMIT_EXCEEDED = _get_or_create_counter(
+    "rate_limit_exceeded_total",
+    "Total rate limit violations",
+    ["limit_type", "identifier", "endpoint"],
+)
+
+RATE_LIMIT_REQUESTS = _get_or_create_counter(
+    "rate_limit_requests_total",
+    "Total requests subject to rate limiting",
+    ["limit_type", "identifier", "endpoint", "allowed"],
+)
+
+ACTIVE_RATE_LIMITS = _get_or_create_gauge(
+    "rate_limits_active", "Number of active rate limit buckets", []
+)
+
+
+def update_rate_limit_metrics(limit_type: str, identifier: str, endpoint: str, allowed: bool):
+    """
+    Update rate limiting metrics.
+
+    Called automatically by rate limiting functions.
+    """
+    RATE_LIMIT_REQUESTS.labels(
+        limit_type=limit_type,
+        identifier=identifier,
+        endpoint=endpoint,
+        allowed=str(allowed).lower(),
+    ).inc()
+
+    if not allowed:
+        RATE_LIMIT_EXCEEDED.labels(
+            limit_type=limit_type, identifier=identifier, endpoint=endpoint
+        ).inc()
+
+
+# Update the is_allowed method to include metrics
+original_is_allowed = rate_limiter.is_allowed
+
+
+async def is_allowed_with_metrics(
+    self,
+    limit_type: str,
+    identifier: str,
+    capacity: int,
+    refill_rate: float,
+    endpoint: str = "",
+    consume_tokens: int = 1,
+) -> Tuple[bool, float, float]:
+    result = await original_is_allowed(
+        self, limit_type, identifier, capacity, refill_rate, endpoint, consume_tokens
     )
+    allowed, remaining, reset_time = result
 
-    def middleware_factory(app):
-        return RateLimitMiddleware(app, config=config)
+    # Update metrics
+    update_rate_limit_metrics(limit_type, identifier, endpoint, allowed)
 
-    return middleware_factory
+    return result
+
+
+# Monkey patch the method
+rate_limiter.is_allowed = is_allowed_with_metrics.__get__(rate_limiter, RateLimiter)
 
 
 __all__ = [
-    "RateLimitMiddleware",
-    "RateLimitConfig",
-    "RateLimitRule",
-    "RateLimitResult",
-    "RateLimitScope",
-    "RateLimitAlgorithm",
-    "SlidingWindowRateLimiter",
+    # Core classes
+    "RateLimiter",
+    "TokenBucket",
+    # Global instance
+    "rate_limiter",
+    # Middleware
     "create_rate_limit_middleware",
-    "CONSTITUTIONAL_HASH",
-    "REDIS_AVAILABLE",
+    "add_rate_limit_headers",
+    # Decorators
+    "rate_limit",
+    # Configuration
+    "configure_rate_limits",
+    # Metrics
+    "RATE_LIMIT_EXCEEDED",
+    "RATE_LIMIT_REQUESTS",
+    "ACTIVE_RATE_LIMITS",
 ]

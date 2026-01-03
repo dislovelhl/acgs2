@@ -392,7 +392,7 @@ class DecoderTrainer:
 
             if (epoch + 1) % 20 == 0:
                 logging.info(
-                    f"  Epoch {epoch+1}/{num_epochs} | Loss: {avg_loss:.4f} | Acc: {accuracy:.2%}"
+                    f"  Epoch {epoch + 1}/{num_epochs} | Loss: {avg_loss:.4f} | Acc: {accuracy:.2%}"
                 )
 
         return self.training_history
@@ -713,9 +713,9 @@ def run_benchmark(num_iterations: int = 10000) -> Dict[str, Dict]:
     logging.info("IBM qLDPC (2025):         ~0.48 µs (theoretical)")
 
     if spec_latency_us < 63:
-        logging.info(f"\n>> {63/spec_latency_us:.1f}x faster than Google Willow!")
+        logging.info(f"\n>> {63 / spec_latency_us:.1f}x faster than Google Willow!")
     if spec_latency_us < 0.48:
-        logging.info(f">> {0.48/spec_latency_us:.1f}x faster than IBM qLDPC!")
+        logging.info(f">> {0.48 / spec_latency_us:.1f}x faster than IBM qLDPC!")
 
     return results
 

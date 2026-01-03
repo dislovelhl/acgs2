@@ -129,7 +129,7 @@ class TestBusConfigurationFromEnvironment:
             config = BusConfiguration.from_environment()
             assert config.redis_url == DEFAULT_REDIS_URL
             assert config.use_dynamic_policy is False
-            assert config.policy_fail_closed is False
+            assert config.policy_fail_closed is True
 
     def test_from_environment_redis_url(self):
         """Test from_environment reads REDIS_URL."""
@@ -179,9 +179,9 @@ class TestBusConfigurationFromEnvironment:
             "POLICY_FAIL_CLOSED": "true",
             "USE_KAFKA": "true",
             "USE_REDIS_REGISTRY": "true",
-            "USE_RUST_BACKEND": "false",
-            "METERING_ENABLED": "false",
-            "MACI_ENABLED": "true",
+            "USE_RUST": "false",
+            "ENABLE_METERING": "false",
+            "ENABLE_MACI": "true",
             "MACI_STRICT_MODE": "false",
         }
         with patch.dict(os.environ, env_vars, clear=True):

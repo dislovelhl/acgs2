@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ACGS-2 Approval Request</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .header {
+            border-bottom: 1px solid #e1e5e9;
+            padding-bottom: 16px;
+            margin-bottom: 20px;
+        }
+        .priority {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        .priority-critical { background: #ffebee; color: #c62828; }
+        .priority-high { background: #fff3e0; color: #ef6c00; }
+        .priority-standard { background: #fffde7; color: #f57f17; }
+        .priority-low { background: #e8f5e8; color: #2e7d32; }
+
+        .section {
+            margin-bottom: 20px;
+        }
+        .section h3 {
+            margin: 0 0 8px 0;
+            color: #374151;
+            font-size: 16px;
+        }
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        .info-item {
+            background: #f9fafb;
+            padding: 8px 12px;
+            border-radius: 6px;
+        }
+        .info-label {
+            font-size: 12px;
+            color: #6b7280;
+            text-transform: uppercase;
+            font-weight: 500;
+        }
+        .info-value {
+            font-size: 14px;
+            color: #111827;
+            font-weight: 500;
+        }
+
+        .description {
+            background: #f9fafb;
+            padding: 16px;
+            border-radius: 8px;
+            border-left: 4px solid #3b82f6;
+            margin-bottom: 20px;
+        }
+
+        .context-data {
+            background: #f8fafc;
+            padding: 12px;
+            border-radius: 6px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 12px;
+            color: #475569;
+            margin-bottom: 16px;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+        .form-label {
+            display: block;
+            margin-bottom: 4px;
+            font-weight: 500;
+            color: #374151;
+        }
+        .form-input, .form-textarea {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        .form-textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 12px;
+            margin-top: 24px;
+        }
+        .btn {
+            flex: 1;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+            transition: all 0.2s;
+        }
+        .btn-approve {
+            background: #10b981;
+            color: white;
+        }
+        .btn-approve:hover {
+            background: #059669;
+        }
+        .btn-reject {
+            background: #ef4444;
+            color: white;
+        }
+        .btn-reject:hover {
+            background: #dc2626;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        .status-pending { background: #fef3c7; color: #d97706; }
+        .status-approved { background: #d1fae5; color: #065f46; }
+        .status-rejected { background: #fee2e2; color: #991b1b; }
+
+        .approval-history {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #e5e7eb;
+        }
+        .history-item {
+            background: #f9fafb;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        @media (max-width: 480px) {
+            body { padding: 10px; }
+            .container { padding: 16px; }
+            .button-group { flex-direction: column; }
+            .info-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>ACGS-2 Approval Request</h1>
+            <span class="priority priority-{{ approval.priority.lower() }}">
+                {{ approval.priority }}
+            </span>
+            <span class="status-indicator status-{{ approval.status.lower() }}">
+                {{ approval.status }}
+            </span>
+        </div>
+
+        <div class="section">
+            <h3>{{ approval.title }}</h3>
+            <div class="description">
+                {{ approval.description }}
+            </div>
+        </div>
+
+        <div class="section">
+            <h3>Request Details</h3>
+            <div class="info-grid">
+                <div class="info-item">
+                    <div class="info-label">Request ID</div>
+                    <div class="info-value">{{ approval.request_id }}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Tenant</div>
+                    <div class="info-value">{{ approval.tenant_id }}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Requested By</div>
+                    <div class="info-value">{{ approval.requested_by }}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Created</div>
+                    <div class="info-value">{{ approval.created_at }}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Expires</div>
+                    <div class="info-value">{{ approval.expires_at }}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Priority</div>
+                    <div class="info-value">{{ approval.priority }}</div>
+                </div>
+            </div>
+        </div>
+
+        {% if approval.context %}
+        <div class="section">
+            <h3>Decision Context</h3>
+            <div class="context-data">
+                <pre>{{ approval.context | tojson(indent=2) }}</pre>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if approval.approvals %}
+        <div class="section approval-history">
+            <h3>Approval History</h3>
+            {% for approval_record in approval.approvals %}
+            <div class="history-item">
+                <strong>{{ approval_record.decision.title() }}</strong> by {{ approval_record.approved_by }}
+                {% if approval_record.rationale %} - {{ approval_record.rationale }}{% endif %}
+                <br><small>{{ approval_record.timestamp }}</small>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if approval.escalation_history %}
+        <div class="section">
+            <h3>Escalation History</h3>
+            {% for escalation in approval.escalation_history %}
+            <div class="history-item">
+                Escalated to level {{ escalation.escalation_level }} - {{ escalation.reason }}
+                <br><small>{{ escalation.timestamp }}</small>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if approval.status == 'PENDING' %}
+        <form method="post" action="/hitl/approvals/approve/{{ approval.request_id }}">
+            <div class="form-group">
+                <label class="form-label" for="approved_by">Your Name/ID</label>
+                <input type="text" id="approved_by" name="approved_by" class="form-input" required>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="rationale">Decision Rationale (Optional)</label>
+                <textarea id="rationale" name="rationale" class="form-textarea"
+                          placeholder="Explain your decision..."></textarea>
+            </div>
+
+            <div class="button-group">
+                <button type="submit" name="decision" value="approved" class="btn btn-approve">
+                    ✅ Approve
+                </button>
+                <button type="submit" name="decision" value="rejected" class="btn btn-reject">
+                    ❌ Reject
+                </button>
+            </div>
+        </form>
+        {% else %}
+        <div style="text-align: center; padding: 40px;">
+            <h3>This request has already been {{ approval.status.lower() }}</h3>
+            <p>No further action is required.</p>
+        </div>
+        {% endif %}
+    </div>
+</body>
+</html>

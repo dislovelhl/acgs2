@@ -1,0 +1,220 @@
+apiVersion: install.istio.io/v1alpha1
+kind: IstioOperator
+metadata:
+  name: region1-controlplane
+  namespace: istio-system
+spec:
+  meshConfig:
+    meshID: global-mesh
+    network: network1
+    # Trust domain for cross-cluster authentication
+    trustDomain: cluster.local
+    # Disable external CA - using self-signed shared root CA
+    ca:
+      address: ""
+    # Configure mesh networks for cross-cluster routing
+    meshNetworks:
+      network1:
+        endpoints:
+          - fromRegistry: cluster1
+        gateways:
+          - registryServiceName: istio-eastwestgateway.istio-system.svc.cluster.local
+            port: 15443
+      network2:
+        endpoints:
+          - fromRegistry: cluster2
+        gateways:
+          - registryServiceName: istio-eastwestgateway.istio-system.svc.cluster.local
+            port: 15443
+
+  values:
+    global:
+      # Multi-cluster configuration
+      multiCluster:
+        clusterName: cluster1
+      # Use external istiod for remote cluster access
+      pilotCertProvider: istiod
+      # Control plane security
+      controlPlaneSecurityEnabled: true
+      # Disable external CA - using shared root CA
+      caAddress: ""
+
+      # Network configuration
+      network: network1
+
+      # Proxy configuration for cross-cluster communication
+      proxy:
+        privileged: false
+        enableCoreDump: false
+        logLevel: warning
+        componentLogLevel: "misc:error"
+        accessLogFile: "/dev/stdout"
+        accessLogFormat: |
+          [%START_TIME%] "%REQ(:METHOD)% %REQ(X-ENVOY-ORIGINAL-PATH?:PATH)% %PROTOCOL%" %RESPONSE_CODE% %RESPONSE_FLAGS% "%UPSTREAM_TRANSPORT_FAILURE_REASON%" %BYTES_RECEIVED% %BYTES_SENT% %DURATION% %RESP(X-ENVOY-UPSTREAM-SERVICE-TIME)% "%REQ(X-FORWARDED-FOR)%" "%REQ(USER-AGENT)%" "%REQ(X-REQUEST-ID)%" "%REQ(:AUTHORITY)%" "%UPSTREAM_HOST%" %UPSTREAM_CLUSTER% %UPSTREAM_LOCAL_ADDRESS% %DOWNSTREAM_LOCAL_ADDRESS% %DOWNSTREAM_REMOTE_ADDRESS% %REQUESTED_SERVER_NAME% %ROUTE_NAME%
+        accessLogEncoding: TEXT
+        concurrency: 2
+
+      # Image configuration
+      hub: docker.io/istio
+      tag: 1.22.0
+
+    # Pilot (control plane) configuration
+    pilot:
+      autoscaleEnabled: true
+      autoscaleMin: 1
+      autoscaleMax: 5
+      replicaCount: 2
+      rollingMaxUnavailable: 50%
+      cpu:
+        targetAverageUtilization: 80
+      memory:
+        targetAverageUtilization: 80
+      resources:
+        requests:
+          cpu: 500m
+          memory: 2Gi
+        limits:
+          cpu: 2000m
+          memory: 4Gi
+      # Enable topology awareness
+      env:
+        - name: PILOT_ENABLE_CROSS_CLUSTER_WORKLOAD_ENTRY
+          value: "true"
+        - name: PILOT_ENABLE_K8S_SELECT_WORKLOAD_ENTRIES
+          value: "false"
+
+    # Security configuration
+    security:
+      selfSigned: false
+
+  components:
+    # Ingress Gateway (optional for multi-cluster)
+    ingressGateways:
+      - name: istio-ingressgateway
+        enabled: false
+
+    # East-West Gateway for cross-cluster communication
+    egressGateways:
+      - name: istio-egressgateway
+        enabled: true
+        label:
+          istio: eastwestgateway
+          app: istio-egressgateway
+          topology.istio.io/network: network1
+        k8s:
+          env:
+            - name: ISTIO_META_REQUESTED_NETWORK_VIEW
+              value: network1
+          service:
+            type: ClusterIP
+            ports:
+              - name: status-port
+                port: 15021
+                targetPort: 15021
+              - name: tls
+                port: 15443
+                targetPort: 15443
+              - name: tls-istiod
+                port: 15012
+                targetPort: 15012
+              - name: tls-webhook
+                port: 15017
+                targetPort: 15017
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 2000m
+              memory: 1024Mi
+          hpaSpec:
+            maxReplicas: 5
+            minReplicas: 1
+            scaleTargetRef:
+              apiVersion: apps/v1
+              kind: Deployment
+              name: istio-egressgateway
+            metrics:
+              - type: Resource
+                resource:
+                  name: cpu
+                  targetAverageUtilization: 80
+
+    # East-West Gateway (primary cross-cluster communication)
+    ingressGateways:
+      - name: istio-eastwestgateway
+        enabled: true
+        label:
+          istio: eastwestgateway
+          app: istio-eastwestgateway
+          topology.istio.io/network: network1
+        k8s:
+          env:
+            - name: ISTIO_META_REQUESTED_NETWORK_VIEW
+              value: network1
+          service:
+            type: LoadBalancer
+            loadBalancerIP: ""
+            ports:
+              - name: status-port
+                port: 15021
+                targetPort: 15021
+              - name: tls
+                port: 15443
+                targetPort: 15443
+              - name: tls-istiod
+                port: 15012
+                targetPort: 15012
+              - name: tls-webhook
+                port: 15017
+                targetPort: 15017
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 2000m
+              memory: 1024Mi
+          hpaSpec:
+            maxReplicas: 5
+            minReplicas: 1
+            scaleTargetRef:
+              apiVersion: apps/v1
+              kind: Deployment
+              name: istio-eastwestgateway
+            metrics:
+              - type: Resource
+                resource:
+                  name: cpu
+                  targetAverageUtilization: 80
+
+    # CoreDNS (for cross-cluster service discovery)
+    coredns:
+      enabled: true
+
+  # Network topology and security policies
+  meshConfig:
+    # Enable locality-based load balancing
+    localityLbSetting:
+      enabled: true
+      distribute:
+        - from: "us-east-1/*"
+          to:
+            "us-east-1/*": 80
+            "eu-west-1/*": 20
+        - from: "eu-west-1/*"
+          to:
+            "eu-west-1/*": 80
+            "us-east-1/*": 20
+
+    # Outlier detection for regional failover
+    outlierDetection:
+      consecutiveErrors: 3
+      interval: 10s
+      baseEjectionTime: 30s
+
+    # Certificate management
+    certificates:
+      - secretName: cacerts
+        dnsNames:
+          - cluster1.istio-system.svc.cluster.local

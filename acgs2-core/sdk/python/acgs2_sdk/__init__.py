@@ -20,6 +20,7 @@ from acgs2_sdk.exceptions import (
 )
 from acgs2_sdk.governor import Governor
 from acgs2_sdk.models import (
+    ABNTest,
     AgentInfo,
     AgentMessage,
     ApprovalRequest,
@@ -27,10 +28,14 @@ from acgs2_sdk.models import (
     AuditEvent,
     ComplianceResult,
     ComplianceStatus,
+    DriftDetection,
     EventCategory,
     EventSeverity,
+    FeedbackSubmission,
     GovernanceDecision,
     MessageType,
+    MLModel,
+    ModelPrediction,
     PaginatedResponse,
     Policy,
     PolicyStatus,
@@ -41,6 +46,8 @@ from acgs2_sdk.services import (
     AuditService,
     ComplianceService,
     GovernanceService,
+    HITLApprovalsService,
+    MLGovernanceService,
     PolicyService,
 )
 
@@ -67,6 +74,7 @@ __all__ = [
     "TimeoutError",
     "ValidationError",
     # Models
+    "ABNTest",
     "AgentInfo",
     "AgentMessage",
     "ApprovalRequest",
@@ -74,10 +82,14 @@ __all__ = [
     "AuditEvent",
     "ComplianceResult",
     "ComplianceStatus",
+    "DriftDetection",
     "EventCategory",
     "EventSeverity",
+    "FeedbackSubmission",
     "GovernanceDecision",
     "MessageType",
+    "MLModel",
+    "ModelPrediction",
     "PaginatedResponse",
     "Policy",
     "PolicyStatus",
@@ -87,5 +99,7 @@ __all__ = [
     "AuditService",
     "ComplianceService",
     "GovernanceService",
+    "HITLApprovalsService",
+    "MLGovernanceService",
     "PolicyService",
 ]

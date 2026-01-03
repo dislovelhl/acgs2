@@ -6,8 +6,13 @@ Configuration dataclass for the Enhanced Agent Bus.
 Follows the Builder pattern for clean configuration management.
 """
 
+import os
 from dataclasses import dataclass, field, replace
 from typing import TYPE_CHECKING, Any, Optional
+from urllib.parse import urlparse
+
+import litellm
+from litellm.caching import Cache
 
 # Import types conditionally to avoid circular imports
 if TYPE_CHECKING:
@@ -72,6 +77,14 @@ class BusConfiguration:
     enable_maci: bool = True
     maci_strict_mode: bool = True
 
+    # LLM Configuration for high-ambiguity intent classification
+    # Added for Spec 001
+    llm_model: str = "anthropic/claude-3-5-sonnet-20240620"
+    llm_cache_ttl: int = 3600
+    llm_confidence_threshold: float = 0.8
+    llm_max_tokens: int = 100
+    llm_use_cache: bool = True
+
     # Optional dependency injections (set to None for defaults)
     # Note: These are typed as Any to avoid circular imports at runtime
     registry: Optional[Any] = None
@@ -89,42 +102,53 @@ class BusConfiguration:
         if not self.constitutional_hash:
             self.constitutional_hash = CONSTITUTIONAL_HASH
 
+    @staticmethod
+    def _parse_bool(value: Any) -> bool:
+        """Parse various representations of boolean values."""
+        if isinstance(value, bool):
+            return value
+        if value is None:
+            return False
+        s = str(value).lower()
+        return s in ("true", "1", "yes", "on", "y", "t")
+
     @classmethod
     def from_environment(cls) -> "BusConfiguration":
-        """Create configuration from environment variables.
-
-        Environment variables:
-            REDIS_URL: Redis connection URL
-            KAFKA_BOOTSTRAP_SERVERS: Kafka servers
-            AUDIT_SERVICE_URL: Audit service endpoint
-            USE_DYNAMIC_POLICY: Enable dynamic policy (true/false)
-            POLICY_FAIL_CLOSED: Fail closed mode (true/false)
-            USE_KAFKA: Enable Kafka (true/false)
-            USE_REDIS_REGISTRY: Use Redis registry (true/false)
-            USE_RUST_BACKEND: Enable Rust backend (true/false)
-            METERING_ENABLED: Enable metering (true/false)
-        """
-        import os
-
-        def _parse_bool(value: Optional[str], default: bool = False) -> bool:
-            if value is None:
-                return default
-            return value.lower() in ("true", "1", "yes", "on")
-
-        return cls(
-            redis_url=os.environ.get("REDIS_URL", DEFAULT_REDIS_URL),
-            kafka_bootstrap_servers=os.environ.get("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092"),
-            audit_service_url=os.environ.get("AUDIT_SERVICE_URL", "http://localhost:8001"),
-            use_dynamic_policy=_parse_bool(os.environ.get("USE_DYNAMIC_POLICY"), False),
-            policy_fail_closed=_parse_bool(os.environ.get("POLICY_FAIL_CLOSED"), False),
-            use_kafka=_parse_bool(os.environ.get("USE_KAFKA"), False),
-            use_redis_registry=_parse_bool(os.environ.get("USE_REDIS_REGISTRY"), False),
-            use_rust=_parse_bool(os.environ.get("USE_RUST_BACKEND"), True),
-            enable_metering=_parse_bool(os.environ.get("METERING_ENABLED"), True),
-            # SECURITY FIX: Default to True per audit finding 2025-12
-            enable_maci=_parse_bool(os.environ.get("MACI_ENABLED"), True),
-            maci_strict_mode=_parse_bool(os.environ.get("MACI_STRICT_MODE"), True),
+        """Load configuration from environment variables."""
+        config = cls(
+            redis_url=os.getenv("REDIS_URL", DEFAULT_REDIS_URL),
+            kafka_bootstrap_servers=os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092"),
+            audit_service_url=os.getenv("AUDIT_SERVICE_URL", "http://localhost:8001"),
+            use_dynamic_policy=cls._parse_bool(os.getenv("USE_DYNAMIC_POLICY", "false")),
+            policy_fail_closed=cls._parse_bool(os.getenv("POLICY_FAIL_CLOSED", "true")),
+            use_kafka=cls._parse_bool(os.getenv("USE_KAFKA", "false")),
+            use_redis_registry=cls._parse_bool(os.getenv("USE_REDIS_REGISTRY", "false")),
+            use_rust=cls._parse_bool(os.getenv("USE_RUST", "true")),
+            enable_metering=cls._parse_bool(os.getenv("ENABLE_METERING", "true")),
+            enable_maci=cls._parse_bool(os.getenv("ENABLE_MACI", "true")),
+            maci_strict_mode=cls._parse_bool(os.getenv("MACI_STRICT_MODE", "true")),
+            llm_model=os.getenv("LLM_MODEL", "anthropic/claude-3-5-sonnet-20240620"),
+            llm_cache_ttl=int(os.getenv("LLM_CACHE_TTL", "3600")),
+            llm_confidence_threshold=float(os.getenv("LLM_CONFIDENCE_THRESHOLD", "0.8")),
+            llm_max_tokens=int(os.getenv("LLM_MAX_TOKENS", "100")),
+            llm_use_cache=cls._parse_bool(os.getenv("LLM_USE_CACHE", "true")),
         )
+
+        # Initialize LiteLLM Cache if enabled
+        if config.llm_use_cache:
+            try:
+                parsed_url = urlparse(config.redis_url)
+                litellm.cache = Cache(
+                    type="redis",
+                    host=parsed_url.hostname or "localhost",
+                    port=parsed_url.port or 6379,
+                    password=parsed_url.password,
+                )
+            except Exception:
+                # Fallback to in-memory if redis fails or isn't available
+                litellm.cache = Cache()
+
+        return config
 
     @classmethod
     def for_testing(cls) -> "BusConfiguration":

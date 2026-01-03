@@ -27,6 +27,10 @@ async def client(solana_config):
 
 
 @pytest.mark.asyncio
+@pytest.mark.skipif(
+    os.getenv("SOLANA_LIVE_TESTS") != "1",
+    reason="Skipping live Solana tests. Set SOLANA_LIVE_TESTS=1 to enable.",
+)
 class TestSolanaClientLive:
     async def test_live_connect(self, solana_config):
         client = SolanaClient(solana_config)

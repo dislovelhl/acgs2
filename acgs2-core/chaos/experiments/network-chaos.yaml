@@ -1,0 +1,70 @@
+# ACGS-2 Network Chaos Experiments
+# Simulates network failures and partitions
+
+apiVersion: chaos-mesh.org/v1alpha1
+kind: NetworkChaos
+metadata:
+  name: acgs2-network-partition
+  namespace: acgs2-system
+spec:
+  action: partition
+  mode: all
+  selector:
+    namespaces:
+      - acgs2-system
+    labelSelectors:
+      app.kubernetes.io/name: acgs2
+  direction: both
+  target:
+    selector:
+      namespaces:
+        - acgs2-system
+      labelSelectors:
+        app.kubernetes.io/component: agent-bus
+    mode: all
+  duration: 60s
+  scheduler:
+    cron: "@every 24h"
+
+---
+apiVersion: chaos-mesh.org/v1alpha1
+kind: NetworkChaos
+metadata:
+  name: acgs2-network-delay
+  namespace: acgs2-system
+spec:
+  action: delay
+  mode: all
+  selector:
+    namespaces:
+      - acgs2-system
+    labelSelectors:
+      app.kubernetes.io/name: acgs2
+  delay:
+    latency: 100ms
+    correlation: 0.5
+    jitter: 50ms
+  duration: 120s
+  scheduler:
+    cron: "@weekly"
+
+---
+apiVersion: chaos-mesh.org/v1alpha1
+kind: NetworkChaos
+metadata:
+  name: acgs2-packet-loss
+  namespace: acgs2-system
+spec:
+  action: loss
+  mode: all
+  selector:
+    namespaces:
+      - acgs2-system
+    labelSelectors:
+      app.kubernetes.io/name: acgs2
+  loss:
+    loss: 5
+    correlation: 0.2
+  duration: 90s
+  scheduler:
+    cron: "@monthly"
