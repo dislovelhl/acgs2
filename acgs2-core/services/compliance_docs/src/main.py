@@ -11,7 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from shared.config import settings
 
-from .api import evidence_router, templates_router
+from .api import evidence_router, reports_router, templates_router
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -74,6 +74,7 @@ async def readiness_check():
 
 # Include API routers
 app.include_router(evidence_router)
+app.include_router(reports_router)
 app.include_router(templates_router)
 
 
