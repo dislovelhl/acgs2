@@ -250,6 +250,11 @@ class BaseIntegration(abc.ABC):
         self._last_success: Optional[datetime] = None
         self._last_failure: Optional[datetime] = None
 
+        # Batch metrics
+        self._batches_sent = 0
+        self._batches_failed = 0
+        self._batch_events_total = 0
+
     @property
     def name(self) -> str:
         """Get integration name"""
@@ -280,6 +285,9 @@ class BaseIntegration(abc.ABC):
             "last_failure": self._last_failure.isoformat() if self._last_failure else None,
             "status": self._status.value,
             "authenticated": self._authenticated,
+            "batches_sent": self._batches_sent,
+            "batches_failed": self._batches_failed,
+            "batch_events_total": self._batch_events_total,
         }
 
     async def get_http_client(self) -> httpx.AsyncClient:
