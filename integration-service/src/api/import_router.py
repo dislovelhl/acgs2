@@ -7,10 +7,10 @@ from external sources like JIRA, ServiceNow, GitHub, and GitLab.
 
 import logging
 from datetime import datetime, timezone
-from typing import Dict, Optional
+from typing import Optional
 from uuid import uuid4
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, HTTPException, Query, Request, status
 from pydantic import BaseModel, Field
 
 from ..models.import_models import (
@@ -29,16 +29,104 @@ logger = logging.getLogger(__name__)
 # Create router
 router = APIRouter(prefix="/api/imports", tags=["Imports"])
 
+# Redis key prefix for import jobs
+REDIS_JOB_PREFIX = "import:job:"
+REDIS_JOB_TTL = 86400  # 24 hours in seconds
 
-# In-memory storage for import jobs (for development)
-# In production, this would be replaced with a database repository
-_import_jobs: Dict[str, ImportResponse] = {}
+
+# Dependency for getting Redis client
+def get_redis_client(request: Request):
+    """Get Redis client from app state."""
+    # Access the redis_client from main.py
+    import sys
+    if 'src.main' in sys.modules:
+        from src.main import redis_client
+        return redis_client
+    return None
 
 
-# Dependency for getting import storage
-def get_import_storage() -> Dict[str, ImportResponse]:
-    """Get import job storage."""
-    return _import_jobs
+async def save_job_to_redis(redis_client, job: ImportResponse) -> None:
+    """Save import job to Redis with TTL."""
+    if not redis_client:
+        logger.warning("Redis client not available, skipping job persistence")
+        return
+
+    try:
+        # Serialize job to JSON
+        job_data = job.model_dump_json()
+
+        # Save to Redis with TTL
+        key = f"{REDIS_JOB_PREFIX}{job.job_id}"
+        await redis_client.set(key, job_data, ex=REDIS_JOB_TTL)
+
+        logger.debug(f"Saved job {job.job_id} to Redis with TTL={REDIS_JOB_TTL}s")
+    except Exception as e:
+        logger.error(f"Failed to save job to Redis: {e}")
+
+
+async def get_job_from_redis(redis_client, job_id: str) -> Optional[ImportResponse]:
+    """Retrieve import job from Redis."""
+    if not redis_client:
+        logger.warning("Redis client not available")
+        return None
+
+    try:
+        key = f"{REDIS_JOB_PREFIX}{job_id}"
+        job_data = await redis_client.get(key)
+
+        if not job_data:
+            return None
+
+        # Deserialize from JSON
+        return ImportResponse.model_validate_json(job_data)
+    except Exception as e:
+        logger.error(f"Failed to retrieve job from Redis: {e}")
+        return None
+
+
+async def list_jobs_from_redis(redis_client) -> list[ImportResponse]:
+    """List all import jobs from Redis."""
+    if not redis_client:
+        logger.warning("Redis client not available")
+        return []
+
+    try:
+        # Find all job keys
+        pattern = f"{REDIS_JOB_PREFIX}*"
+        keys = []
+        async for key in redis_client.scan_iter(match=pattern):
+            keys.append(key)
+
+        # Retrieve all jobs
+        jobs = []
+        for key in keys:
+            job_data = await redis_client.get(key)
+            if job_data:
+                try:
+                    job = ImportResponse.model_validate_json(job_data)
+                    jobs.append(job)
+                except Exception as e:
+                    logger.warning(f"Failed to parse job from key {key}: {e}")
+
+        return jobs
+    except Exception as e:
+        logger.error(f"Failed to list jobs from Redis: {e}")
+        return []
+
+
+async def delete_job_from_redis(redis_client, job_id: str) -> bool:
+    """Delete import job from Redis."""
+    if not redis_client:
+        logger.warning("Redis client not available")
+        return False
+
+    try:
+        key = f"{REDIS_JOB_PREFIX}{job_id}"
+        result = await redis_client.delete(key)
+        return result > 0
+    except Exception as e:
+        logger.error(f"Failed to delete job from Redis: {e}")
+        return False
 
 
 # Request/Response models for test connection
@@ -281,7 +369,7 @@ async def preview_import(
 )
 async def execute_import(
     request: ImportRequest,
-    storage: Dict[str, ImportResponse] = Depends(get_import_storage),
+    req: Request,
 ) -> ImportResponse:
     """
     Execute a data import from an external source.
@@ -290,6 +378,8 @@ async def execute_import(
     can be monitored using the GET /api/imports/{job_id} endpoint.
     """
     try:
+        redis_client = get_redis_client(req)
+
         # Create import job
         job_id = str(uuid4())
         job = ImportResponse(
@@ -303,8 +393,8 @@ async def execute_import(
             correlation_id=request.correlation_id,
         )
 
-        # Store job
-        storage[job_id] = job
+        # Store job in Redis
+        await save_job_to_redis(redis_client, job)
 
         logger.info(
             f"Import job created: job_id={job_id}, "
@@ -338,10 +428,12 @@ async def execute_import(
 )
 async def get_import_status(
     job_id: str,
-    storage: Dict[str, ImportResponse] = Depends(get_import_storage),
+    req: Request,
 ) -> ImportResponse:
     """Get the status and progress of an import job."""
-    job = storage.get(job_id)
+    redis_client = get_redis_client(req)
+    job = await get_job_from_redis(redis_client, job_id)
+
     if not job:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -365,7 +457,7 @@ async def list_imports(
     tenant_id: Optional[str] = Query(None, description="Filter by tenant ID"),
     limit: int = Query(10, ge=1, le=100, description="Maximum number of jobs to return"),
     offset: int = Query(0, ge=0, description="Offset for pagination"),
-    storage: Dict[str, ImportResponse] = Depends(get_import_storage),
+    req: Request = None,
 ) -> ImportListResponse:
     """
     List all import jobs.
@@ -373,9 +465,12 @@ async def list_imports(
     Supports filtering by source type, status, and tenant ID.
     Results are paginated and sorted by creation time (newest first).
     """
-    # Filter jobs
-    jobs = list(storage.values())
+    redis_client = get_redis_client(req)
 
+    # Get all jobs from Redis
+    jobs = await list_jobs_from_redis(redis_client)
+
+    # Filter jobs
     if source_type:
         jobs = [j for j in jobs if j.source_type == source_type]
 
@@ -413,7 +508,7 @@ async def list_imports(
 )
 async def cancel_import(
     job_id: str,
-    storage: Dict[str, ImportResponse] = Depends(get_import_storage),
+    req: Request,
 ) -> None:
     """
     Cancel an import job.
@@ -421,7 +516,9 @@ async def cancel_import(
     Only jobs in PENDING or PROCESSING status can be cancelled.
     Completed or failed jobs cannot be cancelled.
     """
-    job = storage.get(job_id)
+    redis_client = get_redis_client(req)
+    job = await get_job_from_redis(redis_client, job_id)
+
     if not job:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -439,5 +536,8 @@ async def cancel_import(
     job.status = ImportStatus.CANCELLED
     job.updated_at = datetime.now(timezone.utc)
     job.completed_at = datetime.now(timezone.utc)
+
+    # Save updated job back to Redis
+    await save_job_to_redis(redis_client, job)
 
     logger.info(f"Cancelled import job: {job_id}")
