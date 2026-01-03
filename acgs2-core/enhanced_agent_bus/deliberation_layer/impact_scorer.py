@@ -48,29 +48,66 @@ class ImpactAnalysis:
 
 
 class ImpactScorer:
-    """Streamlined ImpactScorer v3.0.0 (ONNX/BERT optimized)."""
+    """Streamlined ImpactScorer v3.0.0 (ONNX/BERT optimized).
+
+    Features tokenization caching and class-level model singleton for efficiency.
+    """
+
+    # Class-level tokenizer and model cache (singleton pattern to avoid reloading)
+    _tokenizer_instance: Optional[Any] = None
+    _model_instance: Optional[Any] = None
+    _cached_model_name: Optional[str] = None
 
     def __init__(
         self,
         config: Optional[ScoringConfig] = None,
         model_name: str = "distilbert-base-uncased",
         use_onnx: bool = True,
+        tokenization_cache_size: int = 1000,
     ):
         self.config = config or ScoringConfig()
         self.model_name = model_name
         self.use_onnx = use_onnx
         self._onnx_enabled = use_onnx if TRANSFORMERS_AVAILABLE else False
         self._bert_enabled = False
+
+        # Initialize tokenization cache for repeated text inputs
+        try:
+            self._tokenization_cache = LRUCache(maxsize=tokenization_cache_size)
+        except NameError:
+            # LRUCache not available, use simple dict with size limit
+            self._tokenization_cache = None
+
+        # Load tokenizer and model with singleton pattern
         if TRANSFORMERS_AVAILABLE:
             try:
-                self.tokenizer = AutoTokenizer.from_pretrained(model_name)
+                # Use class-level cached tokenizer if model name matches
+                if (
+                    ImpactScorer._tokenizer_instance is not None
+                    and ImpactScorer._cached_model_name == model_name
+                ):
+                    self.tokenizer = ImpactScorer._tokenizer_instance
+                else:
+                    self.tokenizer = AutoTokenizer.from_pretrained(model_name)
+                    ImpactScorer._tokenizer_instance = self.tokenizer
+                    ImpactScorer._cached_model_name = model_name
+
                 if use_onnx:
                     self.session = None
                 else:
-                    self.model = AutoModel.from_pretrained(model_name).eval()
+                    # Use class-level cached model if available
+                    if (
+                        ImpactScorer._model_instance is not None
+                        and ImpactScorer._cached_model_name == model_name
+                    ):
+                        self.model = ImpactScorer._model_instance
+                    else:
+                        self.model = AutoModel.from_pretrained(model_name).eval()
+                        ImpactScorer._model_instance = self.model
                     self._bert_enabled = True
             except Exception as e:
                 logger.warning(f"Model load failed: {e}")
+                self.tokenizer = None
 
         self.high_impact_keywords = [
             "critical",
@@ -105,6 +142,148 @@ class ImpactScorer:
         self._agent_rates = {}
         self._agent_history = {}
         self._keyword_embeddings = None
+
+    def _tokenize_text(self, text: str) -> Optional[Dict[str, Any]]:
+        """
+        Tokenize a single text with caching.
+
+        Uses LRU cache to avoid re-tokenizing identical inputs.
+        Optimized with fixed max_length=512 for consistent memory usage.
+
+        Args:
+            text: Input text to tokenize.
+
+        Returns:
+            Tokenized input dict or None if tokenizer not available.
+        """
+        if not hasattr(self, "tokenizer") or self.tokenizer is None:
+            return None
+
+        # Check cache first
+        cache_key = hash(text)
+        if self._tokenization_cache is not None:
+            cached = self._tokenization_cache.get(cache_key)
+            if cached is not None:
+                return cached
+
+        # Tokenize with optimized settings
+        try:
+            tokens = self.tokenizer(
+                text,
+                padding="max_length",
+                truncation=True,
+                max_length=512,
+                return_tensors="pt",
+            )
+
+            # Cache the result
+            if self._tokenization_cache is not None:
+                self._tokenization_cache.set(cache_key, tokens)
+
+            return tokens
+        except Exception as e:
+            logger.debug("Tokenization failed for text: %s", e)
+            return None
+
+    def _tokenize_batch(
+        self, texts: List[str], use_cache: bool = True
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Tokenize multiple texts efficiently with optional caching.
+
+        For batch processing, uses single tokenizer call for better throughput.
+        Individual cache lookups used when texts may repeat across batches.
+
+        Args:
+            texts: List of texts to tokenize.
+            use_cache: Whether to check/populate cache for individual texts.
+
+        Returns:
+            Batch tokenized inputs or None if tokenizer not available.
+        """
+        if not hasattr(self, "tokenizer") or self.tokenizer is None:
+            return None
+
+        if not texts:
+            return None
+
+        # For small batches with caching enabled, check individual cache entries
+        if use_cache and self._tokenization_cache is not None and len(texts) <= 8:
+            cached_results = []
+            uncached_texts = []
+            uncached_indices = []
+
+            for i, text in enumerate(texts):
+                cache_key = hash(text)
+                cached = self._tokenization_cache.get(cache_key)
+                if cached is not None:
+                    cached_results.append((i, cached))
+                else:
+                    uncached_texts.append(text)
+                    uncached_indices.append(i)
+
+            # If all texts were cached, reconstruct batch from cache
+            if not uncached_texts and cached_results:
+                # Merge cached results into batch format
+                try:
+                    if TRANSFORMERS_AVAILABLE:
+                        input_ids = torch.cat(
+                            [cached_results[i][1]["input_ids"] for i in range(len(cached_results))],
+                            dim=0,
+                        )
+                        attention_mask = torch.cat(
+                            [
+                                cached_results[i][1]["attention_mask"]
+                                for i in range(len(cached_results))
+                            ],
+                            dim=0,
+                        )
+                        return {"input_ids": input_ids, "attention_mask": attention_mask}
+                except Exception:
+                    pass  # Fall through to full batch tokenization
+
+        # Batch tokenization (single call for all texts - more efficient)
+        try:
+            batch_tokens = self.tokenizer(
+                texts,
+                padding="max_length",
+                truncation=True,
+                max_length=512,
+                return_tensors="pt",
+            )
+
+            # Optionally cache individual results for future lookups
+            if use_cache and self._tokenization_cache is not None:
+                for i, text in enumerate(texts):
+                    cache_key = hash(text)
+                    try:
+                        individual_tokens = {
+                            "input_ids": batch_tokens["input_ids"][i : i + 1],
+                            "attention_mask": batch_tokens["attention_mask"][i : i + 1],
+                        }
+                        self._tokenization_cache.set(cache_key, individual_tokens)
+                    except Exception:
+                        pass  # Cache failure is non-critical
+
+            return batch_tokens
+        except Exception as e:
+            logger.debug("Batch tokenization failed: %s", e)
+            return None
+
+    def clear_tokenization_cache(self) -> None:
+        """Clear the tokenization cache to free memory."""
+        if self._tokenization_cache is not None:
+            self._tokenization_cache.clear()
+
+    @classmethod
+    def reset_class_cache(cls) -> None:
+        """Reset class-level tokenizer and model cache.
+
+        Use this when switching models or to free memory.
+        """
+        cls._tokenizer_instance = None
+        cls._model_instance = None
+        cls._cached_model_name = None
 
     def _extract_text_content(self, message: Any) -> str:
         if isinstance(message, dict):
@@ -378,7 +557,8 @@ class ImpactScorer:
         """
         Batch scoring using BERT embeddings.
 
-        Performs batch tokenization and inference for optimal throughput.
+        Performs batch tokenization with caching and inference for optimal throughput.
+        Uses _tokenize_batch for cached tokenization when texts repeat across batches.
         """
         try:
             # Filter out empty texts and track their indices
@@ -389,14 +569,11 @@ class ImpactScorer:
                 # All texts are empty - return low scores
                 return [0.0] * len(messages)
 
-            # Batch tokenization (single call for all texts)
-            batch_inputs = self.tokenizer(
-                non_empty_texts,
-                padding="max_length",
-                truncation=True,
-                max_length=512,
-                return_tensors="pt",
-            )
+            # Batch tokenization with caching (uses _tokenize_batch helper)
+            batch_inputs = self._tokenize_batch(non_empty_texts, use_cache=True)
+            if batch_inputs is None:
+                # Tokenization failed, fall back to sequential
+                return self._batch_score_sequential(messages, contexts)
 
             # Batch inference
             with torch.no_grad():
@@ -557,8 +734,11 @@ def get_vector_space_metrics():
 
 
 def reset_impact_scorer():
+    """Reset global scorer and class-level caches."""
     global _global_scorer
     _global_scorer = None
+    # Also reset class-level tokenizer/model cache
+    ImpactScorer.reset_class_cache()
 
 
 def reset_profiling():
