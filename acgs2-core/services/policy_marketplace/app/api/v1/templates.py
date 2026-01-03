@@ -6,7 +6,7 @@ Provides CRUD operations for policy templates.
 from datetime import datetime, timezone
 from typing import Annotated, Any, Dict, List, Optional
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, File, Form, HTTPException, Query, UploadFile
 
 from ...schemas.template import (
     PaginationMeta,
@@ -18,8 +18,11 @@ from ...schemas.template import (
     TemplateResponse,
     TemplateStatus,
     TemplateUpdate,
-    TemplateUpload,
 )
+
+# File upload constants
+ALLOWED_EXTENSIONS = {".json", ".yaml", ".yml", ".rego"}
+MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
 
 router = APIRouter()
 
@@ -275,7 +278,12 @@ async def create_template(
 
 @router.post("/upload", response_model=TemplateResponse, status_code=201)
 async def upload_template(
-    upload_data: TemplateUpload,
+    file: Annotated[UploadFile, File(description="Template file (.json, .yaml, .yml, .rego)")],
+    name: Annotated[str, Form(min_length=1, max_length=255, description="Template name")],
+    description: Annotated[
+        str, Form(min_length=1, max_length=5000, description="Template description")
+    ],
+    category: Annotated[str, Form(description="Template category")],
 ):
     """
     Upload a template file with validation.
@@ -286,19 +294,59 @@ async def upload_template(
     global _next_id
 
     try:
-        # Determine format from file extension
-        file_lower = upload_data.file.lower()
-        if file_lower.endswith(".json"):
-            template_format = TemplateFormat.JSON
-        elif file_lower.endswith((".yaml", ".yml")):
-            template_format = TemplateFormat.YAML
-        elif file_lower.endswith(".rego"):
-            template_format = TemplateFormat.REGO
-        else:
+        # Validate file extension
+        filename = file.filename or ""
+        file_lower = filename.lower()
+        file_ext = ""
+        for ext in ALLOWED_EXTENSIONS:
+            if file_lower.endswith(ext):
+                file_ext = ext
+                break
+
+        if not file_ext:
             raise HTTPException(
                 status_code=400,
-                detail="Unsupported file format. Supported formats: json, yaml, yml, rego",
+                detail=f"Unsupported file format. Supported formats: {', '.join(ALLOWED_EXTENSIONS)}",
             )
+
+        # Determine format from file extension
+        if file_ext == ".json":
+            template_format = TemplateFormat.JSON
+        elif file_ext in (".yaml", ".yml"):
+            template_format = TemplateFormat.YAML
+        elif file_ext == ".rego":
+            template_format = TemplateFormat.REGO
+        else:
+            template_format = TemplateFormat.JSON  # Fallback
+
+        # Read file content
+        contents = await file.read()
+
+        # Validate file size
+        if len(contents) > MAX_FILE_SIZE:
+            raise HTTPException(
+                status_code=413,
+                detail=f"File too large. Maximum size: {MAX_FILE_SIZE // (1024 * 1024)}MB",
+            )
+
+        # Decode content
+        try:
+            content_str = contents.decode("utf-8")
+        except UnicodeDecodeError:
+            raise HTTPException(
+                status_code=400,
+                detail="File encoding not supported. Please use UTF-8.",
+            ) from None
+
+        # Validate category
+        try:
+            template_category = TemplateCategory(category)
+        except ValueError:
+            valid_categories = [c.value for c in TemplateCategory]
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid category. Valid categories: {', '.join(valid_categories)}",
+            ) from None
 
         now = datetime.now(timezone.utc)
         template_id = _next_id
@@ -306,11 +354,11 @@ async def upload_template(
         # Create template record
         template_data = {
             "id": template_id,
-            "name": upload_data.name,
-            "description": upload_data.description,
-            "category": upload_data.category.value,
+            "name": name,
+            "description": description,
+            "category": template_category.value,
             "format": template_format.value,
-            "content": f'{{"source": "{upload_data.file}"}}',  # Placeholder content
+            "content": content_str,
             "status": TemplateStatus.DRAFT.value,
             "is_verified": False,
             "is_public": True,
