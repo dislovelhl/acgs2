@@ -7,7 +7,7 @@
  * - Recommended actions for compliance improvement
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { memo, useCallback, useEffect, useState } from "react";
 import {
   AlertCircle,
   Brain,
@@ -76,7 +76,7 @@ function formatTimestamp(timestamp: string): string {
  * - Supports manual refresh
  * - Shows confidence score and generation metadata
  */
-export function InsightWidget(): JSX.Element {
+export const InsightWidget = memo(function InsightWidget(): JSX.Element {
   const [insight, setInsight] = useState<InsightData | null>(null);
   const [loadingState, setLoadingState] = useState<LoadingState>("idle");
   const [error, setError] = useState<string | null>(null);
@@ -283,6 +283,6 @@ export function InsightWidget(): JSX.Element {
       </div>
     </div>
   );
-}
+});
 
 export default InsightWidget;
