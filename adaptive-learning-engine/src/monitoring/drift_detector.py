@@ -514,12 +514,36 @@ class DriftDetector:
                 #   * PSI measures information gain between distributions
                 #   * Returns drift score compared to threshold
                 #
-                # Dataset-level drift is triggered when:
-                #   share_of_drifted_columns >= drift_share_threshold (default 0.5)
-                #   i.e., at least 50% of features show drift
+                # DRIFT SCORING METHODOLOGY
+                # -------------------------
+                # 1. Column-level drift detection:
+                #    Each feature is tested independently → binary drift_detected flag
                 #
-                # This prevents false alarms from single noisy features while
-                # catching systematic distribution shifts across multiple features.
+                # 2. Dataset-level drift score calculation:
+                #    drift_score = (# drifted columns) / (# total columns)
+                #    Also known as "share_of_drifted_columns"
+                #
+                #    Example: If 3 out of 10 features drift → drift_score = 0.3
+                #
+                # 3. Dataset-level drift decision:
+                #    dataset_drift = (drift_score >= drift_share_threshold)
+                #
+                #    Default drift_share_threshold = 0.5 (50% of features)
+                #
+                #    Why 0.5?
+                #    - Prevents false alarms from single noisy features
+                #    - Requires majority of features to show drift (systematic shift)
+                #    - Balances sensitivity vs. specificity for dataset-level alerts
+                #    - Conservative threshold appropriate for governance applications
+                #
+                #    Example: With 10 features and threshold=0.5:
+                #    - 4 drifted features → drift_score=0.4 → NO dataset drift
+                #    - 5 drifted features → drift_score=0.5 → YES dataset drift
+                #    - 6+ drifted features → drift_score≥0.6 → YES dataset drift
+                #
+                # This two-tier approach (column-level tests + dataset-level threshold)
+                # ensures we detect systematic distribution shifts while being robust
+                # to individual feature noise and outliers.
                 drift_report = Report(
                     metrics=[
                         DataDriftPreset(
@@ -765,6 +789,10 @@ class DriftDetector:
     ) -> DriftResult:
         """Parse Evidently drift report into DriftResult.
 
+        Extracts both column-level and dataset-level drift results from
+        Evidently's report structure, handling different statistical test
+        outputs (K-S, PSI, Chi-squared).
+
         Args:
             report_dict: Evidently report as dictionary.
             ref_size: Reference data size.
@@ -772,7 +800,7 @@ class DriftDetector:
             timestamp: Check timestamp.
 
         Returns:
-            Parsed DriftResult.
+            Parsed DriftResult with drift scores and detection flags.
         """
         columns_drifted: Dict[str, bool] = {}
         column_drift_scores: Dict[str, float] = {}
@@ -785,25 +813,66 @@ class DriftDetector:
             for metric in metrics_list:
                 result = metric.get("result", {})
 
-                # Dataset-level drift
+                # DATASET-LEVEL DRIFT EXTRACTION
+                # ==============================
+                # Evidently's DataDriftPreset computes dataset-level drift by:
+                #
+                # 1. Testing each feature independently (K-S, PSI, or Chi-squared)
+                # 2. Counting how many features show drift (binary: yes/no)
+                # 3. Calculating: share_of_drifted_columns = drifted_count / total_count
+                # 4. Comparing: dataset_drift = (share >= drift_share_threshold)
+                #
+                # Example: 10 features, 6 drifted, threshold=0.5
+                # → share_of_drifted_columns = 6/10 = 0.6
+                # → dataset_drift = (0.6 >= 0.5) = True
+                #
+                # This aggregation strategy prevents false alarms from individual
+                # noisy features while catching systematic distribution shifts.
                 if "dataset_drift" in result:
                     dataset_drift = result["dataset_drift"]
                     share_of_drifted_columns = result.get("share_of_drifted_columns", 0.0)
 
-                # Column-level drift
-                # Evidently returns per-column drift results with test-specific metrics
+                # COLUMN-LEVEL DRIFT EXTRACTION
+                # =============================
+                # Evidently returns per-column drift results with test-specific metrics.
+                # Each column contains:
+                # - drift_detected: Boolean flag (True if drift threshold exceeded)
+                # - drift_score or stattest_score: Test-specific numeric score
+                #
+                # The score interpretation depends on which statistical test was used:
                 drift_by_columns = result.get("drift_by_columns", {})
                 for col_name, col_data in drift_by_columns.items():
                     if isinstance(col_data, dict):
                         columns_drifted[col_name] = col_data.get("drift_detected", False)
 
-                        # Extract drift score - varies by statistical test used:
-                        # - K-S test: p-value (0-1, lower = more drift, <0.05 = significant)
-                        # - PSI test: PSI value (0+, higher = more drift, >0.2 = moderate)
-                        # - Chi-squared: p-value (0-1, lower = more drift, <0.05 = significant)
+                        # DRIFT SCORE EXTRACTION AND INTERPRETATION
+                        # -----------------------------------------
+                        # The numeric drift score varies by statistical test:
                         #
-                        # Evidently may report as "drift_score" or "stattest_score"
-                        # depending on test type and version
+                        # 1. K-S Test (continuous numerical features):
+                        #    Score: p-value in [0, 1]
+                        #    Interpretation:
+                        #      - p < 0.05: Significant drift (reject null hypothesis)
+                        #      - p ≥ 0.05: No significant drift
+                        #    Lower values = more evidence of distribution change
+                        #
+                        # 2. PSI Test (categorical/binned features):
+                        #    Score: PSI value in [0, ∞)
+                        #    Interpretation:
+                        #      - PSI < 0.1:  No significant shift
+                        #      - PSI 0.1-0.2: Small shift
+                        #      - PSI 0.2-0.25: Moderate shift (investigate)
+                        #      - PSI > 0.25: Severe shift (actionable)
+                        #    Higher values = greater distribution divergence
+                        #
+                        # 3. Chi-squared Test (low-cardinality categorical):
+                        #    Score: p-value in [0, 1]
+                        #    Interpretation: Same as K-S (p < 0.05 = drift)
+                        #
+                        # Evidently may report the score as "drift_score" or
+                        # "stattest_score" depending on test type and version.
+                        # We extract whichever is available and store it for
+                        # detailed per-column drift analysis.
                         drift_score = col_data.get("drift_score", 0.0)
                         if drift_score is None:
                             drift_score = col_data.get("stattest_score", 0.0) or 0.0
@@ -812,15 +881,25 @@ class DriftDetector:
         except Exception as e:
             logger.warning(f"Error parsing drift report: {e}")
 
-        # Build result
+        # BUILD FINAL DRIFT RESULT
+        # ========================
+        # Aggregate all extracted information into a DriftResult:
+        # - status: DRIFT_DETECTED or NO_DRIFT (for alerting/UI)
+        # - drift_detected: Boolean flag for easy conditional checks
+        # - drift_score: share_of_drifted_columns (0.0-1.0, dataset-level metric)
+        # - columns_drifted: Per-column drift flags (detailed investigation)
+        # - column_drift_scores: Per-column numeric scores (debugging, analysis)
+        #
+        # The drift_score field (share_of_drifted_columns) is the primary
+        # dataset-level metric used for alerting and monitoring dashboards.
         status = DriftStatus.DRIFT_DETECTED if dataset_drift else DriftStatus.NO_DRIFT
         num_drifted = sum(1 for v in columns_drifted.values() if v)
 
         return DriftResult(
             status=status,
             drift_detected=dataset_drift,
-            drift_score=share_of_drifted_columns,
-            drift_threshold=self.drift_threshold,
+            drift_score=share_of_drifted_columns,  # Dataset-level: fraction of drifted columns
+            drift_threshold=self.drift_threshold,  # Column-level: PSI/p-value threshold
             columns_drifted=columns_drifted,
             column_drift_scores=column_drift_scores,
             reference_size=ref_size,
