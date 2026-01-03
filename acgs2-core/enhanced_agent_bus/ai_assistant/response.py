@@ -208,7 +208,8 @@ class TemplateResponseGenerator(ResponseGenerator):
                 id="escalation",
                 intent="escalation",
                 templates=[
-                    "I understand this needs special attention. Let me connect you with someone who can help.",
+                    "I understand this needs special attention. Let me connect you with "
+                    "someone who can help.",
                     "This requires additional assistance. I'm transferring you to a specialist.",
                 ],
                 sentiment_variants={
