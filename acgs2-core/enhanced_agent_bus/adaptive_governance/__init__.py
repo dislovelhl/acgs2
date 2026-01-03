@@ -76,3 +76,24 @@ def provide_governance_feedback(
     governance = get_adaptive_governance()
     if governance:
         governance.provide_feedback(decision, outcome_success, human_override)
+
+
+# Export key classes and functions
+__all__ = [
+    "AdaptiveGovernanceEngine",
+    "AdaptiveThresholds",
+    "ImpactScorer",
+    "GovernanceDecision",
+    "GovernanceMode",
+    "ImpactLevel",
+    "ImpactFeatures",
+    "GovernanceMetrics",
+    "initialize_adaptive_governance",
+    "get_adaptive_governance",
+    "evaluate_message_governance",
+    "provide_governance_feedback",
+    # Availability flags
+    "DRIFT_MONITORING_AVAILABLE",
+    "ONLINE_LEARNING_AVAILABLE",
+    "AB_TESTING_AVAILABLE",
+]
