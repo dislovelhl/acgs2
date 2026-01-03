@@ -1,0 +1,94 @@
+"""
+ACGS-2 Enhanced Agent Bus - High-Performance Governance Workflow
+Constitutional Hash: cdd01ef066bc6cf2
+
+Integrates SagaLLM transactions and MACI enforcement into a unified workflow.
+"""
+
+import logging
+from typing import Any, Dict, Optional
+from .workflow_base import WorkflowDefinition, WorkflowContext, CONSTITUTIONAL_HASH
+from ..verification.saga_transaction import SagaTransaction
+from ..maci_enforcement import MACIEnforcer, MACIAction
+
+logger = logging.getLogger(__name__)
+
+class HighPerformanceGovernanceWorkflow(WorkflowDefinition[Dict[str, Any], Dict[str, Any]]):
+    """
+    Advanced governance workflow integrating breakthrough Phase 2 components.
+
+    Constitutional Hash: cdd01ef066bc6cf2
+    """
+
+    def __init__(self, enforcer: Optional[MACIEnforcer] = None):
+        super().__init__()
+        self.enforcer = enforcer or MACIEnforcer()
+
+    @property
+    def name(self) -> str:
+        return "high_performance_governance"
+
+    async def run(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Run the governance transaction."""
+        logger.info(f"[{CONSTITUTIONAL_HASH}] Running high-performance governance workflow")
+
+        # Initialize Saga transaction
+        saga = SagaTransaction()
+
+        # Define steps
+        saga.add_step(
+            "maci_authorize",
+            self._maci_authorize_step,
+            self._maci_rollback_step
+        )
+        saga.add_step(
+            "constitutional_validation",
+            self._validate_step,
+            None # No compensation needed for read-only validation
+        )
+        saga.add_step(
+            "governance_execution",
+            self._execute_step,
+            self._rollback_execution_step
+        )
+
+        # Execute saga
+        try:
+            result = await saga.execute(input_data=input_data)
+            return {
+                "status": "success",
+                "transaction_id": saga.transaction_id,
+                "result": result,
+                "constitutional_hash": CONSTITUTIONAL_HASH
+            }
+        except Exception as e:
+            logger.error(f"Governance workflow failed: {e}")
+            return {
+                "status": "failed",
+                "error": str(e),
+                "transaction_id": saga.transaction_id
+            }
+
+    async def _maci_authorize_step(self, **kwargs) -> Any:
+        input_data = kwargs.get("input_data", {})
+        agent_id = input_data.get("agent_id", "unknown")
+
+        # Use MACI Enforcer
+        res = await self.enforcer.validate_action(agent_id, MACIAction.PROPOSE)
+        if not res.is_valid:
+            raise PermissionError(f"MACI Authorization failed: {res.error_message}")
+        return {"authorized": True, "agent_id": agent_id}
+
+    async def _maci_rollback_step(self, result: Any) -> None:
+        logger.info(f"Rolling back MACI authorization for agent {result.get('agent_id')}")
+
+    async def _validate_step(self, **kwargs) -> Any:
+        # Placeholder for deep constitutional validation
+        return {"validated": True}
+
+    async def _execute_step(self, **kwargs) -> Any:
+        # Placeholder for actual governance execution
+        return {"executed": True}
+
+    async def _rollback_execution_step(self, result: Any) -> None:
+        logger.warning("Rolling back governance execution")

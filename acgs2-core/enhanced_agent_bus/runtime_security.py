@@ -30,11 +30,14 @@ try:
     from .security.tenant_validator import TenantValidator
     from .security_helpers import detect_prompt_injection
     from .validators import validate_constitutional_hash
+    from .constitutional_classifier import get_constitutional_classifier, ComplianceResult
 except ImportError:
     # Fallback for standalone usage
     detect_prompt_injection = None  # type: ignore
     TenantValidator = None  # type: ignore
     from validators import validate_constitutional_hash  # type: ignore
+    get_constitutional_classifier = None  # type: ignore
+    ComplianceResult = None  # type: ignore
 
 logger = logging.getLogger(__name__)
 
@@ -52,6 +55,7 @@ class SecurityEventType(Enum):
     AUTHENTICATION_FAILURE = "authentication_failure"
     AUTHORIZATION_FAILURE = "authorization_failure"
     SUSPICIOUS_PATTERN = "suspicious_pattern"
+    CONSTITUTIONAL_VIOLATION = "constitutional_violation"
 
 
 class SecuritySeverity(Enum):
@@ -143,12 +147,14 @@ class RuntimeSecurityConfig:
     enable_constitutional_validation: bool = True
     enable_anomaly_detection: bool = True
     enable_input_sanitization: bool = True
+    enable_constitutional_classifier: bool = True
 
     # Thresholds
     rate_limit_qps: int = 100
     rate_limit_burst: int = 200
     max_input_length: int = 100000
     max_nested_depth: int = 50
+    constitutional_classifier_threshold: float = 0.85
 
     # Anomaly detection settings
     anomaly_window_seconds: int = 60
@@ -284,6 +290,11 @@ class RuntimeSecurityScanner:
             if self.config.enable_anomaly_detection:
                 result.checks_performed.append("anomaly_detection")
                 await self._check_anomalies(result, tenant_id, agent_id)
+
+            # 8. Constitutional classification (Phase 2 Breakthrough)
+            if self.config.enable_constitutional_classifier:
+                result.checks_performed.append("constitutional_classification")
+                await self._check_constitutional_compliance(result, content, tenant_id, agent_id)
 
         except Exception as e:
             logger.error(f"Security scan error: {e}")
@@ -509,6 +520,50 @@ class RuntimeSecurityScanner:
                 },
             )
             result.add_event(event)
+
+    async def _check_constitutional_compliance(
+        self,
+        result: SecurityScanResult,
+        content: Any,
+        tenant_id: Optional[str],
+        agent_id: Optional[str],
+    ) -> None:
+        """Check content for constitutional compliance using neural classification."""
+        if get_constitutional_classifier is None:
+            result.warnings.append("Constitutional classifier not available")
+            return
+
+        classifier = get_constitutional_classifier(
+            threshold=self.config.constitutional_classifier_threshold
+        )
+
+        # Ensure initialized (lazy initialization)
+        if not classifier._initialized:
+            await classifier.initialize()
+
+        content_str = str(content) if content is not None else ""
+        classification = await classifier.classify(content_str)
+
+        if not classification.compliant:
+            event = SecurityEvent(
+                event_type=SecurityEventType.CONSTITUTIONAL_VIOLATION,
+                severity=SecuritySeverity.HIGH if classification.confidence > 0.9 else SecuritySeverity.MEDIUM,
+                message=f"Constitutional violation detected: {classification.reason}",
+                tenant_id=tenant_id,
+                agent_id=agent_id,
+                metadata={
+                    "confidence": classification.confidence,
+                    "reason": classification.reason,
+                    "classifier_metadata": classification.metadata
+                },
+            )
+
+            # Block if confidence is high or reason is severe
+            if classification.confidence > 0.9 or "pattern" in classification.reason:
+                result.add_blocking_event(event, f"Constitutional compliance check failed: {classification.reason}")
+            else:
+                result.add_event(event)
+                result.warnings.append(f"Constitutional compliance warning: {classification.reason}")
 
     def _get_nested_depth(self, obj: Any, current_depth: int = 0) -> int:
         """Calculate nested depth of an object."""

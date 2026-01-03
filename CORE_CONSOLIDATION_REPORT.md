@@ -1,135 +1,312 @@
 # ACGS-2 Codebase Consolidation Report
 
-**Generated**: 2026-01-02
+**Generated**: Sat 03 Jan 2026 04:24:56 AM EST
 **Analysis Target**: 52k+ Python files
-**Analysis Method**: Targeted review of key directories
 
-## Executive Summary
+## Duplicate Functions
 
-The ACGS-2 codebase contains approximately 52,154 Python files across multiple components. Based on manual analysis and project structure review, here are the key consolidation opportunities identified:
+Found 22 opportunities:
 
-## 1. Duplicate Functions (Medium Priority)
+### Function 'to_dict' appears in 47 files with similar implementations
+- **Risk Level**: medium
+- **Estimated Savings**: 470 lines
+- **Files**: 47 affected
+- **Recommendation**: Consider extracting 'to_dict' to a shared utility module
 
-### Common Utility Patterns Found:
-- **Validation functions**: `validate_*` functions appear in 15+ files
-- **Logging helpers**: `log_*` functions duplicated across services
-- **HTTP client utilities**: Similar request/response handlers in multiple services
-- **Data transformation**: `convert_*` and `transform_*` functions repeated
+### Function '__init__' appears in 178 files with similar implementations
+- **Risk Level**: medium
+- **Estimated Savings**: 1780 lines
+- **Files**: 178 affected
+- **Recommendation**: Consider extracting '__init__' to a shared utility module
 
-**Estimated Impact**: 500+ lines of code could be saved by extracting common utilities
+### Function 'get_metrics' appears in 13 files with similar implementations
+- **Risk Level**: medium
+- **Estimated Savings**: 130 lines
+- **Files**: 13 affected
+- **Recommendation**: Consider extracting 'get_metrics' to a shared utility module
 
-### Recommendation:
-Create shared utility modules:
-- `acgs2-core/shared/validation.py` - Common validation functions
-- `acgs2-core/shared/logging.py` - Standardized logging utilities
-- `acgs2-core/shared/http.py` - HTTP client abstractions
+### Function '__post_init__' appears in 9 files with similar implementations
+- **Risk Level**: medium
+- **Estimated Savings**: 90 lines
+- **Files**: 9 affected
+- **Recommendation**: Consider extracting '__post_init__' to a shared utility module
 
-## 2. Unused Imports (Low Priority)
+### Function 'validate' appears in 5 files with similar implementations
+- **Risk Level**: medium
+- **Estimated Savings**: 50 lines
+- **Files**: 5 affected
+- **Recommendation**: Consider extracting 'validate' to a shared utility module
 
-### Patterns Identified:
-- Multiple services import full libraries when only using 1-2 functions
-- Legacy imports from refactored modules
-- Development imports left in production code
+### Function 'from_dict' appears in 3 files with similar implementations
+- **Risk Level**: medium
+- **Estimated Savings**: 30 lines
+- **Files**: 3 affected
+- **Recommendation**: Consider extracting 'from_dict' to a shared utility module
 
-**Estimated Impact**: 200+ import lines could be cleaned up
+### Function 'get_stats' appears in 2 files with similar implementations
+- **Risk Level**: medium
+- **Estimated Savings**: 20 lines
+- **Files**: 2 affected
+- **Recommendation**: Consider extracting 'get_stats' to a shared utility module
 
-### Recommendation:
-Run automated import cleanup tools and review import statements during code reviews.
+### Function 'decorator' appears in 6 files with similar implementations
+- **Risk Level**: medium
+- **Estimated Savings**: 60 lines
+- **Files**: 6 affected
+- **Recommendation**: Consider extracting 'decorator' to a shared utility module
 
-## 3. Similar Classes (High Priority)
+### Function 'main' appears in 4 files with similar implementations
+- **Risk Level**: medium
+- **Estimated Savings**: 40 lines
+- **Files**: 4 affected
+- **Recommendation**: Consider extracting 'main' to a shared utility module
 
-### Classes with Similar Interfaces:
-- **Client classes**: `*Client` classes across different services have similar patterns
-- **Manager classes**: `*Manager` classes with duplicate lifecycle management
-- **Service classes**: `*Service` classes with repeated dependency injection patterns
+### Function 'decode' appears in 2 files with similar implementations
+- **Risk Level**: medium
+- **Estimated Savings**: 20 lines
+- **Files**: 2 affected
+- **Recommendation**: Consider extracting 'decode' to a shared utility module
 
-**Files Affected**: 50+ files with similar class structures
+## Similar Classes
 
-### Recommendation:
-Implement base classes and composition patterns:
-- `BaseClient` for common client functionality
-- `BaseManager` for lifecycle management
-- `BaseService` for dependency injection
+Found 15 opportunities:
 
-## 4. Redundant Utilities (Medium Priority)
+### Class 'GovernanceMetrics' defined in 3 files
+- **Risk Level**: high
+- **Estimated Savings**: 45 lines
+- **Files**: 3 affected
+- **Recommendation**: Review 'GovernanceMetrics' implementations for consolidation or inheritance
 
-### Utility Functions Found:
-- **String manipulation**: 20+ similar string processing functions
-- **Date/time handling**: 15+ duplicate datetime utilities
-- **Configuration loading**: 10+ similar config parsers
-- **Error handling**: 25+ duplicate exception handlers
+### Class 'GovernanceDecision' defined in 3 files
+- **Risk Level**: high
+- **Estimated Savings**: 45 lines
+- **Files**: 3 affected
+- **Recommendation**: Review 'GovernanceDecision' implementations for consolidation or inheritance
 
-**Estimated Impact**: 800+ lines could be consolidated
+### Class 'ValidationResult' defined in 7 files
+- **Risk Level**: high
+- **Estimated Savings**: 105 lines
+- **Files**: 7 affected
+- **Recommendation**: Review 'ValidationResult' implementations for consolidation or inheritance
 
-## 5. Archival Candidates (Low Priority)
+### Class 'SearchPlatformSettings' defined in 3 files
+- **Risk Level**: high
+- **Estimated Savings**: 45 lines
+- **Files**: 3 affected
+- **Recommendation**: Review 'SearchPlatformSettings' implementations for consolidation or inheritance
 
-### Files Identified for Review:
-- **Small utility files**: Files under 50 lines with single functions
-- **Legacy modules**: Files not modified in 6+ months
-- **Test-only utilities**: Helper files only used in testing
-- **Deprecated features**: Old API versions and compatibility layers
+### Class 'Settings' defined in 4 files
+- **Risk Level**: high
+- **Estimated Savings**: 60 lines
+- **Files**: 4 affected
+- **Recommendation**: Review 'Settings' implementations for consolidation or inheritance
 
-**Estimated Impact**: 300+ small files could potentially be archived or consolidated
+### Class 'AccessDeniedError' defined in 3 files
+- **Risk Level**: high
+- **Estimated Savings**: 45 lines
+- **Files**: 3 affected
+- **Recommendation**: Review 'AccessDeniedError' implementations for consolidation or inheritance
 
-### Recommendation:
-Create an archival process:
-1. Review files not modified in 1+ year
-2. Consolidate single-purpose utilities
-3. Archive deprecated functionality
+### Class 'ApprovalStatus' defined in 3 files
+- **Risk Level**: high
+- **Estimated Savings**: 45 lines
+- **Files**: 3 affected
+- **Recommendation**: Review 'ApprovalStatus' implementations for consolidation or inheritance
 
-## 6. Import Consolidation (Low Priority)
+### Class 'ApprovalRequest' defined in 3 files
+- **Risk Level**: high
+- **Estimated Savings**: 45 lines
+- **Files**: 3 affected
+- **Recommendation**: Review 'ApprovalRequest' implementations for consolidation or inheritance
 
-### Issues Found:
-- Files with 20+ import statements
-- Unorganized import groupings
-- Missing `__all__` declarations in packages
+### Class 'Config' defined in 17 files
+- **Risk Level**: high
+- **Estimated Savings**: 255 lines
+- **Files**: 17 affected
+- **Recommendation**: Review 'Config' implementations for consolidation or inheritance
 
-### Recommendation:
-- Group imports by standard library, third-party, local
-- Use explicit imports over wildcard imports
-- Define `__all__` in package `__init__.py` files
+### Class 'ApprovalDecision' defined in 3 files
+- **Risk Level**: high
+- **Estimated Savings**: 45 lines
+- **Files**: 3 affected
+- **Recommendation**: Review 'ApprovalDecision' implementations for consolidation or inheritance
 
-## Implementation Strategy
+## Redundant Utilities
 
-### Phase 1: Low-Risk Cleanup (Immediate)
-1. **Automated import cleanup**: Remove unused imports
-2. **Archival review**: Identify and archive obsolete files
-3. **Import organization**: Standardize import grouping
+Found 5 opportunities:
 
-### Phase 2: Utility Extraction (Short-term)
-1. **Common validation functions** → `shared/validation.py`
-2. **Logging utilities** → `shared/logging.py`
-3. **HTTP abstractions** → `shared/http.py`
+### Pattern 'def (get_|set_|create_|delete_|update_)' appears 7 times in 9 files
+- **Risk Level**: medium
+- **Estimated Savings**: 56 lines
+- **Files**: 5 affected
+- **Recommendation**: Consider extracting common (get_|set_|ceate_|delete_|update_) utilities to shared modules
 
-### Phase 3: Class Consolidation (Medium-term)
-1. **Base classes** for common patterns
-2. **Composition over inheritance** where appropriate
-3. **Interface standardization**
+### Pattern 'def (get_|set_|create_|delete_|update_)' appears 6 times in 15 files
+- **Risk Level**: medium
+- **Estimated Savings**: 48 lines
+- **Files**: 5 affected
+- **Recommendation**: Consider extracting common (get_|set_|ceate_|delete_|update_) utilities to shared modules
 
-### Phase 4: Major Refactoring (Long-term)
-1. **Service consolidation** beyond current 3-service architecture
-2. **Dependency injection framework**
-3. **Plugin architecture** for extensibility
+### Pattern 'def (get_|set_|create_|delete_|update_)' appears 11 times in 2 files
+- **Risk Level**: medium
+- **Estimated Savings**: 88 lines
+- **Files**: 2 affected
+- **Recommendation**: Consider extracting common (get_|set_|ceate_|delete_|update_) utilities to shared modules
 
-## Risk Assessment
+### Pattern 'def (get_|set_|create_|delete_|update_)' appears 13 times in 2 files
+- **Risk Level**: medium
+- **Estimated Savings**: 104 lines
+- **Files**: 2 affected
+- **Recommendation**: Consider extracting common (get_|set_|ceate_|delete_|update_) utilities to shared modules
 
-- **Low Risk**: Import cleanup, archival, utility extraction
-- **Medium Risk**: Class consolidation, interface changes
-- **High Risk**: Major architectural changes, service consolidation
+### Pattern 'def (get_|set_|create_|delete_|update_)' appears 8 times in 3 files
+- **Risk Level**: medium
+- **Estimated Savings**: 64 lines
+- **Files**: 3 affected
+- **Recommendation**: Consider extracting common (get_|set_|ceate_|delete_|update_) utilities to shared modules
 
-## Success Metrics
+## Import Consolidation
 
-- **Lines of code reduction**: Target 15-20% reduction
-- **Cyclomatic complexity**: Maintain or improve average
-- **Test coverage**: Maintain 99.8%+ coverage
-- **Build time**: Reduce CI/CD pipeline time by 10-15%
+Found 52 opportunities:
 
-## Next Steps
+### File has 26 imports - consider consolidation
+- **Risk Level**: low
+- **Estimated Savings**: 13 lines
+- **Files**: 1 affected
+- **Recommendation**: Consider using 'from module import *' or consolidating imports
 
-1. **Immediate**: Run automated import analysis tools
-2. **Week 1**: Create shared utility modules for validation/logging
-3. **Week 2**: Review and archive identified candidate files
-4. **Month 1**: Implement base classes for common patterns
-5. **Quarter 1**: Major consolidation planning and execution
+### File has 29 imports - consider consolidation
+- **Risk Level**: low
+- **Estimated Savings**: 14 lines
+- **Files**: 1 affected
+- **Recommendation**: Consider using 'from module import *' or consolidating imports
 
-This consolidation effort will improve maintainability, reduce technical debt, and align with the 70% complexity reduction goal mentioned in the architecture documentation.
+### File has 85 imports - consider consolidation
+- **Risk Level**: low
+- **Estimated Savings**: 42 lines
+- **Files**: 1 affected
+- **Recommendation**: Consider using 'from module import *' or consolidating imports
+
+### File has 66 imports - consider consolidation
+- **Risk Level**: low
+- **Estimated Savings**: 33 lines
+- **Files**: 1 affected
+- **Recommendation**: Consider using 'from module import *' or consolidating imports
+
+### File has 27 imports - consider consolidation
+- **Risk Level**: low
+- **Estimated Savings**: 13 lines
+- **Files**: 1 affected
+- **Recommendation**: Consider using 'from module import *' or consolidating imports
+
+### File has 56 imports - consider consolidation
+- **Risk Level**: low
+- **Estimated Savings**: 28 lines
+- **Files**: 1 affected
+- **Recommendation**: Consider using 'from module import *' or consolidating imports
+
+### File has 24 imports - consider consolidation
+- **Risk Level**: low
+- **Estimated Savings**: 12 lines
+- **Files**: 1 affected
+- **Recommendation**: Consider using 'from module import *' or consolidating imports
+
+### File has 43 imports - consider consolidation
+- **Risk Level**: low
+- **Estimated Savings**: 21 lines
+- **Files**: 1 affected
+- **Recommendation**: Consider using 'from module import *' or consolidating imports
+
+### File has 58 imports - consider consolidation
+- **Risk Level**: low
+- **Estimated Savings**: 29 lines
+- **Files**: 1 affected
+- **Recommendation**: Consider using 'from module import *' or consolidating imports
+
+### File has 53 imports - consider consolidation
+- **Risk Level**: low
+- **Estimated Savings**: 26 lines
+- **Files**: 1 affected
+- **Recommendation**: Consider using 'from module import *' or consolidating imports
+
+## Archival Candidates
+
+Found 63 opportunities:
+
+### Candidate for archival: very small file, no functions or classes defined
+- **Risk Level**: low
+- **Estimated Savings**: 13 lines
+- **Files**: 1 affected
+- **Recommendation**: Review for archival or consolidation
+
+### Candidate for archival: no functions or classes defined
+- **Risk Level**: low
+- **Estimated Savings**: 123 lines
+- **Files**: 1 affected
+- **Recommendation**: Review for archival or consolidation
+
+### Candidate for archival: very small file, no functions or classes defined
+- **Risk Level**: low
+- **Estimated Savings**: 2 lines
+- **Files**: 1 affected
+- **Recommendation**: Review for archival or consolidation
+
+### Candidate for archival: no functions or classes defined
+- **Risk Level**: low
+- **Estimated Savings**: 190 lines
+- **Files**: 1 affected
+- **Recommendation**: Review for archival or consolidation
+
+### Candidate for archival: no functions or classes defined
+- **Risk Level**: low
+- **Estimated Savings**: 231 lines
+- **Files**: 1 affected
+- **Recommendation**: Review for archival or consolidation
+
+### Candidate for archival: no functions or classes defined
+- **Risk Level**: low
+- **Estimated Savings**: 62 lines
+- **Files**: 1 affected
+- **Recommendation**: Review for archival or consolidation
+
+### Candidate for archival: no functions or classes defined
+- **Risk Level**: low
+- **Estimated Savings**: 51 lines
+- **Files**: 1 affected
+- **Recommendation**: Review for archival or consolidation
+
+### Candidate for archival: very small file, no functions or classes defined
+- **Risk Level**: low
+- **Estimated Savings**: 41 lines
+- **Files**: 1 affected
+- **Recommendation**: Review for archival or consolidation
+
+### Candidate for archival: no functions or classes defined
+- **Risk Level**: low
+- **Estimated Savings**: 76 lines
+- **Files**: 1 affected
+- **Recommendation**: Review for archival or consolidation
+
+### Candidate for archival: no functions or classes defined
+- **Risk Level**: low
+- **Estimated Savings**: 78 lines
+- **Files**: 1 affected
+- **Recommendation**: Review for archival or consolidation
+
+## Summary
+
+- **Total Opportunities**: 45
+,
+
+## Priority Recommendations
+
+1. **Low-risk consolidation first**: Unused imports, archival candidates
+2. **Medium-risk**: Duplicate functions, redundant utilities
+3. **High-risk**: Similar classes (requires careful review)
+
+### Implementation Strategy
+
+1. Start with automated cleanup (unused imports)
+2. Review archival candidates manually
+3. Create shared utility modules for common functions
+4. Implement gradual consolidation with testing

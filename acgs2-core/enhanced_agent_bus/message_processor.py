@@ -25,6 +25,7 @@ try:
     from .utils import LRUCache
     from .validators import ValidationResult
     from .config import BusConfiguration
+    from .runtime_security import get_runtime_security_scanner
 except (ImportError, ValueError):
     from imports import (
         CIRCUIT_BREAKER_ENABLED,  # type: ignore
@@ -44,6 +45,7 @@ except (ImportError, ValueError):
     from utils import LRUCache  # type: ignore
     from validators import ValidationResult  # type: ignore
     from config import BusConfiguration  # type: ignore
+    from runtime_security import get_runtime_security_scanner  # type: ignore
 
 logger = logging.getLogger(__name__)
 
@@ -212,20 +214,37 @@ class MessageProcessor:
         start = time.perf_counter()
 
         # Memory profiling integration (fire-and-forget, <5μs impact)
+        # Only create profiler context if profiling is actually enabled
         profiler = get_memory_profiler()
         operation_name = f"message_processing_{msg.message_type.value}_{msg.priority.value}"
 
         context_manager = (
             profiler.profile_async(operation_name, trace_id=msg.message_id)
-            if profiler
+            if profiler and profiler.config.enabled
             else nullcontext()
         )
 
         async with context_manager:
-            inj_res = self._detect_prompt_injection(msg)
-            if inj_res:
+            # Phase 2 Breakthrough: Unified Runtime Security Scanning
+            security_scanner = get_runtime_security_scanner()
+            security_res = await security_scanner.scan(
+                content=msg.content,
+                tenant_id=msg.tenant_id,
+                agent_id=msg.from_agent,
+                constitutional_hash=msg.constitutional_hash,
+                context={"priority": msg.priority.value, "message_type": msg.message_type.value}
+            )
+
+            if security_res.blocked:
                 self._failed_count += 1
-                return inj_res
+                return ValidationResult(
+                    is_valid=False,
+                    errors=[security_res.block_reason],
+                    metadata={
+                        "rejection_reason": "security_block",
+                        "security_events": [e.to_dict() for e in security_res.events]
+                    }
+                )
 
         ckey = f"{hashlib.sha256(str(msg.content).encode()).hexdigest()[:16]}:{msg.constitutional_hash}"
         cached = self._validation_cache.get(ckey)

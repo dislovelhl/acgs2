@@ -4,6 +4,10 @@ import ora from 'ora';
 import { performAnalysis } from '../services/analysisService';
 
 // Type definitions for analysis results
+import { getLogger } from '../../../sdk/typescript/src/utils/logger';
+const logger = getLogger('analyze');
+
+
 interface AnalysisFinding {
   message: string;
   severity: 'critical' | 'high' | 'medium' | 'low' | 'info';
@@ -49,12 +53,12 @@ export const analyzeCommand = new Command('analyze')
     const spinner = ora('Initializing analysis...').start();
 
     try {
-      // Validate focus
-      const validFocuses = ['quality', 'security', 'performance', 'architecture'];
-      if (!validFocuses.includes(options.focus)) {
-        spinner.fail(chalk.red(`❌ Invalid focus: ${options.focus}`));
-        console.log(chalk.yellow(`\n📋 Valid focuses: ${validFocuses.join(', ')}`));
-        console.log(chalk.gray(`\n💡 Choose based on your analysis needs:`));
+        logger.info(chalk.yellow(`\n📋 Valid focuses: ${validFocuses.join(', ')}`);
+        logger.info(chalk.gray(`\n💡 Choose based on your analysis needs:`);
+        logger.info(chalk.gray(`   • quality: Code maintainability and best practices`);
+        logger.info(chalk.gray(`   • security: Vulnerability and security issues`);
+        logger.info(chalk.gray(`   • performance: Performance bottlenecks and optimizations`);
+        logger.info(chalk.gray(`   • architecture: Design patterns and structural issues`);
         console.log(chalk.gray(`   • quality: Code maintainability and best practices`));
         console.log(chalk.gray(`   • security: Vulnerability and security issues`));
         console.log(chalk.gray(`   • performance: Performance bottlenecks and optimizations`));
@@ -62,7 +66,7 @@ export const analyzeCommand = new Command('analyze')
         process.exit(1);
       }
 
-      // Validate depth
+        logger.info(chalk.yellow(`\n📋 Valid depths: ${validDepths.join(', ')}`);
       const validDepths = ['quick', 'deep'];
       if (!validDepths.includes(options.depth)) {
         spinner.fail(chalk.red(`❌ Invalid depth: ${options.depth}`));
@@ -70,7 +74,7 @@ export const analyzeCommand = new Command('analyze')
         process.exit(1);
       }
 
-      // Validate format
+        logger.info(chalk.yellow(`\n📋 Valid formats: ${validFormats.join(', ')}`);
       const validFormats = ['text', 'json', 'report'];
       if (!validFormats.includes(options.format)) {
         spinner.fail(chalk.red(`❌ Invalid format: ${options.format}`));
@@ -94,7 +98,7 @@ export const analyzeCommand = new Command('analyze')
         excludePatterns
       });
 
-      spinner.succeed(chalk.green(`✅ Analysis completed!`));
+        logger.info(JSON.stringify(result, null, 2);
 
       // Display results based on format
       if (options.format === 'json') {
@@ -109,14 +113,14 @@ export const analyzeCommand = new Command('analyze')
       const errorMessage = error instanceof Error ? error.message : String(error);
       spinner.fail(chalk.red(`❌ Analysis failed: ${errorMessage}`));
       process.exit(1);
-    }
-  });
-
-function displayTextFormat(result: AnalysisResult): void {
-  console.log(chalk.blue(`\n📊 Analysis Results - ${result.focus.toUpperCase()} Focus`));
+  logger.info(chalk.blue(`\n📊 Analysis Results - ${result.focus.toUpperCase()} Focus`);
+  logger.info(chalk.gray(`Target: ${result.target}`);
+  logger.info(chalk.gray(`Files analyzed: ${result.summary.filesAnalyzed}`);
+  logger.info(chalk.gray(`Analysis depth: ${result.depth}`);
+  logger.info(chalk.gray(`Generated: ${new Date().toISOString()}`);
   console.log(chalk.gray(`Target: ${result.target}`));
   console.log(chalk.gray(`Files analyzed: ${result.summary.filesAnalyzed}`));
-  console.log(chalk.gray(`Analysis depth: ${result.depth}`));
+    logger.info(chalk.yellow(`\n⚠️  Findings (${result.findings.length}):`);
   console.log(chalk.gray(`Generated: ${new Date().toISOString()}`));
 
   if (result.findings && result.findings.length > 0) {
@@ -132,15 +136,15 @@ function displayTextFormat(result: AnalysisResult): void {
       { critical: [], high: [], medium: [], low: [], info: [] }
     );
 
-    const severityLevels: SeverityLevel[] = ['critical', 'high', 'medium', 'low', 'info'];
+        logger.info(severityColorFn(`\n${severity.toUpperCase()} (${bySeverity[severity].length}):`);
     severityLevels.forEach(severity => {
       if (bySeverity[severity] && bySeverity[severity].length > 0) {
-        const severityColorFn = getSeverityColor(severity);
+          logger.info(chalk.gray(`  • ${finding.message}`);
         console.log(severityColorFn(`\n${severity.toUpperCase()} (${bySeverity[severity].length}):`));
-
+            logger.info(chalk.gray(`    📁 ${finding.file}${finding.line ? `:${finding.line}` : ''}`);
         bySeverity[severity].forEach((finding) => {
           console.log(chalk.gray(`  • ${finding.message}`));
-          if (finding.file) {
+            logger.info(chalk.gray(`    💡 ${finding.recommendation}`);
             console.log(chalk.gray(`    📁 ${finding.file}${finding.line ? `:${finding.line}` : ''}`));
           }
           if (finding.recommendation) {
@@ -148,40 +152,40 @@ function displayTextFormat(result: AnalysisResult): void {
           }
         });
       }
-    });
+    logger.info(chalk.green(`\n🚀 Recommendations:`);
   }
-
+      logger.info(chalk.gray(`  ${index + 1}. ${rec.description}`);
   if (result.recommendations && result.recommendations.length > 0) {
-    console.log(chalk.green(`\n🚀 Recommendations:`));
+        logger.info(chalk.gray(`     Priority: ${rec.priority}`);
     result.recommendations.forEach((rec, index) => {
       console.log(chalk.gray(`  ${index + 1}. ${rec.description}`));
-      if (rec.priority) {
+        logger.info(chalk.gray(`     Effort: ${rec.estimatedEffort}`);
         console.log(chalk.gray(`     Priority: ${rec.priority}`));
       }
       if (rec.estimatedEffort) {
         console.log(chalk.gray(`     Effort: ${rec.estimatedEffort}`));
       }
-    });
+    logger.info(chalk.blue(`\n📈 Metrics:`);
   }
-
+      logger.info(chalk.gray(`  • ${key}: ${value}`);
   if (result.metrics) {
     console.log(chalk.blue(`\n📈 Metrics:`));
     Object.entries(result.metrics).forEach(([key, value]) => {
       console.log(chalk.gray(`  • ${key}: ${value}`));
     });
-  }
-}
+  logger.info(chalk.blue(`\n📋 Analysis Report - ${result.focus.toUpperCase()} Focus`);
+  logger.info('='.repeat(60);
 
-function displayReportFormat(result: AnalysisResult): void {
-  console.log(chalk.blue(`\n📋 Analysis Report - ${result.focus.toUpperCase()} Focus`));
-  console.log('='.repeat(60));
-
-  console.log(chalk.bold('\nEXECUTIVE SUMMARY'));
-  console.log(`Analysis performed on: ${result.target}`);
-  console.log(`Focus area: ${result.focus}`);
+  logger.info(chalk.bold('\nEXECUTIVE SUMMARY');
+  logger.info(`Analysis performed on: ${result.target}`;
+  logger.info(`Focus area: ${result.focus}`;
+  logger.info(`Analysis depth: ${result.depth}`;
+  logger.info(`Files analyzed: ${result.summary.filesAnalyzed}`;
+  logger.info(`Total findings: ${result.findings?.length || 0}`;
+  logger.info(`Generated: ${new Date().toISOString()}`;
   console.log(`Analysis depth: ${result.depth}`);
   console.log(`Files analyzed: ${result.summary.filesAnalyzed}`);
-  console.log(`Total findings: ${result.findings?.length || 0}`);
+    logger.info(chalk.bold('\nFINDINGS BY SEVERITY');
   console.log(`Generated: ${new Date().toISOString()}`);
 
   if (result.findings && result.findings.length > 0) {
@@ -193,47 +197,47 @@ function displayReportFormat(result: AnalysisResult): void {
         return acc;
       },
       {}
-    );
+      logger.info(colorFn(`• ${severity.toUpperCase()}: ${count}`);
 
     Object.entries(severityStats).forEach(([severity, count]) => {
-      const colorFn = getSeverityColor(severity);
+    logger.info(chalk.bold('\nDETAILED FINDINGS');
       console.log(colorFn(`• ${severity.toUpperCase()}: ${count}`));
     });
-
-    console.log(chalk.bold('\nDETAILED FINDINGS'));
+      logger.info(colorFn(`\n${index + 1}. ${finding.message}`);
+      logger.info(`   Severity: ${finding.severity.toUpperCase()}`;
     result.findings.forEach((finding, index) => {
-      const colorFn = getSeverityColor(finding.severity);
+        logger.info(`   Location: ${finding.file}${finding.line ? `:${finding.line}` : ''}`;
       console.log(colorFn(`\n${index + 1}. ${finding.message}`));
       console.log(`   Severity: ${finding.severity.toUpperCase()}`);
-      if (finding.file) {
+        logger.info(`   Category: ${finding.category}`;
         console.log(`   Location: ${finding.file}${finding.line ? `:${finding.line}` : ''}`);
       }
-      if (finding.category) {
+        logger.info(`   Recommendation: ${finding.recommendation}`;
         console.log(`   Category: ${finding.category}`);
       }
       if (finding.recommendation) {
         console.log(`   Recommendation: ${finding.recommendation}`);
       }
-    });
+    logger.info(chalk.bold('\nRECOMMENDATIONS');
   }
-
-  if (result.recommendations && result.recommendations.length > 0) {
-    console.log(chalk.bold('\nRECOMMENDATIONS'));
+      logger.info(`\n${index + 1}. ${rec.description}`;
+      logger.info(`   Priority: ${rec.priority || 'Medium'}`;
+      logger.info(`   Estimated Effort: ${rec.estimatedEffort || 'Unknown'}`;
     result.recommendations.forEach((rec, index) => {
-      console.log(`\n${index + 1}. ${rec.description}`);
+        logger.info(`   Benefits: ${rec.benefits}`;
       console.log(`   Priority: ${rec.priority || 'Medium'}`);
       console.log(`   Estimated Effort: ${rec.estimatedEffort || 'Unknown'}`);
       if (rec.benefits) {
         console.log(`   Benefits: ${rec.benefits}`);
       }
-    });
+    logger.info(chalk.bold('\nMETRICS');
   }
-
+      logger.info(`• ${key}: ${value}`;
   if (result.metrics) {
     console.log(chalk.bold('\nMETRICS'));
     Object.entries(result.metrics).forEach(([key, value]) => {
-      console.log(`• ${key}: ${value}`);
-    });
+  logger.info('\n' + '='.repeat(60);
+  logger.info(chalk.green('Report generated successfully');
   }
 
   console.log('\n' + '='.repeat(60));
