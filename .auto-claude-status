@@ -1,25 +1,25 @@
 {
   "active": true,
-  "spec": "006-test-coverage-unification-and-enhancement",
-  "state": "complete",
+  "spec": "007-hitl-workflow-automation-and-approval-chains",
+  "state": "building",
   "subtasks": {
-    "completed": 18,
-    "total": 18,
-    "in_progress": 0,
+    "completed": 23,
+    "total": 24,
+    "in_progress": 1,
     "failed": 0
   },
   "phase": {
-    "current": "Verification and Documentation",
+    "current": "Service Integration",
     "id": null,
-    "total": 4
+    "total": 3
   },
   "workers": {
     "active": 0,
     "max": 1
   },
   "session": {
-    "number": 657,
-    "started_at": "2026-01-02T09:45:55.382207"
+    "number": 397,
+    "started_at": "2026-01-03T08:53:53.831076"
   },
-  "last_update": "2026-01-02T15:10:21.899968"
+  "last_update": "2026-01-03T11:20:15.074024"
 }
