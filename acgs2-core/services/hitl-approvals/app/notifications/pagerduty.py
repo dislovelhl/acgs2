@@ -1,4 +1,4 @@
-"""
+"""Constitutional Hash: cdd01ef066bc6cf2
 PagerDuty Notification Provider
 
 Implements event triggering for PagerDuty to handle critical approval escalations.

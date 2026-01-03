@@ -1,4 +1,4 @@
-"""
+"""Constitutional Hash: cdd01ef066bc6cf2
 ACGS-2 Policy Registry Service
 Dynamic Constitution Policy Management with Ed25519 Signatures
 

@@ -1,4 +1,4 @@
-"""
+"""Constitutional Hash: cdd01ef066bc6cf2
 Slack Notification Provider
 
 Implements webhook-based notification delivery for Slack with rate limiting.

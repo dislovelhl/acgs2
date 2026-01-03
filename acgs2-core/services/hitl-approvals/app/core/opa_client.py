@@ -1,4 +1,4 @@
-"""
+"""Constitutional Hash: cdd01ef066bc6cf2
 HITL Approvals OPA Client
 
 Provides integration with Open Policy Agent for role-based routing policy evaluation.

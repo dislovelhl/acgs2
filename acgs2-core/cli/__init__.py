@@ -1,4 +1,4 @@
-"""
+"""Constitutional Hash: cdd01ef066bc6cf2
 ACGS-2 CLI Module
 
 Provides command-line interface tools for policy validation and testing.

@@ -1,4 +1,4 @@
-"""
+"""Constitutional Hash: cdd01ef066bc6cf2
 Feedback Loop for Constitutional Retrieval System
 
 Implements feedback mechanisms to update and improve the vector knowledge base

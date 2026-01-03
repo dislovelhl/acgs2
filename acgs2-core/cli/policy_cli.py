@@ -1,4 +1,4 @@
-"""
+"""Constitutional Hash: cdd01ef066bc6cf2
 ACGS-2 Policy CLI Tool
 
 Provides command-line interface for Rego policy validation and testing.

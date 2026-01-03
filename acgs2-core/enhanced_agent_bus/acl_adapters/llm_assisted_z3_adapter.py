@@ -494,15 +494,17 @@ async def validate_policy_constraint(
 
 if __name__ == "__main__":
     # Example usage and testing
+    logging.basicConfig(level=logging.INFO, format="%(message)s")
+
     async def main():
-        print("Testing LLM-Assisted Z3 Adapter...")
+        logger.info("Testing LLM-Assisted Z3 Adapter...")
 
         adapter = LLMAssistedZ3Adapter()
 
         # Test status
         status = await adapter.get_adapter_status()
-        print(f"✅ Adapter status: {status['status']}")
-        print("✅ Capabilities: LLM + Z3 integration enabled")
+        logger.info("Adapter status: %s", status['status'])
+        logger.info("Capabilities: LLM + Z3 integration enabled")
 
         # Test constraint generation
         test_constraint = NaturalLanguageConstraint(
@@ -514,22 +516,22 @@ if __name__ == "__main__":
 
         result = await adapter.natural_language_to_smt(test_constraint)
 
-        print(f"✅ SMT generation: {result.generation_attempts} attempts")
-        print(f"✅ Refinements needed: {result.refinement_iterations}")
-        print(f"✅ Constraint valid: {result.is_valid}")
-        print(f"✅ SMT formula length: {len(result.smt_formula)} chars")
+        logger.info("SMT generation: %d attempts", result.generation_attempts)
+        logger.info("Refinements needed: %d", result.refinement_iterations)
+        logger.info("Constraint valid: %s", result.is_valid)
+        logger.info("SMT formula length: %d chars", len(result.smt_formula))
 
         if result.errors:
-            print(f"⚠️  Errors encountered: {len(result.errors)}")
+            logger.warning("Errors encountered: %d", len(result.errors))
 
         # Test convenience function
         policy_result = await validate_policy_constraint(
             "Policies must not violate constitutional principles and must be auditable"
         )
 
-        print(f"✅ Policy validation: valid={policy_result.is_valid}")
+        logger.info("Policy validation: valid=%s", policy_result.is_valid)
 
-        print("✅ LLM-Assisted Z3 Adapter test completed!")
+        logger.info("LLM-Assisted Z3 Adapter test completed!")
 
     # Run test
     asyncio.run(main())

@@ -1,4 +1,4 @@
-"""
+"""Constitutional Hash: cdd01ef066bc6cf2
 Versions API endpoints for Policy Marketplace
 Provides versioning operations for policy templates.
 """

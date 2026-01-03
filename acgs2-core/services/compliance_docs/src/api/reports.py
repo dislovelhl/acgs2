@@ -1,4 +1,4 @@
-"""
+"""Constitutional Hash: cdd01ef066bc6cf2
 Report Generation API for Compliance Documentation Service
 
 Provides REST API endpoint for generating custom compliance reports

@@ -1,5 +1,6 @@
 """
 Policy Marketplace Service - Main FastAPI Application
+Constitutional Hash: cdd01ef066bc6cf2
 
 Provides policy template sharing, community marketplace, and template management
 for the ACGS governance system.

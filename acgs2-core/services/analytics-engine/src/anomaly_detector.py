@@ -1,4 +1,4 @@
-"""
+"""Constitutional Hash: cdd01ef066bc6cf2
 Anomaly Detector - IsolationForest-based anomaly detection for governance metrics
 
 Detects unusual patterns in governance data such as sudden spikes in violations,

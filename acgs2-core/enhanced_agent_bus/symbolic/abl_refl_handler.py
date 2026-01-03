@@ -681,16 +681,18 @@ async def classify_with_reflection(input_data: Dict[str, Any]) -> EdgeCaseAnalys
 
 if __name__ == "__main__":
     # Example usage and testing
+    logging.basicConfig(level=logging.INFO, format="%(message)s")
+
     async def main():
-        print("Testing ABL-Refl Constitutional Edge Case Handler...")
+        logger.info("Testing ABL-Refl Constitutional Edge Case Handler...")
 
         handler = ConstitutionalEdgeCaseHandler(reflection_threshold=0.7)
 
         # Test handler status
         status = await handler.get_handler_status()
-        print(f"✅ Handler status: {status['status']}")
-        print(f"✅ System 1→2 reflection: {status['capabilities']['cognitive_reflection']}")
-        print(f"✅ Knowledge base principles: {status['knowledge_base_principles']}")
+        logger.info("Handler status: %s", status['status'])
+        logger.info("System 1→2 reflection: %s", status['capabilities']['cognitive_reflection'])
+        logger.info("Knowledge base principles: %s", status['knowledge_base_principles'])
 
         # Test normal case (should not trigger reflection)
         normal_input = {
@@ -701,8 +703,8 @@ if __name__ == "__main__":
         }
 
         normal_result = await handler.classify(normal_input)
-        print(f"✅ Normal case: reflection={'triggered' if normal_result.reflection_triggered else 'not triggered'}")
-        print(f"   Prediction: {normal_result.final_prediction}, Confidence: {normal_result.confidence:.2f}")
+        logger.info("Normal case: reflection=%s", 'triggered' if normal_result.reflection_triggered else 'not triggered')
+        logger.info("   Prediction: %s, Confidence: %.2f", normal_result.final_prediction, normal_result.confidence)
 
         # Test edge case (should trigger reflection)
         edge_input = {
@@ -715,22 +717,22 @@ if __name__ == "__main__":
         }
 
         edge_result = await handler.classify(edge_input)
-        print(f"✅ Edge case: reflection={'triggered' if edge_result.reflection_triggered else 'not triggered'}")
-        print(f"   Prediction: {edge_result.final_prediction}, Confidence: {edge_result.confidence:.2f}")
-        print(f"   Abductive reasoning steps: {len(edge_result.abductive_trace)}")
+        logger.info("Edge case: reflection=%s", 'triggered' if edge_result.reflection_triggered else 'not triggered')
+        logger.info("   Prediction: %s, Confidence: %.2f", edge_result.final_prediction, edge_result.confidence)
+        logger.info("   Abductive reasoning steps: %d", len(edge_result.abductive_trace))
 
         # Test knowledge base
         kb = handler.knowledge_base
         principles = kb.get_principles_by_domain("governance")
-        print(f"✅ Governance principles: {len(principles)}")
+        logger.info("Governance principles: %d", len(principles))
 
         # Test principle querying
         test_principle = kb.get_principle("maximize_beneficial_impact")
         if test_principle:
             confidence = await kb.query_principle("maximize_beneficial_impact", {"action": "good_policy"})
-            print(f"✅ Principle confidence: {confidence:.2f}")
+            logger.info("Principle confidence: %.2f", confidence)
 
-        print("✅ ABL-Refl Constitutional Edge Case Handler test completed!")
+        logger.info("ABL-Refl Constitutional Edge Case Handler test completed!")
 
     # Run test
     asyncio.run(main())

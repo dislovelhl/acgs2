@@ -1,4 +1,4 @@
-"""
+"""Constitutional Hash: cdd01ef066bc6cf2
 Violation Predictor - Prophet time-series forecasting for governance violation predictions
 
 Uses Facebook Prophet to forecast future policy violation counts based on historical

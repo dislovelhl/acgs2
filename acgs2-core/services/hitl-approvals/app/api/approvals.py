@@ -1,4 +1,4 @@
-"""
+"""Constitutional Hash: cdd01ef066bc6cf2
 HITL Approvals API Endpoints
 
 FastAPI router for approval submission, status queries, and decision capture.

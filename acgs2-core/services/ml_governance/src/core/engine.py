@@ -1,4 +1,4 @@
-"""
+"""Constitutional Hash: cdd01ef066bc6cf2
 ML Governance Engine - Random Forest scoring with online learning and feedback loops
 """
 

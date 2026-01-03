@@ -1,5 +1,7 @@
 """
 Templates API endpoints for Policy Marketplace
+Constitutional Hash: cdd01ef066bc6cf2
+
 Provides CRUD operations for policy templates.
 """
 

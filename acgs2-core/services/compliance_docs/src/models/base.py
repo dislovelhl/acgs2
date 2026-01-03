@@ -1,4 +1,4 @@
-"""
+"""Constitutional Hash: cdd01ef066bc6cf2
 Base Pydantic models for Compliance Documentation Service
 
 Common base classes and shared field definitions used across all compliance frameworks.

@@ -1,4 +1,4 @@
-"""
+"""Constitutional Hash: cdd01ef066bc6cf2
 Anomalies Route - GET /anomalies endpoint with detected outliers
 
 Provides anomaly detection results for governance metrics including:

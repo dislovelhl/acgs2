@@ -1,4 +1,4 @@
-"""
+"""Constitutional Hash: cdd01ef066bc6cf2
 Query Route - POST /query endpoint for natural language queries
 
 Provides natural language query interface for governance analytics:

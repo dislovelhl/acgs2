@@ -1,4 +1,4 @@
-"""
+"""Constitutional Hash: cdd01ef066bc6cf2
 Approval Chain Engine Service
 Manages routing of approvals through configured chains and steps.
 """

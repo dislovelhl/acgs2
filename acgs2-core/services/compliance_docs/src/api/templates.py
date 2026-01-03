@@ -1,4 +1,4 @@
-"""
+"""Constitutional Hash: cdd01ef066bc6cf2
 Template Listing API for Compliance Documentation Service
 
 Provides REST API endpoints for listing available compliance templates

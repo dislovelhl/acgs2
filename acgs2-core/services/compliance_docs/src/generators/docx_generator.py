@@ -1,4 +1,4 @@
-"""
+"""Constitutional Hash: cdd01ef066bc6cf2
 DOCX Document Generator for Compliance Documentation Service
 
 Generates professional compliance reports in DOCX format using python-docx.

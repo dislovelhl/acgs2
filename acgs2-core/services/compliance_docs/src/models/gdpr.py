@@ -1,4 +1,4 @@
-"""
+"""Constitutional Hash: cdd01ef066bc6cf2
 GDPR Article 30 compliance models and data structures
 """
 

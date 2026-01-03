@@ -40,6 +40,7 @@ Usage:
 """
 
 import asyncio
+import os
 import time
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
@@ -62,6 +63,13 @@ try:
     REDIS_AVAILABLE = True
 except ImportError:
     REDIS_AVAILABLE = False
+
+# Check for tenant config availability
+try:
+    from shared.config import TenantQuotaRegistry
+    TENANT_CONFIG_AVAILABLE = True
+except ImportError:
+    TENANT_CONFIG_AVAILABLE = False
 
 
 class RateLimitScope(str, Enum):
@@ -149,6 +157,153 @@ class RateLimitConfig:
             redis_url=redis_url,
             enabled=enabled,
         )
+
+
+@dataclass
+class TenantQuota:
+    """Quota configuration for a specific tenant."""
+
+    tenant_id: str
+    requests: int = 100
+    window_seconds: int = 60
+    burst_multiplier: float = 1.0
+    enabled: bool = True
+
+    @property
+    def effective_limit(self) -> int:
+        """Calculate effective limit including burst multiplier."""
+        return int(self.requests * self.burst_multiplier)
+
+    def to_rule(self) -> RateLimitRule:
+        """Convert to RateLimitRule."""
+        return RateLimitRule(
+            requests=self.requests,
+            window_seconds=self.window_seconds,
+            burst_multiplier=self.burst_multiplier,
+            scope=RateLimitScope.TENANT,
+        )
+
+
+class TenantQuotaProviderProtocol:
+    """Protocol for tenant quota providers."""
+
+    def get_quota(self, tenant_id: str) -> Optional[TenantQuota]:
+        """Get quota for a tenant."""
+        ...
+
+    def set_quota(self, tenant_id: str, quota: TenantQuota) -> None:
+        """Set quota for a tenant."""
+        ...
+
+    def remove_quota(self, tenant_id: str) -> bool:
+        """Remove quota for a tenant."""
+        ...
+
+
+class TenantRateLimitProvider(TenantQuotaProviderProtocol):
+    """Provider for tenant-specific rate limit quotas."""
+
+    def __init__(
+        self,
+        default_requests: int = 1000,
+        default_window_seconds: int = 60,
+        default_burst_multiplier: float = 1.0,
+        use_registry: bool = False,
+    ):
+        self._quotas: Dict[str, TenantQuota] = {}
+        self._default_requests = default_requests
+        self._default_window_seconds = default_window_seconds
+        self._default_burst_multiplier = default_burst_multiplier
+        self._use_registry = use_registry
+        self._constitutional_hash = CONSTITUTIONAL_HASH
+
+    @classmethod
+    def from_env(cls) -> "TenantRateLimitProvider":
+        """Create provider from environment variables."""
+        default_requests = int(os.getenv("RATE_LIMIT_TENANT_REQUESTS", "1000"))
+        default_window = int(os.getenv("RATE_LIMIT_TENANT_WINDOW", "60"))
+        default_burst = float(os.getenv("RATE_LIMIT_TENANT_BURST", "1.0"))
+        use_registry = os.getenv("RATE_LIMIT_USE_REGISTRY", "false").lower() == "true"
+        return cls(
+            default_requests=default_requests,
+            default_window_seconds=default_window,
+            default_burst_multiplier=default_burst,
+            use_registry=use_registry,
+        )
+
+    def get_tenant_quota(self, tenant_id: str) -> TenantQuota:
+        """Get quota for a tenant."""
+        if tenant_id in self._quotas:
+            return self._quotas[tenant_id]
+        # Return default quota for unknown tenants
+        return TenantQuota(
+            tenant_id=tenant_id,
+            requests=self._default_requests,
+            window_seconds=self._default_window_seconds,
+            burst_multiplier=self._default_burst_multiplier,
+        )
+
+    def get_quota(self, tenant_id: str) -> Optional[TenantQuota]:
+        """Get quota for a tenant (alias for get_tenant_quota)."""
+        return self.get_tenant_quota(tenant_id)
+
+    def set_tenant_quota(
+        self,
+        tenant_id: str,
+        requests: int,
+        window_seconds: int = 60,
+        burst_multiplier: float = 1.0,
+        enabled: bool = True,
+    ) -> None:
+        """Set quota for a tenant."""
+        self._quotas[tenant_id] = TenantQuota(
+            tenant_id=tenant_id,
+            requests=requests,
+            window_seconds=window_seconds,
+            burst_multiplier=burst_multiplier,
+            enabled=enabled,
+        )
+
+    def set_quota(
+        self,
+        tenant_id: str,
+        quota: Optional[TenantQuota] = None,
+        requests: Optional[int] = None,
+        window_seconds: Optional[int] = None,
+        burst_multiplier: Optional[float] = None,
+        enabled: bool = True,
+    ) -> None:
+        """Set quota for a tenant using either TenantQuota object or parameters."""
+        if quota is not None:
+            self._quotas[tenant_id] = quota
+        else:
+            self._quotas[tenant_id] = TenantQuota(
+                tenant_id=tenant_id,
+                requests=requests or self._default_requests,
+                window_seconds=window_seconds or self._default_window_seconds,
+                burst_multiplier=burst_multiplier or self._default_burst_multiplier,
+                enabled=enabled,
+            )
+
+    def remove_quota(self, tenant_id: str) -> bool:
+        """Remove quota for a tenant."""
+        if tenant_id in self._quotas:
+            del self._quotas[tenant_id]
+            return True
+        return False
+
+    def remove_tenant_quota(self, tenant_id: str) -> bool:
+        """Remove quota for a tenant (alias for remove_quota)."""
+        return self.remove_quota(tenant_id)
+
+    def get_all_tenant_quotas(self) -> Dict[str, TenantQuota]:
+        """Get all registered tenant quotas (returns deep copies)."""
+        from copy import deepcopy
+        return deepcopy(self._quotas)
+
+    def get_constitutional_hash(self) -> str:
+        """Return constitutional hash for verification."""
+        return self._constitutional_hash
 
 
 @dataclass

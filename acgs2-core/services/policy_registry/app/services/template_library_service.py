@@ -1,4 +1,4 @@
-"""
+"""Constitutional Hash: cdd01ef066bc6cf2
 Template Library Service
 Manages pre-built constitutional governance templates.
 """

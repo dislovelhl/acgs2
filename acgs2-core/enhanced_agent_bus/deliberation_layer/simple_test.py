@@ -1,4 +1,4 @@
-"""
+"""Constitutional Hash: cdd01ef066bc6cf2
 Simple test for ACGS-2 Deliberation Layer components.
 """
 

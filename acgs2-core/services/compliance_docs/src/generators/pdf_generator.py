@@ -1,4 +1,4 @@
-"""
+"""Constitutional Hash: cdd01ef066bc6cf2
 PDF Document Generator for Compliance Documentation Service
 
 Generates professional compliance reports in PDF format using ReportLab.

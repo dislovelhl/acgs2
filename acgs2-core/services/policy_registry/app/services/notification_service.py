@@ -1,4 +1,4 @@
-"""
+"""Constitutional Hash: cdd01ef066bc6cf2
 Notification service for policy updates via WebSocket and Kafka
 """
 

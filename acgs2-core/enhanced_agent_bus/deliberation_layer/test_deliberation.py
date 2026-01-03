@@ -1,4 +1,4 @@
-"""
+"""Constitutional Hash: cdd01ef066bc6cf2
 ACGS-2 Deliberation Layer - Test Script
 Validates the deliberation layer implementation with simulated scenarios.
 """

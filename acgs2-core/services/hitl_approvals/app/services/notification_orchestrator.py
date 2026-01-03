@@ -1,4 +1,4 @@
-"""
+"""Constitutional Hash: cdd01ef066bc6cf2
 Notification Orchestrator Service
 Routes notifications to appropriate channels (Slack/Teams/PagerDuty)
 """

@@ -1,4 +1,4 @@
-"""
+"""Constitutional Hash: cdd01ef066bc6cf2
 ACGS-2 Constraint Generator
 使用Guidance和Outlines库强制LLM生成语法正确代码
 """

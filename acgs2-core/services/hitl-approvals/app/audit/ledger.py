@@ -1,4 +1,4 @@
-"""
+"""Constitutional Hash: cdd01ef066bc6cf2
 Append-Only Audit Ledger for HITL Approvals
 
 Implements an immutable audit trail persistence layer with:

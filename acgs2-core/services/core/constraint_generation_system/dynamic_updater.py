@@ -1,4 +1,4 @@
-"""
+"""Constitutional Hash: cdd01ef066bc6cf2
 ACGS-2 Dynamic Constraint Updater
 基于实时反馈动态调整CFG约束
 """

@@ -1,4 +1,4 @@
-"""
+"""Constitutional Hash: cdd01ef066bc6cf2
 HITL Approvals Core Module
 
 This module contains the core approval chain engine with routing logic,

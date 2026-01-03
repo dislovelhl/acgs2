@@ -1,4 +1,4 @@
-"""
+"""Constitutional Hash: cdd01ef066bc6cf2
 Multi-Agent Coordinator for Constitutional Retrieval System
 
 Enables multiple agents to collaborate by sharing and accessing

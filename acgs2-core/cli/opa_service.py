@@ -1,4 +1,4 @@
-"""
+"""Constitutional Hash: cdd01ef066bc6cf2
 ACGS-2 CLI OPA Service
 
 Provides OPA (Open Policy Agent) integration for CLI policy validation and testing.

@@ -1,4 +1,4 @@
-"""
+"""Constitutional Hash: cdd01ef066bc6cf2
 SOC 2 Type II compliance models and data structures
 """
 

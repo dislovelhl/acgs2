@@ -1,4 +1,4 @@
-"""
+"""Constitutional Hash: cdd01ef066bc6cf2
 Export Route - POST /export/pdf endpoint for executive report generation
 
 Provides PDF export functionality for governance analytics:

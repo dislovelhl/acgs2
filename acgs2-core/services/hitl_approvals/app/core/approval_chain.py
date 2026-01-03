@@ -1,4 +1,4 @@
-"""
+"""Constitutional Hash: cdd01ef066bc6cf2
 Approval Chain Engine
 
 Manages configurable approval workflows with role-based routing and escalation policies.

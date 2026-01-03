@@ -1,31 +1,575 @@
-# Project Index: ACGS-2
+# Project Index: acgs2-root
 
-> **Advanced Constitutional Governance System**
-> Generated: 2026-01-03T00:00:00Z
-> **Constitutional Hash**: `cdd01ef066bc6cf2`
-> **Version**: 3.0.0
+Generated: 2026-01-03T16:00:25.546865
 
 ---
 
 ## 📁 Project Structure
 
 ```
-acgs2/
-├── acgs2-core/           # Core Intelligence Layer (3-service consolidated)
-│   ├── enhanced_agent_bus/   # High-performance agent messaging
-│   ├── services/             # Consolidated microservices
-│   ├── shared/               # Common utilities & security
-│   ├── sdk/                  # Python/Go/TypeScript SDKs
-│   ├── tools/                # CLI & development tools
-│   └── docs/                 # Technical documentation
-├── acgs2-infra/          # Enterprise Infrastructure (Terraform/Helm)
-├── acgs2-observability/  # Monitoring Stack (Prometheus/Grafana)
-├── acgs2-research/       # AI Safety Research
-├── acgs2-neural-mcp/     # Neural MCP Integration
-├── claude-flow/          # Claude workflow orchestration
-├── scripts/              # Build & automation scripts
-├── docs/                 # User documentation
-└── sdk/                  # SDK root (mirrors acgs2-core/sdk)
+.agent/
+  workflows/
+    base/
+    constitutional/
+    coordination/
+    cyclic/
+    dags/
+    sagas/
+    templates/
+    tests/
+.auto-claude/
+  roadmap/
+.cursor/
+.dist/
+  .claude/
+    agents/
+      neural/
+.github/
+  actions/
+    acgs2-policy-check/
+  workflows/
+.kilocode/
+  rules/
+.kilocode-context/
+.roo/
+  rules-docs-specialist/
+.serena/
+  memories/
+.swarm/
+.vscode/
+acgs2-core/
+  .github/
+    workflows/
+  .semgrep/
+    rules/
+  C4-Documentation/
+  breakthrough/
+    context/
+    governance/
+    integrations/
+    policy/
+    symbolic/
+    temporal/
+    tests/
+    verification/
+  cert-manager/
+  chaos/
+    enterprise/
+    experiments/
+    monitors/
+    recovery/
+  cli/
+  config/
+  data/
+  deploy/
+    helm/
+      acgs2/
+        templates/
+  docs/
+    adr/
+    api/
+      specs/
+    architecture/
+    compliance/
+      templates/
+    design/
+    istio/
+    monitoring/
+    operations/
+    performance/
+    reports/
+    security/
+    user-guides/
+  enhanced_agent_bus/
+    C4-Documentation/
+      apis/
+    acl_adapters/
+      tests/
+    ai_assistant/
+      tests/
+    benchmarks/
+    components/
+    context/
+    data/
+      reference/
+    deliberation_layer/
+      workflows/
+    docs/
+      guides/
+      reports/
+    examples/
+    governance/
+    integrations/
+    mcp_server/
+      adapters/
+      protocol/
+      resources/
+      tests/
+      tools/
+    observability/
+      tests/
+    orchestration/
+    policies/
+    profiling/
+    runtime/
+      policy_bundles/
+    rust/
+      src/
+    sdpc/
+    security/
+    specs/
+      fixtures/
+      tests/
+    symbolic/
+    temporal/
+    tests/
+      fixtures/
+      runtime/
+        policy_bundles/
+    verification/
+    workflows/
+  examples/
+    basic-governance/
+    hitl-approval-workflow/
+  infrastructure/
+    governance/
+      tests/
+  integrations/
+    nemo_agent_toolkit/
+      .claude-flow/
+        metrics/
+      colang/
+      tests/
+  monitoring/
+    alerts/
+    collectors/
+    connectors/
+    dashboards/
+      real_time/
+      templates/
+    grafana/
+      provisioning/
+        dashboards/
+        datasources/
+  notebooks/
+  plans/
+  playground/
+    frontend/
+  policies/
+    rego/
+      agent_bus/
+      constitutional/
+      deliberation/
+      test_inputs/
+    schema/
+    templates/
+  quantum_research/
+    tests/
+  runtime/
+    policy_bundles/
+  rust-perf/
+    src/
+  scripts/
+  sdk/
+    go/
+      examples/
+        comprehensive/
+    python/
+      acgs2_sdk/
+        services/
+      examples/
+      tests/
+    typescript/
+      examples/
+      src/
+        client/
+        services/
+        types/
+        utils/
+  services/
+    analytics-api/
+      src/
+        models/
+        routes/
+        services/
+      tests/
+        integration/
+    analytics-engine/
+      data/
+      src/
+      tests/
+    api_gateway/
+      routes/
+      tests/
+        integration/
+        unit/
+    audit_service/
+      app/
+        api/
+        models/
+        services/
+        tasks/
+        templates/
+      blockchain/
+        arweave/
+        ethereum_l2/
+        hyperledger_fabric/
+        solana/
+      cli/
+      config/
+        hyperledger/
+      core/
+        merkle_tree/
+      reporters/
+      tests/
+        integration/
+        unit/
+      zkp/
+        circuits/
+    auth_sso/
+    autonomous_governance/
+    compliance_docs/
+      src/
+        api/
+        generators/
+        models/
+        templates/
+          euaiact/
+          gdpr/
+          iso27001/
+          soc2/
+      tests/
+        unit/
+    core/
+      code-analysis/
+        code_analysis_service/
+          app/
+            api/
+              v1/
+            core/
+            middleware/
+            services/
+            utils/
+          config/
+        tests/
+          integration/
+          unit/
+      constitutional-retrieval-system/
+      constraint_generation_system/
+      ml-governance/
+        ml_governance_service/
+          src/
+            api/
+            models/
+    governance_federation/
+    hitl-approvals/
+      app/
+        api/
+        audit/
+        core/
+        notifications/
+      tests/
+    hitl_approvals/
+      app/
+        api/
+        audit/
+        config/
+        core/
+        models/
+        notifications/
+        schemas/
+        services/
+        tasks/
+        templates/
+      src/
+        api/
+        core/
+      tests/
+        unit/
+    identity/
+      connectors/
+    integration/
+      search_platform/
+        tests/
+    integration_service/
+      src/
+        integrations/
+    metering/
+      app/
+      tests/
+    ml_governance/
+      src/
+        api/
+        core/
+      tests/
+    policy_marketplace/
+      alembic/
+        versions/
+      app/
+        api/
+          v1/
+        config/
+        models/
+        schemas/
+      scripts/
+      templates/
+        verified/
+      tests/
+        e2e/
+    policy_registry/
+      advanced_rbac/
+        delegation/
+        models/
+        policies/
+      app/
+        api/
+          v1/
+        middleware/
+        models/
+        services/
+          tests/
+        templates/
+          financial/
+          healthcare/
+      config/
+      examples/
+      k8s/
+      tests/
+    shared/
+      alembic/
+        versions/
+    tenant_management/
+      onboarding/
+      src/
+      tests/
+        unit/
+  shared/
+    auth/
+      certs/
+      tests/
+    circuit_breaker/
+    config/
+    database/
+    infrastructure/
+    logging/
+    metrics/
+    middleware/
+    models/
+    security/
+    tests/
+  testing/
+    tests/
+  tests/
+    ceos/
+    cli/
+    e2e/
+    fixtures/
+    infrastructure/
+    integration/
+    playground/
+    security/
+  tools/
+    acgs2-cli/
+      commands/
+    sc/
+acgs2-frontend/
+  policy-marketplace/
+    public/
+    src/
+      components/
+      services/
+      types/
+acgs2-infra/
+  cert-manager/
+  deploy/
+    gitops/
+      argocd/
+        applications/
+        projects/
+    helm/
+      acgs2/
+        templates/
+          agent-bus/
+          api-gateway/
+          constitutional-service/
+    terraform/
+      aws/
+        modules/
+          ecr/
+          eks/
+          elasticache/
+          msk/
+          rds/
+      gcp/
+        modules/
+          artifact-registry/
+          cloudsql/
+          gke/
+          memorystore/
+          pubsub/
+  k8s/
+  multi-region/
+    compliance/
+    database/
+    docs/
+    governance/
+    istio/
+    k8s/
+    kafka/
+    scripts/
+  scripts/
+  terraform/
+    aws/
+    gcp/
+acgs2-neural-mcp/
+  src/
+    __tests__/
+      config/
+    config/
+    neural/
+    utils/
+acgs2-observability/
+  monitoring/
+    collectors/
+    connectors/
+    dashboard/
+      src/
+        components/
+        hooks/
+        types/
+        utils/
+    grafana/
+      dashboards/
+    kibana/
+    logstash/
+      config/
+      pipeline/
+  tests/
+    monitoring/
+acgs2-research/
+  configs/
+  docs/
+    research/
+      breakthrough_2025/
+  governance-experiments/
+    data/
+      tasks/
+    notebooks/
+    policies/
+      rego/
+    policy-watch/
+    reports/
+    scripts/
+    src/
+      crypto/
+      evaluators/
+    tests/
+adaptive-learning-engine/
+  src/
+    api/
+    models/
+    monitoring/
+    registry/
+    safety/
+  tests/
+    e2e/
+    integration/
+    unit/
+analytics-dashboard/
+  docs/
+  src/
+    components/
+      __tests__/
+      widgets/
+        __tests__/
+    layouts/
+      __tests__/
+    test/
+      e2e/
+      integration/
+      mocks/
+architecture/
+archive/
+  services/
+    agent_inventory/
+    constitutional_ai/
+assets/
+ci/
+claude-flow/
+  docs/
+  src/
+    __tests__/
+      config/
+    commands/
+    config/
+    services/
+    types/
+    utils/
+  storage/
+claudedocs/
+compliance-docs-service/
+config/
+docs/
+  api/
+    generated/
+      enhanced_specs/
+    specs/
+  coverage/
+    enhanced/
+  data/
+  deployment/
+    air-gapped/
+    high-availability/
+    multi-region/
+  due-diligence/
+  observability/
+  postman/
+  quickstart/
+    video-scripts/
+  summaries/
+  tutorials/
+examples/
+  01-basic-policy-evaluation/
+    policies/
+  02-ai-model-approval/
+    policies/
+  03-data-access-control/
+    policies/
+integration-service/
+  scripts/
+  src/
+    api/
+    config/
+    consumers/
+    integrations/
+    webhooks/
+  templates/
+  tests/
+    integrations/
+    webhooks/
+notebooks/
+policies/
+  vertical-templates/
+    finance/
+    healthcare/
+reports/
+  monitoring/
+runtime/
+  policy_bundles/
+scripts/
+sdk/
+  go/
+    internal/
+      http/
+    pkg/
+      auth/
+      client/
+      models/
+  typescript/
+    src/
+      auth/
+      core/
+      utils/
 ```
 
 ---
@@ -34,236 +578,115 @@ acgs2/
 
 | Type | Path | Purpose |
 |------|------|---------|
-| **CLI** | `acgs2-core/tools/acgs2-cli/main.py` | Command-line interface |
-| **Agent Bus** | `acgs2-core/enhanced_agent_bus/core.py` | Core messaging engine |
-| **API Gateway** | `acgs2-core/services/api_gateway/main.py` | Unified API ingress |
-| **Policy Registry** | `acgs2-core/services/policy_registry/app/main.py` | Policy management |
-| **Audit Service** | `acgs2-core/services/audit_service/app/main.py` | Blockchain audit |
-| **HITL Approvals** | `acgs2-core/services/hitl_approvals/main.py` | Human-in-the-loop |
-| **Tenant Mgmt** | `acgs2-core/services/tenant_management/src/main.py` | Multi-tenancy |
-| **MCP Server** | `acgs2-core/enhanced_agent_bus/mcp_server/server.py` | MCP protocol |
+| Application | `examples/02-ai-model-approval/app.py` | Core entry point |
+| Application | `acgs2-core/playground/app.py` | Core entry point |
+| CLI | `acgs2-core/enhanced_agent_bus/mcp_server/cli.py` | Core entry point |
+| CLI | `acgs2-core/tools/acgs2-cli/main.py` | Core entry point |
+| CLI | `acgs2-core/services/hitl-approvals/main.py` | Core entry point |
+| CLI | `acgs2-core/services/api_gateway/main.py` | Core entry point |
+| CLI | `acgs2-core/services/hitl_approvals/main.py` | Core entry point |
+| CLI | `acgs2-core/services/tenant_management/src/main.py` | Core entry point |
+| CLI | `acgs2-core/services/ml_governance/src/main.py` | Core entry point |
+| CLI | `acgs2-core/services/analytics-api/src/main.py` | Core entry point |
 
 ---
 
 ## 📦 Core Modules
 
-### Module: Enhanced Agent Bus
-- **Path**: `acgs2-core/enhanced_agent_bus/`
-- **Exports**: `EnhancedAgentBus`, `MessageProcessor`, `AgentMessage`, `Priority`
-- **Purpose**: High-performance, constitutional-compliant agent communication
+### Module: fix_lints
+- **Path**: `fix_lints.py`
+- **Language**: python
+- **Exports**: fix_b904
+- **Purpose**: Core functionality
 
-**Key Components**:
-| Component | File | Purpose |
-|-----------|------|---------|
-| Core Engine | `core.py` | Bus initialization & messaging |
-| Message Processor | `message_processor.py` | Async message routing |
-| Impact Scorer | `deliberation_layer/impact_scorer.py` | ML-based risk assessment |
-| MACI Enforcement | `maci_enforcement.py` | Role separation validation |
-| OPA Client | `opa_client.py` | Real-time policy evaluation |
-| SIEM Integration | `siem_integration.py` | Security event logging |
+### Module: test_performance_fix
+- **Path**: `test_performance_fix.py`
+- **Language**: python
+- **Exports**: MockConfig:, __init__
+- **Purpose**: Testing utilities
 
-### Module: Deliberation Layer
-- **Path**: `acgs2-core/enhanced_agent_bus/deliberation_layer/`
-- **Purpose**: High-impact decision routing & human oversight
+### Module: run_unified_tests
+- **Path**: `scripts/run_unified_tests.py`
+- **Language**: python
+- **Exports**: UnifiedTestRunner:, __init__
+- **Purpose**: Testing utilities
 
-**Key Components**:
-| Component | File | Purpose |
-|-----------|------|---------|
-| Intent Classifier | `intent_classifier.py` | NLP-based intent detection |
-| HITL Manager | `hitl_manager.py` | Human approval workflows |
-| Voting Service | `voting_service.py` | Multi-party consensus |
-| Adaptive Router | `adaptive_router.py` | Dynamic threshold routing |
+### Module: validate-sdk-publishing
+- **Path**: `scripts/validate-sdk-publishing.py`
+- **Language**: python
+- **Exports**: Colors:, print_header, print_success
+- **Purpose**: Core functionality
 
-### Module: ACL Adapters
-- **Path**: `acgs2-core/enhanced_agent_bus/acl_adapters/`
-- **Purpose**: Formal verification integration (OPA, Z3)
+### Module: import_health_check
+- **Path**: `scripts/import_health_check.py`
+- **Language**: python
+- **Exports**: get_python_files, extract_module_name, check_module_imports
+- **Purpose**: Core functionality
 
-### Module: MCP Server
-- **Path**: `acgs2-core/enhanced_agent_bus/mcp_server/`
-- **Purpose**: Model Context Protocol implementation
+### Module: import_simplifier
+- **Path**: `scripts/import_simplifier.py`
+- **Language**: python
+- **Exports**: simplify_imports_in_file
+- **Purpose**: Core functionality
 
-### Module: Services (Consolidated)
-- **Path**: `acgs2-core/services/`
-- **Purpose**: 3-service consolidated architecture (70% complexity reduction)
+### Module: import_refactor
+- **Path**: `scripts/import_refactor.py`
+- **Language**: python
+- **Exports**: ImportRefactorer, __init__, visit_Try
+- **Purpose**: Core functionality
 
-| Service | Path | Purpose |
-|---------|------|---------|
-| API Gateway | `api_gateway/` | Unified ingress, auth, load balancing |
-| Policy Registry | `policy_registry/` | Policy CRUD, crypto, bundles |
-| Audit Service | `audit_service/` | Blockchain anchoring, ZKP, compliance |
-| HITL Approvals | `hitl_approvals/` | Approval chains, notifications |
-| Tenant Management | `tenant_management/` | Multi-tenant isolation |
-| Metering | `metering/` | Usage tracking & billing |
+### Module: profile_message_processor
+- **Path**: `scripts/profile_message_processor.py`
+- **Language**: python
+- **Exports**: ProfilingResult:
+- **Purpose**: Core functionality
 
-### Module: Shared Utilities
-- **Path**: `acgs2-core/shared/`
-- **Exports**: Auth, Rate Limiter, Circuit Breaker, Logging, JSON Utils
+### Module: fix_typescript_console_logs
+- **Path**: `scripts/fix_typescript_console_logs.py`
+- **Language**: python
+- **Exports**: find_console_logs
+- **Purpose**: Core functionality
+
+### Module: deliberation_layer_profiler
+- **Path**: `scripts/deliberation_layer_profiler.py`
+- **Language**: python
+- **Exports**: ProfilingResult:, DeliberationLayerProfiler:, __init__
+- **Purpose**: Testing utilities
 
 ---
 
 ## 🔧 Configuration
 
-| File | Purpose |
-|------|---------|
-| `pyproject.toml` | Python project config (root) |
-| `docker-compose.dev.yml` | Development environment |
-| `docker-compose.horizontal-scaling.yml` | Production scaling |
-| `acgs2-core/enhanced_agent_bus/pyproject.toml` | Agent bus dependencies |
-| `acgs2-infra/deploy/helm/acgs2/values.yaml` | Kubernetes Helm values |
-| `acgs2-core/monitoring/prometheus.yml` | Metrics configuration |
-| `.pre-commit-config.yaml` | Code quality hooks |
-
-**Environment Files**:
-- `.env.dev` - Development defaults
-- `.env.staging` - Staging environment
-- `.env.production` - Production template
+- `pyproject.toml` (Python Project)
+- `.pre-commit-config.yaml` (Configuration)
+- `compose.yaml` (Configuration)
+- `codecov.yml` (Configuration)
+- `docker-compose.horizontal-scaling.yml` (Docker)
 
 ---
 
 ## 📚 Documentation
 
-| Document | Path | Topic |
-|----------|------|-------|
-| Main README | `README.md` | System overview |
-| Quickstart | `acgs2-core/QUICKSTART.md` | Getting started |
-| C4 Architecture | `acgs2-core/C4-Documentation/` | 22 architecture docs |
-| Adaptive Governance | `acgs2-core/enhanced_agent_bus/docs/ADAPTIVE_GOVERNANCE.md` | ML governance |
-| Security Hardening | `acgs2-core/docs/security/SECURITY_HARDENING.md` | Enterprise security |
-| Deployment Guide | `acgs2-core/deploy/deployment_guide.md` | Production deployment |
-| API Reference | `acgs2-core/docs/api_reference.md` | API documentation |
-| ADRs | `acgs2-core/docs/adr/` | Architecture decisions |
-
----
-
-## 🧪 Test Coverage
-
-| Category | Count | Path Pattern |
-|----------|-------|--------------|
-| **Total Test Files** | 209 | `**/test_*.py` |
-| Agent Bus Tests | 127 | `acgs2-core/enhanced_agent_bus/tests/` |
-| Service Tests | 45 | `acgs2-core/services/**/tests/` |
-| Integration Tests | 15 | `**/integration/test_*.py` |
-| Security Tests | 8 | `**/test_*security*.py` |
-
-**Coverage**: 99.8% (3,534 tests passing)
-
-**Key Test Commands**:
-```bash
-# Full test suite
-./scripts/run_all_tests.sh
-
-# Enhanced Agent Bus tests
-cd acgs2-core/enhanced_agent_bus && python -m pytest tests/ -v
-
-# With coverage
-python -m pytest acgs2-core/ -v --cov=acgs2-core --cov-report=html
-```
-
----
-
-## 🔗 Key Dependencies
-
-| Dependency | Version | Purpose |
-|------------|---------|---------|
-| Python | ≥3.11 | Runtime |
-| FastAPI | latest | API framework |
-| Redis | 6+ | Caching & pubsub |
-| OPA | latest | Policy engine |
-| Prometheus | latest | Metrics |
-| Jaeger | latest | Tracing |
-| Kafka | latest | Event streaming |
-| PostgreSQL | 15+ | Persistence |
-
----
-
-## 📊 Performance Metrics
-
-| Metric | Target | Achieved |
-|--------|--------|----------|
-| P99 Latency | 0.278ms | **0.328ms** ✅ |
-| Throughput | 6,310 RPS | **2,605 RPS** ✅ |
-| Memory Usage | <4MB/pod | **<4MB/pod** ✅ |
-| CPU Utilization | <75% | **73.9%** ✅ |
-| Cache Hit Rate | >85% | **95%+** ✅ |
+- `README.md` - ACGS-2: Advanced Constitutional Governance System (README)
+- `docs/workflows_reference.md` - ACGS-2 Workflow Reference (Documentation)
+- `docs/CONFIGURATION_TROUBLESHOOTING.md` - ACGS-2 Configuration Troubleshooting Runbook (Documentation)
+- `docs/CI-MIGRATION.md` - ACGS2 CI/CD Migration Summary (Documentation)
+- `docs/getting-started.md` - 🚀 Getting Started with ACGS-2 (Documentation)
+- `docs/validation_report.md` - Developer Onboarding Validation Report (Documentation)
+- `docs/feedback.md` - ACGS-2 Developer Feedback (Documentation)
+- `docs/DEVELOPMENT.md` - ACGS-2 Development Guide (Documentation)
+- `docs/testing-guide.md` - ACGS-2 Testing Guide (Documentation)
+- `docs/cross-platform-testing.md` - Cross-Platform Testing Guide (Documentation)
 
 ---
 
 ## 📝 Quick Start
 
-### 1. Development Setup
-```bash
-cd acgs2-core
-python -m venv .venv && source .venv/bin/activate
-pip install -e .[dev]
-```
-
-### 2. Run Services
-```bash
-docker compose -f docker-compose.dev.yml up -d
-```
-
-### 3. Run Tests
-```bash
-./scripts/run_all_tests.sh
-```
-
-### 4. Access Dashboards
-- Grafana: `http://localhost:3000`
-- Jaeger: `http://localhost:16686`
-- API: `http://localhost:8080`
+1. **Setup**: Install dependencies
+2. **Configure**: Update configuration files
+3. **Run**: Start development server
+4. **Test**: Run test suite
 
 ---
 
-## 🏗️ Architecture (v3.0 Consolidated)
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                       API Gateway                            │
-│              (Load Balancing, Auth, Rate Limiting)           │
-└─────────────────────────────┬───────────────────────────────┘
-                              │
-┌─────────────────────────────┼───────────────────────────────┐
-│                     Core Governance                          │
-│  ┌─────────────┐  ┌────────────────┐  ┌────────────────┐   │
-│  │   Policy    │  │  Constitutional │  │    Audit       │   │
-│  │  Registry   │  │    Validator    │  │   Service      │   │
-│  └─────────────┘  └────────────────┘  └────────────────┘   │
-└─────────────────────────────┬───────────────────────────────┘
-                              │
-┌─────────────────────────────┼───────────────────────────────┐
-│                     Enhanced Agent Bus                       │
-│  ┌─────────────┐  ┌────────────────┐  ┌────────────────┐   │
-│  │  Message    │  │  Deliberation  │  │     MACI       │   │
-│  │  Router     │  │    Layer       │  │  Enforcement   │   │
-│  └─────────────┘  └────────────────┘  └────────────────┘   │
-└─────────────────────────────────────────────────────────────┘
-```
-
----
-
-## 🔐 Security Features
-
-- **Zero-Trust Architecture**: mTLS, network segmentation
-- **RBAC**: 6 roles, 23 permissions, OPA-powered
-- **Rate Limiting**: Multi-scope (IP, tenant, user, endpoint)
-- **Crypto**: KMS encryption, Ed25519 signatures
-- **Supply Chain**: Container signing, SBOM generation
-
----
-
-## 📂 Key File Locations
-
-| Purpose | Location |
-|---------|----------|
-| Constitutional Hash | `acgs2-core/shared/constants.py` |
-| Main Config | `pyproject.toml` |
-| Docker Dev | `docker-compose.dev.yml` |
-| Helm Charts | `acgs2-infra/deploy/helm/acgs2/` |
-| Terraform | `acgs2-infra/deploy/terraform/` |
-| Policies (Rego) | `acgs2-core/enhanced_agent_bus/policies/` |
-| OpenAPI Specs | `docs/api/specs/` |
-| Test Fixtures | `acgs2-core/policies/rego/test_inputs/` |
-
----
-
-**Index Size**: ~4KB | **Last Updated**: 2026-01-03
+**Index Size**: ~12KB | **Last Updated**: 2026-01-03

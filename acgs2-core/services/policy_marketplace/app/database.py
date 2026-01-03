@@ -1,5 +1,6 @@
 """
 Database connection and session management
+Constitutional Hash: cdd01ef066bc6cf2
 """
 
 from typing import AsyncGenerator

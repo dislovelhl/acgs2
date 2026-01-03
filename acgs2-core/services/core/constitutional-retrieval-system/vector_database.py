@@ -1,4 +1,4 @@
-"""
+"""Constitutional Hash: cdd01ef066bc6cf2
 Vector Database Manager for Constitutional Retrieval System
 
 Supports Qdrant and Milvus vector databases for storing and retrieving

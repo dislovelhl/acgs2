@@ -1,3 +1,7 @@
+"""
+Constitutional Hash: cdd01ef066bc6cf2
+"""
+
 import asyncio
 import logging
 from typing import Any, Dict, List, Optional, Tuple
@@ -142,7 +146,13 @@ class EnhancedAgentBus:
         self._deliberation_queue = kwargs.get("deliberation_queue")
         if not self._deliberation_queue and DELIBERATION_AVAILABLE:
             self._deliberation_queue = DeliberationQueue()
-        self._validator = kwargs.get("validator") or StaticHashValidationStrategy()
+        # Initialize validation strategy with PQC support
+        if kwargs.get("validator"):
+            self._validator = kwargs.get("validator")
+        else:
+            # Use composite validation with PQC support
+            from .registry import CompositeValidationStrategy
+            self._validator = CompositeValidationStrategy(enable_pqc=True)
         self._processor = kwargs.get("processor") or MessageProcessor(
             registry=self._registry,
             router=self._router,

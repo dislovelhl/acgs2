@@ -1,4 +1,4 @@
-"""
+"""Constitutional Hash: cdd01ef066bc6cf2
 Escalation Worker Task
 Monitors Redis for approval timeouts and triggers auto-escalation.
 """

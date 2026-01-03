@@ -1,4 +1,4 @@
-"""
+"""Constitutional Hash: cdd01ef066bc6cf2
 Notification Retry Logic with Exponential Backoff
 
 Provides retry functionality for notification providers with configurable

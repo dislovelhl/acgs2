@@ -1,4 +1,4 @@
-"""
+"""Constitutional Hash: cdd01ef066bc6cf2
 HITL Approval Workflow Engine
 Handles approval chain execution, escalation logic, and state management
 """

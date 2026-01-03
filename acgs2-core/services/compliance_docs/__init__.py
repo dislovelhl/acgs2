@@ -1,4 +1,4 @@
-"""
+"""Constitutional Hash: cdd01ef066bc6cf2
 ACGS-2 Compliance Documentation Service
 
 Enterprise compliance documentation generation for SOC 2 Type II,

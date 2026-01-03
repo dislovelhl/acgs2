@@ -1,4 +1,4 @@
-"""
+"""Constitutional Hash: cdd01ef066bc6cf2
 LLM Reasoner for Constitutional Retrieval System
 
 Integrates retrieved constitutional documents and precedents with LLM reasoning

@@ -1,4 +1,4 @@
-"""
+"""Constitutional Hash: cdd01ef066bc6cf2
 Ethereum Layer 2 区块链客户端
 用于公开审计账本的区块链集成
 

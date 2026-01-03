@@ -528,20 +528,22 @@ def get_saga_engine() -> SagaLLMEngine:
 
 if __name__ == "__main__":
     # Example usage and testing
+    logging.basicConfig(level=logging.INFO, format="%(message)s")
+
     async def main():
-        print("Testing SagaLLM Transaction Engine...")
+        logger.info("Testing SagaLLM Transaction Engine...")
 
         engine = SagaLLMEngine()
 
         # Test engine status
         status = await engine.get_engine_status()
-        print(f"✅ Engine status: {status['status']}")
-        print(f"✅ Constitutional hash: {status['constitutional_hash']}")
+        logger.info("Engine status: %s", status['status'])
+        logger.info("Constitutional hash: %s", status['constitutional_hash'])
 
         # Test transaction creation
         transaction = engine.create_transaction("Test governance decision")
-        print(f"✅ Transaction created: {transaction.transaction_id}")
-        print(f"✅ Initial state: {transaction.state.value}")
+        logger.info("Transaction created: %s", transaction.transaction_id)
+        logger.info("Initial state: %s", transaction.state.value)
 
         # Test adding actions
         async def mock_execute():
@@ -558,13 +560,13 @@ if __name__ == "__main__":
             mock_compensate,
         )
 
-        print(f"✅ Action added: {action.action_id}")
-        print(f"✅ Actions in transaction: {len(transaction.actions)}")
+        logger.info("Action added: %s", action.action_id)
+        logger.info("Actions in transaction: %d", len(transaction.actions))
 
         # Test transaction execution
         success = await engine.execute_transaction(transaction)
-        print(f"✅ Transaction execution: {'success' if success else 'compensated'}")
-        print(f"✅ Final state: {transaction.state.value}")
+        logger.info("Transaction execution: %s", 'success' if success else 'compensated')
+        logger.info("Final state: %s", transaction.state.value)
 
         # Test context manager
         async def test_context_manager():
@@ -579,9 +581,9 @@ if __name__ == "__main__":
                 return await engine.execute_transaction(saga)
 
         context_success = await test_context_manager()
-        print(f"✅ Context manager: {'success' if context_success else 'compensated'}")
+        logger.info("Context manager: %s", 'success' if context_success else 'compensated')
 
-        print("✅ SagaLLM Transaction Engine test completed!")
+        logger.info("SagaLLM Transaction Engine test completed!")
 
     # Run test
     asyncio.run(main())

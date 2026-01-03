@@ -1,4 +1,4 @@
-"""
+"""Constitutional Hash: cdd01ef066bc6cf2
 Arweave 客户端
 用于审计日志哈希的永久去中心化存储
 

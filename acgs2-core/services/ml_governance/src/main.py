@@ -1,4 +1,4 @@
-"""
+"""Constitutional Hash: cdd01ef066bc6cf2
 ACGS-2 ML Governance Service
 Adaptive governance with ML models, feedback loops, and online learning
 """

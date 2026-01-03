@@ -1,4 +1,4 @@
-"""
+"""Constitutional Hash: cdd01ef066bc6cf2
 HITL Approvals Audit Log API Endpoints
 
 FastAPI router for audit trail retrieval and querying.

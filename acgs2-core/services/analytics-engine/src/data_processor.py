@@ -1,4 +1,4 @@
-"""
+"""Constitutional Hash: cdd01ef066bc6cf2
 Governance Data Processor - Kafka consumer for governance events
 
 Consumes governance events from Kafka topics and processes them into

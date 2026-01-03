@@ -1,4 +1,4 @@
-"""
+"""Constitutional Hash: cdd01ef066bc6cf2
 Microsoft Teams Notification Provider
 
 Implements webhook-based notification delivery for Microsoft Teams with connector cards.

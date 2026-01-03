@@ -1,4 +1,4 @@
-"""
+"""Constitutional Hash: cdd01ef066bc6cf2
 XLSX Document Generator for Compliance Documentation Service
 
 Generates professional compliance evidence matrices and reports in XLSX format

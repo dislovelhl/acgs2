@@ -1,3 +1,7 @@
+"""
+Constitutional Hash: cdd01ef066bc6cf2
+"""
+
 #!/usr/bin/env python3
 """
 Seed script for verified policy templates in the Policy Marketplace.

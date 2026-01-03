@@ -1,4 +1,4 @@
-"""
+"""Constitutional Hash: cdd01ef066bc6cf2
 Insight Generator - OpenAI SDK integration for AI-powered governance insights
 
 Generates natural language insights from governance data using OpenAI GPT models.

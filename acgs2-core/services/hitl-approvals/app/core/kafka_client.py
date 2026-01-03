@@ -1,4 +1,4 @@
-"""
+"""Constitutional Hash: cdd01ef066bc6cf2
 Kafka Client for HITL Approvals Event Streaming
 
 Provides async Kafka producer and consumer for approval workflow events.

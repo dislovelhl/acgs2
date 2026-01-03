@@ -179,6 +179,11 @@ class AgentMessage:
     constitutional_hash: str = CONSTITUTIONAL_HASH
     constitutional_validated: bool = False
 
+    # Post-Quantum Cryptography support (NIST FIPS 203/204)
+    pqc_signature: Optional[str] = None  # CRYSTALS-Dilithium signature (base64)
+    pqc_public_key: Optional[str] = None  # CRYSTALS-Kyber public key (base64)
+    pqc_algorithm: Optional[str] = None  # "dilithium-3", "kyber-768", etc.
+
     # Timestamps
     created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
@@ -211,6 +216,9 @@ class AgentMessage:
             "status": self.status.value,
             "constitutional_hash": self.constitutional_hash,
             "constitutional_validated": self.constitutional_validated,
+            "pqc_signature": self.pqc_signature,
+            "pqc_public_key": self.pqc_public_key,
+            "pqc_algorithm": self.pqc_algorithm,
             "created_at": self.created_at.isoformat(),
             "updated_at": self.updated_at.isoformat(),
         }
@@ -226,6 +234,9 @@ class AgentMessage:
                 "expires_at": self.expires_at.isoformat() if self.expires_at else None,
                 "impact_score": self.impact_score,
                 "performance_metrics": self.performance_metrics,
+                "pqc_signature": self.pqc_signature,
+                "pqc_public_key": self.pqc_public_key,
+                "pqc_algorithm": self.pqc_algorithm,
             }
         )
         return data
@@ -243,6 +254,9 @@ class AgentMessage:
             tenant_id=data.get("tenant_id", ""),
             priority=Priority(data.get("priority", 1)),  # Default to MEDIUM/NORMAL
             status=MessageStatus(data.get("status", "pending")),
+            pqc_signature=data.get("pqc_signature"),
+            pqc_public_key=data.get("pqc_public_key"),
+            pqc_algorithm=data.get("pqc_algorithm"),
         )
 
 

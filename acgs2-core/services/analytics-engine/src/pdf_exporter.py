@@ -1,4 +1,4 @@
-"""
+"""Constitutional Hash: cdd01ef066bc6cf2
 PDF Exporter - ReportLab document generation for executive governance reports
 
 Generates professionally formatted PDF reports containing governance summaries,

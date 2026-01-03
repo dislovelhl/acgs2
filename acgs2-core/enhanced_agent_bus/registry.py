@@ -50,6 +50,7 @@ try:
         CompositeValidationStrategy,
         DynamicPolicyValidationStrategy,
         OPAValidationStrategy,
+        PQCValidationStrategy,
         RustValidationStrategy,
         StaticHashValidationStrategy,
     )
@@ -66,6 +67,7 @@ except (ImportError, ValueError):
         CompositeValidationStrategy,
         DynamicPolicyValidationStrategy,
         OPAValidationStrategy,
+        PQCValidationStrategy,
         RustValidationStrategy,
         StaticHashValidationStrategy,
     )
@@ -298,6 +300,7 @@ __all__ = [
     "StaticHashValidationStrategy",
     "DynamicPolicyValidationStrategy",
     "OPAValidationStrategy",
+    "PQCValidationStrategy",
     "RustValidationStrategy",
     "CompositeValidationStrategy",
     "PythonProcessingStrategy",

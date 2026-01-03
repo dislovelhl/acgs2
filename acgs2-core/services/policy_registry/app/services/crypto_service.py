@@ -1,4 +1,4 @@
-"""
+"""Constitutional Hash: cdd01ef066bc6cf2
 Cryptographic service for Ed25519 signing and verification
 """
 

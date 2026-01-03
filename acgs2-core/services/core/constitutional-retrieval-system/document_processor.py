@@ -1,4 +1,4 @@
-"""
+"""Constitutional Hash: cdd01ef066bc6cf2
 Document Processor for Constitutional Retrieval System
 
 Handles processing, chunking, and vectorization of constitutional documents

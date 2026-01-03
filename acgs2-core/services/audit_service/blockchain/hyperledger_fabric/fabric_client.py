@@ -1,4 +1,4 @@
-"""
+"""Constitutional Hash: cdd01ef066bc6cf2
 Hyperledger Fabric 区块链客户端
 用于企业审计账本的区块链集成
 """

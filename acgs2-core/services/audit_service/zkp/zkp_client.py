@@ -1,4 +1,4 @@
-"""
+"""Constitutional Hash: cdd01ef066bc6cf2
 零知识证明客户端
 用于审计数据的隐私保护验证
 

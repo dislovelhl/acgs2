@@ -1,4 +1,4 @@
-"""
+"""Constitutional Hash: cdd01ef066bc6cf2
 Temporary File Cleanup Module for Compliance Documentation Service
 
 Provides background cleanup of temporary files generated during report export.

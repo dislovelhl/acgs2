@@ -1,4 +1,4 @@
-"""
+"""Constitutional Hash: cdd01ef066bc6cf2
 Setup configuration for ACGS-2 Core package.
 
 Provides the acgs2-policy CLI command for Rego policy validation and testing.

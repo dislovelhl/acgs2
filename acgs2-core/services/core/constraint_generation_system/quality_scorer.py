@@ -1,4 +1,4 @@
-"""
+"""Constitutional Hash: cdd01ef066bc6cf2
 ACGS-2 Quality Scorer
 集成SonarQube进行代码质量评分
 """

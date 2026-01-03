@@ -1,4 +1,4 @@
-"""
+"""Constitutional Hash: cdd01ef066bc6cf2
 Insights Route - GET /insights endpoint with AI-generated governance summaries
 
 Provides AI-powered governance insights including:

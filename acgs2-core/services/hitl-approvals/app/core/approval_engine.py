@@ -1,4 +1,4 @@
-"""
+"""Constitutional Hash: cdd01ef066bc6cf2
 HITL Approval Chain Engine
 
 Orchestrates approval workflows with role-based routing, escalation tracking,

@@ -1,4 +1,4 @@
-"""
+"""Constitutional Hash: cdd01ef066bc6cf2
 HITL Approvals Notification Providers
 
 This module provides notification integrations for Slack, Microsoft Teams,

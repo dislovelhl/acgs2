@@ -1,4 +1,4 @@
-"""
+"""Constitutional Hash: cdd01ef066bc6cf2
 ACGS-2 Compliance Documentation Template Engine
 
 Configures Jinja2 template engine with security-focused autoescaping

@@ -1,4 +1,4 @@
-"""
+"""Constitutional Hash: cdd01ef066bc6cf2
 Abstract Notification Provider Base Class
 
 Defines the interface for notification providers (Slack, Teams, PagerDuty)

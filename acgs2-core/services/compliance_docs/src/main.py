@@ -1,4 +1,4 @@
-"""
+"""Constitutional Hash: cdd01ef066bc6cf2
 ACGS-2 Compliance Documentation Service
 Generates compliance documentation and evidence exports for SOC 2, ISO 27001, GDPR, and EU AI Act
 """

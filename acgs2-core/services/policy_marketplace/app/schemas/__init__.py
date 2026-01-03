@@ -1,4 +1,4 @@
-"""
+"""Constitutional Hash: cdd01ef066bc6cf2
 Pydantic schemas for Policy Marketplace Service
 
 Exports all request/response schemas for API validation

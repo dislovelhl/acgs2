@@ -1,4 +1,4 @@
-"""
+"""Constitutional Hash: cdd01ef066bc6cf2
 ACGS-2 Policy Playground - Example Policies
 
 Provides pre-built example policies demonstrating common Rego patterns

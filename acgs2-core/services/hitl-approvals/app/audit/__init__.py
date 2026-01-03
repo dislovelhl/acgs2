@@ -1,4 +1,4 @@
-"""
+"""Constitutional Hash: cdd01ef066bc6cf2
 HITL Approvals Audit Module
 
 This module provides an append-only audit trail persistence layer for

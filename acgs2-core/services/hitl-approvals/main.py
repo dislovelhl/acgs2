@@ -1,4 +1,4 @@
-"""
+"""Constitutional Hash: cdd01ef066bc6cf2
 ACGS-2 HITL Approvals Service
 Human-in-the-Loop workflow automation and approval chains for AI governance decisions.
 """

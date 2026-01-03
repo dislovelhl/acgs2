@@ -1,4 +1,4 @@
-"""
+"""Constitutional Hash: cdd01ef066bc6cf2
 Impact Scorer v3.1.0 - ML-Powered Impact Assessment
 
 This module provides ML-based impact scoring for governance decisions using:

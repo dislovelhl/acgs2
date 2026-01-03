@@ -1,4 +1,4 @@
-"""
+"""Constitutional Hash: cdd01ef066bc6cf2
 HITL Approvals Service Configuration
 
 Uses pydantic-settings for type-safe environment configuration.

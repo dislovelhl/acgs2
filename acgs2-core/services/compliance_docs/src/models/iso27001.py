@@ -1,4 +1,4 @@
-"""
+"""Constitutional Hash: cdd01ef066bc6cf2
 ISO 27001:2022 compliance models and data structures
 """
 

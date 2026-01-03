@@ -1,3 +1,7 @@
+"""
+Constitutional Hash: cdd01ef066bc6cf2
+"""
+
 # ruff: noqa: I001
 """
 Alembic environment configuration for async migrations with SQLAlchemy 2.0

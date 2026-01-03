@@ -1,4 +1,4 @@
-"""
+"""Constitutional Hash: cdd01ef066bc6cf2
 Pydantic schemas for Policy Marketplace request/response validation
 
 Following Pydantic v2 patterns with ConfigDict and field_serializer

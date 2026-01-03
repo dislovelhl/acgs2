@@ -1,4 +1,4 @@
-"""
+"""Constitutional Hash: cdd01ef066bc6cf2
 ACGS-2 Policy Playground Module
 
 Provides a web-based interactive environment for testing and learning

@@ -1,4 +1,4 @@
-"""
+"""Constitutional Hash: cdd01ef066bc6cf2
 Retrieval Engine for Constitutional Retrieval System
 
 Implements RAG (Retrieval-Augmented Generation) for retrieving similar

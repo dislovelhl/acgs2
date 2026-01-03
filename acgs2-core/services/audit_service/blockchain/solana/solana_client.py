@@ -1,4 +1,4 @@
-"""
+"""Constitutional Hash: cdd01ef066bc6cf2
 Solana 区块链客户端 (Production Ready)
 用于审计日志哈希的去中心化锚定
 

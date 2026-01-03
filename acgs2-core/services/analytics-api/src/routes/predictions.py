@@ -1,4 +1,4 @@
-"""
+"""Constitutional Hash: cdd01ef066bc6cf2
 Predictions Route - GET /predictions endpoint with violation forecasts
 
 Provides time-series forecasting for governance violations including:
