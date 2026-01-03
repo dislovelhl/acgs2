@@ -196,7 +196,9 @@
           "subtask_id": "4.3",
           "title": "Update contributing guidelines",
           "description": "Update CONTRIBUTING.md or similar with secrets policy",
-          "status": "pending",
+          "status": "completed",
+          "completed_at": "2026-01-04T00:25:00.000Z",
+          "notes": "Successfully updated CONTRIBUTING.md with comprehensive secrets detection policy. Added new \"Secrets Detection and Protection\" section under Security Considerations covering: (1) What gets detected - AI credentials, infrastructure secrets, 140+ patterns, (2) Clear policy with examples of what CAN commit (dev placeholders, .env.example values) vs what CANNOT commit (real API keys, production passwords), (3) Step-by-step guidance when pre-commit hooks fail with three solution paths, (4) Links to detailed documentation (SECRETS_DETECTION.md and SECRETS_QUICK_FIX.md), (5) Setup instructions and performance notes (<5s scan time). Enhanced existing Code Security section to reference automated enforcement via secrets_manager.py. All acceptance criteria met: mentions secrets detection ✓, policy on what can/cannot commit ✓, links to documentation ✓. Commit: 75a66e5e6",
           "acceptance_criteria": [
             "Contributing guidelines mention secrets detection",
             "Policy on what secrets can/cannot be committed",

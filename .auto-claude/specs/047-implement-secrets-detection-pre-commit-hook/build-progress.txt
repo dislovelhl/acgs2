@@ -344,21 +344,69 @@ All subtasks in Phase 3 completed successfully. The custom ACGS-2 secrets detect
 
 ---
 
-## Current Status: Phase 4 - Documentation and Developer Experience (In Progress)
+#### ✅ Subtask 4.3 - Update contributing guidelines (2026-01-04)
+- Successfully updated CONTRIBUTING.md with comprehensive secrets detection policy
+- Added new "Secrets Detection and Protection" section (80+ lines) under Security Considerations
+- Documented what gets detected:
+  * AI provider credentials (Anthropic, Claude Code, OpenRouter, HuggingFace, OpenAI)
+  * Infrastructure secrets (AWS, JWT, Vault, database passwords)
+  * 140+ generic patterns via gitleaks
+- Clear policy on what CAN be committed:
+  * Development placeholders (dev-*, test-*, your-*)
+  * Example configuration files (.env.example)
+  * Test fixtures clearly marked as fake
+  * Public certificates for testing
+- Clear policy on what CANNOT be committed:
+  * Real API keys from any provider
+  * Production passwords or tokens
+  * Private keys without exceptions
+  * Actual JWT secrets or session keys
+  * Real database credentials
+- Step-by-step guidance when pre-commit hooks fail:
+  * Decision tree: Is it real? Is it a false positive?
+  * Three solution paths with code examples
+  * Emergency bypass instructions (with warnings)
+- Links to comprehensive documentation:
+  * SECRETS_DETECTION.md - Full detection guide
+  * SECRETS_QUICK_FIX.md - Quick-fix solutions
+  * Secrets Manager integration section
+- Setup instructions for pre-commit hooks
+- Enhanced existing "Code Security" section to reference automated enforcement
+- All pre-commit hooks pass
+- Commit: 75a66e5e6
 
-All subtasks in Phase 4 completed so far:
+**Acceptance Criteria Met:**
+- ✅ Contributing guidelines mention secrets detection (comprehensive section added)
+- ✅ Policy on what secrets can/cannot be committed (clear examples and explanations)
+- ✅ Link to secrets detection documentation (3 documentation links provided)
+
+---
+
+---
+
+## Current Status: Phase 4 - Documentation and Developer Experience (COMPLETED ✅)
+
+All subtasks in Phase 4 completed successfully:
 - ✅ 4.1: Secrets detection documentation (SECRETS_DETECTION.md)
 - ✅ 4.2: Developer quick-fix guide (SECRETS_QUICK_FIX.md)
+- ✅ 4.3: Contributing guidelines updated (CONTRIBUTING.md)
 
-**Next subtask:**
-- 4.3: Update contributing guidelines
+**Phase 4 Summary:**
+The complete documentation and developer experience suite is now in place, providing:
+- Comprehensive technical documentation (SECRETS_DETECTION.md)
+- Quick-fix troubleshooting guide (SECRETS_QUICK_FIX.md)
+- Contributing guidelines with clear secrets policy (CONTRIBUTING.md)
+- Links and cross-references between all documentation
+- Developer-friendly guidance for handling secrets detection
 
 ---
 
 ## Next Steps:
-1. Continue Phase 4: Documentation and Developer Experience
-   - Subtask 4.3: Update contributing guidelines
-2. Then proceed to Phase 5: Testing and Validation
+1. Proceed to Phase 5: Testing and Validation
+   - Subtask 5.1: Create test fixtures for secret patterns
+   - Subtask 5.2: Create automated tests for hooks
+   - Subtask 5.3: Perform end-to-end validation
+   - Subtask 5.4: Validate CI integration
 
 ## Blockers:
 None
