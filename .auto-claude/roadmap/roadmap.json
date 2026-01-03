@@ -36,14 +36,21 @@
           "id": "milestone-1-1",
           "title": "Core ML Pipeline Optimization",
           "description": "ONNX GPU acceleration and optimized BERT inference working in production with sub-millisecond latency",
-          "features": ["feature-1", "feature-2", "feature-3"],
+          "features": [
+            "feature-1",
+            "feature-2",
+            "feature-3"
+          ],
           "status": "completed"
         },
         {
           "id": "milestone-1-2",
           "title": "API Production Readiness",
           "description": "All API placeholder implementations completed with proper message processing and configuration validation",
-          "features": ["feature-4", "feature-5"],
+          "features": [
+            "feature-4",
+            "feature-5"
+          ],
           "status": "completed"
         },
         {
@@ -83,21 +90,33 @@
           "id": "milestone-2-1",
           "title": "HITL Deliberation v2 Complete",
           "description": "Production-ready event-driven vote collection with enhanced deliberation workflows and MACI role management",
-          "features": ["feature-11", "feature-12", "feature-13"],
+          "features": [
+            "feature-11",
+            "feature-12",
+            "feature-13"
+          ],
           "status": "completed"
         },
         {
           "id": "milestone-2-2",
           "title": "Compliance Certification Ready",
           "description": "Full documentation and audit trails for SOC 2, ISO 27001, and EU AI Act compliance with automated evidence collection",
-          "features": ["feature-14", "feature-15"],
+          "features": [
+            "feature-14",
+            "feature-15"
+          ],
           "status": "completed"
         },
         {
           "id": "milestone-2-3",
           "title": "Developer Experience Excellence",
           "description": "Pre-built templates, interactive onboarding, IDE extensions, and comprehensive SDK packages",
-          "features": ["feature-16", "feature-17", "feature-18", "feature-19"],
+          "features": [
+            "feature-16",
+            "feature-17",
+            "feature-18",
+            "feature-19"
+          ],
           "status": "completed"
         }
       ]
@@ -123,21 +142,32 @@
           "id": "milestone-3-1",
           "title": "Federated Learning Operational",
           "description": "Adaptive governance learns from cross-tenant feedback with privacy-preserving aggregation",
-          "features": ["feature-20", "feature-21"],
+          "features": [
+            "feature-20",
+            "feature-21"
+          ],
           "status": "completed"
         },
         {
           "id": "milestone-3-2",
           "title": "Enterprise Multi-Tenancy & Scale",
           "description": "Full multi-tenant isolation with 10,000+ RPS performance and enterprise SSO integration",
-          "features": ["feature-22", "feature-23", "feature-24"],
+          "features": [
+            "feature-22",
+            "feature-23",
+            "feature-24"
+          ],
           "status": "completed"
         },
         {
           "id": "milestone-3-3",
           "title": "Advanced Analytics & Insights",
           "description": "Real-time governance analytics dashboard with predictive insights and executive reporting",
-          "features": ["feature-25", "feature-26", "feature-27"],
+          "features": [
+            "feature-25",
+            "feature-26",
+            "feature-27"
+          ],
           "status": "completed"
         }
       ]
@@ -160,21 +190,72 @@
           "id": "milestone-4-1",
           "title": "Quantum-Ready Security",
           "description": "Quantum-resistant cryptography integrated for future-proof security and immutable audit trails",
-          "features": ["feature-28"],
+          "features": [
+            "feature-28"
+          ],
           "status": "completed"
         },
         {
           "id": "milestone-4-2",
           "title": "Global Federation & Policy Marketplace",
           "description": "Cross-organization governance federation with community policy templates and marketplace",
-          "features": ["feature-29", "feature-30", "feature-31"],
+          "features": [
+            "feature-29",
+            "feature-30",
+            "feature-31"
+          ],
           "status": "completed"
         },
         {
           "id": "milestone-4-3",
           "title": "Self-Evolving Governance",
           "description": "Autonomous governance systems that adapt and improve based on emerging risks without human intervention",
-          "features": ["feature-32"],
+          "features": [
+            "feature-32"
+          ],
+          "status": "completed"
+        }
+      ]
+    },
+    {
+      "id": "phase-5",
+      "name": "Evolution - Next-Generation Governance",
+      "description": "Implement cutting-edge governance innovations including post-quantum cryptography, cross-organization federation, and self-evolving governance systems with comprehensive safety bounds",
+      "order": 5,
+      "status": "in_progress",
+      "features": [
+        "feature-33",
+        "feature-34",
+        "feature-35",
+        "feature-36"
+      ],
+      "milestones": [
+        {
+          "id": "milestone-5-1",
+          "title": "Post-Quantum Security",
+          "description": "NIST-approved CRYSTALS-Kyber and CRYSTALS-Dilithium algorithms integrated for quantum-resistant constitutional hash validation",
+          "features": [
+            "feature-33"
+          ],
+          "status": "completed"
+        },
+        {
+          "id": "milestone-5-2",
+          "title": "Federation Protocol",
+          "description": "Cross-organization governance federation with trust establishment, policy synchronization, and distributed audit trails",
+          "features": [
+            "feature-34"
+          ],
+          "status": "completed"
+        },
+        {
+          "id": "milestone-5-3",
+          "title": "Autonomous Governance",
+          "description": "Self-evolving governance systems with safety guardrails, ethics evaluation, and human override capabilities",
+          "features": [
+            "feature-35",
+            "feature-36"
+          ],
           "status": "completed"
         }
       ]
@@ -204,7 +285,10 @@
         "As a Platform Architect, I want to leverage GPU resources so that impact scoring scales with system load"
       ],
       "linked_spec_id": "021-enable-onnx-gpu-acceleration",
-      "competitor_insight_ids": ["pain-1-4", "gap-5"]
+      "competitor_insight_ids": [
+        "pain-1-4",
+        "gap-5"
+      ]
     },
     {
       "id": "feature-2",
@@ -215,7 +299,9 @@
       "complexity": "medium",
       "impact": "high",
       "phase_id": "phase-1",
-      "dependencies": ["feature-1"],
+      "dependencies": [
+        "feature-1"
+      ],
       "status": "completed",
       "acceptance_criteria": [
         "Optimized BERT inference enabled in production",
@@ -229,7 +315,10 @@
         "As a DevOps engineer, I want efficient BERT inference so that ML operations don't become bottlenecks"
       ],
       "linked_spec_id": "022-fix-optimized-bert-inference",
-      "competitor_insight_ids": ["pain-5-2", "gap-2"]
+      "competitor_insight_ids": [
+        "pain-5-2",
+        "gap-2"
+      ]
     },
     {
       "id": "feature-3",
@@ -254,7 +343,10 @@
         "As a DevOps engineer, I want persistent state so that service restarts don't lose governance context"
       ],
       "linked_spec_id": "023-claude-flow-persistent-memory-implementation",
-      "competitor_insight_ids": ["pain-5-2", "gap-2"]
+      "competitor_insight_ids": [
+        "pain-5-2",
+        "gap-2"
+      ]
     },
     {
       "id": "feature-4",
@@ -384,8 +476,8 @@
         "As a DevOps Engineer, I want structured logs so that I can integrate with my organization's log aggregation platform",
         "As an SRE, I want correlation IDs so that I can trace requests across all three services"
       ],
-      "competitor_insight_ids": [],
-      "linked_spec_id": "032-structured-logging-standardization"
+      "linked_spec_id": "032-structured-logging-standardization",
+      "competitor_insight_ids": []
     },
     {
       "id": "feature-9",
@@ -396,7 +488,9 @@
       "complexity": "high",
       "impact": "high",
       "phase_id": "phase-1",
-      "dependencies": ["feature-2"],
+      "dependencies": [
+        "feature-2"
+      ],
       "status": "completed",
       "acceptance_criteria": [
         "LLM integration operational for ambiguous case detection",
@@ -409,7 +503,10 @@
         "As an AI Platform Engineer, I want the system to intelligently classify ambiguous governance cases so that edge cases don't require manual intervention",
         "As a Compliance Officer, I want confident decisions even on unclear inputs so that I can trust the governance outcomes"
       ],
-      "competitor_insight_ids": ["pain-3-2", "pain-5-1"]
+      "competitor_insight_ids": [
+        "pain-3-2",
+        "pain-5-1"
+      ]
     },
     {
       "id": "feature-10",
@@ -433,7 +530,10 @@
         "As an AI Platform Engineer, I want to evaluate governance policies across entire conversations so that I can enforce constitutional compliance on complex workflows",
         "As a Security Engineer, I want conversation context tracked for governance so that multi-step attacks or policy circumvention are detected"
       ],
-      "competitor_insight_ids": ["pain-2-2", "pain-6-1"]
+      "competitor_insight_ids": [
+        "pain-2-2",
+        "pain-6-1"
+      ]
     },
     {
       "id": "feature-11",
@@ -444,7 +544,9 @@
       "complexity": "high",
       "impact": "high",
       "phase_id": "phase-2",
-      "dependencies": ["feature-6"],
+      "dependencies": [
+        "feature-6"
+      ],
       "status": "completed",
       "acceptance_criteria": [
         "Votes collected via Kafka events in real-time with guaranteed delivery",
@@ -477,7 +579,9 @@
       "complexity": "medium",
       "impact": "high",
       "phase_id": "phase-2",
-      "dependencies": ["feature-11"],
+      "dependencies": [
+        "feature-11"
+      ],
       "status": "completed",
       "acceptance_criteria": [
         "Dynamic role assignment based on context, availability, and expertise",
@@ -490,7 +594,9 @@
         "As a Platform Architect, I want flexible role management so that governance fits organizational structures",
         "As a Compliance Officer, I want role audit trails so that responsibility is clearly documented"
       ],
-      "competitor_insight_ids": ["gap-1"]
+      "competitor_insight_ids": [
+        "gap-1"
+      ]
     },
     {
       "id": "feature-13",
@@ -501,7 +607,10 @@
       "complexity": "high",
       "impact": "high",
       "phase_id": "phase-2",
-      "dependencies": ["feature-11", "feature-12"],
+      "dependencies": [
+        "feature-11",
+        "feature-12"
+      ],
       "status": "completed",
       "acceptance_criteria": [
         "Configurable approval chains with role-based routing",
@@ -567,7 +676,9 @@
       "complexity": "high",
       "impact": "high",
       "phase_id": "phase-2",
-      "dependencies": ["feature-14"],
+      "dependencies": [
+        "feature-14"
+      ],
       "status": "completed",
       "acceptance_criteria": [
         "SOC 2 control mapping documentation complete (all Trust Services Criteria)",
@@ -582,7 +693,11 @@
         "As a Compliance Officer, I want automated evidence collection so that compliance is continuous",
         "As an Internal Auditor, I want control effectiveness monitoring so that I can identify gaps"
       ],
-      "competitor_insight_ids": ["pain-1-3", "pain-4-3", "gap-4"]
+      "competitor_insight_ids": [
+        "pain-1-3",
+        "pain-4-3",
+        "gap-4"
+      ]
     },
     {
       "id": "feature-16",
@@ -607,7 +722,11 @@
         "As a DevOps engineer, I want pre-built templates so that I can deploy governance in hours not weeks",
         "As a Platform Architect, I want industry-specific policies so that governance fits our regulatory domain"
       ],
-      "competitor_insight_ids": ["pain-5-1", "pain-5-4", "gap-6"]
+      "competitor_insight_ids": [
+        "pain-5-1",
+        "pain-5-4",
+        "gap-6"
+      ]
     },
     {
       "id": "feature-17",
@@ -618,7 +737,9 @@
       "complexity": "medium",
       "impact": "high",
       "phase_id": "phase-2",
-      "dependencies": ["feature-16"],
+      "dependencies": [
+        "feature-16"
+      ],
       "status": "completed",
       "acceptance_criteria": [
         "Interactive tutorial covering core governance concepts",
@@ -633,7 +754,11 @@
         "As a Platform Architect, I want sample deployments so that I can evaluate ACGS-2 easily",
         "As a Developer Advocate, I want onboarding analytics so that I can improve the experience"
       ],
-      "competitor_insight_ids": ["pain-2-1", "pain-5-4", "gap-6"]
+      "competitor_insight_ids": [
+        "pain-2-1",
+        "pain-5-4",
+        "gap-6"
+      ]
     },
     {
       "id": "feature-18",
@@ -644,7 +769,9 @@
       "complexity": "medium",
       "impact": "high",
       "phase_id": "phase-2",
-      "dependencies": ["feature-4"],
+      "dependencies": [
+        "feature-4"
+      ],
       "status": "completed",
       "acceptance_criteria": [
         "Python SDK published to PyPI with 100% API coverage",
@@ -659,7 +786,9 @@
         "As a TypeScript Developer, I want type-safe interfaces so that I get IDE autocompletion and error checking",
         "As a Go Developer, I want idiomatic Go SDK so that integration feels native"
       ],
-      "competitor_insight_ids": ["pain-6-2"]
+      "competitor_insight_ids": [
+        "pain-6-2"
+      ]
     },
     {
       "id": "feature-19",
@@ -685,7 +814,10 @@
         "As a Security Engineer, I want policy validation so that I catch errors before deployment",
         "As a new user, I want a playground so that I can experiment without setup"
       ],
-      "competitor_insight_ids": ["pain-2-1", "pain-5-4"]
+      "competitor_insight_ids": [
+        "pain-2-1",
+        "pain-5-4"
+      ]
     },
     {
       "id": "feature-20",
@@ -696,7 +828,10 @@
       "complexity": "high",
       "impact": "high",
       "phase_id": "phase-3",
-      "dependencies": ["feature-2", "feature-3"],
+      "dependencies": [
+        "feature-2",
+        "feature-3"
+      ],
       "status": "completed",
       "acceptance_criteria": [
         "Federated learning model updates without sharing raw data",
@@ -710,7 +845,10 @@
         "As a Security Engineer, I want privacy-preserving learning so that tenant data remains isolated",
         "As a Compliance Officer, I want opt-out capability so that I control data sharing"
       ],
-      "competitor_insight_ids": ["pain-5-2", "gap-2"]
+      "competitor_insight_ids": [
+        "pain-5-2",
+        "gap-2"
+      ]
     },
     {
       "id": "feature-21",
@@ -721,7 +859,10 @@
       "complexity": "high",
       "impact": "high",
       "phase_id": "phase-3",
-      "dependencies": ["feature-2", "feature-20"],
+      "dependencies": [
+        "feature-2",
+        "feature-20"
+      ],
       "status": "completed",
       "acceptance_criteria": [
         "Impact scores include human-readable explanations",
@@ -735,7 +876,10 @@
         "As an AI Safety Researcher, I want transparency so that I can validate scoring accuracy",
         "As a Legal Advisor, I want documentation so that liability is properly attributed"
       ],
-      "competitor_insight_ids": ["pain-4-4", "gap-2"]
+      "competitor_insight_ids": [
+        "pain-4-4",
+        "gap-2"
+      ]
     },
     {
       "id": "feature-22",
@@ -746,7 +890,10 @@
       "complexity": "high",
       "impact": "high",
       "phase_id": "phase-3",
-      "dependencies": ["feature-11", "feature-12"],
+      "dependencies": [
+        "feature-11",
+        "feature-12"
+      ],
       "status": "completed",
       "acceptance_criteria": [
         "Complete tenant isolation at data and policy levels",
@@ -761,7 +908,11 @@
         "As a Security Engineer, I want tenant isolation so that data breaches are contained",
         "As a Tenant Admin, I want self-service so that I can manage my organization independently"
       ],
-      "competitor_insight_ids": ["pain-3-1", "pain-4-2", "gap-3"]
+      "competitor_insight_ids": [
+        "pain-3-1",
+        "pain-4-2",
+        "gap-3"
+      ]
     },
     {
       "id": "feature-23",
@@ -772,7 +923,10 @@
       "complexity": "high",
       "impact": "high",
       "phase_id": "phase-3",
-      "dependencies": ["feature-1", "feature-7"],
+      "dependencies": [
+        "feature-1",
+        "feature-7"
+      ],
       "status": "completed",
       "acceptance_criteria": [
         "System sustains 10,000 RPS in load testing",
@@ -786,7 +940,11 @@
         "As a Platform Engineer, I want the system to scale to massive traffic so that governance never becomes a bottleneck",
         "As an SRE, I want performance guarantees so that SLOs are maintained under peak load"
       ],
-      "competitor_insight_ids": ["pain-1-4", "pain-6-4", "gap-5"]
+      "competitor_insight_ids": [
+        "pain-1-4",
+        "pain-6-4",
+        "gap-5"
+      ]
     },
     {
       "id": "feature-24",
@@ -797,7 +955,9 @@
       "complexity": "medium",
       "impact": "high",
       "phase_id": "phase-3",
-      "dependencies": ["feature-22"],
+      "dependencies": [
+        "feature-22"
+      ],
       "status": "completed",
       "acceptance_criteria": [
         "SAML 2.0 SP implementation complete",
@@ -838,7 +998,10 @@
         "As a DevOps engineer, I want real-time metrics so that I can identify governance issues quickly",
         "As an Executive, I want dashboards so that I can understand governance health at a glance"
       ],
-      "competitor_insight_ids": ["pain-1-3", "gap-4"]
+      "competitor_insight_ids": [
+        "pain-1-3",
+        "gap-4"
+      ]
     },
     {
       "id": "feature-26",
@@ -849,7 +1012,9 @@
       "complexity": "medium",
       "impact": "medium",
       "phase_id": "phase-3",
-      "dependencies": ["feature-22"],
+      "dependencies": [
+        "feature-22"
+      ],
       "status": "completed",
       "acceptance_criteria": [
         "Accurate metering of governance decisions by type",
@@ -863,7 +1028,9 @@
         "As a DevOps engineer, I want cost visibility so that I can manage governance expenses",
         "As a Finance Team member, I want cost allocation so that I can chargeback to departments"
       ],
-      "competitor_insight_ids": ["pain-3-4"]
+      "competitor_insight_ids": [
+        "pain-3-4"
+      ]
     },
     {
       "id": "feature-27",
@@ -874,7 +1041,9 @@
       "complexity": "high",
       "impact": "medium",
       "phase_id": "phase-3",
-      "dependencies": ["feature-18"],
+      "dependencies": [
+        "feature-18"
+      ],
       "status": "completed",
       "acceptance_criteria": [
         "Splunk and Microsoft Sentinel SIEM integrations",
@@ -923,7 +1092,10 @@
       "complexity": "medium",
       "impact": "medium",
       "phase_id": "phase-4",
-      "dependencies": ["feature-16", "feature-19"],
+      "dependencies": [
+        "feature-16",
+        "feature-19"
+      ],
       "status": "completed",
       "acceptance_criteria": [
         "Marketplace web interface operational",
@@ -938,7 +1110,9 @@
         "As an experienced user, I want to share policies so that the community benefits from my work",
         "As a security auditor, I want verified templates so that I can trust community contributions"
       ],
-      "competitor_insight_ids": ["pain-5-1"]
+      "competitor_insight_ids": [
+        "pain-5-1"
+      ]
     },
     {
       "id": "feature-30",
@@ -949,7 +1123,10 @@
       "complexity": "high",
       "impact": "medium",
       "phase_id": "phase-4",
-      "dependencies": ["feature-22", "feature-28"],
+      "dependencies": [
+        "feature-22",
+        "feature-28"
+      ],
       "status": "completed",
       "acceptance_criteria": [
         "Federation protocol for cross-organization governance",
@@ -974,7 +1151,9 @@
       "complexity": "high",
       "impact": "medium",
       "phase_id": "phase-4",
-      "dependencies": ["feature-24"],
+      "dependencies": [
+        "feature-24"
+      ],
       "status": "completed",
       "acceptance_criteria": [
         "Multi-region Kubernetes deployment templates",
@@ -989,7 +1168,11 @@
         "As a Compliance Officer, I want data residency controls so that EU data stays in EU",
         "As an SRE, I want regional failover so that outages are contained"
       ],
-      "competitor_insight_ids": ["pain-2-4", "pain-3-1", "pain-4-2"]
+      "competitor_insight_ids": [
+        "pain-2-4",
+        "pain-3-1",
+        "pain-4-2"
+      ]
     },
     {
       "id": "feature-32",
@@ -1000,7 +1183,10 @@
       "complexity": "high",
       "impact": "high",
       "phase_id": "phase-4",
-      "dependencies": ["feature-20", "feature-21"],
+      "dependencies": [
+        "feature-20",
+        "feature-21"
+      ],
       "status": "completed",
       "acceptance_criteria": [
         "Prototype autonomous policy adaptation mechanism",
@@ -1015,41 +1201,182 @@
         "As a Platform Architect, I want autonomous governance so that operational burden decreases over time",
         "As a Compliance Officer, I want safety bounds so that autonomous changes can't violate regulations"
       ],
-      "competitor_insight_ids": ["gap-2"]
+      "competitor_insight_ids": [
+        "gap-2"
+      ]
+    },
+    {
+      "id": "feature-33",
+      "title": "NIST Post-Quantum Cryptography Integration",
+      "description": "Implement CRYSTALS-Kyber (ML-KEM) for key encapsulation and CRYSTALS-Dilithium (ML-DSA) for digital signatures per NIST FIPS 203/204. Provides quantum-resistant constitutional hash validation and audit trail integrity.",
+      "rationale": "Long-term security investment addressing future quantum computing threats. Positions ACGS-2 as forward-thinking security leader with NIST-standardized post-quantum algorithms.",
+      "priority": "should",
+      "complexity": "high",
+      "impact": "high",
+      "phase_id": "phase-5",
+      "dependencies": [],
+      "status": "completed",
+      "acceptance_criteria": [
+        "CRYSTALS-Kyber-768 KEM implemented for key exchange",
+        "CRYSTALS-Dilithium-3 DSA implemented for hash signing",
+        "Constitutional hash validation uses quantum-resistant signatures",
+        "Performance impact under 10% for cryptographic operations",
+        "Hybrid classical/PQC mode available for transition period"
+      ],
+      "user_stories": [
+        "As a Security Engineer, I want quantum-resistant cryptography so that governance remains secure against future quantum attacks",
+        "As a Compliance Officer, I want NIST-approved algorithms so that audit trails remain tamper-proof for decades"
+      ],
+      "linked_spec_id": "033-nist-post-quantum-crypto",
+      "competitor_insight_ids": []
+    },
+    {
+      "id": "feature-34",
+      "title": "Cross-Organization Governance Federation",
+      "description": "Implement federated governance across organizational boundaries with trust establishment protocols, policy inheritance/override, cross-org audit trails, and mutual compliance recognition.",
+      "rationale": "Addresses complex enterprise scenarios with partners, subsidiaries, and supply chains. Enables governance at industry and ecosystem levels for regulatory coordination.",
+      "priority": "should",
+      "complexity": "high",
+      "impact": "high",
+      "phase_id": "phase-5",
+      "dependencies": [
+        "feature-33"
+      ],
+      "status": "completed",
+      "acceptance_criteria": [
+        "Trust establishment protocol with challenge-response verification",
+        "Policy synchronization with push/pull mechanisms",
+        "Cross-organization Merkle-tree audit trails",
+        "Mutual compliance attestation framework",
+        "Federation agreement signing and management"
+      ],
+      "user_stories": [
+        "As a Platform Architect, I want federation so that governance works across organizational boundaries",
+        "As a Compliance Officer, I want mutual recognition so that partner compliance is verified",
+        "As a Supply Chain Manager, I want federated governance so that AI risks are managed across vendors"
+      ],
+      "linked_spec_id": "034-cross-org-federation",
+      "competitor_insight_ids": []
+    },
+    {
+      "id": "feature-35",
+      "title": "Self-Evolving Governance with Safety Bounds",
+      "description": "Research prototype for autonomous governance systems that adapt policies based on emerging risks, regulatory changes, and operational feedback with comprehensive safety guardrails and human override capabilities.",
+      "rationale": "Cutting-edge research for autonomous AI governance. Long-term vision for reducing human governance burden while maintaining compliance with ethics review integration.",
+      "priority": "could",
+      "complexity": "high",
+      "impact": "high",
+      "phase_id": "phase-5",
+      "dependencies": [
+        "feature-34"
+      ],
+      "status": "completed",
+      "acceptance_criteria": [
+        "Risk detection with statistical analysis and anomaly detection",
+        "Evolution proposal generation with confidence scoring",
+        "Safety guardrails for bias, harm prevention, transparency, human agency",
+        "Ethics evaluation across six categories",
+        "Human approval workflow for high-risk evolutions",
+        "Emergency halt capability"
+      ],
+      "user_stories": [
+        "As an AI Safety Researcher, I want self-evolving governance so that systems adapt to new threats automatically",
+        "As a Platform Architect, I want autonomous governance so that operational burden decreases over time",
+        "As a Compliance Officer, I want safety bounds so that autonomous changes can't violate regulations"
+      ],
+      "linked_spec_id": "035-self-evolving-governance",
+      "competitor_insight_ids": [
+        "gap-2"
+      ]
+    },
+    {
+      "id": "feature-36",
+      "title": "Ethics-Aware Evolution Engine",
+      "description": "Comprehensive ethics evaluation framework for autonomous policy evolution with multi-dimensional scoring across fairness, transparency, privacy, autonomy, safety, and accountability categories.",
+      "rationale": "Required for responsible deployment of autonomous governance. Ensures all policy evolutions are evaluated against ethical principles before application.",
+      "priority": "could",
+      "complexity": "medium",
+      "impact": "high",
+      "phase_id": "phase-5",
+      "dependencies": [
+        "feature-35"
+      ],
+      "status": "completed",
+      "acceptance_criteria": [
+        "Six-category ethics scoring (fairness, transparency, privacy, autonomy, safety, accountability)",
+        "Configurable ethics thresholds",
+        "Ethics violation blocking for autonomous evolutions",
+        "Ethics audit trail for all proposals",
+        "Integration with human review workflow"
+      ],
+      "user_stories": [
+        "As an Ethics Board member, I want comprehensive ethics evaluation so that autonomous governance aligns with our values",
+        "As a Legal Advisor, I want ethics documentation so that liability is properly attributed"
+      ],
+      "linked_spec_id": "036-ethics-evolution-engine",
+      "competitor_insight_ids": []
     }
   ],
   "metadata": {
     "created_at": "2025-01-03T04:45:00Z",
-    "updated_at": "2026-01-03T18:30:00Z",
+    "updated_at": "2026-01-03T18:10:22.000Z",
     "generated_by": "roadmap_features agent",
     "prioritization_framework": "MoSCoW",
     "competitor_analysis_used": true,
-    "total_features": 32,
-    "total_phases": 4,
+    "total_features": 36,
+    "total_phases": 5,
     "features_addressing_competitor_pain_points": 24,
     "priority_breakdown": {
       "must": 11,
-      "should": 14,
-      "could": 5,
+      "should": 16,
+      "could": 7,
       "wont": 2
     },
     "complexity_breakdown": {
       "low": 1,
-      "medium": 14,
-      "high": 17
+      "medium": 15,
+      "high": 20
     },
     "impact_breakdown": {
       "low": 0,
       "medium": 9,
-      "high": 23
+      "high": 27
     },
     "competitor_insights_addressed": {
-      "guardrails_ai": ["pain-1-2", "pain-1-3", "pain-1-4"],
-      "nemo_guardrails": ["pain-2-1", "pain-2-2", "pain-2-4"],
-      "aws_bedrock": ["pain-3-1", "pain-3-2", "pain-3-3", "pain-3-4"],
-      "azure_content_safety": ["pain-4-1", "pain-4-2", "pain-4-3", "pain-4-4"],
-      "opa": ["pain-5-1", "pain-5-2", "pain-5-3", "pain-5-4"],
-      "langchain": ["pain-6-1", "pain-6-2", "pain-6-3", "pain-6-4"]
+      "guardrails_ai": [
+        "pain-1-2",
+        "pain-1-3",
+        "pain-1-4"
+      ],
+      "nemo_guardrails": [
+        "pain-2-1",
+        "pain-2-2",
+        "pain-2-4"
+      ],
+      "aws_bedrock": [
+        "pain-3-1",
+        "pain-3-2",
+        "pain-3-3",
+        "pain-3-4"
+      ],
+      "azure_content_safety": [
+        "pain-4-1",
+        "pain-4-2",
+        "pain-4-3",
+        "pain-4-4"
+      ],
+      "opa": [
+        "pain-5-1",
+        "pain-5-2",
+        "pain-5-3",
+        "pain-5-4"
+      ],
+      "langchain": [
+        "pain-6-1",
+        "pain-6-2",
+        "pain-6-3",
+        "pain-6-4"
+      ]
     },
     "market_gaps_addressed": [
       "gap-1",
