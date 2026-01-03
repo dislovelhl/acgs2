@@ -15,6 +15,7 @@ from urllib.parse import urlparse
 try:
     import litellm
     from litellm.caching import Cache
+
     HAS_LITELLM = True
 except ImportError:
     litellm = None  # type: ignore
@@ -89,8 +90,8 @@ class BusConfiguration:
     llm_enabled: bool = True
     llm_model_version: str = "openai/gpt-4o-mini"
     llm_cache_ttl: int = 3600  # seconds
-    llm_confidence_threshold: float = 0.8
-    llm_max_tokens: int = 100
+    llm_confidence_threshold: float = 0.7  # Below this, use LLM
+    llm_max_tokens: int = 100  # Required for Anthropic models
     llm_use_cache: bool = True
 
     # A/B testing settings for LLM vs rule-based comparison
@@ -184,7 +185,7 @@ class BusConfiguration:
             llm_enabled=cls._parse_bool(os.getenv("LLM_ENABLED", "true")),
             llm_model_version=os.getenv("LLM_MODEL_VERSION", "openai/gpt-4o-mini"),
             llm_cache_ttl=cls._parse_int(os.getenv("LLM_CACHE_TTL"), 3600),
-            llm_confidence_threshold=cls._parse_float(os.getenv("LLM_CONFIDENCE_THRESHOLD"), 0.8),
+            llm_confidence_threshold=cls._parse_float(os.getenv("LLM_CONFIDENCE_THRESHOLD"), 0.7),
             llm_max_tokens=cls._parse_int(os.getenv("LLM_MAX_TOKENS"), 100),
             llm_use_cache=cls._parse_bool(os.getenv("LLM_USE_CACHE", "true")),
             enable_ab_testing=cls._parse_bool(os.getenv("ENABLE_AB_TESTING", "false")),
@@ -192,7 +193,7 @@ class BusConfiguration:
         )
 
         # Initialize LiteLLM Cache if enabled
-        if config.llm_use_cache:
+        if config.llm_use_cache and HAS_LITELLM and Cache is not None:
             try:
                 parsed_url = urlparse(config.redis_url)
                 litellm.cache = Cache(
@@ -203,7 +204,11 @@ class BusConfiguration:
                 )
             except Exception:
                 # Fallback to in-memory if redis fails or isn't available
-                litellm.cache = Cache()
+                try:
+                    litellm.cache = Cache()
+                except Exception:
+                    # Disable caching if Cache() fails
+                    config = replace(config, llm_use_cache=False)
 
         return config
 
@@ -243,7 +248,7 @@ class BusConfiguration:
             enable_maci=True,
             maci_strict_mode=True,
             llm_enabled=True,
-            llm_confidence_threshold=0.8,
+            llm_confidence_threshold=0.7,
             llm_use_cache=True,
             enable_ab_testing=False,
         )
