@@ -6,7 +6,7 @@ Provides CRUD operations for policy templates.
 from datetime import datetime, timezone
 from typing import Annotated, Any, Dict, List, Optional
 
-from fastapi import APIRouter, File, Form, HTTPException, Query, UploadFile
+from fastapi import APIRouter, File, Form, Header, HTTPException, Query, UploadFile
 
 from ...schemas.template import (
     PaginationMeta,
@@ -25,6 +25,80 @@ ALLOWED_EXTENSIONS = {".json", ".yaml", ".yml", ".rego"}
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
 
 router = APIRouter()
+
+
+# ====================
+# User Context Helpers
+# ====================
+
+
+class UserContext:
+    """User context extracted from request headers."""
+
+    def __init__(
+        self,
+        user_id: Optional[str] = None,
+        organization_id: Optional[str] = None,
+        is_admin: bool = False,
+    ):
+        self.user_id = user_id
+        self.organization_id = organization_id
+        self.is_admin = is_admin
+
+    @property
+    def is_authenticated(self) -> bool:
+        """Check if user is authenticated."""
+        return self.user_id is not None
+
+
+def get_user_context(
+    x_user_id: Optional[str] = None,
+    x_organization_id: Optional[str] = None,
+    x_user_role: Optional[str] = None,
+) -> UserContext:
+    """
+    Extract user context from request headers.
+
+    Headers:
+        X-User-Id: User ID (if authenticated)
+        X-Organization-Id: Organization ID for the user
+        X-User-Role: User role (e.g., "admin")
+    """
+    return UserContext(
+        user_id=x_user_id,
+        organization_id=x_organization_id,
+        is_admin=x_user_role == "admin" if x_user_role else False,
+    )
+
+
+def can_access_template(template: Dict[str, Any], user_ctx: UserContext) -> bool:
+    """
+    Check if user can access a template based on access control rules.
+
+    Rules:
+        - Public templates are accessible to everyone
+        - Private templates are only accessible to users in the same organization
+        - Admins can access all templates
+
+    Returns:
+        True if user can access the template, False otherwise.
+    """
+    # Public templates are accessible to all
+    if template.get("is_public", True):
+        return True
+
+    # Admins can access all templates
+    if user_ctx.is_admin:
+        return True
+
+    # Private template: check organization membership
+    template_org = template.get("organization_id")
+    if not template_org:
+        # Private template without org is only accessible to its owner
+        return template.get("author_id") == user_ctx.user_id
+
+    # User must belong to the same organization
+    return user_ctx.organization_id == template_org
 
 
 # ====================
@@ -160,6 +234,9 @@ async def list_templates(
         str, Query(description="Sort field (created_at, downloads, rating, name)")
     ] = "created_at",
     sort_order: Annotated[str, Query(description="Sort order (asc, desc)")] = "desc",
+    x_user_id: Annotated[Optional[str], Header(alias="X-User-Id")] = None,
+    x_organization_id: Annotated[Optional[str], Header(alias="X-Organization-Id")] = None,
+    x_user_role: Annotated[Optional[str], Header(alias="X-User-Role")] = None,
 ):
     """
     List policy templates with pagination and filtering.
@@ -167,12 +244,23 @@ async def list_templates(
     Returns a paginated list of templates based on the provided filters.
     Templates are filtered by visibility (public templates or templates
     belonging to the user's organization).
+
+    Access Control:
+        - Public templates are visible to all users
+        - Private templates are only visible to users in the same organization
     """
+    # Get user context from headers
+    user_ctx = get_user_context(x_user_id, x_organization_id, x_user_role)
+
     # Get all templates (including seeded ones)
     _get_mock_templates()
 
-    # Filter templates
-    templates = [t for t in _templates_store.values() if not t.get("is_deleted", False)]
+    # Filter templates - exclude deleted and apply access control
+    templates = [
+        t
+        for t in _templates_store.values()
+        if not t.get("is_deleted", False) and can_access_template(t, user_ctx)
+    ]
 
     # Apply filters
     if category:
@@ -284,12 +372,23 @@ async def upload_template(
         str, Form(min_length=1, max_length=5000, description="Template description")
     ],
     category: Annotated[str, Form(description="Template category")],
+    is_public: Annotated[bool, Form(description="Whether template is publicly visible")] = True,
+    organization_id: Annotated[
+        Optional[str], Form(max_length=100, description="Organization ID for private templates")
+    ] = None,
+    x_user_id: Annotated[Optional[str], Header(alias="X-User-Id")] = None,
+    x_organization_id: Annotated[Optional[str], Header(alias="X-Organization-Id")] = None,
 ):
     """
     Upload a template file with validation.
 
     Creates a new template from an uploaded file. The file extension is validated
     to ensure it's a supported format (JSON, YAML, or Rego).
+
+    Access Control:
+        - Templates can be created as public (is_public=true, default)
+        - Templates can be created as private for an organization (is_public=false, organization_id set)
+        - If no organization_id is provided but is_public=false, the user's organization is used
     """
     global _next_id
 
@@ -351,6 +450,16 @@ async def upload_template(
         now = datetime.now(timezone.utc)
         template_id = _next_id
 
+        # Determine organization_id for the template
+        # If private and no org_id provided, use user's org from header
+        effective_org_id = organization_id
+        if not is_public and not effective_org_id:
+            effective_org_id = x_organization_id
+
+        # Determine author from header or fallback
+        author_id = x_user_id or "current_user"
+        author_name = "Current User"
+
         # Create template record
         template_data = {
             "id": template_id,
@@ -361,10 +470,10 @@ async def upload_template(
             "content": content_str,
             "status": TemplateStatus.DRAFT.value,
             "is_verified": False,
-            "is_public": True,
-            "organization_id": None,
-            "author_id": "current_user",  # Would come from auth in production
-            "author_name": "Current User",
+            "is_public": is_public,
+            "organization_id": effective_org_id,
+            "author_id": author_id,
+            "author_name": author_name,
             "current_version": "1.0.0",
             "downloads": 0,
             "rating": None,
@@ -391,13 +500,23 @@ async def upload_template(
 @router.get("/{template_id}", response_model=TemplateResponse)
 async def get_template(
     template_id: int,
+    x_user_id: Annotated[Optional[str], Header(alias="X-User-Id")] = None,
+    x_organization_id: Annotated[Optional[str], Header(alias="X-Organization-Id")] = None,
+    x_user_role: Annotated[Optional[str], Header(alias="X-User-Role")] = None,
 ):
     """
     Get a template by ID.
 
     Returns the full template details including content.
-    Access control is enforced for private templates.
+
+    Access Control:
+        - Public templates are accessible to all users
+        - Private templates are only accessible to users in the same organization
+        - Returns 404 for private templates the user cannot access (avoids info disclosure)
     """
+    # Get user context from headers
+    user_ctx = get_user_context(x_user_id, x_organization_id, x_user_role)
+
     # Ensure mock data is seeded
     _get_mock_templates()
 
@@ -405,10 +524,9 @@ async def get_template(
     if not template or template.get("is_deleted", False):
         raise HTTPException(status_code=404, detail="Template not found")
 
-    # In production, we would check access control here:
-    # - If template is public, allow access
-    # - If template is private, check if user belongs to the organization
-    # For now, we return the template for all requests
+    # Check access control - return 404 for unauthorized access to avoid info disclosure
+    if not can_access_template(template, user_ctx):
+        raise HTTPException(status_code=404, detail="Template not found")
 
     return _to_response(template)
 
@@ -488,13 +606,24 @@ async def delete_template(
 @router.get("/{template_id}/download")
 async def download_template(
     template_id: int,
+    x_user_id: Annotated[Optional[str], Header(alias="X-User-Id")] = None,
+    x_organization_id: Annotated[Optional[str], Header(alias="X-Organization-Id")] = None,
+    x_user_role: Annotated[Optional[str], Header(alias="X-User-Role")] = None,
 ):
     """
     Download a template and increment download counter.
 
     Returns the template content for download and increments the
     download counter for analytics tracking.
+
+    Access Control:
+        - Public templates can be downloaded by anyone
+        - Private templates can only be downloaded by users in the same organization
+        - Returns 404 for private templates the user cannot access
     """
+    # Get user context from headers
+    user_ctx = get_user_context(x_user_id, x_organization_id, x_user_role)
+
     # Ensure mock data is seeded
     _get_mock_templates()
 
@@ -502,10 +631,9 @@ async def download_template(
     if not template or template.get("is_deleted", False):
         raise HTTPException(status_code=404, detail="Template not found")
 
-    # In production, we would:
-    # 1. Check access control for private templates
-    # 2. Record analytics event
-    # 3. Return proper file response with content-disposition header
+    # Check access control - return 404 for unauthorized access to avoid info disclosure
+    if not can_access_template(template, user_ctx):
+        raise HTTPException(status_code=404, detail="Template not found")
 
     # Increment download counter
     template["downloads"] = template.get("downloads", 0) + 1
