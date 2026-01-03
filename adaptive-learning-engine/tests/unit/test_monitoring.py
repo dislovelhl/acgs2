@@ -1543,6 +1543,72 @@ class TestDriftDetectorCacheDisabled:
 
 
 # =============================================================================
+# DriftDetector Tests - Performance Benchmark
+# =============================================================================
+
+
+class TestDriftDetectorPerformanceBenchmark:
+    """Tests for performance improvement from caching."""
+
+    def test_cache_provides_significant_performance_improvement(self, reference_data, similar_data):
+        """Test that cached check_drift() calls are significantly faster than uncached calls.
+
+        This test verifies the core value proposition of the caching feature:
+        repeated check_drift() calls with unchanged data should be >50% faster
+        due to cached DataFrame conversions and report results.
+        """
+        # Create detector with caching enabled
+        detector = DriftDetector(
+            reference_window_size=100,
+            current_window_size=50,
+            enable_caching=True,
+        )
+
+        # Add sufficient data for meaningful drift detection
+        detector.add_batch(reference_data)
+        detector.lock_reference_data()
+        detector._current_data.clear()
+        detector.add_batch(similar_data[:30])
+
+        # First call: should populate all caches (DataFrame + report)
+        start_time_1 = time.time()
+        result_1 = detector.check_drift()
+        elapsed_1 = time.time() - start_time_1
+
+        # Verify caches were populated
+        assert detector._reference_df_cache is not None
+        assert detector._current_df_cache is not None
+        assert detector._last_report_cache is not None
+        assert detector._report_cache_checksum is not None
+
+        # Second call: should hit all caches (same data, no changes)
+        start_time_2 = time.time()
+        result_2 = detector.check_drift()
+        elapsed_2 = time.time() - start_time_2
+
+        # Verify results are consistent (using cached data)
+        assert result_1.status == result_2.status
+        assert result_1.drift_detected == result_2.drift_detected
+        assert result_1.drift_score == result_2.drift_score
+
+        # Performance assertion: second call should be >50% faster
+        # This means elapsed_2 should be < 50% of elapsed_1
+        # i.e., elapsed_2 / elapsed_1 < 0.5
+        # Add small epsilon for timing measurement noise
+        improvement_ratio = elapsed_2 / elapsed_1 if elapsed_1 > 0 else 1.0
+
+        # The cached call should be significantly faster
+        # We expect >50% improvement (ratio < 0.5), but allow some margin for variability
+        # In practice, cache hits are often 90%+ faster (ratio < 0.1)
+        assert improvement_ratio < 0.5, (
+            f"Cached call not significantly faster: "
+            f"first call took {elapsed_1:.6f}s, "
+            f"second call took {elapsed_2:.6f}s "
+            f"(ratio: {improvement_ratio:.2%}, expected < 50%)"
+        )
+
+
+# =============================================================================
 # DriftDetector Tests - Repr
 # =============================================================================
 
