@@ -32,6 +32,13 @@ from shared.auth.oidc_handler import (
     OIDCTokenError,
     OIDCUserInfo,
 )
+from shared.auth.provisioning import (
+    DomainNotAllowedError,
+    ProvisioningDisabledError,
+    ProvisioningError,
+    ProvisioningResult,
+    get_provisioner,
+)
 from shared.auth.saml_config import SAMLConfigurationError, SAMLSPConfig
 from shared.auth.saml_handler import (
     SAMLAuthenticationError,
@@ -541,29 +548,57 @@ async def oidc_callback(
         request.session.pop("oidc_provider", None)
         request.session.pop("oidc_callback_url", None)
 
-        # Store user info in session
+        # JIT Provisioning: Create or update user in database
+        # Get default role as a list (provisioner expects list of roles)
+        default_roles = None
+        if (
+            hasattr(settings.sso, "default_role_on_provision")
+            and settings.sso.default_role_on_provision
+        ):
+            default_roles = [settings.sso.default_role_on_provision]
+
+        provisioner = get_provisioner(
+            auto_provision_enabled=settings.sso.auto_provision_users,
+            default_roles=default_roles,
+            allowed_domains=settings.sso.allowed_domains if settings.sso.allowed_domains else None,
+        )
+
+        # Provision the user (creates new user or updates existing)
+        provisioning_result: ProvisioningResult = await provisioner.get_or_create_user(
+            email=user_info.email,
+            name=user_info.name,
+            sso_provider="oidc",
+            idp_user_id=user_info.sub,
+            provider_id=stored_provider,
+            roles=user_info.groups,  # Map IdP groups to roles
+        )
+
+        # Store user info in session with provisioned user data
         request.session["user"] = {
+            "id": provisioning_result.user.get("id"),
             "sub": user_info.sub,
-            "email": user_info.email,
-            "name": user_info.name,
+            "email": provisioning_result.user.get("email"),
+            "name": provisioning_result.user.get("name"),
             "groups": user_info.groups,
+            "roles": provisioning_result.user.get("roles", []),
             "provider": stored_provider,
             "auth_type": "oidc",
+            "sso_enabled": True,
         }
 
         logger.info(
-            "OIDC authentication successful",
+            "OIDC authentication and provisioning successful",
             extra={
                 "provider": stored_provider,
                 "user_sub": user_info.sub[:8] + "..." if user_info.sub else "N/A",
                 "email": user_info.email,
+                "user_created": provisioning_result.created,
+                "roles_updated": provisioning_result.roles_updated,
                 "constitutional_hash": CONSTITUTIONAL_HASH,
             },
         )
 
-        # Return user information
-        # Note: In a full implementation, this would trigger JIT provisioning
-        # and redirect to the application. For now, return user info.
+        # Return user information with provisioning details
         return {
             "sub": user_info.sub,
             "email": user_info.email,
@@ -573,6 +608,51 @@ async def oidc_callback(
             "family_name": user_info.family_name,
             "groups": user_info.groups,
         }
+
+    except DomainNotAllowedError as e:
+        logger.warning(
+            "OIDC user domain not allowed",
+            extra={
+                "provider": stored_provider,
+                "error": str(e),
+                "constitutional_hash": CONSTITUTIONAL_HASH,
+            },
+        )
+        raise HTTPException(
+            status_code=403,
+            detail="Your email domain is not allowed for this SSO provider.",
+        ) from e
+
+    except ProvisioningDisabledError as e:
+        logger.warning(
+            "OIDC auto-provisioning disabled",
+            extra={
+                "provider": stored_provider,
+                "error": str(e),
+                "constitutional_hash": CONSTITUTIONAL_HASH,
+            },
+        )
+        raise HTTPException(
+            status_code=403,
+            detail=(
+                "Auto-provisioning is disabled. "
+                "Please contact an administrator to create your account."
+            ),
+        ) from e
+
+    except ProvisioningError as e:
+        logger.error(
+            "OIDC user provisioning failed",
+            extra={
+                "provider": stored_provider,
+                "error": str(e),
+                "constitutional_hash": CONSTITUTIONAL_HASH,
+            },
+        )
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to provision user account. Please try again or contact support.",
+        ) from e
 
     except OIDCAuthenticationError as e:
         logger.error(
