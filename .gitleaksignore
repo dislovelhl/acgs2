@@ -78,3 +78,22 @@ acgs2-core/shared/auth/certs/sp.crt:certificate:1
 #    - Fix the actual secret (move to secrets manager)
 #
 # =============================================================================
+# ==============================================================================
+# Test Scripts with Fake Secrets for E2E Testing
+# ==============================================================================
+# Test scripts contain intentionally fake secrets for validation purposes
+# These are NOT real credentials, generated randomly for testing only
+
+# scripts/test-e2e-secrets-detection.sh - E2E testing script
+# Why: Contains fake secrets used to validate secrets detection hooks
+# Safe because: Intentionally created fake credentials for testing purposes
+# Production: Real secrets managed via Vault/environment variables
+scripts/test-e2e-secrets-detection.sh:openai-api-key-acgs2:148
+scripts/test-e2e-secrets-detection.sh:openai-api-key-acgs2:164
+scripts/test-e2e-secrets-detection.sh:openai-api-key-acgs2:250
+scripts/test-e2e-secrets-detection.sh:openai-api-key-acgs2:288
+scripts/test-e2e-secrets-detection.sh:openai-api-key-acgs2:360
+scripts/test-e2e-secrets-detection.sh:huggingface-token:289
+scripts/test-e2e-secrets-detection.sh:anthropic-api-key:165
+scripts/test-e2e-secrets-detection.sh:anthropic-api-key:210
+scripts/test-e2e-secrets-detection.sh:anthropic-api-key:251
