@@ -165,7 +165,13 @@ except ImportError:
 
 # Import from our own modules
 from .impact_scorer import ImpactScorer
-from .models import GovernanceDecision, GovernanceMetrics, GovernanceMode, ImpactLevel
+from .models import (
+    GovernanceDecision,
+    GovernanceMetrics,
+    GovernanceMode,
+    ImpactFeatures,
+    ImpactLevel,
+)
 from .threshold_manager import AdaptiveThresholds
 
 logger = logging.getLogger(__name__)
@@ -381,8 +387,6 @@ class AdaptiveGovernanceEngine:
         except Exception as e:
             logger.error(f"Governance evaluation error: {e}")
             # Fallback to strict mode
-            from .models import ImpactFeatures
-
             return GovernanceDecision(
                 action_allowed=False,  # Conservative fallback
                 impact_level=ImpactLevel.HIGH,
