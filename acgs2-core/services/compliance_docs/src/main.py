@@ -9,6 +9,8 @@ from datetime import datetime, timezone
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from shared.security.cors_config import get_cors_config
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -19,14 +21,8 @@ app = FastAPI(
     version="1.0.0",
 )
 
-# Add CORS middleware (configure based on environment)
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # TODO: Configure based on environment
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# Add CORS middleware (configured based on environment)
+app.add_middleware(CORSMiddleware, **get_cors_config())
 
 
 # Health check endpoints
