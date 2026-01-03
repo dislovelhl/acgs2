@@ -1,0 +1,183 @@
+{
+  "name": "Audit Logging Policy Template",
+  "description": "Comprehensive audit logging policy for security monitoring, compliance, and forensic analysis. Covers log collection, retention, integrity protection, and access controls.",
+  "category": "audit",
+  "format": "json",
+  "version": "1.0.0",
+  "author": "ACGS-2 Team",
+  "tags": ["audit", "logging", "security", "compliance", "monitoring", "forensics"],
+  "policy": {
+    "name": "audit-logging",
+    "version": "1.0.0",
+    "description": "Audit logging governance policy",
+    "log_requirements": {
+      "mandatory_events": [
+        "authentication_success",
+        "authentication_failure",
+        "authorization_failure",
+        "privilege_escalation",
+        "data_access",
+        "data_modification",
+        "data_deletion",
+        "configuration_change",
+        "system_startup",
+        "system_shutdown",
+        "security_alert"
+      ],
+      "mandatory_fields": [
+        "timestamp",
+        "event_type",
+        "user_id",
+        "source_ip",
+        "resource_id",
+        "action",
+        "outcome",
+        "correlation_id"
+      ],
+      "timestamp_format": "ISO8601",
+      "timezone": "UTC"
+    },
+    "rules": [
+      {
+        "id": "audit-001",
+        "name": "authentication-logging",
+        "description": "Log all authentication attempts with required details",
+        "severity": "critical",
+        "condition": {
+          "all": [
+            {"field": "event.type", "operator": "in", "value": ["authentication_success", "authentication_failure"]},
+            {"field": "log.fields", "operator": "contains_all", "value": ["timestamp", "user_id", "source_ip", "outcome", "method"]}
+          ]
+        },
+        "action": "log",
+        "log_level": "info",
+        "retention": "2_years"
+      },
+      {
+        "id": "audit-002",
+        "name": "privileged-action-logging",
+        "description": "Enhanced logging for privileged operations",
+        "severity": "critical",
+        "condition": {
+          "all": [
+            {"field": "action.privileged", "operator": "equals", "value": true}
+          ]
+        },
+        "action": "log",
+        "log_level": "warn",
+        "additional_fields": ["justification", "approver_id", "session_id"],
+        "retention": "7_years",
+        "immediate_alert": true
+      },
+      {
+        "id": "audit-003",
+        "name": "data-access-logging",
+        "description": "Log all access to sensitive data",
+        "severity": "high",
+        "condition": {
+          "all": [
+            {"field": "data.classification", "operator": "in", "value": ["confidential", "restricted", "pii"]},
+            {"field": "action.type", "operator": "in", "value": ["read", "export", "download"]}
+          ]
+        },
+        "action": "log",
+        "log_level": "info",
+        "retention": "3_years"
+      },
+      {
+        "id": "audit-004",
+        "name": "data-modification-logging",
+        "description": "Log all modifications to sensitive data with before/after values",
+        "severity": "critical",
+        "condition": {
+          "all": [
+            {"field": "data.classification", "operator": "in", "value": ["confidential", "restricted"]},
+            {"field": "action.type", "operator": "in", "value": ["create", "update", "delete"]}
+          ]
+        },
+        "action": "log",
+        "log_level": "warn",
+        "include_before_after": true,
+        "retention": "7_years"
+      },
+      {
+        "id": "audit-005",
+        "name": "security-event-logging",
+        "description": "Log security-related events with high priority",
+        "severity": "critical",
+        "condition": {
+          "any": [
+            {"field": "event.type", "operator": "equals", "value": "security_alert"},
+            {"field": "event.type", "operator": "equals", "value": "intrusion_detected"},
+            {"field": "event.type", "operator": "equals", "value": "malware_detected"},
+            {"field": "event.suspicious", "operator": "equals", "value": true}
+          ]
+        },
+        "action": "log",
+        "log_level": "error",
+        "immediate_alert": true,
+        "notify": ["security_team", "incident_response"],
+        "retention": "10_years"
+      },
+      {
+        "id": "audit-006",
+        "name": "log-integrity-protection",
+        "description": "Ensure log integrity through cryptographic signing",
+        "severity": "critical",
+        "condition": {
+          "all": [
+            {"field": "log.signed", "operator": "equals", "value": true},
+            {"field": "log.signature_valid", "operator": "equals", "value": true},
+            {"field": "log.tamper_evident", "operator": "equals", "value": true}
+          ]
+        },
+        "action": "accept",
+        "fallback": "alert_tampering"
+      },
+      {
+        "id": "audit-007",
+        "name": "log-access-control",
+        "description": "Restrict access to audit logs",
+        "severity": "high",
+        "condition": {
+          "all": [
+            {"field": "user.role", "operator": "in", "value": ["auditor", "security_admin", "compliance_officer"]},
+            {"field": "access.purpose", "operator": "defined"},
+            {"field": "access.logged", "operator": "equals", "value": true}
+          ]
+        },
+        "action": "allow",
+        "fallback": "deny"
+      },
+      {
+        "id": "audit-008",
+        "name": "failed-login-threshold",
+        "description": "Alert on multiple failed login attempts",
+        "severity": "high",
+        "condition": {
+          "all": [
+            {"field": "event.type", "operator": "equals", "value": "authentication_failure"},
+            {"field": "event.count_last_hour", "operator": "greater_than", "value": 5}
+          ]
+        },
+        "action": "alert",
+        "notify": ["security_team"],
+        "additional_action": "lock_account_if_threshold_exceeded"
+      }
+    ],
+    "retention_policy": {
+      "default": "1_year",
+      "security_events": "10_years",
+      "compliance_events": "7_years",
+      "operational_events": "90_days",
+      "debug_logs": "30_days"
+    },
+    "metadata": {
+      "compliance_frameworks": ["SOC2", "PCI-DSS", "HIPAA", "ISO27001"],
+      "log_format": "JSON",
+      "centralized_logging": true,
+      "last_reviewed": "2024-01-15",
+      "review_frequency": "quarterly"
+    }
+  }
+}

@@ -1,0 +1,130 @@
+{
+  "name": "HIPAA Compliance Policy Template",
+  "description": "Healthcare data protection policy compliant with HIPAA Privacy and Security Rules. Covers PHI handling, access controls, audit requirements, and breach notification procedures.",
+  "category": "compliance",
+  "format": "json",
+  "version": "1.0.0",
+  "author": "ACGS-2 Team",
+  "tags": ["hipaa", "healthcare", "phi", "privacy", "security", "compliance"],
+  "policy": {
+    "name": "hipaa-compliance",
+    "version": "1.0.0",
+    "description": "HIPAA compliance governance policy for PHI protection",
+    "rules": [
+      {
+        "id": "hipaa-001",
+        "name": "phi-access-authorization",
+        "description": "Ensure PHI access is authorized based on minimum necessary principle",
+        "severity": "critical",
+        "condition": {
+          "all": [
+            {"field": "data.type", "operator": "equals", "value": "phi"},
+            {"field": "user.role", "operator": "in", "value": "{{authorized_roles}}"},
+            {"field": "access.purpose", "operator": "in", "value": ["treatment", "payment", "healthcare_operations"]}
+          ]
+        },
+        "action": "allow",
+        "fallback": "deny"
+      },
+      {
+        "id": "hipaa-002",
+        "name": "phi-encryption-at-rest",
+        "description": "Ensure PHI is encrypted when stored",
+        "severity": "critical",
+        "condition": {
+          "all": [
+            {"field": "data.type", "operator": "equals", "value": "phi"},
+            {"field": "storage.encryption", "operator": "equals", "value": true},
+            {"field": "storage.encryption_standard", "operator": "in", "value": ["AES-256", "AES-128"]}
+          ]
+        },
+        "action": "allow",
+        "fallback": "deny"
+      },
+      {
+        "id": "hipaa-003",
+        "name": "phi-encryption-in-transit",
+        "description": "Ensure PHI is encrypted during transmission",
+        "severity": "critical",
+        "condition": {
+          "all": [
+            {"field": "data.type", "operator": "equals", "value": "phi"},
+            {"field": "transmission.encrypted", "operator": "equals", "value": true},
+            {"field": "transmission.protocol", "operator": "in", "value": ["TLS1.2", "TLS1.3"]}
+          ]
+        },
+        "action": "allow",
+        "fallback": "deny"
+      },
+      {
+        "id": "hipaa-004",
+        "name": "audit-trail-logging",
+        "description": "Maintain audit trail for all PHI access and modifications",
+        "severity": "high",
+        "condition": {
+          "all": [
+            {"field": "data.type", "operator": "equals", "value": "phi"},
+            {"field": "audit.enabled", "operator": "equals", "value": true}
+          ]
+        },
+        "action": "log_access",
+        "log_fields": ["user_id", "timestamp", "action", "data_accessed", "ip_address"],
+        "retention": "6_years"
+      },
+      {
+        "id": "hipaa-005",
+        "name": "breach-notification",
+        "description": "Notify affected individuals within 60 days of breach discovery",
+        "severity": "critical",
+        "condition": {
+          "all": [
+            {"field": "incident.type", "operator": "equals", "value": "data_breach"},
+            {"field": "incident.phi_affected", "operator": "equals", "value": true},
+            {"field": "incident.individuals_affected", "operator": "greater_than", "value": 0}
+          ]
+        },
+        "action": "notify_individuals",
+        "timeline": "60d",
+        "additional_actions": ["notify_hhs", "notify_media_if_500_plus"]
+      },
+      {
+        "id": "hipaa-006",
+        "name": "business-associate-agreement",
+        "description": "Ensure BAA is in place for third-party PHI access",
+        "severity": "critical",
+        "condition": {
+          "all": [
+            {"field": "data.type", "operator": "equals", "value": "phi"},
+            {"field": "accessor.type", "operator": "equals", "value": "business_associate"},
+            {"field": "baa.signed", "operator": "equals", "value": true},
+            {"field": "baa.valid", "operator": "equals", "value": true}
+          ]
+        },
+        "action": "allow",
+        "fallback": "deny"
+      },
+      {
+        "id": "hipaa-007",
+        "name": "workforce-training",
+        "description": "Verify workforce member has completed HIPAA training",
+        "severity": "high",
+        "condition": {
+          "all": [
+            {"field": "user.type", "operator": "equals", "value": "workforce"},
+            {"field": "user.hipaa_training_completed", "operator": "equals", "value": true},
+            {"field": "user.training_expiry", "operator": "greater_than", "value": "{{current_date}}"}
+          ]
+        },
+        "action": "allow",
+        "fallback": "require_training"
+      }
+    ],
+    "metadata": {
+      "applicable_regions": ["US"],
+      "regulation_reference": "Health Insurance Portability and Accountability Act of 1996",
+      "covered_entities": ["healthcare_providers", "health_plans", "healthcare_clearinghouses"],
+      "last_reviewed": "2024-01-15",
+      "review_frequency": "annual"
+    }
+  }
+}
