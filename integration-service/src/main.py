@@ -12,6 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .api.health import configure_health_router
 from .api.health import router as health_router
+from .api.linear import router as linear_router
 from .api.linear_webhooks import router as linear_webhooks_router
 from .api.policy_check import router as policy_check_router
 from .api.webhooks import router as webhooks_router
@@ -84,6 +85,7 @@ app.add_middleware(
 app.include_router(health_router)
 app.include_router(policy_check_router)
 app.include_router(webhooks_router)
+app.include_router(linear_router)
 app.include_router(linear_webhooks_router)
 
 
