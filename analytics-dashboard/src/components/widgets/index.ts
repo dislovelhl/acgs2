@@ -5,6 +5,7 @@
  */
 
 export { InsightWidget } from "./InsightWidget";
+export { ComplianceWidget } from "./ComplianceWidget";
 
 // Additional widgets will be added as they are implemented:
 // export { AnomalyWidget } from "./AnomalyWidget";
