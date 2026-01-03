@@ -7,10 +7,11 @@ from external sources like JIRA, ServiceNow, GitHub, and GitLab.
 
 import logging
 from datetime import datetime, timezone
-from typing import Dict, List, Optional
+from typing import Dict, Optional
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from pydantic import BaseModel, Field
 
 from ..models.import_models import (
     ImportListResponse,
@@ -18,6 +19,7 @@ from ..models.import_models import (
     ImportResponse,
     ImportStatus,
     PreviewResponse,
+    SourceConfig,
     SourceType,
 )
 
@@ -39,7 +41,180 @@ def get_import_storage() -> Dict[str, ImportResponse]:
     return _import_jobs
 
 
+# Request/Response models for test connection
+class TestConnectionRequest(BaseModel):
+    """Request to test connection to an external source."""
+
+    source: SourceType = Field(..., description="Type of source to connect to")
+    source_config: SourceConfig = Field(..., description="Connection configuration")
+
+
+class TestConnectionResponse(BaseModel):
+    """Response from test connection attempt."""
+
+    success: bool = Field(..., description="Whether connection was successful")
+    message: str = Field(..., description="Success or error message")
+    source_name: Optional[str] = Field(None, description="Name/identifier from the source")
+
+
 # API Endpoints
+@router.post(
+    "/test-connection",
+    response_model=TestConnectionResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Test connection to external source",
+    description="Verify credentials and connectivity to an external data source",
+)
+async def test_connection(
+    request: TestConnectionRequest,
+) -> TestConnectionResponse:
+    """
+    Test connection to an external source.
+
+    This endpoint verifies that the provided credentials can successfully
+    authenticate with the external source. It does not fetch or modify any data.
+    """
+    try:
+        logger.info(f"Testing connection to source_type={request.source}")
+
+        # Import service modules dynamically to avoid circular imports
+        if request.source == SourceType.JIRA:
+            from ..services.jira_import_service import create_jira_import_service
+
+            # Create import service
+            try:
+                service = await create_jira_import_service(request.source_config)
+            except ValueError as e:
+                logger.warning(f"JIRA configuration validation failed: {e}")
+                return TestConnectionResponse(
+                    success=False,
+                    message=str(e),
+                    source_name=None,
+                )
+
+            success, error_msg = await service.test_connection()
+
+            if success:
+                logger.info("JIRA connection test successful")
+                return TestConnectionResponse(
+                    success=True,
+                    message="Connection successful",
+                    source_name=f"JIRA ({request.source_config.base_url})",
+                )
+            else:
+                logger.warning(f"JIRA connection test failed: {error_msg}")
+                return TestConnectionResponse(
+                    success=False,
+                    message=error_msg or "Connection failed",
+                    source_name=None,
+                )
+
+        elif request.source == SourceType.SERVICENOW:
+            from ..services.servicenow_import_service import create_servicenow_import_service
+
+            try:
+                service = await create_servicenow_import_service(request.source_config)
+            except ValueError as e:
+                logger.warning(f"ServiceNow configuration validation failed: {e}")
+                return TestConnectionResponse(
+                    success=False,
+                    message=str(e),
+                    source_name=None,
+                )
+
+            success, error_msg = await service.test_connection()
+
+            if success:
+                logger.info("ServiceNow connection test successful")
+                return TestConnectionResponse(
+                    success=True,
+                    message="Connection successful",
+                    source_name=f"ServiceNow ({request.source_config.instance})",
+                )
+            else:
+                logger.warning(f"ServiceNow connection test failed: {error_msg}")
+                return TestConnectionResponse(
+                    success=False,
+                    message=error_msg or "Connection failed",
+                    source_name=None,
+                )
+
+        elif request.source == SourceType.GITHUB:
+            from ..services.github_import_service import create_github_import_service
+
+            try:
+                service = await create_github_import_service(request.source_config)
+            except ValueError as e:
+                logger.warning(f"GitHub configuration validation failed: {e}")
+                return TestConnectionResponse(
+                    success=False,
+                    message=str(e),
+                    source_name=None,
+                )
+
+            success, error_msg = await service.test_connection()
+
+            if success:
+                logger.info("GitHub connection test successful")
+                return TestConnectionResponse(
+                    success=True,
+                    message="Connection successful",
+                    source_name="GitHub",
+                )
+            else:
+                logger.warning(f"GitHub connection test failed: {error_msg}")
+                return TestConnectionResponse(
+                    success=False,
+                    message=error_msg or "Connection failed",
+                    source_name=None,
+                )
+
+        elif request.source == SourceType.GITLAB:
+            from ..services.gitlab_import_service import create_gitlab_import_service
+
+            try:
+                service = await create_gitlab_import_service(request.source_config)
+            except ValueError as e:
+                logger.warning(f"GitLab configuration validation failed: {e}")
+                return TestConnectionResponse(
+                    success=False,
+                    message=str(e),
+                    source_name=None,
+                )
+
+            success, error_msg = await service.test_connection()
+
+            if success:
+                logger.info("GitLab connection test successful")
+                return TestConnectionResponse(
+                    success=True,
+                    message="Connection successful",
+                    source_name=f"GitLab ({request.source_config.base_url})",
+                )
+            else:
+                logger.warning(f"GitLab connection test failed: {error_msg}")
+                return TestConnectionResponse(
+                    success=False,
+                    message=error_msg or "Connection failed",
+                    source_name=None,
+                )
+
+        else:
+            raise ValueError(f"Unsupported source type: {request.source}")
+
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        ) from None
+    except Exception as e:
+        logger.exception(f"Error testing connection: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Connection test failed. Please verify your configuration and try again.",
+        ) from None
+
+
 @router.post(
     "/preview",
     response_model=PreviewResponse,

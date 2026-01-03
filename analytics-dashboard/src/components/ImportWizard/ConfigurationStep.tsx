@@ -182,23 +182,30 @@ export function ConfigurationStep({
     setConnectionState("testing");
     setConnectionError(null);
 
-    // Simulate API call - In real implementation, this would call the backend
-    // to verify credentials against the external tool
     try {
-      await new Promise((resolve, reject) => {
-        setTimeout(() => {
-          // Simulate success for demo purposes
-          // In production, this would be an actual API call
-          const shouldSucceed = Math.random() > 0.2; // 80% success rate for demo
-          if (shouldSucceed) {
-            resolve(true);
-          } else {
-            reject(new Error("Invalid credentials or connection failed"));
-          }
-        }, 1500);
+      // Call the backend API to test the connection
+      const apiBaseUrl =
+        import.meta.env.VITE_INTEGRATION_API_URL || "http://localhost:8100";
+      const response = await fetch(`${apiBaseUrl}/api/imports/test-connection`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          source: sourceTool,
+          source_config: credentials,
+        }),
       });
 
-      setConnectionState("success");
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        setConnectionState("success");
+      } else {
+        const message = data.message || "Connection test failed";
+        setConnectionError(message);
+        setConnectionState("error");
+      }
     } catch (err) {
       const message =
         err instanceof Error
