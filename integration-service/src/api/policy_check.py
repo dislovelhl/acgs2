@@ -119,6 +119,22 @@ class PolicyValidationRequest(BaseModel):
 
 
 # Response Models
+class AuditContext(BaseModel):
+    """Audit context for tracking authenticated user information."""
+
+    user_id: str = Field(..., description="Authenticated user ID")
+    tenant_id: str = Field(..., description="Tenant ID")
+    timestamp: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        description="Request timestamp",
+    )
+    request_id: str = Field(default_factory=lambda: str(uuid4()), description="Request ID")
+
+    model_config = ConfigDict(
+        str_strip_whitespace=True,
+    )
+
+
 class PolicyViolation(BaseModel):
     """A single policy violation."""
 
@@ -177,6 +193,9 @@ class PolicyValidationResponse(BaseModel):
     opa_available: bool = Field(
         default=True, description="Whether OPA was available for validation"
     )
+    audit_context: Optional[AuditContext] = Field(
+        None, description="Audit context with authenticated user information"
+    )
 
     model_config = ConfigDict(
         str_strip_whitespace=True,
@@ -202,6 +221,18 @@ class PoliciesListResponse(BaseModel):
 
     policies: List[PolicyInfo] = Field(..., description="Available policies")
     total: int = Field(..., description="Total number of policies")
+    audit_context: Optional[AuditContext] = Field(
+        None, description="Audit context with authenticated user information"
+    )
+
+
+class PolicyResponse(BaseModel):
+    """Response model for a single policy."""
+
+    policy: PolicyInfo = Field(..., description="Policy information")
+    audit_context: Optional[AuditContext] = Field(
+        None, description="Audit context with authenticated user information"
+    )
 
 
 # Built-in demo policies for testing when OPA is unavailable
@@ -627,6 +658,13 @@ async def validate_policies(
         if request.include_recommendations:
             recommendations = generate_recommendations(violations, opa_available)
 
+        # Create audit context
+        audit_ctx = AuditContext(
+            user_id=current_user.sub,
+            tenant_id=current_user.tenant_id,
+            timestamp=start_time,
+        )
+
         response = PolicyValidationResponse(
             passed=passed,
             violations=violations,
@@ -634,6 +672,7 @@ async def validate_policies(
             recommendations=recommendations,
             dry_run=not opa_available,
             opa_available=opa_available,
+            audit_context=audit_ctx,
         )
 
         logger.info(
@@ -716,7 +755,14 @@ async def list_policies(
                         f"user={current_user.sub}, tenant={current_user.tenant_id}"
                     )
 
-                    return PoliciesListResponse(policies=policies, total=len(policies))
+                    audit_ctx = AuditContext(
+                        user_id=current_user.sub,
+                        tenant_id=current_user.tenant_id,
+                    )
+
+                    return PoliciesListResponse(
+                        policies=policies, total=len(policies), audit_context=audit_ctx
+                    )
         except Exception as e:
             logger.warning(f"Failed to get policies from OPA: {e}")
 
@@ -736,19 +782,24 @@ async def list_policies(
         f"user={current_user.sub}, tenant={current_user.tenant_id}"
     )
 
-    return PoliciesListResponse(policies=policies, total=len(policies))
+    audit_ctx = AuditContext(
+        user_id=current_user.sub,
+        tenant_id=current_user.tenant_id,
+    )
+
+    return PoliciesListResponse(policies=policies, total=len(policies), audit_context=audit_ctx)
 
 
 @router.get(
     "/policies/{policy_id}",
-    response_model=PolicyInfo,
+    response_model=PolicyResponse,
     summary="Get policy details",
     description="Get details of a specific policy",
 )
 async def get_policy(
     policy_id: str,
     current_user: UserClaims = Depends(get_current_user),
-) -> PolicyInfo:
+) -> PolicyResponse:
     """Get details of a specific policy."""
     # Log the request with user/tenant context for audit trail
     logger.info(
@@ -763,7 +814,11 @@ async def get_policy(
                 f"Get policy complete: found demo policy {policy_id}, "
                 f"user={current_user.sub}, tenant={current_user.tenant_id}"
             )
-            return policy
+            audit_ctx = AuditContext(
+                user_id=current_user.sub,
+                tenant_id=current_user.tenant_id,
+            )
+            return PolicyResponse(policy=policy, audit_context=audit_ctx)
 
     # Check OPA if available
     opa_available = await check_opa_health()
@@ -789,7 +844,11 @@ async def get_policy(
                             f"Get policy complete: found OPA policy {policy_id}, "
                             f"user={current_user.sub}, tenant={current_user.tenant_id}"
                         )
-                        return policy_info
+                        audit_ctx = AuditContext(
+                            user_id=current_user.sub,
+                            tenant_id=current_user.tenant_id,
+                        )
+                        return PolicyResponse(policy=policy_info, audit_context=audit_ctx)
         except Exception as e:
             logger.warning(f"Failed to get policy from OPA: {e}")
 
@@ -831,4 +890,10 @@ async def policy_health(
         "opa_url": OPA_URL,
         "builtin_policies": len(DEMO_POLICIES),
         "timestamp": datetime.now(timezone.utc).isoformat(),
+        "audit_context": {
+            "user_id": current_user.sub,
+            "tenant_id": current_user.tenant_id,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "request_id": str(uuid4()),
+        },
     }
