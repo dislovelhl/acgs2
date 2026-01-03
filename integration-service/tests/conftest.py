@@ -3,9 +3,12 @@ Pytest configuration and shared fixtures for integration service tests.
 """
 
 import sys
+from datetime import datetime, timedelta
 from pathlib import Path
+from typing import Dict, List
 
 import pytest
+from fastapi.testclient import TestClient
 
 # Add acgs2-core to Python path for shared module imports
 # This allows integration-service to import from acgs2-core/shared/ during tests
@@ -13,6 +16,8 @@ repo_root = Path(__file__).parent.parent.parent
 acgs2_core_path = repo_root / "acgs2-core"
 if acgs2_core_path.exists() and str(acgs2_core_path) not in sys.path:
     sys.path.insert(0, str(acgs2_core_path))
+
+from src.api.auth import UserClaims, create_access_token, create_test_token  # noqa: E402
 
 
 @pytest.fixture(autouse=True)
@@ -24,3 +29,290 @@ def reset_test_state():
 
 # Configure pytest-asyncio
 pytest_plugins = ["pytest_asyncio"]
+
+
+# ============================================================================
+# JWT Authentication Fixtures
+# ============================================================================
+
+
+@pytest.fixture
+def test_user_claims() -> UserClaims:
+    """
+    Create test user claims with default permissions.
+
+    Returns:
+        UserClaims with test user, tenant, and standard permissions
+    """
+    now = int(datetime.utcnow().timestamp())
+    return UserClaims(
+        sub="test-user-123",
+        tenant_id="test-tenant-456",
+        roles=["user", "developer"],
+        permissions=["read", "write", "policy:validate"],
+        exp=now + 3600,  # Expires in 1 hour
+        iat=now,
+        iss="acgs2",
+    )
+
+
+@pytest.fixture
+def admin_user_claims() -> UserClaims:
+    """
+    Create admin user claims with elevated permissions.
+
+    Returns:
+        UserClaims with admin role and all permissions
+    """
+    now = int(datetime.utcnow().timestamp())
+    return UserClaims(
+        sub="admin-user-789",
+        tenant_id="admin-tenant-000",
+        roles=["admin", "user"],
+        permissions=["read", "write", "delete", "policy:validate", "policy:manage"],
+        exp=now + 3600,
+        iat=now,
+        iss="acgs2",
+    )
+
+
+@pytest.fixture
+def limited_user_claims() -> UserClaims:
+    """
+    Create limited user claims with minimal permissions.
+
+    Returns:
+        UserClaims with only read permission
+    """
+    now = int(datetime.utcnow().timestamp())
+    return UserClaims(
+        sub="limited-user-999",
+        tenant_id="limited-tenant-111",
+        roles=["viewer"],
+        permissions=["read"],
+        exp=now + 3600,
+        iat=now,
+        iss="acgs2",
+    )
+
+
+@pytest.fixture
+def test_jwt_token() -> str:
+    """
+    Create a valid test JWT token with standard permissions.
+
+    Returns:
+        JWT token string
+    """
+    return create_test_token(
+        user_id="test-user-123",
+        tenant_id="test-tenant-456",
+        roles=["user", "developer"],
+        permissions=["read", "write", "policy:validate"],
+    )
+
+
+@pytest.fixture
+def admin_jwt_token() -> str:
+    """
+    Create a valid admin JWT token with elevated permissions.
+
+    Returns:
+        Admin JWT token string
+    """
+    return create_test_token(
+        user_id="admin-user-789",
+        tenant_id="admin-tenant-000",
+        roles=["admin", "user"],
+        permissions=["read", "write", "delete", "policy:validate", "policy:manage"],
+    )
+
+
+@pytest.fixture
+def limited_jwt_token() -> str:
+    """
+    Create a valid JWT token with limited permissions.
+
+    Returns:
+        Limited JWT token string
+    """
+    return create_test_token(
+        user_id="limited-user-999",
+        tenant_id="limited-tenant-111",
+        roles=["viewer"],
+        permissions=["read"],
+    )
+
+
+@pytest.fixture
+def expired_jwt_token() -> str:
+    """
+    Create an expired JWT token for testing expiration handling.
+
+    Returns:
+        Expired JWT token string
+    """
+    return create_access_token(
+        user_id="expired-user",
+        tenant_id="expired-tenant",
+        roles=["user"],
+        permissions=["read"],
+        expires_delta=timedelta(seconds=-1),  # Already expired
+    )
+
+
+@pytest.fixture
+def malformed_jwt_token() -> str:
+    """
+    Create a malformed JWT token for testing validation.
+
+    Returns:
+        Malformed token string
+    """
+    return "malformed.jwt.token.that.is.invalid"
+
+
+@pytest.fixture
+def create_jwt_token():
+    """
+    Factory fixture for creating custom JWT tokens.
+
+    Returns:
+        Function that creates JWT tokens with custom parameters
+
+    Example:
+        token = create_jwt_token(
+            user_id="custom-user",
+            tenant_id="custom-tenant",
+            roles=["custom-role"],
+            permissions=["custom-permission"],
+        )
+    """
+
+    def _create_token(
+        user_id: str = "test-user",
+        tenant_id: str = "test-tenant",
+        roles: List[str] = None,
+        permissions: List[str] = None,
+        expires_delta: timedelta = None,
+    ) -> str:
+        if roles is None:
+            roles = ["user"]
+        if permissions is None:
+            permissions = ["read"]
+        if expires_delta is None:
+            expires_delta = timedelta(hours=1)
+
+        return create_access_token(
+            user_id=user_id,
+            tenant_id=tenant_id,
+            roles=roles,
+            permissions=permissions,
+            expires_delta=expires_delta,
+        )
+
+    return _create_token
+
+
+@pytest.fixture
+def auth_headers(test_jwt_token: str) -> Dict[str, str]:
+    """
+    Create HTTP headers with valid authentication token.
+
+    Args:
+        test_jwt_token: Valid JWT token
+
+    Returns:
+        Dictionary with Authorization header
+    """
+    return {"Authorization": f"Bearer {test_jwt_token}"}
+
+
+@pytest.fixture
+def admin_auth_headers(admin_jwt_token: str) -> Dict[str, str]:
+    """
+    Create HTTP headers with admin authentication token.
+
+    Args:
+        admin_jwt_token: Admin JWT token
+
+    Returns:
+        Dictionary with Authorization header
+    """
+    return {"Authorization": f"Bearer {admin_jwt_token}"}
+
+
+@pytest.fixture
+def limited_auth_headers(limited_jwt_token: str) -> Dict[str, str]:
+    """
+    Create HTTP headers with limited authentication token.
+
+    Args:
+        limited_jwt_token: Limited JWT token
+
+    Returns:
+        Dictionary with Authorization header
+    """
+    return {"Authorization": f"Bearer {limited_jwt_token}"}
+
+
+@pytest.fixture
+def expired_auth_headers(expired_jwt_token: str) -> Dict[str, str]:
+    """
+    Create HTTP headers with expired authentication token.
+
+    Args:
+        expired_jwt_token: Expired JWT token
+
+    Returns:
+        Dictionary with Authorization header containing expired token
+    """
+    return {"Authorization": f"Bearer {expired_jwt_token}"}
+
+
+@pytest.fixture
+def malformed_auth_headers(malformed_jwt_token: str) -> Dict[str, str]:
+    """
+    Create HTTP headers with malformed authentication token.
+
+    Args:
+        malformed_jwt_token: Malformed JWT token
+
+    Returns:
+        Dictionary with Authorization header containing malformed token
+    """
+    return {"Authorization": f"Bearer {malformed_jwt_token}"}
+
+
+@pytest.fixture
+def test_client() -> TestClient:
+    """
+    Create a FastAPI test client for the integration service.
+
+    Returns:
+        TestClient instance for making API requests
+    """
+    from src.main import app
+
+    return TestClient(app)
+
+
+@pytest.fixture
+def authenticated_client(test_client: TestClient, auth_headers: Dict[str, str]) -> TestClient:
+    """
+    Create an authenticated test client with default auth headers.
+
+    Args:
+        test_client: Base test client
+        auth_headers: Authentication headers
+
+    Returns:
+        TestClient configured with authentication headers
+
+    Note:
+        This client automatically includes auth headers in requests.
+        Use via: authenticated_client.get("/endpoint", headers=headers)
+        where headers can be combined with auth_headers.
+    """
+    test_client.headers.update(auth_headers)
+    return test_client
