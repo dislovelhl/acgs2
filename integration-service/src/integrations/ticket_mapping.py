@@ -36,6 +36,7 @@ class TicketingProvider(str, Enum):
 
     JIRA = "jira"
     SERVICENOW = "servicenow"
+    PAGERDUTY = "pagerduty"
 
 
 class FieldMappingType(str, Enum):
@@ -78,6 +79,19 @@ class ServiceNowImpactUrgency(str, Enum):
     LOW = "3"
 
 
+class PagerDutyUrgency(str, Enum):
+    """
+    PagerDuty urgency levels.
+
+    PagerDuty uses a simplified two-level urgency system (high/low) compared
+    to Jira's five-level priority or ServiceNow's three-level impact/urgency.
+    High urgency incidents trigger immediate notifications and escalation.
+    """
+
+    HIGH = "high"
+    LOW = "low"
+
+
 # ============================================================================
 # Default Mappings
 # ============================================================================
@@ -108,6 +122,18 @@ DEFAULT_SERVICENOW_URGENCY_MAP: Dict[EventSeverity, ServiceNowImpactUrgency] = {
     EventSeverity.MEDIUM: ServiceNowImpactUrgency.MEDIUM,
     EventSeverity.LOW: ServiceNowImpactUrgency.LOW,
     EventSeverity.INFO: ServiceNowImpactUrgency.LOW,
+}
+
+# Severity to PagerDuty Urgency mapping
+# PagerDuty uses a two-level urgency system (high/low). CRITICAL and HIGH severity
+# violations map to 'high' urgency to ensure immediate notifications and escalation.
+# MEDIUM, LOW, and INFO map to 'low' urgency for standard processing.
+DEFAULT_PAGERDUTY_URGENCY_MAP: Dict[EventSeverity, PagerDutyUrgency] = {
+    EventSeverity.CRITICAL: PagerDutyUrgency.HIGH,
+    EventSeverity.HIGH: PagerDutyUrgency.HIGH,
+    EventSeverity.MEDIUM: PagerDutyUrgency.LOW,
+    EventSeverity.LOW: PagerDutyUrgency.LOW,
+    EventSeverity.INFO: PagerDutyUrgency.LOW,
 }
 
 
