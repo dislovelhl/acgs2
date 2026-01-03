@@ -16,6 +16,7 @@ import hmac
 import logging
 import re
 import secrets
+import warnings
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -39,7 +40,21 @@ logger = logging.getLogger(__name__)
 
 # Backward compatibility aliases
 # These maintain API compatibility for existing code that imports from webhooks.auth
-WebhookAuthError = AuthenticationError
+class WebhookAuthError(AuthenticationError):
+    """
+    Deprecated: Use AuthenticationError from exceptions.auth instead.
+
+    This alias is maintained for backward compatibility but will be removed in a future version.
+    """
+
+    def __init__(self, *args, **kwargs):
+        warnings.warn(
+            "WebhookAuthError is deprecated. "
+            "Use AuthenticationError from exceptions.auth instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        super().__init__(*args, **kwargs)
 
 # Public API exports - make exceptions available for import from this module
 __all__ = [

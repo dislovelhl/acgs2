@@ -11,6 +11,7 @@ import hmac
 import json
 import logging
 import time
+import warnings
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Set
 from uuid import uuid4
@@ -48,10 +49,72 @@ logger = logging.getLogger(__name__)
 
 # Backward compatibility aliases
 # These maintain API compatibility for existing code that imports from webhooks.delivery
-WebhookDeliveryError = DeliveryError
-WebhookAuthenticationError = AuthenticationError
-WebhookTimeoutError = DeliveryTimeoutError
-WebhookConnectionError = DeliveryConnectionError
+class WebhookDeliveryError(DeliveryError):
+    """
+    Deprecated: Use DeliveryError from exceptions.delivery instead.
+
+    This alias is maintained for backward compatibility but will be removed in a future version.
+    """
+
+    def __init__(self, *args, **kwargs):
+        warnings.warn(
+            "WebhookDeliveryError is deprecated. "
+            "Use DeliveryError from exceptions.delivery instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        super().__init__(*args, **kwargs)
+
+
+class WebhookAuthenticationError(AuthenticationError):
+    """
+    Deprecated: Use AuthenticationError from exceptions.auth instead.
+
+    This alias is maintained for backward compatibility but will be removed in a future version.
+    """
+
+    def __init__(self, *args, **kwargs):
+        warnings.warn(
+            "WebhookAuthenticationError is deprecated. "
+            "Use AuthenticationError from exceptions.auth instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        super().__init__(*args, **kwargs)
+
+
+class WebhookTimeoutError(DeliveryTimeoutError):
+    """
+    Deprecated: Use DeliveryTimeoutError from exceptions.delivery instead.
+
+    This alias is maintained for backward compatibility but will be removed in a future version.
+    """
+
+    def __init__(self, *args, **kwargs):
+        warnings.warn(
+            "WebhookTimeoutError is deprecated. "
+            "Use DeliveryTimeoutError from exceptions.delivery instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        super().__init__(*args, **kwargs)
+
+
+class WebhookConnectionError(DeliveryConnectionError):
+    """
+    Deprecated: Use DeliveryConnectionError from exceptions.delivery instead.
+
+    This alias is maintained for backward compatibility but will be removed in a future version.
+    """
+
+    def __init__(self, *args, **kwargs):
+        warnings.warn(
+            "WebhookConnectionError is deprecated. "
+            "Use DeliveryConnectionError from exceptions.delivery instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        super().__init__(*args, **kwargs)
 
 # Public API exports - make exceptions and classes available for import from this module
 __all__ = [

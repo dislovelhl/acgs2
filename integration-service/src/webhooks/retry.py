@@ -8,6 +8,7 @@ and utilities for calculating backoff delays for webhook deliveries.
 import asyncio
 import logging
 import random
+import warnings
 from datetime import datetime, timedelta, timezone
 from functools import wraps
 from typing import Any, Callable, Optional, Set, TypeVar
@@ -38,7 +39,21 @@ T = TypeVar("T")
 
 # Backward compatibility aliases
 # These maintain API compatibility for existing code that imports from webhooks.retry
-WebhookRetryError = MaxRetriesExceededError
+class WebhookRetryError(MaxRetriesExceededError):
+    """
+    Deprecated: Use MaxRetriesExceededError from exceptions.retry instead.
+
+    This alias is maintained for backward compatibility but will be removed in a future version.
+    """
+
+    def __init__(self, *args, **kwargs):
+        warnings.warn(
+            "WebhookRetryError is deprecated. "
+            "Use MaxRetriesExceededError from exceptions.retry instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        super().__init__(*args, **kwargs)
 
 
 class ExponentialBackoff:
