@@ -670,6 +670,13 @@ class DriftDetector:
             self._current_status = (
                 DriftStatus.INSUFFICIENT_DATA if self._enabled else DriftStatus.DISABLED
             )
+            # Clear cache fields
+            self._reference_df_cache = None
+            self._current_df_cache = None
+            self._reference_checksum = None
+            self._current_checksum = None
+            self._last_report_cache = None
+            self._report_cache_checksum = None
             logger.info("DriftDetector reset")
 
     def _compute_deque_checksum(self, data: Deque[Dict[str, Any]], num_items: int = 3) -> str:
