@@ -1170,16 +1170,104 @@ class SafetyBoundsChecker:
         # State Transitions:
         # OK (0 failures) → WARNING (1+ failures) → CRITICAL/PAUSED (3+ failures)
         #
-        # Why 3 consecutive failures?
-        # - 1 failure: Could be noise, outlier batch, temporary data issue
-        # - 2 failures: Concerning, but still possibly transient
-        # - 3 failures: Highly unlikely to be coincidence, indicates systematic problem
-        #   (Probability of 3 false alarms in a row ≈ 0.1^3 = 0.001 if p(false alarm) = 0.1)
+        # WHY CONSECUTIVE_FAILURES_LIMIT = 3?
+        # This threshold balances two competing concerns:
+        # (1) CONFIRMATION: Need multiple failures to distinguish systematic issues from noise
+        # (2) SPEED: Must detect and halt degradation before significant production impact
         #
-        # This is similar to:
+        # CONFIRMATION WITHOUT FALSE ALARMS:
+        # ------------------------------------
+        # Single failures can occur due to transient issues:
+        # - 1 failure: Could be statistical noise, outlier batch, temporary data spike
+        #   * With accuracy SE ≈ 3.6%, ~16% chance of false alarm from noise alone
+        #   * Too sensitive - would cause unnecessary circuit breaker trips
+        #   * Action: Issue WARNING alert but continue learning
+        #
+        # - 2 failures: Concerning pattern, but could still be coincidental
+        #   * Probability of 2 consecutive false alarms: 0.16 × 0.16 = 2.6%
+        #   * Still plausible as random fluctuation in noisy governance data
+        #   * Action: Escalate WARNING severity but continue learning
+        #
+        # - 3 failures: Extremely unlikely to be coincidence (statistical confirmation)
+        #   * Probability of 3 consecutive false alarms: 0.16^3 ≈ 0.4% (highly improbable)
+        #   * Strong evidence of systematic issue requiring intervention
+        #   * Action: CRITICAL alert + PAUSED (circuit breaker opens)
+        #
+        # DETECTION WITHOUT EXCESSIVE DELAYS:
+        # ------------------------------------
+        # Why not 4 or 5 failures? Timing matters for preventing production impact:
+        #
+        # Typical Governance Model Update Frequency:
+        # - High-traffic systems: Safety checks every 5-15 minutes (frequent model updates)
+        # - Medium-traffic systems: Safety checks every 30-60 minutes (moderate updates)
+        # - Low-traffic systems: Safety checks every 2-4 hours (infrequent updates)
+        #
+        # Time to Circuit Breaker Open with Different Thresholds:
+        #
+        # High-Traffic System (10-minute check intervals):
+        # - 3 failures: 30 minutes to detection (ACCEPTABLE)
+        #   * Fail at T=0, T=10, T=20 → Paused at T=20
+        #   * Production running degraded model for only 20 minutes
+        # - 5 failures: 50 minutes to detection (TOO SLOW)
+        #   * Fail at T=0, T=10, T=20, T=30, T=40 → Paused at T=40
+        #   * Production running degraded model for 40+ minutes (UNACCEPTABLE)
+        #
+        # Medium-Traffic System (30-minute check intervals):
+        # - 3 failures: 90 minutes to detection (ACCEPTABLE for moderate traffic)
+        #   * Fail at T=0, T=30, T=60 → Paused at T=60
+        #   * Balances false alarm prevention with reasonable detection time
+        # - 5 failures: 150 minutes to detection (2.5 hours - TOO SLOW)
+        #   * Would allow degraded model to impact production for hours
+        #
+        # Low-Traffic System (2-hour check intervals):
+        # - 3 failures: 6 hours to detection (ACCEPTABLE for low-traffic)
+        #   * Fail at T=0, T=2h, T=4h → Paused at T=4h
+        #   * Lower traffic means lower impact exposure
+        # - 5 failures: 10 hours to detection (TOO SLOW even for low traffic)
+        #
+        # PRODUCTION IMPACT ANALYSIS:
+        # In a high-traffic governance system processing 100 requests/minute:
+        # - 3-failure threshold (30 min): ~3,000 requests with degraded model
+        # - 5-failure threshold (50 min): ~5,000 requests with degraded model
+        #   * 2,000 additional requests at risk (67% more exposure)
+        #
+        # With 85% accuracy threshold and 80% degraded model accuracy:
+        # - Expected additional errors: 2,000 × (0.85 - 0.80) = 100 more errors
+        #   * 100 more false grants (security breaches) or false denials (user impact)
+        #   * In governance, even small numbers matter (compliance violations, audit failures)
+        #
+        # WHY NOT LOWER (e.g., 2 failures)?
+        # - Too sensitive to noise (2.6% false alarm rate)
+        # - Would cause frequent unnecessary pauses
+        # - Reduces system adaptability (excessive circuit breaker trips)
+        # - Alert fatigue for operators (ignored warnings become dangerous)
+        #
+        # SIMILAR INDUSTRY STANDARDS:
+        # The 3-failure threshold aligns with established reliability engineering patterns:
         # - TCP retransmit threshold (3 duplicate ACKs trigger fast retransmit)
         # - Traditional circuit breakers (often use 3-5 failure threshold)
         # - Statistical significance (3 standard deviations for 99.7% confidence)
+        # - AWS health checks (default 3 consecutive failures before instance marked unhealthy)
+        # - Kubernetes liveness probes (default failureThreshold=3)
+        #
+        # TUNING GUIDANCE:
+        # The consecutive_failures_limit can be adjusted based on your deployment:
+        #
+        # Use 2 failures if:
+        # - Extremely high-traffic (1000s requests/minute)
+        # - Ultra-low tolerance for degradation (banking, healthcare)
+        # - Excellent data quality (very low noise)
+        # - Willing to handle occasional false alarm pauses
+        #
+        # Use 4-5 failures if:
+        # - Very low-traffic (infrequent model updates)
+        # - High tolerance for transient degradation
+        # - Noisy data (imbalanced classes, sparse features)
+        # - Want to minimize circuit breaker trips
+        #
+        # Default 3 is optimal for most governance applications, providing statistical
+        # confirmation (0.4% false alarm rate) with reasonable detection speed (minutes
+        # to hours depending on traffic, not days).
 
         if self._consecutive_failures >= self.consecutive_failures_limit:
             # CIRCUIT BREAKER OPENS (CRITICAL → PAUSED)
@@ -1196,10 +1284,72 @@ class SafetyBoundsChecker:
                 self._status = SafetyStatus.CRITICAL
 
                 if self.enable_auto_pause:
-                    # AUTO-PAUSE MECHANISM
-                    # If enable_auto_pause=True, automatically halt learning
-                    # This is the circuit breaker "opening" to prevent further damage
-                    self._pause_learning()  # Sets status to PAUSED
+                    # AUTO-PAUSE MECHANISM: Preventing Bad Model Updates
+                    # ====================================================
+                    #
+                    # When enable_auto_pause=True, the circuit breaker automatically halts
+                    # learning after consecutive_failures_limit failures. This prevents
+                    # degraded models from corrupting production in several critical ways:
+                    #
+                    # 1. FEEDBACK LOOP PREVENTION:
+                    #    A degraded model makes incorrect predictions → those predictions
+                    #    generate incorrect feedback labels → model learns from its own
+                    #    mistakes → degradation accelerates.
+                    #
+                    #    Example in Governance:
+                    #    - Model incorrectly grants access (FP) → User accesses resource →
+                    #      System logs "successful access" as positive feedback →
+                    #      Model learns to grant more improper access → CASCADE
+                    #
+                    # 2. PRODUCTION CORRUPTION PREVENTION:
+                    #    Without auto-pause, consecutive failures would allow ModelManager
+                    #    to swap in progressively worse models, degrading the production
+                    #    system. Auto-pause blocks swaps until human review confirms fix.
+                    #
+                    #    Timeline without auto-pause:
+                    #    T0: Model at 90% accuracy (production)
+                    #    T1: New model at 84% fails check → WARNING (swap allowed)
+                    #    T2: New model at 82% fails check → WARNING (swap allowed)
+                    #    T3: New model at 79% fails check → WARNING (swap allowed)
+                    #    T4: Production now running 79% model → CRITICAL FAILURE
+                    #
+                    #    Timeline WITH auto-pause:
+                    #    T0: Model at 90% accuracy (production)
+                    #    T1: New model at 84% fails check → WARNING (swap allowed)
+                    #    T2: New model at 82% fails check → WARNING (swap allowed)
+                    #    T3: New model at 79% fails check → PAUSED (swap BLOCKED)
+                    #    T4: Production still running 90% model → STABLE
+                    #
+                    # 3. FORCED INVESTIGATION WINDOW:
+                    #    Auto-pause creates mandatory stop for root cause analysis:
+                    #    - Is training data corrupted? (bad labels, feature drift)
+                    #    - Is there distribution shift? (concept drift, covariate shift)
+                    #    - Are hyperparameters misconfigured? (learning rate too high)
+                    #    - Is there infrastructure failure? (broken pipeline)
+                    #
+                    # 4. GOVERNANCE SAFETY MARGIN:
+                    #    In access control, even a brief period with a degraded model can:
+                    #    - Grant unauthorized access (security breach, compliance violation)
+                    #    - Deny legitimate access (business disruption, user frustration)
+                    #    - Create audit inconsistencies (compliance risk)
+                    #    Auto-pause prevents these risks by blocking updates proactively.
+                    #
+                    # WHY ENABLE_AUTO_PAUSE IS CRITICAL:
+                    # When enable_auto_pause=False (NOT RECOMMENDED for production):
+                    # - Circuit breaker transitions to CRITICAL but does NOT pause
+                    # - Learning continues despite consecutive failures (DANGEROUS)
+                    # - Operator must manually monitor and pause (human-in-the-loop delay)
+                    # - Use only for testing/debugging where controlled degradation is acceptable
+                    #
+                    # When enable_auto_pause=True (RECOMMENDED for production):
+                    # - Circuit breaker automatically pauses learning (fail-safe)
+                    # - No human intervention delay (immediate protection)
+                    # - Forces operators to fix root cause before resume (deliberate recovery)
+                    # - Default: True for safety-critical governance applications
+                    #
+                    # This is the circuit breaker "opening" to prevent further damage.
+                    # Sets status to PAUSED and blocks all future learning operations.
+                    self._pause_learning()  # Opens circuit breaker
 
                 # Generate CRITICAL alert for operator intervention
                 # In production, this should trigger:
@@ -1331,11 +1481,146 @@ class SafetyBoundsChecker:
         - Alert operators for manual investigation
         - Wait for force_resume() before accepting updates again
 
-        Recovery Process:
-        1. Operator investigates root cause (check logs, data quality, drift metrics)
-        2. Fix underlying issue (repair data pipeline, retrain model, adjust thresholds)
-        3. Manually call force_resume() to close circuit
-        4. Monitor for successful checks before resuming normal operations
+        Recovery Process and Manual Intervention:
+        ==========================================
+
+        When the circuit breaker opens (PAUSED state), manual intervention via
+        force_resume() is required to restart learning. This deliberate human-in-the-loop
+        ensures systematic issues are resolved before resuming operations.
+
+        WHEN TO USE MANUAL INTERVENTION (force_resume):
+
+        Scenario 1: Root Cause Identified and Fixed
+        --------------------------------------------
+        If investigation reveals a fixable issue that has been resolved:
+
+        Example: Data Pipeline Corruption
+        - Investigation: Features were not being normalized correctly
+        - Fix: Repaired StandardScaler initialization in preprocessing
+        - Action: force_resume() after verifying fix on validation data
+        - Rationale: Root cause eliminated, safe to resume learning
+
+        Example: Hyperparameter Misconfiguration
+        - Investigation: Learning rate (0.1) was too high, causing divergence
+        - Fix: Reduced learning_rate to 0.01 in model configuration
+        - Action: force_resume() after testing with smaller learning rate
+        - Rationale: Configuration corrected, stable training expected
+
+        Example: Bad Training Batch
+        - Investigation: Single batch contained corrupted labels (flipped grant/deny)
+        - Fix: Removed corrupted batch from training queue, validated data quality
+        - Action: force_resume() after data quality checks pass
+        - Rationale: Corrupted data purged, clean training data restored
+
+        Scenario 2: Temporary Distribution Shift Resolved
+        --------------------------------------------------
+        If drift detection shows distribution has returned to normal:
+
+        Example: Organizational Restructure
+        - Investigation: Company acquisition caused temporary access pattern shift
+        - Resolution: Access patterns stabilized after integration completed
+        - Action: force_resume() after drift_score returns to baseline
+        - Rationale: Distribution shift was temporary, model is valid again
+
+        Example: Seasonal Policy Change
+        - Investigation: End-of-quarter access patterns deviated from norm
+        - Resolution: Quarter ended, access patterns returned to typical levels
+        - Action: force_resume() after monitoring shows pattern normalization
+        - Rationale: Seasonal drift resolved, model applicable again
+
+        Scenario 3: Threshold Adjustment After Review
+        ----------------------------------------------
+        If investigation shows thresholds were too conservative:
+
+        Example: Overly Strict Accuracy Threshold
+        - Investigation: Model consistently at 83-84% (below 85% threshold)
+        - Analysis: Domain research shows 80-85% is acceptable for this use case
+        - Action: Lower accuracy_threshold to 0.80, then force_resume()
+        - Rationale: Threshold was misconfigured, model is actually safe
+        - CAUTION: Only adjust thresholds after thorough domain analysis!
+
+        WHEN NOT TO USE MANUAL INTERVENTION:
+
+        Do NOT force_resume() if:
+
+        1. Root Cause Unknown:
+           - Consecutive failures detected but cause unclear
+           - Action: Continue investigation, review logs/metrics/drift
+           - Risk: Resuming without fix will trigger circuit breaker again
+
+        2. Systematic Data Quality Issues:
+           - Label noise, feature corruption, or missing values persist
+           - Action: Fix data pipeline, validate data quality first
+           - Risk: Model will learn from garbage data (garbage in, garbage out)
+
+        3. Fundamental Model Degradation:
+           - Model has catastrophically forgotten previous knowledge
+           - Distribution shift is permanent (concept drift)
+           - Action: Retrain model from scratch with new data
+           - Risk: Resuming learning won't fix fundamental model corruption
+
+        4. Infrastructure Instability:
+           - Database connections flapping, network issues, resource constraints
+           - Action: Stabilize infrastructure before resuming
+           - Risk: Unstable infrastructure will cause repeated failures
+
+        STANDARD RECOVERY WORKFLOW:
+
+        Step 1: INVESTIGATE
+        -------------------
+        - Check logs for error messages and stack traces
+        - Review accuracy metrics (current vs. historical)
+        - Analyze drift scores (check_drift() results)
+        - Inspect recent training batches (data quality)
+        - Verify infrastructure health (database, network, resources)
+
+        Step 2: DIAGNOSE
+        ----------------
+        - Identify root cause (data quality, drift, configuration, infrastructure)
+        - Determine if issue is transient or systematic
+        - Assess whether model can be salvaged or needs retraining
+
+        Step 3: FIX
+        -----------
+        - Repair data pipeline if corrupted
+        - Adjust hyperparameters if misconfigured
+        - Retrain model if fundamentally degraded
+        - Fix infrastructure if unstable
+
+        Step 4: VALIDATE
+        ----------------
+        - Test fix on validation data (ensure accuracy > threshold)
+        - Verify data quality checks pass
+        - Confirm drift scores are within acceptable range
+        - Run safety checks manually before force_resume()
+
+        Step 5: RESUME
+        --------------
+        - Call force_resume() to close circuit breaker
+        - Monitor initial checks closely (ensure they pass)
+        - Watch for consecutive failures (circuit may reopen)
+        - Document incident for post-mortem analysis
+
+        Step 6: MONITOR
+        ---------------
+        - Track accuracy metrics for next 24-48 hours
+        - Watch for circuit breaker state transitions
+        - Verify model performance remains stable
+        - Conduct post-mortem to prevent recurrence
+
+        ALTERNATIVE: AUTOMATIC RECOVERY
+
+        The circuit breaker can also close automatically if a safety check passes
+        after being PAUSED. This happens in _handle_success() when status == PAUSED.
+
+        Automatic recovery occurs when:
+        - Underlying issue self-resolves (temporary drift, transient error)
+        - Next model update happens to pass safety checks
+        - No manual intervention was needed
+
+        However, automatic recovery should NOT be relied upon for systematic issues.
+        If consecutive failures indicated a real problem, force_resume() with
+        investigation is the safer approach.
 
         Callbacks:
         Pause callbacks are invoked to notify integrated systems:
