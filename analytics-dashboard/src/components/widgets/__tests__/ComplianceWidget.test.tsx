@@ -11,7 +11,7 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import { ComplianceWidget } from "../ComplianceWidget";
 
 const API_BASE_URL = "http://localhost:8080";
@@ -122,6 +122,55 @@ describe("ComplianceWidget", () => {
       expect(screen.getAllByText("SOC2").length).toBeGreaterThan(0);
       expect(screen.getAllByText("HIPAA").length).toBeGreaterThan(0);
       expect(screen.getByText("PCI-DSS")).toBeInTheDocument();
+    });
+  });
+
+  describe("Severity Filtering", () => {
+    it("shows all severity filter buttons", async () => {
+      render(<ComplianceWidget />);
+
+      await waitFor(() => {
+        expect(
+          screen.getByRole("button", { name: "All" })
+        ).toBeInTheDocument();
+      });
+
+      expect(
+        screen.getByRole("button", { name: "critical" })
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: "high" })
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: "medium" })
+      ).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "low" })).toBeInTheDocument();
+    });
+
+    it("filters violations by severity when filter is clicked", async () => {
+      render(<ComplianceWidget />);
+
+      await waitFor(() => {
+        expect(
+          screen.getByText("Unencrypted PII detected in production database")
+        ).toBeInTheDocument();
+      });
+
+      // Click on "critical" filter
+      fireEvent.click(screen.getByRole("button", { name: "critical" }));
+
+      // Wait for filtered results
+      await waitFor(() => {
+        // Should only show critical violation
+        expect(
+          screen.getByText("Unencrypted PII detected in production database")
+        ).toBeInTheDocument();
+      });
+
+      // Other violations should not be visible
+      expect(
+        screen.queryByText("Admin API endpoint accessible without MFA")
+      ).not.toBeInTheDocument();
     });
   });
 });
