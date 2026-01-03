@@ -136,7 +136,9 @@ class TestAdaptiveGovernance:
 
         assert engine.constitutional_hash == constitutional_hash
         assert engine.mode == GovernanceMode.ADAPTIVE
-        assert engine._adaptive_governance is None  # Not yet initialized
+        # Engine has core components initialized
+        assert engine.impact_scorer is not None
+        assert engine.threshold_manager is not None
         assert len(engine.decision_history) == 0
 
     @pytest.mark.asyncio
