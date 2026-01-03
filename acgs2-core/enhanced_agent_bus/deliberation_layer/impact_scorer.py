@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from dataclasses import dataclass
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 import numpy as np
 
@@ -318,6 +318,200 @@ class ImpactScorer:
 
     async def calculate_impact(self, message: AgentMessage) -> float:
         return self.calculate_impact_score(message)
+
+    def batch_score_impact(
+        self,
+        messages: List[Any],
+        contexts: Optional[List[Optional[Dict[str, Any]]]] = None,
+    ) -> List[float]:
+        """
+        Process multiple messages efficiently with batching.
+
+        This method provides optimized batch inference for high-throughput scenarios.
+        When ONNX/BERT is enabled, it batches tokenization and inference operations
+        for better throughput. Falls back to sequential processing when ML is unavailable.
+
+        Args:
+            messages: List of messages to score. Each message can be a dict or AgentMessage.
+            contexts: Optional list of context dicts corresponding to each message.
+                     If None, empty contexts are used for all messages.
+
+        Returns:
+            List of impact scores (floats between 0.0 and 1.0).
+
+        Example:
+            >>> scorer = ImpactScorer()
+            >>> messages = [
+            ...     {"content": "critical security alert"},
+            ...     {"content": "normal status check"},
+            ... ]
+            >>> scores = scorer.batch_score_impact(messages)
+            >>> print(scores)  # [0.85, 0.25]
+        """
+        if not messages:
+            return []
+
+        # Normalize contexts list
+        if contexts is None:
+            contexts = [None] * len(messages)
+        elif len(contexts) != len(messages):
+            raise ValueError(
+                f"contexts length ({len(contexts)}) must match messages length ({len(messages)})"
+            )
+
+        # Extract text content from all messages for batch processing
+        texts = [self._extract_text_content(msg) for msg in messages]
+
+        # If ONNX/BERT enabled with batch support, use optimized path
+        if self._onnx_enabled and self._bert_enabled and TRANSFORMERS_AVAILABLE:
+            return self._batch_score_with_embeddings(messages, texts, contexts)
+
+        # Fallback to sequential processing for keyword-based scoring
+        return self._batch_score_sequential(messages, contexts)
+
+    def _batch_score_with_embeddings(
+        self,
+        messages: List[Any],
+        texts: List[str],
+        contexts: List[Optional[Dict[str, Any]]],
+    ) -> List[float]:
+        """
+        Batch scoring using BERT embeddings.
+
+        Performs batch tokenization and inference for optimal throughput.
+        """
+        try:
+            # Filter out empty texts and track their indices
+            non_empty_indices = [i for i, t in enumerate(texts) if t.strip()]
+            non_empty_texts = [texts[i] for i in non_empty_indices]
+
+            if not non_empty_texts:
+                # All texts are empty - return low scores
+                return [0.0] * len(messages)
+
+            # Batch tokenization (single call for all texts)
+            batch_inputs = self.tokenizer(
+                non_empty_texts,
+                padding="max_length",
+                truncation=True,
+                max_length=512,
+                return_tensors="pt",
+            )
+
+            # Batch inference
+            with torch.no_grad():
+                outputs = self.model(**batch_inputs)
+                # Extract [CLS] token embeddings for each text
+                batch_embeddings = outputs.last_hidden_state[:, 0, :].numpy()
+
+            # Get keyword embeddings for similarity computation
+            keyword_embs = self._get_keyword_embeddings()
+
+            # Compute batch similarities using vectorized operations
+            similarities = cosine_similarity(batch_embeddings, keyword_embs)
+            max_similarities = np.max(similarities, axis=1)
+
+            # Build result array with semantic scores
+            semantic_scores = np.zeros(len(messages))
+            for idx, orig_idx in enumerate(non_empty_indices):
+                semantic_scores[orig_idx] = float(max_similarities[idx])
+
+            # Compute full impact scores for all messages
+            results = []
+            for i, msg in enumerate(messages):
+                ctx = contexts[i]
+                # Combine semantic score with other factors
+                score = self._compute_combined_score(msg, ctx, semantic_scores[i])
+                results.append(score)
+
+            return results
+
+        except Exception as e:
+            logger.debug("Batch embedding inference failed, falling back to sequential: %s", e)
+            return self._batch_score_sequential(messages, contexts)
+
+    def _batch_score_sequential(
+        self,
+        messages: List[Any],
+        contexts: List[Optional[Dict[str, Any]]],
+    ) -> List[float]:
+        """
+        Sequential scoring fallback for keyword-based processing.
+
+        Used when ONNX/BERT is not available or batch inference fails.
+        """
+        return [
+            self.calculate_impact_score(msg, ctx)
+            for msg, ctx in zip(messages, contexts)
+        ]
+
+    def _compute_combined_score(
+        self,
+        message: Any,
+        context: Optional[Dict[str, Any]],
+        semantic_score: float,
+    ) -> float:
+        """
+        Compute combined impact score from semantic and other factors.
+
+        Mirrors the logic in calculate_impact_score but uses pre-computed semantic score.
+        """
+        agent_id = "anonymous"
+        if context and "agent_id" in context:
+            agent_id = context["agent_id"]
+        elif isinstance(message, dict) and "from_agent" in message:
+            agent_id = message["from_agent"]
+        elif hasattr(message, "from_agent"):
+            agent_id = getattr(message, "from_agent", "anonymous")
+
+        # Use pre-computed semantic score but also check keywords for fallback
+        text = self._extract_text_content(message).strip().lower()
+        keyword_score = 0.1
+        if text:
+            hits = sum(1 for k in self.high_impact_keywords if k in text)
+            if hits >= 5:
+                keyword_score = 1.0
+            elif hits >= 3:
+                keyword_score = 0.8
+            elif hits > 0:
+                keyword_score = 0.5
+
+        # Take max of semantic and keyword scores
+        final_semantic = max(semantic_score, keyword_score)
+
+        scores = {
+            "semantic": final_semantic,
+            "permission": self._calculate_permission_score(message),
+            "volume": self._calculate_volume_score(agent_id),
+            "context": self._calculate_context_score(message, context),
+            "drift": self._calculate_drift_score(agent_id, final_semantic),
+            "priority": self._calculate_priority_factor(message, context),
+            "type": self._calculate_type_factor(message, context),
+        }
+
+        weighted = sum(scores[k] * getattr(self.config, f"{k}_weight") for k in scores)
+
+        if scores["priority"] >= 0.9:
+            weighted = max(weighted, self.config.critical_priority_boost)
+        if scores["semantic"] >= 0.8:
+            weighted = max(weighted, self.config.high_semantic_boost)
+
+        return min(1.0, weighted)
+
+    async def batch_calculate_impact(
+        self,
+        messages: List[AgentMessage],
+    ) -> List[float]:
+        """
+        Async wrapper for batch_score_impact.
+
+        Args:
+            messages: List of AgentMessage objects to score.
+
+        Returns:
+            List of impact scores.
+        """
+        return self.batch_score_impact(messages)
 
     def _get_embeddings(self, text: str) -> np.ndarray:
         return np.zeros((1, 768))
