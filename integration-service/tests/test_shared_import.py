@@ -46,9 +46,34 @@ def test_import_shared_logging():
         pytest.fail(f"Failed to import from shared.logging: {e}")
 
 
+def test_jwt_configuration_accessible():
+    """Verify that JWT configuration from shared.config is accessible."""
+    import os
+    from shared.config import settings
+
+    # Set a test JWT_SECRET if not already set
+    if not os.getenv("JWT_SECRET"):
+        os.environ["JWT_SECRET"] = "test-jwt-secret-key-for-testing-only"
+
+    # Re-import to pick up the environment variable
+    from shared.config import get_settings
+
+    test_settings = get_settings()
+
+    # Verify JWT configuration is accessible
+    assert test_settings.security is not None
+    assert test_settings.security.jwt_secret is not None
+    assert test_settings.security.jwt_secret.get_secret_value() != ""
+
+
 def test_create_test_token():
     """Verify that we can create a test token using the shared auth module."""
+    import os
     from shared.security.auth import create_test_token
+
+    # Ensure JWT_SECRET is set for token creation
+    if not os.getenv("JWT_SECRET"):
+        os.environ["JWT_SECRET"] = "test-jwt-secret-key-for-testing-only"
 
     # This test will actually create a token to ensure the module is fully functional
     token = create_test_token(
