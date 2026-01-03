@@ -9,7 +9,7 @@ import abc
 import logging
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, Dict, List, Optional, TypeVar
+from typing import List, Optional, TypeVar
 from uuid import uuid4
 
 import httpx
@@ -23,6 +23,8 @@ from tenacity import (
     wait_exponential,
 )
 
+from ..types import ErrorDetails, EventData, JSONDict, JSONValue, MetadataDict
+
 logger = logging.getLogger(__name__)
 
 
@@ -30,7 +32,9 @@ logger = logging.getLogger(__name__)
 class IntegrationError(Exception):
     """Base exception for integration errors"""
 
-    def __init__(self, message: str, integration_name: str = "", details: Dict[str, Any] = None):
+    def __init__(
+        self, message: str, integration_name: str = "", details: Optional[ErrorDetails] = None
+    ):
         self.message = message
         self.integration_name = integration_name
         self.details = details or {}
@@ -63,7 +67,7 @@ class RateLimitError(IntegrationError):
         message: str,
         integration_name: str = "",
         retry_after: Optional[int] = None,
-        details: Dict[str, Any] = None,
+        details: Optional[ErrorDetails] = None,
     ):
         super().__init__(message, integration_name, details)
         self.retry_after = retry_after
@@ -158,7 +162,7 @@ class IntegrationEvent(BaseModel):
     # Details
     title: str = Field(..., description="Event title/summary")
     description: Optional[str] = Field(None, description="Detailed description")
-    details: Dict[str, Any] = Field(default_factory=dict, description="Additional event details")
+    details: EventData = Field(default_factory=dict, description="Additional event details")
 
     # Metadata
     user_id: Optional[str] = Field(None, description="User who triggered the event")
@@ -187,7 +191,7 @@ class IntegrationResult(BaseModel):
     # Error details
     error_code: Optional[str] = Field(None, description="Error code if failed")
     error_message: Optional[str] = Field(None, description="Error message if failed")
-    error_details: Dict[str, Any] = Field(
+    error_details: ErrorDetails = Field(
         default_factory=dict, description="Additional error details"
     )
 
@@ -271,7 +275,7 @@ class BaseIntegration(abc.ABC):
         return self._authenticated
 
     @property
-    def metrics(self) -> Dict[str, Any]:
+    def metrics(self) -> MetadataDict:
         """Get integration metrics"""
         return {
             "events_sent": self._events_sent,
@@ -570,7 +574,7 @@ class BaseIntegration(abc.ABC):
                 error_message=str(e),
             )
 
-    def _redact_sensitive_data(self, data: Dict[str, Any]) -> Dict[str, Any]:
+    def _redact_sensitive_data(self, data: JSONDict) -> JSONDict:
         """
         Redact sensitive data from a dictionary for logging.
 
@@ -594,7 +598,7 @@ class BaseIntegration(abc.ABC):
             "authorization",
         }
 
-        def redact_value(key: str, value: Any) -> Any:
+        def redact_value(key: str, value: JSONValue) -> JSONValue:
             if isinstance(value, dict):
                 return {k: redact_value(k, v) for k, v in value.items()}
             elif isinstance(value, list):
