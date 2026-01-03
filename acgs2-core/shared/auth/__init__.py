@@ -6,7 +6,7 @@ This module provides authentication handlers for SSO integration,
 supporting both OpenID Connect (OIDC) and SAML 2.0 protocols.
 
 Usage:
-    from shared.auth import OIDCHandler, SAMLHandler
+    from shared.auth import OIDCHandler, SAMLHandler, JITProvisioner
     from shared.auth.oidc_handler import OIDCConfig
     from shared.auth.saml_config import SAMLSPConfig, SAMLIdPConfig
 
@@ -42,12 +42,32 @@ Usage:
 
     # Process ACS callback
     user_info = await saml_handler.process_acs_response(saml_response, request_id)
+
+    # --- JIT Provisioning ---
+    # Create provisioner for automatic user creation on SSO login
+    provisioner = JITProvisioner()
+
+    # Provision user from SSO login
+    result = await provisioner.get_or_create_user(
+        email="user@example.com",
+        name="John Doe",
+        sso_provider="oidc",
+        idp_user_id="google-12345",
+        roles=["developer"],
+    )
+
+    if result.created:
+        print(f"New user created: {result.user['email']}")
 """
 
 from .oidc_handler import OIDCHandler
+from .provisioning import JITProvisioner, ProvisioningResult, get_provisioner
 from .saml_handler import SAMLHandler
 
 __all__ = [
+    "JITProvisioner",
     "OIDCHandler",
+    "ProvisioningResult",
     "SAMLHandler",
+    "get_provisioner",
 ]
