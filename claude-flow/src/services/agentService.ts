@@ -117,7 +117,46 @@ export async function listAgents(): Promise<any[]> {
   }
 }
 
-export async function removeAgent(agentId: string): Promise<boolean> {
-  // TODO: Implement agent removal
-  return true;
+export interface AgentRemovalResult {
+  success: boolean;
+  agentId?: string;
+  message?: string;
+  error?: string;
+}
+
+export async function removeAgent(agentId: string): Promise<AgentRemovalResult> {
+  try {
+    // Path to the Python agent remover script
+    // Use src path for development, fallback to dist for production
+    let removerPath = path.join(__dirname, 'agentRemover.py');
+    if (!require('fs').existsSync(removerPath)) {
+      // Try the src path from dist
+      removerPath = path.join(__dirname, '../../src/services/agentRemover.py');
+    }
+
+    // Prepare arguments for the Python script
+    const args = [removerPath, agentId];
+
+    // Run the Python script to remove the agent
+    const result = await runPythonScript(args);
+
+    if (result.success) {
+      return {
+        success: true,
+        agentId: result.agentId,
+        message: result.message
+      };
+    } else {
+      return {
+        success: false,
+        error: result.error
+      };
+    }
+
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error occurred'
+    };
+  }
 }
