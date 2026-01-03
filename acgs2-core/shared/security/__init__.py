@@ -33,6 +33,11 @@ from .rate_limiter import (
     TenantRateLimitProvider,
     create_rate_limit_middleware,
 )
+from .security_headers import (
+    SecurityHeadersConfig,
+    SecurityHeadersMiddleware,
+    add_security_headers,
+)
 from .tenant_context import (
     TENANT_ID_MAX_LENGTH,
     TENANT_ID_MIN_LENGTH,
@@ -71,6 +76,10 @@ __all__ = [
     "TenantRateLimitProvider",
     "TenantQuotaProviderProtocol",
     "TENANT_CONFIG_AVAILABLE",
+    # Security Headers
+    "SecurityHeadersMiddleware",
+    "SecurityHeadersConfig",
+    "add_security_headers",
     # Tenant Context
     "TenantContextMiddleware",
     "TenantContextConfig",
