@@ -127,7 +127,9 @@ class ImpactScorer:
                 if use_onnx:
                     # ONNX mode: session will be lazy loaded on first inference
                     # self.session stays None until _ensure_onnx_session() is called
-                    pass
+                    # BERT-style embeddings are available via ONNX
+                    if self._onnx_enabled:
+                        self._bert_enabled = True
                 else:
                     # Use class-level cached model if available
                     if (
