@@ -3,9 +3,9 @@
   "spec": "037-add-batch-event-processing-to-baseintegration",
   "state": "building",
   "subtasks": {
-    "completed": 2,
+    "completed": 6,
     "total": 20,
-    "in_progress": 1,
+    "in_progress": 0,
     "failed": 0
   },
   "phase": {
@@ -18,8 +18,8 @@
     "max": 1
   },
   "session": {
-    "number": 4,
+    "number": 7,
     "started_at": "2026-01-03T17:23:54.637229"
   },
-  "last_update": "2026-01-03T17:32:21.389151"
+  "last_update": "2026-01-03T17:40:50.218547"
 }
