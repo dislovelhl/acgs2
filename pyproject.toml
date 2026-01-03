@@ -28,9 +28,14 @@ loadtest = [
 [tool.ruff]
 line-length = 100
 target-version = "py311"
+extend-exclude = ["venv", ".venv", "node_modules", "build", "dist"]
 
 [tool.ruff.lint]
 select = ["E", "F", "B", "I"]
+ignore = [
+    "B008",  # Do not perform function call in argument defaults (FastAPI Depends)
+    "E501",  # Line too long (Handled by Black mostly)
+]
 
 [tool.black]
 line-length = 100

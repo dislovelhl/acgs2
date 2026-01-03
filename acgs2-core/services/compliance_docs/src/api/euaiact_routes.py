@@ -94,7 +94,7 @@ async def validate_compliance(request: ComplianceValidationRequest) -> Complianc
         )
     except Exception as e:
         logger.error(f"Compliance validation failed: {e}")
-        raise HTTPException(status_code=500, detail=f"Validation failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Validation failed: {str(e)}") from e
 
 
 async def _perform_compliance_validation(
@@ -181,7 +181,7 @@ async def generate_document(
 
     except Exception as e:
         logger.error(f"Document generation failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.post("/export/checklist")

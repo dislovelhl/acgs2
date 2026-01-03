@@ -54,7 +54,7 @@ async def generate_soc2_report(
 
     except Exception as e:
         logger.error(f"SOC 2 generation failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.post("/iso27001/generate")
@@ -90,4 +90,4 @@ async def generate_iso27001_report(
 
     except Exception as e:
         logger.error(f"ISO 27001 generation failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e

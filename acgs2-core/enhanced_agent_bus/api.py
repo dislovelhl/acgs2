@@ -22,6 +22,8 @@ from fastapi.responses import JSONResponse, ORJSONResponse
 from pydantic import BaseModel, Field, field_validator
 from starlette.middleware.gzip import GZipMiddleware
 
+from shared.metrics_middleware import instrument_app
+
 # Configure structured logging
 logging.basicConfig(
     level=logging.INFO,
@@ -97,8 +99,6 @@ except ImportError:
         "allow_methods": ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
         "allow_headers": ["Authorization", "Content-Type", "X-Request-ID", "X-Constitutional-Hash"],
     }
-
-from shared.metrics_middleware import instrument_app
 
 # ... (middleware setup) ...
 

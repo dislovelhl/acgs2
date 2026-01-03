@@ -213,7 +213,7 @@ async def semantic_search(
                     "request_id": request_id,
                 }
             ),
-        )
+        ) from e
 
 
 @api_router.get("/symbols/{symbol_id}", response_model=CodeSymbol, tags=["Symbols"])
@@ -291,7 +291,7 @@ async def get_symbol(
                     "request_id": request_id,
                 }
             ),
-        )
+        ) from e
 
 
 @api_router.post("/analysis/trigger", response_model=AnalysisResponse, tags=["Analysis"])
@@ -379,7 +379,7 @@ async def trigger_analysis(
                     "request_id": request_id,
                 }
             ),
-        )
+        ) from e
 
 
 @api_router.post("/context/enrich", response_model=ContextEnrichmentResponse, tags=["Context"])
@@ -456,4 +456,4 @@ async def enrich_context(
                     "request_id": request_id,
                 }
             ),
-        )
+        ) from e
