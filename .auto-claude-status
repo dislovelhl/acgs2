@@ -1,25 +1,25 @@
 {
   "active": true,
   "spec": "002-get-familiar-with-linear",
-  "state": "building",
+  "state": "complete",
   "subtasks": {
-    "completed": 0,
+    "completed": 1,
     "total": 1,
-    "in_progress": 1,
+    "in_progress": 0,
     "failed": 0
   },
   "phase": {
-    "current": "Complete Learning Resources",
-    "id": 1,
-    "total": 1
+    "current": "",
+    "id": 0,
+    "total": 0
   },
   "workers": {
     "active": 0,
     "max": 1
   },
   "session": {
-    "number": 1,
-    "started_at": "2026-01-03T16:13:04.781362"
+    "number": 0,
+    "started_at": "2026-01-03T16:22:59.057432"
   },
-  "last_update": "2026-01-03T16:13:04.783585"
+  "last_update": "2026-01-03T16:22:59.058537"
 }
