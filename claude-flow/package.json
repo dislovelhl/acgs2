@@ -15,6 +15,8 @@
     "test:coverage": "jest --coverage",
     "test:e2e": "jest --testMatch='**/*.e2e.test.ts'",
     "test:e2e:real": "RUN_REAL_REDIS_TESTS=true jest --testMatch='**/*.e2e.test.ts'",
+    "test:perf": "jest --testMatch='**/*.perf.test.ts' --verbose",
+    "test:perf:real": "RUN_REAL_REDIS_TESTS=true jest --testMatch='**/*.perf.test.ts' --verbose",
     "clean": "rm -rf dist"
   },
   "dependencies": {
@@ -53,7 +55,8 @@
     ],
     "testMatch": [
       "**/__tests__/**/*.test.ts",
-      "**/__tests__/**/*.e2e.test.ts"
+      "**/__tests__/**/*.e2e.test.ts",
+      "**/__tests__/**/*.perf.test.ts"
     ],
     "collectCoverageFrom": [
       "src/**/*.ts",
