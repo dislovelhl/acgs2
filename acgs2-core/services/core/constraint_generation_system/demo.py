@@ -276,21 +276,24 @@ async def main():
         await demo_quality_scoring()
         await demo_system_stats()
 
-        logger.info("Demo sequence completed successfully", extra={
-            "features": [
-                "Guidance/Outlines库集成",
-                "CFG和JSON Schema约束定义",
-                "多语言支持 (Python, JavaScript, Java, C++, Go)",
-                "动态约束更新",
-                "单元测试自动生成",
-                "SonarQube质量评分集成",
-                "反馈循环至模型微调"
-            ]
-        })
-        print("\n里程碑目标:")
-        print("• 代码修复需求减80%")
-        print("• 语法正确率>99.5%")
-        print("• 生成任务中测试覆盖>90%")
+        logger.info(
+            "Demo sequence completed successfully",
+            extra={
+                "features": [
+                    "Guidance/Outlines库集成",
+                    "CFG和JSON Schema约束定义",
+                    "多语言支持 (Python, JavaScript, Java, C++, Go)",
+                    "动态约束更新",
+                    "单元测试自动生成",
+                    "SonarQube质量评分集成",
+                    "反馈循环至模型微调",
+                ]
+            },
+        )
+    logger.info("\n里程碑目标:")
+    logger.info("• 代码修复需求减80%")
+    logger.info("• 语法正确率>99.5%")
+    logger.info("• 生成任务中测试覆盖>90%")
 
     except Exception as e:
     logger.info(f"演示过程中出现错误: {e}")

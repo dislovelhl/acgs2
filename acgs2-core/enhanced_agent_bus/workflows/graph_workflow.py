@@ -6,26 +6,26 @@ Implements stateful cyclic graphs for multi-agent governance orchestration.
 Features conditional branching, state persistence, and human-in-the-loop interrupts.
 """
 
+import asyncio
 import logging
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import (
     Any,
-    Awaitable,
     Callable,
     Dict,
     List,
     Optional,
     Set,
+    Tuple,
     TypeVar,
+    Union,
 )
-
-from .workflow_base import CONSTITUTIONAL_HASH, WorkflowContext
+from .workflow_base import WorkflowContext, CONSTITUTIONAL_HASH
 
 logger = logging.getLogger(__name__)
 
 TState = TypeVar("TState", bound=Dict[str, Any])
-
 
 class NodeStatus(Enum):
     PENDING = "pending"
@@ -33,25 +33,20 @@ class NodeStatus(Enum):
     COMPLETED = "completed"
     FAILED = "failed"
 
-
 @dataclass
 class GraphNode:
     """A node in the state graph representing an agent or a function."""
-
     name: str
     func: Callable[[TState], Awaitable[TState]]
     metadata: Dict[str, Any] = field(default_factory=dict)
 
-
 @dataclass
 class GraphEdge:
     """An edge in the state graph."""
-
     source: str
     target: str
     condition: Optional[Callable[[TState], bool]] = None
     metadata: Dict[str, Any] = field(default_factory=dict)
-
 
 class StateGraph:
     """
@@ -69,16 +64,14 @@ class StateGraph:
 
         # State persistence and checkpointing
         self._checkpoints: List[TState] = []
-        self._interrupts: Set[str] = set()  # Node names where to interrupt
+        self._interrupts: Set[str] = set() # Node names where to interrupt
 
     def add_node(self, name: str, func: Callable[[TState], Awaitable[TState]]) -> "StateGraph":
         """Add a node to the graph."""
         self.nodes[name] = GraphNode(name=name, func=func)
         return self
 
-    def add_edge(
-        self, source: str, target: str, condition: Optional[Callable[[TState], bool]] = None
-    ) -> "StateGraph":
+    def add_edge(self, source: str, target: str, condition: Optional[Callable[[TState], bool]] = None) -> "StateGraph":
         """Add an edge between nodes."""
         if source not in self.nodes and source != "START":
             raise ValueError(f"Source node {source} not found")
@@ -100,9 +93,7 @@ class StateGraph:
         self._interrupts.add(node_name)
         return self
 
-    async def execute(
-        self, initial_state: TState, context: Optional[WorkflowContext] = None
-    ) -> TState:
+    async def execute(self, initial_state: TState, context: Optional[WorkflowContext] = None) -> TState:
         """
         Execute the state graph.
 
@@ -144,9 +135,7 @@ class StateGraph:
             # 3. Determine next node
             next_node = self._get_next_node(current_node, state)
             if not next_node:
-                logger.warning(
-                    f"[{CONSTITUTIONAL_HASH}] No valid edge from {current_node}, terminating."
-                )
+                logger.warning(f"[{CONSTITUTIONAL_HASH}] No valid edge from {current_node}, terminating.")
                 break
 
             current_node = next_node
@@ -167,7 +156,6 @@ class StateGraph:
     def get_history(self) -> List[TState]:
         """Get the history of state checkpoints."""
         return self._checkpoints
-
 
 class GovernanceGraph(StateGraph):
     """
@@ -193,12 +181,8 @@ class GovernanceGraph(StateGraph):
         self.set_entry_point("classify")
 
         self.add_edge("classify", "execute", condition=lambda s: s.get("complexity") == "simple")
-        self.add_edge(
-            "classify", "validate", condition=lambda s: s.get("complexity") == "requires_validation"
-        )
-        self.add_edge(
-            "classify", "deliberate", condition=lambda s: s.get("complexity") == "complex"
-        )
+        self.add_edge("classify", "validate", condition=lambda s: s.get("complexity") == "requires_validation")
+        self.add_edge("classify", "deliberate", condition=lambda s: s.get("complexity") == "complex")
 
         self.add_edge("validate", "deliberate")
         self.add_edge("deliberate", "execute")
