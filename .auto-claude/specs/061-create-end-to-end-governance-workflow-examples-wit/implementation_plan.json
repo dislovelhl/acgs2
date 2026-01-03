@@ -194,7 +194,7 @@
           "subtask_id": "3.4",
           "title": "Create audit logging policy",
           "description": "Write Rego policy that defines what should be logged and how decisions are recorded",
-          "status": "pending",
+          "status": "completed",
           "dependencies": ["3.2"],
           "files": [
             "./examples/04-end-to-end-governance-workflow/policies/audit.rego"
@@ -204,7 +204,9 @@
             "Log structure specified",
             "Compliance metadata included",
             "Retention rules defined"
-          ]
+          ],
+          "completed_at": "2026-01-03T22:30:00Z",
+          "notes": "Completed comprehensive audit logging policy implementation. Created audit.rego (311 lines) with: retention period calculation based on data sensitivity (7 years for PII/health/financial/denials, 3 years for production, 1 year default), compliance tagging for 5 regulatory frameworks (SOC2 for production/denials/HITL, GDPR for PII/customer/personal data, HIPAA for health/medical/patient data, PCI-DSS for payment/card/financial, ISO27001 for production config changes and deletions), log detail level determination (detailed for denials/HITL/high-risk/compliance-tagged, summary for low-risk approvals, normal as default), metadata inclusion rules (enabled for compliance tags, production, HITL, denials, high-risk), sensitive data detection across 7 resource patterns, helper rules for production change actions, structured result output with all audit requirements. Policy follows patterns from constitutional.rego, agent_actions.rego, and hitl_approval.rego with comprehensive inline comments, clear sectioning, and rego.v1 import. All acceptance criteria met: audit requirements defined, log structure specified, compliance metadata included, retention rules defined. Committed to git (commit f14389d2f)."
         }
       ]
     },
@@ -217,7 +219,7 @@
           "subtask_id": "4.1",
           "title": "Create OPA client module",
           "description": "Build a reusable OPA client module for policy evaluation",
-          "status": "pending",
+          "status": "completed",
           "dependencies": ["2.3"],
           "files": [
             "./examples/04-end-to-end-governance-workflow/src/opa_client.py"
@@ -227,7 +229,9 @@
             "Error handling robust",
             "Retry logic included",
             "Type hints and documentation complete"
-          ]
+          ],
+          "completed_at": "2026-01-03T22:55:00Z",
+          "notes": "Completed OPA client module implementation. Created comprehensive opa_client.py (374 lines) with: OPAClient class with health_check(), evaluate_policy(), evaluate_policies_batch(), clear_cache() methods; OPAConfig dataclass for flexible configuration; Custom exceptions (OPAConnectionError, OPAPolicyError, OPATimeoutError); Exponential backoff retry logic with configurable retries; Optional in-memory caching for improved performance; Persistent HTTP session for connection pooling; Context manager support (__enter__/__exit__); Comprehensive type hints using collections.abc.Callable for Python 3.11+ compatibility; Detailed docstrings and logging throughout; Convenience evaluate_policy() function for one-off evaluations. Follows patterns from Examples 01-03: health check pattern from Example 01, error handling pattern from Example 02, constitutional hash in header. All acceptance criteria met: connection handling implemented, error handling robust, retry logic included, type hints and documentation complete. Committed to git (commit 69f0307f5)."
         },
         {
           "subtask_id": "4.2",
