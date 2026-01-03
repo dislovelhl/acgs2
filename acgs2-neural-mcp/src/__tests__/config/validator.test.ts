@@ -786,4 +786,300 @@ describe('Configuration Validator', () => {
       expect(result.success).toBe(true);
     });
   });
+
+  describe('formatZodError Coverage - Error Code Branches', () => {
+    it('should handle invalid_type errors (wrong type provided)', () => {
+      // Passing a number where string is expected triggers invalid_type
+      const configWithWrongType = {
+        TENANT_ID: 123 as unknown as string, // Wrong type
+      };
+
+      const result = validateConfigSafe(configWithWrongType);
+
+      expect(result.success).toBe(false);
+      expect(result.errors).toBeDefined();
+      expect(result.errors!.some(e => e.rule === 'invalid_type')).toBe(true);
+      expect(result.errors![0].remediation).toContain('correct type');
+    });
+
+    it('should handle too_small errors (minimum length violation)', () => {
+      const config = createValidConfig();
+      config.TENANT_ID = ''; // Empty string violates min(1)
+
+      const result = validateConfigSafe(config);
+
+      expect(result.success).toBe(false);
+      expect(result.errors).toBeDefined();
+      expect(result.errors!.some(e => e.rule === 'too_small')).toBe(true);
+      expect(result.errors![0].remediation).toContain('too short');
+    });
+
+    it('should handle invalid_enum_value errors', () => {
+      const config = createValidConfig();
+      config.ENVIRONMENT = 'invalid-env';
+
+      const result = validateConfigSafe(config);
+
+      expect(result.success).toBe(false);
+      expect(result.errors).toBeDefined();
+      expect(result.errors!.some(e => e.rule === 'invalid_enum_value')).toBe(true);
+      expect(result.errors![0].remediation).toContain('valid options');
+    });
+
+    it('should handle custom errors from transform functions', () => {
+      const config = createValidConfig();
+      config.HITL_APPROVALS_PORT = 'not-a-number';
+
+      const result = validateConfigSafe(config);
+
+      expect(result.success).toBe(false);
+      expect(result.errors).toBeDefined();
+      // Transform errors become 'custom' errors
+      expect(result.errors!.some(e => e.rule === 'custom')).toBe(true);
+    });
+
+    it('should handle custom errors from timeout transforms', () => {
+      const config = createValidConfig();
+      config.DEFAULT_ESCALATION_TIMEOUT_MINUTES = 'invalid-timeout';
+
+      const result = validateConfigSafe(config);
+
+      expect(result.success).toBe(false);
+      expect(result.errors).toBeDefined();
+      expect(result.errors!.some(e => e.rule === 'custom')).toBe(true);
+    });
+
+    it('should handle custom URL validation errors (refine)', () => {
+      const config = createValidConfig();
+      // OPA_URL uses refine which produces custom errors
+      config.OPA_URL = 'invalid-url-format';
+
+      const result = validateConfigSafe(config);
+
+      expect(result.success).toBe(false);
+      expect(result.errors).toBeDefined();
+      const urlError = result.errors!.find(e => e.field.includes('OPA_URL'));
+      expect(urlError).toBeDefined();
+    });
+
+    it('should handle multiple validation errors simultaneously', () => {
+      const configWithMultipleErrors = {
+        TENANT_ID: '', // too_small
+        ENVIRONMENT: 'invalid-env', // invalid_enum_value
+        HITL_APPROVALS_PORT: 'abc', // custom
+      };
+
+      const result = validateConfigSafe(configWithMultipleErrors);
+
+      expect(result.success).toBe(false);
+      expect(result.errors).toBeDefined();
+      expect(result.errors!.length).toBeGreaterThanOrEqual(3);
+    });
+
+    it('should provide remediation for all error types', () => {
+      const configWithErrors = {
+        TENANT_ID: '', // too_small
+        ENVIRONMENT: 'invalid', // invalid_enum_value
+        LOG_LEVEL: 'VERBOSE', // invalid_enum_value
+        REDIS_URL: 'bad-url', // custom (refine)
+      };
+
+      const result = validateConfigSafe(configWithErrors);
+
+      expect(result.success).toBe(false);
+      expect(result.errors).toBeDefined();
+
+      // All errors should have remediation guidance
+      for (const error of result.errors!) {
+        expect(error.remediation).toBeDefined();
+        expect(error.remediation.length).toBeGreaterThan(0);
+      }
+    });
+  });
+
+  describe('Validation Error Details', () => {
+    it('should include correct field paths in nested errors', () => {
+      const result = validateConfigSafe({
+        TENANT_ID: 123 as unknown as string,
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.errors).toBeDefined();
+      const error = result.errors![0];
+      expect(error.field).toBe('TENANT_ID');
+    });
+
+    it('should not expose sensitive values in providedValue', () => {
+      // The formatZodError function checks SENSITIVE_FIELDS
+      // For sensitive fields, providedValue should be '[REDACTED]' or undefined
+      const config = createValidConfig();
+      config.ENVIRONMENT = 'production';
+      config.REDIS_PASSWORD = 'weak'; // Short password in production
+
+      const result = validateConfigSafe(config);
+
+      expect(result.success).toBe(false);
+      const passwordError = result.errors!.find(e => e.field.includes('REDIS_PASSWORD'));
+      if (passwordError && passwordError.providedValue) {
+        expect(passwordError.providedValue).toBe('[REDACTED]');
+      }
+    });
+
+    it('should include message in all error details', () => {
+      const result = validateConfigSafe({
+        ENVIRONMENT: 'invalid',
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.errors![0].message).toBeDefined();
+      expect(result.errors![0].message.length).toBeGreaterThan(0);
+    });
+
+    it('should include rule in all error details', () => {
+      const result = validateConfigSafe({
+        LOG_LEVEL: 'INVALID',
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.errors![0].rule).toBeDefined();
+    });
+  });
+
+  describe('Security Policy Edge Cases', () => {
+    it('should detect DEBUG security violation even with other valid fields', () => {
+      const config = createValidConfig();
+      config.ENVIRONMENT = 'production';
+      config.DEBUG = 'true';
+      config.RELOAD = 'false';
+      config.REDIS_PASSWORD = 'strongpassword123';
+
+      const result = validateConfigSafe(config);
+
+      expect(result.success).toBe(false);
+      expect(result.errors!.some(e =>
+        e.rule === 'security_violation' && e.field === 'production-debug-mode'
+      )).toBe(true);
+    });
+
+    it('should detect RELOAD security violation even with other valid fields', () => {
+      const config = createValidConfig();
+      config.ENVIRONMENT = 'production';
+      config.DEBUG = 'false';
+      config.RELOAD = 'true';
+      config.REDIS_PASSWORD = 'strongpassword123';
+
+      const result = validateConfigSafe(config);
+
+      expect(result.success).toBe(false);
+      expect(result.errors!.some(e =>
+        e.rule === 'security_violation' && e.field === 'production-reload-mode'
+      )).toBe(true);
+    });
+
+    it('should validate production with empty KAFKA_PASSWORD (optional)', () => {
+      const config = createValidConfig();
+      config.ENVIRONMENT = 'production';
+      config.DEBUG = 'false';
+      config.RELOAD = 'false';
+      config.REDIS_PASSWORD = 'strongpassword123';
+      config.KAFKA_PASSWORD = ''; // Optional
+
+      const result = validateConfigSafe(config);
+
+      expect(result.success).toBe(true);
+    });
+
+    it('should fail production with weak KAFKA_PASSWORD when provided', () => {
+      const config = createValidConfig();
+      config.ENVIRONMENT = 'production';
+      config.DEBUG = 'false';
+      config.RELOAD = 'false';
+      config.REDIS_PASSWORD = 'strongpassword123';
+      config.KAFKA_PASSWORD = 'short'; // Too short
+
+      const result = validateConfigSafe(config);
+
+      // The ProductionSecuritySchema makes KAFKA_PASSWORD optional
+      // So short non-empty passwords should trigger the min(8) validation
+      expect(result.success).toBe(false);
+      expect(result.errors!.some(e => e.field.includes('KAFKA_PASSWORD'))).toBe(true);
+    });
+  });
+
+  describe('Partial Validator Edge Cases', () => {
+    it('should validate empty field list', () => {
+      const validator = createPartialValidator([]);
+
+      const result = validator({
+        TENANT_ID: 'anything',
+        ENVIRONMENT: 'invalid',
+      });
+
+      // No fields to validate means success
+      expect(result.success).toBe(true);
+    });
+
+    it('should validate single field', () => {
+      const validator = createPartialValidator(['ENVIRONMENT']);
+
+      const validResult = validator({ ENVIRONMENT: 'production' });
+      expect(validResult.success).toBe(true);
+
+      const invalidResult = validator({ ENVIRONMENT: 'invalid' });
+      expect(invalidResult.success).toBe(false);
+    });
+
+    it('should handle fields not present in config', () => {
+      const validator = createPartialValidator(['LOG_LEVEL', 'TENANT_ID']);
+
+      const result = validator({}); // Neither field provided
+
+      // Should succeed with defaults
+      expect(result.success).toBe(true);
+    });
+  });
+
+  describe('isValidConfigValue Edge Cases', () => {
+    it('should validate boolean-like strings for DEBUG', () => {
+      expect(isValidConfigValue('DEBUG', 'true')).toBe(true);
+      expect(isValidConfigValue('DEBUG', 'false')).toBe(true);
+      expect(isValidConfigValue('DEBUG', '1')).toBe(true);
+      expect(isValidConfigValue('DEBUG', '0')).toBe(true);
+    });
+
+    it('should validate timeout values', () => {
+      expect(isValidConfigValue('DEFAULT_ESCALATION_TIMEOUT_MINUTES', '30')).toBe(true);
+      expect(isValidConfigValue('DEFAULT_ESCALATION_TIMEOUT_MINUTES', '1')).toBe(true);
+    });
+
+    it('should reject invalid timeout values', () => {
+      expect(isValidConfigValue('DEFAULT_ESCALATION_TIMEOUT_MINUTES', '0')).toBe(false);
+      expect(isValidConfigValue('DEFAULT_ESCALATION_TIMEOUT_MINUTES', '-5')).toBe(false);
+      expect(isValidConfigValue('DEFAULT_ESCALATION_TIMEOUT_MINUTES', 'abc')).toBe(false);
+    });
+
+    it('should validate URL fields', () => {
+      expect(isValidConfigValue('REDIS_URL', 'redis://localhost:6379')).toBe(true);
+      expect(isValidConfigValue('REDIS_URL', 'rediss://secure:6379')).toBe(true);
+      expect(isValidConfigValue('AGENT_BUS_URL', 'http://localhost:8000')).toBe(true);
+      expect(isValidConfigValue('AGENT_BUS_URL', 'https://secure.example.com')).toBe(true);
+    });
+
+    it('should reject invalid URLs', () => {
+      expect(isValidConfigValue('REDIS_URL', 'http://wrong-protocol')).toBe(false);
+      expect(isValidConfigValue('REDIS_URL', 'not-a-url')).toBe(false);
+    });
+
+    it('should validate port values', () => {
+      expect(isValidConfigValue('HITL_APPROVALS_PORT', '8080')).toBe(true);
+      expect(isValidConfigValue('HITL_APPROVALS_PORT', '1')).toBe(true);
+      expect(isValidConfigValue('HITL_APPROVALS_PORT', '65535')).toBe(true);
+    });
+
+    it('should reject invalid port values', () => {
+      expect(isValidConfigValue('HITL_APPROVALS_PORT', '0')).toBe(false);
+      expect(isValidConfigValue('HITL_APPROVALS_PORT', '70000')).toBe(false);
+      expect(isValidConfigValue('HITL_APPROVALS_PORT', 'abc')).toBe(false);
+    });
+  });
 });
