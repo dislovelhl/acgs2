@@ -236,9 +236,134 @@ class DriftDetector:
                 instead of this threshold, but the 0.2 PSI threshold is the
                 primary tuning parameter for drift sensitivity.
 
-            reference_window_size: Number of samples in reference dataset.
-            current_window_size: Number of recent samples for comparison.
-            min_samples_for_drift: Minimum samples needed for drift check.
+            reference_window_size: Number of samples in reference dataset (default 1000).
+                This establishes the baseline distribution for drift comparison.
+
+                STATISTICAL VALIDITY REQUIREMENTS:
+                ==================================
+                Window sizing is critical for statistical test reliability:
+
+                1. K-S Test (continuous features):
+                   - Minimum: 30-50 samples per dataset (Central Limit Theorem)
+                   - Recommended: 100+ for reliable p-values
+                   - Optimal: 500-1000+ for detecting subtle distribution shifts
+                   - Power: Larger reference increases test sensitivity
+
+                2. PSI Test (categorical features):
+                   - Minimum: 5-10 samples per category/bin
+                   - For 10 categories: ≥50-100 total samples
+                   - Recommended: 100+ to ensure stable proportion estimates
+                   - Zero-count categories can cause ln(0) errors → need sufficient coverage
+
+                3. Chi-squared Test (low-cardinality categorical):
+                   - Minimum: 5 samples per expected category (statistical requirement)
+                   - For 5 categories: ≥25 total samples
+                   - Recommended: 50+ for reliable χ² distribution approximation
+
+                REFERENCE VS CURRENT WINDOW SIZE RATIO:
+                ========================================
+                Default ratio: 1000:100 (10:1)
+
+                Why larger reference than current?
+                - Reference = stable baseline (established "ground truth")
+                  → Needs more samples for accurate distribution estimation
+                  → Minimizes false positives from reference noise
+
+                - Current = recent observations (potential drift signal)
+                  → Can be smaller for faster drift detection
+                  → Responsive to emerging distribution shifts
+                  → Updated continuously as new data arrives
+
+                Statistical rationale:
+                - Asymmetric comparison: testing if current deviates from reference
+                - Larger reference → lower variance → more stable baseline
+                - Smaller current → faster response time → earlier drift detection
+                - 10:1 ratio balances stability vs. responsiveness
+
+                WINDOW SIZE TRADE-OFFS:
+                =======================
+                Larger reference window (↑):
+                  ✓ More stable baseline (less noise)
+                  ✓ Higher statistical power (detects smaller shifts)
+                  ✓ Better category coverage for PSI/Chi-squared
+                  ✗ Slower to adapt if baseline itself drifts over time
+                  ✗ More memory usage
+
+                Smaller reference window (↓):
+                  ✓ Faster adaptation to evolving distributions
+                  ✓ Less memory usage
+                  ✗ Noisier baseline (higher false positive rate)
+                  ✗ Lower statistical power (misses subtle drift)
+
+                RECOMMENDED CONFIGURATIONS:
+                ===========================
+                - High-traffic applications (1000s requests/day):
+                  reference_window_size=1000-5000, current_window_size=100-500
+
+                - Low-traffic applications (100s requests/day):
+                  reference_window_size=200-500, current_window_size=50-100
+
+                - High-dimensional data (many features):
+                  Increase both to ensure per-feature statistical validity
+
+                - Rapidly evolving data:
+                  Reduce reference window to 200-500 for faster baseline adaptation
+
+                - Governance/compliance (low false positive tolerance):
+                  Increase reference to 2000-5000 for maximum stability
+
+            current_window_size: Number of recent samples for comparison (default 100).
+                This represents the "recent" distribution tested against the reference.
+
+                STATISTICAL VALIDITY:
+                ====================
+                Must meet same minimum sample requirements as reference (see above):
+                - K-S: ≥30-50 samples
+                - PSI: ≥5-10 per category
+                - Chi-squared: ≥5 per expected category
+
+                SLIDING WINDOW BEHAVIOR:
+                ========================
+                - Implemented as a deque with maxlen=current_window_size
+                - Automatically evicts oldest samples when full (FIFO)
+                - Continuously updated with new prediction data
+                - Each drift check compares the current window against reference
+
+                RESPONSIVENESS TRADE-OFFS:
+                ==========================
+                Larger current window (↑):
+                  ✓ More stable drift signals (less noise)
+                  ✓ Higher statistical power
+                  ✗ Slower to detect emerging drift (diluted by older samples)
+                  ✗ Lags behind rapid distribution changes
+
+                Smaller current window (↓):
+                  ✓ Faster drift detection (captures recent changes quickly)
+                  ✓ More responsive to sudden shifts
+                  ✗ Noisier drift signals (higher false positive rate)
+                  ✗ Lower statistical power (may miss gradual drift)
+
+                TUNING GUIDANCE:
+                ================
+                Balance responsiveness vs. stability:
+                - Sudden concept drift (e.g., system failure) → smaller window (50-100)
+                - Gradual concept drift (e.g., seasonality) → larger window (200-500)
+                - Noisy data with variance → larger window for stability
+                - Critical alerts requiring fast response → smaller window
+
+                EXAMPLE: With current_window_size=100 and check every 5 minutes:
+                - At 10 requests/min → 50 samples per check (suboptimal)
+                - At 50 requests/min → 250 samples per check (overfills, uses last 100)
+                - Adjust window size based on actual traffic rate for optimal coverage
+
+            min_samples_for_drift: Minimum samples needed for drift check (default 10).
+                Safety threshold to prevent statistical tests from running on
+                insufficient data, which would yield unreliable results.
+
+                This is a conservative minimum; actual statistical validity requires
+                larger samples as documented above for reference_window_size and
+                current_window_size. Think of this as a "fail-fast" guard rather
+                than a guarantee of statistical rigor.
             check_interval_seconds: Interval between automatic checks.
             drift_share_threshold: Fraction of columns that must drift
                 to trigger dataset-level drift alert.

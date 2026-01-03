@@ -1,25 +1,25 @@
 {
   "active": true,
-  "spec": "002-get-familiar-with-linear",
+  "spec": "062-add-inline-documentation-for-adaptive-learning-eng",
   "state": "building",
   "subtasks": {
     "completed": 0,
-    "total": 1,
+    "total": 0,
     "in_progress": 1,
     "failed": 0
   },
   "phase": {
-    "current": "Complete Learning Resources",
-    "id": 1,
-    "total": 1
+    "current": "",
+    "id": 0,
+    "total": 0
   },
   "workers": {
     "active": 0,
     "max": 1
   },
   "session": {
-    "number": 1,
-    "started_at": "2026-01-03T16:13:04.781362"
+    "number": 4,
+    "started_at": "2026-01-03T17:24:41.612652"
   },
-  "last_update": "2026-01-03T16:13:04.783585"
+  "last_update": "2026-01-03T17:36:57.423995"
 }
