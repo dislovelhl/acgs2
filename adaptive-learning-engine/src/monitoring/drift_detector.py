@@ -692,8 +692,7 @@ class DriftDetector:
                 ref_checksum = self._compute_deque_checksum(self._reference_data)
                 cur_checksum = self._compute_deque_checksum(self._current_data)
                 combined_checksum = hashlib.md5(
-                    f"{ref_checksum}|{cur_checksum}".encode("utf-8"),
-                    usedforsecurity=False
+                    f"{ref_checksum}|{cur_checksum}".encode("utf-8"), usedforsecurity=False
                 ).hexdigest()
 
                 # Check cache: if reference + current data hasn't changed, return cached result
@@ -719,7 +718,9 @@ class DriftDetector:
 
             try:
                 # Convert to DataFrames (with caching)
-                reference_df = self._to_dataframe(list(self._reference_data), data_source="reference")
+                reference_df = self._to_dataframe(
+                    list(self._reference_data), data_source="reference"
+                )
                 current_df = self._to_dataframe(list(self._current_data), data_source="current")
 
                 # Ensure same columns
@@ -748,15 +749,116 @@ class DriftDetector:
                 # =============================
                 # DataDriftPreset applies statistical tests to detect distribution shifts:
                 #
-                # For each feature, Evidently automatically selects the appropriate test:
-                # - Continuous numerical features → Kolmogorov-Smirnov (K-S) test
-                #   * Compares cumulative distribution functions
-                #   * Returns p-value (drift if p < 0.05)
+                # AUTOMATIC TEST SELECTION BY EVIDENTLY
+                # --------------------------------------
+                # For each feature, Evidently automatically selects the appropriate test
+                # based on feature characteristics (type, cardinality, distribution):
                 #
-                # - Categorical/low-cardinality features → Chi-squared or PSI
-                #   * Chi-squared tests category distribution independence
-                #   * PSI measures information gain between distributions
-                #   * Returns drift score compared to threshold
+                # 1. KOLMOGOROV-SMIRNOV (K-S) TEST - Continuous numerical features
+                #    ----------------------------------------------------------------
+                #    When: Feature is numerical with >10 unique values
+                #    Method:
+                #      - Computes empirical cumulative distribution functions (ECDFs)
+                #        for both reference and current data
+                #      - Test statistic: D = max|F_ref(x) - F_curr(x)|
+                #        (maximum vertical distance between the two ECDFs)
+                #      - Null hypothesis H0: Both samples drawn from same distribution
+                #
+                #    Decision rule:
+                #      - Compute p-value using Kolmogorov distribution
+                #      - If p-value < 0.05 → reject H0 → drift detected
+                #      - If p-value ≥ 0.05 → fail to reject H0 → no drift
+                #
+                #    Interpretation:
+                #      - p-value: Probability of observing D this large if H0 is true
+                #      - Low p-value (< 0.05) = strong evidence against H0
+                #      - D statistic ∈ [0, 1]: larger D = more divergence
+                #
+                #    Advantages:
+                #      ✓ Non-parametric (no distribution assumptions)
+                #      ✓ Sensitive to shifts in location, scale, and shape
+                #      ✓ Well-established statistical test with known properties
+                #
+                # 2. POPULATION STABILITY INDEX (PSI) - Categorical/binned features
+                #    ----------------------------------------------------------------
+                #    When: Feature is categorical OR numerical with ≤10 unique values
+                #    Method:
+                #      - Bins data into categories (for categorical: use categories directly;
+                #        for numerical: create equal-frequency bins from reference data)
+                #      - Compute proportions in each bin for reference and current:
+                #        P_ref[i] = count_ref[bin_i] / total_ref
+                #        P_curr[i] = count_curr[bin_i] / total_curr
+                #      - Calculate PSI as sum across all bins:
+                #        PSI = Σ_i (P_curr[i] - P_ref[i]) × ln(P_curr[i] / P_ref[i])
+                #
+                #    Mathematical intuition:
+                #      - PSI measures the "information gain" or divergence between
+                #        the current and reference distributions
+                #      - Each bin's contribution: (difference in proportion) × (log ratio)
+                #      - Asymmetric: PSI(A→B) ≠ PSI(B→A)
+                #      - Related to Kullback-Leibler divergence but simplified for
+                #        practical model monitoring
+                #
+                #    Decision rule (industry standard thresholds):
+                #      - PSI < 0.1:     No significant shift (distribution stable)
+                #      - PSI 0.1-0.2:   Small shift (monitor, no immediate action)
+                #      - PSI 0.2-0.25:  Moderate shift (investigate, consider retraining)
+                #                       ↑ DEFAULT drift_threshold=0.2
+                #      - PSI > 0.25:    Severe shift (actionable drift, retrain/rollback)
+                #
+                #    Why drift_threshold=0.2 is chosen:
+                #      ✓ Catches moderate drift before it becomes severe (0.25+)
+                #      ✓ Balances sensitivity (catches real drift) vs. specificity
+                #        (avoids false alarms from normal variation)
+                #      ✓ Industry best practice for model risk management
+                #      ✓ Conservative threshold appropriate for governance (safety-critical)
+                #      ✓ Triggers investigation while there's time to plan retraining,
+                #        before performance degrades significantly
+                #
+                #    Advantages:
+                #      ✓ Intuitive interpretation (information divergence)
+                #      ✓ Works for both categorical and discretized numerical features
+                #      ✓ Industry-standard thresholds enable consistent monitoring
+                #      ✓ Handles high-cardinality categoricals via binning
+                #
+                # 3. CHI-SQUARED TEST - Low-cardinality categorical features
+                #    ----------------------------------------------------------
+                #    When: Feature is categorical with <10 categories (alternative to PSI)
+                #    Method:
+                #      - Construct contingency table of observed counts for each category
+                #        in reference vs. current data
+                #      - Compute expected counts under null hypothesis (same distribution):
+                #        E[ref, category_i] = (total_ref / total_all) × count_i
+                #        E[curr, category_i] = (total_curr / total_all) × count_i
+                #      - Calculate chi-squared statistic:
+                #        χ² = Σ_i (O_i - E_i)² / E_i
+                #        where O_i = observed count, E_i = expected count
+                #      - Degrees of freedom: df = (# categories - 1)
+                #
+                #    Decision rule:
+                #      - Compute p-value from chi-squared distribution with df degrees of freedom
+                #      - If p-value < 0.05 → reject H0 → drift detected
+                #      - If p-value ≥ 0.05 → fail to reject H0 → no drift
+                #
+                #    Statistical requirements:
+                #      - Each expected count should be ≥5 for valid χ² approximation
+                #      - Minimum ~5 samples per category recommended
+                #      - For sparse categories, PSI may be preferred
+                #
+                #    Advantages:
+                #      ✓ Classical statistical test with well-known properties
+                #      ✓ Tests independence between distribution and category membership
+                #      ✓ Provides p-value for significance testing
+                #
+                # EVIDENTLY'S TEST SELECTION LOGIC SUMMARY
+                # ----------------------------------------
+                # Evidently inspects each feature and applies:
+                # - Continuous numerical (>10 unique values) → K-S test
+                # - Low-cardinality (<10 unique values) → Chi-squared or PSI
+                # - High-cardinality categorical → PSI on binned distribution
+                #
+                # This automated selection ensures appropriate statistical rigor
+                # for different feature types without manual configuration.
                 #
                 # DRIFT SCORING METHODOLOGY
                 # -------------------------
@@ -1456,7 +1558,9 @@ class DriftDetector:
                 return False
 
             try:
-                reference_df = self._to_dataframe(list(self._reference_data), data_source="reference")
+                reference_df = self._to_dataframe(
+                    list(self._reference_data), data_source="reference"
+                )
                 current_df = self._to_dataframe(list(self._current_data), data_source="current")
 
                 # Ensure same columns
