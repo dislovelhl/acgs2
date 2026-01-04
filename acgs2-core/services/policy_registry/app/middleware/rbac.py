@@ -28,14 +28,10 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 logger = logging.getLogger(__name__)
 CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
 
-# Try to import JWT library
-try:
-    import jwt
+# Hard import JWT library - mandatory dependency
+import jwt
 
-    JWT_AVAILABLE = True
-except ImportError:
-    JWT_AVAILABLE = False
-    logger.warning("PyJWT not installed. JWT validation will be simulated.")
+JWT_AVAILABLE = True
 
 
 class Role(Enum):
@@ -268,19 +264,22 @@ class RBACConfig:
         self.env = env or os.environ.get("APP_ENV", "development")
         self.development_mode = self.env == "development"
 
-        # In production, jwt_secret must be provided or set in environment
-        # and it MUST NOT be 'dev-secret'
-        env_secret = os.environ.get("JWT_SECRET")
-        self.jwt_secret = jwt_secret or env_secret
-
-        if not self.development_mode:
-            if not self.jwt_secret:
+        if not self.jwt_secret:
+            if not self.development_mode:
                 raise ValueError("JWT_SECRET is mandatory in production environment")
-            if self.jwt_secret == "dev-secret":
-                raise ValueError("Insecure JWT_SECRET 'dev-secret' is forbidden in production")
-        elif not self.jwt_secret:
-            self.jwt_secret = "dev-secret"
-            logger.warning("Using default JWT_SECRET 'dev-secret' in development mode")
+            else:
+                self.jwt_secret = "dev-secret"
+                logger.warning("Using default JWT_SECRET 'dev-secret' in development mode")
+
+        # Security check for production
+        if not self.development_mode and self.jwt_secret == "dev-secret":
+            raise ValueError("Insecure JWT_SECRET 'dev-secret' is forbidden in production")
+
+        # Check secret strength
+        if self.jwt_secret and len(self.jwt_secret) < 32 and not self.development_mode:
+            logger.error("SECURITY WARNING: JWT_SECRET is too short (min 32 chars recommended)")
+            # In production, we might want to be even stricter
+            # raise ValueError("JWT_SECRET must be at least 32 characters")
 
         self.jwt_algorithm = jwt_algorithm
         self.jwt_issuer = jwt_issuer
@@ -312,15 +311,12 @@ class TokenValidator:
         Raises:
             HTTPException: If token is invalid
         """
+        # JWT must be available (imported at module level)
         if not JWT_AVAILABLE:
-            if self.config.development_mode:
-                return self._simulate_validation(token)
-            else:
-                logger.critical("PyJWT not installed in production environment")
-                raise HTTPException(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail="Authentication service misconfigured: JWT library unavailable",
-                )
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Authentication service misconfigured: JWT library unavailable",
+            )
 
         try:
             options = {
@@ -407,26 +403,8 @@ class TokenValidator:
             metadata=payload.get("metadata", {}),
         )
 
-    def _simulate_validation(self, token: str) -> TokenClaims:
-        """Simulate token validation for development."""
-        logger.warning("Simulating JWT validation (PyJWT not installed)")
-
-        # For dev, return a default admin token
-        return TokenClaims(
-            subject="dev-user",
-            issuer=self.config.jwt_issuer,
-            tenant_id="default",
-            roles=[Role.SYSTEM_ADMIN],
-            permissions=set(Permission),
-            scope=Scope.GLOBAL,
-            constitutional_hash=CONSTITUTIONAL_HASH,
-            issued_at=datetime.now(timezone.utc),
-        )
-
 
 class RateLimiter:
-    """Simple in-memory rate limiter."""
-
     def __init__(self, config: RBACConfig):
         self.config = config
         self._requests: Dict[str, List[float]] = {}

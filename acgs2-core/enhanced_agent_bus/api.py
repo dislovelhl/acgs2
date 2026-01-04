@@ -78,28 +78,8 @@ if create_correlation_middleware:
     app.middleware("http")(create_correlation_middleware())
 
 # SECURITY: Use secure CORS configuration from shared module
-# Removed allow_origins=["*"] to prevent CORS vulnerability (OWASP A05:2021)
-try:
-    from shared.security.cors_config import get_cors_config
-
-    cors_config = get_cors_config()
-    logger.info("CORS: Using secure configuration from shared module")
-except ImportError:
-    # Fallback: Use environment-based configuration
-    allowed_origins = os.environ.get("CORS_ALLOWED_ORIGINS", "").split(",")
-    allowed_origins = [o.strip() for o in allowed_origins if o.strip()]
-
-# Add correlation ID middleware (MUST be after instrument_fastapi)
-add_correlation_id_middleware(app, service_name="enhanced_agent_bus")
-
-# Add CORS middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# Initialized for the current environment (production/staging/development)
+app.add_middleware(CORSMiddleware, **get_cors_config())
 
 # Add Tenant Context Middleware for multi-tenant isolation
 # Middleware runs in reverse order of addition (tenant context runs after CORS)

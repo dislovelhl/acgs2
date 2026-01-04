@@ -19,13 +19,7 @@ from shared.otel_config import init_otel
 
 from .services import CacheService, CryptoService, NotificationService, PolicyService
 
-# Import secure CORS configuration
-try:
-    from shared.security.cors_config import get_cors_config
-
-    SECURE_CORS_AVAILABLE = True
-except ImportError:
-    SECURE_CORS_AVAILABLE = False
+from shared.security.cors_config import get_cors_config
 
 # Import rate limiting middleware
 try:
@@ -94,25 +88,7 @@ init_otel("policy-registry", app=app, export_to_console=settings.debug)
 app.middleware("http")(create_correlation_middleware())
 
 # Add CORS middleware with secure configuration
-if SECURE_CORS_AVAILABLE:
-    # Use secure CORS configuration from shared module
-    cors_config = get_cors_config()
-    logger.info(
-        "cors_configured",
-        source="shared.security",
-        origins_count=len(cors_config.get("allow_origins", [])),
-    )
-else:
-    # Fallback to settings-based configuration
-    cors_config = {
-        "allow_origins": settings.security.cors_origins,
-        "allow_credentials": True,
-        "allow_methods": ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-        "allow_headers": ["Authorization", "Content-Type", "X-Request-ID", "X-Constitutional-Hash"],
-    }
-    logger.warning("cors_fallback_config", reason="shared.security module not available")
-
-app.add_middleware(CORSMiddleware, **cors_config)
+app.add_middleware(CORSMiddleware, **get_cors_config())
 
 # Add Rate Limiting middleware
 if RATE_LIMIT_AVAILABLE:

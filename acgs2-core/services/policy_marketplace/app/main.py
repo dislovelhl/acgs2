@@ -14,13 +14,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-# Import secure CORS configuration
-try:
-    from shared.security.cors_config import get_cors_config
-
-    SECURE_CORS_AVAILABLE = True
-except ImportError:
-    SECURE_CORS_AVAILABLE = False
+from shared.security.cors_config import get_cors_config
 
 # Import rate limiting middleware
 try:
@@ -66,24 +60,8 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# Add CORS middleware with secure configuration
-if SECURE_CORS_AVAILABLE:
-    # Use secure CORS configuration from shared module
-    cors_config = get_cors_config()
-    logger.info(
-        f"Using secure CORS configuration with {len(cors_config.get('allow_origins', []))} origins"
-    )
-else:
-    # Fallback to settings-based configuration
-    cors_config = {
-        "allow_origins": settings.security.cors_origins,
-        "allow_credentials": True,
-        "allow_methods": ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-        "allow_headers": ["Authorization", "Content-Type", "X-Request-ID"],
-    }
-    logger.warning("Using fallback CORS configuration - shared.security module not available")
-
-app.add_middleware(CORSMiddleware, **cors_config)
+# Add CORS middleware with secure configuration from shared module
+app.add_middleware(CORSMiddleware, **get_cors_config())
 
 # Add Rate Limiting middleware
 if RATE_LIMIT_AVAILABLE:

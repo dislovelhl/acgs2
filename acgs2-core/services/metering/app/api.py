@@ -11,6 +11,7 @@ from typing import Optional
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
+from shared.security.cors_config import get_cors_config
 from pydantic import BaseModel
 
 from .models import (
@@ -27,30 +28,8 @@ app = FastAPI(
     version="1.0.0",
 )
 
-# Configure CORS based on environment for security
-cors_origins = os.getenv("CORS_ALLOWED_ORIGINS", "").split(",")
-if not cors_origins or cors_origins == [""]:
-    # Default secure configuration - no external origins allowed
-    cors_origins = []
-
-# Allow localhost for development (but not in production)
-if os.getenv("ENVIRONMENT", "").lower() == "development":
-    cors_origins.extend(
-        [
-            "http://localhost:3000",
-            "http://localhost:8080",
-            "http://127.0.0.1:3000",
-            "http://127.0.0.1:8080",
-        ]
-    )
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=cors_origins,
-    allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allow_headers=["Authorization", "Content-Type", "X-Correlation-ID"],
-)
+# Add CORS middleware with secure configuration from shared module
+app.add_middleware(CORSMiddleware, **get_cors_config())
 
 # Service instance
 _metering_service: Optional[UsageMeteringService] = None
