@@ -13,6 +13,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.approvals import router as approvals_router
 from app.api.audit import router as audit_router
+from shared.security.cors_config import get_cors_config
 from app.config import settings
 from app.core.approval_engine import (
     get_notification_manager,
@@ -73,14 +74,8 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# Add CORS middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=settings.cors_origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# Add CORS middleware with secure configuration from shared module
+app.add_middleware(CORSMiddleware, **get_cors_config())
 
 # Include API routers
 app.include_router(approvals_router)

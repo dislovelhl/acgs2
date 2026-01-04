@@ -2,7 +2,7 @@
   "feature": "Create end-to-end governance workflow examples with working code",
   "description": "Create comprehensive examples demonstrating complete governance workflows from policy creation through enforcement to audit logging, targeting Enterprise DevOps/MLOps engineers deploying AI systems. The examples will show: defining constitutional policies, enforcing them on agent actions, handling HITL approvals, and auditing decisions.",
   "created_at": "2026-01-03T21:27:54.052Z",
-  "updated_at": "2026-01-04T05:39:33.225Z",
+  "updated_at": "2026-01-04T10:35:46.540Z",
   "status": "in_progress",
   "planStatus": "in_progress",
   "phases": [
@@ -622,5 +622,5 @@
     "Target audience (Enterprise DevOps/MLOps) can understand and use the example"
   ],
   "spec_file": "spec.md",
-  "recoveryNote": "Task recovered from stuck state at 2026-01-04T05:39:33.225Z"
+  "recoveryNote": "Task recovered from stuck state at 2026-01-04T10:35:46.540Z"
 }

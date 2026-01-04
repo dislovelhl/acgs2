@@ -4,7 +4,7 @@
   "workflow_type": "feature",
   "description": "Implement Linear integration into the ACGS2 integration-service to enable bidirectional synchronization between Linear issues and external tools (GitHub, GitLab, Slack). This will make Linear the source of truth for product development workflows by automatically syncing issue states, comments, and metadata across platforms.",
   "created_at": "2026-01-03T21:08:19.581Z",
-  "updated_at": "2026-01-03T22:00:00.431Z",
+  "updated_at": "2026-01-04T10:36:38.432Z",
   "status": "in_progress",
   "planStatus": "in_progress",
   "total_estimated_hours": 80,
@@ -22,7 +22,7 @@
           "status": "completed",
           "dependencies": [],
           "estimated_hours": 2,
-          "notes": "\u2705 All packages verified on PyPI: gql 4.0.0 (req: >=3.5.0), PyGithub 2.8.1 (req: >=2.1.0), python-gitlab 7.1.0 (req: >=4.4.0), slack-sdk 3.39.0 (req: >=3.33.0). The gql[all] extra is confirmed available. Verification report created at pypi-package-verification.md.",
+          "notes": "✅ All packages verified on PyPI: gql 4.0.0 (req: >=3.5.0), PyGithub 2.8.1 (req: >=2.1.0), python-gitlab 7.1.0 (req: >=4.4.0), slack-sdk 3.39.0 (req: >=3.33.0). The gql[all] extra is confirmed available. Verification report created at pypi-package-verification.md.",
           "files_to_modify": [],
           "updated_at": "2026-01-03T21:32:36.696713+00:00"
         },
@@ -32,7 +32,7 @@
           "status": "completed",
           "dependencies": [],
           "estimated_hours": 2,
-          "notes": "\u2705 Linear API verification report created at linear-api-verification.md. Documented GraphQL endpoint (https://api.linear.app/graphql), Bearer token authentication, HMAC-SHA256 webhook signatures, rate limiting, and pagination patterns. Manual verification checklist provided for: endpoint URL, auth headers, rate limit thresholds, webhook event types, signature verification method, and GraphQL schema. Report includes security considerations and next steps.",
+          "notes": "✅ Linear API verification report created at linear-api-verification.md. Documented GraphQL endpoint (https://api.linear.app/graphql), Bearer token authentication, HMAC-SHA256 webhook signatures, rate limiting, and pagination patterns. Manual verification checklist provided for: endpoint URL, auth headers, rate limit thresholds, webhook event types, signature verification method, and GraphQL schema. Report includes security considerations and next steps.",
           "files_to_modify": [],
           "updated_at": "2026-01-03T21:36:30.283375+00:00"
         },
@@ -42,7 +42,7 @@
           "status": "completed",
           "dependencies": [],
           "estimated_hours": 2,
-          "notes": "\u2705 GitHub, GitLab, and Slack API verification report created at github-gitlab-slack-api-verification.md. Documented authentication methods (GitHub: Bearer token, GitLab: PRIVATE-TOKEN, Slack: Bot token), rate limiting patterns (GitHub: 5000/hr, GitLab: 300/min, Slack: tiered), webhook signature verification (GitHub: HMAC-SHA256, GitLab: simple token, Slack: HMAC-SHA256 with timestamp), and API patterns for PyGithub, python-gitlab, and slack-sdk libraries. Manual verification checklist provided for: endpoint URLs, auth headers, rate limits, webhook structures, and async support in libraries. Report includes security considerations and integration patterns.",
+          "notes": "✅ GitHub, GitLab, and Slack API verification report created at github-gitlab-slack-api-verification.md. Documented authentication methods (GitHub: Bearer token, GitLab: PRIVATE-TOKEN, Slack: Bot token), rate limiting patterns (GitHub: 5000/hr, GitLab: 300/min, Slack: tiered), webhook signature verification (GitHub: HMAC-SHA256, GitLab: simple token, Slack: HMAC-SHA256 with timestamp), and API patterns for PyGithub, python-gitlab, and slack-sdk libraries. Manual verification checklist provided for: endpoint URLs, auth headers, rate limits, webhook structures, and async support in libraries. Report includes security considerations and integration patterns.",
           "files_to_modify": [],
           "updated_at": "2026-01-03T21:41:41.361640+00:00"
         },
@@ -54,7 +54,7 @@
             "1.1"
           ],
           "estimated_hours": 1,
-          "notes": "\u2705 Added Linear dependencies to requirements.txt: gql[all]>=3.5.0 (GraphQL client), PyGithub>=2.1.0 (GitHub API), python-gitlab>=4.4.0 (GitLab API), slack-sdk>=3.33.0 (Slack SDK). Pre-commit hook automatically sorted the dependencies alphabetically. All packages verified in subtask 1.1 are now included in requirements.txt.",
+          "notes": "✅ Added Linear dependencies to requirements.txt: gql[all]>=3.5.0 (GraphQL client), PyGithub>=2.1.0 (GitHub API), python-gitlab>=4.4.0 (GitLab API), slack-sdk>=3.33.0 (Slack SDK). Pre-commit hook automatically sorted the dependencies alphabetically. All packages verified in subtask 1.1 are now included in requirements.txt.",
           "files_to_modify": [
             "integration-service/requirements.txt"
           ],
@@ -68,7 +68,7 @@
             "1.2"
           ],
           "estimated_hours": 1,
-          "notes": "\u2705 Added Linear integration environment variables (LINEAR_API_KEY, LINEAR_WEBHOOK_SECRET, LINEAR_TEAM_ID, LINEAR_PROJECT_ID) and Slack integration variables (SLACK_BOT_TOKEN, SLACK_SIGNING_SECRET, SLACK_DEFAULT_CHANNEL) to integration-service/.env.example. Included setup instructions following existing patterns from JIRA and ServiceNow integrations. Committed with proper git message.",
+          "notes": "✅ Added Linear integration environment variables (LINEAR_API_KEY, LINEAR_WEBHOOK_SECRET, LINEAR_TEAM_ID, LINEAR_PROJECT_ID) and Slack integration variables (SLACK_BOT_TOKEN, SLACK_SIGNING_SECRET, SLACK_DEFAULT_CHANNEL) to integration-service/.env.example. Included setup instructions following existing patterns from JIRA and ServiceNow integrations. Committed with proper git message.",
           "files_to_modify": [
             "integration-service/.env.example"
           ],
@@ -82,7 +82,7 @@
             "1.5"
           ],
           "estimated_hours": 2,
-          "notes": "\u2705 Created Linear configuration class using pydantic-settings at integration-service/src/config.py. Implemented LinearConfig, SlackConfig, and IntegrationServiceConfig classes with proper SecretStr for sensitive fields (LINEAR_API_KEY, LINEAR_WEBHOOK_SECRET, SLACK_BOT_TOKEN, SLACK_SIGNING_SECRET). Added singleton pattern with get_linear_config(), get_slack_config(), and get_service_config() helper functions. All fields properly typed with validation and default values. Committed successfully with all pre-commit hooks passing.",
+          "notes": "✅ Created Linear configuration class using pydantic-settings at integration-service/src/config.py. Implemented LinearConfig, SlackConfig, and IntegrationServiceConfig classes with proper SecretStr for sensitive fields (LINEAR_API_KEY, LINEAR_WEBHOOK_SECRET, SLACK_BOT_TOKEN, SLACK_SIGNING_SECRET). Added singleton pattern with get_linear_config(), get_slack_config(), and get_service_config() helper functions. All fields properly typed with validation and default values. Committed successfully with all pre-commit hooks passing.",
           "files_to_modify": [
             "integration-service/src/config.py"
           ],
@@ -98,7 +98,7 @@
             "1.6"
           ],
           "estimated_hours": 4,
-          "notes": "\u2705 Implemented Linear GraphQL client at integration-service/src/integrations/linear/client.py. Created LinearClient class with async support using gql library and AIOHTTPTransport. Implemented all required methods: create_issue, get_issue, update_issue, list_issues, add_comment. Added comprehensive error handling with custom exception classes (LinearClientError, LinearAuthenticationError, LinearRateLimitError, LinearNotFoundError, LinearValidationError). Integrated retry logic with exponential backoff using tenacity. Supports pagination for large result sets. Rate limiting detection and handling. Async context manager support (__aenter__/__aexit__). All pre-commit hooks passed. Committed with hash 2476c97b9.",
+          "notes": "✅ Implemented Linear GraphQL client at integration-service/src/integrations/linear/client.py. Created LinearClient class with async support using gql library and AIOHTTPTransport. Implemented all required methods: create_issue, get_issue, update_issue, list_issues, add_comment. Added comprehensive error handling with custom exception classes (LinearClientError, LinearAuthenticationError, LinearRateLimitError, LinearNotFoundError, LinearValidationError). Integrated retry logic with exponential backoff using tenacity. Supports pagination for large result sets. Rate limiting detection and handling. Async context manager support (__aenter__/__aexit__). All pre-commit hooks passed. Committed with hash 2476c97b9.",
           "files_to_modify": [
             "integration-service/src/integrations/linear/client.py"
           ],
@@ -112,7 +112,7 @@
             "1.7"
           ],
           "estimated_hours": 2,
-          "notes": "\u2705 Comprehensive test suite created for Linear GraphQL client at tests/integrations/test_linear_client.py. Includes 839 lines with 49 test functions covering: initialization, query execution, issue CRUD operations, comment creation, pagination, error handling (auth, rate limits, not found, validation), retry logic, and async context manager support. All tests follow existing patterns from test_jira.py. Committed with hash 45840bf5a.",
+          "notes": "✅ Comprehensive test suite created for Linear GraphQL client at tests/integrations/test_linear_client.py. Includes 839 lines with 49 test functions covering: initialization, query execution, issue CRUD operations, comment creation, pagination, error handling (auth, rate limits, not found, validation), retry logic, and async context manager support. All tests follow existing patterns from test_jira.py. Committed with hash 45840bf5a.",
           "files_to_modify": [
             "tests/integrations/test_linear_client.py"
           ],
@@ -135,7 +135,7 @@
             "1.2"
           ],
           "estimated_hours": 3,
-          "notes": "\u2705 Successfully created comprehensive Pydantic models for Linear webhook payloads at integration-service/src/integrations/linear/models.py. Includes:\n- Core webhook models: LinearWebhookPayload, IssueWebhookData, CommentWebhookData\n- Event-specific convenience wrappers: IssueEvent, CommentEvent, StatusChangeEvent\n- Supporting models: LinearUser, LinearTeam, LinearWorkflowState, LinearProject, LinearCycle, LinearLabel, LinearIssue, LinearComment\n- Proper enums for WebhookAction, LinearWebhookType, IssuePriority\n- Comprehensive field validation and model validators\n- Change tracking support with updatedFrom field\n- Proper logging for debugging parse failures\n- Follows existing patterns from webhooks/models.py and config/models.py\n- All linting checks passed\n- Committed in 4c8daa58f",
+          "notes": "✅ Successfully created comprehensive Pydantic models for Linear webhook payloads at integration-service/src/integrations/linear/models.py. Includes:\n- Core webhook models: LinearWebhookPayload, IssueWebhookData, CommentWebhookData\n- Event-specific convenience wrappers: IssueEvent, CommentEvent, StatusChangeEvent\n- Supporting models: LinearUser, LinearTeam, LinearWorkflowState, LinearProject, LinearCycle, LinearLabel, LinearIssue, LinearComment\n- Proper enums for WebhookAction, LinearWebhookType, IssuePriority\n- Comprehensive field validation and model validators\n- Change tracking support with updatedFrom field\n- Proper logging for debugging parse failures\n- Follows existing patterns from webhooks/models.py and config/models.py\n- All linting checks passed\n- Committed in 4c8daa58f",
           "files_to_modify": [
             "integration-service/src/integrations/linear/models.py"
           ],
@@ -150,7 +150,7 @@
             "2.1"
           ],
           "estimated_hours": 3,
-          "notes": "\u2705 Successfully implemented Linear webhook signature verification middleware at integration-service/src/integrations/linear/webhook_auth.py. Created comprehensive authentication module with:\n- verify_linear_webhook_signature: FastAPI dependency for webhook authentication returning AuthResult\n- verify_linear_webhook_signature_strict: Simpler dependency for blocking unauthorized requests\n- verify_linear_signature_sync: Synchronous verification for testing and utilities\n- get_linear_webhook_handler: Factory function for configured HmacAuthHandler\n- is_linear_webhook_configured: Configuration check utility\n- LinearWebhookAuthError: Custom exception class\n- format_linear_signature_for_logging: Safe signature logging utility\n\nImplementation follows existing patterns from src/webhooks/auth.py using HmacAuthHandler with HMAC-SHA256 algorithm. Uses LINEAR_WEBHOOK_SECRET from config (via get_linear_config()). Includes comprehensive error handling, logging, and security features (constant-time comparison, proper exception handling). All functions exported in __init__.py. Committed with hash 4ad73d13e, all pre-commit hooks passed (ruff, bandit, etc.).",
+          "notes": "✅ Successfully implemented Linear webhook signature verification middleware at integration-service/src/integrations/linear/webhook_auth.py. Created comprehensive authentication module with:\n- verify_linear_webhook_signature: FastAPI dependency for webhook authentication returning AuthResult\n- verify_linear_webhook_signature_strict: Simpler dependency for blocking unauthorized requests\n- verify_linear_signature_sync: Synchronous verification for testing and utilities\n- get_linear_webhook_handler: Factory function for configured HmacAuthHandler\n- is_linear_webhook_configured: Configuration check utility\n- LinearWebhookAuthError: Custom exception class\n- format_linear_signature_for_logging: Safe signature logging utility\n\nImplementation follows existing patterns from src/webhooks/auth.py using HmacAuthHandler with HMAC-SHA256 algorithm. Uses LINEAR_WEBHOOK_SECRET from config (via get_linear_config()). Includes comprehensive error handling, logging, and security features (constant-time comparison, proper exception handling). All functions exported in __init__.py. Committed with hash 4ad73d13e, all pre-commit hooks passed (ruff, bandit, etc.).",
           "files_to_modify": [
             "integration-service/src/integrations/linear/webhook_auth.py"
           ],
@@ -165,7 +165,7 @@
             "2.2"
           ],
           "estimated_hours": 4,
-          "notes": "\u2705 Successfully created Linear webhook endpoint handler at integration-service/src/api/linear_webhooks.py. Implemented POST /webhooks/linear endpoint with HMAC signature verification using verify_linear_webhook_signature dependency, POST /webhooks/linear/test endpoint for testing without verification, and GET /webhooks/linear/status endpoint for monitoring. Fast response (<3 seconds) achieved with background event queueing using in-memory queue. Comprehensive event parsing for Issue, Comment, and StatusChange events with detailed logging. Proper error handling with graceful degradation for malformed payloads. Updated src/main.py to register Linear webhook router and src/api/__init__.py to export linear_webhooks_router. All pre-commit hooks passed. Committed with hash 7aebc7369.",
+          "notes": "✅ Successfully created Linear webhook endpoint handler at integration-service/src/api/linear_webhooks.py. Implemented POST /webhooks/linear endpoint with HMAC signature verification using verify_linear_webhook_signature dependency, POST /webhooks/linear/test endpoint for testing without verification, and GET /webhooks/linear/status endpoint for monitoring. Fast response (<3 seconds) achieved with background event queueing using in-memory queue. Comprehensive event parsing for Issue, Comment, and StatusChange events with detailed logging. Proper error handling with graceful degradation for malformed payloads. Updated src/main.py to register Linear webhook router and src/api/__init__.py to export linear_webhooks_router. All pre-commit hooks passed. Committed with hash 7aebc7369.",
           "files_to_modify": [
             "integration-service/src/api/linear_webhooks.py"
           ],
@@ -179,7 +179,7 @@
             "1.6"
           ],
           "estimated_hours": 3,
-          "notes": "\u2705 Successfully implemented Redis state tracking for Linear sync operations at integration-service/src/integrations/linear/state.py. Created LinearStateManager with async Redis operations for FastAPI compatibility. Features include:\n- Deduplication with event tracking (is_duplicate_event)\n- Distributed locks for concurrent sync protection (acquire_lock, release_lock, lock context manager)\n- Sync state recording (record_sync, get_sync_state) with last_synced_at, sync_source, and metadata\n- Automatic TTL for cleanup (7 days for state, 3 days for events, 5 minutes for locks)\n- Namespace isolation (linear:sync:*, linear:event:*, linear:lock:* prefixes)\n- Async context managers for connection and lock management\n- Comprehensive error handling with custom exceptions (LinearStateError, LinearStateConnectionError, LinearStateLockError)\n- Singleton pattern with get_state_manager() helper\n- Updated __init__.py to export state management functions\nAll pre-commit hooks passed (ruff, bandit, etc.). Committed with hash 38b0a10c1.",
+          "notes": "✅ Successfully implemented Redis state tracking for Linear sync operations at integration-service/src/integrations/linear/state.py. Created LinearStateManager with async Redis operations for FastAPI compatibility. Features include:\n- Deduplication with event tracking (is_duplicate_event)\n- Distributed locks for concurrent sync protection (acquire_lock, release_lock, lock context manager)\n- Sync state recording (record_sync, get_sync_state) with last_synced_at, sync_source, and metadata\n- Automatic TTL for cleanup (7 days for state, 3 days for events, 5 minutes for locks)\n- Namespace isolation (linear:sync:*, linear:event:*, linear:lock:* prefixes)\n- Async context managers for connection and lock management\n- Comprehensive error handling with custom exceptions (LinearStateError, LinearStateConnectionError, LinearStateLockError)\n- Singleton pattern with get_state_manager() helper\n- Updated __init__.py to export state management functions\nAll pre-commit hooks passed (ruff, bandit, etc.). Committed with hash 38b0a10c1.",
           "files_to_modify": [
             "integration-service/src/integrations/linear/state.py"
           ],
@@ -194,7 +194,7 @@
             "2.3"
           ],
           "estimated_hours": 3,
-          "notes": "\u2705 Comprehensive unit test suite created for Linear webhook handler and signature verification at tests/api/test_linear_webhooks.py. Includes 50+ test cases covering: HMAC signature verification (valid, invalid, missing, tampered), webhook payload parsing (Issue, Comment, StatusChange events), malformed payload handling, event queueing and statistics tracking, status endpoint functionality, test endpoint (without signature verification), error handling and edge cases, and complete integration flows. Tests follow existing patterns from tests/webhooks/test_auth.py using pytest with pytest-asyncio for async testing. Mocks Linear config and external dependencies with comprehensive fixtures for sample webhook payloads. Tests signature computation using HMAC-SHA256, verifies 200 OK response for graceful degradation, and ensures events are queued for background processing. Committed with hash a5c77bd6c.",
+          "notes": "✅ Comprehensive unit test suite created for Linear webhook handler and signature verification at tests/api/test_linear_webhooks.py. Includes 50+ test cases covering: HMAC signature verification (valid, invalid, missing, tampered), webhook payload parsing (Issue, Comment, StatusChange events), malformed payload handling, event queueing and statistics tracking, status endpoint functionality, test endpoint (without signature verification), error handling and edge cases, and complete integration flows. Tests follow existing patterns from tests/webhooks/test_auth.py using pytest with pytest-asyncio for async testing. Mocks Linear config and external dependencies with comprehensive fixtures for sample webhook payloads. Tests signature computation using HMAC-SHA256, verifies 200 OK response for graceful degradation, and ensures events are queued for background processing. Committed with hash a5c77bd6c.",
           "files_to_modify": [
             "tests/api/test_linear_webhooks.py"
           ],
@@ -217,7 +217,7 @@
             "2.4"
           ],
           "estimated_hours": 3,
-          "notes": "\u2705 Successfully implemented comprehensive deduplication logic with Redis at integration-service/src/integrations/linear/deduplication.py. Created LinearDeduplicationManager class with:\n\nFeatures:\n- Event ID tracking to prevent duplicate processing (is_duplicate, mark_processed)\n- Source tracking to prevent infinite sync loops between Linear, GitHub, GitLab, and Slack\n- Sync chain tracking in Redis with TTL-based cleanup (3 days for events, 5 min for chains)\n- Loop detection with would_create_loop() analyzing sync patterns (direct loops, bounce loops)\n- Comprehensive should_process_event() combining duplicate and loop checks\n\nKey Components:\n- Async/await support for FastAPI compatibility\n- Singleton pattern with get_dedup_manager() helper\n- Custom exception classes (DeduplicationError, DuplicateEventError, SyncLoopDetectedError)\n- Redis-backed state using LinearStateManager\n- Context manager support for resource management\n- Comprehensive logging for debugging\n\nLoop Detection Algorithm:\n- Tracks sync chains in Redis (linear:sync_chain:{issue_id})\n- Detects exact sync repetition (A->B seen again)\n- Detects bounce patterns (A->B->A or A->B->A->B)\n- Max chain length enforcement (5 operations before loop declared)\n\nUpdated __init__.py to export all deduplication classes and functions. All pre-commit hooks passed (ruff, bandit). Committed with hash 0be1b275d. Follows patterns from state.py and client.py exactly.",
+          "notes": "✅ Successfully implemented comprehensive deduplication logic with Redis at integration-service/src/integrations/linear/deduplication.py. Created LinearDeduplicationManager class with:\n\nFeatures:\n- Event ID tracking to prevent duplicate processing (is_duplicate, mark_processed)\n- Source tracking to prevent infinite sync loops between Linear, GitHub, GitLab, and Slack\n- Sync chain tracking in Redis with TTL-based cleanup (3 days for events, 5 min for chains)\n- Loop detection with would_create_loop() analyzing sync patterns (direct loops, bounce loops)\n- Comprehensive should_process_event() combining duplicate and loop checks\n\nKey Components:\n- Async/await support for FastAPI compatibility\n- Singleton pattern with get_dedup_manager() helper\n- Custom exception classes (DeduplicationError, DuplicateEventError, SyncLoopDetectedError)\n- Redis-backed state using LinearStateManager\n- Context manager support for resource management\n- Comprehensive logging for debugging\n\nLoop Detection Algorithm:\n- Tracks sync chains in Redis (linear:sync_chain:{issue_id})\n- Detects exact sync repetition (A->B seen again)\n- Detects bounce patterns (A->B->A or A->B->A->B)\n- Max chain length enforcement (5 operations before loop declared)\n\nUpdated __init__.py to export all deduplication classes and functions. All pre-commit hooks passed (ruff, bandit). Committed with hash 0be1b275d. Follows patterns from state.py and client.py exactly.",
           "files_to_modify": [
             "integration-service/src/integrations/linear/deduplication.py"
           ],
@@ -231,7 +231,7 @@
             "2.4"
           ],
           "estimated_hours": 3,
-          "notes": "\u2705 Successfully implemented conflict resolution (last-write-wins) logic at integration-service/src/integrations/linear/conflict_resolution.py. \n\nFeatures implemented:\n- ConflictResolutionManager class with timestamp-based last-write-wins strategy\n- Conflict resolution between Linear, GitHub, GitLab, and Slack updates\n- Timestamp comparison with configurable tolerance (1 second)\n- Source priority resolution for simultaneous updates (manual > linear > github > gitlab > slack)\n- Conflict history tracking in Redis with 30-day TTL for auditing\n- should_apply_update() method to determine if update should be applied\n- record_update() method to track applied updates\n- resolve_conflict() method for explicit conflict resolution\n- Conflict history retrieval with get_conflict_history()\n- Redis-backed state using LinearStateManager\n- Async/await support for FastAPI compatibility\n- Singleton pattern with get_conflict_manager() helper\n- Custom exception classes (ConflictResolutionError, ConflictTimestampError)\n- Comprehensive logging for debugging\n\nArchitecture:\n- Uses Redis keys with prefix \"linear:conflict:{issue_id}\" for conflict tracking\n- Stores conflict history as Redis lists (limited to last 100 conflicts)\n- Integrates with LinearStateManager for sync state tracking\n- Timestamp parsing supports datetime objects and ISO format strings\n- TTL-based automatic cleanup (30 days for conflicts)\n\nUpdated __init__.py to export all conflict resolution classes and functions. All pre-commit hooks passed (ruff, bandit, etc.). Committed with hash d89f27ae0. Follows exact patterns from state.py and deduplication.py.",
+          "notes": "✅ Successfully implemented conflict resolution (last-write-wins) logic at integration-service/src/integrations/linear/conflict_resolution.py. \n\nFeatures implemented:\n- ConflictResolutionManager class with timestamp-based last-write-wins strategy\n- Conflict resolution between Linear, GitHub, GitLab, and Slack updates\n- Timestamp comparison with configurable tolerance (1 second)\n- Source priority resolution for simultaneous updates (manual > linear > github > gitlab > slack)\n- Conflict history tracking in Redis with 30-day TTL for auditing\n- should_apply_update() method to determine if update should be applied\n- record_update() method to track applied updates\n- resolve_conflict() method for explicit conflict resolution\n- Conflict history retrieval with get_conflict_history()\n- Redis-backed state using LinearStateManager\n- Async/await support for FastAPI compatibility\n- Singleton pattern with get_conflict_manager() helper\n- Custom exception classes (ConflictResolutionError, ConflictTimestampError)\n- Comprehensive logging for debugging\n\nArchitecture:\n- Uses Redis keys with prefix \"linear:conflict:{issue_id}\" for conflict tracking\n- Stores conflict history as Redis lists (limited to last 100 conflicts)\n- Integrates with LinearStateManager for sync state tracking\n- Timestamp parsing supports datetime objects and ISO format strings\n- TTL-based automatic cleanup (30 days for conflicts)\n\nUpdated __init__.py to export all conflict resolution classes and functions. All pre-commit hooks passed (ruff, bandit, etc.). Committed with hash d89f27ae0. Follows exact patterns from state.py and deduplication.py.",
           "files_to_modify": [
             "integration-service/src/integrations/linear/conflict_resolution.py"
           ],
@@ -239,7 +239,7 @@
         },
         {
           "id": "3.3",
-          "description": "Build GitHub sync manager for Linear \u2194 GitHub bidirectional sync",
+          "description": "Build GitHub sync manager for Linear ↔ GitHub bidirectional sync",
           "status": "completed",
           "dependencies": [
             "1.7",
@@ -248,7 +248,7 @@
             "3.2"
           ],
           "estimated_hours": 6,
-          "notes": "\u2705 Successfully implemented GitHub sync manager for Linear \u2194 GitHub bidirectional sync at integration-service/src/integrations/linear/github_sync.py. \n\nFeatures implemented:\n- GitHubSyncManager class with async/await support for FastAPI compatibility\n- Bidirectional sync (Linear \u2192 GitHub and GitHub \u2192 Linear)\n- Issue creation and updates (sync_linear_to_github, sync_github_to_linear)\n- Comment synchronization (sync_github_comment_to_linear, sync_linear_comment_to_github)\n- PR status to Linear synchronization (sync_pr_status_to_linear)\n- Deduplication integration to prevent infinite sync loops\n- Conflict resolution with last-write-wins strategy\n- Rate limiting with exponential backoff using tenacity\n- Comprehensive error handling with custom exceptions (GitHubSyncError, GitHubAuthenticationError, GitHubRateLimitError, GitHubNotFoundError)\n- PyGithub library integration for GitHub API access\n- LinearClient integration for Linear operations\n- Singleton pattern with get_github_sync_manager() helper\n- Context manager support for resource management\n- Detailed logging for debugging\n\nAdded configuration:\n- GitHubConfig and GitLabConfig classes to integration-service/src/config.py\n- get_github_config() and get_gitlab_config() singleton helpers\n- GitHub and GitLab environment variables support (GITHUB_TOKEN, GITLAB_TOKEN, GITLAB_URL, timeout, retry settings)\n\nUpdated exports:\n- Updated integration-service/src/integrations/linear/__init__.py to export GitHub sync manager classes and functions\n\nAll pre-commit hooks passed (ruff, bandit, etc.). Committed with hash 2e21fc06a. Follows exact patterns from client.py, deduplication.py, and conflict_resolution.py.",
+          "notes": "✅ Successfully implemented GitHub sync manager for Linear ↔ GitHub bidirectional sync at integration-service/src/integrations/linear/github_sync.py. \n\nFeatures implemented:\n- GitHubSyncManager class with async/await support for FastAPI compatibility\n- Bidirectional sync (Linear → GitHub and GitHub → Linear)\n- Issue creation and updates (sync_linear_to_github, sync_github_to_linear)\n- Comment synchronization (sync_github_comment_to_linear, sync_linear_comment_to_github)\n- PR status to Linear synchronization (sync_pr_status_to_linear)\n- Deduplication integration to prevent infinite sync loops\n- Conflict resolution with last-write-wins strategy\n- Rate limiting with exponential backoff using tenacity\n- Comprehensive error handling with custom exceptions (GitHubSyncError, GitHubAuthenticationError, GitHubRateLimitError, GitHubNotFoundError)\n- PyGithub library integration for GitHub API access\n- LinearClient integration for Linear operations\n- Singleton pattern with get_github_sync_manager() helper\n- Context manager support for resource management\n- Detailed logging for debugging\n\nAdded configuration:\n- GitHubConfig and GitLabConfig classes to integration-service/src/config.py\n- get_github_config() and get_gitlab_config() singleton helpers\n- GitHub and GitLab environment variables support (GITHUB_TOKEN, GITLAB_TOKEN, GITLAB_URL, timeout, retry settings)\n\nUpdated exports:\n- Updated integration-service/src/integrations/linear/__init__.py to export GitHub sync manager classes and functions\n\nAll pre-commit hooks passed (ruff, bandit, etc.). Committed with hash 2e21fc06a. Follows exact patterns from client.py, deduplication.py, and conflict_resolution.py.",
           "files_to_modify": [
             "integration-service/src/integrations/linear/github_sync.py"
           ],
@@ -256,7 +256,7 @@
         },
         {
           "id": "3.4",
-          "description": "Build GitLab sync manager for Linear \u2194 GitLab bidirectional sync",
+          "description": "Build GitLab sync manager for Linear ↔ GitLab bidirectional sync",
           "status": "completed",
           "dependencies": [
             "1.7",
@@ -265,7 +265,7 @@
             "3.2"
           ],
           "estimated_hours": 6,
-          "notes": "\u2705 Successfully implemented GitLab sync manager for Linear \u2194 GitLab bidirectional sync at integration-service/src/integrations/linear/gitlab_sync.py. \n\nFeatures implemented:\n- GitLabSyncManager class with async/await support for FastAPI compatibility\n- Bidirectional sync (Linear \u2192 GitLab and GitLab \u2192 Linear)\n- Issue creation and updates (sync_linear_to_gitlab, sync_gitlab_to_linear)\n- Comment synchronization (sync_gitlab_comment_to_linear, sync_linear_comment_to_gitlab)\n- MR status to Linear synchronization (sync_mr_status_to_linear)\n- Deduplication integration to prevent infinite sync loops\n- Conflict resolution with last-write-wins strategy\n- Rate limiting with exponential backoff using tenacity\n- Comprehensive error handling with custom exceptions (GitLabSyncError, GitLabAuthenticationError, GitLabRateLimitError, GitLabNotFoundError)\n- python-gitlab library integration for GitLab API access\n- LinearClient integration for Linear operations\n- Singleton pattern with get_gitlab_sync_manager() helper\n- Context manager support for resource management\n- Detailed logging for debugging\n\nUpdated exports:\n- Updated integration-service/src/integrations/linear/__init__.py to export GitLab sync manager classes and functions\n\nAll pre-commit hooks passed (ruff, bandit, etc.). Committed with hash bf42293af. Follows exact patterns from github_sync.py, client.py, deduplication.py, and conflict_resolution.py.",
+          "notes": "✅ Successfully implemented GitLab sync manager for Linear ↔ GitLab bidirectional sync at integration-service/src/integrations/linear/gitlab_sync.py. \n\nFeatures implemented:\n- GitLabSyncManager class with async/await support for FastAPI compatibility\n- Bidirectional sync (Linear → GitLab and GitLab → Linear)\n- Issue creation and updates (sync_linear_to_gitlab, sync_gitlab_to_linear)\n- Comment synchronization (sync_gitlab_comment_to_linear, sync_linear_comment_to_gitlab)\n- MR status to Linear synchronization (sync_mr_status_to_linear)\n- Deduplication integration to prevent infinite sync loops\n- Conflict resolution with last-write-wins strategy\n- Rate limiting with exponential backoff using tenacity\n- Comprehensive error handling with custom exceptions (GitLabSyncError, GitLabAuthenticationError, GitLabRateLimitError, GitLabNotFoundError)\n- python-gitlab library integration for GitLab API access\n- LinearClient integration for Linear operations\n- Singleton pattern with get_gitlab_sync_manager() helper\n- Context manager support for resource management\n- Detailed logging for debugging\n\nUpdated exports:\n- Updated integration-service/src/integrations/linear/__init__.py to export GitLab sync manager classes and functions\n\nAll pre-commit hooks passed (ruff, bandit, etc.). Committed with hash bf42293af. Follows exact patterns from github_sync.py, client.py, deduplication.py, and conflict_resolution.py.",
           "files_to_modify": [
             "integration-service/src/integrations/linear/gitlab_sync.py"
           ],
@@ -279,7 +279,7 @@
             "3.3"
           ],
           "estimated_hours": 3,
-          "notes": "\u2705 Comprehensive unit test suite created for GitHub sync manager at tests/sync/test_github_linear_sync.py. Includes 1045 lines with 60+ test functions covering:\n\nTest Coverage:\n- GitHubSyncManager initialization and configuration tests\n- Linear \u2192 GitHub issue sync (create and update operations)\n- GitHub \u2192 Linear issue sync (create and update operations)\n- Bidirectional comment synchronization tests\n- PR status synchronization to Linear\n- Deduplication logic tests to prevent infinite sync loops\n- Conflict resolution with last-write-wins strategy\n- Comprehensive error handling (auth failures, rate limits, not found errors)\n- Async context manager support tests\n- Singleton pattern tests\n\nImplementation Details:\n- Follows existing test patterns from test_linear_client.py\n- Mocks PyGithub library with proper exception types\n- Uses pytest with pytest-asyncio for async testing\n- All fixtures properly isolated for unit testing\n- Tests verify deduplication manager integration\n- Tests verify conflict resolution manager integration\n- Comprehensive assertions for all sync operations\n- Error scenarios properly tested with appropriate exceptions\n\nAll pre-commit hooks passed (ruff, bandit, etc.). Committed with hash 51bdab3a0. Manual verification required as specified in task notes.",
+          "notes": "✅ Comprehensive unit test suite created for GitHub sync manager at tests/sync/test_github_linear_sync.py. Includes 1045 lines with 60+ test functions covering:\n\nTest Coverage:\n- GitHubSyncManager initialization and configuration tests\n- Linear → GitHub issue sync (create and update operations)\n- GitHub → Linear issue sync (create and update operations)\n- Bidirectional comment synchronization tests\n- PR status synchronization to Linear\n- Deduplication logic tests to prevent infinite sync loops\n- Conflict resolution with last-write-wins strategy\n- Comprehensive error handling (auth failures, rate limits, not found errors)\n- Async context manager support tests\n- Singleton pattern tests\n\nImplementation Details:\n- Follows existing test patterns from test_linear_client.py\n- Mocks PyGithub library with proper exception types\n- Uses pytest with pytest-asyncio for async testing\n- All fixtures properly isolated for unit testing\n- Tests verify deduplication manager integration\n- Tests verify conflict resolution manager integration\n- Comprehensive assertions for all sync operations\n- Error scenarios properly tested with appropriate exceptions\n\nAll pre-commit hooks passed (ruff, bandit, etc.). Committed with hash 51bdab3a0. Manual verification required as specified in task notes.",
           "files_to_modify": [
             "tests/sync/test_github_linear_sync.py"
           ],
@@ -293,7 +293,7 @@
             "3.4"
           ],
           "estimated_hours": 3,
-          "notes": "\u2705 Comprehensive unit test suite created for GitLab sync manager at tests/sync/test_gitlab_linear_sync.py. Includes 1062 lines with 60+ test functions covering:\n\nTest Coverage:\n- GitLabSyncManager initialization and configuration tests\n- Linear \u2192 GitLab issue sync (create and update operations)\n- GitLab \u2192 Linear issue sync (create and update operations)\n- Bidirectional comment synchronization tests\n- MR status synchronization to Linear\n- Deduplication logic tests to prevent infinite sync loops\n- Conflict resolution with last-write-wins strategy\n- Comprehensive error handling (auth failures, rate limits, not found errors)\n- Async context manager support tests\n- Singleton pattern tests\n\nImplementation Details:\n- Follows existing test patterns from test_github_linear_sync.py exactly\n- Mocks python-gitlab library with proper exception types\n- Uses pytest with pytest-asyncio for async testing\n- All fixtures properly isolated for unit testing\n- Tests verify deduplication manager integration\n- Tests verify conflict resolution manager integration\n- Comprehensive assertions for all sync operations\n- Error scenarios properly tested with appropriate exceptions\n\nAll pre-commit hooks passed (ruff, bandit, etc.). Committed with hash 0cc17a9b2. Manual verification required as specified in task notes.",
+          "notes": "✅ Comprehensive unit test suite created for GitLab sync manager at tests/sync/test_gitlab_linear_sync.py. Includes 1062 lines with 60+ test functions covering:\n\nTest Coverage:\n- GitLabSyncManager initialization and configuration tests\n- Linear → GitLab issue sync (create and update operations)\n- GitLab → Linear issue sync (create and update operations)\n- Bidirectional comment synchronization tests\n- MR status synchronization to Linear\n- Deduplication logic tests to prevent infinite sync loops\n- Conflict resolution with last-write-wins strategy\n- Comprehensive error handling (auth failures, rate limits, not found errors)\n- Async context manager support tests\n- Singleton pattern tests\n\nImplementation Details:\n- Follows existing test patterns from test_github_linear_sync.py exactly\n- Mocks python-gitlab library with proper exception types\n- Uses pytest with pytest-asyncio for async testing\n- All fixtures properly isolated for unit testing\n- Tests verify deduplication manager integration\n- Tests verify conflict resolution manager integration\n- Comprehensive assertions for all sync operations\n- Error scenarios properly tested with appropriate exceptions\n\nAll pre-commit hooks passed (ruff, bandit, etc.). Committed with hash 0cc17a9b2. Manual verification required as specified in task notes.",
           "files_to_modify": [
             "tests/sync/test_gitlab_linear_sync.py"
           ],
@@ -317,7 +317,7 @@
             "1.6"
           ],
           "estimated_hours": 3,
-          "notes": "\u2705 Successfully created Slack notification service at integration-service/src/integrations/linear/slack_notifier.py. \n\nFeatures implemented:\n- SlackNotifier class with async/await support for FastAPI compatibility\n- Three notification methods: post_issue_created, post_status_changed, post_comment_added\n- Slack Block Kit formatting for rich message display\n- Rate limiting (1 message per second per Slack guidelines)\n- Graceful degradation when Slack is not configured\n- Deduplication integration to prevent duplicate notifications\n- Comprehensive error handling with custom exceptions (SlackNotifierError, SlackAuthenticationError, SlackRateLimitError, SlackChannelNotFoundError, SlackNotConfiguredError)\n- Retry logic with exponential backoff using tenacity\n- Singleton pattern with get_slack_notifier() helper\n- Async context manager support (__aenter__/__aexit__)\n- Integration with SlackConfig for configuration management\n- Integration with LinearDeduplicationManager for event tracking\n- Detailed logging for debugging\n- Security: uses SecretStr for sensitive tokens, MD5 hash with usedforsecurity=False for comment deduplication\n\nUpdated exports in integration-service/src/integrations/linear/__init__.py to include all Slack notifier classes and functions.\n\nAll pre-commit hooks passed (ruff, bandit, etc.). Committed with hash ebf64d9da.",
+          "notes": "✅ Successfully created Slack notification service at integration-service/src/integrations/linear/slack_notifier.py. \n\nFeatures implemented:\n- SlackNotifier class with async/await support for FastAPI compatibility\n- Three notification methods: post_issue_created, post_status_changed, post_comment_added\n- Slack Block Kit formatting for rich message display\n- Rate limiting (1 message per second per Slack guidelines)\n- Graceful degradation when Slack is not configured\n- Deduplication integration to prevent duplicate notifications\n- Comprehensive error handling with custom exceptions (SlackNotifierError, SlackAuthenticationError, SlackRateLimitError, SlackChannelNotFoundError, SlackNotConfiguredError)\n- Retry logic with exponential backoff using tenacity\n- Singleton pattern with get_slack_notifier() helper\n- Async context manager support (__aenter__/__aexit__)\n- Integration with SlackConfig for configuration management\n- Integration with LinearDeduplicationManager for event tracking\n- Detailed logging for debugging\n- Security: uses SecretStr for sensitive tokens, MD5 hash with usedforsecurity=False for comment deduplication\n\nUpdated exports in integration-service/src/integrations/linear/__init__.py to include all Slack notifier classes and functions.\n\nAll pre-commit hooks passed (ruff, bandit, etc.). Committed with hash ebf64d9da.",
           "files_to_modify": [
             "integration-service/src/integrations/linear/slack_notifier.py"
           ],
@@ -331,7 +331,7 @@
             "4.1"
           ],
           "estimated_hours": 2,
-          "notes": "\u2705 Successfully created Slack message templates using Block Kit at integration-service/src/integrations/linear/slack_templates.py.\n\nFeatures implemented:\n- build_issue_created_template: Rich notification with header, issue details, priority emoji indicators, and action button\n- build_status_changed_template: Status transition notification with visual arrow indicator\n- build_comment_added_template: Comment notification with author and truncated content\n- build_issue_assigned_template: Assignment/reassignment notification (bonus feature)\n- build_priority_changed_template: Priority change notification with emoji indicators (bonus feature)\n\nSupporting utilities:\n- Fallback text generators for all notification types (get_issue_created_fallback, get_status_changed_fallback, get_comment_added_fallback, get_issue_assigned_fallback, get_priority_changed_fallback)\n- Priority-based emoji mapping (urgent: \ud83d\udd34, high: \ud83d\udfe0, medium: \ud83d\udd35, low: \u26aa)\n- Content truncation (500 chars for descriptions, 300 chars for comments)\n- Rich metadata display (issue ID, status, priority, assignee)\n- Action buttons with direct links to Linear issues\n\nArchitecture:\n- Clean separation of concerns with dedicated templates module\n- Reusable template functions following Slack Block Kit specification\n- Comprehensive docstrings with examples\n- Type hints for all parameters and return values\n- Updated __init__.py to export all template functions\n\nAll pre-commit hooks passed (ruff, bandit, etc.). Committed with hash b2d3668c9. Manual verification required as specified in task notes.",
+          "notes": "✅ Successfully created Slack message templates using Block Kit at integration-service/src/integrations/linear/slack_templates.py.\n\nFeatures implemented:\n- build_issue_created_template: Rich notification with header, issue details, priority emoji indicators, and action button\n- build_status_changed_template: Status transition notification with visual arrow indicator\n- build_comment_added_template: Comment notification with author and truncated content\n- build_issue_assigned_template: Assignment/reassignment notification (bonus feature)\n- build_priority_changed_template: Priority change notification with emoji indicators (bonus feature)\n\nSupporting utilities:\n- Fallback text generators for all notification types (get_issue_created_fallback, get_status_changed_fallback, get_comment_added_fallback, get_issue_assigned_fallback, get_priority_changed_fallback)\n- Priority-based emoji mapping (urgent: 🔴, high: 🟠, medium: 🔵, low: ⚪)\n- Content truncation (500 chars for descriptions, 300 chars for comments)\n- Rich metadata display (issue ID, status, priority, assignee)\n- Action buttons with direct links to Linear issues\n\nArchitecture:\n- Clean separation of concerns with dedicated templates module\n- Reusable template functions following Slack Block Kit specification\n- Comprehensive docstrings with examples\n- Type hints for all parameters and return values\n- Updated __init__.py to export all template functions\n\nAll pre-commit hooks passed (ruff, bandit, etc.). Committed with hash b2d3668c9. Manual verification required as specified in task notes.",
           "files_to_modify": [
             "integration-service/src/integrations/linear/slack_templates.py"
           ],
@@ -347,7 +347,7 @@
             "4.2"
           ],
           "estimated_hours": 2,
-          "notes": "\u2705 Successfully wired Slack notifier into sync engine. \n\nChanges implemented:\n1. **linear_webhooks.py**: Added Slack notifications for webhook events\n   - Issue created events trigger post_issue_created()\n   - Status change events trigger post_status_changed()\n   - Comment added events trigger post_comment_added()\n   - All notifications run asynchronously via asyncio.create_task (non-blocking)\n\n2. **github_sync.py**: Added Slack notifications for GitHub sync\n   - Notifies when Linear issues are synced to GitHub (new issues only)\n   - Uses async context manager with graceful error handling\n   - Doesn't fail sync if Slack notification fails\n\n3. **gitlab_sync.py**: Added Slack notifications for GitLab sync\n   - Notifies when Linear issues are synced to GitLab (new issues only)\n   - Uses async context manager with graceful error handling\n   - Doesn't fail sync if Slack notification fails\n\nArchitecture:\n- All notifications use get_slack_notifier() singleton pattern\n- Graceful degradation when SLACK_BOT_TOKEN not configured\n- Non-blocking async execution (webhook responds in <3 seconds)\n- Comprehensive error logging without failing parent operations\n- Deduplication handled by SlackNotifier internally\n\nAll pre-commit hooks passed (ruff, bandit, etc.). Committed with hash ecc58db83.",
+          "notes": "✅ Successfully wired Slack notifier into sync engine. \n\nChanges implemented:\n1. **linear_webhooks.py**: Added Slack notifications for webhook events\n   - Issue created events trigger post_issue_created()\n   - Status change events trigger post_status_changed()\n   - Comment added events trigger post_comment_added()\n   - All notifications run asynchronously via asyncio.create_task (non-blocking)\n\n2. **github_sync.py**: Added Slack notifications for GitHub sync\n   - Notifies when Linear issues are synced to GitHub (new issues only)\n   - Uses async context manager with graceful error handling\n   - Doesn't fail sync if Slack notification fails\n\n3. **gitlab_sync.py**: Added Slack notifications for GitLab sync\n   - Notifies when Linear issues are synced to GitLab (new issues only)\n   - Uses async context manager with graceful error handling\n   - Doesn't fail sync if Slack notification fails\n\nArchitecture:\n- All notifications use get_slack_notifier() singleton pattern\n- Graceful degradation when SLACK_BOT_TOKEN not configured\n- Non-blocking async execution (webhook responds in <3 seconds)\n- Comprehensive error logging without failing parent operations\n- Deduplication handled by SlackNotifier internally\n\nAll pre-commit hooks passed (ruff, bandit, etc.). Committed with hash ecc58db83.",
           "files_to_modify": [
             "integration-service/src/api/linear_webhooks.py",
             "integration-service/src/integrations/linear/github_sync.py",
@@ -364,7 +364,7 @@
             "4.2"
           ],
           "estimated_hours": 1,
-          "notes": "\u2705 Comprehensive unit test suite created for Slack notifier at tests/notifications/test_slack.py. Includes 896 lines with 60+ test functions covering:\n\nTest Coverage:\n- SlackNotifier initialization and configuration tests (configured and unconfigured states)\n- Async context manager support (__aenter__/__aexit__)\n- Client initialization and cleanup (_ensure_client, close)\n- Rate limiting enforcement (1 message per second as per Slack guidelines)\n- Message sending with retry logic (_send_message)\n- Block Kit message building for all notification types\n- Issue created notifications (post_issue_created)\n- Status changed notifications (post_status_changed)\n- Comment added notifications (post_comment_added)\n- Comprehensive error handling:\n  * SlackAuthenticationError (invalid_auth, token_revoked, not_authed)\n  * SlackRateLimitError (rate_limited with retry_after)\n  * SlackChannelNotFoundError (channel_not_found, is_archived)\n  * SlackNotConfiguredError (missing credentials)\n  * Generic SlackNotifierError for other API errors\n- Deduplication logic to prevent duplicate notifications\n- Priority emoji mapping (urgent: red, high: orange, medium: blue, low: white)\n- Content truncation (descriptions: 500 chars, comments: 300 chars)\n- Default channel usage when channel not specified\n- Singleton pattern (get_slack_notifier, reset_slack_notifier)\n\nImplementation Details:\n- Follows existing test patterns from test_linear_client.py and test_github_linear_sync.py\n- Mocks Slack SDK's AsyncWebClient and SlackApiError\n- Uses pytest with pytest-asyncio for async testing\n- Comprehensive fixtures for configurations, clients, and managers\n- All tests properly isolated with mocks\n- Tests verify deduplication manager integration\n- Tests verify all Block Kit template structures\n- Error scenarios properly tested with appropriate exceptions\n\nAll pre-commit hooks passed (ruff, bandit, etc.). Committed with hash c9892e048. Manual verification required as specified in task notes.",
+          "notes": "✅ Comprehensive unit test suite created for Slack notifier at tests/notifications/test_slack.py. Includes 896 lines with 60+ test functions covering:\n\nTest Coverage:\n- SlackNotifier initialization and configuration tests (configured and unconfigured states)\n- Async context manager support (__aenter__/__aexit__)\n- Client initialization and cleanup (_ensure_client, close)\n- Rate limiting enforcement (1 message per second as per Slack guidelines)\n- Message sending with retry logic (_send_message)\n- Block Kit message building for all notification types\n- Issue created notifications (post_issue_created)\n- Status changed notifications (post_status_changed)\n- Comment added notifications (post_comment_added)\n- Comprehensive error handling:\n  * SlackAuthenticationError (invalid_auth, token_revoked, not_authed)\n  * SlackRateLimitError (rate_limited with retry_after)\n  * SlackChannelNotFoundError (channel_not_found, is_archived)\n  * SlackNotConfiguredError (missing credentials)\n  * Generic SlackNotifierError for other API errors\n- Deduplication logic to prevent duplicate notifications\n- Priority emoji mapping (urgent: red, high: orange, medium: blue, low: white)\n- Content truncation (descriptions: 500 chars, comments: 300 chars)\n- Default channel usage when channel not specified\n- Singleton pattern (get_slack_notifier, reset_slack_notifier)\n\nImplementation Details:\n- Follows existing test patterns from test_linear_client.py and test_github_linear_sync.py\n- Mocks Slack SDK's AsyncWebClient and SlackApiError\n- Uses pytest with pytest-asyncio for async testing\n- Comprehensive fixtures for configurations, clients, and managers\n- All tests properly isolated with mocks\n- Tests verify deduplication manager integration\n- Tests verify all Block Kit template structures\n- Error scenarios properly tested with appropriate exceptions\n\nAll pre-commit hooks passed (ruff, bandit, etc.). Committed with hash c9892e048. Manual verification required as specified in task notes.",
           "files_to_modify": [
             "tests/notifications/test_slack.py"
           ],
@@ -387,7 +387,7 @@
             "2.3"
           ],
           "estimated_hours": 1,
-          "notes": "\u2705 Successfully registered Linear routes in main.py. Created new Linear integration API router at src/api/linear.py with GET /integrations/linear/status endpoint (returns sync status, connectivity checks, and statistics) and POST /integrations/linear/sync endpoint (triggers manual sync with GitHub, GitLab, and Slack). Updated src/api/__init__.py to export linear_router and src/main.py to import and register the router. Follows existing patterns from health.py and linear_webhooks.py exactly. All pre-commit hooks passed (ruff, bandit, etc.). Committed with hash a2f517144.",
+          "notes": "✅ Successfully registered Linear routes in main.py. Created new Linear integration API router at src/api/linear.py with GET /integrations/linear/status endpoint (returns sync status, connectivity checks, and statistics) and POST /integrations/linear/sync endpoint (triggers manual sync with GitHub, GitLab, and Slack). Updated src/api/__init__.py to export linear_router and src/main.py to import and register the router. Follows existing patterns from health.py and linear_webhooks.py exactly. All pre-commit hooks passed (ruff, bandit, etc.). Committed with hash a2f517144.",
           "files_to_modify": [
             "integration-service/src/main.py"
           ],
@@ -395,14 +395,14 @@
         },
         {
           "id": "5.2",
-          "description": "Write integration tests for Linear \u2192 GitHub sync flow",
+          "description": "Write integration tests for Linear → GitHub sync flow",
           "status": "completed",
           "dependencies": [
             "3.3",
             "3.5"
           ],
           "estimated_hours": 2,
-          "notes": "\u2705 Comprehensive integration test suite created for Linear \u2192 GitHub bidirectional sync flow at tests/integration/test_linear_github_integration.py. Includes 889 lines with 20+ test cases covering: Linear webhook \u2192 GitHub issue creation, Linear/GitHub issue updates, bidirectional comment synchronization, PR status synchronization, deduplication logic (prevents infinite loops), conflict resolution (last-write-wins), error handling (auth failures, rate limits, not found), complete end-to-end flows, and async context manager support. Comprehensive fixtures mock Linear GraphQL API, GitHub REST API, and Redis state tracking. Tests verify deduplication and conflict resolution manager integration. Follows existing patterns from test_linear_webhooks.py and test_slack.py. Uses pytest with pytest-asyncio for async testing. Committed with hash 42faf0e89. Manual verification required as specified in task notes.",
+          "notes": "✅ Comprehensive integration test suite created for Linear → GitHub bidirectional sync flow at tests/integration/test_linear_github_integration.py. Includes 889 lines with 20+ test cases covering: Linear webhook → GitHub issue creation, Linear/GitHub issue updates, bidirectional comment synchronization, PR status synchronization, deduplication logic (prevents infinite loops), conflict resolution (last-write-wins), error handling (auth failures, rate limits, not found), complete end-to-end flows, and async context manager support. Comprehensive fixtures mock Linear GraphQL API, GitHub REST API, and Redis state tracking. Tests verify deduplication and conflict resolution manager integration. Follows existing patterns from test_linear_webhooks.py and test_slack.py. Uses pytest with pytest-asyncio for async testing. Committed with hash 42faf0e89. Manual verification required as specified in task notes.",
           "files_to_modify": [
             "tests/integration/test_linear_github_integration.py"
           ],
@@ -410,14 +410,14 @@
         },
         {
           "id": "5.3",
-          "description": "Write integration tests for Linear \u2192 GitLab sync flow",
+          "description": "Write integration tests for Linear → GitLab sync flow",
           "status": "completed",
           "dependencies": [
             "3.4",
             "3.6"
           ],
           "estimated_hours": 2,
-          "notes": "\u2705 Comprehensive integration test suite created for Linear \u2192 GitLab bidirectional sync flow at tests/integration/test_linear_gitlab_integration.py. Includes 943 lines with 17 test functions covering: Linear webhook \u2192 GitLab issue creation, Linear/GitLab issue updates, bidirectional comment synchronization, MR status synchronization, deduplication logic (prevents infinite loops), conflict resolution (last-write-wins), error handling (auth failures, rate limits, not found), complete end-to-end flows, GitLab issue state transitions, and async context manager support. Comprehensive fixtures mock Linear GraphQL API, GitLab REST API, and Redis state tracking. Tests verify deduplication and conflict resolution manager integration. Follows existing patterns from test_linear_github_integration.py. Uses pytest with pytest-asyncio for async testing. All pre-commit hooks passed (ruff, bandit, etc.). Committed with hash 0749931a2. Manual verification required as specified in task notes.",
+          "notes": "✅ Comprehensive integration test suite created for Linear → GitLab bidirectional sync flow at tests/integration/test_linear_gitlab_integration.py. Includes 943 lines with 17 test functions covering: Linear webhook → GitLab issue creation, Linear/GitLab issue updates, bidirectional comment synchronization, MR status synchronization, deduplication logic (prevents infinite loops), conflict resolution (last-write-wins), error handling (auth failures, rate limits, not found), complete end-to-end flows, GitLab issue state transitions, and async context manager support. Comprehensive fixtures mock Linear GraphQL API, GitLab REST API, and Redis state tracking. Tests verify deduplication and conflict resolution manager integration. Follows existing patterns from test_linear_github_integration.py. Uses pytest with pytest-asyncio for async testing. All pre-commit hooks passed (ruff, bandit, etc.). Committed with hash 0749931a2. Manual verification required as specified in task notes.",
           "files_to_modify": [
             "tests/integration/test_linear_gitlab_integration.py"
           ],
@@ -425,14 +425,14 @@
         },
         {
           "id": "5.4",
-          "description": "Write integration test for Linear \u2192 Slack notification flow",
+          "description": "Write integration test for Linear → Slack notification flow",
           "status": "completed",
           "dependencies": [
             "4.3",
             "4.4"
           ],
           "estimated_hours": 1,
-          "notes": "\u2705 Comprehensive integration test suite created for Linear \u2192 Slack notification flow at tests/integration/test_linear_slack_integration.py. Includes 17 test functions covering: Linear webhook \u2192 Slack notifications for issue creation, status changes, and comments; custom channel support; deduplication logic; complete end-to-end flow; rate limiting enforcement; Block Kit formatting verification; and comprehensive error handling (SlackNotConfiguredError, SlackAuthenticationError, SlackRateLimitError, SlackChannelNotFoundError). Follows existing test patterns from test_linear_github_integration.py and test_slack.py. Uses pytest with pytest-asyncio for async testing. Mocks Slack SDK's AsyncWebClient and SlackApiError. All tests properly isolated with comprehensive fixtures. Tests verify deduplication and Block Kit message structure. Committed with hash 8ab0c992b. Manual verification required as specified in task notes.",
+          "notes": "✅ Comprehensive integration test suite created for Linear → Slack notification flow at tests/integration/test_linear_slack_integration.py. Includes 17 test functions covering: Linear webhook → Slack notifications for issue creation, status changes, and comments; custom channel support; deduplication logic; complete end-to-end flow; rate limiting enforcement; Block Kit formatting verification; and comprehensive error handling (SlackNotConfiguredError, SlackAuthenticationError, SlackRateLimitError, SlackChannelNotFoundError). Follows existing test patterns from test_linear_github_integration.py and test_slack.py. Uses pytest with pytest-asyncio for async testing. Mocks Slack SDK's AsyncWebClient and SlackApiError. All tests properly isolated with comprehensive fixtures. Tests verify deduplication and Block Kit message structure. Committed with hash 8ab0c992b. Manual verification required as specified in task notes.",
           "files_to_modify": [
             "tests/integration/test_linear_slack_integration.py"
           ],
@@ -448,7 +448,7 @@
             "5.4"
           ],
           "estimated_hours": 3,
-          "notes": "\u2705 Successfully created comprehensive end-to-end test suite for complete Linear integration sync flow at tests/e2e/test_linear_integration.py. Includes 1123 lines with 9 comprehensive test cases covering:\n\nTest Coverage:\n1. test_complete_sync_flow_linear_to_all_services - Primary e2e test verifying Linear \u2192 GitHub + GitLab + Slack simultaneously\n2. test_bidirectional_sync_with_deduplication - Tests bidirectional sync with deduplication preventing infinite loops\n3. test_comment_sync_across_all_platforms - Tests comment synchronization across Linear \u2194 GitHub \u2194 GitLab\n4. test_status_change_sync_with_conflict_resolution - Tests status changes with conflict resolution (last-write-wins)\n5. test_error_handling_partial_sync_failure - Tests graceful degradation when partial sync fails\n6. test_webhook_to_full_sync_integration - Tests webhook event triggering full sync across all services\n7. test_concurrent_updates_with_conflict_resolution - Tests concurrent updates from multiple sources\n8. test_full_lifecycle_create_update_close - Tests complete issue lifecycle: create \u2192 update \u2192 close\n\nImplementation Details:\n- Comprehensive fixtures for all services (Linear, GitHub, GitLab, Slack)\n- Mock configurations for all integration managers\n- Tests verify deduplication logic prevents loops\n- Tests verify conflict resolution with timestamps\n- Tests verify error handling and graceful degradation\n- Tests verify complete webhook-to-sync flow\n- All tests follow existing patterns from integration tests\n- Proper async/await patterns throughout\n- Extensive assertions verifying correct data flow\n\nCommitted with hash 8d13dec0d. Manual verification required for full integration testing with live services.",
+          "notes": "✅ Successfully created comprehensive end-to-end test suite for complete Linear integration sync flow at tests/e2e/test_linear_integration.py. Includes 1123 lines with 9 comprehensive test cases covering:\n\nTest Coverage:\n1. test_complete_sync_flow_linear_to_all_services - Primary e2e test verifying Linear → GitHub + GitLab + Slack simultaneously\n2. test_bidirectional_sync_with_deduplication - Tests bidirectional sync with deduplication preventing infinite loops\n3. test_comment_sync_across_all_platforms - Tests comment synchronization across Linear ↔ GitHub ↔ GitLab\n4. test_status_change_sync_with_conflict_resolution - Tests status changes with conflict resolution (last-write-wins)\n5. test_error_handling_partial_sync_failure - Tests graceful degradation when partial sync fails\n6. test_webhook_to_full_sync_integration - Tests webhook event triggering full sync across all services\n7. test_concurrent_updates_with_conflict_resolution - Tests concurrent updates from multiple sources\n8. test_full_lifecycle_create_update_close - Tests complete issue lifecycle: create → update → close\n\nImplementation Details:\n- Comprehensive fixtures for all services (Linear, GitHub, GitLab, Slack)\n- Mock configurations for all integration managers\n- Tests verify deduplication logic prevents loops\n- Tests verify conflict resolution with timestamps\n- Tests verify error handling and graceful degradation\n- Tests verify complete webhook-to-sync flow\n- All tests follow existing patterns from integration tests\n- Proper async/await patterns throughout\n- Extensive assertions verifying correct data flow\n\nCommitted with hash 8d13dec0d. Manual verification required for full integration testing with live services.",
           "files_to_modify": [
             "tests/e2e/test_linear_integration.py"
           ],
@@ -490,7 +490,7 @@
             "5.7"
           ],
           "estimated_hours": 1,
-          "notes": "Run pytest with coverage. Ensure \u226580% coverage. Verify no regressions in JIRA/ServiceNow integrations. Fix any failing tests.",
+          "notes": "Run pytest with coverage. Ensure ≥80% coverage. Verify no regressions in JIRA/ServiceNow integrations. Fix any failing tests.",
           "files_to_modify": []
         },
         {
@@ -572,27 +572,27 @@
     "integration_tests": [
       {
         "test": "test_linear_to_github_sync",
-        "services": "Linear (mocked) \u2194 GitHub (mocked)",
+        "services": "Linear (mocked) ↔ GitHub (mocked)",
         "verified": false
       },
       {
         "test": "test_github_to_linear_sync",
-        "services": "GitHub (mocked) \u2194 Linear (mocked)",
+        "services": "GitHub (mocked) ↔ Linear (mocked)",
         "verified": false
       },
       {
         "test": "test_linear_to_gitlab_sync",
-        "services": "Linear (mocked) \u2194 GitLab (mocked)",
+        "services": "Linear (mocked) ↔ GitLab (mocked)",
         "verified": false
       },
       {
         "test": "test_linear_to_slack_notification",
-        "services": "Linear (mocked) \u2192 Slack (mocked)",
+        "services": "Linear (mocked) → Slack (mocked)",
         "verified": false
       },
       {
         "test": "test_bidirectional_sync_no_loop",
-        "services": "Linear \u2194 GitHub",
+        "services": "Linear ↔ GitHub",
         "verified": false
       }
     ],
@@ -634,9 +634,9 @@
       }
     ],
     "sign_off_requirements": [
-      "All unit tests pass (pytest coverage \u2265 80%)",
+      "All unit tests pass (pytest coverage ≥ 80%)",
       "All integration tests pass with mocked external services",
-      "End-to-end test demonstrates full Linear \u2192 GitHub \u2192 Slack flow",
+      "End-to-end test demonstrates full Linear → GitHub → Slack flow",
       "Webhook signature verification rejects tampered payloads",
       "API documentation generated and accessible at /docs",
       "No regressions in existing JIRA/ServiceNow integrations",
@@ -656,14 +656,14 @@
     "Linear status changes sync to GitHub/GitLab issue states",
     "Slack receives notifications when Linear issues are created/updated",
     "No infinite sync loops occur (deduplication logic works)",
-    "All integration tests pass (Linear \u2194 GitHub, Linear \u2194 GitLab, Linear \u2192 Slack)",
+    "All integration tests pass (Linear ↔ GitHub, Linear ↔ GitLab, Linear → Slack)",
     "No console errors or unhandled exceptions",
     "Existing tests still pass",
     "API documentation includes Linear endpoints",
     "Environment variables documented in .env.example"
   ],
   "critical_notes": [
-    "\u26a0\ufe0f CRITICAL: All package names, versions, and API patterns must be verified against live documentation before implementation",
+    "⚠️ CRITICAL: All package names, versions, and API patterns must be verified against live documentation before implementation",
     "Follow existing integration patterns from JIRA and ServiceNow implementations",
     "Use async/await patterns throughout for FastAPI compatibility",
     "Implement comprehensive error handling and logging",
@@ -674,5 +674,5 @@
     "Use Redis locks to prevent race conditions during bidirectional sync"
   ],
   "last_updated": "2026-01-03T23:50:00.485454+00:00",
-  "recoveryNote": "Task recovered from stuck state at 2026-01-03T22:00:00.431Z"
+  "recoveryNote": "Task recovered from stuck state at 2026-01-04T10:36:38.432Z"
 }

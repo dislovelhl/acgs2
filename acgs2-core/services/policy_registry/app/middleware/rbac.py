@@ -23,6 +23,8 @@ from enum import Enum
 from typing import Any, Callable, Dict, List, Optional, Set
 
 from fastapi import Depends, HTTPException, Request, status
+
+from shared.config import settings
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 logger = logging.getLogger(__name__)
@@ -263,6 +265,23 @@ class RBACConfig:
     ):
         self.env = env or os.environ.get("APP_ENV", "development")
         self.development_mode = self.env == "development"
+
+        # Load from settings if not provided
+        self.jwt_secret = jwt_secret or settings.security.jwt_secret
+        self.jwt_algorithm = jwt_algorithm or settings.security.jwt_algorithm
+        self.jwt_issuer = jwt_issuer or (settings.security.jwt_issuer if hasattr(settings.security, "jwt_issuer") else jwt_issuer)
+
+        self.verify_signature = verify_signature
+        self.verify_expiration = verify_expiration
+        self.enforce_constitutional_hash = enforce_constitutional_hash
+        self.audit_all_decisions = audit_all_decisions
+        self.rate_limit_enabled = rate_limit_enabled
+        self.rate_limits = rate_limits or {
+            Role.ANONYMOUS: 60,
+            Role.USER: 300,
+            Role.ADMIN: 1000,
+            Role.SYSTEM: 5000,
+        }
 
         if not self.jwt_secret:
             if not self.development_mode:
