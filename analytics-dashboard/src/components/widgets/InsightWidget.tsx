@@ -7,7 +7,7 @@
  * - Recommended actions for compliance improvement
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { memo, useCallback, useEffect, useState } from "react";
 import {
   AlertCircle,
   Brain,
@@ -75,14 +75,39 @@ function formatTimestamp(timestamp: string): string {
  * - Displays summary, business impact, and recommended actions
  * - Supports manual refresh
  * - Shows confidence score and generation metadata
+ *
+ * @memoization Wrapped with React.memo to optimize parent re-renders.
+ * Performance benefits:
+ * - Widget has no props, so it only re-renders when internal state changes
+ * - Prevents unnecessary re-renders when parent dashboard updates other widgets
+ * - Avoids re-rendering three content sections (summary, impact, actions)
+ * - Reduces DOM operations for formatted text content
+ *
+ * Memoization strategy:
+ * - Component level: React.memo prevents re-renders from parent
+ * - API calls: useCallback stabilizes fetchInsight reference
+ * - Refresh mechanism: forceRefresh parameter allows intentional cache bypass
+ * - Content is mostly text-based, but memoization prevents layout recalculation
  */
-export function InsightWidget(): JSX.Element {
+export const InsightWidget = memo(function InsightWidget(): JSX.Element {
   const [insight, setInsight] = useState<InsightData | null>(null);
   const [loadingState, setLoadingState] = useState<LoadingState>("idle");
   const [error, setError] = useState<string | null>(null);
 
   /**
    * Fetches insight data from the API
+   *
+   * @memoization Wrapped with useCallback to maintain stable function reference.
+   * Performance benefits:
+   * - Prevents useEffect from re-fetching on every render
+   * - Empty dependency array ensures function is created once per component lifecycle
+   * - forceRefresh parameter allows manual cache invalidation via handleRefresh
+   * - Reduces unnecessary API calls to AI insight generation endpoint
+   *
+   * Special considerations:
+   * - AI insight generation is expensive (LLM processing)
+   * - Backend caching strategy benefits from stable function reference
+   * - Refresh button intentionally bypasses cache when user explicitly requests it
    */
   const fetchInsight = useCallback(async (forceRefresh = false) => {
     setLoadingState("loading");
@@ -283,6 +308,6 @@ export function InsightWidget(): JSX.Element {
       </div>
     </div>
   );
-}
+});
 
 export default InsightWidget;

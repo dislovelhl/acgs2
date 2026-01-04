@@ -8,7 +8,7 @@
  * - Summary statistics
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import {
   AlertCircle,
   Calendar,
@@ -136,8 +136,15 @@ function formatChartDate(dateString: string): string {
 
 /**
  * Custom tooltip component for the chart
+ *
+ * @memoization Wrapped with React.memo to prevent unnecessary re-renders.
+ * Performance benefits:
+ * - Recharts frequently re-renders tooltips on mouse movements
+ * - Memoization ensures tooltip only updates when active state or payload data changes
+ * - Reduces DOM reconciliation overhead during chart interactions
+ * - Prevents expensive formatting operations from running on every mouse move
  */
-function CustomTooltip({
+const CustomTooltip = memo(function CustomTooltip({
   active,
   payload,
 }: {
@@ -171,7 +178,7 @@ function CustomTooltip({
       </div>
     </div>
   );
-}
+});
 
 /**
  * PredictionWidget - Displays violation forecast chart with predictions
@@ -182,14 +189,34 @@ function CustomTooltip({
  * - Displays interactive chart with confidence intervals
  * - Shows summary statistics and trend direction
  * - Supports manual refresh
+ *
+ * @memoization Wrapped with React.memo to optimize parent re-renders.
+ * Performance benefits:
+ * - Widget has no props, so it only re-renders when internal state changes
+ * - Prevents unnecessary re-renders when parent dashboard updates other widgets
+ * - Reduces cost of re-rendering complex Recharts components
+ * - Works in conjunction with useMemo for chartData transformation
+ *
+ * Memoization strategy:
+ * - Component level: React.memo prevents re-renders from parent
+ * - Data transformation: useMemo caches chartData calculations
+ * - API calls: useCallback stabilizes fetchPredictions reference
+ * - Nested components: CustomTooltip memoized for chart interaction performance
  */
-export function PredictionWidget(): JSX.Element {
+export const PredictionWidget = memo(function PredictionWidget(): JSX.Element {
   const [data, setData] = useState<PredictionsResponse | null>(null);
   const [loadingState, setLoadingState] = useState<LoadingState>("idle");
   const [error, setError] = useState<string | null>(null);
 
   /**
    * Fetches prediction data from the API
+   *
+   * @memoization Wrapped with useCallback to maintain stable function reference.
+   * Performance benefits:
+   * - Prevents useEffect from re-fetching on every render
+   * - Allows useEffect dependency array to work correctly
+   * - Reduces unnecessary API calls and network traffic
+   * - Empty dependency array ensures function is created once per component lifecycle
    */
   const fetchPredictions = useCallback(async () => {
     setLoadingState("loading");
@@ -237,19 +264,34 @@ export function PredictionWidget(): JSX.Element {
 
   /**
    * Transform API predictions to chart data
+   *
+   * @memoization Wrapped with useMemo to cache expensive data transformations.
+   * Performance benefits:
+   * - Prevents re-calculating chart data on every render (e.g., during loading state updates)
+   * - Reduces array mapping operations (typically 30+ prediction points)
+   * - Avoids triggering Recharts re-renders with new array references
+   * - Only recalculates when predictions data actually changes
+   *
+   * Transformation cost:
+   * - Maps ~30 prediction points on each calculation
+   * - Formats dates and creates tuple objects for each point
+   * - Without memoization, runs on every state update (loading, error states)
    */
-  const chartData: ChartDataPoint[] =
-    data?.predictions.map((point) => ({
-      date: point.date,
-      displayDate: formatChartDate(point.date),
-      predicted: point.predicted_value,
-      lower: point.lower_bound,
-      upper: point.upper_bound,
-      confidenceRange: [point.lower_bound, point.upper_bound] as [
-        number,
-        number,
-      ],
-    })) || [];
+  const chartData: ChartDataPoint[] = useMemo(
+    () =>
+      data?.predictions.map((point) => ({
+        date: point.date,
+        displayDate: formatChartDate(point.date),
+        predicted: point.predicted_value,
+        lower: point.lower_bound,
+        upper: point.upper_bound,
+        confidenceRange: [point.lower_bound, point.upper_bound] as [
+          number,
+          number,
+        ],
+      })) || [],
+    [data?.predictions]
+  );
 
   // Loading state
   if (loadingState === "loading" && !data) {
@@ -542,6 +584,6 @@ export function PredictionWidget(): JSX.Element {
       </div>
     </div>
   );
-}
+});
 
 export default PredictionWidget;
