@@ -1,3 +1,14 @@
+/**
+ * Swarm Command Module
+ *
+ * This module provides CLI commands for managing ACGS-2 agent swarms, including:
+ * - Initializing swarms with various topologies and strategies
+ * - Monitoring swarm status and health
+ * - Real-time swarm activity monitoring
+ *
+ * @module swarm
+ */
+
 import { Command } from 'commander';
 import chalk from 'chalk';
 import ora from 'ora';
@@ -5,8 +16,24 @@ import { initializeSwarm, getSwarmStatus } from '../services/swarmService';
 import { getLogger } from '../../../sdk/typescript/src/utils/logger';
 const logger = getLogger('swarm');
 
-
-
+/**
+ * Main swarm command that provides subcommands for swarm management.
+ * Use this command to initialize, monitor, and manage agent swarms.
+ *
+ * Available subcommands:
+ * - init: Initialize a new swarm with specified topology and configuration
+ * - status: Check the current status of the active swarm
+ * - monitor: Monitor swarm activity in real-time
+ *
+ * @example
+ * ```bash
+ * # Initialize a hierarchical swarm with 8 max agents
+ * npx claude-flow swarm init --topology hierarchical --max-agents 8
+ *
+ * # Check swarm status
+ * npx claude-flow swarm status --verbose
+ * ```
+ */
 export const swarmCommand = new Command('swarm')
   .description('Manage agent swarms');
 
@@ -14,17 +41,76 @@ export const swarmCommand = new Command('swarm')
 const VALID_TOPOLOGIES = ['mesh', 'hierarchical', 'ring', 'star'] as const;
 const VALID_STRATEGIES = ['balanced', 'parallel', 'sequential'] as const;
 
+/**
+ * Valid swarm topology types.
+ *
+ * - mesh: Research, exploration, brainstorming (all agents communicate peer-to-peer)
+ * - hierarchical: Development, structured tasks (coordinator-worker pattern)
+ * - ring: Pipeline processing, sequential workflows (agents in circular chain)
+ * - star: Simple tasks, centralized control (hub-and-spoke pattern)
+ */
 type Topology = typeof VALID_TOPOLOGIES[number];
+
+/**
+ * Valid execution strategy types.
+ *
+ * - balanced: Distribute work evenly across available agents
+ * - parallel: Execute tasks concurrently across multiple agents
+ * - sequential: Execute tasks one at a time in order
+ */
 type Strategy = typeof VALID_STRATEGIES[number];
 
+/**
+ * Validates if a string is a valid swarm topology type.
+ *
+ * @param topology - The topology string to validate
+ * @returns True if the topology is valid (mesh, hierarchical, ring, or star)
+ *
+ * @example
+ * ```typescript
+ * if (validateTopology('mesh')) {
+ *   console.log('Valid topology');
+ * }
+ * ```
+ */
 function validateTopology(topology: string): topology is Topology {
   return VALID_TOPOLOGIES.includes(topology as Topology);
 }
 
+/**
+ * Validates if a string is a valid execution strategy type.
+ *
+ * @param strategy - The strategy string to validate
+ * @returns True if the strategy is valid (balanced, parallel, or sequential)
+ *
+ * @example
+ * ```typescript
+ * if (validateStrategy('parallel')) {
+ *   console.log('Valid strategy');
+ * }
+ * ```
+ */
 function validateStrategy(strategy: string): strategy is Strategy {
   return VALID_STRATEGIES.includes(strategy as Strategy);
 }
 
+/**
+ * Validates and parses the maximum agents value.
+ *
+ * @param maxAgents - The max agents value as a string
+ * @returns The parsed number if valid
+ * @throws {Error} If the value is not a number between 1 and 100
+ *
+ * @example
+ * ```typescript
+ * try {
+ *   const max = validateMaxAgents('8');
+ *   console.log(`Max agents: ${max}`);
+ * } catch (error) {
+ *   console.error('Invalid max agents value');
+ * }
+ * ```
+ */
 function validateMaxAgents(maxAgents: string): number {
   const num = parseInt(maxAgents, 10);
   if (isNaN(num) || num < 1 || num > 100) {
