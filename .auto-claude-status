@@ -1,25 +1,25 @@
 {
   "active": true,
-  "spec": "033-add-useanomalies-hook-to-analytics-dashboard",
+  "spec": "053-split-large-adaptive-governance-py-into-domain-mod",
   "state": "building",
   "subtasks": {
-    "completed": 0,
-    "total": 0,
+    "completed": 37,
+    "total": 43,
     "in_progress": 1,
     "failed": 0
   },
   "phase": {
-    "current": "",
-    "id": 0,
-    "total": 0
+    "current": "Testing and Validation",
+    "id": null,
+    "total": 4
   },
   "workers": {
     "active": 0,
     "max": 1
   },
   "session": {
-    "number": 34,
-    "started_at": "2026-01-03T17:24:04.274620"
+    "number": 2,
+    "started_at": "2026-01-04T00:39:40.362755"
   },
-  "last_update": "2026-01-03T18:14:23.261674"
+  "last_update": "2026-01-04T00:43:02.102295"
 }
