@@ -1,0 +1,148 @@
+=============================================================================
+BUILD PROGRESS - Add Authentication to Policy Validation API Endpoints
+=============================================================================
+Started: 2026-01-04
+Status: IN PROGRESS
+
+Phase 2: Setup and Dependencies
+--------------------------------
+
+[COMPLETED] Subtask 2.1: Verify shared auth module accessibility
+-----------------------------------------------------------------
+Task: Ensure integration-service can import from acgs2-core/shared/security/auth.py
+
+Verification completed successfully:
+
+1. Python Path Setup ✓
+   - integration-service/src/__init__.py adds acgs2-core to sys.path (line 14)
+   - integration-service/src/main.py also adds acgs2-core to sys.path (line 17)
+   - integration-service/tests/conftest.py adds acgs2-core to sys.path (line 16)
+
+2. Existing Import Usage ✓
+   - integration-service/src/api/auth.py successfully imports from shared.security.auth
+   - integration-service/src/main.py imports from shared.security
+   - integration-service/tests/conftest.py imports from src.api.auth (which uses shared.security.auth)
+
+3. Test Coverage ✓
+   - integration-service/tests/test_shared_import.py exists with comprehensive tests:
+     * test_import_shared_auth_module() - verifies all auth module imports
+     * test_import_shared_config() - verifies config access
+     * test_jwt_configuration_accessible() - verifies JWT settings
+     * test_create_test_token() - verifies token creation works
+
+4. Verified Imports ✓
+   The following are successfully imported from shared.security.auth:
+   - UserClaims (model)
+   - TokenResponse (model)
+   - create_access_token (function)
+   - verify_token (function)
+   - get_current_user (FastAPI dependency)
+   - get_current_user_optional (FastAPI dependency)
+   - require_role (dependency factory)
+   - require_permission (dependency factory)
+   - require_tenant_access (dependency factory)
+   - AuthenticationMiddleware (middleware)
+   - create_test_token (utility)
+   - security (HTTPBearer scheme)
+
+5. Import Path Mechanism ✓
+   The import chain works as follows:
+   integration-service/src/__init__.py → adds acgs2-core to sys.path
+   → allows "from shared.security.auth import ..."
+   → acgs2-core/shared/security/auth.py provides all authentication components
+
+CONCLUSION: Integration-service CAN successfully import from acgs2-core/shared/security/auth.py
+The Python path is properly configured in multiple locations for runtime and test execution.
+
+Status: VERIFIED AND WORKING ✓
+Next: Proceed to subtask 2.2 - Add authentication dependencies
+
+[COMPLETED] Subtask 2.2: Add authentication dependencies
+---------------------------------------------------------
+Task: Add python-jose[cryptography] to integration-service requirements.txt for JWT handling if not already present
+
+Verification completed successfully:
+
+1. Dependency Check ✓
+   - Checked integration-service/requirements.txt
+   - python-jose[cryptography]>=3.3.0 is ALREADY PRESENT on line 47
+   - No changes needed - dependency is already installed
+
+2. Version Information ✓
+   - Current version requirement: >=3.3.0
+   - Listed in Security & Authentication section (line 39-47)
+   - Comment indicates "JWT encoding/decoding for shared auth module"
+
+CONCLUSION: python-jose[cryptography] dependency is already present and configured correctly.
+No modifications to requirements.txt needed.
+
+Status: VERIFIED ✓
+Next: Proceed to subtask 2.3 - Configure JWT settings
+
+[COMPLETED] Subtask 2.3: Configure JWT settings
+-------------------------------------------------
+Task: Ensure JWT_SECRET and related configuration is available in integration service environment
+
+Implementation completed successfully:
+
+1. Environment Configuration ✓
+   - .env.example already documents JWT_SECRET (lines 152-160)
+   - Provides clear instructions for generating secure secrets
+   - Documents JWT_ALGORITHM and JWT_EXPIRATION_HOURS
+   - Includes security warnings about production usage
+
+2. Test Environment Configuration ✓
+   - Added pytest-env>=1.1.5 to requirements.txt (line 77)
+   - Updated pytest.ini with JWT_SECRET test environment variable:
+     * JWT_SECRET=test-jwt-secret-key-for-testing-only-do-not-use-in-production
+     * APP_ENV=test
+   - This ensures all tests have access to JWT_SECRET without manual setup
+
+3. Shared Configuration Integration ✓
+   - Integration service uses shared config (acgs2-core/shared/config.py)
+   - SecuritySettings.jwt_secret reads from JWT_SECRET environment variable
+   - Production validation enforces JWT_SECRET is set (raises ValueError if missing)
+
+4. Documentation ✓
+   - integration-service/docs/JWT_CONFIGURATION.md already exists with comprehensive guide:
+     * Environment variable setup
+     * Development and production configuration
+     * Testing setup and fixtures
+     * Troubleshooting guide
+     * Security best practices
+
+5. Test Coverage ✓
+   - tests/test_shared_import.py includes JWT configuration tests:
+     * test_jwt_configuration_accessible() - verifies JWT config access
+     * test_create_test_token() - verifies token creation
+   - tests/conftest.py provides JWT test fixtures:
+     * test_jwt_token, admin_jwt_token, limited_jwt_token
+     * expired_jwt_token, malformed_jwt_token
+     * auth_headers and factory fixtures
+
+6. Configuration Hierarchy ✓
+   The JWT configuration works through this chain:
+   - Environment: JWT_SECRET env var
+   - Shared Config: settings.security.jwt_secret (SecretStr)
+   - Auth Module: uses settings.security.jwt_secret for signing/verification
+   - Integration Service: accesses via shared config (already configured)
+
+Files Modified:
+- integration-service/requirements.txt (added pytest-env>=1.1.5)
+- integration-service/pytest.ini (added env section with JWT_SECRET)
+
+Files Verified (No Changes Needed):
+- integration-service/.env.example (JWT_SECRET already documented)
+- integration-service/docs/JWT_CONFIGURATION.md (comprehensive guide exists)
+- integration-service/tests/conftest.py (JWT fixtures already in place)
+- integration-service/tests/test_shared_import.py (JWT tests exist)
+- acgs2-core/shared/config.py (JWT_SECRET configuration exists)
+- acgs2-core/shared/security/auth.py (JWT auth implementation exists)
+
+CONCLUSION: JWT_SECRET configuration is fully implemented and documented.
+The integration service can access JWT configuration through the shared config module.
+Test environment is configured to automatically provide JWT_SECRET.
+Production validation ensures JWT_SECRET must be set.
+
+Status: COMPLETED ✓
+Next: Proceed to Phase 3 - Implementation (Subtask 3.1)
