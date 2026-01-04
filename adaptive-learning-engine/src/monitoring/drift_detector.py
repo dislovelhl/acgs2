@@ -404,8 +404,195 @@ class DriftDetector:
                 current_window_size. Think of this as a "fail-fast" guard rather
                 than a guarantee of statistical rigor.
             check_interval_seconds: Interval between automatic checks.
-            drift_share_threshold: Fraction of columns that must drift
-                to trigger dataset-level drift alert.
+            drift_share_threshold: Dataset-level drift threshold (default 0.5).
+                This threshold determines when the entire dataset is considered
+                to be drifting based on the fraction of individual features that
+                show drift.
+
+                TWO-TIER DRIFT THRESHOLD SYSTEM
+                ================================
+                The drift detection system uses TWO distinct thresholds at different levels:
+
+                1. COLUMN-LEVEL THRESHOLD (drift_threshold parameter):
+                   - Applied to INDIVIDUAL features/columns
+                   - Default: 0.2 (PSI-based, moderate drift threshold)
+                   - Used by statistical tests (PSI, K-S, Chi-squared)
+                   - Determines if a SINGLE feature has drifted
+                   - Example: If feature "age" has PSI > 0.2 → feature drifts
+
+                2. DATASET-LEVEL THRESHOLD (drift_share_threshold parameter):
+                   - Applied to the ENTIRE dataset as an aggregate
+                   - Default: 0.5 (50% of features must drift)
+                   - Determines if the DATASET as a whole has drifted
+                   - Example: If 6 out of 10 features drift → dataset drifts
+                             (because 6/10 = 0.6 ≥ 0.5)
+
+                DRIFT SCORING METHODOLOGY
+                =========================
+                The drift scoring process follows these steps:
+
+                Step 1: Column-Level Drift Detection
+                -------------------------------------
+                For each feature, apply appropriate statistical test:
+                - Continuous numerical (>10 unique values) → K-S test
+                  → drift_detected = (p-value < 0.05)
+                - Categorical/binned (<10 unique values) → PSI test
+                  → drift_detected = (PSI > drift_threshold=0.2)
+                - Low-cardinality categorical → Chi-squared test
+                  → drift_detected = (p-value < 0.05)
+
+                Result: Binary drift flag for each column
+                Example: {feature1: False, feature2: True, feature3: True, ...}
+
+                Step 2: Calculate Dataset-Level Drift Score
+                --------------------------------------------
+                Compute the fraction of features that drifted:
+
+                    drift_score = (# drifted features) / (# total features)
+
+                Also called "share_of_drifted_columns" in Evidently terminology.
+
+                Example:
+                - 10 total features
+                - 6 features drifted (from Step 1)
+                - drift_score = 6 / 10 = 0.6
+
+                This score is a VALUE between 0.0 and 1.0:
+                - 0.0 = No features drifted (perfect stability)
+                - 0.5 = Half of features drifted
+                - 1.0 = All features drifted (complete drift)
+
+                Step 3: Apply Dataset-Level Threshold
+                --------------------------------------
+                Compare drift_score against drift_share_threshold:
+
+                    dataset_drift = (drift_score >= drift_share_threshold)
+
+                With default threshold=0.5:
+                - drift_score = 0.4 (40% drifted) → NO dataset drift
+                - drift_score = 0.5 (50% drifted) → YES dataset drift
+                - drift_score = 0.8 (80% drifted) → YES dataset drift
+
+                THRESHOLD CALCULATION EXAMPLES
+                ==============================
+                Scenario 1: 10 features, threshold=0.5 (default)
+                -------------------------------------------------
+                Features tested: f1, f2, f3, f4, f5, f6, f7, f8, f9, f10
+                Drifted: f2 (PSI=0.25), f5 (PSI=0.30), f7 (p=0.01), f9 (PSI=0.22)
+
+                Calculation:
+                - Step 1: 4 features drifted (f2, f5, f7, f9)
+                - Step 2: drift_score = 4/10 = 0.4
+                - Step 3: dataset_drift = (0.4 >= 0.5) = False
+
+                Result: NO dataset drift (only 40% of features drifted)
+                Action: Monitor individual features, but no alert
+
+                Scenario 2: 10 features, threshold=0.5 (default)
+                -------------------------------------------------
+                Features tested: f1, f2, f3, f4, f5, f6, f7, f8, f9, f10
+                Drifted: f1, f3, f4, f6, f7, f9 (6 features)
+
+                Calculation:
+                - Step 1: 6 features drifted
+                - Step 2: drift_score = 6/10 = 0.6
+                - Step 3: dataset_drift = (0.6 >= 0.5) = True
+
+                Result: YES dataset drift (60% of features drifted)
+                Action: Trigger alert, investigate for model retraining
+
+                Scenario 3: 20 features, threshold=0.3 (more sensitive)
+                --------------------------------------------------------
+                Features tested: f1-f20
+                Drifted: f2, f5, f7, f9, f12, f15 (6 features)
+
+                Calculation:
+                - Step 1: 6 features drifted
+                - Step 2: drift_score = 6/20 = 0.3
+                - Step 3: dataset_drift = (0.3 >= 0.3) = True
+
+                Result: YES dataset drift (exactly at threshold)
+                Note: Same 6 drifted features, but now triggers alert
+                      because threshold was lowered to 0.3
+
+                WHY USE A DATASET-LEVEL THRESHOLD?
+                ===================================
+                The two-tier threshold system provides critical benefits:
+
+                1. ROBUSTNESS TO NOISE:
+                   - Individual features can drift due to random noise, outliers,
+                     or temporary anomalies
+                   - Requiring multiple features to drift (>50% by default) filters
+                     out false positives from single noisy features
+                   - Example: If only 1 out of 50 features drifts, likely noise,
+                     not systematic distribution shift
+
+                2. SYSTEMATIC DRIFT DETECTION:
+                   - Real concept drift (data distribution change) typically affects
+                     multiple correlated features, not just one
+                   - Example: Economic recession affects income, spending, credit score
+                     → multiple features drift together → systematic change
+                   - Threshold ensures we catch these systematic shifts
+
+                3. ALERT FATIGUE PREVENTION:
+                   - Without dataset threshold, would alert on ANY single feature drift
+                   - With 50 features, could get 50 separate alerts even if 49 stable
+                   - Dataset threshold aggregates: one alert when PATTERN emerges
+
+                4. TUNABLE SENSITIVITY:
+                   - Lower threshold (e.g., 0.3): More sensitive, earlier detection
+                     → Good for critical systems, faster response
+                   - Higher threshold (e.g., 0.7): More conservative, fewer alerts
+                     → Good for noisy data, reduces false positives
+                   - Default 0.5: Balanced middle ground for most use cases
+
+                THRESHOLD TUNING GUIDANCE
+                =========================
+                Recommended drift_share_threshold values by use case:
+
+                - Critical safety systems (medical, autonomous vehicles):
+                  threshold=0.3-0.4 → Detect drift early with ~30-40% features
+                  → Prioritize safety over false positives
+
+                - Financial/compliance models (fraud, credit):
+                  threshold=0.4-0.5 → Moderate sensitivity
+                  → Balance regulatory scrutiny with operational stability
+
+                - General ML models (recommendations, search):
+                  threshold=0.5-0.6 → Standard sensitivity (default)
+                  → Catch systematic drift while filtering noise
+
+                - High-dimensional, noisy data (NLP, images):
+                  threshold=0.6-0.7 → More conservative
+                  → Many features expected to show some variance
+
+                - Experimental/development models:
+                  threshold=0.3 → High sensitivity for early detection
+                  → Discover drift patterns during development
+
+                MATHEMATICAL RELATIONSHIP BETWEEN THRESHOLDS
+                ============================================
+                The two thresholds work together multiplicatively:
+
+                Effective detection sensitivity =
+                    drift_threshold (column) × drift_share_threshold (dataset)
+
+                Examples:
+                - Strict column (0.1) + Strict dataset (0.3)
+                  → Very sensitive: detects small shifts in minority of features
+
+                - Moderate column (0.2) + Moderate dataset (0.5)
+                  → Balanced: detects moderate shifts in majority of features (DEFAULT)
+
+                - Lenient column (0.3) + Lenient dataset (0.7)
+                  → Conservative: only severe drift in most features triggers alert
+
+                Tuning strategy:
+                - If getting too many false positives → increase either threshold
+                - If missing real drift → decrease either threshold
+                - If drift affects few features strongly → decrease drift_share_threshold
+                - If drift affects many features weakly → decrease drift_threshold
+
             enabled: Whether drift detection is enabled.
             enable_caching: Whether to cache DataFrame conversions and drift
                 reports for performance. When enabled, the detector caches
