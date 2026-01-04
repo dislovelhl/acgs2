@@ -277,10 +277,10 @@ class RBACConfig:
         self.audit_all_decisions = audit_all_decisions
         self.rate_limit_enabled = rate_limit_enabled
         self.rate_limits = rate_limits or {
-            Role.ANONYMOUS: 60,
-            Role.USER: 300,
-            Role.ADMIN: 1000,
-            Role.SYSTEM: 5000,
+            Role.VIEWER: 60,
+            Role.AGENT_OPERATOR: 300,
+            Role.TENANT_ADMIN: 1000,
+            Role.SYSTEM_ADMIN: 5000,
         }
 
         if not self.jwt_secret:

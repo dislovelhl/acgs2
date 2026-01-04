@@ -2,9 +2,9 @@
   "feature": "Add Authentication to Policy Validation API Endpoints",
   "description": "Secure policy validation API endpoints with JWT-based authentication to prevent unauthorized access to governance policy information. The policy check API endpoints (/api/policy/validate, /api/policy/policies, /api/policy/policies/{policy_id}, /api/policy/health) in integration-service/src/api/policy_check.py are currently publicly accessible without authentication.",
   "created_at": "2026-01-03T21:27:51.256Z",
-  "updated_at": "2026-01-04T10:36:23.954Z",
-  "status": "in_progress",
-  "planStatus": "in_progress",
+  "updated_at": "2026-01-04T10:39:01.908Z",
+  "status": "done",
+  "planStatus": "completed",
   "workflow_type": "development",
   "services_involved": [
     "integration-service",

@@ -5,13 +5,25 @@ Constitutional Hash: cdd01ef066bc6cf2
 Configuration models and utilities for multi-tenant isolation.
 """
 
-from shared.config.settings import (
-    DatabaseSettings,
+from .unified import (
+    AuditSettings,
+    AWSSettings,
+    BundleSettings,
+    MACISettings,
+    OPASettings,
+    QualitySettings,
     RedisSettings,
+    SearchPlatformSettings,
+    SecuritySettings,
+    ServiceSettings,
     Settings,
+    TelemetrySettings,
+    VaultSettings,
+    VotingSettings,
+    get_settings,
     settings,
 )
-from shared.config.tenant_config import (
+from .tenant_config import (
     TenantConfig,
     TenantQuotaConfig,
     TenantQuotaRegistry,
@@ -24,8 +36,20 @@ __all__ = [
     # Settings
     "Settings",
     "settings",
+    "get_settings",
     "RedisSettings",
-    "DatabaseSettings",
+    "SecuritySettings",
+    "OPASettings",
+    "AuditSettings",
+    "BundleSettings",
+    "ServiceSettings",
+    "TelemetrySettings",
+    "AWSSettings",
+    "SearchPlatformSettings",
+    "QualitySettings",
+    "MACISettings",
+    "VaultSettings",
+    "VotingSettings",
     # Tenant config
     "TenantConfig",
     "TenantQuotaConfig",

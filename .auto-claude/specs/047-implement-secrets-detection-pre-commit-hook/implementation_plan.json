@@ -3,9 +3,9 @@
   "title": "Implement Secrets Detection Pre-commit Hook",
   "description": "Add pre-commit hooks to prevent accidental secret commits, integrating gitleaks with ACGS-2's secrets_manager.py patterns for comprehensive protection",
   "created_at": "2026-01-03T21:27:51.710Z",
-  "updated_at": "2026-01-04T10:36:20.393Z",
-  "status": "in_progress",
-  "planStatus": "in_progress",
+  "updated_at": "2026-01-04T10:39:00.807Z",
+  "status": "done",
+  "planStatus": "completed",
   "workflow_type": "development",
   "constitutional_hash": "cdd01ef066bc6cf2",
   "phases": [
