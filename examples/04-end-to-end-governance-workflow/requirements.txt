@@ -1,0 +1,22 @@
+# ACGS-2 Example 04: End-to-End Governance Workflow Dependencies
+# Updated: 2026-01-03
+# Constitutional Hash: cdd01ef066bc6cf2
+
+# Core dependencies for OPA integration, database, and data models
+requests>=2.31.0,<3.0.0
+psycopg2-binary>=2.9.9,<3.0.0
+pydantic>=2.5.0,<3.0.0
+python-dotenv>=1.0.0,<2.0.0
+
+# Optional: Enhanced features (Redis caching, REST API service)
+redis>=5.0.0,<6.0.0
+fastapi>=0.104.0,<1.0.0
+uvicorn[standard]>=0.24.0,<1.0.0
+
+# Development and testing dependencies
+pytest>=7.4.0,<8.0.0
+pytest-asyncio>=0.21.0,<1.0.0
+pytest-cov>=4.1.0,<5.0.0
+black>=23.0.0,<24.0.0
+mypy>=1.7.0,<2.0.0
+ruff>=0.1.0,<1.0.0

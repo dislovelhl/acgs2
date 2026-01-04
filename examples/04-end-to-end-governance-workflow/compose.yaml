@@ -1,0 +1,145 @@
+# ACGS-2 Example 04: End-to-End Governance Workflow
+# Complete governance workflow with OPA, PostgreSQL audit logging, and optional Redis
+# Constitutional Hash: cdd01ef066bc6cf2
+#
+# Usage: docker compose up -d
+#
+# This example demonstrates a complete end-to-end AI governance workflow including
+# constitutional policy validation, agent action evaluation, HITL approvals, and
+# persistent audit logging. For the full ACGS-2 stack, use the root compose.yaml.
+#
+# Services:
+# - OPA: Policy evaluation engine
+# - PostgreSQL: Persistent audit log storage
+# - Redis: Optional state caching (use --profile enhanced)
+
+services:
+  # Open Policy Agent for policy decisions
+  opa:
+    image: openpolicyagent/opa:latest-rootless
+    container_name: acgs2-example04-opa
+    command:
+      - "run"
+      - "--server"
+      - "--log-level=info"
+      - "--addr=0.0.0.0:8181"
+      - "/policies"
+    ports:
+      - "${OPA_PORT:-8181}:8181"
+    volumes:
+      - ./policies:/policies:ro
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8181/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    networks:
+      - governance-network
+    restart: unless-stopped
+
+  # PostgreSQL database for audit trail storage
+  postgres:
+    image: postgres:16-alpine
+    container_name: acgs2-example04-postgres
+    environment:
+      POSTGRES_DB: ${DB_NAME:-governance_audit}
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Database password required}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./scripts/init_db.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+      - ./scripts/seed_data.sql:/docker-entrypoint-initdb.d/02-seed.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - governance-network
+    restart: unless-stopped
+
+  # Redis for optional state caching and session management
+  redis:
+    image: redis:7-alpine
+    container_name: acgs2-example04-redis
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    networks:
+      - governance-network
+    restart: unless-stopped
+    profiles:
+      - enhanced  # Optional service - enable with: docker compose --profile enhanced up -d
+
+volumes:
+  postgres-data:
+    name: acgs2-example04-postgres-data
+
+networks:
+  governance-network:
+    name: acgs2-example04-network
+    driver: bridge
+
+# =============================================================================
+# Quick Reference
+# =============================================================================
+#
+# Start services (OPA + PostgreSQL only):
+#   docker compose up -d
+#
+# Start all services including Redis:
+#   docker compose --profile enhanced up -d
+#
+# Check service health:
+#   curl http://localhost:8181/health  # OPA
+#   docker compose ps                   # All services
+#
+# View logs:
+#   docker compose logs -f opa          # OPA logs
+#   docker compose logs -f postgres     # Database logs
+#   docker compose logs -f              # All logs
+#
+# Query OPA directly:
+#   curl -X POST http://localhost:8181/v1/data/acgs2/constitutional/validate \
+#     -H "Content-Type: application/json" \
+#     -d '{"input": {"context": {"constitutional_hash": "cdd01ef066bc6cf2"}}}'
+#
+# Connect to database:
+#   docker compose exec postgres psql -U postgres -d governance_audit
+#
+# Query audit logs:
+#   docker compose exec postgres psql -U postgres -d governance_audit \
+#     -c "SELECT * FROM audit_log ORDER BY timestamp DESC LIMIT 10;"
+#
+# Stop services:
+#   docker compose down
+#
+# Stop and remove data:
+#   docker compose down -v
+#
+# Environment Variables:
+#   OPA_PORT=8181           # OPA service port
+#   DB_PORT=5432            # PostgreSQL port
+#   DB_NAME=governance_audit # Database name
+#   DB_USER=postgres        # Database user
+#   DB_PASSWORD=<required>  # Database password (must be set)
+#   REDIS_PORT=6379         # Redis port (if using enhanced profile)
+#
+# Port conflicts?
+#   OPA_PORT=8182 DB_PORT=5433 docker compose up -d
+#
+# Troubleshooting:
+#   - If OPA fails to start, check that port 8181 is available
+#   - If PostgreSQL fails, ensure DB_PASSWORD is set in .env file
+#   - For database connection issues, check health: docker compose ps
+#   - View detailed logs: docker compose logs <service-name>
+# =============================================================================

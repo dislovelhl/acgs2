@@ -1,0 +1,202 @@
+# ACGS-2 Example 04: End-to-End Governance Workflow - Project Configuration
+# Constitutional Hash: cdd01ef066bc6cf2
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "acgs2-example-04-end-to-end-governance"
+version = "1.0.0"
+description = "ACGS-2 Example 04: Complete end-to-end AI governance workflow with constitutional policy validation, HITL approvals, and audit logging"
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "Apache-2.0"}
+authors = [
+    {name = "ACGS Team"}
+]
+keywords = [
+    "acgs",
+    "ai-governance",
+    "constitutional-ai",
+    "policy-evaluation",
+    "human-in-the-loop",
+    "audit-logging",
+    "opa",
+    "example"
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Typing :: Typed",
+]
+dependencies = [
+    "requests>=2.31.0,<3.0.0",
+    "psycopg2-binary>=2.9.9,<3.0.0",
+    "pydantic>=2.5.0,<3.0.0",
+    "python-dotenv>=1.0.0,<2.0.0",
+]
+
+[project.optional-dependencies]
+enhanced = [
+    "redis>=5.0.0,<6.0.0",
+    "fastapi>=0.104.0,<1.0.0",
+    "uvicorn[standard]>=0.24.0,<1.0.0",
+]
+dev = [
+    "pytest>=7.4.0,<8.0.0",
+    "pytest-asyncio>=0.21.0,<1.0.0",
+    "pytest-cov>=4.1.0,<5.0.0",
+    "black>=23.0.0,<24.0.0",
+    "mypy>=1.7.0,<2.0.0",
+    "ruff>=0.1.0,<1.0.0",
+]
+all = [
+    "redis>=5.0.0,<6.0.0",
+    "fastapi>=0.104.0,<1.0.0",
+    "uvicorn[standard]>=0.24.0,<1.0.0",
+    "pytest>=7.4.0,<8.0.0",
+    "pytest-asyncio>=0.21.0,<1.0.0",
+    "pytest-cov>=4.1.0,<5.0.0",
+    "black>=23.0.0,<24.0.0",
+    "mypy>=1.7.0,<2.0.0",
+    "ruff>=0.1.0,<1.0.0",
+]
+
+[project.urls]
+Homepage = "https://acgs.io"
+Documentation = "https://docs.acgs.io/examples/04-end-to-end-governance-workflow"
+Repository = "https://github.com/acgs/acgs2"
+"Example Directory" = "https://github.com/acgs/acgs2/tree/main/examples/04-end-to-end-governance-workflow"
+
+[tool.setuptools]
+packages = ["src"]
+
+[tool.setuptools.package-dir]
+src = "src"
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+testpaths = ["tests"]
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+asyncio_mode = "auto"
+addopts = [
+    "-v",
+    "--strict-markers",
+    "--tb=short",
+    "-ra",
+    "--cov=src",
+    "--cov-report=term-missing",
+]
+markers = [
+    "asyncio: mark test as async",
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks tests requiring external services (OPA, PostgreSQL)",
+    "unit: marks tests as unit tests",
+]
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::PendingDeprecationWarning",
+]
+
+[tool.coverage.run]
+source = ["src"]
+branch = true
+relative_files = true
+omit = [
+    "tests/*",
+    "*/__pycache__/*",
+    "*.pyc",
+    "venv/*",
+    ".venv/*",
+    "*/tests/*",
+    "conftest.py",
+    "**/conftest.py",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "if typing.TYPE_CHECKING:",
+]
+fail_under = 80
+show_missing = true
+precision = 2
+
+[tool.coverage.html]
+directory = "htmlcov"
+
+[tool.coverage.xml]
+output = "coverage.xml"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # Pyflakes
+    "I",    # isort
+    "B",    # flake8-bugbear
+    "C4",   # flake8-comprehensions
+    "UP",   # pyupgrade
+    "ARG",  # flake8-unused-arguments
+    "SIM",  # flake8-simplify
+]
+ignore = [
+    "E501",   # line too long, handled by formatter
+    "B008",   # do not perform function calls in argument defaults
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["src"]
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401"]
+"tests/*" = ["F841", "F401"]
+"*/tests/*" = ["F841", "F401"]
+"**/test_*.py" = ["F841", "F401"]
+"**/*_test.py" = ["F841", "F401"]
+
+[tool.black]
+line-length = 100
+target-version = ['py311']
+exclude = '''
+/(
+    \.git
+  | \.venv
+  | venv
+  | \.eggs
+  | \.tox
+  | build
+  | dist
+)/
+'''
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_return_any = true
+warn_unused_ignores = true
+disallow_untyped_defs = true
+ignore_missing_imports = true
+exclude = ["venv", ".venv", "tests"]
+check_untyped_defs = true
+disallow_any_generics = false
