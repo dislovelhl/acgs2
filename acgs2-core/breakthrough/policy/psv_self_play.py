@@ -23,10 +23,15 @@ import random
 import time
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, List, Optional, Set
+from typing import Dict, List, Optional, Set
 
+from ...shared.types import JSONDict
 from .. import CONSTITUTIONAL_HASH
-from .verified_policy_generator import PolicyVerificationError, VerifiedPolicyGenerator
+from .verified_policy_generator import (
+    PolicyVerificationError,
+    VerifiedPolicy,
+    VerifiedPolicyGenerator,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -63,8 +68,8 @@ class SelfPlayChallenge:
     generated_at: float = field(default_factory=time.time)
 
     # Results
-    attempted_solutions: List[Dict[str, Any]] = field(default_factory=list)
-    best_solution: Optional[Dict[str, Any]] = None
+    attempted_solutions: List[JSONDict] = field(default_factory=list)
+    best_solution: Optional[JSONDict] = None
     success_achieved: bool = False
     improvement_score: float = 0.0
 
@@ -156,14 +161,14 @@ class PSVSelfPlay:
         self.completed_rounds: List[SelfPlayRound] = []
 
         # Challenge generation
-        self.challenge_templates: Dict[str, Dict[str, Any]] = {}
-        self.difficulty_progression: Dict[DifficultyLevel, Dict[str, Any]] = {}
+        self.challenge_templates: Dict[str, JSONDict] = {}
+        self.difficulty_progression: Dict[DifficultyLevel, JSONDict] = {}
         self._initialize_challenge_templates()
 
         # Learning and adaptation
         self.psv_agents: Dict[str, PSVAgent] = {}
         self.performance_baseline: Dict[str, float] = {}
-        self.learning_history: List[Dict[str, Any]] = []
+        self.learning_history: List[JSONDict] = []
 
         # Performance tracking
         self._metrics = {
@@ -381,7 +386,7 @@ class PSVSelfPlay:
 
         return random.choice(list(self.challenge_templates.keys()))
 
-    async def execute_self_play_round(self, round_obj: SelfPlayRound) -> Dict[str, Any]:
+    async def execute_self_play_round(self, round_obj: SelfPlayRound) -> JSONDict:
         """
         Execute a complete self-play round.
 
@@ -445,7 +450,7 @@ class PSVSelfPlay:
 
         return results
 
-    async def _attempt_challenge_solution(self, challenge: SelfPlayChallenge) -> Dict[str, Any]:
+    async def _attempt_challenge_solution(self, challenge: SelfPlayChallenge) -> JSONDict:
         """Attempt to solve a self-play challenge."""
         start_time = time.time()
         attempts = 0
@@ -490,7 +495,7 @@ class PSVSelfPlay:
             "error": "All solution attempts failed",
         }
 
-    async def _validate_solution(self, policy: Any, challenge: SelfPlayChallenge) -> Dict[str, Any]:
+    async def _validate_solution(self, policy: VerifiedPolicy, challenge: SelfPlayChallenge) -> JSONDict:
         """Validate a solution against challenge criteria."""
         validation = {"valid": True, "criteria_met": [], "criteria_failed": [], "score": 0.0}
 
@@ -600,7 +605,7 @@ class PSVSelfPlay:
 
     async def run_self_improvement_session(
         self, num_rounds: int = 5, adaptive_difficulty: bool = True
-    ) -> Dict[str, Any]:
+    ) -> JSONDict:
         """
         Run a complete self-improvement session.
 
@@ -683,7 +688,7 @@ class PSVSelfPlay:
 
         return current_difficulty
 
-    def get_system_metrics(self) -> Dict[str, Any]:
+    def get_system_metrics(self) -> JSONDict:
         """Get current system performance metrics."""
         return {
             **self._metrics,
@@ -694,7 +699,7 @@ class PSVSelfPlay:
             "constitutional_hash": CONSTITUTIONAL_HASH,
         }
 
-    async def analyze_learning_patterns(self) -> Dict[str, Any]:
+    async def analyze_learning_patterns(self) -> JSONDict:
         """Analyze patterns in the learning process."""
         analysis = {
             "category_performance": {},

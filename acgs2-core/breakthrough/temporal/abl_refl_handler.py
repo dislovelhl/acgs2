@@ -21,8 +21,15 @@ import logging
 import time
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Callable, Dict, List, Optional, Tuple
 
+from ...shared.types import (
+    ContextData,
+    DecisionData,
+    JSONDict,
+    JSONValue,
+    VerificationResult,
+)
 from .. import CONSTITUTIONAL_HASH
 
 logger = logging.getLogger(__name__)
@@ -75,11 +82,11 @@ class ReflectionStep:
     """A step in the reflection process."""
     step_id: str
     timestamp: float
-    system1_response: Any
-    system2_analysis: Any
+    system1_response: JSONValue
+    system2_analysis: JSONDict
     reflection_trigger: ReflectionTrigger
-    constitutional_check: Dict[str, Any]
-    final_decision: Any
+    constitutional_check: VerificationResult
+    final_decision: DecisionData
     confidence_boost: float  # Improvement in confidence
     processing_overhead_ms: float
 
@@ -95,12 +102,12 @@ class EdgeCasePattern:
     """Pattern for detecting edge cases."""
     pattern_id: str
     description: str
-    detection_criteria: Callable[[Any], bool]
+    detection_criteria: Callable[[ContextData], bool]
     reflection_required: bool = True
     historical_success_rate: float = 0.0
     trigger_count: int = 0
 
-    def matches(self, context: Any) -> bool:
+    def matches(self, context: ContextData) -> bool:
         """Check if pattern matches the given context."""
         try:
             return self.detection_criteria(context)
@@ -176,7 +183,7 @@ class ABLReflHandler:
             reflection_required=True
         )
 
-    def _detect_constitutional_impact(self, context: Any) -> bool:
+    def _detect_constitutional_impact(self, context: ContextData) -> bool:
         """Detect if context involves constitutional principles."""
         if isinstance(context, dict):
             text_content = str(context).lower()
@@ -187,7 +194,7 @@ class ABLReflHandler:
             return any(keyword in text_content for keyword in constitutional_keywords)
         return False
 
-    def _detect_novelty(self, context: Any) -> bool:
+    def _detect_novelty(self, context: ContextData) -> bool:
         """Detect novel situations using pattern matching."""
         # Simplified novelty detection - in practice would use ML models
         if isinstance(context, dict):
@@ -195,7 +202,7 @@ class ABLReflHandler:
             return len(str(context)) > 1000  # Rough heuristic
         return False
 
-    def _detect_conflicts(self, context: Any) -> bool:
+    def _detect_conflicts(self, context: ContextData) -> bool:
         """Detect conflicting evidence in context."""
         # Look for contradictory statements or evidence
         if isinstance(context, dict):
@@ -205,7 +212,7 @@ class ABLReflHandler:
             return contradiction_count >= 2
         return False
 
-    def _detect_high_stakes(self, context: Any) -> bool:
+    def _detect_high_stakes(self, context: ContextData) -> bool:
         """Detect high-stakes situations."""
         if isinstance(context, dict):
             text = str(context).lower()
@@ -218,9 +225,9 @@ class ABLReflHandler:
 
     async def process_request(
         self,
-        request: Any,
-        context: Optional[Dict[str, Any]] = None
-    ) -> Tuple[Any, CognitiveState]:
+        request: JSONValue,
+        context: Optional[ContextData] = None
+    ) -> Tuple[DecisionData, CognitiveState]:
         """
         Process a governance request using dual-process reasoning.
 
@@ -289,9 +296,9 @@ class ABLReflHandler:
 
     async def _system1_process(
         self,
-        request: Any,
-        context: Optional[Dict[str, Any]]
-    ) -> Tuple[Any, float]:
+        request: JSONValue,
+        context: Optional[ContextData]
+    ) -> Tuple[DecisionData, float]:
         """
         System 1 fast processing using pattern matching.
 
@@ -316,9 +323,9 @@ class ABLReflHandler:
 
     async def _detect_reflection_triggers(
         self,
-        request: Any,
-        context: Optional[Dict[str, Any]],
-        system1_response: Any
+        request: JSONValue,
+        context: Optional[ContextData],
+        system1_response: DecisionData
     ) -> List[ReflectionTrigger]:
         """Detect triggers that should initiate System 1→2 reflection."""
         triggers = []
@@ -352,11 +359,11 @@ class ABLReflHandler:
 
     async def _system2_reflect(
         self,
-        request: Any,
-        context: Optional[Dict[str, Any]],
-        system1_response: Any,
+        request: JSONValue,
+        context: Optional[ContextData],
+        system1_response: DecisionData,
         triggers: List[ReflectionTrigger]
-    ) -> Tuple[Any, Dict[str, Any]]:
+    ) -> Tuple[DecisionData, JSONDict]:
         """
         System 2 analytical reflection process.
 
@@ -399,9 +406,9 @@ class ABLReflHandler:
 
     async def _analyze_system1_response(
         self,
-        system1_response: Any,
+        system1_response: DecisionData,
         triggers: List[ReflectionTrigger]
-    ) -> Dict[str, Any]:
+    ) -> JSONDict:
         """Analyze the System 1 response for potential issues."""
         analysis = {
             "response_type": type(system1_response).__name__,
@@ -425,9 +432,9 @@ class ABLReflHandler:
 
     async def _perform_constitutional_review(
         self,
-        request: Any,
-        response: Any
-    ) -> Dict[str, Any]:
+        request: JSONValue,
+        response: DecisionData
+    ) -> VerificationResult:
         """Perform constitutional review of the request and response."""
         # Simplified constitutional review - in practice would use formal verification
         review = {
@@ -456,11 +463,11 @@ class ABLReflHandler:
 
     async def _deliberative_reasoning(
         self,
-        request: Any,
-        context: Optional[Dict[str, Any]],
-        system1_analysis: Dict[str, Any],
-        constitutional_check: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        request: JSONValue,
+        context: Optional[ContextData],
+        system1_analysis: JSONDict,
+        constitutional_check: VerificationResult
+    ) -> JSONDict:
         """Perform deliberate System 2 reasoning."""
         reasoning = {
             "step_by_step_analysis": [],
@@ -505,11 +512,11 @@ class ABLReflHandler:
 
     async def _generate_reflected_decision(
         self,
-        request: Any,
-        system1_response: Any,
-        analysis: Dict[str, Any],
-        constitutional_check: Dict[str, Any]
-    ) -> Any:
+        request: JSONValue,
+        system1_response: DecisionData,
+        analysis: JSONDict,
+        constitutional_check: VerificationResult
+    ) -> DecisionData:
         """Generate final decision after reflection."""
         # Use analysis to potentially override System 1 decision
         recommendation = analysis.get("final_recommendation", {})
@@ -534,7 +541,7 @@ class ABLReflHandler:
             # Accept System 1 decision
             return system1_response
 
-    def get_reflection_stats(self) -> Dict[str, Any]:
+    def get_reflection_stats(self) -> JSONDict:
         """Get reflection system statistics."""
         total_requests = self.system1_hits + self.reflections_triggered
 

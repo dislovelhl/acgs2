@@ -18,10 +18,11 @@ import json
 import logging
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, Dict, List, Optional, Union
+from typing import Dict, List, Optional, Union
 
 from pydantic import BaseModel, Field
 
+from ..types import EventData, JSONDict, ModelContext
 from .base import EventSeverity, IntegrationEvent
 
 logger = logging.getLogger(__name__)
@@ -148,16 +149,16 @@ class StandardizedSIEMEvent(BaseModel):
     labels: Dict[str, str] = Field(default_factory=dict, description="Key-value labels")
 
     # Extended details
-    details: Dict[str, Any] = Field(
+    details: EventData = Field(
         default_factory=dict,
         description="Additional event details",
     )
-    raw_event: Optional[Dict[str, Any]] = Field(
+    raw_event: Optional[JSONDict] = Field(
         None,
         description="Original raw event data",
     )
 
-    def model_post_init(self, __context: Any) -> None:
+    def model_post_init(self, __context: ModelContext) -> None:
         """Calculate derived fields after initialization"""
         if self.time_epoch is None:
             self.time_epoch = self.timestamp.timestamp()
@@ -211,10 +212,10 @@ class CEFEventConfig(BaseModel):
 
 
 def format_siem_event(
-    event: Union[IntegrationEvent, Dict[str, Any]],
+    event: Union[IntegrationEvent, JSONDict],
     format_type: SIEMFormat = SIEMFormat.JSON,
     config: Optional[Union[SplunkEventConfig, SentinelEventConfig, CEFEventConfig]] = None,
-) -> Dict[str, Any]:
+) -> JSONDict:
     """
     Format a governance event for SIEM ingestion.
 
@@ -265,7 +266,7 @@ def format_siem_event(
 def format_splunk_event(
     event: StandardizedSIEMEvent,
     config: Optional[SplunkEventConfig] = None,
-) -> Dict[str, Any]:
+) -> JSONDict:
     """
     Format an event for Splunk HEC submission.
 
@@ -343,7 +344,7 @@ def format_splunk_event(
 def format_sentinel_event(
     event: StandardizedSIEMEvent,
     config: Optional[SentinelEventConfig] = None,
-) -> Dict[str, Any]:
+) -> JSONDict:
     """
     Format an event for Azure Monitor Logs Ingestion API.
 
@@ -408,7 +409,7 @@ def format_sentinel_event(
 def format_cef_event(
     event: StandardizedSIEMEvent,
     config: Optional[CEFEventConfig] = None,
-) -> Dict[str, Any]:
+) -> JSONDict:
     """
     Format an event in Common Event Format (CEF).
 
@@ -489,7 +490,7 @@ def format_cef_event(
 
 def format_json_event(
     event: StandardizedSIEMEvent,
-) -> Dict[str, Any]:
+) -> JSONDict:
     """
     Format an event as a generic standardized JSON payload.
 
@@ -557,10 +558,10 @@ def format_json_event(
 
 
 def format_events_batch(
-    events: List[Union[IntegrationEvent, Dict[str, Any]]],
+    events: List[Union[IntegrationEvent, JSONDict]],
     format_type: SIEMFormat = SIEMFormat.JSON,
     config: Optional[Union[SplunkEventConfig, SentinelEventConfig, CEFEventConfig]] = None,
-) -> List[Dict[str, Any]]:
+) -> List[JSONDict]:
     """
     Format multiple events for SIEM ingestion.
 
@@ -575,7 +576,7 @@ def format_events_batch(
     return [format_siem_event(event, format_type, config) for event in events]
 
 
-def _dict_to_integration_event(data: Dict[str, Any]) -> IntegrationEvent:
+def _dict_to_integration_event(data: JSONDict) -> IntegrationEvent:
     """
     Convert a dictionary to an IntegrationEvent.
 

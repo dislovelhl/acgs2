@@ -18,8 +18,9 @@ import asyncio
 import logging
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Callable, Dict, List
+from typing import Callable, Dict, List
 
+from ...shared.types import ContextData, JSONDict, JSONValue
 from .. import CONSTITUTIONAL_HASH
 
 logger = logging.getLogger(__name__)
@@ -35,12 +36,12 @@ class MCPResourceType(Enum):
 @dataclass
 class MCPResponse:
     """Response from MCP tool or resource."""
-    content: Any
+    content: JSONValue
     content_type: MCPResourceType = MCPResourceType.JSON
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: JSONDict = field(default_factory=dict)
     constitutional_hash: str = CONSTITUTIONAL_HASH
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> JSONDict:
         return {
             "content": self.content,
             "content_type": self.content_type.value,
@@ -57,7 +58,7 @@ class MCPResource:
     description: str
     mime_type: str = "application/json"
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> JSONDict:
         return {
             "uri": self.uri,
             "name": self.name,
@@ -71,10 +72,10 @@ class MCPTool:
     """An MCP tool definition."""
     name: str
     description: str
-    input_schema: Dict[str, Any]
+    input_schema: JSONDict
     handler: Callable
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> JSONDict:
         return {
             "name": self.name,
             "description": self.description,
@@ -87,9 +88,9 @@ class MCPPrompt:
     """An MCP prompt template."""
     name: str
     description: str
-    arguments: List[Dict[str, Any]]
+    arguments: List[JSONDict]
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> JSONDict:
         return {
             "name": self.name,
             "description": self.description,
@@ -121,7 +122,7 @@ class ConstitutionalGovernanceEngine:
             "constitutional_compliance": f"Constitutional hash {CONSTITUTIONAL_HASH} must be valid",
         }
 
-    async def validate(self, action: Dict[str, Any]) -> Dict[str, Any]:
+    async def validate(self, action: ContextData) -> JSONDict:
         """
         Validate an action against constitutional principles.
 
@@ -151,7 +152,7 @@ class ConstitutionalGovernanceEngine:
 
     async def _check_principle(
         self,
-        action: Dict[str, Any],
+        action: ContextData,
         principle_id: str
     ) -> bool:
         """Check if action complies with a specific principle."""
@@ -295,7 +296,7 @@ class ACGS2MCPServer:
     async def handle_tool_call(
         self,
         tool_name: str,
-        arguments: Dict[str, Any]
+        arguments: JSONDict
     ) -> MCPResponse:
         """
         Handle an MCP tool call.
@@ -357,16 +358,16 @@ class ACGS2MCPServer:
 
     async def _handle_validate(
         self,
-        arguments: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        arguments: JSONDict
+    ) -> JSONDict:
         """Handle validate_constitutional_compliance tool."""
         action = arguments.get("action", {})
         return await self.governance_engine.validate(action)
 
     async def _handle_check_policy(
         self,
-        arguments: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        arguments: JSONDict
+    ) -> JSONDict:
         """Handle check_policy tool."""
         action = arguments.get("action", {})
         policy_id = arguments.get("policy_id", "")
@@ -378,15 +379,15 @@ class ACGS2MCPServer:
 
     async def _handle_get_hash(
         self,
-        arguments: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        arguments: JSONDict
+    ) -> JSONDict:
         """Handle get_constitutional_hash tool."""
         return {
             "constitutional_hash": CONSTITUTIONAL_HASH,
             "version": self.version,
         }
 
-    def get_server_info(self) -> Dict[str, Any]:
+    def get_server_info(self) -> JSONDict:
         """Get MCP server information."""
         return {
             "name": self.server_name,

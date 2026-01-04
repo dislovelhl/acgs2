@@ -21,8 +21,15 @@ import logging
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
+from ...shared.types import (
+    AuditTrail,
+    ContextData,
+    JSONDict,
+    JSONValue,
+    MetadataDict,
+)
 from .. import CONSTITUTIONAL_HASH
 
 logger = logging.getLogger(__name__)
@@ -39,15 +46,15 @@ class MemoryType(Enum):
 class MemoryEntry:
     """A single memory entry."""
     id: str
-    content: Any
+    content: JSONValue
     memory_type: MemoryType
     timestamp: datetime
     importance: float
     embedding: Optional[List[float]] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: MetadataDict = field(default_factory=dict)
     constitutional_hash: str = CONSTITUTIONAL_HASH
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> JSONDict:
         return {
             "id": self.id,
             "content": self.content,
@@ -70,7 +77,7 @@ class Precedent:
     relevance_score: float
     constitutional_hash: str = CONSTITUTIONAL_HASH
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> JSONDict:
         return {
             "case_id": self.case_id,
             "description": self.description,
@@ -87,11 +94,11 @@ class GovernanceCase:
     """A current governance case to evaluate."""
     case_id: str
     description: str
-    context: Dict[str, Any]
+    context: ContextData
     timestamp: datetime = field(default_factory=datetime.utcnow)
     embedding: Optional[List[float]] = None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> JSONDict:
         return {
             "case_id": self.case_id,
             "description": self.description,
@@ -112,7 +119,7 @@ class GovernanceDecision:
     precedents_used: List[str] = field(default_factory=list)
     constitutional_hash: str = CONSTITUTIONAL_HASH
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> JSONDict:
         return {
             "decision_id": self.decision_id,
             "case": self.case.to_dict(),
@@ -175,7 +182,7 @@ class EpisodicMemory:
         self,
         query_embedding: List[float],
         top_k: int = 10,
-        filter_criteria: Optional[Dict[str, Any]] = None
+        filter_criteria: Optional[MetadataDict] = None
     ) -> List[MemoryEntry]:
         """
         Search episodic memory by similarity.
@@ -229,7 +236,7 @@ class EpisodicMemory:
         """Compute cosine similarity between two vectors."""
         if len(a) != len(b):
             return 0.0
-        dot_product = sum(x * y for x, y in zip(a, b))
+        dot_product = sum(x * y for x, y in zip(a, b, strict=True))
         norm_a = sum(x * x for x in a) ** 0.5
         norm_b = sum(x * x for x in b) ** 0.5
         if norm_a == 0 or norm_b == 0:
@@ -239,7 +246,7 @@ class EpisodicMemory:
     def _matches_filter(
         self,
         entry: MemoryEntry,
-        filter_criteria: Dict[str, Any]
+        filter_criteria: MetadataDict
     ) -> bool:
         """Check if entry matches filter criteria."""
         for key, value in filter_criteria.items():
@@ -288,7 +295,7 @@ class SemanticMemory:
         principle_id: str,
         content: str,
         importance: float = 1.0,
-        metadata: Optional[Dict[str, Any]] = None
+        metadata: Optional[MetadataDict] = None
     ) -> str:
         """Store a constitutional principle."""
         entry = MemoryEntry(
@@ -315,7 +322,7 @@ class SemanticMemory:
     async def store_knowledge(
         self,
         knowledge_id: str,
-        content: Any,
+        content: JSONValue,
         category: str,
         importance: float = 0.5
     ) -> str:
@@ -365,7 +372,7 @@ class WorkingMemory:
     async def store(
         self,
         key: str,
-        content: Any,
+        content: JSONValue,
         ttl_seconds: Optional[int] = None
     ) -> str:
         """Store content in working memory with TTL."""
@@ -383,7 +390,7 @@ class WorkingMemory:
         self._entries[key] = (entry, expiry)
         return key
 
-    async def get(self, key: str) -> Optional[Any]:
+    async def get(self, key: str) -> Optional[JSONValue]:
         """Get content from working memory."""
         await self._cleanup_expired()
 
@@ -443,7 +450,7 @@ class ConstitutionalMemorySystem:
         self.semantic = SemanticMemory()
         self.working = WorkingMemory(default_ttl_seconds=working_ttl_seconds)
 
-        self._audit_log: List[Dict[str, Any]] = []
+        self._audit_log: AuditTrail = []
         self._stats = {
             "precedents_retrieved": 0,
             "decisions_stored": 0,
@@ -528,13 +535,13 @@ class ConstitutionalMemorySystem:
     async def store_context(
         self,
         key: str,
-        content: Any,
+        content: JSONValue,
         ttl_seconds: Optional[int] = None
     ) -> str:
         """Store context in working memory."""
         return await self.working.store(key, content, ttl_seconds)
 
-    async def get_context(self, key: str) -> Optional[Any]:
+    async def get_context(self, key: str) -> Optional[JSONValue]:
         """Retrieve context from working memory."""
         return await self.working.get(key)
 
@@ -582,7 +589,7 @@ class ConstitutionalMemorySystem:
             "constitutional_hash": decision.constitutional_hash,
         })
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> JSONDict:
         """Get memory system statistics."""
         return {
             **self._stats,

@@ -22,8 +22,9 @@ import logging
 import time
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Awaitable, Callable, Dict, List, Optional, Tuple
+from typing import Awaitable, Callable, Dict, List, Optional, Tuple
 
+from ...shared.types import AuditTrail, JSONDict, JSONValue
 from .. import CONSTITUTIONAL_HASH
 
 logger = logging.getLogger(__name__)
@@ -55,10 +56,10 @@ class CompensableOperation:
     """An operation that can be compensated (undone)."""
     operation_id: str
     operation_type: OperationType
-    forward_action: Callable[[Any], Awaitable[Any]]
-    compensate_action: Callable[[Any], Awaitable[Any]]
-    forward_data: Any
-    compensate_data: Any
+    forward_action: Callable[[JSONValue], Awaitable[JSONValue]]
+    compensate_action: Callable[[JSONDict], Awaitable[JSONValue]]
+    forward_data: JSONValue
+    compensate_data: JSONValue
     timeout_seconds: float = 30.0
     retry_count: int = 3
     depends_on: List[str] = field(default_factory=list)
@@ -75,12 +76,12 @@ class OperationResult:
     """Result of executing an operation."""
     operation_id: str
     success: bool
-    result: Any
+    result: JSONValue
     error: Optional[str]
     execution_time_ms: float
     timestamp: float
     compensated: bool = False
-    compensation_result: Optional[Any] = None
+    compensation_result: Optional[JSONValue] = None
 
 
 @dataclass
@@ -96,7 +97,7 @@ class SagaTransaction:
     # Execution tracking
     executed_operations: List[OperationResult] = field(default_factory=list)
     failed_operation: Optional[str] = None
-    compensation_log: List[Dict[str, Any]] = field(default_factory=list)
+    compensation_log: AuditTrail = field(default_factory=list)
 
     def __post_init__(self):
         if not self.transaction_id:
@@ -311,7 +312,7 @@ class TransactionCoordinator:
         self,
         operation: CompensableOperation,
         operation_result: OperationResult
-    ) -> Any:
+    ) -> JSONValue:
         """Execute the compensation action for an operation."""
         try:
             # Use the compensation data and result from forward operation
@@ -344,7 +345,7 @@ class TransactionCoordinator:
         if len(self.completed_transactions) > 1000:
             self.completed_transactions = self.completed_transactions[-500:]
 
-    async def get_transaction_status(self, transaction_id: str) -> Optional[Dict[str, Any]]:
+    async def get_transaction_status(self, transaction_id: str) -> Optional[JSONDict]:
         """Get the status of a transaction."""
         transaction = (
             self.active_transactions.get(transaction_id) or
@@ -365,7 +366,7 @@ class TransactionCoordinator:
             "constitutional_hash": transaction.constitutional_hash
         }
 
-    def get_system_status(self) -> Dict[str, Any]:
+    def get_system_status(self) -> JSONDict:
         """Get coordinator system status."""
         return {
             "active_transactions": len(self.active_transactions),
@@ -383,18 +384,19 @@ class ConstitutionalOperationFactory:
 
     @staticmethod
     def create_policy_operation(
-        policy_data: Dict[str, Any]
+        policy_data: JSONDict
     ) -> CompensableOperation:
         """Create a compensable policy creation operation."""
 
-        async def create_policy(data: Dict[str, Any]) -> Dict[str, Any]:
+        async def create_policy(data: JSONValue) -> JSONDict:
             # Placeholder for policy creation
             policy_id = hashlib.sha256(str(data).encode()).hexdigest()[:16]
             return {"policy_id": policy_id, "created": True}
 
-        async def delete_policy(data: Dict[str, Any]) -> Dict[str, Any]:
+        async def delete_policy(data: JSONDict) -> JSONDict:
             # Compensation: delete the created policy
-            policy_id = data.get("original_data", {}).get("policy_id")
+            original_data = data.get("original_data", {})
+            policy_id = original_data.get("policy_id") if isinstance(original_data, dict) else None
             return {"policy_id": policy_id, "deleted": True}
 
         return CompensableOperation(
@@ -409,18 +411,19 @@ class ConstitutionalOperationFactory:
 
     @staticmethod
     def create_execution_operation(
-        execution_data: Dict[str, Any]
+        execution_data: JSONDict
     ) -> CompensableOperation:
         """Create a compensable execution operation."""
 
-        async def execute_action(data: Dict[str, Any]) -> Dict[str, Any]:
+        async def execute_action(data: JSONValue) -> JSONDict:
             # Placeholder for action execution
             execution_id = hashlib.sha256(str(data).encode()).hexdigest()[:16]
             return {"execution_id": execution_id, "executed": True}
 
-        async def rollback_execution(data: Dict[str, Any]) -> Dict[str, Any]:
+        async def rollback_execution(data: JSONDict) -> JSONDict:
             # Compensation: rollback the execution
-            execution_id = data.get("original_data", {}).get("execution_id")
+            original_data = data.get("original_data", {})
+            execution_id = original_data.get("execution_id") if isinstance(original_data, dict) else None
             return {"execution_id": execution_id, "rolled_back": True}
 
         return CompensableOperation(
@@ -435,18 +438,19 @@ class ConstitutionalOperationFactory:
 
     @staticmethod
     def create_validation_operation(
-        validation_data: Dict[str, Any]
+        validation_data: JSONDict
     ) -> CompensableOperation:
         """Create a compensable validation operation."""
 
-        async def validate_policy(data: Dict[str, Any]) -> Dict[str, Any]:
+        async def validate_policy(data: JSONValue) -> JSONDict:
             # Placeholder for policy validation
             validation_id = hashlib.sha256(str(data).encode()).hexdigest()[:16]
             return {"validation_id": validation_id, "validated": True}
 
-        async def invalidate_validation(data: Dict[str, Any]) -> Dict[str, Any]:
+        async def invalidate_validation(data: JSONDict) -> JSONDict:
             # Compensation: invalidate the validation
-            validation_id = data.get("original_data", {}).get("validation_id")
+            original_data = data.get("original_data", {})
+            validation_id = original_data.get("validation_id") if isinstance(original_data, dict) else None
             return {"validation_id": validation_id, "invalidated": True}
 
         return CompensableOperation(
@@ -474,7 +478,7 @@ class SagaLLMOrchestrator:
 
     async def create_policy_transaction(
         self,
-        policy_data: Dict[str, Any],
+        policy_data: JSONDict,
         validation_required: bool = True
     ) -> Tuple[bool, str, Optional[str]]:
         """
@@ -507,7 +511,7 @@ class SagaLLMOrchestrator:
 
     async def execute_governance_action(
         self,
-        action_data: Dict[str, Any],
+        action_data: JSONDict,
         requires_validation: bool = True
     ) -> Tuple[bool, str, Optional[str]]:
         """
@@ -538,11 +542,11 @@ class SagaLLMOrchestrator:
         transaction_id = transaction.transaction_id if success else None
         return success, message, transaction_id
 
-    async def get_transaction_status(self, transaction_id: str) -> Optional[Dict[str, Any]]:
+    async def get_transaction_status(self, transaction_id: str) -> Optional[JSONDict]:
         """Get status of a specific transaction."""
         return await self.coordinator.get_transaction_status(transaction_id)
 
-    def get_system_health(self) -> Dict[str, Any]:
+    def get_system_health(self) -> JSONDict:
         """Get overall system health."""
         coordinator_status = self.coordinator.get_system_status()
         return {

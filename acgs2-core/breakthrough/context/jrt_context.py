@@ -13,8 +13,9 @@ are strategically repeated in the context window.
 
 import logging
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
+from ...shared.types import JSONValue
 from .. import CONSTITUTIONAL_HASH
 
 logger = logging.getLogger(__name__)
@@ -23,7 +24,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class ContextSection:
     """A section of context with importance scoring."""
-    content: Any
+    content: JSONValue
     start_position: int
     end_position: int
     importance_score: float
@@ -36,8 +37,8 @@ class ContextSection:
 @dataclass
 class PreparedContext:
     """Prepared context with JRT optimization."""
-    original: Any
-    prepared: Any
+    original: JSONValue
+    prepared: JSONValue
     critical_positions: List[int]
     repeated_sections: List[Tuple[int, int]]
     total_tokens: int
@@ -94,7 +95,7 @@ class JRTContextPreparator:
 
     async def prepare(
         self,
-        context: Any,
+        context: JSONValue,
         sections: Optional[List[ContextSection]] = None
     ) -> PreparedContext:
         """
@@ -146,7 +147,7 @@ class JRTContextPreparator:
 
     async def _identify_sections(
         self,
-        context: Any
+        context: JSONValue
     ) -> List[ContextSection]:
         """
         Automatically identify sections in context.
@@ -244,9 +245,9 @@ class JRTContextPreparator:
 
     async def _apply_jrt(
         self,
-        context: Any,
+        context: JSONValue,
         sections_to_repeat: List[ContextSection]
-    ) -> Tuple[Any, List[Tuple[int, int]]]:
+    ) -> Tuple[JSONValue, List[Tuple[int, int]]]:
         """
         Apply JRT strategy by repeating critical sections.
 
@@ -294,7 +295,7 @@ class JRTContextPreparator:
 
     def _compute_critical_positions(
         self,
-        prepared: Any,
+        prepared: JSONValue,
         critical_sections: List[ContextSection]
     ) -> List[int]:
         """

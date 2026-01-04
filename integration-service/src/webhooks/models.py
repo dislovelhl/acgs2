@@ -7,7 +7,7 @@ with comprehensive validation, authentication support, and delivery tracking.
 
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, Dict, List, Literal, Optional
+from typing import Dict, List, Literal, Optional
 from uuid import uuid4
 
 from pydantic import (
@@ -18,6 +18,8 @@ from pydantic import (
     field_validator,
     model_validator,
 )
+
+from ..types import JSONDict, ValidatorValue
 
 
 class WebhookState(str, Enum):
@@ -242,7 +244,7 @@ class WebhookSubscription(BaseModel):
 
     @field_validator("tags", mode="before")
     @classmethod
-    def validate_tags(cls, v: Any) -> List[str]:
+    def validate_tags(cls, v: ValidatorValue) -> List[str]:
         """Ensure tags is a list of strings."""
         if v is None:
             return []
@@ -252,7 +254,7 @@ class WebhookSubscription(BaseModel):
 
     @field_validator("severity_filter", mode="before")
     @classmethod
-    def validate_severity_filter(cls, v: Any) -> List[str]:
+    def validate_severity_filter(cls, v: ValidatorValue) -> List[str]:
         """Validate severity filter values."""
         if v is None:
             return ["critical", "high", "medium", "low", "info"]
@@ -327,7 +329,7 @@ class WebhookEvent(BaseModel):
     # Event content
     title: str = Field(..., description="Event title/summary")
     description: Optional[str] = Field(None, description="Detailed description")
-    details: Dict[str, Any] = Field(default_factory=dict, description="Additional event details")
+    details: JSONDict = Field(default_factory=dict, description="Additional event details")
 
     # Resource context
     policy_id: Optional[str] = Field(None, description="Related policy ID")
@@ -360,7 +362,7 @@ class WebhookEvent(BaseModel):
             raise ValueError(f"Invalid severity '{v}', must be one of {valid}")
         return v
 
-    def to_payload(self) -> Dict[str, Any]:
+    def to_payload(self) -> JSONDict:
         """
         Convert event to webhook payload format.
 
@@ -503,7 +505,7 @@ class WebhookDeliveryResult(BaseModel):
     error_message: Optional[str] = Field(
         None, max_length=1000, description="Error message if failed"
     )
-    error_details: Dict[str, Any] = Field(
+    error_details: JSONDict = Field(
         default_factory=dict, description="Additional error details"
     )
 

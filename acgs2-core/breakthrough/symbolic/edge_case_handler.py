@@ -20,8 +20,9 @@ import logging
 import uuid
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Callable, Dict, List, Optional, Tuple
 
+from ...shared.types import ContextData, JSONDict
 from .. import CONSTITUTIONAL_HASH, EDGE_CASE_ACCURACY_TARGET
 
 logger = logging.getLogger(__name__)
@@ -41,7 +42,7 @@ class NeuralPrediction:
     confidence: float
     embedding: List[float]
     processing_time_ms: float
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: JSONDict = field(default_factory=dict)
 
 
 @dataclass
@@ -60,7 +61,7 @@ class AbductiveCorrection:
     confidence: float
     derivation: List[str]  # Logical derivation steps
     corrections_made: List[str]
-    symbolic_trace: Dict[str, Any]
+    symbolic_trace: JSONDict
 
 
 @dataclass
@@ -75,7 +76,7 @@ class ClassificationResult:
     processing_time_ms: float
     constitutional_hash: str = CONSTITUTIONAL_HASH
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> JSONDict:
         return {
             "result_id": self.result_id,
             "prediction": self.prediction,
@@ -133,7 +134,7 @@ class NeuralClassifier:
 
     async def predict(
         self,
-        input_data: Dict[str, Any]
+        input_data: ContextData
     ) -> NeuralPrediction:
         """
         Make a fast neural prediction.
@@ -169,7 +170,7 @@ class NeuralClassifier:
 
     async def _compute_embedding(
         self,
-        input_data: Dict[str, Any]
+        input_data: ContextData
     ) -> List[float]:
         """Compute embedding from input data."""
         # Simulate embedding computation
@@ -181,7 +182,7 @@ class NeuralClassifier:
     async def _classify(
         self,
         embedding: List[float],
-        input_data: Dict[str, Any]
+        input_data: ContextData
     ) -> Tuple[str, float]:
         """Classify based on embedding."""
         # Simulate classification logic
@@ -227,7 +228,7 @@ class AbductionEngine:
 
     async def correct(
         self,
-        input_data: Dict[str, Any],
+        input_data: ContextData,
         neural_prediction: NeuralPrediction,
         violated_rules: List[str],
         focused_space: List[int]
@@ -299,10 +300,10 @@ class AbductionEngine:
 
     async def _find_inconsistencies(
         self,
-        input_data: Dict[str, Any],
+        input_data: ContextData,
         prediction: NeuralPrediction,
         violated_rules: List[str]
-    ) -> List[Dict[str, Any]]:
+    ) -> List[JSONDict]:
         """Find inconsistencies between prediction and knowledge base."""
         inconsistencies = []
 
@@ -320,10 +321,10 @@ class AbductionEngine:
 
     async def _generate_hypotheses(
         self,
-        input_data: Dict[str, Any],
-        inconsistencies: List[Dict[str, Any]],
+        input_data: ContextData,
+        inconsistencies: List[JSONDict],
         focused_space: List[int]
-    ) -> List[Dict[str, Any]]:
+    ) -> List[JSONDict]:
         """Generate hypotheses to explain inconsistencies."""
         hypotheses = []
 
@@ -359,9 +360,9 @@ class AbductionEngine:
 
     async def _select_best_hypothesis(
         self,
-        hypotheses: List[Dict[str, Any]],
-        input_data: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        hypotheses: List[JSONDict],
+        input_data: ContextData
+    ) -> JSONDict:
         """Select the best hypothesis using abductive reasoning."""
         if not hypotheses:
             return {"label": "uncertain", "confidence": 0.5}
@@ -386,8 +387,8 @@ class DeepProbLogKB:
 
     def __init__(self):
         """Initialize knowledge base."""
-        self._rules: Dict[str, Dict[str, Any]] = {}
-        self._facts: List[Dict[str, Any]] = []
+        self._rules: Dict[str, JSONDict] = {}
+        self._facts: List[JSONDict] = []
 
         # Add default constitutional rules
         self._add_default_rules()
@@ -421,7 +422,7 @@ class DeepProbLogKB:
         self,
         rule_id: str,
         description: str,
-        check_fn: Any,
+        check_fn: Callable[[ContextData], bool],
         priority: float = 0.5
     ) -> None:
         """Add a rule to the knowledge base."""
@@ -435,8 +436,8 @@ class DeepProbLogKB:
     async def evaluate_rule(
         self,
         rule_id: str,
-        input_data: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        input_data: ContextData
+    ) -> JSONDict:
         """Evaluate a rule against input data."""
         if rule_id not in self._rules:
             return {"satisfied": True, "rule_id": rule_id, "reason": "Rule not found"}
@@ -459,14 +460,14 @@ class DeepProbLogKB:
 
     async def get_applicable_rules(
         self,
-        input_data: Dict[str, Any]
+        input_data: ContextData
     ) -> List[str]:
         """Get rules applicable to the input data."""
         return list(self._rules.keys())
 
     async def check_all_rules(
         self,
-        input_data: Dict[str, Any]
+        input_data: ContextData
     ) -> Tuple[List[str], List[str]]:
         """
         Check all rules against input data.
@@ -534,7 +535,7 @@ class ConstitutionalEdgeCaseHandler:
 
     async def classify(
         self,
-        input_data: Dict[str, Any]
+        input_data: ContextData
     ) -> ClassificationResult:
         """
         Classify input with cognitive reflection.
@@ -600,7 +601,7 @@ class ConstitutionalEdgeCaseHandler:
 
     async def compute_reflection(
         self,
-        input_data: Dict[str, Any],
+        input_data: ContextData,
         prediction: NeuralPrediction
     ) -> ReflectionVector:
         """
@@ -638,7 +639,7 @@ class ConstitutionalEdgeCaseHandler:
             reasoning_trace=reasoning,
         )
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> JSONDict:
         """Get handler statistics."""
         total = self._stats["total_classifications"]
         s1_rate = self._stats["system_1_only"] / max(total, 1)

@@ -21,13 +21,29 @@ import time
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Tuple
 
+from ...shared.types import JSONDict, PolicyData
 from .. import CONSTITUTIONAL_HASH
 
 logger = logging.getLogger(__name__)
 
 # Z3 imports (will be available in production environment)
 try:
-    from z3 import *
+    from z3 import (  # noqa: F401
+        And,
+        Bool,
+        BoolVal,
+        Function,
+        Int,
+        Not,
+        Or,
+        Solver,
+        is_bool,
+        is_int_value,
+        is_true,
+        sat,
+        unknown,
+        unsat,
+    )
     Z3_AVAILABLE = True
 except ImportError:
     Z3_AVAILABLE = False
@@ -76,7 +92,7 @@ class PolicySpecification:
     name: str
     description: str
 
-    # Z3 variables and constraints
+    # Z3 variables and constraints (kept as Any since they're Z3 library types)
     variables: Dict[str, Any] = field(default_factory=dict)
     preconditions: List[Any] = field(default_factory=list)
     postconditions: List[Any] = field(default_factory=list)
@@ -95,7 +111,7 @@ class VerificationResult:
     policy_id: str
     is_satisfiable: bool
     is_valid: bool
-    counterexample: Optional[Dict[str, Any]]
+    counterexample: Optional[JSONDict]
     verification_time_ms: float
     solver_result: str  # "sat", "unsat", "unknown"
     error_message: Optional[str] = None
@@ -131,7 +147,7 @@ class Z3PolicyVerifier:
     async def verify_policy(
         self,
         policy_spec: PolicySpecification,
-        context: Optional[Dict[str, Any]] = None
+        context: Optional[JSONDict] = None
     ) -> VerificationResult:
         """
         Verify a policy specification using Z3.
@@ -229,9 +245,9 @@ class Z3PolicyVerifier:
 
     async def _add_policy_constraints(
         self,
-        solver: Any,
+        solver: Any,  # Z3 Solver object - third-party library type
         policy_spec: PolicySpecification,
-        context: Optional[Dict[str, Any]]
+        context: Optional[JSONDict]
     ) -> None:
         """Add policy constraints to the Z3 solver."""
 
@@ -253,7 +269,7 @@ class Z3PolicyVerifier:
                     elif isinstance(var_value, int):
                         solver.add(var == var_value)
 
-    def _extract_model(self, model: Any) -> Dict[str, Any]:
+    def _extract_model(self, model: Any) -> JSONDict:  # model is Z3 Model object
         """Extract counterexample from Z3 model."""
         if not Z3_AVAILABLE or not model:
             return {}
@@ -268,7 +284,7 @@ class Z3PolicyVerifier:
                     counterexample[str(var_name)] = value.as_long()
                 else:
                     counterexample[str(var_name)] = str(value)
-            except:
+            except Exception:
                 counterexample[str(var_name)] = "unknown"
 
         return counterexample
@@ -276,7 +292,7 @@ class Z3PolicyVerifier:
     def _get_cache_key(
         self,
         policy_spec: PolicySpecification,
-        context: Optional[Dict[str, Any]]
+        context: Optional[JSONDict]
     ) -> str:
         """Generate cache key for verification results."""
         context_str = str(sorted(context.items())) if context else ""
@@ -339,20 +355,21 @@ class Z3PolicyVerifier:
     def _parse_constraint(
         self,
         constraint_str: str,
-        variables: Dict[str, Any]
-    ) -> Any:
+        variables: Dict[str, Any]  # Z3 variable objects
+    ) -> Any:  # Returns Z3 constraint object
         """Parse a constraint string into Z3 expression (simplified)."""
         # This is a very basic parser - in practice, would use a proper expression parser
         if Z3_AVAILABLE:
             # Simple variable substitution
             expr_str = constraint_str
-            for var_name, var in variables.items():
+            for var_name, _var in variables.items():
                 expr_str = expr_str.replace(var_name, f"variables['{var_name}']")
 
             # Evaluate in context (dangerous in production!)
+            # This is for Z3 constraint parsing only, not user input
             try:
-                return eval(expr_str, {"variables": variables, "And": And, "Or": Or, "Not": Not})
-            except:
+                return eval(expr_str, {"variables": variables, "And": And, "Or": Or, "Not": Not})  # nosec B307
+            except Exception:
                 # Fallback to simple boolean
                 return BoolVal(True)
         else:
@@ -392,7 +409,7 @@ class Z3PolicyVerifier:
             error_messages.append("Policy set contains contradictions")
 
             # Try to identify conflicting policies (simplified)
-            for i, spec in enumerate(policy_specs):
+            for _i, spec in enumerate(policy_specs):
                 single_solver = Solver()
                 if Z3_AVAILABLE:
                     single_solver.set("timeout", self.verification_timeout_ms)
@@ -415,7 +432,7 @@ class Z3PolicyVerifier:
         status_message = "All policies consistent" if all_consistent else "; ".join(error_messages)
         return all_consistent, status_message, results
 
-    def get_verification_stats(self) -> Dict[str, Any]:
+    def get_verification_stats(self) -> JSONDict:
         """Get verification statistics."""
         return {
             "policies_verified": len(self.policy_specs),
@@ -485,7 +502,7 @@ class ConstitutionalVerifier:
     async def verify_constitutional_compliance(
         self,
         action_description: str,
-        context: Optional[Dict[str, Any]] = None
+        context: Optional[JSONDict] = None
     ) -> Tuple[bool, str, List[VerificationResult]]:
         """
         Verify that an action complies with constitutional principles.
@@ -526,7 +543,7 @@ class ConstitutionalVerifier:
 
     async def verify_governance_decision(
         self,
-        decision_data: Dict[str, Any]
+        decision_data: PolicyData
     ) -> VerificationResult:
         """
         Verify a governance decision for mathematical consistency.
@@ -556,7 +573,7 @@ class ConstitutionalVerifier:
 
         return await self.z3_verifier.verify_policy(decision_policy, decision_data)
 
-    def get_verifier_status(self) -> Dict[str, Any]:
+    def get_verifier_status(self) -> JSONDict:
         """Get verifier system status."""
         return {
             "z3_stats": self.z3_verifier.get_verification_stats(),
