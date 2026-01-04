@@ -267,7 +267,12 @@ class RBACConfig:
         self.development_mode = self.env == "development"
 
         # Load from settings if not provided
-        self.jwt_secret = jwt_secret or settings.security.jwt_secret
+        if jwt_secret:
+            self.jwt_secret = jwt_secret
+        else:
+            raw_secret = settings.security.jwt_secret
+            self.jwt_secret = raw_secret.get_secret_value() if hasattr(raw_secret, "get_secret_value") else raw_secret
+
         self.jwt_algorithm = jwt_algorithm or settings.security.jwt_algorithm
         self.jwt_issuer = jwt_issuer or (settings.security.jwt_issuer if hasattr(settings.security, "jwt_issuer") else jwt_issuer)
 
@@ -277,10 +282,12 @@ class RBACConfig:
         self.audit_all_decisions = audit_all_decisions
         self.rate_limit_enabled = rate_limit_enabled
         self.rate_limits = rate_limits or {
-            Role.VIEWER: 60,
-            Role.AGENT_OPERATOR: 300,
-            Role.TENANT_ADMIN: 1000,
-            Role.SYSTEM_ADMIN: 5000,
+            Role.SYSTEM_ADMIN: 1000,
+            Role.TENANT_ADMIN: 500,
+            Role.AGENT_OPERATOR: 200,
+            Role.POLICY_AUTHOR: 100,
+            Role.AUDITOR: 100,
+            Role.VIEWER: 50,
         }
 
         if not self.jwt_secret:

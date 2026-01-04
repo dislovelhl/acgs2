@@ -17,6 +17,7 @@ def test_rbac_middleware_dev_secret_in_production(monkeypatch):
 
     mock_settings = MagicMock()
     mock_settings.env = "production"
+    # Ensure raw_secret in RBACConfig.__init__ sees the SecretStr
     mock_settings.security.jwt_secret = SecretStr("dev-secret")
     mock_settings.security.jwt_algorithm = "HS256"
 
@@ -47,10 +48,9 @@ def test_rbac_token_validation_no_jwt_library(monkeypatch):
     app = MagicMock()
     middleware = RBACMiddleware(app)
 
-    # validate_token is an async method
+    # validate_token is a method of token_validator and it is synchronous
     with pytest.raises(HTTPException) as exc:
-        import asyncio
-        asyncio.run(middleware.validate_token("dummy-token"))
+        middleware.token_validator.validate_token("dummy-token")
 
     assert exc.value.status_code == 500
     assert "Authentication service misconfigured" in exc.value.detail
