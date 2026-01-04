@@ -152,10 +152,26 @@ class ModelManager:
         self.auto_rollback = auto_rollback
 
         # Thread safety
+        # RLock allows the same thread to acquire the lock multiple times
+        # This is critical for atomic operations that may call other locked methods
         self._lock = threading.RLock()
         self._async_lock: Optional[asyncio.Lock] = None
 
-        # Model state - atomic reference
+        # ATOMIC REFERENCE SWAP PATTERN:
+        # _current_model is a single reference that can be updated atomically.
+        # Python's GIL guarantees that simple reference assignments are atomic operations.
+        # Combined with locks, this enables zero-downtime model swaps:
+        #
+        # 1. All prediction requests read from _current_model (a simple reference read)
+        # 2. During swap, we acquire the lock and update the reference in one step
+        # 3. In-flight predictions continue using the old model they already reference
+        # 4. New predictions get the new model after the swap completes
+        # 5. No prediction requests are blocked or dropped during the swap
+        #
+        # This is superior to alternatives like:
+        # - Stopping the service (downtime)
+        # - Request queuing (latency spikes)
+        # - Blue-green deployment (resource overhead)
         self._current_model: OnlineLearner = self._create_initial_model()
         self._current_version: int = 1
 
@@ -239,6 +255,23 @@ class ModelManager:
         This method is designed for FastAPI dependency injection.
         Returns a reference to the current model atomically.
 
+        ATOMIC REFERENCE READ:
+        The lock ensures we get a consistent reference to the current model.
+        Once we have the reference, we can use it safely outside the lock.
+        The model object itself is immutable from the manager's perspective -
+        we never modify it, we only replace the reference during swaps.
+
+        This enables zero-downtime deployment:
+        - Request A calls get_model() and gets model v1
+        - Request B calls get_model() and gets model v1
+        - Swap occurs: _current_model = v2
+        - Request A continues using v1 (still has the reference)
+        - Request B continues using v1 (already got the reference)
+        - Request C calls get_model() and gets model v2 (new reference)
+        - Request D calls get_model() and gets model v2
+
+        No requests are blocked, dropped, or see inconsistent state.
+
         Returns:
             The current OnlineLearner instance.
         """
@@ -276,6 +309,21 @@ class ModelManager:
         start_time = time.time()
         async_lock = await self._get_async_lock()
 
+        # DOUBLE-LOCK PATTERN FOR SWAP SAFETY:
+        # We use two locks to ensure swap atomicity in async environments:
+        #
+        # 1. async_lock: Prevents concurrent swap operations (async contexts)
+        #    Only one swap can be in progress at a time across all async tasks
+        #
+        # 2. _lock (RLock): Protects the reference update itself (thread safety)
+        #    Ensures get_model() sees consistent state during the swap
+        #
+        # This pattern handles both async concurrency and thread concurrency:
+        # - Multiple async tasks trying to swap → serialized by async_lock
+        # - Multiple threads reading during swap → protected by _lock
+        # - Prediction requests during swap → safely read old or new model
+        #
+        # The locks are acquired in a nested fashion to prevent deadlocks.
         async with async_lock:
             with self._lock:
                 old_version = self._current_version
@@ -295,7 +343,22 @@ class ModelManager:
                                 duration_ms=(time.time() - start_time) * 1000,
                             )
 
-                    # Perform atomic swap
+                    # ATOMIC SWAP OPERATION:
+                    # This is the critical zero-downtime swap moment.
+                    # We hold both async_lock and _lock, ensuring no other swap
+                    # can occur concurrently and all get_model() calls see consistent state.
+                    #
+                    # The reference assignment is atomic in Python due to the GIL.
+                    # Sequence of events during swap:
+                    #
+                    # T0: old_model = _current_model (v1)
+                    # T1: _current_model = new_model  <- ATOMIC ASSIGNMENT
+                    # T2: new_model = _current_model (v2)
+                    #
+                    # Concurrent prediction requests see either v1 or v2,
+                    # but never an inconsistent state or null reference.
+                    # Requests in-flight with v1 complete normally.
+                    # New requests get v2 immediately after this line.
                     self._current_model = new_model
                     self._current_version = new_version
 
@@ -424,7 +487,22 @@ class ModelManager:
                 for v in self._version_history:
                     v.is_champion = False
 
-                # Swap to target model
+                # ATOMIC ROLLBACK VIA REFERENCE SWAP:
+                # Rollback uses the same atomic reference swap pattern as forward deployment.
+                # We keep previous model versions in memory (_version_history), so rollback
+                # is instantaneous - just swap the reference back to the old model.
+                #
+                # Benefits of this approach:
+                # - Sub-millisecond rollback (just a reference update)
+                # - No need to reload from disk or retrain
+                # - Same zero-downtime guarantees as forward swaps
+                # - Can rollback multiple times without performance penalty
+                #
+                # This enables rapid incident response:
+                # 1. Detect production issue with new model
+                # 2. Call rollback_to_version(old_version)
+                # 3. Service immediately reverts to old model
+                # 4. Investigate issue offline with new model
                 self._current_model = target_version.model
                 self._current_version = new_version
                 target_version.is_champion = True
