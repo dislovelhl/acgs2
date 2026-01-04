@@ -1,3 +1,14 @@
+/**
+ * Agent Command Module
+ *
+ * This module provides CLI commands for managing individual agents in ACGS-2 swarms, including:
+ * - Spawning new agents with specific types and skills
+ * - Listing active agents with filtering capabilities
+ * - Managing agent lifecycle and configurations
+ *
+ * @module agent
+ */
+
 import { Command } from 'commander';
 import chalk from 'chalk';
 import ora from 'ora';
@@ -5,19 +16,79 @@ import { spawnAgent, listAgents } from '../services/agentService';
 import { getLogger } from '../../../sdk/typescript/src/utils/logger';
 const logger = getLogger('agent');
 
-
-
+/**
+ * Main agent command that provides subcommands for agent management.
+ * Use this command to spawn, list, and manage individual agents in the swarm.
+ *
+ * Available subcommands:
+ * - spawn: Create and spawn a new agent with specified type and skills
+ * - list: Display all active agents with optional filtering
+ *
+ * @example
+ * ```bash
+ * # Spawn a coder agent with custom name
+ * npx claude-flow agent spawn --type coder --name my-coder
+ *
+ * # Spawn a researcher with specific skills
+ * npx claude-flow agent spawn --type researcher --skills "ml,nlp,data-analysis"
+ *
+ * # List all active agents
+ * npx claude-flow agent list --verbose
+ *
+ * # Filter agents by type
+ * npx claude-flow agent list --type coder
+ * ```
+ */
 export const agentCommand = new Command('agent')
   .description('Manage agents in the swarm');
 
 // Valid agent types
 const VALID_AGENT_TYPES = ['coder', 'researcher', 'analyst', 'tester', 'coordinator'] as const;
+
+/**
+ * Valid agent type classifications.
+ *
+ * - coder: Software development and code implementation (👨‍💻)
+ * - researcher: Information gathering and research tasks (🔬)
+ * - analyst: Data analysis and insights generation (📊)
+ * - tester: Quality assurance and testing (🧪)
+ * - coordinator: Task coordination and orchestration (🎯)
+ */
 type AgentType = typeof VALID_AGENT_TYPES[number];
 
+/**
+ * Validates if a string is a valid agent type.
+ *
+ * @param type - The agent type string to validate
+ * @returns True if the type is valid (coder, researcher, analyst, tester, or coordinator)
+ *
+ * @example
+ * ```typescript
+ * if (validateAgentType('coder')) {
+ *   console.log('Valid agent type');
+ * }
+ * ```
+ */
 function validateAgentType(type: string): type is AgentType {
   return VALID_AGENT_TYPES.includes(type as AgentType);
 }
 
+/**
+ * Validates and parses a comma-separated skills string into a normalized array.
+ * Trims whitespace, removes empty entries, and converts to lowercase.
+ *
+ * @param skills - Comma-separated skills string
+ * @returns Array of normalized skill strings, or empty array if input is empty
+ *
+ * @example
+ * ```typescript
+ * const skills = validateSkills('Python, JavaScript, Machine Learning');
+ * // Returns: ['python', 'javascript', 'machine learning']
+ *
+ * const empty = validateSkills('');
+ * // Returns: []
+ * ```
+ */
 function validateSkills(skills: string): string[] {
   if (!skills || skills.trim() === '') {
     return [];
@@ -29,6 +100,21 @@ function validateSkills(skills: string): string[] {
     .map(skill => skill.toLowerCase());
 }
 
+/**
+ * Returns the emoji icon associated with a given agent type.
+ *
+ * @param type - The agent type
+ * @returns The emoji string for the agent type, or default robot emoji if unknown
+ *
+ * @example
+ * ```typescript
+ * const emoji = getAgentEmoji('coder');
+ * // Returns: '👨‍💻'
+ *
+ * const fallback = getAgentEmoji('unknown');
+ * // Returns: '🤖'
+ * ```
+ */
 function getAgentEmoji(type: string): string {
   const emojiMap: Record<string, string> = {
     coder: '👨‍💻',
@@ -40,6 +126,23 @@ function getAgentEmoji(type: string): string {
   return emojiMap[type] || '🤖';
 }
 
+/**
+ * Generates a unique agent name based on type and timestamp, or returns the custom name if provided.
+ * Auto-generated names use the format: `{type}-{timestamp}-{random}`.
+ *
+ * @param type - The agent type
+ * @param customName - Optional custom name provided by user
+ * @returns The agent name (custom if provided, otherwise auto-generated)
+ *
+ * @example
+ * ```typescript
+ * const custom = generateAgentName('coder', 'my-special-coder');
+ * // Returns: 'my-special-coder'
+ *
+ * const auto = generateAgentName('coder');
+ * // Returns: 'coder-lx4h2k-9f3k1' (example)
+ * ```
+ */
 function generateAgentName(type: AgentType, customName?: string): string {
   if (customName && customName.trim()) {
     return customName.trim();
