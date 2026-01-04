@@ -20,24 +20,24 @@ import { PredictionWidget } from "../PredictionWidget";
 
 const API_BASE_URL = "http://localhost:8080";
 
-// Mock recharts to avoid rendering issues in tests
-vi.mock("recharts", async () => {
-  const actual = await vi.importActual("recharts");
-  return {
-    ...actual,
-    ResponsiveContainer: ({ children }: { children: React.ReactNode }) => (
-      <div data-testid="responsive-container">{children}</div>
-    ),
-    ComposedChart: ({ children }: { children: React.ReactNode }) => (
-      <div data-testid="composed-chart">{children}</div>
-    ),
-    Line: () => <div data-testid="line-chart" />,
-    Area: () => <div data-testid="area-chart" />,
-    XAxis: () => null,
-    YAxis: () => null,
-    Tooltip: () => null,
-  };
-});
+// Mock visx-based chart components to avoid rendering issues in tests
+vi.mock("../charts", () => ({
+  ResponsiveChart: ({ children }: { children: (dimensions: { width: number; height: number }) => React.ReactNode }) => (
+    <div data-testid="responsive-container">
+      {children({ width: 800, height: 400 })}
+    </div>
+  ),
+  ComposedChart: ({ children }: { children?: React.ReactNode }) => (
+    <div data-testid="composed-chart">{children}</div>
+  ),
+}));
+
+// Mock visx dependencies to avoid SVG rendering issues in tests
+vi.mock("@visx/responsive", () => ({
+  ParentSize: ({ children }: { children: (dimensions: { width: number; height: number }) => React.ReactNode }) => (
+    <div>{children({ width: 800, height: 400 })}</div>
+  ),
+}));
 
 describe("PredictionWidget", () => {
   describe("Loading State", () => {

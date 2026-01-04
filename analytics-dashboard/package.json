@@ -21,7 +21,13 @@
     "react-router-dom": "^6.20.0",
     "recharts": "^2.10.0",
     "lucide-react": "^0.294.0",
-    "react-grid-layout": "^1.4.4"
+    "react-grid-layout": "^1.4.4",
+    "@visx/shape": "^3.3.0",
+    "@visx/scale": "^3.3.0",
+    "@visx/axis": "^3.3.0",
+    "@visx/tooltip": "^3.3.0",
+    "@visx/gradient": "^3.3.0",
+    "@visx/responsive": "^3.3.0"
   },
   "devDependencies": {
     "@testing-library/dom": "^9.3.3",
