@@ -13,8 +13,10 @@ from typing import Any, Dict, List, Optional
 from uuid import uuid4
 
 import httpx
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+from .auth import UserClaims, get_current_user
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -117,6 +119,22 @@ class PolicyValidationRequest(BaseModel):
 
 
 # Response Models
+class AuditContext(BaseModel):
+    """Audit context for tracking authenticated user information."""
+
+    user_id: str = Field(..., description="Authenticated user ID")
+    tenant_id: str = Field(..., description="Tenant ID")
+    timestamp: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        description="Request timestamp",
+    )
+    request_id: str = Field(default_factory=lambda: str(uuid4()), description="Request ID")
+
+    model_config = ConfigDict(
+        str_strip_whitespace=True,
+    )
+
+
 class PolicyViolation(BaseModel):
     """A single policy violation."""
 
@@ -175,6 +193,9 @@ class PolicyValidationResponse(BaseModel):
     opa_available: bool = Field(
         default=True, description="Whether OPA was available for validation"
     )
+    audit_context: Optional[AuditContext] = Field(
+        None, description="Audit context with authenticated user information"
+    )
 
     model_config = ConfigDict(
         str_strip_whitespace=True,
@@ -200,6 +221,18 @@ class PoliciesListResponse(BaseModel):
 
     policies: List[PolicyInfo] = Field(..., description="Available policies")
     total: int = Field(..., description="Total number of policies")
+    audit_context: Optional[AuditContext] = Field(
+        None, description="Audit context with authenticated user information"
+    )
+
+
+class PolicyResponse(BaseModel):
+    """Response model for a single policy."""
+
+    policy: PolicyInfo = Field(..., description="Policy information")
+    audit_context: Optional[AuditContext] = Field(
+        None, description="Audit context with authenticated user information"
+    )
 
 
 # Built-in demo policies for testing when OPA is unavailable
@@ -544,10 +577,37 @@ def generate_recommendations(
     response_model=PolicyValidationResponse,
     status_code=status.HTTP_200_OK,
     summary="Validate resources against policies",
-    description="Validate resources against governance policies for CI/CD integration",
+    description=(
+        "Validate resources against governance policies for CI/CD integration. "
+        "**Requires JWT authentication.** Include a valid JWT token in the "
+        "Authorization header as `Bearer <token>`."
+    ),
+    responses={
+        200: {
+            "description": "Validation completed successfully",
+            "model": PolicyValidationResponse,
+        },
+        401: {
+            "description": "Unauthorized - Invalid or missing authentication token",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Authentication required"}
+                }
+            },
+        },
+        500: {
+            "description": "Internal server error during validation",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Policy validation failed: <error message>"}
+                }
+            },
+        },
+    },
 )
 async def validate_policies(
     request: PolicyValidationRequest,
+    current_user: UserClaims = Depends(get_current_user),
 ) -> PolicyValidationResponse:
     """
     Validate resources against ACGS2 governance policies.
@@ -573,7 +633,8 @@ async def validate_policies(
 
         logger.info(
             f"Policy validation request: {len(request.resources)} resources, "
-            f"type={request.resource_type}, policy={request.policy_id}, platform={ci_platform}"
+            f"type={request.resource_type}, policy={request.policy_id}, platform={ci_platform}, "
+            f"user={current_user.sub}, tenant={current_user.tenant_id}"
         )
 
         # Try to evaluate with OPA first
@@ -623,6 +684,13 @@ async def validate_policies(
         if request.include_recommendations:
             recommendations = generate_recommendations(violations, opa_available)
 
+        # Create audit context
+        audit_ctx = AuditContext(
+            user_id=current_user.sub,
+            tenant_id=current_user.tenant_id,
+            timestamp=start_time,
+        )
+
         response = PolicyValidationResponse(
             passed=passed,
             violations=violations,
@@ -630,11 +698,13 @@ async def validate_policies(
             recommendations=recommendations,
             dry_run=not opa_available,
             opa_available=opa_available,
+            audit_context=audit_ctx,
         )
 
         logger.info(
             f"Policy validation complete: passed={passed}, "
-            f"violations={len(violations)}, time={validation_time_ms}ms"
+            f"violations={len(violations)}, time={validation_time_ms}ms, "
+            f"user={current_user.sub}, tenant={current_user.tenant_id}"
         )
 
         return response
@@ -651,17 +721,43 @@ async def validate_policies(
     "/policies",
     response_model=PoliciesListResponse,
     summary="List available policies",
-    description="List all available governance policies",
+    description=(
+        "List all available governance policies. "
+        "**Requires JWT authentication.** Include a valid JWT token in the "
+        "Authorization header as `Bearer <token>`. "
+        "Optionally filter by resource type and enabled status."
+    ),
+    responses={
+        200: {
+            "description": "Policies retrieved successfully",
+            "model": PoliciesListResponse,
+        },
+        401: {
+            "description": "Unauthorized - Invalid or missing authentication token",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Authentication required"}
+                }
+            },
+        },
+    },
 )
 async def list_policies(
     resource_type: Optional[str] = None,
     enabled_only: bool = True,
+    current_user: UserClaims = Depends(get_current_user),
 ) -> PoliciesListResponse:
     """
     List available governance policies.
 
     Optionally filter by resource type and enabled status.
     """
+    # Log the request with user/tenant context for audit trail
+    logger.info(
+        f"List policies request: resource_type={resource_type}, enabled_only={enabled_only}, "
+        f"user={current_user.sub}, tenant={current_user.tenant_id}"
+    )
+
     # Check if OPA is available
     opa_available = await check_opa_health()
 
@@ -699,7 +795,19 @@ async def list_policies(
                     if enabled_only:
                         policies = [p for p in policies if p.enabled]
 
-                    return PoliciesListResponse(policies=policies, total=len(policies))
+                    logger.info(
+                        f"List policies complete: returned {len(policies)} policies from OPA, "
+                        f"user={current_user.sub}, tenant={current_user.tenant_id}"
+                    )
+
+                    audit_ctx = AuditContext(
+                        user_id=current_user.sub,
+                        tenant_id=current_user.tenant_id,
+                    )
+
+                    return PoliciesListResponse(
+                        policies=policies, total=len(policies), audit_context=audit_ctx
+                    )
         except Exception as e:
             logger.warning(f"Failed to get policies from OPA: {e}")
 
@@ -714,21 +822,74 @@ async def list_policies(
     if enabled_only:
         policies = [p for p in policies if p.enabled]
 
-    return PoliciesListResponse(policies=policies, total=len(policies))
+    logger.info(
+        f"List policies complete: returned {len(policies)} policies, "
+        f"user={current_user.sub}, tenant={current_user.tenant_id}"
+    )
+
+    audit_ctx = AuditContext(
+        user_id=current_user.sub,
+        tenant_id=current_user.tenant_id,
+    )
+
+    return PoliciesListResponse(policies=policies, total=len(policies), audit_context=audit_ctx)
 
 
 @router.get(
     "/policies/{policy_id}",
-    response_model=PolicyInfo,
+    response_model=PolicyResponse,
     summary="Get policy details",
-    description="Get details of a specific policy",
+    description=(
+        "Get details of a specific policy by its ID. "
+        "**Requires JWT authentication.** Include a valid JWT token in the "
+        "Authorization header as `Bearer <token>`."
+    ),
+    responses={
+        200: {
+            "description": "Policy details retrieved successfully",
+            "model": PolicyResponse,
+        },
+        401: {
+            "description": "Unauthorized - Invalid or missing authentication token",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Authentication required"}
+                }
+            },
+        },
+        404: {
+            "description": "Policy not found",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Policy not found: <policy_id>"}
+                }
+            },
+        },
+    },
 )
-async def get_policy(policy_id: str) -> PolicyInfo:
+async def get_policy(
+    policy_id: str,
+    current_user: UserClaims = Depends(get_current_user),
+) -> PolicyResponse:
     """Get details of a specific policy."""
+    # Log the request with user/tenant context for audit trail
+    logger.info(
+        f"Get policy request: policy_id={policy_id}, "
+        f"user={current_user.sub}, tenant={current_user.tenant_id}"
+    )
+
     # Check demo policies first
     for policy in DEMO_POLICIES:
         if policy.id == policy_id:
-            return policy
+            logger.info(
+                f"Get policy complete: found demo policy {policy_id}, "
+                f"user={current_user.sub}, tenant={current_user.tenant_id}"
+            )
+            audit_ctx = AuditContext(
+                user_id=current_user.sub,
+                tenant_id=current_user.tenant_id,
+            )
+            return PolicyResponse(policy=policy, audit_context=audit_ctx)
 
     # Check OPA if available
     opa_available = await check_opa_health()
@@ -741,7 +902,7 @@ async def get_policy(policy_id: str) -> PolicyInfo:
                     policy_data = result.get("result", {})
 
                     if policy_data:
-                        return PolicyInfo(
+                        policy_info = PolicyInfo(
                             id=policy_id,
                             name=policy_data.get("name", policy_id),
                             description=policy_data.get("description"),
@@ -750,9 +911,22 @@ async def get_policy(policy_id: str) -> PolicyInfo:
                             severity=ViolationSeverity(policy_data.get("severity", "medium")),
                             enabled=policy_data.get("enabled", True),
                         )
+                        logger.info(
+                            f"Get policy complete: found OPA policy {policy_id}, "
+                            f"user={current_user.sub}, tenant={current_user.tenant_id}"
+                        )
+                        audit_ctx = AuditContext(
+                            user_id=current_user.sub,
+                            tenant_id=current_user.tenant_id,
+                        )
+                        return PolicyResponse(policy=policy_info, audit_context=audit_ctx)
         except Exception as e:
             logger.warning(f"Failed to get policy from OPA: {e}")
 
+    logger.warning(
+        f"Get policy failed: policy not found {policy_id}, "
+        f"user={current_user.sub}, tenant={current_user.tenant_id}"
+    )
     raise HTTPException(
         status_code=status.HTTP_404_NOT_FOUND,
         detail=f"Policy not found: {policy_id}",
@@ -762,11 +936,58 @@ async def get_policy(policy_id: str) -> PolicyInfo:
 @router.get(
     "/health",
     summary="Policy validation health check",
-    description="Check if policy validation is available",
+    description=(
+        "Check if policy validation service is available and healthy. "
+        "**Requires JWT authentication** to prevent system reconnaissance. "
+        "Include a valid JWT token in the Authorization header as `Bearer <token>`."
+    ),
+    responses={
+        200: {
+            "description": "Health check completed successfully",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "status": "healthy",
+                        "opa_available": True,
+                        "opa_url": "http://localhost:8181",
+                        "builtin_policies": 6,
+                        "timestamp": "2026-01-03T12:00:00Z",
+                        "audit_context": {
+                            "user_id": "user-123",
+                            "tenant_id": "tenant-456",
+                            "timestamp": "2026-01-03T12:00:00Z",
+                            "request_id": "req-789",
+                        },
+                    }
+                }
+            },
+        },
+        401: {
+            "description": "Unauthorized - Invalid or missing authentication token",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Authentication required"}
+                }
+            },
+        },
+    },
 )
-async def policy_health() -> Dict[str, Any]:
+async def policy_health(
+    current_user: UserClaims = Depends(get_current_user),
+) -> Dict[str, Any]:
     """Check policy validation health status."""
+    # Log the health check request with user/tenant context for audit trail
+    logger.info(
+        f"Policy health check request: "
+        f"user={current_user.sub}, tenant={current_user.tenant_id}"
+    )
+
     opa_available = await check_opa_health()
+
+    logger.info(
+        f"Policy health check complete: status=healthy, opa_available={opa_available}, "
+        f"user={current_user.sub}, tenant={current_user.tenant_id}"
+    )
 
     return {
         "status": "healthy",
@@ -774,4 +995,10 @@ async def policy_health() -> Dict[str, Any]:
         "opa_url": OPA_URL,
         "builtin_policies": len(DEMO_POLICIES),
         "timestamp": datetime.now(timezone.utc).isoformat(),
+        "audit_context": {
+            "user_id": current_user.sub,
+            "tenant_id": current_user.tenant_id,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "request_id": str(uuid4()),
+        },
     }
