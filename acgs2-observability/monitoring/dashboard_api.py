@@ -50,6 +50,14 @@ try:
     except ImportError:
         MEMORY_PROFILER_AVAILABLE = False
 
+    # Import security headers middleware
+    try:
+        from shared.security import SecurityHeadersConfig, SecurityHeadersMiddleware
+
+        SECURITY_HEADERS_AVAILABLE = True
+    except ImportError:
+        SECURITY_HEADERS_AVAILABLE = False
+
     FASTAPI_AVAILABLE = True
 except ImportError:
     FASTAPI_AVAILABLE = False
@@ -761,6 +769,20 @@ def create_dashboard_app() -> FastAPI:
         allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         allow_headers=["Authorization", "Content-Type", "X-Correlation-ID"],
     )
+
+    # Add security headers middleware
+    # Configure for WebSocket service to allow ws:// and wss:// connections for /dashboard/ws endpoint
+    if SECURITY_HEADERS_AVAILABLE:
+        security_config = SecurityHeadersConfig.for_websocket_service()
+        app.add_middleware(SecurityHeadersMiddleware, config=security_config)
+        environment = os.getenv("ENVIRONMENT", "production")
+        logger.info(
+            f"[{CONSTITUTIONAL_HASH}] Security headers middleware configured for monitoring dashboard (environment: {environment})"
+        )
+    else:
+        logger.warning(
+            f"[{CONSTITUTIONAL_HASH}] Security headers middleware not available - install shared security module"
+        )
 
     @app.get("/dashboard/overview", response_model=DashboardOverview)
     async def get_overview(request: Request):
