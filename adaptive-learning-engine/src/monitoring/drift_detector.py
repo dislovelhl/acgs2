@@ -399,13 +399,317 @@ class DriftDetector:
                 Safety threshold to prevent statistical tests from running on
                 insufficient data, which would yield unreliable results.
 
-                This is a conservative minimum; actual statistical validity requires
-                larger samples as documented above for reference_window_size and
-                current_window_size. Think of this as a "fail-fast" guard rather
-                than a guarantee of statistical rigor.
+                WHY min_samples_for_drift=10?
+                =============================
+                This is a "fail-fast" guard for cold start and low-traffic scenarios.
+                It prevents drift checks from running when there's clearly insufficient
+                data, but it does NOT guarantee statistical validity.
+
+                Relationship to statistical test requirements:
+                ----------------------------------------------
+                - K-S test: Needs 30-50 samples minimum (Central Limit Theorem)
+                - PSI test: Needs 5-10 per category (e.g., 50-100 for 10 categories)
+                - Chi-squared: Needs 5 per expected category minimum
+
+                So why allow checks with only 10 samples?
+                - Cold start scenario: System just started, waiting for 100+ samples
+                  would delay initial drift monitoring too long
+                - Low-traffic periods: Better to get a noisy signal than no signal
+                - Layered defense: This is the absolute minimum; the recommended
+                  window sizes (reference=1000, current=100) provide the real
+                  statistical rigor
+                - Graceful degradation: Return INSUFFICIENT_DATA status rather than
+                  throwing errors or blocking the system
+
+                STATISTICAL VALIDITY HIERARCHY
+                ==============================
+                Think of sample requirements as a three-tier system:
+
+                Tier 1: min_samples_for_drift (10)
+                  → "Survival threshold" - absolute minimum to attempt a check
+                  → Prevents crashes/errors from tests on nearly empty data
+                  → Returns INSUFFICIENT_DATA if not met
+                  → Not statistically rigorous
+
+                Tier 2: Recommended minimums (30-100)
+                  → Theoretical minimum for statistical tests to be valid
+                  → K-S: 30-50 samples per dataset
+                  → PSI/Chi-squared: depends on # categories (50-100 typical)
+                  → Tests may run but have low statistical power
+
+                Tier 3: Production recommended (100-1000+)
+                  → Default window sizes provide this
+                  → High statistical power to detect meaningful drift
+                  → Low false positive/negative rates
+                  → Robust to outliers and noise
+
+                PRACTICAL IMPLICATIONS
+                ======================
+                In practice, drift checks will rarely operate at Tier 1 (10 samples):
+
+                - Normal operation: reference=1000, current=100 (Tier 3)
+                  → Full statistical validity, high confidence in results
+
+                - Degraded operation: reference=50, current=15 (Tier 2)
+                  → Tests run but results are noisy, use with caution
+                  → May see in low-traffic periods or after system restart
+
+                - Failure mode: reference=8, current=7 (below Tier 1)
+                  → Drift check skipped entirely (INSUFFICIENT_DATA status)
+                  → System logs a warning but continues operating
+                  → Waits for more data accumulation
+
+                COMPARISON TO WINDOW SIZE RECOMMENDATIONS
+                ==========================================
+                The default window sizes (reference=1000, current=100) far exceed
+                min_samples_for_drift=10, ensuring all drift checks in normal
+                operation have sufficient statistical power:
+
+                - reference_window_size=1000 ≫ min_samples_for_drift=10
+                  → Reference always has high statistical validity
+
+                - current_window_size=100 ≫ min_samples_for_drift=10
+                  → Current window meets all statistical test requirements
+
+                - 10:1 ratio maintained even at minimum (100:10)
+                  → Asymmetric comparison preserved for stability
+
+                COLD START BEHAVIOR
+                ===================
+                During system initialization:
+
+                1. First 0-9 samples collected:
+                   - Status: INSUFFICIENT_DATA
+                   - No drift checks attempted
+                   - System accumulates baseline data
+
+                2. First 10-99 samples collected:
+                   - Status: Drift checks begin (if both windows have ≥10)
+                   - Statistical power: LOW (high noise, use with caution)
+                   - Purpose: Early warning system, not definitive
+
+                3. First 100+ samples collected:
+                   - Status: Normal operation begins
+                   - current_window fills up (if high traffic)
+                   - Statistical power: MODERATE to HIGH
+
+                4. First 1000+ samples collected:
+                   - Status: Full statistical validity achieved
+                   - reference_window fills up
+                   - Statistical power: HIGH (production-grade)
+
+                TUNING GUIDANCE
+                ===============
+                When to adjust min_samples_for_drift:
+
+                - Keep at 10 (default): For most applications
+                  → Balances early detection vs. statistical validity
+                  → Works well with default window sizes
+
+                - Increase to 30-50: For safety-critical applications
+                  → Ensures K-S test minimum is always met
+                  → Prevents any checks below theoretical minimums
+                  → Delays cold start monitoring by ~3-5x
+
+                - Decrease to 5: For extremely low-traffic applications
+                  → Accepts higher noise for faster cold start
+                  → Only if you understand the statistical risks
+                  → Not recommended for production
+
+                - Coordinate with window sizes:
+                  → min_samples_for_drift ≤ current_window_size ≤ reference_window_size
+                  → Violation of this ordering breaks the tier system
+                  → Example: Don't set min=100 with current=50 (illogical)
             check_interval_seconds: Interval between automatic checks.
-            drift_share_threshold: Fraction of columns that must drift
-                to trigger dataset-level drift alert.
+            drift_share_threshold: Dataset-level drift threshold (default 0.5).
+                This threshold determines when the entire dataset is considered
+                to be drifting based on the fraction of individual features that
+                show drift.
+
+                TWO-TIER DRIFT THRESHOLD SYSTEM
+                ================================
+                The drift detection system uses TWO distinct thresholds at different levels:
+
+                1. COLUMN-LEVEL THRESHOLD (drift_threshold parameter):
+                   - Applied to INDIVIDUAL features/columns
+                   - Default: 0.2 (PSI-based, moderate drift threshold)
+                   - Used by statistical tests (PSI, K-S, Chi-squared)
+                   - Determines if a SINGLE feature has drifted
+                   - Example: If feature "age" has PSI > 0.2 → feature drifts
+
+                2. DATASET-LEVEL THRESHOLD (drift_share_threshold parameter):
+                   - Applied to the ENTIRE dataset as an aggregate
+                   - Default: 0.5 (50% of features must drift)
+                   - Determines if the DATASET as a whole has drifted
+                   - Example: If 6 out of 10 features drift → dataset drifts
+                             (because 6/10 = 0.6 ≥ 0.5)
+
+                DRIFT SCORING METHODOLOGY
+                =========================
+                The drift scoring process follows these steps:
+
+                Step 1: Column-Level Drift Detection
+                -------------------------------------
+                For each feature, apply appropriate statistical test:
+                - Continuous numerical (>10 unique values) → K-S test
+                  → drift_detected = (p-value < 0.05)
+                - Categorical/binned (<10 unique values) → PSI test
+                  → drift_detected = (PSI > drift_threshold=0.2)
+                - Low-cardinality categorical → Chi-squared test
+                  → drift_detected = (p-value < 0.05)
+
+                Result: Binary drift flag for each column
+                Example: {feature1: False, feature2: True, feature3: True, ...}
+
+                Step 2: Calculate Dataset-Level Drift Score
+                --------------------------------------------
+                Compute the fraction of features that drifted:
+
+                    drift_score = (# drifted features) / (# total features)
+
+                Also called "share_of_drifted_columns" in Evidently terminology.
+
+                Example:
+                - 10 total features
+                - 6 features drifted (from Step 1)
+                - drift_score = 6 / 10 = 0.6
+
+                This score is a VALUE between 0.0 and 1.0:
+                - 0.0 = No features drifted (perfect stability)
+                - 0.5 = Half of features drifted
+                - 1.0 = All features drifted (complete drift)
+
+                Step 3: Apply Dataset-Level Threshold
+                --------------------------------------
+                Compare drift_score against drift_share_threshold:
+
+                    dataset_drift = (drift_score >= drift_share_threshold)
+
+                With default threshold=0.5:
+                - drift_score = 0.4 (40% drifted) → NO dataset drift
+                - drift_score = 0.5 (50% drifted) → YES dataset drift
+                - drift_score = 0.8 (80% drifted) → YES dataset drift
+
+                THRESHOLD CALCULATION EXAMPLES
+                ==============================
+                Scenario 1: 10 features, threshold=0.5 (default)
+                -------------------------------------------------
+                Features tested: f1, f2, f3, f4, f5, f6, f7, f8, f9, f10
+                Drifted: f2 (PSI=0.25), f5 (PSI=0.30), f7 (p=0.01), f9 (PSI=0.22)
+
+                Calculation:
+                - Step 1: 4 features drifted (f2, f5, f7, f9)
+                - Step 2: drift_score = 4/10 = 0.4
+                - Step 3: dataset_drift = (0.4 >= 0.5) = False
+
+                Result: NO dataset drift (only 40% of features drifted)
+                Action: Monitor individual features, but no alert
+
+                Scenario 2: 10 features, threshold=0.5 (default)
+                -------------------------------------------------
+                Features tested: f1, f2, f3, f4, f5, f6, f7, f8, f9, f10
+                Drifted: f1, f3, f4, f6, f7, f9 (6 features)
+
+                Calculation:
+                - Step 1: 6 features drifted
+                - Step 2: drift_score = 6/10 = 0.6
+                - Step 3: dataset_drift = (0.6 >= 0.5) = True
+
+                Result: YES dataset drift (60% of features drifted)
+                Action: Trigger alert, investigate for model retraining
+
+                Scenario 3: 20 features, threshold=0.3 (more sensitive)
+                --------------------------------------------------------
+                Features tested: f1-f20
+                Drifted: f2, f5, f7, f9, f12, f15 (6 features)
+
+                Calculation:
+                - Step 1: 6 features drifted
+                - Step 2: drift_score = 6/20 = 0.3
+                - Step 3: dataset_drift = (0.3 >= 0.3) = True
+
+                Result: YES dataset drift (exactly at threshold)
+                Note: Same 6 drifted features, but now triggers alert
+                      because threshold was lowered to 0.3
+
+                WHY USE A DATASET-LEVEL THRESHOLD?
+                ===================================
+                The two-tier threshold system provides critical benefits:
+
+                1. ROBUSTNESS TO NOISE:
+                   - Individual features can drift due to random noise, outliers,
+                     or temporary anomalies
+                   - Requiring multiple features to drift (>50% by default) filters
+                     out false positives from single noisy features
+                   - Example: If only 1 out of 50 features drifts, likely noise,
+                     not systematic distribution shift
+
+                2. SYSTEMATIC DRIFT DETECTION:
+                   - Real concept drift (data distribution change) typically affects
+                     multiple correlated features, not just one
+                   - Example: Economic recession affects income, spending, credit score
+                     → multiple features drift together → systematic change
+                   - Threshold ensures we catch these systematic shifts
+
+                3. ALERT FATIGUE PREVENTION:
+                   - Without dataset threshold, would alert on ANY single feature drift
+                   - With 50 features, could get 50 separate alerts even if 49 stable
+                   - Dataset threshold aggregates: one alert when PATTERN emerges
+
+                4. TUNABLE SENSITIVITY:
+                   - Lower threshold (e.g., 0.3): More sensitive, earlier detection
+                     → Good for critical systems, faster response
+                   - Higher threshold (e.g., 0.7): More conservative, fewer alerts
+                     → Good for noisy data, reduces false positives
+                   - Default 0.5: Balanced middle ground for most use cases
+
+                THRESHOLD TUNING GUIDANCE
+                =========================
+                Recommended drift_share_threshold values by use case:
+
+                - Critical safety systems (medical, autonomous vehicles):
+                  threshold=0.3-0.4 → Detect drift early with ~30-40% features
+                  → Prioritize safety over false positives
+
+                - Financial/compliance models (fraud, credit):
+                  threshold=0.4-0.5 → Moderate sensitivity
+                  → Balance regulatory scrutiny with operational stability
+
+                - General ML models (recommendations, search):
+                  threshold=0.5-0.6 → Standard sensitivity (default)
+                  → Catch systematic drift while filtering noise
+
+                - High-dimensional, noisy data (NLP, images):
+                  threshold=0.6-0.7 → More conservative
+                  → Many features expected to show some variance
+
+                - Experimental/development models:
+                  threshold=0.3 → High sensitivity for early detection
+                  → Discover drift patterns during development
+
+                MATHEMATICAL RELATIONSHIP BETWEEN THRESHOLDS
+                ============================================
+                The two thresholds work together multiplicatively:
+
+                Effective detection sensitivity =
+                    drift_threshold (column) × drift_share_threshold (dataset)
+
+                Examples:
+                - Strict column (0.1) + Strict dataset (0.3)
+                  → Very sensitive: detects small shifts in minority of features
+
+                - Moderate column (0.2) + Moderate dataset (0.5)
+                  → Balanced: detects moderate shifts in majority of features (DEFAULT)
+
+                - Lenient column (0.3) + Lenient dataset (0.7)
+                  → Conservative: only severe drift in most features triggers alert
+
+                Tuning strategy:
+                - If getting too many false positives → increase either threshold
+                - If missing real drift → decrease either threshold
+                - If drift affects few features strongly → decrease drift_share_threshold
+                - If drift affects many features weakly → decrease drift_threshold
+
             enabled: Whether drift detection is enabled.
             enable_caching: Whether to cache DataFrame conversions and drift
                 reports for performance. When enabled, the detector caches
@@ -692,8 +996,7 @@ class DriftDetector:
                 ref_checksum = self._compute_deque_checksum(self._reference_data)
                 cur_checksum = self._compute_deque_checksum(self._current_data)
                 combined_checksum = hashlib.md5(
-                    f"{ref_checksum}|{cur_checksum}".encode("utf-8"),
-                    usedforsecurity=False
+                    f"{ref_checksum}|{cur_checksum}".encode("utf-8"), usedforsecurity=False
                 ).hexdigest()
 
                 # Check cache: if reference + current data hasn't changed, return cached result
@@ -719,7 +1022,9 @@ class DriftDetector:
 
             try:
                 # Convert to DataFrames (with caching)
-                reference_df = self._to_dataframe(list(self._reference_data), data_source="reference")
+                reference_df = self._to_dataframe(
+                    list(self._reference_data), data_source="reference"
+                )
                 current_df = self._to_dataframe(list(self._current_data), data_source="current")
 
                 # Ensure same columns
@@ -748,15 +1053,116 @@ class DriftDetector:
                 # =============================
                 # DataDriftPreset applies statistical tests to detect distribution shifts:
                 #
-                # For each feature, Evidently automatically selects the appropriate test:
-                # - Continuous numerical features → Kolmogorov-Smirnov (K-S) test
-                #   * Compares cumulative distribution functions
-                #   * Returns p-value (drift if p < 0.05)
+                # AUTOMATIC TEST SELECTION BY EVIDENTLY
+                # --------------------------------------
+                # For each feature, Evidently automatically selects the appropriate test
+                # based on feature characteristics (type, cardinality, distribution):
                 #
-                # - Categorical/low-cardinality features → Chi-squared or PSI
-                #   * Chi-squared tests category distribution independence
-                #   * PSI measures information gain between distributions
-                #   * Returns drift score compared to threshold
+                # 1. KOLMOGOROV-SMIRNOV (K-S) TEST - Continuous numerical features
+                #    ----------------------------------------------------------------
+                #    When: Feature is numerical with >10 unique values
+                #    Method:
+                #      - Computes empirical cumulative distribution functions (ECDFs)
+                #        for both reference and current data
+                #      - Test statistic: D = max|F_ref(x) - F_curr(x)|
+                #        (maximum vertical distance between the two ECDFs)
+                #      - Null hypothesis H0: Both samples drawn from same distribution
+                #
+                #    Decision rule:
+                #      - Compute p-value using Kolmogorov distribution
+                #      - If p-value < 0.05 → reject H0 → drift detected
+                #      - If p-value ≥ 0.05 → fail to reject H0 → no drift
+                #
+                #    Interpretation:
+                #      - p-value: Probability of observing D this large if H0 is true
+                #      - Low p-value (< 0.05) = strong evidence against H0
+                #      - D statistic ∈ [0, 1]: larger D = more divergence
+                #
+                #    Advantages:
+                #      ✓ Non-parametric (no distribution assumptions)
+                #      ✓ Sensitive to shifts in location, scale, and shape
+                #      ✓ Well-established statistical test with known properties
+                #
+                # 2. POPULATION STABILITY INDEX (PSI) - Categorical/binned features
+                #    ----------------------------------------------------------------
+                #    When: Feature is categorical OR numerical with ≤10 unique values
+                #    Method:
+                #      - Bins data into categories (for categorical: use categories directly;
+                #        for numerical: create equal-frequency bins from reference data)
+                #      - Compute proportions in each bin for reference and current:
+                #        P_ref[i] = count_ref[bin_i] / total_ref
+                #        P_curr[i] = count_curr[bin_i] / total_curr
+                #      - Calculate PSI as sum across all bins:
+                #        PSI = Σ_i (P_curr[i] - P_ref[i]) × ln(P_curr[i] / P_ref[i])
+                #
+                #    Mathematical intuition:
+                #      - PSI measures the "information gain" or divergence between
+                #        the current and reference distributions
+                #      - Each bin's contribution: (difference in proportion) × (log ratio)
+                #      - Asymmetric: PSI(A→B) ≠ PSI(B→A)
+                #      - Related to Kullback-Leibler divergence but simplified for
+                #        practical model monitoring
+                #
+                #    Decision rule (industry standard thresholds):
+                #      - PSI < 0.1:     No significant shift (distribution stable)
+                #      - PSI 0.1-0.2:   Small shift (monitor, no immediate action)
+                #      - PSI 0.2-0.25:  Moderate shift (investigate, consider retraining)
+                #                       ↑ DEFAULT drift_threshold=0.2
+                #      - PSI > 0.25:    Severe shift (actionable drift, retrain/rollback)
+                #
+                #    Why drift_threshold=0.2 is chosen:
+                #      ✓ Catches moderate drift before it becomes severe (0.25+)
+                #      ✓ Balances sensitivity (catches real drift) vs. specificity
+                #        (avoids false alarms from normal variation)
+                #      ✓ Industry best practice for model risk management
+                #      ✓ Conservative threshold appropriate for governance (safety-critical)
+                #      ✓ Triggers investigation while there's time to plan retraining,
+                #        before performance degrades significantly
+                #
+                #    Advantages:
+                #      ✓ Intuitive interpretation (information divergence)
+                #      ✓ Works for both categorical and discretized numerical features
+                #      ✓ Industry-standard thresholds enable consistent monitoring
+                #      ✓ Handles high-cardinality categoricals via binning
+                #
+                # 3. CHI-SQUARED TEST - Low-cardinality categorical features
+                #    ----------------------------------------------------------
+                #    When: Feature is categorical with <10 categories (alternative to PSI)
+                #    Method:
+                #      - Construct contingency table of observed counts for each category
+                #        in reference vs. current data
+                #      - Compute expected counts under null hypothesis (same distribution):
+                #        E[ref, category_i] = (total_ref / total_all) × count_i
+                #        E[curr, category_i] = (total_curr / total_all) × count_i
+                #      - Calculate chi-squared statistic:
+                #        χ² = Σ_i (O_i - E_i)² / E_i
+                #        where O_i = observed count, E_i = expected count
+                #      - Degrees of freedom: df = (# categories - 1)
+                #
+                #    Decision rule:
+                #      - Compute p-value from chi-squared distribution with df degrees of freedom
+                #      - If p-value < 0.05 → reject H0 → drift detected
+                #      - If p-value ≥ 0.05 → fail to reject H0 → no drift
+                #
+                #    Statistical requirements:
+                #      - Each expected count should be ≥5 for valid χ² approximation
+                #      - Minimum ~5 samples per category recommended
+                #      - For sparse categories, PSI may be preferred
+                #
+                #    Advantages:
+                #      ✓ Classical statistical test with well-known properties
+                #      ✓ Tests independence between distribution and category membership
+                #      ✓ Provides p-value for significance testing
+                #
+                # EVIDENTLY'S TEST SELECTION LOGIC SUMMARY
+                # ----------------------------------------
+                # Evidently inspects each feature and applies:
+                # - Continuous numerical (>10 unique values) → K-S test
+                # - Low-cardinality (<10 unique values) → Chi-squared or PSI
+                # - High-cardinality categorical → PSI on binned distribution
+                #
+                # This automated selection ensures appropriate statistical rigor
+                # for different feature types without manual configuration.
                 #
                 # DRIFT SCORING METHODOLOGY
                 # -------------------------
@@ -820,12 +1226,81 @@ class DriftDetector:
                     # CIRCUIT BREAKER PATTERN: Increment consecutive drift counter
                     # ============================================================
                     # This counter tracks how many drift checks in a row have detected drift.
-                    # It forms part of a circuit breaker pattern that escalates alert severity
-                    # when drift persists across multiple consecutive checks.
+                    # It implements a circuit breaker pattern that distinguishes between:
+                    # - Transient drift (temporary fluctuations, noise, outliers)
+                    # - Persistent drift (systematic distribution shifts requiring action)
                     #
-                    # The circuit breaker prevents transient drift from triggering critical
-                    # alerts while ensuring persistent drift (systematic issues) gets
-                    # escalated attention. See _trigger_alert() for the severity logic.
+                    # HOW IT WORKS:
+                    # -------------
+                    # 1. Each drift detection increments the counter (consecutive_drift_count++)
+                    # 2. When counter reaches threshold (default: 3), circuit "trips" to OPEN state
+                    # 3. OPEN state triggers CRITICAL severity alerts (see _trigger_alert())
+                    # 4. Counter resets to 0 when no drift detected (circuit "closes")
+                    #
+                    # CIRCUIT BREAKER STATES:
+                    # -----------------------
+                    # CLOSED (Normal): consecutive_drift_count < 3
+                    #   → Severity: "warning"
+                    #   → Meaning: Drift detected but not yet persistent
+                    #   → Action: Monitor, investigate if recurring
+                    #
+                    # OPEN (Tripped): consecutive_drift_count >= 3
+                    #   → Severity: "critical"
+                    #   → Meaning: Sustained drift confirmed (systematic issue)
+                    #   → Action: Immediate response (rollback, retrain, incident)
+                    #
+                    # WHY THIS PATTERN?
+                    # -----------------
+                    # Prevents alert fatigue while ensuring real problems get escalated:
+                    #
+                    # - Single drift detection: Could be noise, outlier batch, or temporary anomaly
+                    #   → Generate warning but don't page on-call team yet
+                    #
+                    # - 2 consecutive detections: Possible pattern emerging, still could be coincidence
+                    #   → Continue monitoring with warning-level alerts
+                    #
+                    # - 3+ consecutive detections: High confidence of persistent drift
+                    #   → Trip circuit breaker to CRITICAL, trigger incident response
+                    #
+                    # TIMING EXAMPLE (with default check_interval_seconds=300):
+                    # ---------------------------------------------------------
+                    # Check 1 (t=0):    Drift detected → warning, count=1
+                    # Check 2 (t=5min): Drift detected → warning, count=2
+                    # Check 3 (t=10min): Drift detected → CRITICAL, count=3 ← Circuit trips!
+                    # Check 4 (t=15min): Drift detected → CRITICAL, count=4 (stays tripped)
+                    # Check 5 (t=20min): No drift → warning, count=0 ← Circuit resets!
+                    #
+                    # This 10-minute confirmation window (3 checks × 5 min) balances:
+                    # ✓ Fast enough to catch real issues before significant impact
+                    # ✓ Slow enough to filter out temporary fluctuations and false positives
+                    # ✓ Aligned with typical model monitoring cadences (5-15 min checks)
+                    #
+                    # GOVERNANCE IMPLICATIONS:
+                    # ------------------------
+                    # For model governance and regulatory compliance:
+                    # - Warning alerts: Logged in monitoring system (audit trail)
+                    # - Critical alerts: Require documented incident response and root cause analysis
+                    # - Threshold (3): Conservative enough for regulatory scrutiny
+                    # - Transparency: Counter exposed in DriftMetrics.consecutive_drift_count
+                    #
+                    # COMPARISON TO TRADITIONAL CIRCUIT BREAKERS:
+                    # -------------------------------------------
+                    # Traditional circuit breakers (e.g., for API calls):
+                    # - Monitor failure rate over time window (e.g., >50% failures in 1 min)
+                    # - Open circuit to prevent cascading failures
+                    #
+                    # This drift circuit breaker:
+                    # - Monitors consecutive drift detections (sequential, not rate-based)
+                    # - Opens circuit to escalate alert severity (not to block operations)
+                    # - Provides automatic recovery when drift stops
+                    #
+                    # Both patterns share core goals:
+                    # - Distinguish between transient vs. persistent failures
+                    # - Escalate only when problem is confirmed
+                    # - Provide automatic recovery when issue resolves
+                    #
+                    # See _trigger_alert() for the complete circuit breaker severity logic
+                    # and detailed threshold justification.
                     self._consecutive_drift_count += 1
 
                     self._last_drift_time = timestamp
@@ -846,9 +1321,64 @@ class DriftDetector:
                     # CIRCUIT BREAKER PATTERN: Reset consecutive drift counter
                     # =========================================================
                     # When no drift is detected, reset the consecutive counter to 0.
-                    # This "closes" the circuit breaker, preventing previous drift
-                    # detections from affecting future alerts. Only sustained,
-                    # consecutive drift will escalate to critical severity.
+                    # This "closes" the circuit breaker, returning it to normal state.
+                    #
+                    # RESET BEHAVIOR:
+                    # ---------------
+                    # - Counter reset to 0 immediately on first "no drift" detection
+                    # - Alert severity returns to "warning" for next drift (if any)
+                    # - Previous drift history is cleared (non-persistent pattern)
+                    # - Circuit breaker state: OPEN → CLOSED
+                    #
+                    # WHY RESET IMMEDIATELY?
+                    # ----------------------
+                    # Immediate reset (vs. gradual decay) ensures:
+                    #
+                    # 1. CLEAN STATE TRANSITIONS:
+                    #    - No drift = distribution is stable now
+                    #    - Previous drift episodes are no longer relevant
+                    #    - Prevents "memory" of old drift from affecting current state
+                    #
+                    # 2. ACCURATE CONSECUTIVE TRACKING:
+                    #    - "Consecutive" means uninterrupted sequence
+                    #    - Any gap (no-drift check) breaks the sequence
+                    #    - New drift must prove itself persistent again (3+ consecutive)
+                    #
+                    # 3. PREVENTS FALSE ESCALATION:
+                    #    - Pattern: drift, drift, no-drift, drift, drift
+                    #    - Without reset: count would be 1,2,3,4,5 → incorrectly critical
+                    #    - With reset: count would be 1,2,0,1,2 → correctly stays warning
+                    #    - Ensures only sustained drift triggers critical alerts
+                    #
+                    # ALTERNATIVE APPROACHES (NOT USED):
+                    # -----------------------------------
+                    # Could use gradual decay (e.g., count = max(0, count - 2) on no-drift):
+                    # - Pros: More forgiving of brief interruptions in drift pattern
+                    # - Cons: Complex to tune, harder to reason about, less explainable
+                    # - Decision: Immediate reset is simpler and more transparent for governance
+                    #
+                    # RECOVERY EXAMPLE:
+                    # -----------------
+                    # Scenario: Model experiencing drift, then issue is fixed
+                    #
+                    # Check 1: Drift detected → count=1, severity=warning
+                    # Check 2: Drift detected → count=2, severity=warning
+                    # Check 3: Drift detected → count=3, severity=CRITICAL ← Circuit trips
+                    # Check 4: Drift detected → count=4, severity=CRITICAL
+                    # [Model rollback or retraining performed]
+                    # Check 5: No drift → count=0, severity=warning ← Circuit closes, recovery!
+                    # Check 6: No drift → count=0, severity=warning (stays closed)
+                    #
+                    # This immediate recovery prevents alert fatigue after issues are resolved
+                    # and provides clear feedback that corrective actions were successful.
+                    #
+                    # GOVERNANCE TRACKING:
+                    # --------------------
+                    # The consecutive_drift_count is exposed in DriftMetrics for:
+                    # - Monitoring dashboards (show current circuit breaker state)
+                    # - Incident reports (document how quickly drift was escalated)
+                    # - Audit trails (prove appropriate response based on drift persistence)
+                    # - Threshold tuning (analyze if 3 consecutive is appropriate for your use case)
                     self._consecutive_drift_count = 0
                     self._current_status = DriftStatus.NO_DRIFT
 
@@ -1456,7 +1986,9 @@ class DriftDetector:
                 return False
 
             try:
-                reference_df = self._to_dataframe(list(self._reference_data), data_source="reference")
+                reference_df = self._to_dataframe(
+                    list(self._reference_data), data_source="reference"
+                )
                 current_df = self._to_dataframe(list(self._current_data), data_source="current")
 
                 # Ensure same columns
