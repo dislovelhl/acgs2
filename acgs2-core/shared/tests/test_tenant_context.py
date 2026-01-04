@@ -265,7 +265,8 @@ class TestValidateTenantId:
 
     def test_invalid_path_traversal_backslash(self):
         """Test validation rejects backslash."""
-        with pytest.raises(TenantValidationError, match="invalid path characters"):
+        # Note: backslash is caught by DANGEROUS_CHARS first, not path traversal check
+        with pytest.raises(TenantValidationError, match="invalid characters"):
             validate_tenant_id("tenant\\windows\\system32")
 
 
@@ -788,17 +789,14 @@ class TestEdgeCases:
 
     def test_unicode_tenant_id_rejected(self):
         """Test tenant ID with unicode characters is rejected."""
-        app = FastAPI()
-        app.add_middleware(TenantContextMiddleware)
+        # Test validation directly since httpx cannot encode unicode headers
+        # Unicode characters (like zero-width space) should fail the pattern check
+        with pytest.raises(TenantValidationError):
+            validate_tenant_id("tenant\u200B123")
 
-        @app.get("/api/test")
-        async def test_endpoint():
-            return {"ok": True}
-
-        client = TestClient(app)
-        # Unicode characters should fail the pattern check
-        response = client.get("/api/test", headers={"X-Tenant-ID": "tenant\u200B123"})
-        assert response.status_code == 400
+        # Also test that non-ASCII characters fail validation
+        with pytest.raises(TenantValidationError):
+            validate_tenant_id("tëñant123")
 
 
 if __name__ == "__main__":

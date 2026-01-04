@@ -1049,7 +1049,7 @@ class TestWarmCacheOnStartup:
         """Test warm_cache_on_startup returns WarmingResult."""
         with patch("shared.cache_warming.logger"):
             # Patch get_tiered_cache to return a mock
-            with patch("shared.cache_warming.get_tiered_cache") as mock_get_cache:
+            with patch("shared.tiered_cache.get_tiered_cache") as mock_get_cache:
                 mock_manager = MagicMock()
                 mock_manager._l3_cache = {}
                 mock_manager._l3_lock = threading.Lock()
@@ -1066,7 +1066,7 @@ class TestWarmCacheOnStartup:
     async def test_warm_cache_on_startup_uses_params(self):
         """Test warm_cache_on_startup uses provided parameters."""
         with patch("shared.cache_warming.logger"):
-            with patch("shared.cache_warming.get_tiered_cache") as mock_get_cache:
+            with patch("shared.tiered_cache.get_tiered_cache") as mock_get_cache:
                 mock_manager = MagicMock()
                 mock_manager._l3_cache = {
                     "key1": {"data": "value1", "timestamp": time.time()},

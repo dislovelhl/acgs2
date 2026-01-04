@@ -1,805 +1,517 @@
 """
-Linear GraphQL Client
+Linear API client for ACGS2 governance event integration.
 
-Provides async GraphQL client for interacting with Linear.app API.
-Supports issue CRUD operations, comments, and pagination.
-
-Features:
-- Async/await support for FastAPI integration
-- Bearer token authentication
-- Rate limiting with exponential backoff
-- Comprehensive error handling
-- Pagination support for large result sets
+This client uses aiohttp for HTTP transport and properly handles aiohttp-specific
+exceptions in retry logic, unlike httpx-based clients.
 """
 
+import asyncio
+import json
 import logging
 from typing import Any, Dict, List, Optional
 
-import httpx
-from gql import Client, gql
-from gql.transport.aiohttp import AIOHTTPTransport
-from gql.transport.exceptions import TransportQueryError, TransportServerError
+import aiohttp
 from tenacity import (
+    AsyncRetrying,
     before_sleep_log,
-    retry,
     retry_if_exception_type,
     stop_after_attempt,
     wait_exponential,
 )
 
-from ...config import LinearConfig, get_linear_config
+from ..base import (
+    BaseIntegration,
+    DeliveryError,
+    IntegrationEvent,
+    IntegrationResult,
+    IntegrationType,
+)
+from .credentials import LinearCredentials
 
 logger = logging.getLogger(__name__)
 
 
-class LinearClientError(Exception):
-    """Base exception for Linear client errors"""
+class LinearClient(BaseIntegration):
+    """
+    Linear API client for creating and managing issues from governance events.
 
-    def __init__(self, message: str, details: Optional[Dict[str, Any]] = None):
-        self.message = message
-        self.details = details or {}
-        super().__init__(self.message)
+    Uses aiohttp transport instead of httpx for better performance and control,
+    with proper exception handling for aiohttp-specific errors.
+    """
 
+    # GraphQL queries
+    ISSUE_QUERY = """
+    query Issue($id: String!) {
+        issue(id: $id) {
+            id
+            title
+            description
+            state {
+                name
+                type
+            }
+            priority
+            team {
+                name
+            }
+            project {
+                name
+            }
+            url
+        }
+    }
+    """
 
-class LinearAuthenticationError(LinearClientError):
-    """Raised when authentication with Linear fails"""
-    pass
+    CREATE_ISSUE_MUTATION = """
+    mutation CreateIssue($input: IssueCreateInput!) {
+        issueCreate(input: $input) {
+            success
+            issue {
+                id
+                title
+                url
+            }
+            errors {
+                message
+            }
+        }
+    }
+    """
 
-
-class LinearRateLimitError(LinearClientError):
-    """Raised when Linear rate limit is exceeded"""
+    UPDATE_ISSUE_MUTATION = """
+    mutation UpdateIssue($id: String!, $input: IssueUpdateInput!) {
+        issueUpdate(id: $id, input: $input) {
+            success
+            issue {
+                id
+                state {
+                    name
+                }
+            }
+            errors {
+                message
+            }
+        }
+    }
+    """
 
     def __init__(
         self,
-        message: str,
-        retry_after: Optional[int] = None,
-        details: Optional[Dict[str, Any]] = None,
-    ):
-        super().__init__(message, details)
-        self.retry_after = retry_after
-
-
-class LinearNotFoundError(LinearClientError):
-    """Raised when a requested resource is not found"""
-    pass
-
-
-class LinearValidationError(LinearClientError):
-    """Raised when request validation fails"""
-    pass
-
-
-class LinearClient:
-    """
-    Async GraphQL client for Linear.app API.
-
-    Provides methods for issue management, comments, and queries.
-    Uses AIOHTTPTransport for async FastAPI compatibility.
-
-    Usage:
-        config = get_linear_config()
-        client = LinearClient(config)
-        await client.initialize()
-
-        # Create an issue
-        issue = await client.create_issue(
-            title="Bug in login",
-            description="Users cannot log in",
-            team_id="TEAM-123"
-        )
-
-        # Get an issue
-        issue = await client.get_issue("ISSUE-123")
-
-        # List issues
-        issues = await client.list_issues(team_id="TEAM-123")
-
-        # Update an issue
-        await client.update_issue(
-            issue_id="abc123",
-            title="Updated title",
-            state_id="state-123"
-        )
-
-        # Add a comment
-        await client.add_comment(
-            issue_id="abc123",
-            body="This is a comment"
-        )
-
-        await client.close()
-
-    Features:
-        - Automatic retry with exponential backoff
-        - Rate limit handling
-        - Pagination support
-        - Comprehensive error handling
-    """
-
-    # Linear API rate limit (conservative estimate)
-    # Linear uses a rolling window rate limit
-    DEFAULT_TIMEOUT = 30.0
-    DEFAULT_MAX_RETRIES = 3
-
-    def __init__(
-        self,
-        config: Optional[LinearConfig] = None,
-        timeout: float = DEFAULT_TIMEOUT,
-        max_retries: int = DEFAULT_MAX_RETRIES,
+        credentials: LinearCredentials,
+        max_retries: int = 3,
+        timeout: float = 30.0,
     ):
         """
-        Initialize Linear GraphQL client.
+        Initialize Linear client.
 
         Args:
-            config: Linear configuration (uses get_linear_config() if not provided)
+            credentials: Linear API credentials
+            max_retries: Maximum retry attempts for operations
             timeout: Request timeout in seconds
-            max_retries: Maximum retry attempts for failed requests
         """
-        self.config = config or get_linear_config()
-        self.timeout = timeout
-        self.max_retries = max_retries
+        super().__init__(credentials, max_retries, timeout)
+        self.linear_credentials = credentials
 
-        self._client: Optional[Client] = None
-        self._transport: Optional[AIOHTTPTransport] = None
-        self._initialized = False
+        # aiohttp session (instead of httpx client)
+        self._aiohttp_session: Optional[aiohttp.ClientSession] = None
 
-    async def initialize(self) -> None:
+    @property
+    def credentials(self) -> LinearCredentials:
+        """Get Linear credentials."""
+        return self.linear_credentials
+
+    async def get_aiohttp_session(self) -> aiohttp.ClientSession:
         """
-        Initialize the GraphQL client and transport.
+        Get or create aiohttp session with proper configuration.
 
-        Must be called before making any API requests.
-        Creates the AIOHTTPTransport with authentication headers.
+        Returns:
+            Configured aiohttp ClientSession
         """
-        if self._initialized:
-            logger.debug("Linear client already initialized")
-            return
-
-        logger.info(f"Initializing Linear GraphQL client for API: {self.config.linear_api_url}")
-
-        # Create async HTTP transport with authentication
-        headers = {
-            "Authorization": f"Bearer {self.config.linear_api_key.get_secret_value()}",
-            "Content-Type": "application/json",
-        }
-
-        self._transport = AIOHTTPTransport(
-            url=self.config.linear_api_url,
-            headers=headers,
-            timeout=self.timeout,
-        )
-
-        # Create GraphQL client
-        try:
-            self._client = Client(
-                transport=self._transport,
-                fetch_schema_from_transport=False,  # Don't fetch schema on init for performance
-                execute_timeout=self.timeout,
+        if self._aiohttp_session is None or self._aiohttp_session.closed:
+            timeout = aiohttp.ClientTimeout(total=self.timeout)
+            self._aiohttp_session = aiohttp.ClientSession(
+                timeout=timeout,
+                headers=self.credentials.get_auth_headers(),
             )
-            self._initialized = True
-            logger.info("Linear GraphQL client initialized successfully")
-
-        except Exception as e:
-            logger.error(f"Failed to initialize Linear client: {str(e)}")
-            raise LinearClientError(f"Failed to initialize client: {str(e)}") from e
+        return self._aiohttp_session
 
     async def close(self) -> None:
-        """
-        Close the GraphQL client and cleanup resources.
+        """Close the client and cleanup aiohttp session."""
+        if self._aiohttp_session is not None and not self._aiohttp_session.closed:
+            await self._aiohttp_session.close()
+            self._aiohttp_session = None
+        await super().close()
 
-        Should be called when done using the client.
+    async def _do_authenticate(self) -> IntegrationResult:
         """
-        if self._client and self._transport:
-            await self._transport.close()
-            self._client = None
-            self._transport = None
-            self._initialized = False
-            logger.info("Linear GraphQL client closed")
+        Authenticate with Linear API by testing credentials.
 
-    def _ensure_initialized(self) -> None:
-        """Ensure the client is initialized before making requests."""
-        if not self._initialized or not self._client:
-            raise LinearClientError(
-                "Client not initialized. Call await client.initialize() first."
+        Returns:
+            IntegrationResult with authentication status
+        """
+        try:
+            # Test authentication by querying current user
+            query = """
+            query {
+                viewer {
+                    id
+                    name
+                    email
+                }
+            }
+            """
+
+            response_data = await self._execute_graphql_query(query)
+
+            if "data" in response_data and "viewer" in response_data["data"]:
+                viewer = response_data["data"]["viewer"]
+                return IntegrationResult(
+                    success=True,
+                    integration_name=self.name,
+                    operation="authenticate",
+                    external_id=viewer.get("id"),
+                )
+            else:
+                return IntegrationResult(
+                    success=False,
+                    integration_name=self.name,
+                    operation="authenticate",
+                    error_code="AUTH_FAILED",
+                    error_message="Authentication failed - invalid credentials or API key",
+                )
+
+        except Exception as e:
+            return IntegrationResult(
+                success=False,
+                integration_name=self.name,
+                operation="authenticate",
+                error_code="AUTH_ERROR",
+                error_message=f"Authentication error: {str(e)}",
             )
 
-    @retry(
-        stop=stop_after_attempt(3),
-        wait=wait_exponential(multiplier=1, min=1, max=16),
-        retry=retry_if_exception_type((httpx.TimeoutException, httpx.NetworkError)),
-        before_sleep=before_sleep_log(logger, logging.WARNING),
-        reraise=True,
-    )
-    async def _execute_query(
+    async def _do_validate(self) -> IntegrationResult:
+        """
+        Validate Linear integration configuration.
+
+        Returns:
+            IntegrationResult with validation status
+        """
+        try:
+            # Test basic connectivity and validate team/project IDs if provided
+            validation_errors = []
+
+            # Test API connectivity
+            auth_result = await self._do_authenticate()
+            if not auth_result.success:
+                validation_errors.append("API authentication failed")
+
+            # Validate team ID if provided
+            if self.credentials.default_team_id:
+                team_query = """
+                query Team($id: String!) {
+                    team(id: $id) {
+                        id
+                        name
+                    }
+                }
+                """
+
+                try:
+                    team_data = await self._execute_graphql_query(
+                        team_query, {"id": self.credentials.default_team_id}
+                    )
+                    if not (team_data.get("data", {}).get("team")):
+                        validation_errors.append(f"Invalid default team ID: {self.credentials.default_team_id}")
+                except Exception:
+                    validation_errors.append(f"Cannot access team ID: {self.credentials.default_team_id}")
+
+            # Validate project ID if provided
+            if self.credentials.default_project_id:
+                project_query = """
+                query Project($id: String!) {
+                    project(id: $id) {
+                        id
+                        name
+                    }
+                }
+                """
+
+                try:
+                    project_data = await self._execute_graphql_query(
+                        project_query, {"id": self.credentials.default_project_id}
+                    )
+                    if not (project_data.get("data", {}).get("project")):
+                        validation_errors.append(f"Invalid default project ID: {self.credentials.default_project_id}")
+                except Exception:
+                    validation_errors.append(f"Cannot access project ID: {self.credentials.default_project_id}")
+
+            if validation_errors:
+                return IntegrationResult(
+                    success=False,
+                    integration_name=self.name,
+                    operation="validate",
+                    error_code="VALIDATION_FAILED",
+                    error_message="Validation errors: " + "; ".join(validation_errors),
+                )
+
+            return IntegrationResult(
+                success=True,
+                integration_name=self.name,
+                operation="validate",
+            )
+
+        except Exception as e:
+            return IntegrationResult(
+                success=False,
+                integration_name=self.name,
+                operation="validate",
+                error_code="VALIDATION_ERROR",
+                error_message=f"Validation error: {str(e)}",
+            )
+
+    async def _do_send_event(self, event: IntegrationEvent) -> IntegrationResult:
+        """
+        Send governance event to Linear by creating an issue.
+
+        Args:
+            event: Governance event to convert to Linear issue
+
+        Returns:
+            IntegrationResult with issue creation status
+        """
+        try:
+            # Create issue from governance event
+            issue_input = self._build_issue_input(event)
+
+            response_data = await self._execute_graphql_query(
+                self.CREATE_ISSUE_MUTATION,
+                {"input": issue_input}
+            )
+
+            # Handle GraphQL response
+            if "data" in response_data:
+                issue_create = response_data["data"].get("issueCreate", {})
+
+                if issue_create.get("success"):
+                    issue = issue_create.get("issue", {})
+                    return IntegrationResult(
+                        success=True,
+                        integration_name=self.name,
+                        operation="send_event",
+                        external_id=issue.get("id"),
+                        external_url=issue.get("url"),
+                    )
+                else:
+                    # GraphQL returned success=False
+                    errors = issue_create.get("errors", [])
+                    error_messages = [err.get("message", "Unknown error") for err in errors]
+                    return IntegrationResult(
+                        success=False,
+                        integration_name=self.name,
+                        operation="send_event",
+                        error_code="GRAPHQL_ERROR",
+                        error_message=f"Issue creation failed: {'; '.join(error_messages)}",
+                    )
+            else:
+                # Check for GraphQL errors
+                errors = response_data.get("errors", [])
+                if errors:
+                    error_messages = [err.get("message", "Unknown error") for err in errors]
+                    return IntegrationResult(
+                        success=False,
+                        integration_name=self.name,
+                        operation="send_event",
+                        error_code="GRAPHQL_ERROR",
+                        error_message=f"GraphQL errors: {'; '.join(error_messages)}",
+                    )
+
+                return IntegrationResult(
+                    success=False,
+                    integration_name=self.name,
+                    operation="send_event",
+                    error_code="UNKNOWN_ERROR",
+                    error_message="Unknown error occurred during issue creation",
+                )
+
+        except Exception as e:
+            return IntegrationResult(
+                success=False,
+                integration_name=self.name,
+                operation="send_event",
+                error_code="SEND_ERROR",
+                error_message=f"Failed to send event: {str(e)}",
+            )
+
+    def _build_issue_input(self, event: IntegrationEvent) -> Dict[str, Any]:
+        """
+        Build GraphQL input for creating a Linear issue from governance event.
+
+        Args:
+            event: Governance event
+
+        Returns:
+            Dictionary suitable for IssueCreateInput
+        """
+        # Build title
+        if self.credentials.default_issue_template:
+            title = self.credentials.default_issue_template.format(
+                event_type=event.event_type,
+                title=event.title,
+                severity=event.severity.value,
+                resource_type=event.resource_type or "unknown",
+            )
+        else:
+            title = f"[{event.severity.value.upper()}] {event.title}"
+
+        # Build description
+        description_parts = [
+            f"**Event Type:** {event.event_type}",
+            f"**Severity:** {event.severity.value}",
+            f"**Timestamp:** {event.timestamp.isoformat()}",
+        ]
+
+        if event.resource_id:
+            description_parts.append(f"**Resource ID:** {event.resource_id}")
+        if event.resource_type:
+            description_parts.append(f"**Resource Type:** {event.resource_type}")
+        if event.action:
+            description_parts.append(f"**Action:** {event.action}")
+        if event.outcome:
+            description_parts.append(f"**Outcome:** {event.outcome}")
+        if event.user_id:
+            description_parts.append(f"**User:** {event.user_id}")
+        if event.policy_id:
+            description_parts.append(f"**Policy:** {event.policy_id}")
+
+        description_parts.append("")  # Empty line
+        description_parts.append(event.description or "No additional details provided.")
+
+        if event.details:
+            description_parts.append("")
+            description_parts.append("**Additional Details:**")
+            description_parts.append("```json")
+            description_parts.append(json.dumps(event.details, indent=2))
+            description_parts.append("```")
+
+        if event.tags:
+            description_parts.append("")
+            description_parts.append(f"**Tags:** {', '.join(f'`{tag}`' for tag in event.tags)}")
+
+        description = "\n".join(description_parts)
+
+        # Build input dictionary
+        issue_input = {
+            "title": title,
+            "description": description,
+        }
+
+        # Add team ID (required)
+        if self.credentials.default_team_id:
+            issue_input["teamId"] = self.credentials.default_team_id
+        else:
+            # If no default team, this will cause an error - Linear requires teamId
+            raise ValueError("teamId is required for Linear issue creation")
+
+        # Add optional fields
+        if self.credentials.default_project_id:
+            issue_input["projectId"] = self.credentials.default_project_id
+
+        if self.credentials.default_priority:
+            issue_input["priority"] = self.credentials.default_priority
+
+        return issue_input
+
+    async def _execute_graphql_query(
         self,
         query: str,
-        variable_values: Optional[Dict[str, Any]] = None,
+        variables: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
         """
-        Execute a GraphQL query with retry logic.
+        Execute a GraphQL query against Linear API.
 
         Args:
             query: GraphQL query string
-            variable_values: Query variables
+            variables: Query variables
 
         Returns:
-            Query result as dictionary
+            Parsed JSON response
 
         Raises:
-            LinearClientError: For general client errors
-            LinearAuthenticationError: For authentication failures
-            LinearRateLimitError: For rate limit errors
-            LinearNotFoundError: For 404 errors
+            DeliveryError: If the request fails
         """
-        self._ensure_initialized()
+        session = await self.get_aiohttp_session()
+
+        payload = {"query": query}
+        if variables:
+            payload["variables"] = variables
 
         try:
-            # Parse and execute the query
-            parsed_query = gql(query)
-            result = await self._client.execute_async(
-                parsed_query,
-                variable_values=variable_values or {},
-            )
-            return result
+            async with session.post(
+                self.credentials.base_url,
+                json=payload,
+            ) as response:
+                response.raise_for_status()
+                return await response.json()
 
-        except TransportQueryError as e:
-            # GraphQL query errors (validation, not found, etc.)
-            error_message = str(e)
-
-            # Check for specific error types
-            if "not found" in error_message.lower():
-                raise LinearNotFoundError(
-                    f"Resource not found: {error_message}",
-                    details={"query": query, "variables": variable_values},
-                ) from e
-            elif (
-                "unauthorized" in error_message.lower()
-                or "authentication" in error_message.lower()
-            ):
-                raise LinearAuthenticationError(
-                    f"Authentication failed: {error_message}",
-                    details={"query": query},
-                ) from e
-            elif "validation" in error_message.lower():
-                raise LinearValidationError(
-                    f"Validation failed: {error_message}",
-                    details={"query": query, "variables": variable_values},
-                ) from e
+        except aiohttp.ClientResponseError as e:
+            # HTTP error responses
+            error_msg = f"HTTP {e.status}: {e.message}"
+            if e.status == 401:
+                raise DeliveryError(f"Authentication failed: {error_msg}", self.name)
+            elif e.status == 403:
+                raise DeliveryError(f"Permission denied: {error_msg}", self.name)
+            elif e.status == 429:
+                raise DeliveryError(f"Rate limited: {error_msg}", self.name)
             else:
-                raise LinearClientError(
-                    f"GraphQL query error: {error_message}",
-                    details={"query": query, "variables": variable_values},
-                ) from e
+                raise DeliveryError(f"API error: {error_msg}", self.name)
 
-        except TransportServerError as e:
-            # Server errors (500, 429, etc.)
-            error_message = str(e)
+        except (aiohttp.ClientTimeout, asyncio.TimeoutError) as e:
+            raise DeliveryError(f"Request timeout: {str(e)}", self.name)
 
-            # Check for rate limiting
-            if "429" in error_message or "rate limit" in error_message.lower():
-                raise LinearRateLimitError(
-                    "Linear API rate limit exceeded",
-                    retry_after=60,  # Linear typically uses 60 second windows
-                    details={"error": error_message},
-                ) from e
-            else:
-                raise LinearClientError(
-                    f"Linear API server error: {error_message}",
-                    details={"error": error_message},
-                ) from e
-
-        except httpx.TimeoutException as e:
-            logger.error(f"Request timed out after {self.timeout}s")
-            raise LinearClientError(
-                f"Request timed out after {self.timeout}s",
-                details={"timeout": self.timeout},
-            ) from e
-
-        except httpx.NetworkError as e:
-            logger.error(f"Network error: {str(e)}")
-            raise LinearClientError(
-                f"Network error: {str(e)}",
-                details={"error": str(e)},
-            ) from e
+        except (aiohttp.ClientError, aiohttp.ClientConnectionError) as e:
+            raise DeliveryError(f"Network error: {str(e)}", self.name)
 
         except Exception as e:
-            logger.error(f"Unexpected error executing query: {str(e)}")
-            raise LinearClientError(
-                f"Unexpected error: {str(e)}",
-                details={"error": str(e)},
-            ) from e
+            raise DeliveryError(f"Unexpected error: {str(e)}", self.name)
 
-    async def create_issue(
-        self,
-        title: str,
-        team_id: Optional[str] = None,
-        description: Optional[str] = None,
-        priority: Optional[int] = None,
-        state_id: Optional[str] = None,
-        assignee_id: Optional[str] = None,
-        project_id: Optional[str] = None,
-        labels: Optional[List[str]] = None,
-    ) -> Dict[str, Any]:
+    # Override retry methods to use aiohttp exception types
+    @staticmethod
+    def _create_aiohttp_retry_decorator(max_attempts: int = 3):
         """
-        Create a new issue in Linear.
+        Create retry decorator that handles aiohttp exceptions properly.
 
-        Args:
-            title: Issue title (required)
-            team_id: Team ID (uses config default if not provided)
-            description: Issue description (Markdown supported)
-            priority: Priority level (0=No priority, 1=Urgent, 2=High, 3=Normal, 4=Low)
-            state_id: Workflow state ID
-            assignee_id: User ID to assign the issue to
-            project_id: Project ID (uses config default if not provided)
-            labels: List of label IDs to add to the issue
-
-        Returns:
-            Created issue data including id, identifier, url
-
-        Raises:
-            LinearClientError: If issue creation fails
+        This is the key fix: using aiohttp exception types instead of httpx ones.
         """
-        logger.debug(f"Creating Linear issue: {title}")
+        return AsyncRetrying(
+            stop=stop_after_attempt(max_attempts),
+            wait=wait_exponential(multiplier=1, min=1, max=16),
+            retry=retry_if_exception_type((
+                aiohttp.ClientTimeout,
+                aiohttp.ClientError,
+                aiohttp.ClientConnectionError,
+                DeliveryError,
+            )),
+            before_sleep=before_sleep_log(logger, logging.WARNING),
+            reraise=True,
+        )
 
-        # Use defaults from config if not provided
-        team_id = team_id or self.config.linear_team_id
-        project_id = project_id or self.config.linear_project_id
+    async def _authenticate_with_retry(self) -> IntegrationResult:
+        """Authenticate with aiohttp-specific retry logic."""
+        retry_decorator = self._create_aiohttp_retry_decorator(self.max_retries)
+        async for attempt in retry_decorator:
+            with attempt:
+                return await self._do_authenticate()
 
-        # Build the mutation
-        mutation = """
-            mutation IssueCreate($input: IssueCreateInput!) {
-                issueCreate(input: $input) {
-                    success
-                    issue {
-                        id
-                        identifier
-                        title
-                        description
-                        url
-                        createdAt
-                        updatedAt
-                        state {
-                            id
-                            name
-                        }
-                        team {
-                            id
-                            name
-                        }
-                        assignee {
-                            id
-                            name
-                            email
-                        }
-                    }
-                }
-            }
-        """
+    async def _validate_with_retry(self) -> IntegrationResult:
+        """Validate with aiohttp-specific retry logic."""
+        retry_decorator = self._create_aiohttp_retry_decorator(self.max_retries)
+        async for attempt in retry_decorator:
+            with attempt:
+                return await self._do_validate()
 
-        # Build input variables
-        input_data: Dict[str, Any] = {
-            "title": title,
-            "teamId": team_id,
-        }
-
-        if description:
-            input_data["description"] = description
-        if priority is not None:
-            input_data["priority"] = priority
-        if state_id:
-            input_data["stateId"] = state_id
-        if assignee_id:
-            input_data["assigneeId"] = assignee_id
-        if project_id:
-            input_data["projectId"] = project_id
-        if labels:
-            input_data["labelIds"] = labels
-
-        variables = {"input": input_data}
-
-        try:
-            result = await self._execute_query(mutation, variables)
-
-            if not result.get("issueCreate", {}).get("success"):
-                raise LinearClientError(
-                    "Issue creation returned success=false",
-                    details={"result": result},
-                )
-
-            issue = result["issueCreate"]["issue"]
-            logger.info(f"Created Linear issue: {issue.get('identifier')} ({issue.get('id')})")
-            return issue
-
-        except (LinearClientError, LinearAuthenticationError, LinearRateLimitError):
-            raise
-        except Exception as e:
-            raise LinearClientError(
-                f"Failed to create issue: {str(e)}",
-                details={"title": title},
-            ) from e
-
-    async def get_issue(
-        self,
-        issue_id: str,
-    ) -> Dict[str, Any]:
-        """
-        Get an issue by ID or identifier.
-
-        Args:
-            issue_id: Issue ID (UUID) or identifier (e.g., "ENG-123")
-
-        Returns:
-            Issue data
-
-        Raises:
-            LinearNotFoundError: If issue not found
-            LinearClientError: For other errors
-        """
-        logger.debug(f"Fetching Linear issue: {issue_id}")
-
-        query = """
-            query Issue($id: String!) {
-                issue(id: $id) {
-                    id
-                    identifier
-                    title
-                    description
-                    url
-                    priority
-                    createdAt
-                    updatedAt
-                    archivedAt
-                    state {
-                        id
-                        name
-                        type
-                    }
-                    team {
-                        id
-                        name
-                        key
-                    }
-                    assignee {
-                        id
-                        name
-                        email
-                    }
-                    creator {
-                        id
-                        name
-                        email
-                    }
-                    project {
-                        id
-                        name
-                    }
-                    labels {
-                        nodes {
-                            id
-                            name
-                        }
-                    }
-                }
-            }
-        """
-
-        variables = {"id": issue_id}
-
-        try:
-            result = await self._execute_query(query, variables)
-            issue = result.get("issue")
-
-            if not issue:
-                raise LinearNotFoundError(
-                    f"Issue not found: {issue_id}",
-                    details={"issue_id": issue_id},
-                )
-
-            logger.debug(f"Retrieved Linear issue: {issue.get('identifier')}")
-            return issue
-
-        except (LinearNotFoundError, LinearAuthenticationError, LinearRateLimitError):
-            raise
-        except Exception as e:
-            raise LinearClientError(
-                f"Failed to get issue: {str(e)}",
-                details={"issue_id": issue_id},
-            ) from e
-
-    async def update_issue(
-        self,
-        issue_id: str,
-        title: Optional[str] = None,
-        description: Optional[str] = None,
-        priority: Optional[int] = None,
-        state_id: Optional[str] = None,
-        assignee_id: Optional[str] = None,
-        labels: Optional[List[str]] = None,
-    ) -> Dict[str, Any]:
-        """
-        Update an existing issue.
-
-        Args:
-            issue_id: Issue ID (UUID) to update
-            title: New title
-            description: New description
-            priority: New priority level
-            state_id: New workflow state ID
-            assignee_id: New assignee user ID
-            labels: New list of label IDs (replaces existing)
-
-        Returns:
-            Updated issue data
-
-        Raises:
-            LinearNotFoundError: If issue not found
-            LinearClientError: For other errors
-        """
-        logger.debug(f"Updating Linear issue: {issue_id}")
-
-        mutation = """
-            mutation IssueUpdate($id: String!, $input: IssueUpdateInput!) {
-                issueUpdate(id: $id, input: $input) {
-                    success
-                    issue {
-                        id
-                        identifier
-                        title
-                        description
-                        priority
-                        updatedAt
-                        state {
-                            id
-                            name
-                        }
-                        assignee {
-                            id
-                            name
-                        }
-                    }
-                }
-            }
-        """
-
-        # Build update input
-        input_data: Dict[str, Any] = {}
-
-        if title is not None:
-            input_data["title"] = title
-        if description is not None:
-            input_data["description"] = description
-        if priority is not None:
-            input_data["priority"] = priority
-        if state_id is not None:
-            input_data["stateId"] = state_id
-        if assignee_id is not None:
-            input_data["assigneeId"] = assignee_id
-        if labels is not None:
-            input_data["labelIds"] = labels
-
-        if not input_data:
-            raise LinearValidationError(
-                "At least one field must be provided to update",
-                details={"issue_id": issue_id},
-            )
-
-        variables = {
-            "id": issue_id,
-            "input": input_data,
-        }
-
-        try:
-            result = await self._execute_query(mutation, variables)
-
-            if not result.get("issueUpdate", {}).get("success"):
-                raise LinearClientError(
-                    "Issue update returned success=false",
-                    details={"result": result, "issue_id": issue_id},
-                )
-
-            issue = result["issueUpdate"]["issue"]
-            logger.info(f"Updated Linear issue: {issue.get('identifier')}")
-            return issue
-
-        except (
-            LinearNotFoundError,
-            LinearValidationError,
-            LinearAuthenticationError,
-            LinearRateLimitError,
-        ):
-            raise
-        except Exception as e:
-            raise LinearClientError(
-                f"Failed to update issue: {str(e)}",
-                details={"issue_id": issue_id},
-            ) from e
-
-    async def list_issues(
-        self,
-        team_id: Optional[str] = None,
-        project_id: Optional[str] = None,
-        state_id: Optional[str] = None,
-        assignee_id: Optional[str] = None,
-        first: int = 50,
-        after: Optional[str] = None,
-    ) -> Dict[str, Any]:
-        """
-        List issues with optional filters.
-
-        Supports pagination through cursor-based pagination.
-
-        Args:
-            team_id: Filter by team ID (uses config default if not provided)
-            project_id: Filter by project ID
-            state_id: Filter by workflow state ID
-            assignee_id: Filter by assignee user ID
-            first: Number of issues to return (max 250)
-            after: Cursor for pagination (from previous pageInfo.endCursor)
-
-        Returns:
-            Dictionary with:
-                - nodes: List of issues
-                - pageInfo: Pagination info (hasNextPage, endCursor)
-
-        Raises:
-            LinearClientError: If query fails
-        """
-        logger.debug(f"Listing Linear issues (first={first})")
-
-        # Use default team if not provided
-        team_id = team_id or self.config.linear_team_id
-
-        query = """
-            query Issues($filter: IssueFilter, $first: Int, $after: String) {
-                issues(filter: $filter, first: $first, after: $after) {
-                    nodes {
-                        id
-                        identifier
-                        title
-                        description
-                        priority
-                        url
-                        createdAt
-                        updatedAt
-                        state {
-                            id
-                            name
-                        }
-                        team {
-                            id
-                            name
-                        }
-                        assignee {
-                            id
-                            name
-                        }
-                    }
-                    pageInfo {
-                        hasNextPage
-                        endCursor
-                    }
-                }
-            }
-        """
-
-        # Build filter
-        filter_data: Dict[str, Any] = {}
-
-        if team_id:
-            filter_data["team"] = {"id": {"eq": team_id}}
-        if project_id:
-            filter_data["project"] = {"id": {"eq": project_id}}
-        if state_id:
-            filter_data["state"] = {"id": {"eq": state_id}}
-        if assignee_id:
-            filter_data["assignee"] = {"id": {"eq": assignee_id}}
-
-        variables: Dict[str, Any] = {
-            "first": min(first, 250),  # Linear max is 250
-        }
-
-        if filter_data:
-            variables["filter"] = filter_data
-        if after:
-            variables["after"] = after
-
-        try:
-            result = await self._execute_query(query, variables)
-            issues_data = result.get("issues", {})
-
-            logger.debug(
-                f"Retrieved {len(issues_data.get('nodes', []))} issues, "
-                f"hasNextPage={issues_data.get('pageInfo', {}).get('hasNextPage', False)}"
-            )
-
-            return issues_data
-
-        except (LinearAuthenticationError, LinearRateLimitError):
-            raise
-        except Exception as e:
-            raise LinearClientError(
-                f"Failed to list issues: {str(e)}",
-                details={"filters": filter_data},
-            ) from e
-
-    async def add_comment(
-        self,
-        issue_id: str,
-        body: str,
-    ) -> Dict[str, Any]:
-        """
-        Add a comment to an issue.
-
-        Args:
-            issue_id: Issue ID (UUID) to comment on
-            body: Comment text (Markdown supported)
-
-        Returns:
-            Created comment data
-
-        Raises:
-            LinearNotFoundError: If issue not found
-            LinearClientError: For other errors
-        """
-        logger.debug(f"Adding comment to Linear issue: {issue_id}")
-
-        mutation = """
-            mutation CommentCreate($input: CommentCreateInput!) {
-                commentCreate(input: $input) {
-                    success
-                    comment {
-                        id
-                        body
-                        createdAt
-                        updatedAt
-                        user {
-                            id
-                            name
-                        }
-                        issue {
-                            id
-                            identifier
-                        }
-                    }
-                }
-            }
-        """
-
-        variables = {
-            "input": {
-                "issueId": issue_id,
-                "body": body,
-            }
-        }
-
-        try:
-            result = await self._execute_query(mutation, variables)
-
-            if not result.get("commentCreate", {}).get("success"):
-                raise LinearClientError(
-                    "Comment creation returned success=false",
-                    details={"result": result, "issue_id": issue_id},
-                )
-
-            comment = result["commentCreate"]["comment"]
-            logger.info(
-                f"Added comment to issue {comment.get('issue', {}).get('identifier')}: "
-                f"{comment.get('id')}"
-            )
-            return comment
-
-        except (LinearNotFoundError, LinearAuthenticationError, LinearRateLimitError):
-            raise
-        except Exception as e:
-            raise LinearClientError(
-                f"Failed to add comment: {str(e)}",
-                details={"issue_id": issue_id},
-            ) from e
-
-    async def __aenter__(self):
-        """Async context manager entry."""
-        await self.initialize()
-        return self
-
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
-        """Async context manager exit."""
-        await self.close()
+    async def _send_event_with_retry(self, event: IntegrationEvent) -> IntegrationResult:
+        """Send event with aiohttp-specific retry logic."""
+        retry_decorator = self._create_aiohttp_retry_decorator(self.max_retries)
+        async for attempt in retry_decorator:
+            with attempt:
+                return await self._do_send_event(event)
