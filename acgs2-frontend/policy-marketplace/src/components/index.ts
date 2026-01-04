@@ -5,4 +5,5 @@
  * Re-exports all components for clean imports
  */
 
+export { SkipLink } from "./SkipLink";
 export { TemplateList } from "./TemplateList";
