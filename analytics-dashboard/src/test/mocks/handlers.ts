@@ -113,6 +113,82 @@ const mockQueryResponse = {
   generated_at: new Date().toISOString(),
 };
 
+/** Sample compliance data */
+const mockComplianceData = {
+  analysis_timestamp: new Date().toISOString(),
+  overall_score: 84.5,
+  trend: "improving" as const,
+  violations_by_severity: {
+    critical: 2,
+    high: 5,
+    medium: 8,
+    low: 12,
+  },
+  total_violations: 27,
+  recent_violations: [
+    {
+      id: "comp-001",
+      rule: "Sensitive data must be encrypted at rest",
+      severity: "critical" as const,
+      description: "Unencrypted PII detected in production database",
+      timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+      framework: "SOC2",
+      evidence: {
+        database: "users_prod",
+        field: "ssn",
+        encryption_status: "none",
+      },
+    },
+    {
+      id: "comp-002",
+      rule: "API access requires multi-factor authentication",
+      severity: "high" as const,
+      description: "Admin API endpoint accessible without MFA",
+      timestamp: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
+      framework: "HIPAA",
+      evidence: {
+        endpoint: "/admin/users",
+        mfa_enabled: false,
+      },
+    },
+    {
+      id: "comp-003",
+      rule: "Security patches must be applied within 30 days",
+      severity: "medium" as const,
+      description: "Critical security patch overdue by 12 days",
+      timestamp: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(),
+      framework: "PCI-DSS",
+      evidence: {
+        package: "openssl",
+        current_version: "1.1.1k",
+        required_version: "1.1.1w",
+        days_overdue: 12,
+      },
+    },
+    {
+      id: "comp-004",
+      rule: "Access logs must be retained for 90 days",
+      severity: "low" as const,
+      description: "Log retention policy set to 60 days",
+      timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+      framework: "SOC2",
+    },
+    {
+      id: "comp-005",
+      rule: "Failed login attempts must trigger alerts",
+      severity: "medium" as const,
+      description: "Alert threshold set too high (50 attempts)",
+      timestamp: new Date(Date.now() - 36 * 60 * 60 * 1000).toISOString(),
+      framework: "HIPAA",
+      evidence: {
+        current_threshold: 50,
+        recommended_threshold: 10,
+      },
+    },
+  ],
+  frameworks_analyzed: ["SOC2", "HIPAA", "PCI-DSS", "GDPR"],
+};
+
 /**
  * MSW handlers for all analytics API endpoints
  */
@@ -159,6 +235,24 @@ export const handlers = [
   // GET /predictions/status
   http.get(`${API_BASE_URL}/predictions/status`, () => {
     return HttpResponse.json({ status: "healthy", service: "predictions" });
+  }),
+
+  // GET /compliance
+  http.get(`${API_BASE_URL}/compliance`, ({ request }) => {
+    const url = new URL(request.url);
+    const severity = url.searchParams.get("severity");
+
+    if (severity) {
+      const filteredViolations = {
+        ...mockComplianceData,
+        recent_violations: mockComplianceData.recent_violations.filter(
+          (v) => v.severity === severity
+        ),
+      };
+      return HttpResponse.json(filteredViolations);
+    }
+
+    return HttpResponse.json(mockComplianceData);
   }),
 
   // POST /query
@@ -229,6 +323,13 @@ export const errorHandlers = {
     return HttpResponse.json(
       { detail: "Insufficient data for predictions" },
       { status: 400 }
+    );
+  }),
+
+  complianceError: http.get(`${API_BASE_URL}/compliance`, () => {
+    return HttpResponse.json(
+      { detail: "Compliance service unavailable" },
+      { status: 503 }
     );
   }),
 

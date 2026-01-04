@@ -21,6 +21,7 @@ import "react-resizable/css/styles.css";
 import { InsightWidget } from "../components/widgets/InsightWidget";
 import { AnomalyWidget } from "../components/widgets/AnomalyWidget";
 import { PredictionWidget } from "../components/widgets/PredictionWidget";
+import { ComplianceWidget } from "../components/widgets/ComplianceWidget";
 
 // Create responsive grid layout component
 const ResponsiveGridLayout = WidthProvider(Responsive);
@@ -29,7 +30,7 @@ const ResponsiveGridLayout = WidthProvider(Responsive);
 const LAYOUT_STORAGE_KEY = "acgs-analytics-dashboard-layout";
 
 /** Widget identifiers */
-type WidgetId = "insights" | "anomalies" | "predictions";
+type WidgetId = "insights" | "anomalies" | "predictions" | "compliance";
 
 /** Widget configuration */
 interface WidgetConfig {
@@ -65,6 +66,12 @@ const WIDGET_CONFIGS: WidgetConfig[] = [
     title: "Violation Forecast",
     component: <PredictionWidget />,
     defaultLayout: { x: 0, y: 10, w: 12, h: 12, minW: 6, minH: 8 },
+  },
+  {
+    id: "compliance",
+    title: "Compliance Status",
+    component: <ComplianceWidget />,
+    defaultLayout: { x: 0, y: 20, w: 6, h: 10, minW: 3, minH: 6 },
   },
 ];
 
