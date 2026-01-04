@@ -13,9 +13,11 @@ from typing import Any, Callable, Dict, List, Optional
 from ..base import IntegrationEvent
 from .enums import (
     DEFAULT_JIRA_PRIORITY_MAP,
+    DEFAULT_PAGERDUTY_URGENCY_MAP,
     DEFAULT_SERVICENOW_IMPACT_MAP,
     DEFAULT_SERVICENOW_URGENCY_MAP,
     JiraPriority,
+    PagerDutyUrgency,
     ServiceNowImpactUrgency,
 )
 
@@ -75,6 +77,15 @@ def severity_to_servicenow_urgency(event: IntegrationEvent, params: Dict[str, An
     if custom_map and event.severity.value in custom_map:
         return custom_map[event.severity.value]
     return DEFAULT_SERVICENOW_URGENCY_MAP.get(event.severity, ServiceNowImpactUrgency.MEDIUM).value
+
+
+@FieldTransformers.register("severity_to_pagerduty_urgency")
+def severity_to_pagerduty_urgency(event: IntegrationEvent, params: Dict[str, Any]) -> str:
+    """Convert event severity to PagerDuty urgency value."""
+    custom_map = params.get("mapping", {})
+    if custom_map and event.severity.value in custom_map:
+        return custom_map[event.severity.value]
+    return DEFAULT_PAGERDUTY_URGENCY_MAP.get(event.severity, PagerDutyUrgency.LOW).value
 
 
 @FieldTransformers.register("format_timestamp")
@@ -170,6 +181,7 @@ __all__ = [
     "severity_to_jira_priority",
     "severity_to_servicenow_impact",
     "severity_to_servicenow_urgency",
+    "severity_to_pagerduty_urgency",
     "format_timestamp",
     "format_tags",
     "build_labels",
