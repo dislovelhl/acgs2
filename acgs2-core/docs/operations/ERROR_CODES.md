@@ -6876,6 +6876,1965 @@ docker-compose exec hitl-approvals python -c \
 
 ---
 
+### ACGS-4102: RedisAuthenticationError
+
+**Severity**: MEDIUM
+**Impact**: Service-Degraded
+**Scenario**: Redis authentication failed (DEPLOYMENT_FAILURE_SCENARIOS.md #5.2)
+
+**Description**: Redis requires authentication but credentials are missing or invalid.
+
+**Common Causes**:
+- Missing password in REDIS_URL
+- Incorrect Redis password
+- Redis ACL configuration mismatch
+- Redis requirepass not configured properly
+- Password contains special characters not URL-encoded
+
+**Symptoms**:
+```
+NOAUTH Authentication required
+ERR invalid password
+Redis authentication failed
+Service degraded: cache unavailable
+```
+
+**Resolution**:
+
+1. **Check Redis configuration**:
+   ```bash
+   # Verify Redis requires auth
+   docker-compose exec redis redis-cli CONFIG GET requirepass
+   # Returns: requirepass <password>
+   ```
+
+2. **Update REDIS_URL with password**:
+   ```bash
+   # In .env file:
+   # Format: redis://:<password>@host:port
+   REDIS_URL=redis://:mypassword@redis:6379
+
+   # Or with username (Redis 6+):
+   REDIS_URL=redis://username:password@redis:6379
+   ```
+
+3. **URL-encode special characters in password**:
+   ```bash
+   # Password: p@ss!word#123
+   # Encoded: p%40ss%21word%23123
+   REDIS_URL=redis://:p%40ss%21word%23123@redis:6379
+   ```
+
+4. **Test authentication**:
+   ```bash
+   # With password
+   docker-compose exec redis redis-cli -a mypassword ping
+   # Should return: PONG
+
+   # Or using AUTH command
+   docker-compose exec redis redis-cli
+   > AUTH mypassword
+   > PING
+   # Should return: PONG
+   ```
+
+5. **Verify service can authenticate**:
+   ```bash
+   # Check service logs
+   docker-compose logs hitl-approvals | grep -i redis
+   # Should show: "Redis connection established"
+   ```
+
+6. **Restart dependent services**:
+   ```bash
+   docker-compose restart hitl-approvals enhanced-agent-bus
+   ```
+
+**Common Password Encoding Issues**:
+```bash
+# Password with @: pass@word → pass%40word
+# Password with !: pass!word → pass%21word
+# Password with #: pass#word → pass%23word
+# Password with %: pass%word → pass%25word
+```
+
+**Example**:
+```bash
+# Authentication failure
+docker-compose logs redis
+# ERR: Client sent AUTH, but no password is set
+
+# Fix: Set password in docker-compose.yml
+# redis:
+#   command: redis-server --requirepass mypassword
+
+# Update .env
+REDIS_URL=redis://:mypassword@redis:6379
+
+# Restart Redis and services
+docker-compose restart redis hitl-approvals
+
+# Verify
+docker-compose exec redis redis-cli -a mypassword ping
+# PONG
+```
+
+**Security Note**: Store Redis password in secrets management system (e.g., Vault, AWS Secrets Manager) for production deployments.
+
+**Related Errors**: ACGS-4101, ACGS-4103, ACGS-1504
+
+---
+
+### ACGS-4103: RedisTimeoutError
+
+**Severity**: MEDIUM
+**Impact**: Performance-Degradation
+
+**Description**: Redis operation timed out. Network latency or Redis overloaded.
+
+**Common Causes**:
+- Network latency between service and Redis
+- Redis under heavy load (high CPU)
+- Slow command (e.g., KEYS *, large SCAN)
+- Redis memory eviction in progress
+- Network packet loss
+- Connection pool exhausted
+
+**Symptoms**:
+```
+RedisTimeoutError: Operation timed out after 5 seconds
+Cache operation slow: 5000ms
+Warning: Redis timeout, using database fallback
+P99 latency spike: 5000ms
+```
+
+**Resolution**:
+
+1. **Check Redis performance**:
+   ```bash
+   # Monitor Redis stats
+   docker-compose exec redis redis-cli INFO stats
+   # Look at: total_connections_received, evicted_keys
+
+   # Check slow log
+   docker-compose exec redis redis-cli SLOWLOG GET 10
+   ```
+
+2. **Monitor Redis CPU and memory**:
+   ```bash
+   docker-compose stats redis
+   # CPU should be < 80%, Memory usage reasonable
+   ```
+
+3. **Check for slow commands**:
+   ```bash
+   # View slow log (commands > 10ms)
+   docker-compose exec redis redis-cli CONFIG GET slowlog-log-slower-than
+   docker-compose exec redis redis-cli SLOWLOG GET 20
+   ```
+
+4. **Check network connectivity**:
+   ```bash
+   # Test latency from service to Redis
+   docker-compose exec hitl-approvals ping -c 5 redis
+   # Should be < 1ms
+   ```
+
+5. **Increase timeout if necessary**:
+   ```bash
+   # In .env or service config:
+   REDIS_TIMEOUT=10  # Default is usually 5 seconds
+   REDIS_SOCKET_CONNECT_TIMEOUT=5
+   REDIS_SOCKET_KEEPALIVE=true
+   ```
+
+6. **Scale Redis if under load**:
+   ```bash
+   # Check Redis memory usage
+   docker-compose exec redis redis-cli INFO memory
+
+   # Consider Redis Cluster or read replicas
+   # for high-throughput scenarios
+   ```
+
+**Performance Tuning**:
+```bash
+# Optimize Redis configuration
+docker-compose exec redis redis-cli CONFIG SET maxmemory-policy allkeys-lru
+docker-compose exec redis redis-cli CONFIG SET lazyfree-lazy-eviction yes
+
+# Monitor improvements
+docker-compose exec redis redis-cli INFO commandstats
+```
+
+**Example**:
+```bash
+# Identify slow operations
+docker-compose exec redis redis-cli SLOWLOG GET 10
+# 1) 1) (integer) 123
+#    2) (integer) 1640000000
+#    3) (integer) 5000000  # 5 seconds!
+#    4) 1) "KEYS"
+#       2) "*"            # NEVER use KEYS in production!
+
+# Fix: Replace KEYS with SCAN
+# Before (slow): KEYS pattern*
+# After (fast): SCAN 0 MATCH pattern* COUNT 100
+
+# Verify performance improved
+docker-compose logs hitl-approvals | grep -i "cache.*ms"
+```
+
+**Best Practices**:
+- Use SCAN instead of KEYS for pattern matching
+- Set appropriate TTL on cache keys
+- Use connection pooling (default in most clients)
+- Monitor Redis slow log regularly
+
+**Related Errors**: ACGS-4101, ACGS-4102, ACGS-7101
+
+---
+
+### ACGS-4104: RedisKeyNotFoundError
+
+**Severity**: LOW
+**Impact**: Informational
+
+**Description**: Cache key not found (cache miss). Normal behavior when data not in cache.
+
+**Common Causes**:
+- Key never set (first access)
+- Key expired (TTL reached)
+- Key evicted (memory pressure)
+- Key deleted explicitly
+- Cache cleared/flushed
+
+**Symptoms**:
+```
+Cache miss: key not found
+Fetching from database (cache miss)
+Redis key expired
+```
+
+**Behavior**: This is expected and normal. Service falls back to database on cache miss.
+
+**Resolution**: No action needed. Cache misses are expected behavior.
+
+**Monitoring**:
+```bash
+# Check cache hit rate
+docker-compose exec redis redis-cli INFO stats | grep keyspace
+# keyspace_hits: 1000
+# keyspace_misses: 100
+# Hit rate = 1000 / (1000 + 100) = 90.9%
+
+# Target hit rate: > 80% for good cache performance
+```
+
+**Optimization** (if hit rate < 80%):
+```bash
+# 1. Increase cache TTL (if data doesn't change often)
+CACHE_TTL=3600  # 1 hour
+
+# 2. Increase Redis memory
+# In docker-compose.yml:
+# redis:
+#   command: redis-server --maxmemory 512mb
+
+# 3. Use better eviction policy
+docker-compose exec redis redis-cli CONFIG SET maxmemory-policy allkeys-lru
+```
+
+**Example**:
+```bash
+# Cache miss on first access
+curl http://localhost:8080/api/v1/approvals/123
+# Logs: Cache miss for approval:123, fetching from database
+
+# Second access (cache hit)
+curl http://localhost:8080/api/v1/approvals/123
+# Logs: Cache hit for approval:123 (5ms vs 50ms)
+
+# Check cache stats
+docker-compose exec redis redis-cli INFO stats | grep keyspace
+```
+
+**Related Errors**: ACGS-4101, ACGS-4103
+
+---
+
+### ACGS-4105: EscalationTimerError
+
+**Severity**: MEDIUM
+**Impact**: Service-Degraded
+**Exception**: `EscalationTimerError` (hitl-approvals)
+
+**Description**: Base exception for escalation timer errors in approval workflows.
+
+**Common Causes**:
+- Redis connection failed (timers stored in Redis)
+- Timer configuration invalid
+- Timer expired while processing
+- Redis key corruption
+
+**Symptoms**:
+```
+Escalation timer error
+Failed to schedule escalation timer
+Timer processing failed
+Approval escalation delayed
+```
+
+**Resolution**:
+
+1. **Verify Redis is running** (timers depend on Redis):
+   ```bash
+   docker-compose ps redis
+   # Should show "Up" status
+   ```
+
+2. **Check Redis connectivity**:
+   ```bash
+   docker-compose exec redis redis-cli ping
+   # PONG
+   ```
+
+3. **View pending timers**:
+   ```bash
+   # List escalation timers in Redis
+   docker-compose exec redis redis-cli KEYS "timer:*"
+   ```
+
+4. **Check HITL Approvals logs**:
+   ```bash
+   docker-compose logs hitl-approvals | grep -i "escalation\|timer"
+   ```
+
+5. **Verify escalation configuration**:
+   ```bash
+   # Check service config
+   grep ESCALATION .env
+   # Example:
+   # ESCALATION_TIMEOUT=3600  # 1 hour
+   # ESCALATION_ENABLED=true
+   ```
+
+6. **Restart HITL Approvals service**:
+   ```bash
+   docker-compose restart hitl-approvals
+   ```
+
+**Timer Behavior**:
+- Timers schedule automatic escalation if approval not completed within SLA
+- Uses Redis for distributed timer storage
+- Escalates to next approver or admin after timeout
+
+**Example**:
+```bash
+# Check approval with escalation timer
+curl http://localhost:8080/api/v1/approvals/123
+# {
+#   "id": 123,
+#   "status": "pending",
+#   "escalation_timeout": "2024-01-03T15:00:00Z"
+# }
+
+# Monitor escalation
+docker-compose logs -f hitl-approvals | grep "approval:123"
+# Escalation timer set: approval:123 (3600s)
+# Escalation triggered: approval:123 → admin@example.com
+```
+
+**Related Errors**: ACGS-4101, ACGS-4106
+
+---
+
+### ACGS-4106: TimerNotFoundError
+
+**Severity**: LOW
+**Impact**: Informational
+**Exception**: `TimerNotFoundError` (hitl-approvals)
+
+**Description**: Escalation timer not found. Occurs when trying to cancel timer for already-completed approval.
+
+**Common Causes**:
+- Approval already completed (timer cleaned up)
+- Timer already fired (escalation occurred)
+- Timer never created
+- Redis key manually deleted
+
+**Symptoms**:
+```
+Warning: Timer not found for approval 123
+Unable to cancel timer: not found
+Timer already processed
+```
+
+**Behavior**: Normal when approval completes before escalation timeout.
+
+**Resolution**: No action needed. This is expected behavior when approvals complete quickly.
+
+**Example**:
+```bash
+# Fast approval (completed before escalation)
+# 1. Submit approval request (timer set for 1 hour)
+curl -X POST http://localhost:8080/api/v1/approvals \
+  -d '{"request_id": "req-123", "approvers": ["user1@example.com"]}'
+# Timer set: 3600s
+
+# 2. Approve within 5 minutes
+curl -X POST http://localhost:8080/api/v1/approvals/123/approve
+# Status: approved
+# Log: Timer not found for approval 123 (already completed)
+
+# This is normal - approval was fast, timer not needed
+```
+
+**Related Errors**: ACGS-4105, ACGS-4101
+
+---
+
+### ACGS-4202: KafkaNotAvailableError
+
+**Severity**: HIGH
+**Impact**: Service-Degraded
+**Exception**: `KafkaNotAvailableError` (hitl-approvals)
+
+**Description**: aiokafka library not installed. Python dependency missing.
+
+**Common Causes**:
+- Missing aiokafka in requirements.txt
+- Virtual environment not activated
+- Dependency installation failed
+- Wrong Python environment
+
+**Symptoms**:
+```
+ImportError: No module named 'aiokafka'
+KafkaNotAvailableError: aiokafka not installed
+Async message processing unavailable
+```
+
+**Resolution**:
+
+1. **Install aiokafka**:
+   ```bash
+   # In service directory (e.g., hitl-approvals)
+   pip install aiokafka
+
+   # Or from requirements.txt
+   pip install -r requirements.txt
+   ```
+
+2. **Verify installation**:
+   ```bash
+   python -c "import aiokafka; print(aiokafka.__version__)"
+   # Should print version (e.g., 0.8.1)
+   ```
+
+3. **Rebuild Docker container**:
+   ```bash
+   # If using Docker, rebuild to include dependency
+   docker-compose build hitl-approvals
+   docker-compose up -d hitl-approvals
+   ```
+
+4. **Check requirements.txt**:
+   ```bash
+   # Ensure aiokafka is listed
+   grep aiokafka acgs2-core/services/hitl_approvals/requirements.txt
+   # Should show: aiokafka>=0.8.0
+   ```
+
+**For Docker Deployments**:
+```dockerfile
+# Ensure Dockerfile includes:
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Verify aiokafka in requirements.txt:
+# aiokafka>=0.8.0
+# kafka-python>=2.0.2  # Alternative client
+```
+
+**Example**:
+```bash
+# Error in logs
+docker-compose logs hitl-approvals
+# ImportError: No module named 'aiokafka'
+
+# Fix: Rebuild container
+docker-compose build hitl-approvals
+docker-compose up -d hitl-approvals
+
+# Verify
+docker-compose exec hitl-approvals python -c "import aiokafka; print('OK')"
+# OK
+```
+
+**Alternative**: If aiokafka unavailable, service may fall back to synchronous processing (slower, no async benefits).
+
+**Related Errors**: ACGS-4201, ACGS-4203
+
+---
+
+### ACGS-4203: KafkaPublishError
+
+**Severity**: HIGH
+**Impact**: Service-Degraded
+**Exception**: `KafkaPublishError` (hitl-approvals)
+
+**Description**: Failed to publish message to Kafka topic.
+
+**Common Causes**:
+- Kafka broker unavailable
+- Topic doesn't exist (and auto-create disabled)
+- Insufficient permissions
+- Message too large (exceeds max.message.bytes)
+- Network issues
+- Producer timeout
+
+**Symptoms**:
+```
+KafkaPublishError: Failed to publish message
+Kafka producer timeout
+Topic not found: approval-events
+Message size exceeds limit
+```
+
+**Resolution**:
+
+1. **Verify Kafka is running**:
+   ```bash
+   docker-compose ps kafka
+   # Should show "Up" status
+   ```
+
+2. **Check topic exists**:
+   ```bash
+   docker-compose exec kafka kafka-topics --list \
+     --bootstrap-server localhost:9092
+   # Should list: approval-events, audit-events, etc.
+   ```
+
+3. **Create topic if missing**:
+   ```bash
+   docker-compose exec kafka kafka-topics --create \
+     --topic approval-events \
+     --partitions 3 \
+     --replication-factor 1 \
+     --bootstrap-server localhost:9092
+   ```
+
+4. **Check message size limits**:
+   ```bash
+   # Get max message size
+   docker-compose exec kafka kafka-configs --describe \
+     --entity-type topics --entity-name approval-events \
+     --bootstrap-server localhost:9092 | grep max.message.bytes
+
+   # Default is usually 1MB. Increase if needed:
+   docker-compose exec kafka kafka-configs --alter \
+     --entity-type topics --entity-name approval-events \
+     --add-config max.message.bytes=5242880 \
+     --bootstrap-server localhost:9092
+   # 5MB limit
+   ```
+
+5. **Test publishing**:
+   ```bash
+   # Test with console producer
+   echo "test message" | docker-compose exec -T kafka \
+     kafka-console-producer \
+     --topic approval-events \
+     --bootstrap-server localhost:9092
+   ```
+
+6. **Check producer configuration**:
+   ```bash
+   # In service config:
+   KAFKA_PRODUCER_TIMEOUT=30000  # 30 seconds
+   KAFKA_REQUEST_TIMEOUT=30000
+   KAFKA_MAX_REQUEST_SIZE=1048576  # 1MB
+   ```
+
+**Common Topic Naming**:
+- `approval-events` - Approval workflow events
+- `audit-events` - Audit trail events
+- `policy-updates` - OPA policy change events
+
+**Example**:
+```bash
+# Publishing fails
+docker-compose logs hitl-approvals
+# KafkaPublishError: Topic 'approval-events' not found
+
+# Create topic
+docker-compose exec kafka kafka-topics --create \
+  --topic approval-events \
+  --partitions 3 \
+  --replication-factor 1 \
+  --bootstrap-server localhost:9092
+# Created topic approval-events
+
+# Verify
+docker-compose exec kafka kafka-topics --describe \
+  --topic approval-events \
+  --bootstrap-server localhost:9092
+
+# Retry operation
+curl -X POST http://localhost:8080/api/v1/approvals/123/approve
+# Success: Event published to Kafka
+```
+
+**Related Errors**: ACGS-4201, ACGS-4205, ACGS-4206
+
+---
+
+### ACGS-4204: KafkaConsumerError
+
+**Severity**: HIGH
+**Impact**: Service-Degraded
+
+**Description**: Kafka consumer error. Unable to consume messages from topic.
+
+**Common Causes**:
+- Consumer group blocked
+- Offset out of range
+- Topic partition reassignment
+- Consumer timeout
+- Deserialization error
+
+**Symptoms**:
+```
+Kafka consumer error
+Offset out of range
+Consumer group rebalancing
+Failed to deserialize message
+```
+
+**Resolution**:
+
+1. **Check consumer group status**:
+   ```bash
+   docker-compose exec kafka kafka-consumer-groups --describe \
+     --group approval-service \
+     --bootstrap-server localhost:9092
+   ```
+
+2. **Reset consumer offset if out of range**:
+   ```bash
+   # Reset to earliest
+   docker-compose exec kafka kafka-consumer-groups --reset-offsets \
+     --group approval-service \
+     --topic approval-events \
+     --to-earliest \
+     --bootstrap-server localhost:9092 \
+     --execute
+
+   # Or reset to latest (skip old messages)
+   --to-latest
+   ```
+
+3. **Monitor consumer lag**:
+   ```bash
+   docker-compose exec kafka kafka-consumer-groups --describe \
+     --group approval-service \
+     --bootstrap-server localhost:9092 | grep LAG
+   # LAG should be low (< 100 messages)
+   ```
+
+4. **Check service logs for deserialization errors**:
+   ```bash
+   docker-compose logs hitl-approvals | grep -i "deserialize\|kafka"
+   ```
+
+5. **Restart consumer**:
+   ```bash
+   docker-compose restart hitl-approvals
+   ```
+
+**Example**:
+```bash
+# Check consumer lag
+docker-compose exec kafka kafka-consumer-groups --describe \
+  --group approval-service \
+  --bootstrap-server localhost:9092
+# GROUP           TOPIC           PARTITION  CURRENT-OFFSET  LOG-END-OFFSET  LAG
+# approval-service approval-events 0          100             1000            900
+# High lag (900 messages behind)
+
+# Verify consumer is processing
+docker-compose logs -f hitl-approvals | grep "Consumed message"
+
+# If stuck, restart
+docker-compose restart hitl-approvals
+```
+
+**Related Errors**: ACGS-4201, ACGS-4203, ACGS-4205
+
+---
+
+### ACGS-4205: KafkaTopicNotFoundError
+
+**Severity**: HIGH
+**Impact**: Service-Degraded
+
+**Description**: Kafka topic doesn't exist and auto-creation is disabled.
+
+**Common Causes**:
+- Topic not created during setup
+- Wrong topic name in configuration
+- Auto-create disabled in Kafka broker
+- Typo in topic name
+
+**Symptoms**:
+```
+Topic 'approval-events' not found
+Unknown topic or partition
+Broker: Unknown topic or partition
+```
+
+**Resolution**:
+
+1. **List existing topics**:
+   ```bash
+   docker-compose exec kafka kafka-topics --list \
+     --bootstrap-server localhost:9092
+   ```
+
+2. **Create missing topic**:
+   ```bash
+   docker-compose exec kafka kafka-topics --create \
+     --topic approval-events \
+     --partitions 3 \
+     --replication-factor 1 \
+     --bootstrap-server localhost:9092 \
+     --config retention.ms=86400000  # 24 hours
+   ```
+
+3. **Verify topic configuration**:
+   ```bash
+   # In service .env or config:
+   KAFKA_TOPIC_APPROVALS=approval-events
+   KAFKA_TOPIC_AUDIT=audit-events
+   KAFKA_TOPIC_POLICIES=policy-updates
+   ```
+
+4. **Enable auto-create (not recommended for production)**:
+   ```bash
+   # In docker-compose.yml kafka environment:
+   KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+
+   # Restart Kafka
+   docker-compose restart kafka
+   ```
+
+**Required Topics for ACGS2**:
+```bash
+# Create all required topics
+for topic in approval-events audit-events policy-updates agent-messages; do
+  docker-compose exec kafka kafka-topics --create \
+    --topic $topic \
+    --partitions 3 \
+    --replication-factor 1 \
+    --bootstrap-server localhost:9092 \
+    --if-not-exists
+done
+```
+
+**Example**:
+```bash
+# Service fails to start
+docker-compose logs hitl-approvals
+# KafkaTopicNotFoundError: Topic 'approval-events' not found
+
+# Create topic
+docker-compose exec kafka kafka-topics --create \
+  --topic approval-events \
+  --partitions 3 \
+  --replication-factor 1 \
+  --bootstrap-server localhost:9092
+
+# Verify creation
+docker-compose exec kafka kafka-topics --describe \
+  --topic approval-events \
+  --bootstrap-server localhost:9092
+
+# Restart service
+docker-compose restart hitl-approvals
+```
+
+**Related Errors**: ACGS-4201, ACGS-4203, ACGS-4204
+
+---
+
+### ACGS-4206: KafkaClientError
+
+**Severity**: HIGH
+**Impact**: Service-Degraded
+**Exception**: `KafkaClientError` (hitl-approvals)
+
+**Description**: Base exception for Kafka client errors. Generic Kafka operation failure.
+
+**Common Causes**:
+- Kafka client library error
+- Invalid Kafka configuration
+- Protocol version mismatch
+- Network error
+- Authentication failure
+
+**Symptoms**:
+```
+KafkaClientError: Kafka operation failed
+Client exception occurred
+Kafka protocol error
+```
+
+**Resolution**:
+
+1. **Check Kafka client logs**:
+   ```bash
+   docker-compose logs hitl-approvals | grep -i kafka
+   ```
+
+2. **Verify Kafka configuration**:
+   ```bash
+   grep KAFKA .env
+   # KAFKA_BOOTSTRAP_SERVERS=kafka:19092
+   # KAFKA_CLIENT_ID=hitl-approvals
+   # KAFKA_API_VERSION=auto
+   ```
+
+3. **Test Kafka connectivity**:
+   ```bash
+   docker-compose exec hitl-approvals nc -zv kafka 19092
+   # Connection successful
+   ```
+
+4. **Check Kafka broker version**:
+   ```bash
+   docker-compose exec kafka kafka-broker-api-versions \
+     --bootstrap-server localhost:9092 | head -5
+   ```
+
+5. **Restart Kafka and dependent services**:
+   ```bash
+   docker-compose restart kafka
+   sleep 30  # Wait for Kafka to start
+   docker-compose restart hitl-approvals enhanced-agent-bus
+   ```
+
+**Example**:
+```bash
+# Generic Kafka error
+docker-compose logs hitl-approvals
+# KafkaClientError: Operation failed
+
+# Check Kafka status
+docker-compose ps kafka
+# Ensure "Up" and healthy
+
+# Check for specific error in Kafka logs
+docker-compose logs kafka | tail -50
+
+# Restart services
+docker-compose restart kafka hitl-approvals
+```
+
+**Related Errors**: ACGS-4201, ACGS-4203, ACGS-4204, ACGS-4205
+
+---
+
+### ACGS-4211: KafkaMirrorMakerError
+
+**Severity**: MEDIUM
+**Impact**: Service-Degraded (Multi-Region)
+**Scenario**: Kafka MirrorMaker 2 failures (DEPLOYMENT_FAILURE_SCENARIOS.md #11.3)
+
+**Description**: Kafka MirrorMaker 2 replication error in multi-region deployments.
+
+**Common Causes**:
+- MirrorMaker container not running
+- Network connectivity between regions
+- Source or target cluster unavailable
+- Topic whitelist misconfiguration
+- Replication lag excessive
+
+**Symptoms**:
+```
+MirrorMaker 2 replication failed
+Cross-region Kafka sync degraded
+Replication lag > 1000 messages
+Consumer group offset sync failed
+```
+
+**Resolution**:
+
+1. **Check MirrorMaker status**:
+   ```bash
+   docker-compose ps kafka-mirror-maker
+   # Should show "Up" status
+   ```
+
+2. **Monitor replication lag**:
+   ```bash
+   # Check MirrorMaker metrics
+   curl http://localhost:9090/metrics | grep mirror_lag
+   ```
+
+3. **Verify connectivity to both clusters**:
+   ```bash
+   # Test source cluster
+   docker-compose exec kafka-mirror-maker nc -zv source-kafka:9092
+
+   # Test target cluster
+   docker-compose exec kafka-mirror-maker nc -zv target-kafka:9092
+   ```
+
+4. **Check MirrorMaker configuration**:
+   ```bash
+   # Verify mm2.properties
+   docker-compose exec kafka-mirror-maker cat /etc/mm2/mm2.properties
+   # Check: source/target bootstrap servers, topic whitelist
+   ```
+
+5. **Review MirrorMaker logs**:
+   ```bash
+   docker-compose logs kafka-mirror-maker | tail -100
+   ```
+
+6. **Restart MirrorMaker**:
+   ```bash
+   docker-compose restart kafka-mirror-maker
+   ```
+
+**MirrorMaker 2 Configuration**:
+```properties
+# mm2.properties
+clusters = source, target
+source.bootstrap.servers = source-kafka:9092
+target.bootstrap.servers = target-kafka:9092
+source->target.enabled = true
+source->target.topics = approval-.*, audit-.*, policy-.*
+replication.factor = 3
+sync.topic.acls.enabled = false
+```
+
+**Example**:
+```bash
+# Check replication status
+docker-compose exec kafka-mirror-maker \
+  curl http://localhost:8083/connectors/mm2-checkpoint-connector/status
+# Should show: "state": "RUNNING"
+
+# Monitor lag
+docker-compose exec target-kafka kafka-consumer-groups --describe \
+  --group mm2-group \
+  --bootstrap-server localhost:9092 | grep LAG
+
+# If high lag, check MirrorMaker logs
+docker-compose logs kafka-mirror-maker | grep ERROR
+```
+
+**Note**: Only applicable for multi-region deployments with cross-region Kafka replication.
+
+**Related Errors**: ACGS-4201, ACGS-3702
+
+---
+
+### ACGS-4302: DatabaseQueryError
+
+**Severity**: MEDIUM
+**Impact**: Service-Degraded
+
+**Description**: Database query execution failed.
+
+**Common Causes**:
+- SQL syntax error
+- Invalid table or column name
+- Constraint violation
+- Deadlock detected
+- Query timeout
+- Permission denied
+
+**Symptoms**:
+```
+DatabaseQueryError: Query execution failed
+SQL error: relation "approvals" does not exist
+Deadlock detected
+Permission denied for table approvals
+```
+
+**Resolution**:
+
+1. **Check query syntax**:
+   ```bash
+   # View service logs for SQL error
+   docker-compose logs hitl-approvals | grep -i "SQL\|query"
+   ```
+
+2. **Verify database schema**:
+   ```bash
+   # List tables
+   docker-compose exec postgres psql -U acgs2 -d acgs2_db -c "\dt"
+
+   # Describe table structure
+   docker-compose exec postgres psql -U acgs2 -d acgs2_db \
+     -c "\d approvals"
+   ```
+
+3. **Run database migrations**:
+   ```bash
+   # Apply pending migrations
+   docker-compose exec hitl-approvals alembic upgrade head
+
+   # Check migration status
+   docker-compose exec hitl-approvals alembic current
+   ```
+
+4. **Check database permissions**:
+   ```bash
+   # Grant permissions if needed
+   docker-compose exec postgres psql -U acgs2 -d acgs2_db -c \
+     "GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO acgs2;"
+   ```
+
+5. **Investigate deadlocks**:
+   ```bash
+   # View deadlock details
+   docker-compose exec postgres psql -U acgs2 -d acgs2_db -c \
+     "SELECT * FROM pg_stat_activity WHERE wait_event_type = 'Lock';"
+   ```
+
+**Example**:
+```bash
+# Query error: table doesn't exist
+docker-compose logs hitl-approvals
+# relation "approvals" does not exist
+
+# Run migrations
+docker-compose exec hitl-approvals alembic upgrade head
+# INFO  [alembic.runtime.migration] Running upgrade -> abc123, create approvals table
+
+# Verify table created
+docker-compose exec postgres psql -U acgs2 -d acgs2_db -c "\dt"
+# List of relations
+# Schema | Name      | Type  | Owner
+# public | approvals | table | acgs2
+
+# Retry operation
+curl http://localhost:8080/api/v1/approvals
+# Success
+```
+
+**Related Errors**: ACGS-4301, ACGS-4303, ACGS-4304
+
+---
+
+### ACGS-4303: DatabaseTimeoutError
+
+**Severity**: HIGH
+**Impact**: Performance-Degradation
+
+**Description**: Database query timeout exceeded.
+
+**Common Causes**:
+- Slow query (missing index)
+- Database under heavy load
+- Lock contention
+- Large result set
+- Network latency
+- Connection pool exhausted
+
+**Symptoms**:
+```
+DatabaseTimeoutError: Query timeout after 30s
+Statement timeout
+Query cancelled on user request
+Connection timeout
+```
+
+**Resolution**:
+
+1. **Identify slow queries**:
+   ```bash
+   # Enable slow query logging
+   docker-compose exec postgres psql -U acgs2 -d acgs2_db -c \
+     "ALTER DATABASE acgs2_db SET log_min_duration_statement = 1000;"
+   # Logs queries > 1 second
+
+   # Check logs
+   docker-compose logs postgres | grep "duration:"
+   ```
+
+2. **Analyze query execution plan**:
+   ```bash
+   # Get EXPLAIN ANALYZE for slow query
+   docker-compose exec postgres psql -U acgs2 -d acgs2_db -c \
+     "EXPLAIN ANALYZE SELECT * FROM approvals WHERE status = 'pending';"
+   ```
+
+3. **Add missing indexes**:
+   ```bash
+   # Create index on frequently queried columns
+   docker-compose exec postgres psql -U acgs2 -d acgs2_db -c \
+     "CREATE INDEX idx_approvals_status ON approvals(status);"
+   ```
+
+4. **Check connection pool**:
+   ```bash
+   # View active connections
+   docker-compose exec postgres psql -U acgs2 -d acgs2_db -c \
+     "SELECT count(*) FROM pg_stat_activity WHERE datname = 'acgs2_db';"
+
+   # Increase pool size if needed (in service config):
+   DATABASE_POOL_SIZE=20
+   DATABASE_MAX_OVERFLOW=10
+   ```
+
+5. **Increase query timeout** (if appropriate):
+   ```bash
+   # In service config:
+   DATABASE_QUERY_TIMEOUT=60  # 60 seconds
+
+   # Or per-session in PostgreSQL:
+   SET statement_timeout = 60000;  # milliseconds
+   ```
+
+6. **Optimize query**:
+   ```bash
+   # Add LIMIT to large queries
+   # Use pagination instead of fetching all rows
+   # SELECT * FROM approvals LIMIT 100 OFFSET 0
+   ```
+
+**Performance Tuning**:
+```sql
+-- Check table statistics
+ANALYZE approvals;
+
+-- Vacuum to reclaim space
+VACUUM ANALYZE approvals;
+
+-- View index usage
+SELECT schemaname, tablename, indexname, idx_scan
+FROM pg_stat_user_indexes
+WHERE schemaname = 'public'
+ORDER BY idx_scan ASC;
+```
+
+**Example**:
+```bash
+# Slow query detected
+docker-compose logs postgres
+# duration: 30000.123 ms  statement: SELECT * FROM approvals
+
+# Analyze query
+docker-compose exec postgres psql -U acgs2 -d acgs2_db -c \
+  "EXPLAIN ANALYZE SELECT * FROM approvals WHERE status = 'pending';"
+# Seq Scan on approvals (cost=0.00..1000.00 rows=1000)
+# Missing index!
+
+# Add index
+docker-compose exec postgres psql -U acgs2 -d acgs2_db -c \
+  "CREATE INDEX idx_approvals_status ON approvals(status);"
+
+# Verify improvement
+docker-compose exec postgres psql -U acgs2 -d acgs2_db -c \
+  "EXPLAIN ANALYZE SELECT * FROM approvals WHERE status = 'pending';"
+# Index Scan using idx_approvals_status (cost=0.00..10.00 rows=100)
+# 100x faster!
+```
+
+**Related Errors**: ACGS-4301, ACGS-4302, ACGS-7101
+
+---
+
+### ACGS-4304: DatabaseConstraintError
+
+**Severity**: MEDIUM
+**Impact**: Service-Degraded
+
+**Description**: Database constraint violation (unique, foreign key, check constraint).
+
+**Common Causes**:
+- Duplicate key violation (UNIQUE constraint)
+- Foreign key violation (referenced row doesn't exist)
+- Check constraint violation
+- NOT NULL constraint violation
+- Application logic error
+
+**Symptoms**:
+```
+IntegrityError: duplicate key value violates unique constraint
+ForeignKeyViolation: Key is still referenced from table
+CheckViolation: new row violates check constraint
+NotNullViolation: null value in column "status" violates not-null constraint
+```
+
+**Resolution**:
+
+1. **Identify constraint violation**:
+   ```bash
+   # Check service logs for constraint name
+   docker-compose logs hitl-approvals | grep -i constraint
+   # Key (email)=(user@example.com) already exists
+   ```
+
+2. **View table constraints**:
+   ```bash
+   docker-compose exec postgres psql -U acgs2 -d acgs2_db -c \
+     "SELECT conname, contype FROM pg_constraint WHERE conrelid = 'approvals'::regclass;"
+   ```
+
+3. **For duplicate key violations**:
+   ```bash
+   # Check existing records
+   docker-compose exec postgres psql -U acgs2 -d acgs2_db -c \
+     "SELECT * FROM approvals WHERE email = 'user@example.com';"
+
+   # Application should handle: UPDATE instead of INSERT, or ignore duplicate
+   ```
+
+4. **For foreign key violations**:
+   ```bash
+   # Verify referenced record exists
+   docker-compose exec postgres psql -U acgs2 -d acgs2_db -c \
+     "SELECT * FROM users WHERE id = 123;"
+
+   # Create referenced record first, or fix reference
+   ```
+
+5. **For check constraint violations**:
+   ```bash
+   # View constraint definition
+   docker-compose exec postgres psql -U acgs2 -d acgs2_db -c \
+     "SELECT conname, pg_get_constraintdef(oid) FROM pg_constraint WHERE conname = 'check_status';"
+
+   # Ensure data meets constraint requirements
+   ```
+
+**Common Constraints in ACGS2**:
+```sql
+-- Unique constraints
+UNIQUE (email)
+UNIQUE (approval_id, user_id)
+
+-- Foreign keys
+FOREIGN KEY (user_id) REFERENCES users(id)
+FOREIGN KEY (policy_id) REFERENCES policies(id)
+
+-- Check constraints
+CHECK (status IN ('pending', 'approved', 'rejected'))
+CHECK (priority >= 0 AND priority <= 10)
+```
+
+**Example**:
+```bash
+# Duplicate key error
+curl -X POST http://localhost:8080/api/v1/approvals \
+  -d '{"email": "user@example.com", ...}'
+# Error: Key (email)=(user@example.com) already exists
+
+# Check existing record
+docker-compose exec postgres psql -U acgs2 -d acgs2_db -c \
+  "SELECT id, email, status FROM approvals WHERE email = 'user@example.com';"
+# id |        email        | status
+# 1  | user@example.com    | pending
+
+# Fix: Update existing record instead
+curl -X PUT http://localhost:8080/api/v1/approvals/1 \
+  -d '{"status": "approved"}'
+# Success
+```
+
+**Application Fix**: Handle constraint violations gracefully with try/except and appropriate HTTP status codes (409 Conflict).
+
+**Related Errors**: ACGS-4301, ACGS-4302
+
+---
+
+### ACGS-4305: DatabaseReplicationError
+
+**Severity**: HIGH
+**Impact**: Service-Degraded (Multi-Region)
+**Scenario**: Database replication lag (DEPLOYMENT_FAILURE_SCENARIOS.md #4.2)
+
+**Description**: Database replication lag or failure in multi-region setup.
+
+**Common Causes**:
+- Network latency between regions
+- Replication slot full
+- WAL archiving delayed
+- Replica fell too far behind
+- Disk I/O bottleneck on replica
+
+**Symptoms**:
+```
+Replication lag > 10 seconds
+Replica is behind by 1000 WAL segments
+Replication slot inactive
+Read replica unavailable
+Data inconsistency between regions
+```
+
+**Resolution**:
+
+1. **Check replication status**:
+   ```bash
+   # On primary
+   docker-compose exec postgres psql -U acgs2 -d acgs2_db -c \
+     "SELECT client_addr, state, sync_state, replay_lag FROM pg_stat_replication;"
+   ```
+
+2. **Monitor replication lag**:
+   ```bash
+   # On replica
+   docker-compose exec postgres psql -U acgs2 -d acgs2_db -c \
+     "SELECT now() - pg_last_xact_replay_timestamp() AS replication_lag;"
+   # Should be < 1 second
+   ```
+
+3. **Check replication slots**:
+   ```bash
+   # On primary
+   docker-compose exec postgres psql -U acgs2 -d acgs2_db -c \
+     "SELECT slot_name, active, restart_lsn FROM pg_replication_slots;"
+   ```
+
+4. **Investigate lag causes**:
+   ```bash
+   # Check WAL sender/receiver
+   docker-compose logs postgres | grep -i "wal\|replication"
+
+   # Monitor network latency
+   docker-compose exec postgres ping -c 10 replica-postgres
+   ```
+
+5. **Force replication catchup**:
+   ```bash
+   # On replica, pause reads and let it catch up
+   # Monitor until lag < 1s
+   watch -n 1 'docker-compose exec postgres psql -U acgs2 -d acgs2_db -c \
+     "SELECT now() - pg_last_xact_replay_timestamp() AS lag;"'
+   ```
+
+6. **For severe lag, rebuild replica**:
+   ```bash
+   # Stop replica
+   docker-compose stop postgres-replica
+
+   # Create new basebackup from primary
+   docker-compose exec postgres pg_basebackup -h postgres -D /var/lib/postgresql/replica -U replicator -Fp -Xs -P -R
+
+   # Start replica
+   docker-compose start postgres-replica
+   ```
+
+**Monitoring Thresholds**:
+- **Normal**: < 1 second lag
+- **Warning**: 1-10 seconds lag
+- **Critical**: > 10 seconds lag
+- **Alerting**: > 30 seconds lag (data loss risk)
+
+**Example**:
+```bash
+# Check replication status
+docker-compose exec postgres psql -U acgs2 -d acgs2_db -c \
+  "SELECT client_addr, state, replay_lag FROM pg_stat_replication;"
+#  client_addr   | state     | replay_lag
+#  10.0.2.5      | streaming | 00:00:15    # 15 seconds behind!
+
+# Investigate
+docker-compose logs postgres | tail -50
+# LOG: could not send data to WAL stream: Connection reset
+
+# Check network
+docker-compose exec postgres ping replica-postgres
+# High latency: time=500ms
+
+# Monitor until recovered
+watch -n 1 'docker-compose exec postgres psql -U acgs2 -d acgs2_db -c \
+  "SELECT replay_lag FROM pg_stat_replication;"'
+```
+
+**Note**: Only applicable for deployments with PostgreSQL replication (read replicas or multi-region).
+
+**Related Errors**: ACGS-4301, ACGS-4311, ACGS-3702
+
+---
+
+### ACGS-4311: DatabaseFailoverError
+
+**Severity**: CRITICAL
+**Impact**: Deployment-Blocking
+**Scenario**: Database failover issues (DEPLOYMENT_FAILURE_SCENARIOS.md #4.3, #11.2)
+
+**Description**: Database failover failed or incomplete during primary failure.
+
+**Common Causes**:
+- Automatic failover not configured
+- Replica promotion failed
+- Connection string not updated
+- Health check failed to detect primary failure
+- Split-brain scenario (multiple primaries)
+
+**Symptoms**:
+```
+CRITICAL: Database primary unavailable
+Failover to replica failed
+Cannot promote replica to primary
+Split-brain detected: multiple primaries
+Connection refused: primary database
+```
+
+**Resolution**:
+
+1. **Verify primary status**:
+   ```bash
+   # Check if primary is truly down
+   docker-compose exec postgres pg_isready -h postgres
+   # postgres:5432 - rejecting connections (or timeout)
+   ```
+
+2. **Check replica status**:
+   ```bash
+   # Verify replica is healthy
+   docker-compose exec postgres-replica pg_isready
+   # postgres-replica:5432 - accepting connections
+   ```
+
+3. **Manual failover (if automatic failed)**:
+   ```bash
+   # Promote replica to primary
+   docker-compose exec postgres-replica pg_ctl promote -D /var/lib/postgresql/data
+
+   # Verify promotion
+   docker-compose exec postgres-replica psql -U acgs2 -d acgs2_db -c \
+     "SELECT pg_is_in_recovery();"
+   # f (false = now primary)
+   ```
+
+4. **Update application connection strings**:
+   ```bash
+   # Point all services to new primary
+   # Update DATABASE_URL in .env or service configs
+   DATABASE_URL=postgresql://acgs2:password@postgres-replica:5432/acgs2_db
+
+   # Restart services
+   docker-compose restart hitl-approvals enhanced-agent-bus
+   ```
+
+5. **Rebuild old primary as new replica** (after fixing):
+   ```bash
+   # Once old primary fixed, make it new replica
+   docker-compose exec postgres pg_basebackup -h postgres-replica -D /var/lib/postgresql/data -U replicator -Fp -Xs -P -R
+
+   # Start as replica
+   docker-compose start postgres
+   ```
+
+6. **Prevent split-brain**:
+   ```bash
+   # Verify only ONE primary exists
+   docker-compose exec postgres psql -U acgs2 -d acgs2_db -c \
+     "SELECT pg_is_in_recovery();"
+   docker-compose exec postgres-replica psql -U acgs2 -d acgs2_db -c \
+     "SELECT pg_is_in_recovery();"
+   # One should be 'f' (primary), other 't' (replica)
+   ```
+
+**Automatic Failover with Patroni** (recommended for production):
+```yaml
+# docker-compose.yml
+patroni:
+  image: patroni/patroni:latest
+  environment:
+    PATRONI_SCOPE: acgs2-cluster
+    PATRONI_POSTGRESQL_DATA_DIR: /data/postgres
+    # Automatic failover enabled
+```
+
+**Recovery Time Objectives (RTO)**:
+- **Detection**: < 30 seconds (health checks)
+- **Promotion**: < 30 seconds (pg_ctl promote)
+- **Application switchover**: < 60 seconds (restart services)
+- **Total RTO**: < 2 minutes
+
+**Example**:
+```bash
+# Primary failure detected
+docker-compose ps postgres
+# State: Exit 1
+
+# Check replica
+docker-compose ps postgres-replica
+# State: Up
+
+# Promote replica
+docker-compose exec postgres-replica pg_ctl promote -D /var/lib/postgresql/data
+# server promoting
+
+# Update connection strings
+sed -i 's/postgres:5432/postgres-replica:5432/g' .env
+
+# Restart services
+docker-compose restart hitl-approvals enhanced-agent-bus audit-service
+
+# Verify services healthy
+curl http://localhost:8080/health
+# {"status": "healthy", "database": "connected"}
+```
+
+**Related Errors**: ACGS-4301, ACGS-4305, ACGS-3701
+
+---
+
+### ACGS-4401: OPAIntegrationError
+
+**Severity**: HIGH
+**Impact**: Service-Degraded
+
+**Description**: OPA integration failed (distinct from ACGS-24xx authentication/authorization errors). This is for general OPA integration issues, not policy evaluation failures.
+
+**Common Causes**:
+- OPA container not running
+- OPA API endpoint misconfigured
+- OPA version mismatch
+- Invalid OPA configuration
+- Network connectivity issues
+
+**Symptoms**:
+```
+OPA integration error
+Failed to connect to OPA service
+OPA health check failed
+OPA integration degraded
+```
+
+**Resolution**:
+
+1. **Check OPA status**:
+   ```bash
+   docker-compose ps opa
+   # Should show "Up" status
+   ```
+
+2. **Verify OPA health**:
+   ```bash
+   curl http://localhost:8181/health
+   # Should return: {"status": "ok"}
+   ```
+
+3. **Check OPA configuration**:
+   ```bash
+   grep OPA .env
+   # OPA_URL=http://opa:8181
+   # OPA_POLICY_PATH=/v1/data/acgs2/allow
+   ```
+
+4. **Test OPA connectivity from service**:
+   ```bash
+   docker-compose exec hitl-approvals curl -v http://opa:8181/health
+   # Should connect successfully
+   ```
+
+5. **Check OPA logs**:
+   ```bash
+   docker-compose logs opa | tail -50
+   ```
+
+6. **Restart OPA and dependent services**:
+   ```bash
+   docker-compose restart opa
+   sleep 5
+   docker-compose restart hitl-approvals enhanced-agent-bus
+   ```
+
+**Example**:
+```bash
+# OPA integration error
+docker-compose logs hitl-approvals
+# Error: Failed to connect to OPA: connection refused
+
+# Check OPA
+docker-compose ps opa
+# State: Exit 1
+
+# Start OPA
+docker-compose up -d opa
+
+# Verify health
+curl http://localhost:8181/health
+# {"status": "ok"}
+
+# Restart services
+docker-compose restart hitl-approvals
+```
+
+**Related Errors**: ACGS-2403, ACGS-4402, ACGS-4403, ACGS-4404
+
+---
+
+### ACGS-4402: OPAQueryError
+
+**Severity**: HIGH
+**Impact**: Service-Degraded
+
+**Description**: OPA query execution failed. Policy loaded but query execution error.
+
+**Common Causes**:
+- Invalid query input format
+- Policy runtime error
+- Undefined policy rule
+- Query timeout
+- OPA internal error
+
+**Symptoms**:
+```
+OPA query error
+Policy evaluation failed
+Undefined rule: allow
+Invalid query input
+OPA returned error: evaluation error
+```
+
+**Resolution**:
+
+1. **Check query format**:
+   ```bash
+   # Test OPA query manually
+   curl -X POST http://localhost:8181/v1/data/acgs2/allow \
+     -H 'Content-Type: application/json' \
+     -d '{
+       "input": {
+         "user": "user@example.com",
+         "action": "approve",
+         "resource": "approval-123"
+       }
+     }'
+   ```
+
+2. **Verify policy is loaded**:
+   ```bash
+   # List loaded policies
+   curl http://localhost:8181/v1/policies
+
+   # Check specific policy
+   curl http://localhost:8181/v1/policies/acgs2
+   ```
+
+3. **Test policy in OPA REPL**:
+   ```bash
+   docker-compose exec opa /opa run --bundle /bundles
+   # > data.acgs2.allow
+   ```
+
+4. **Check OPA logs for errors**:
+   ```bash
+   docker-compose logs opa | grep -i error
+   ```
+
+5. **Reload policy bundles**:
+   ```bash
+   # Trigger bundle reload
+   curl -X POST http://localhost:8181/v1/config
+
+   # Or restart OPA
+   docker-compose restart opa
+   ```
+
+**Example**:
+```bash
+# Query error
+curl -X POST http://localhost:8181/v1/data/acgs2/allow \
+  -d '{"input": {"user": "test"}}'
+# {"error": "evaluation error"}
+
+# Check policy
+curl http://localhost:8181/v1/policies/acgs2
+# Policy found
+
+# Test with correct input format
+curl -X POST http://localhost:8181/v1/data/acgs2/allow \
+  -d '{
+    "input": {
+      "user": "user@example.com",
+      "action": "approve",
+      "resource": "approval-123",
+      "constitutional_hash": "cdd01ef066bc6cf2"
+    }
+  }'
+# {"result": true}
+```
+
+**Related Errors**: ACGS-2401, ACGS-4401, ACGS-4403
+
+---
+
+### ACGS-4403: OPATimeoutError
+
+**Severity**: HIGH
+**Impact**: Service-Degraded
+
+**Description**: OPA request timeout exceeded.
+
+**Common Causes**:
+- Complex policy evaluation (too many rules)
+- Large input data
+- OPA under heavy load
+- Network latency
+- OPA resource exhaustion
+
+**Symptoms**:
+```
+OPA timeout: request exceeded 5 seconds
+Policy evaluation timeout
+OPA not responding
+Request cancelled: timeout
+```
+
+**Resolution**:
+
+1. **Check OPA response time**:
+   ```bash
+   time curl -X POST http://localhost:8181/v1/data/acgs2/allow \
+     -d '{"input": {...}}'
+   # Should be < 100ms for simple policies
+   ```
+
+2. **Monitor OPA resource usage**:
+   ```bash
+   docker-compose stats opa
+   # Check CPU and memory usage
+   ```
+
+3. **Simplify policy if possible**:
+   ```bash
+   # Review policy complexity
+   # Reduce nested loops, large data sets
+   # Use indexing for faster lookups
+   ```
+
+4. **Increase timeout** (if complex policies justified):
+   ```bash
+   # In service config:
+   OPA_TIMEOUT=10  # 10 seconds (default usually 5)
+   OPA_REQUEST_TIMEOUT=10000  # milliseconds
+   ```
+
+5. **Scale OPA if under load**:
+   ```bash
+   # Add more OPA replicas (docker-compose scale)
+   docker-compose up -d --scale opa=3
+
+   # Add load balancer in front
+   ```
+
+6. **Check OPA logs for slow queries**:
+   ```bash
+   docker-compose logs opa | grep -i "slow\|timeout"
+   ```
+
+**Policy Optimization**:
+```rego
+# Before (slow - nested loops)
+allow {
+  some i, j
+  user := data.users[i]
+  role := data.roles[j]
+  # ... complex logic
+}
+
+# After (fast - indexed lookup)
+allow {
+  user := data.users_by_email[input.user]
+  role := user.roles[_]
+  # ... simpler logic
+}
+```
+
+**Example**:
+```bash
+# Timeout error
+time curl -X POST http://localhost:8181/v1/data/acgs2/allow \
+  -d '{"input": {...}}'
+# Timeout after 5.0 seconds
+
+# Check OPA stats
+docker-compose stats opa
+# CPU: 95% (overloaded!)
+
+# Restart OPA
+docker-compose restart opa
+
+# Verify performance
+time curl -X POST http://localhost:8181/v1/data/acgs2/allow \
+  -d '{"input": {...}}'
+# 0.050s (50ms - good!)
+```
+
+**Performance Targets**:
+- **Simple policies**: < 50ms
+- **Complex policies**: < 500ms
+- **Critical**: < 1 second
+- **Timeout threshold**: 5 seconds (default)
+
+**Related Errors**: ACGS-4401, ACGS-4402, ACGS-7101
+
+---
+
+### ACGS-4404: OPAPolicyLoadError
+
+**Severity**: CRITICAL
+**Impact**: Deployment-Blocking
+**Scenario**: Policy syntax errors (DEPLOYMENT_FAILURE_SCENARIOS.md #2.3)
+
+**Description**: OPA policy loading failed due to syntax or validation errors.
+
+**Common Causes**:
+- Rego syntax error
+- Invalid policy structure
+- Missing package declaration
+- Circular import
+- Type error in policy
+
+**Symptoms**:
+```
+CRITICAL: Failed to load OPA policy
+Rego syntax error: unexpected token
+Policy compilation failed
+Package not found: acgs2
+Invalid policy bundle
+```
+
+**Resolution**:
+
+1. **Check OPA logs for syntax errors**:
+   ```bash
+   docker-compose logs opa | grep -i error
+   # rego_parse_error: unexpected eof token
+   # Line 45: expected ']'
+   ```
+
+2. **Validate policy syntax**:
+   ```bash
+   # Test policy file locally
+   docker-compose exec opa /opa test /policies/*.rego -v
+
+   # Or use OPA CLI
+   opa check /path/to/policy.rego
+   ```
+
+3. **Check policy bundle structure**:
+   ```bash
+   # Verify bundle contains required files
+   docker-compose exec opa ls -la /bundles/
+   # Should have: .manifest, *.rego files
+   ```
+
+4. **Fix syntax errors**:
+   ```rego
+   # Before (syntax error)
+   package acgs2
+   allow {
+     input.user == "admin"  # Missing closing brace
+
+   # After (fixed)
+   package acgs2
+   allow {
+     input.user == "admin"
+   }
+   ```
+
+5. **Reload policy**:
+   ```bash
+   # After fixing policy, reload
+   docker-compose restart opa
+
+   # Or trigger bundle update (if using bundle service)
+   curl -X POST http://localhost:8181/v1/config
+   ```
+
+6. **Verify policy loaded successfully**:
+   ```bash
+   # Check loaded policies
+   curl http://localhost:8181/v1/policies
+   # Should list acgs2 policy
+
+   # Test policy
+   curl -X POST http://localhost:8181/v1/data/acgs2/allow \
+     -d '{"input": {"user": "admin"}}'
+   # Should return result
+   ```
+
+**Common Rego Syntax Errors**:
+```rego
+# Missing package
+# Error: package declaration required
+package acgs2  # Fix: Add package
+
+# Unclosed braces
+allow {
+  input.user == "admin"
+# Fix: Add closing }
+
+# Invalid operator
+allow {
+  input.user = "admin"  # Assignment instead of comparison
+}
+# Fix: Use == for comparison
+
+# Undefined variable
+allow {
+  user.role == "admin"  # 'user' not defined
+}
+# Fix: Use input.user.role
+```
+
+**Example**:
+```bash
+# Policy load error
+docker-compose logs opa
+# ERROR: rego_parse_error: unexpected '}' token at line 23
+
+# Check policy file
+cat acgs2-core/opa/policies/acgs2.rego
+# Line 23: Extra closing brace
+
+# Fix policy
+vim acgs2-core/opa/policies/acgs2.rego
+# Remove extra }
+
+# Validate
+docker-compose exec opa /opa check /policies/acgs2.rego
+# Success
+
+# Restart OPA
+docker-compose restart opa
+
+# Verify loaded
+curl http://localhost:8181/v1/policies/acgs2
+# Policy loaded successfully
+```
+
+**Constitutional Hash Validation**: Ensure policy includes constitutional hash validation:
+```rego
+package acgs2
+
+constitutional_hash := "cdd01ef066bc6cf2"
+
+allow {
+  input.constitutional_hash == constitutional_hash
+  # ... other rules
+}
+```
+
+**Related Errors**: ACGS-2401, ACGS-2402, ACGS-4401, ACGS-6201
+
+---
+
 ## ACGS-5xxx: Runtime Errors
 
 **Category Description**: Errors occurring during normal system operation, including business logic, workflow, and processing errors.
