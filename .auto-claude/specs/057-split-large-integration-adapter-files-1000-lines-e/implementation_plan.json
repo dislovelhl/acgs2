@@ -208,11 +208,12 @@
           "subtask_id": "3.5",
           "title": "Create integrations/ticket_mapping/mapper.py",
           "description": "Extract TicketFieldMapper class with field mapping orchestration logic",
-          "status": "pending",
+          "status": "completed",
           "depends_on": [
             "3.3",
             "3.4"
-          ]
+          ],
+          "notes": "Successfully updated integrations/ticket_mapping/mapper.py with improved type safety and robustness. File contains 392 lines with TicketFieldMapper class extracted from original ticket_mapping.py (lines 631-985). Implements template rendering with TEMPLATE_PATTERN regex, field transformations via FieldTransformers registry, validation via FieldValidator, and conditional logic with 8 operators (eq, ne, gt, gte, lt, lte, in, contains, regex). Key improvements: type-safe _get_event_field method ensures simple JSON types, explicit string conversions in _apply_conditional for robustness, defensive handling of 'in' and 'contains' operators. Public methods: map_event(), register_transform(), get_summary(), get_priority(), validate_config(). Dependencies: IntegrationEvent and EventSeverity from ..base, enums/models/validators/transformers from local package. All pre-commit hooks passed (ruff, ruff-format, ruff-no-print, bandit). Committed as 70e08b36f."
         },
         {
           "subtask_id": "3.6",

@@ -1,6 +1,79 @@
 # Build Progress Report
 
-## Completed Subtask: 3.4 - Add PagerDuty support and complete transformers.py
+## Completed Subtask: 3.5 - Create integrations/ticket_mapping/mapper.py
+
+### Summary
+Successfully updated integrations/ticket_mapping/mapper.py with improved type safety and robustness. The TicketFieldMapper class orchestrates the mapping of governance events to ticket fields, coordinating template rendering, field transformations, validation, and conditional logic.
+
+### Implementation Details
+- **File Updated**: integration-service/src/integrations/ticket_mapping/mapper.py (392 lines)
+- **Commit**: 70e08b36f
+- **Date**: 2025-01-04
+
+### TicketFieldMapper Class Features
+
+**Core Functionality:**
+- Maps governance events to ticketing system fields using configurable mappings
+- Supports 5 mapping types: STATIC, TEMPLATE, EVENT_FIELD, TRANSFORM, CONDITIONAL
+- Provides template-based field generation with regex pattern `\{(\w+(?:\.\w+)*)\}`
+- Enables custom transform registration for extensibility
+
+**Public Methods:**
+- `map_event(event)` - Maps an event to ticket fields, returns TicketMappingResult
+- `register_transform(name, func)` - Registers custom transform functions
+- `get_summary(event)` - Generates ticket summary using configured template
+- `get_priority(severity)` - Gets priority value for severity level (supports Jira/ServiceNow)
+- `validate_config()` - Validates mapping configuration for errors
+
+**Private Methods:**
+- `_map_field()` - Maps a single field with validation
+- `_compute_value()` - Computes field value based on mapping type
+- `_apply_template()` - Renders templates with event field placeholders
+- `_get_event_field()` - Gets event field values, supports nested paths (e.g., "details.key")
+- `_apply_transform()` - Applies transform functions (custom or built-in)
+- `_apply_conditional()` - Evaluates conditional logic to determine field value
+- `_evaluate_condition()` - Evaluates single condition with 8 operators
+
+**Conditional Operators Supported:**
+- `eq` - equals
+- `ne` - not equals
+- `gt`, `gte`, `lt`, `lte` - comparison operators
+- `in` - value in list
+- `contains` - string contains
+- `regex` - regex pattern match
+
+### Key Improvements (vs original)
+- Type-safe `_get_event_field()` ensures simple JSON types are returned
+- Explicit string conversions in `_apply_conditional()` for field and operator
+- Defensive handling of 'in' operator (checks if expected is list)
+- Proper string handling in 'contains' operator
+- Added type: ignore comments for comparison operators to satisfy type checker
+
+### Dependencies
+- Standard library: `logging`, `re`, `typing`
+- Parent: `IntegrationEvent`, `EventSeverity` from `..base`
+- Local: `FieldMappingType`, `TicketingProvider`, `JiraPriority`, `ServiceNowImpactUrgency`, `DEFAULT_JIRA_PRIORITY_MAP`, `DEFAULT_SERVICENOW_IMPACT_MAP` from `.enums`
+- Local: `FieldMapping`, `FieldMappingResult`, `TicketMappingConfig`, `TicketMappingResult` from `.models`
+- Local: `FieldTransformers`, `TransformFunc` from `.transformers`
+- Local: `FieldValidator` from `.validators`
+
+### Verification
+✅ All pre-commit hooks passed:
+- ruff (linting)
+- ruff-format (code formatting)
+- ruff-no-print (no debug statements)
+- bandit (security scanning)
+- check json
+- check for merge conflicts
+- check for added large files
+- check for case conflicts
+
+### Phase 3 Progress
+Phase 3 (Split integrations/ticket_mapping.py): **5/9 subtasks completed (56%)**
+
+---
+
+## Previous Subtask: 3.4 - Add PagerDuty support and complete transformers.py
 
 ### Summary
 Successfully updated integrations/ticket_mapping/enums.py with PagerDuty support and added missing severity_to_pagerduty_urgency transformer function to transformers.py. The transformers.py file already existed with 10 transformer functions; added the 11th PagerDuty function to complete the full set from the original ticket_mapping.py file.
