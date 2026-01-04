@@ -1,0 +1,260 @@
+# Gitleaks Configuration for ACGS-2
+# This configuration adds custom rules for ACGS-2 specific secrets
+# and defines allowlists for development placeholders.
+#
+# References:
+# - secrets_manager.py CREDENTIAL_PATTERNS
+# - .auto-claude/specs/047-implement-secrets-detection-pre-commit-hook/
+
+title = "ACGS-2 Gitleaks Configuration"
+
+# ============================================================================
+# Custom Rules for ACGS-2 Specific Secrets
+# ============================================================================
+
+# Anthropic API Key (not in default gitleaks)
+# Pattern: sk-ant-[A-Za-z0-9_-]{80,}
+[[rules]]
+id = "anthropic-api-key"
+description = "Anthropic API Key"
+regex = '''sk-ant-[A-Za-z0-9_-]{80,}'''
+keywords = ["sk-ant-"]
+tags = ["api-key", "ai-provider", "anthropic"]
+[rules.allowlist]
+regexes = [
+  '''sk-ant-XXX''',  # Redacted examples in documentation
+  '''sk-ant-.*example''',  # Example placeholders
+]
+
+# Claude Code OAuth Token (ACGS-2 specific)
+# Pattern: sk-ant-oat\d{2}-[A-Za-z0-9_-]{60,}
+[[rules]]
+id = "claude-code-oauth-token"
+description = "Claude Code OAuth Token"
+regex = '''sk-ant-oat\d{2}-[A-Za-z0-9_-]{60,}'''
+keywords = ["sk-ant-oat"]
+tags = ["oauth", "ai-provider", "claude-code"]
+[rules.allowlist]
+regexes = [
+  '''sk-ant-oat.*XXX''',  # Redacted examples
+  '''sk-ant-oat.*example''',  # Example placeholders
+]
+
+# OpenRouter API Key (ACGS-2 specific)
+# Pattern: sk-or-v1-[A-Za-z0-9]{60,}
+[[rules]]
+id = "openrouter-api-key"
+description = "OpenRouter API Key"
+regex = '''sk-or-v1-[A-Za-z0-9]{60,}'''
+keywords = ["sk-or-v1-"]
+tags = ["api-key", "ai-provider", "openrouter"]
+[rules.allowlist]
+regexes = [
+  '''sk-or-v1-XXX''',  # Redacted examples
+  '''sk-or-v1-.*example''',  # Example placeholders
+]
+
+# HuggingFace Token (ensure coverage beyond default rules)
+# Pattern: hf_[A-Za-z0-9]{30,}
+[[rules]]
+id = "huggingface-token"
+description = "HuggingFace API Token"
+regex = '''hf_[A-Za-z0-9]{30,}'''
+keywords = ["hf_"]
+tags = ["api-key", "ai-provider", "huggingface"]
+[rules.allowlist]
+regexes = [
+  '''hf_XXX''',  # Redacted examples
+  '''hf_.*example''',  # Example placeholders
+]
+
+# OpenAI API Key (enhance default detection)
+# Pattern: sk-[A-Za-z0-9]{20,}
+# Note: This may overlap with default gitleaks rules, but ensures coverage
+[[rules]]
+id = "openai-api-key-acgs2"
+description = "OpenAI API Key (ACGS-2)"
+regex = '''sk-[A-Za-z0-9]{20,}'''
+keywords = ["sk-"]
+tags = ["api-key", "ai-provider", "openai"]
+[rules.allowlist]
+regexes = [
+  '''sk-XXX''',  # Redacted examples
+  '''sk-.*example''',  # Example placeholders
+  '''sk-test-''',  # Test prefixes
+  '''sk-ant-''',  # Exclude Anthropic keys (handled by specific rule)
+  '''sk-or-''',  # Exclude OpenRouter keys (handled by specific rule)
+]
+
+# AWS Access Key ID (ensure strict detection)
+# Pattern: AKIA[A-Z0-9]{16}
+# Note: Default gitleaks has this, but we add for completeness
+[[rules]]
+id = "aws-access-key-id-acgs2"
+description = "AWS Access Key ID (ACGS-2)"
+regex = '''AKIA[A-Z0-9]{16}'''
+keywords = ["AKIA"]
+tags = ["api-key", "cloud", "aws"]
+[rules.allowlist]
+regexes = [
+  '''AKIAIOSFODNN7EXAMPLE''',  # AWS official example key
+  '''AKIA.*EXAMPLE''',  # Example keys
+]
+
+# JWT Secret (64 hex characters)
+# Pattern: ^[A-Fa-f0-9]{64}$
+# Note: High entropy detection will catch this, but we add specific rule
+[[rules]]
+id = "jwt-secret-acgs2"
+description = "JWT Secret (64 hex chars)"
+regex = '''[A-Fa-f0-9]{64}'''
+keywords = ["JWT_SECRET", "jwt_secret", "JWT-SECRET"]
+tags = ["secret", "security", "jwt"]
+[rules.allowlist]
+regexes = [
+  '''0{64}''',  # All zeros (placeholder)
+  '''1{64}''',  # All ones (placeholder)
+  '''[Aa]{64}''',  # All A's (placeholder)
+]
+
+# HashiCorp Vault Token
+# Pattern: (hvs\.|s\.)[A-Za-z0-9]{20,}
+[[rules]]
+id = "vault-token-acgs2"
+description = "HashiCorp Vault Token"
+regex = '''(hvs\.|s\.)[A-Za-z0-9]{20,}'''
+keywords = ["hvs.", "VAULT_TOKEN", "vault_token"]
+tags = ["secret", "infrastructure", "vault"]
+[rules.allowlist]
+regexes = [
+  '''hvs\.EXAMPLE''',  # Example tokens
+  '''s\.EXAMPLE''',  # Example tokens
+]
+
+# ============================================================================
+# Global Allowlist Configuration
+# ============================================================================
+
+[allowlist]
+description = "Allowlist for development placeholders and safe paths"
+
+# Placeholder patterns that indicate safe, non-real secrets
+regexes = [
+  # Development prefixes
+  '''dev-.*''',
+  '''development-.*''',
+  '''test-.*''',
+  '''local-.*''',
+  '''placeholder-.*''',
+
+  # Instructional placeholders
+  '''your-.*''',
+  '''<.*>''',
+  '''.*-example''',
+  '''.*-template''',
+  '''.*-placeholder''',
+
+  # Redaction markers
+  '''XXX+''',
+  '''\*\*\*.*\*\*\*''',
+  '''\[REDACTED\]''',
+  '''<hidden>''',
+  '''<secret>''',
+
+  # Common placeholder values from ACGS-2 codebase
+  '''dev-jwt-secret-min-32-chars-required''',
+  '''dev_password''',
+  '''mlflow_password''',
+  '''acgs2_pass''',
+
+  # Empty or clearly fake values
+  '''password''',  # Single word "password" in .env.example
+  '''changeme''',
+  '''replace-me''',
+  '''insert-.*-here''',
+]
+
+# Paths to exclude from scanning entirely
+paths = [
+  # Example and template files
+  '''.env.example$''',
+  '''.env.template$''',
+  '''.*\.example\..*''',
+  '''.*\.template\..*''',
+
+  # Test fixtures and test data
+  '''tests/fixtures/.*''',
+  '''test/fixtures/.*''',
+  '''__fixtures__/.*''',
+  '''.*/test_.*\.py$''',  # May contain test secrets
+
+  # Documentation (allow redacted examples)
+  '''docs/.*\.md$''',
+  '''README.*\.md$''',
+  '''.*/.*\.md$''',
+
+  # Dependencies and build artifacts
+  '''node_modules/.*''',
+  '''.venv/.*''',
+  '''venv/.*''',
+  '''__pycache__/.*''',
+  '''dist/.*''',
+  '''build/.*''',
+  '''.eggs/.*''',
+  '''.*\.egg-info/.*''',
+
+  # Git and version control
+  '''.git/.*''',
+
+  # Binary and media files (performance optimization)
+  '''.*\.(png|jpg|jpeg|gif|pdf|zip|tar|gz|woff|woff2|ttf|eot)$''',
+]
+
+# Specific commits to skip (if needed for historical reasons)
+commits = []
+
+# Stop words that indicate likely false positives
+# These are common words that might trigger generic secret detection
+stopwords = [
+  "example",
+  "template",
+  "placeholder",
+  "redacted",
+  "hidden",
+  "secret",  # The word itself in documentation
+  "password",  # The word itself in comments
+]
+
+# ============================================================================
+# Performance and Scanning Configuration
+# ============================================================================
+
+# Extend default depth for entropy scanning
+# Default is 100, we keep it for performance
+# [extend]
+# useDefault = true
+
+# Note: Additional configuration options available:
+# - [extend] section to include/exclude default gitleaks rules
+# - Per-rule entropy thresholds
+# - Custom keywords per rule
+#
+# See: https://github.com/gitleaks/gitleaks#configuration
+
+# ============================================================================
+# Integration Notes
+# ============================================================================
+#
+# This configuration works in conjunction with:
+# 1. .gitleaksignore - For specific fingerprint-based exceptions
+# 2. .pre-commit-config.yaml - For pre-commit hook integration
+# 3. scripts/check-secrets-pre-commit.py - Custom ACGS-2 validation
+# 4. acgs2-core/shared/secrets_manager.py - Source of truth for patterns
+#
+# Maintenance:
+# - When adding new secrets to CREDENTIAL_PATTERNS in secrets_manager.py,
+#   consider adding corresponding rules here for pre-commit detection
+# - Review and update allowlist regexes if new placeholder patterns emerge
+# - Document any new .gitleaksignore additions with clear justification
+#
+# ============================================================================

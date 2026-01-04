@@ -1,0 +1,374 @@
+{
+  "spec_id": "047-implement-secrets-detection-pre-commit-hook",
+  "title": "Implement Secrets Detection Pre-commit Hook",
+  "description": "Add pre-commit hooks to prevent accidental secret commits, integrating gitleaks with ACGS-2's secrets_manager.py patterns for comprehensive protection",
+  "created_at": "2026-01-03T21:27:51.710Z",
+  "updated_at": "2026-01-03T21:27:51.710Z",
+  "status": "in_progress",
+  "planStatus": "complete",
+  "workflow_type": "development",
+  "constitutional_hash": "cdd01ef066bc6cf2",
+  "phases": [
+    {
+      "phase_id": "1",
+      "phase_name": "Analysis and Setup",
+      "description": "Analyze current secret detection setup and prepare configuration",
+      "subtasks": [
+        {
+          "subtask_id": "1.1",
+          "title": "Analyze existing gitleaks configuration",
+          "description": "Review .gitleaksignore and GitHub workflow to understand current gitleaks usage patterns",
+          "status": "completed",
+          "completed_at": "2026-01-03T21:30:00.000Z",
+          "notes": "Completed comprehensive analysis. Key findings: Gitleaks in CI only (not pre-commit), minimal .gitleaksignore with 1 exception (SAML cert), need custom ACGS-2 patterns, placeholder detection required. Created gitleaks-analysis.md with detailed findings.",
+          "acceptance_criteria": [
+            "Documented list of currently ignored secrets",
+            "Understanding of gitleaks configuration in CI",
+            "List of file patterns that need secret scanning"
+          ],
+          "dependencies": []
+        },
+        {
+          "subtask_id": "1.2",
+          "title": "Review secrets_manager.py patterns",
+          "description": "Extract CREDENTIAL_PATTERNS and SECRET_CATEGORIES to inform hook configuration",
+          "status": "completed",
+          "completed_at": "2026-01-03T21:35:00.000Z",
+          "notes": "Completed comprehensive analysis. Extracted 8 CREDENTIAL_PATTERNS with regex details, identified 7 additional secrets without patterns, documented 5 placeholder categories (dev-*, your-*, <...>, empty, redacted), created detection logic, and mapped to gitleaks rules. Created secrets-patterns-analysis.md with complete findings including valid/invalid format examples and file-specific handling rules.",
+          "acceptance_criteria": [
+            "List of all credential patterns from secrets_manager.py",
+            "Understanding of what constitutes a valid vs invalid secret format",
+            "Identification of placeholder vs real secrets"
+          ],
+          "dependencies": ["1.1"]
+        },
+        {
+          "subtask_id": "1.3",
+          "title": "Design hook strategy",
+          "description": "Design multi-layered approach: gitleaks for general scanning, custom hook for ACGS-2 specific patterns",
+          "status": "completed",
+          "completed_at": "2026-01-03T21:40:00.000Z",
+          "notes": "Completed comprehensive hook strategy design. Created detailed strategy document covering multi-layered approach (gitleaks + custom ACGS-2 hook), file scanning/exclusion strategy, performance optimizations (<5s target), three-tier allow-list system, context-aware validation, phased rollout plan, and success metrics. Key decision: Single source of truth using CREDENTIAL_PATTERNS from secrets_manager.py. Document: hook-strategy.md",
+          "acceptance_criteria": [
+            "Documented hook strategy with rationale",
+            "List of files/patterns to scan vs exclude",
+            "Performance considerations documented"
+          ],
+          "dependencies": ["1.2"]
+        }
+      ]
+    },
+    {
+      "phase_id": "2",
+      "phase_name": "Gitleaks Pre-commit Integration",
+      "description": "Add gitleaks as a pre-commit hook for industry-standard secret detection",
+      "subtasks": [
+        {
+          "subtask_id": "2.1",
+          "title": "Add gitleaks to pre-commit config",
+          "description": "Configure gitleaks as a pre-commit hook in .pre-commit-config.yaml",
+          "status": "completed",
+          "completed_at": "2026-01-03T21:45:00.000Z",
+          "notes": "Successfully added gitleaks v8.21.2 to .pre-commit-config.yaml. Hook configured with --staged flag for efficient scanning of only staged files, --redact for security, and --verbose for debugging. Automatically uses existing .gitleaksignore. Verified hook runs successfully in pre-commit workflow.",
+          "acceptance_criteria": [
+            "Gitleaks hook added to .pre-commit-config.yaml",
+            "Hook configured to use existing .gitleaksignore",
+            "Hook runs efficiently (doesn't scan entire history)"
+          ],
+          "dependencies": ["1.3"]
+        },
+        {
+          "subtask_id": "2.2",
+          "title": "Create gitleaks configuration file",
+          "description": "Create .gitleaks.toml with ACGS-2 specific rules and allow-lists",
+          "status": "completed",
+          "completed_at": "2026-01-03T21:50:00.000Z",
+          "notes": "Successfully created .gitleaks.toml with comprehensive ACGS-2 configuration. Includes: 8 custom rules for AI provider keys (Anthropic, Claude Code, OpenRouter, HuggingFace, OpenAI), enhanced rules for AWS/JWT/Vault tokens, global allowlist for dev placeholders (dev-*, test-*, your-*, etc.), path exclusions for .env.example/tests/docs, and integration notes for secrets_manager.py. Configuration validated by pre-commit hook - passes successfully. Commit: 1042f9f39",
+          "acceptance_criteria": [
+            ".gitleaks.toml created with custom rules",
+            "Configuration allows placeholder secrets (e.g., 'dev-jwt-secret-min-32-chars-required')",
+            "Configuration catches real credential patterns from secrets_manager.py"
+          ],
+          "dependencies": ["2.1"]
+        },
+        {
+          "subtask_id": "2.3",
+          "title": "Update .gitleaksignore with known safe secrets",
+          "description": "Add fingerprints for development/test secrets that are safe to commit",
+          "status": "completed",
+          "completed_at": "2026-01-03T22:00:00.000Z",
+          "notes": "Successfully updated .gitleaksignore with comprehensive fingerprints and documentation for safe development/test secrets. Added: (1) sp.crt certificate alongside existing sp.key entry, (2) Three .env.dev development secrets with detailed justifications (JWT_SECRET, REDIS_PASSWORD, POSTGRES_ML_PASSWORD), (3) Comprehensive documentation including what each secret is, why it's safe, and production mitigation. Each exception clearly documents that these are development-only placeholders with real secrets managed via Vault/secrets manager in production. Added best practices notes and guidelines for future additions. Commit: 01a011541. Pre-commit hooks verified - gitleaks passes successfully.",
+          "acceptance_criteria": [
+            ".gitleaksignore updated with documented exceptions",
+            "Each exception has a comment explaining why it's safe",
+            "Test certificates and placeholder values properly ignored"
+          ],
+          "dependencies": ["2.2"]
+        }
+      ]
+    },
+    {
+      "phase_id": "3",
+      "phase_name": "Custom ACGS-2 Secrets Hook",
+      "description": "Create custom pre-commit hook using CREDENTIAL_PATTERNS from secrets_manager.py",
+      "subtasks": [
+        {
+          "subtask_id": "3.1",
+          "title": "Create custom secrets detection script",
+          "description": "Build scripts/check-secrets-pre-commit.py using patterns from secrets_manager.py",
+          "status": "completed",
+          "completed_at": "2026-01-03T23:08:00.000Z",
+          "notes": "Successfully created scripts/check-secrets-pre-commit.py. Script imports CREDENTIAL_PATTERNS directly from secrets_manager.py, validates against 8 patterns, distinguishes placeholders using 5-category detection (dev-*, test-*, your-*, etc.), provides actionable error messages with remediation steps, scans only staged files for performance, and exits with code 0 (pass) or 1 (fail). Includes file exclusions (.env.example, test fixtures), binary file skipping, and category-based risk reporting. All pre-commit hooks pass (ruff, bandit, gitleaks). Commit: a72fec167",
+          "acceptance_criteria": [
+            "Script validates credentials against CREDENTIAL_PATTERNS",
+            "Script distinguishes between placeholder and real secrets",
+            "Script provides clear error messages with remediation steps",
+            "Script exits with appropriate codes (0=pass, 1=fail)"
+          ],
+          "dependencies": ["1.3"]
+        },
+        {
+          "subtask_id": "3.2",
+          "title": "Add allow-list for development secrets",
+          "description": "Create configuration for known-safe development secrets and placeholders",
+          "status": "completed",
+          "completed_at": "2026-01-03T23:30:00.000Z",
+          "notes": "Successfully created comprehensive .secrets-allowlist.yaml configuration file with three-tier allow-list system (pattern/path/value-based). Includes documented safe values from .env.dev and .env.example, placeholder patterns (dev-*, test-*, your-*, etc.), file exclusions, binary/media extensions, feature flags, and performance settings. Updated scripts/check-secrets-pre-commit.py to load configuration with PyYAML, falling back to defaults if unavailable. Created .secrets-allowlist.README.md with complete documentation, usage examples, best practices, and troubleshooting guide. All pre-commit hooks pass (ruff, bandit, gitleaks). Commit: 7a3781d97",
+          "acceptance_criteria": [
+            "Allow-list configuration file created",
+            "Placeholder patterns documented (e.g., 'dev-*', 'test-*')",
+            "Allow-list includes .env.example and .env.dev safe values"
+          ],
+          "dependencies": ["3.1"]
+        },
+        {
+          "subtask_id": "3.3",
+          "title": "Integrate custom hook into pre-commit",
+          "description": "Add custom hook to .pre-commit-config.yaml as local hook",
+          "status": "completed",
+          "completed_at": "2026-01-03T23:45:00.000Z",
+          "notes": "Successfully integrated ACGS-2 custom secrets detection hook into .pre-commit-config.yaml. Hook configuration: ID=acgs2-secrets-detection, entry point=scripts/check-secrets-pre-commit.py, file types=.py/.env/.yaml/.yml/.json (regex: \\.(py|env|ya?ml|json)$), excludes test fixtures/examples/templates via comprehensive regex pattern. Hook tested and passed during commit. Complements gitleaks with ACGS-2-specific CREDENTIAL_PATTERNS from secrets_manager.py. Integration verified - hook runs automatically on commits and shows 'ACGS-2 Secrets Detection...Passed' in pre-commit output. Commit: 085f033d6",
+          "acceptance_criteria": [
+            "Custom hook added to pre-commit config",
+            "Hook runs on relevant file types (.py, .env, .yaml, .json)",
+            "Hook excludes test fixtures and example files appropriately"
+          ],
+          "dependencies": ["3.2"]
+        }
+      ]
+    },
+    {
+      "phase_id": "4",
+      "phase_name": "Documentation and Developer Experience",
+      "description": "Create comprehensive documentation and improve developer workflows",
+      "subtasks": [
+        {
+          "subtask_id": "4.1",
+          "title": "Create secrets detection documentation",
+          "description": "Document how the secrets detection works and how to handle findings",
+          "status": "completed",
+          "completed_at": "2026-01-03T23:55:00.000Z",
+          "notes": "Created comprehensive docs/SECRETS_DETECTION.md (600+ lines) covering: what secrets are detected (AI providers, infrastructure, 140+ generic patterns), safe vs unsafe examples with visual indicators, multi-layered detection architecture, integration with secrets_manager.py as single source of truth, step-by-step false positive resolution (3 solutions), troubleshooting guide (6 common issues), configuration files reference, best practices DO/DON'T lists, example workflows (3 scenarios), security impact and incident response. Documentation follows ACGS-2 style with constitutional hash and comprehensive examples. All acceptance criteria met. Commit: 9b1ab9dbd",
+          "acceptance_criteria": [
+            "Documentation explains what secrets are detected",
+            "Clear steps for resolving false positives",
+            "Examples of safe vs unsafe secrets",
+            "Integration with secrets_manager.py explained"
+          ],
+          "dependencies": ["3.3", "2.3"]
+        },
+        {
+          "subtask_id": "4.2",
+          "title": "Create developer quick-fix guide",
+          "description": "Add troubleshooting guide for common secret detection issues",
+          "status": "completed",
+          "completed_at": "2026-01-04T00:10:00.000Z",
+          "notes": "Successfully created comprehensive developer quick-fix guide (docs/SECRETS_QUICK_FIX.md, 537 lines). Guide covers: (1) Emergency procedures for committed secrets with detailed git history removal methods (filter-repo, BFG, amend), (2) Quick fixes for 3 common pre-commit failure scenarios with actionable solutions, (3) Detailed secrets_manager.py integration patterns with validation examples and credential pattern reference table, (4) Quick reference for updating allow-lists (.secrets-allowlist.yaml) and .gitleaksignore with step-by-step instructions, (5) Decision tree for choosing the right solution, (6) Common commands cheat sheet, (7) Best practices and when to skip hooks. All acceptance criteria met. Commit: 681ef9f19",
+          "acceptance_criteria": [
+            "Guide covers how to add exceptions to .gitleaksignore",
+            "Guide explains how to remove secrets from git history",
+            "Guide shows how to use secrets_manager.py for safe storage",
+            "Quick reference for updating allow-lists"
+          ],
+          "dependencies": ["4.1"]
+        },
+        {
+          "subtask_id": "4.3",
+          "title": "Update contributing guidelines",
+          "description": "Update CONTRIBUTING.md or similar with secrets policy",
+          "status": "completed",
+          "completed_at": "2026-01-04T00:25:00.000Z",
+          "notes": "Successfully updated CONTRIBUTING.md with comprehensive secrets detection policy. Added new \"Secrets Detection and Protection\" section under Security Considerations covering: (1) What gets detected - AI credentials, infrastructure secrets, 140+ patterns, (2) Clear policy with examples of what CAN commit (dev placeholders, .env.example values) vs what CANNOT commit (real API keys, production passwords), (3) Step-by-step guidance when pre-commit hooks fail with three solution paths, (4) Links to detailed documentation (SECRETS_DETECTION.md and SECRETS_QUICK_FIX.md), (5) Setup instructions and performance notes (<5s scan time). Enhanced existing Code Security section to reference automated enforcement via secrets_manager.py. All acceptance criteria met: mentions secrets detection ✓, policy on what can/cannot commit ✓, links to documentation ✓. Commit: 75a66e5e6",
+          "acceptance_criteria": [
+            "Contributing guidelines mention secrets detection",
+            "Policy on what secrets can/cannot be committed",
+            "Link to secrets detection documentation"
+          ],
+          "dependencies": ["4.2"]
+        }
+      ]
+    },
+    {
+      "phase_id": "5",
+      "phase_name": "Testing and Validation",
+      "description": "Comprehensive testing of secret detection hooks",
+      "subtasks": [
+        {
+          "subtask_id": "5.1",
+          "title": "Create test fixtures for secret patterns",
+          "description": "Build test files with various secret patterns to validate detection",
+          "status": "completed",
+          "completed_at": "2026-01-04T02:35:00.000Z",
+          "notes": "Successfully created comprehensive test fixtures for secret pattern validation. Created 8 test files (1,555 lines) covering all CREDENTIAL_PATTERNS from secrets_manager.py across multiple file formats (.py, .env, .yaml). Safe placeholders include development prefixes (dev-*, test-*), instructional markers (<...>, your-*), and redacted examples (XXX). Unsafe secrets include realistic-looking fake credentials for each of the 8 patterns (Claude Code, OpenAI, OpenRouter, HuggingFace, Anthropic, AWS, JWT, Vault). All fixtures properly excluded via pre-commit config and .secrets-allowlist.yaml - verified by successful ACGS-2 Secrets Detection and Gitleaks hooks passing. Comprehensive documentation in README.md and patterns_reference.md (430 lines). Commit: 1ace28dba",
+          "acceptance_criteria": [
+            "Test fixtures contain each pattern from CREDENTIAL_PATTERNS",
+            "Test files include safe placeholders that should pass",
+            "Test files include real-looking secrets that should fail",
+            "Test fixtures properly marked to exclude from actual scanning"
+          ],
+          "dependencies": ["3.3", "2.3"]
+        },
+        {
+          "subtask_id": "5.2",
+          "title": "Create automated tests for hooks",
+          "description": "Build tests/test_secrets_detection.py to validate hook behavior",
+          "status": "completed",
+          "completed_at": "2026-01-04T02:40:00.000Z",
+          "notes": "Successfully created comprehensive test suite (tests/test_secrets_detection.py, 762 lines) with 66 test methods across 14 test classes. Tests cover all 8 CREDENTIAL_PATTERNS from secrets_manager.py, placeholder detection, allow-list integration, test fixtures validation, gitleaks integration, and end-to-end scenarios. Updated .pre-commit-config.yaml to exclude test files (tests/test_.*\\.py$) from secrets scanning to prevent false positives from test fixtures. All acceptance criteria met: ✅ Tests verify gitleaks catches common secrets (TestGitleaksIntegration class), ✅ Tests verify custom hook catches ACGS-2 patterns (TestSecretPatternDetection - all 8 patterns tested), ✅ Tests verify allow-lists work correctly (TestAllowlistIntegration - 3 tier system), ✅ Tests verify false positives are handled (TestPlaceholderDetection - 10 test methods). Integration points tested: check-secrets-pre-commit.py, secrets_manager.py CREDENTIAL_PATTERNS, .secrets-allowlist.yaml, test fixtures, gitleaks config. Commit: 267c48fbf. All pre-commit hooks pass (ruff, bandit, gitleaks, ACGS-2 secrets detection).",
+          "acceptance_criteria": [
+            "Tests verify gitleaks catches common secrets",
+            "Tests verify custom hook catches ACGS-2 patterns",
+            "Tests verify allow-lists work correctly",
+            "Tests verify false positives are handled"
+          ],
+          "dependencies": ["5.1"]
+        },
+        {
+          "subtask_id": "5.3",
+          "title": "Perform end-to-end validation",
+          "description": "Test hooks in real commit scenarios with various file types",
+          "status": "completed",
+          "completed_at": "2026-01-03T23:50:00.000Z",
+          "notes": "Successfully created and executed comprehensive end-to-end testing for secrets detection hooks. Test suite (scripts/test-e2e-secrets-detection.sh, 560 lines) covers 11 test scenarios across 6 test suites with 100% pass rate. Validated: (1) .env files with safe/unsafe secrets, (2) .env.example exclusion, (3) Python config files, (4) YAML config files with quoted values, (5) JSON config files, (6) Multiple files simultaneously, (7) Large files (500+ lines) with avg performance ~235ms (<5s target), (8) Error message clarity with required sections (ACGS-2 SECRETS DETECTED, REMEDIATION STEPS, secrets_manager references). Generated e2e-test-results.md with comprehensive documentation. All acceptance criteria met: hooks tested with .env/Python/YAML/JSON ✓, performance acceptable ✓, error messages clear and actionable ✓. Added test script fake secrets to .gitleaksignore with documentation. Commit: 72df3af75",
+          "acceptance_criteria": [
+            "Hooks tested with .env files",
+            "Hooks tested with Python config files",
+            "Hooks tested with YAML/JSON configs",
+            "Performance is acceptable (<5s for typical commits)",
+            "Error messages are clear and actionable"
+          ],
+          "dependencies": ["5.2"]
+        },
+        {
+          "subtask_id": "5.4",
+          "title": "Validate CI integration",
+          "description": "Ensure pre-commit hooks are consistent with CI gitleaks check",
+          "status": "pending",
+          "acceptance_criteria": [
+            "Pre-commit and CI use same gitleaks configuration",
+            "CI workflow updated if needed for consistency",
+            "Documented differences (if any) between local and CI checks"
+          ],
+          "dependencies": ["5.3"]
+        }
+      ]
+    },
+    {
+      "phase_id": "6",
+      "phase_name": "Deployment and Rollout",
+      "description": "Deploy hooks to team with proper migration support",
+      "subtasks": [
+        {
+          "subtask_id": "6.1",
+          "title": "Create migration guide for existing developers",
+          "description": "Document steps for developers to update their pre-commit hooks",
+          "status": "pending",
+          "acceptance_criteria": [
+            "Clear steps to run 'pre-commit install' or update hooks",
+            "Migration guide handles potential secret findings in existing work",
+            "Documented how to scan existing branches before merging"
+          ],
+          "dependencies": ["4.3"]
+        },
+        {
+          "subtask_id": "6.2",
+          "title": "Add init.sh setup automation",
+          "description": "Update or create init.sh to automatically configure secrets detection",
+          "status": "pending",
+          "acceptance_criteria": [
+            "init.sh installs gitleaks if not present",
+            "init.sh runs pre-commit install",
+            "init.sh validates hooks are working",
+            "Clear success/failure messages"
+          ],
+          "dependencies": ["6.1"]
+        },
+        {
+          "subtask_id": "6.3",
+          "title": "Create team announcement and training",
+          "description": "Prepare announcement and brief training on new secret detection",
+          "status": "pending",
+          "acceptance_criteria": [
+            "Announcement explains why secrets detection is important",
+            "Quick-start guide for new behavior",
+            "FAQ for common questions/issues",
+            "Contact info for help/questions"
+          ],
+          "dependencies": ["6.2"]
+        }
+      ]
+    }
+  ],
+  "services_involved": [
+    "pre-commit framework",
+    "gitleaks",
+    "secrets_manager.py"
+  ],
+  "final_acceptance": [
+    "Gitleaks integrated as pre-commit hook",
+    "Custom ACGS-2 secrets hook using CREDENTIAL_PATTERNS",
+    "All tests passing with realistic secret patterns",
+    "Documentation complete and accessible",
+    "Hooks perform efficiently (<5s for typical commits)",
+    "CI and pre-commit hooks use consistent configuration",
+    "Team onboarded with migration guide"
+  ],
+  "qa_signoff": {
+    "status": "not_started",
+    "issues": "",
+    "tests_passed": ""
+  },
+  "notes": [
+    "Gitleaks is already used in CI (.github/workflows/reusable-security.yml) but not in pre-commit",
+    "Existing .gitleaksignore has SP certificate exception that should be preserved",
+    "secrets_manager.py defines CREDENTIAL_PATTERNS with regex for various secret types",
+    "Need to balance security with developer experience - avoid too many false positives",
+    "Consider performance impact - hooks should be fast enough to not frustrate developers",
+    "Placeholder secrets like 'dev-jwt-secret-min-32-chars-required' should be allowed",
+    "Real secrets in .env.dev and .env.example need to be audited and potentially allowed if they're truly safe",
+    "Integration with existing secrets_manager.py creates a cohesive secrets strategy"
+  ],
+  "references": {
+    "existing_files": [
+      ".pre-commit-config.yaml",
+      ".gitleaksignore",
+      "acgs2-core/shared/secrets_manager.py",
+      ".github/workflows/reusable-security.yml",
+      "scripts/check-secrets-rotation.py",
+      ".env.example",
+      ".env.dev"
+    ],
+    "new_files": [
+      ".gitleaks.toml",
+      "scripts/check-secrets-pre-commit.py",
+      "docs/SECRETS_DETECTION.md",
+      "tests/test_secrets_detection.py",
+      ".auto-claude/specs/047-implement-secrets-detection-pre-commit-hook/init.sh"
+    ],
+    "external_dependencies": [
+      "gitleaks (already in use in CI)",
+      "pre-commit framework (already configured)"
+    ]
+  },
+  "spec_file": "spec.md"
+}

@@ -1,8 +1,99 @@
 # Gitleaks ignore file
 # https://github.com/gitleaks/gitleaks#gitleaksignore
 # Use fingerprints from gitleaks findings to ignore specific secrets
+#
+# IMPORTANT: Each exception must be documented with:
+# 1. What the secret is
+# 2. Why it's safe to commit
+# 3. Mitigation (how production differs)
+#
+# Review this file periodically to ensure exceptions are still valid
 
-# Development SAML SP certificates (self-signed, for testing only)
-# These are NOT used in production - production deployments generate their own certificates
+# =============================================================================
+# Development SAML Certificates (Self-signed, Testing Only)
+# =============================================================================
+# These certificates are used ONLY for local development and testing of SAML SSO.
+# They are self-signed and NOT trusted by any production IdP.
+# Production deployments MUST generate new certificates on deployment.
+# See: acgs2-core/shared/auth/certs/README.md
 # Fingerprint format: file:rule:line
 acgs2-core/shared/auth/certs/sp.key:private-key:1
+acgs2-core/shared/auth/certs/sp.crt:certificate:1
+
+# =============================================================================
+# Development Environment Configuration (.env.dev)
+# =============================================================================
+# The .env.dev file contains safe placeholder values for local development.
+# These are NOT real secrets and are documented as development-only values.
+# Production uses real secrets from a secrets manager (Vault, AWS Secrets Manager).
+
+# JWT Secret: Development placeholder (clearly marked as "dev-")
+# Value: dev-jwt-secret-min-32-chars-required
+# Safe because: Obvious placeholder prefix, documented as dev-only
+# Production: Uses cryptographically random 64-char hex secret from Vault
+.env.dev:jwt-secret-acgs2:23
+
+# Redis Password: Simple development password
+# Value: dev_password
+# Safe because: Common knowledge dev password, only for local Redis container
+# Production: Uses strong randomly generated password from secrets manager
+.env.dev:generic-api-key:31
+
+# PostgreSQL MLflow Password: Service-specific development password
+# Value: mlflow_password
+# Safe because: Only used in local Docker Compose environment
+# Production: Uses managed database service with IAM authentication
+.env.dev:generic-api-key:53
+
+# =============================================================================
+# Known Safe Database Credentials in Example Files
+# =============================================================================
+# Example files contain placeholder values to guide developers.
+# These are never used in production and are clearly marked as examples.
+
+# Policy Marketplace database password placeholder
+# Value: acgs2_pass (in connection string)
+# Safe because: In .env.example file (excluded by path in .gitleaks.toml)
+# Already covered by .gitleaks.toml allowlist pattern 'acgs2_pass'
+# acgs2-core/services/policy_marketplace/.env.example:generic-api-key:9
+
+# =============================================================================
+# NOTES
+# =============================================================================
+# 1. Most placeholders are handled by .gitleaks.toml allowlist patterns:
+#    - Patterns: dev-*, your-*, <*>, *-example, XXX*, etc.
+#    - Paths: *.example files, tests/fixtures/, docs/
+#
+# 2. This file is for SPECIFIC exceptions that may still trigger detection
+#    despite the allowlist patterns.
+#
+# 3. When adding new exceptions:
+#    - Run: gitleaks detect --no-git --verbose
+#    - Copy the fingerprint from gitleaks output
+#    - Add clear documentation explaining why it's safe
+#
+# 4. Alternatives to adding fingerprints here:
+#    - Update .gitleaks.toml allowlist patterns (preferred for patterns)
+#    - Update .gitleaks.toml path exclusions (preferred for entire files)
+#    - Fix the actual secret (move to secrets manager)
+#
+# =============================================================================
+# ==============================================================================
+# Test Scripts with Fake Secrets for E2E Testing
+# ==============================================================================
+# Test scripts contain intentionally fake secrets for validation purposes
+# These are NOT real credentials, generated randomly for testing only
+
+# scripts/test-e2e-secrets-detection.sh - E2E testing script
+# Why: Contains fake secrets used to validate secrets detection hooks
+# Safe because: Intentionally created fake credentials for testing purposes
+# Production: Real secrets managed via Vault/environment variables
+scripts/test-e2e-secrets-detection.sh:openai-api-key-acgs2:148
+scripts/test-e2e-secrets-detection.sh:openai-api-key-acgs2:164
+scripts/test-e2e-secrets-detection.sh:openai-api-key-acgs2:250
+scripts/test-e2e-secrets-detection.sh:openai-api-key-acgs2:288
+scripts/test-e2e-secrets-detection.sh:openai-api-key-acgs2:360
+scripts/test-e2e-secrets-detection.sh:huggingface-token:289
+scripts/test-e2e-secrets-detection.sh:anthropic-api-key:165
+scripts/test-e2e-secrets-detection.sh:anthropic-api-key:210
+scripts/test-e2e-secrets-detection.sh:anthropic-api-key:251
