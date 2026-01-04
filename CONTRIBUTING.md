@@ -296,16 +296,19 @@ git commit --no-verify -m "message"  # Only for verified safe content
 #### 📖 Documentation
 
 For comprehensive guidance:
+- **[Migration Guide](./docs/SECRETS_DETECTION_MIGRATION.md)** - **If you're an existing developer**, start here to update your hooks
 - **[Secrets Detection Guide](./docs/SECRETS_DETECTION.md)** - Complete documentation on what's detected and how it works
 - **[Quick-Fix Guide](./docs/SECRETS_QUICK_FIX.md)** - Step-by-step solutions for common issues
 - **[Secrets Manager Integration](./docs/SECRETS_DETECTION.md#integration-with-secrets_managerpy)** - How to use the safe storage system
 
 #### 🔧 Setup
 
-The secrets detection hooks are automatically installed when you run:
+**For new developers**, the secrets detection hooks are automatically installed when you run:
 ```bash
 pre-commit install  # One-time setup
 ```
+
+**For existing developers**, follow the [Migration Guide](./docs/SECRETS_DETECTION_MIGRATION.md) to update your hooks and scan existing work.
 
 After installation, every commit is automatically scanned. The hooks run quickly (<5s) and provide actionable error messages if secrets are detected.
 
