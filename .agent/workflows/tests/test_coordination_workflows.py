@@ -13,7 +13,7 @@ from ..coordination.swarm import SwarmCoordinationWorkflow
 from ..coordination.voting import VoteDecision, VotingStrategy, VotingWorkflow
 
 try:
-    from shared.constants import CONSTITUTIONAL_HASH
+    from src.core.shared.constants import CONSTITUTIONAL_HASH
 except ImportError:
     CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
 

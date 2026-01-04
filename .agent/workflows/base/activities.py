@@ -13,7 +13,7 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 try:
-    from shared.constants import CONSTITUTIONAL_HASH
+    from src.core.shared.constants import CONSTITUTIONAL_HASH
 except ImportError:
     CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
 
@@ -203,7 +203,7 @@ class DefaultActivities(BaseActivities):
             # Try to use OPA client if available
             if self._opa_client is None:
                 try:
-                    from enhanced_agent_bus.opa_client import get_opa_client
+                    from src.core.enhanced_agent_bus.opa_client import get_opa_client
 
                     self._opa_client = get_opa_client()
                 except ImportError:
@@ -251,7 +251,7 @@ class DefaultActivities(BaseActivities):
             # Try to use audit client if available
             if self._audit_client is None:
                 try:
-                    from enhanced_agent_bus.audit_client import AuditClient
+                    from src.core.enhanced_agent_bus.audit_client import AuditClient
 
                     self._audit_client = AuditClient()
                 except ImportError:

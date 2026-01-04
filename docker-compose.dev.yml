@@ -13,7 +13,7 @@ services:
     ports:
       - "8181:8181"
     volumes:
-      - ./acgs2-core/enhanced_agent_bus/policies:/policies:ro
+      - ./src/core/enhanced_agent_bus/policies:/policies:ro
     # healthcheck:
     #   test: ["CMD", "curl", "-f", "http://localhost:8181/health"]
     #   interval: 10s
@@ -144,7 +144,7 @@ services:
   # Enhanced Agent Bus (Python service)
   agent-bus:
     build:
-      context: ./acgs2-core/enhanced_agent_bus
+      context: ./src/core/enhanced_agent_bus
       dockerfile: Dockerfile.dev
     ports:
       - "8000:8000"
@@ -162,7 +162,7 @@ services:
       - MACI_STRICT_MODE=${MACI_STRICT_MODE:-true}
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
     volumes:
-      - ./acgs2-core/enhanced_agent_bus:/app
+      - ./src/core/enhanced_agent_bus:/app
       - /app/__pycache__
     depends_on:
       - opa
@@ -175,7 +175,7 @@ services:
   # API Gateway
   api-gateway:
     build:
-      context: ./acgs2-core/services/api_gateway
+      context: ./src/core/services/api_gateway
       dockerfile: Dockerfile.dev
     ports:
       - "8080:8080"
@@ -201,7 +201,7 @@ services:
   # Analytics API Service
   analytics-api:
     build:
-      context: ./acgs2-core/services/analytics-api
+      context: ./src/core/services/analytics-api
       dockerfile: Dockerfile.dev
     ports:
       - "8082:8082"
@@ -221,7 +221,7 @@ services:
       - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000,http://localhost:8080,http://localhost:5173,http://127.0.0.1:3000,http://127.0.0.1:8080,http://127.0.0.1:5173}
       - TENANT_ID=${TENANT_ID:-acgs-dev}
     volumes:
-      - ./acgs2-core/services/analytics-api:/app
+      - ./src/core/services/analytics-api:/app
       - /app/__pycache__
     depends_on:
       - redis

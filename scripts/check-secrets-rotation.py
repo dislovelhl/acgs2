@@ -41,7 +41,7 @@ def check_rotation_status(warn_days: int = 30, fail_on_expired: bool = False) ->
 
     # Try to use SecretsManager
     try:
-        from shared.secrets_manager import get_secrets_manager
+        from src.core.shared.secrets_manager import get_secrets_manager
 
         manager = get_secrets_manager()
         report = manager.rotation_report()

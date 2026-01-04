@@ -253,7 +253,7 @@ SEARCH_PLATFORM_MAX_CONNECTIONS=100
 
 - [Configuration Troubleshooting](./CONFIGURATION_TROUBLESHOOTING.md)
 - [API Reference](./api/generated/api_reference.md)
-- [Architecture Documentation](../acgs2-core/C4-Documentation/)
+- [Architecture Documentation](../src/core/C4-Documentation/)
 
 ---
 

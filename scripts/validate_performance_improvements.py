@@ -24,8 +24,8 @@ sys.modules['config'].BusConfiguration = type('BusConfiguration', (), {
 })()
 
 try:
-    from enhanced_agent_bus.memory_profiler import MemoryProfilingConfig, get_memory_profiler
-    from shared.json_utils import dumps
+    from src.core.enhanced_agent_bus.memory_profiler import MemoryProfilingConfig, get_memory_profiler
+    from src.core.shared.json_utils import dumps
 except ImportError as e:
     print(f"Failed to import required modules: {e}")
     # Try fallback imports
@@ -104,7 +104,7 @@ async def test_audit_client_integration():
     print("\nTesting Audit Client Integration...")
 
     try:
-        from shared.audit_client import AuditClient
+        from src.core.shared.audit_client import AuditClient
 
         # Test with a mock audit service (will fall back to simulated)
         client = AuditClient("http://nonexistent-audit-service:9999")

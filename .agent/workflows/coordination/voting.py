@@ -18,7 +18,7 @@ from ..base.result import WorkflowResult, WorkflowStatus
 from ..base.workflow import BaseWorkflow
 
 try:
-    from shared.constants import CONSTITUTIONAL_HASH
+    from src.core.shared.constants import CONSTITUTIONAL_HASH
 except ImportError:
     CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
 

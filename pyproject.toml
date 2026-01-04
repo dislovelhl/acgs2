@@ -43,7 +43,7 @@ ignore = [
 ]
 
 [tool.ruff.lint.isort]
-known-first-party = ["shared", "services", "enhanced_agent_bus", "routes", "main", "app"]
+known-first-party = ["src", "shared", "services", "enhanced_agent_bus", "routes", "main", "app"]
 
 [tool.ruff.lint.per-file-ignores]
 "*/alembic/env.py" = ["I001"]
@@ -77,15 +77,14 @@ python_classes = ["Test*"]
 python_functions = ["test_*"]
 pythonpath = [
     ".",
-    "acgs2-core",
-    "acgs2-core/enhanced_agent_bus"
+    "src"
 ]
 
 [tool.coverage.run]
 # Migrated from acgs2-core/.coveragerc - Constitutional Hash: cdd01ef066bc6cf2
 branch = true
 parallel = true
-source = ["acgs2-core", "acgs2-observability", "acgs2-research", "acgs2-infra", "acgs2-neural-mcp"]
+source = ["src"]
 omit = [
     "*/tests/*",
     "*/__pycache__/*",

@@ -332,7 +332,7 @@ Coverage is automatically collected and uploaded in CI/CD:
 - name: Upload coverage to Codecov
   uses: codecov/codecov-action@v4
   with:
-    files: ./acgs2-core/coverage.xml
+    files: ./src/core/coverage.xml
     flags: acgs2-core,claude-flow,neural-mcp
     fail_ci_if_error: true
   env:

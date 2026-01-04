@@ -39,7 +39,7 @@ ALLOWLIST_CONFIG_PATH = project_root / ".secrets-allowlist.yaml"
 
 # Import patterns from secrets_manager.py (single source of truth)
 try:
-    from shared.secrets_manager import CREDENTIAL_PATTERNS, SECRET_CATEGORIES
+    from src.core.shared.secrets_manager import CREDENTIAL_PATTERNS, SECRET_CATEGORIES
 except ImportError:
     print("❌ ERROR: Cannot import from secrets_manager.py")  # noqa: T201
     print("   Ensure acgs2-core/shared/secrets_manager.py exists")  # noqa: T201
@@ -398,7 +398,7 @@ def report_findings(
     print("Option 1: Remove the secret and use environment variables")  # noqa: T201
     print("   1. Remove the secret value from the file")  # noqa: T201
     print("   2. Add to .env file (ensure .env is in .gitignore)")  # noqa: T201
-    print("   3. Load via: from shared.secrets_manager import get_secrets_manager")  # noqa: T201
+    print("   3. Load via: from src.core.shared.secrets_manager import get_secrets_manager")  # noqa: T201
     print("                secret = get_secrets_manager().get('SECRET_NAME')")  # noqa: T201
     print()  # noqa: T201
     print("Option 2: If this is a development placeholder")  # noqa: T201

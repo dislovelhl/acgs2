@@ -9,7 +9,7 @@
 **Quick Links:**
 - Full Documentation: [`SECRETS_DETECTION.md`](./SECRETS_DETECTION.md)
 - Allow-list Configuration: [`.secrets-allowlist.README.md`](../.secrets-allowlist.README.md)
-- Secrets Manager: [`acgs2-core/shared/secrets_manager.py`](../acgs2-core/shared/secrets_manager.py)
+- Secrets Manager: [`acgs2-core/shared/secrets_manager.py`](../src/core/shared/secrets_manager.py)
 
 ---
 
@@ -534,4 +534,4 @@ See [`SECRETS_DETECTION.md#troubleshooting`](./SECRETS_DETECTION.md#troubleshoot
 **Next Steps:**
 - Read full documentation: [`SECRETS_DETECTION.md`](./SECRETS_DETECTION.md)
 - Review allow-list config: [`.secrets-allowlist.yaml`](../.secrets-allowlist.yaml)
-- Understand patterns: [`secrets_manager.py`](../acgs2-core/shared/secrets_manager.py)
+- Understand patterns: [`secrets_manager.py`](../src/core/shared/secrets_manager.py)

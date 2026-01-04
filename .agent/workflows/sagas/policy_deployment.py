@@ -14,7 +14,7 @@ from typing import Any, Dict
 from .base_saga import BaseSaga, SagaStep
 
 try:
-    from shared.constants import CONSTITUTIONAL_HASH
+    from src.core.shared.constants import CONSTITUTIONAL_HASH
 except ImportError:
     CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
 

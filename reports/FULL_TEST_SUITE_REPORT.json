@@ -1,6 +1,6 @@
 {
   "execution_info": {
-    "timestamp": "2026-01-01T01:26:46.917001+00:00",
+    "timestamp": "2026-01-01T07:58:16.969974+00:00",
     "constitutional_hash": "cdd01ef066bc6cf2",
     "project_root": "/home/dislove/document/acgs2",
     "virtual_environment": "/home/dislove/document/acgs2/acgs2-core/venv"
@@ -12,7 +12,7 @@
     "skipped": 0,
     "pass_rate_percent": 0.0,
     "overall_coverage_percent": null,
-    "total_execution_time_seconds": 0.04000687599182129,
+    "total_execution_time_seconds": 0.042026519775390625,
     "overall_status": "FAILED"
   },
   "component_results": [
@@ -23,7 +23,7 @@
       "failed": 0,
       "skipped": 0,
       "coverage_percent": null,
-      "execution_time_seconds": 0.00900721549987793,
+      "execution_time_seconds": 0.010159015655517578,
       "status": "FAILED"
     },
     {
@@ -33,7 +33,7 @@
       "failed": 0,
       "skipped": 0,
       "coverage_percent": null,
-      "execution_time_seconds": 0.008847713470458984,
+      "execution_time_seconds": 0.009894847869873047,
       "status": "FAILED"
     },
     {
@@ -43,7 +43,7 @@
       "failed": 0,
       "skipped": 0,
       "coverage_percent": null,
-      "execution_time_seconds": 0.009160995483398438,
+      "execution_time_seconds": 0.009243011474609375,
       "status": "FAILED"
     },
     {
@@ -53,7 +53,7 @@
       "failed": 1,
       "skipped": 0,
       "coverage_percent": null,
-      "execution_time_seconds": 0.012990951538085938,
+      "execution_time_seconds": 0.012729644775390625,
       "status": "FAILED"
     }
   ],

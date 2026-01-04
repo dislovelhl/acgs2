@@ -20,7 +20,7 @@ from .result import WorkflowResult, WorkflowStatus
 from .step import StepCompensation, WorkflowStep
 
 try:
-    from shared.constants import CONSTITUTIONAL_HASH
+    from src.core.shared.constants import CONSTITUTIONAL_HASH
 except ImportError:
     CONSTITUTIONAL_HASH = "cdd01ef066bc6cf2"
 
@@ -33,7 +33,7 @@ except ImportError:
     HAS_METRICS = False
 
 try:
-    from enhanced_agent_bus.exceptions import ConstitutionalHashMismatchError
+    from src.core.enhanced_agent_bus.exceptions import ConstitutionalHashMismatchError
 except ImportError:
 
     class ConstitutionalHashMismatchError(Exception):

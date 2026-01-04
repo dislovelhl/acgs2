@@ -240,13 +240,13 @@ python3 -m pytest tests/ -v --tb=short
 ### Production Deployment
 ```bash
 # Blue-green deployment
-./acgs2-core/scripts/blue-green-deploy.sh
+./src/core/scripts/blue-green-deploy.sh
 
 # Health check
-./acgs2-core/scripts/health-check.sh
+./src/core/scripts/health-check.sh
 
 # Rollback if needed
-./acgs2-core/scripts/blue-green-rollback.sh
+./src/core/scripts/blue-green-rollback.sh
 ```
 
 ## 🔒 Security & Governance

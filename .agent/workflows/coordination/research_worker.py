@@ -13,8 +13,8 @@ from .supervisor import WorkerNode
 
 # Attempt to import RetrievalTriad
 try:
-    from enhanced_agent_bus.graph_database import create_graph_db_manager
-    from enhanced_agent_bus.retrieval_triad import RetrievalTriad
+    from src.core.enhanced_agent_bus.graph_database import create_graph_db_manager
+    from src.core.enhanced_agent_bus.retrieval_triad import RetrievalTriad
 
     HAS_TRIAD = True
 except ImportError:

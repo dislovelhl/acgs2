@@ -420,7 +420,7 @@ SKIP=gitleaks git commit -m "message"  # Skip only gitleaks
 - **Quick-Fix Guide**: [`SECRETS_QUICK_FIX.md`](./SECRETS_QUICK_FIX.md)
 - **Allow-list README**: [`.secrets-allowlist.README.md`](../.secrets-allowlist.README.md)
 - **Contributing Guidelines**: [`CONTRIBUTING.md`](../CONTRIBUTING.md)
-- **Secrets Manager Source**: [`acgs2-core/shared/secrets_manager.py`](../acgs2-core/shared/secrets_manager.py)
+- **Secrets Manager Source**: [`acgs2-core/shared/secrets_manager.py`](../src/core/shared/secrets_manager.py)
 
 ---
 

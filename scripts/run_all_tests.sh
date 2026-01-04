@@ -59,14 +59,18 @@ run_component_tests() {
 }
 
 # Run test components with proper working directories
-run_component_tests "Enhanced Agent Bus Tests" "acgs2-core/enhanced_agent_bus" "tests/" 4570
-run_component_tests "Policy Registry Tests" "acgs2-core/services/policy_registry" "tests/" 120
-run_component_tests "Metering Tests" "acgs2-core/services/metering" "tests/" 9
-run_component_tests "Shared Tests" "acgs2-core/shared" "tests/" 10
-run_component_tests "Core Tests" "acgs2-core" "tests/" 6
-run_component_tests "Observability Tests" "acgs2-observability" "tests/" 28
-run_component_tests "Governance Experiments" "acgs2-research/governance-experiments" "tests/" 4
-run_component_tests "Research Tests" "acgs2-research" "tests/" 5
+run_component_tests "Enhanced Agent Bus Tests" "src/core/enhanced_agent_bus" "tests/" 4570
+run_component_tests "Policy Registry Tests" "src/core/services/policy_registry" "tests/" 120
+run_component_tests "Metering Tests" "src/core/services/metering" "tests/" 9
+run_component_tests "Shared Tests" "src/core/shared" "tests/" 10
+run_component_tests "Core Tests" "src/core" "tests/" 6
+run_component_tests "Observability Tests" "src/observability" "tests/" 28
+run_component_tests "Governance Experiments" "src/research/governance-experiments" "tests/" 4
+run_component_tests "Research Tests" "src/research" "tests/" 5
+
+# Additional Services
+run_component_tests "Integration Service Tests" "src/integration-service/integration-service" "tests/" 0
+run_component_tests "Adaptive Learning Tests" "src/adaptive-learning/adaptive-learning-engine" "tests/" 0
 
 # Performance validation
 echo -e "\n${YELLOW}Running Performance Validation...${NC}"

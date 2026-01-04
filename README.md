@@ -1,6 +1,6 @@
 # ACGS-2: Advanced Constitutional Governance System
 
-> **Constitutional Hash**: `cdd01ef066bc6cf2` [🔍 Validation Requirements](./acgs2-core/docs/architecture/ENHANCED_AGENT_BUS_DOCUMENTATION.md#constitutional-validation)
+> **Constitutional Hash**: `cdd01ef066bc6cf2` [🔍 Validation Requirements](./src/core/docs/architecture/ENHANCED_AGENT_BUS_DOCUMENTATION.md#constitutional-validation)
 > **Version**: 3.0.0 (Post-Architecture Review)
 > **Status**: Production Ready with Enterprise Security
 > **Architecture**: 3-Service Consolidation (70% complexity reduction)
@@ -66,7 +66,7 @@
 ## 🏛️ Architecture Documentation
 
 ### Complete C4 Model Documentation
-Available in [`acgs2-core/C4-Documentation/`](./acgs2-core/C4-Documentation/) (685 KB across 22 documents):
+Available in [`acgs2-core/C4-Documentation/`](./src/core/C4-Documentation/) (685 KB across 22 documents):
 
 | Level | Documents | Coverage | Status |
 |-------|-----------|----------|--------|
@@ -79,23 +79,23 @@ Available in [`acgs2-core/C4-Documentation/`](./acgs2-core/C4-Documentation/) (6
 
 | Component | Scope | New Capabilities |
 |-----------|-------|------------------|
-| [Message Bus](./acgs2-core/C4-Documentation/c4-component-message-bus.md) | Agent bus, orchestration, MACI | **Adaptive governance integration** |
-| [Deliberation](./acgs2-core/C4-Documentation/c4-component-deliberation.md) | Impact scoring, HITL, voting | **ML-based decision making** |
-| [Resilience](./acgs2-core/C4-Documentation/c4-component-resilience.md) | Health aggregator, recovery | **Chaos testing framework** |
-| [Policy Engine](./acgs2-core/C4-Documentation/c4-component-policy-engine.md) | Policy lifecycle, OPA | **Dynamic threshold adjustment** |
-| [Security](./acgs2-core/C4-Documentation/c4-component-security.md) | RBAC, authentication | **Zero-trust implementation** |
-| [Observability](./acgs2-core/C4-Documentation/c4-component-observability.md) | Telemetry, metrics | **Distributed tracing, 15+ alerts** |
+| [Message Bus](./src/core/C4-Documentation/c4-component-message-bus.md) | Agent bus, orchestration, MACI | **Adaptive governance integration** |
+| [Deliberation](./src/core/C4-Documentation/c4-component-deliberation.md) | Impact scoring, HITL, voting | **ML-based decision making** |
+| [Resilience](./src/core/C4-Documentation/c4-component-resilience.md) | Health aggregator, recovery | **Chaos testing framework** |
+| [Policy Engine](./src/core/C4-Documentation/c4-component-policy-engine.md) | Policy lifecycle, OPA | **Dynamic threshold adjustment** |
+| [Security](./src/core/C4-Documentation/c4-component-security.md) | RBAC, authentication | **Zero-trust implementation** |
+| [Observability](./src/core/C4-Documentation/c4-component-observability.md) | Telemetry, metrics | **Distributed tracing, 15+ alerts** |
 
 ### 🆕 New Architecture Features
 
 | Feature Category | Implementation | Documentation |
 |------------------|----------------|---------------|
-| **🤖 Adaptive Governance** | ML-based impact scoring, dynamic thresholds | [ADAPTIVE_GOVERNANCE.md](./acgs2-core/enhanced_agent_bus/docs/ADAPTIVE_GOVERNANCE.md) |
-| **🏗️ Service Consolidation** | 70% complexity reduction | [ARCHITECTURE_CONSOLIDATION_PLAN.md](./acgs2-infra/ARCHITECTURE_CONSOLIDATION_PLAN.md) |
-| **🔒 Enterprise Security** | Zero-trust, CIS compliance | [Security Implementation](./acgs2-core/docs/security/) |
-| **📊 Performance Benchmarking** | Automated validation framework | [Performance Guide](./acgs2-core/scripts/README_performance.md) |
-| **🚀 GitOps Automation** | ArgoCD, automated deployments | [Deployment Guide](./acgs2-infra/deploy/README.md) |
-| [Integrations](./acgs2-core/C4-Documentation/c4-component-integrations.md)   | NeMo, blockchain, ACL adapters                 |
+| **🤖 Adaptive Governance** | ML-based impact scoring, dynamic thresholds | [ADAPTIVE_GOVERNANCE.md](./src/core/enhanced_agent_bus/docs/ADAPTIVE_GOVERNANCE.md) |
+| **🏗️ Service Consolidation** | 70% complexity reduction | [ARCHITECTURE_CONSOLIDATION_PLAN.md](./src/infra/ARCHITECTURE_CONSOLIDATION_PLAN.md) |
+| **🔒 Enterprise Security** | Zero-trust, CIS compliance | [Security Implementation](./src/core/docs/security/) |
+| **📊 Performance Benchmarking** | Automated validation framework | [Performance Guide](./src/core/scripts/README_performance.md) |
+| **🚀 GitOps Automation** | ArgoCD, automated deployments | [Deployment Guide](./src/infra/deploy/README.md) |
+| [Integrations](./src/core/C4-Documentation/c4-component-integrations.md)   | NeMo, blockchain, ACL adapters                 |
 
 ## 🚀 Core Capabilities (v3.0 Enhanced)
 
@@ -248,9 +248,9 @@ docker run --security-opt=no-new-privileges \
 
 | Platform | Status | Documentation | Key Features |
 |----------|--------|---------------|--------------|
-| **Kubernetes** | ✅ Production Ready | [K8s Guide](./acgs2-infra/deploy/README.md) | Consolidated architecture, GitOps, enterprise security |
-| **AWS EKS** | ✅ Certified | [AWS Deployment](./acgs2-infra/deploy/terraform/aws/) | KMS encryption, CloudWatch integration, EBS optimization |
-| **GCP GKE** | ✅ Certified | [GCP Deployment](./acgs2-infra/deploy/terraform/gcp/) | Workload Identity, Cloud Monitoring, persistent disks |
+| **Kubernetes** | ✅ Production Ready | [K8s Guide](./src/infra/deploy/README.md) | Consolidated architecture, GitOps, enterprise security |
+| **AWS EKS** | ✅ Certified | [AWS Deployment](./src/infra/deploy/terraform/aws/) | KMS encryption, CloudWatch integration, EBS optimization |
+| **GCP GKE** | ✅ Certified | [GCP Deployment](./src/infra/deploy/terraform/gcp/) | Workload Identity, Cloud Monitoring, persistent disks |
 | **Docker Compose** | ⚠️ Development Only | [Development Guide](./docs/DEVELOPMENT.md) | Quick testing, centralized config, limited security |
 
 ### Infrastructure as Code
@@ -380,24 +380,24 @@ For comprehensive testing documentation, see the [Testing Guide](./docs/testing-
 
 ### 📖 Complete Documentation Portal
 
-- **[🏠 Main Documentation](./acgs2-core/README.md)**: Comprehensive system overview
+- **[🏠 Main Documentation](./src/core/README.md)**: Comprehensive system overview
 - **[🚀 Getting Started](./docs/getting-started.md)**: Step-by-step setup guides
-- **[🔧 Deployment Guide](./acgs2-infra/deploy/README.md)**: Production deployment instructions
+- **[🔧 Deployment Guide](./src/infra/deploy/README.md)**: Production deployment instructions
 - **[🧪 Testing Guide](./docs/testing-guide.md)**: Coverage requirements, testing patterns, CI/CD integration
-- **[📊 Performance Guide](./acgs2-core/scripts/README_performance.md)**: Benchmarking and optimization
+- **[📊 Performance Guide](./src/core/scripts/README_performance.md)**: Benchmarking and optimization
 - **[🔒 Security Guide](./docs/security/README.md)**: Enterprise security implementation
-- **[🤖 Adaptive Governance](./acgs2-core/enhanced_agent_bus/docs/ADAPTIVE_GOVERNANCE.md)**: ML governance documentation
+- **[🤖 Adaptive Governance](./src/core/enhanced_agent_bus/docs/ADAPTIVE_GOVERNANCE.md)**: ML governance documentation
 
 ### 🏗️ Architecture Documentation (C4 Model)
 
-- **[Context Level](./acgs2-core/C4-Documentation/c4-context-acgs2.md)**: System overview and user journeys
-- **[Container Level](./acgs2-core/C4-Documentation/c4-container-acgs2.md)**: **Updated for v3.0 consolidated architecture**
-- **[Component Level](./acgs2-core/C4-Documentation/)**: 7 detailed component breakdowns
-- **[Code Level](./acgs2-core/C4-Documentation/)**: 13 detailed code documentation files
+- **[Context Level](./src/core/C4-Documentation/c4-context-acgs2.md)**: System overview and user journeys
+- **[Container Level](./src/core/C4-Documentation/c4-container-acgs2.md)**: **Updated for v3.0 consolidated architecture**
+- **[Component Level](./src/core/C4-Documentation/)**: 7 detailed component breakdowns
+- **[Code Level](./src/core/C4-Documentation/)**: 13 detailed code documentation files
 
 ### 🔗 API Documentation
 
-- **[OpenAPI Specs](./acgs2-core/enhanced_agent_bus/C4-Documentation/apis/)**: Complete API specifications
+- **[OpenAPI Specs](./src/core/enhanced_agent_bus/C4-Documentation/apis/)**: Complete API specifications
 - **[Postman Collections](./docs/api/)**: API testing collections
 - **[SDK Documentation](./sdk/)**: Client library documentation
 
@@ -444,7 +444,7 @@ ACGS-2 has undergone comprehensive architecture review and implementation result
 
 ## 📄 License & Legal
 
-**License**: MIT License - See [LICENSE](./acgs2-core/LICENSE) for complete terms.
+**License**: MIT License - See [LICENSE](./src/core/LICENSE) for complete terms.
 
 **Constitutional Hash**: `cdd01ef066bc6cf2` - Immutable governance validation hash.
 
@@ -558,15 +558,15 @@ Agent → EnhancedAgentBus → Constitutional Validation (hash: cdd01ef066bc6cf2
 
 | Resource               | Location                                                         |
 | ---------------------- | ---------------------------------------------------------------- |
-| C4 Architecture        | [`acgs2-core/C4-Documentation/`](./acgs2-core/C4-Documentation/) |
-| Development Guide      | [`acgs2-core/CLAUDE.md`](./acgs2-core/CLAUDE.md)                 |
+| C4 Architecture        | [`acgs2-core/C4-Documentation/`](./src/core/C4-Documentation/) |
+| Development Guide      | [`acgs2-core/CLAUDE.md`](./src/core/CLAUDE.md)                 |
 | Testing Guide          | [`docs/testing-guide.md`](./docs/testing-guide.md)               |
 | API Documentation      | [`docs/api/`](./docs/api/)                                       |
 | Architecture Decisions | [`docs/adr/`](./docs/adr/)                                       |
 
 ## License
 
-Licensed under the Apache License, Version 2.0. See [LICENSE](./acgs2-core/LICENSE) for details.
+Licensed under the Apache License, Version 2.0. See [LICENSE](./src/core/LICENSE) for details.
 
 Copyright 2024-2025 ACGS-2 Contributors.
 

@@ -30,8 +30,8 @@ sys.modules['config'].BusConfiguration = type('BusConfiguration', (), {
 })()
 
 try:
-    from enhanced_agent_bus.message_processor import MessageProcessor
-    from enhanced_agent_bus.models import AgentMessage, MessageType, Priority
+    from src.core.enhanced_agent_bus.message_processor import MessageProcessor
+    from src.core.enhanced_agent_bus.models import AgentMessage, MessageType, Priority
 except ImportError as e:
     print(f"Failed to import MessageProcessor: {e}")
     sys.exit(1)

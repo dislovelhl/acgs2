@@ -1238,10 +1238,10 @@ Congratulations! You've completed the ACGS-2 quickstart. Here's where to go next
 | Resource | Description |
 |----------|-------------|
 | [Development Guide](../DEVELOPMENT.md) | Local development setup |
-| [Architecture Docs](../../acgs2-core/C4-Documentation/) | C4 model architecture |
+| [Architecture Docs](../../src/core/C4-Documentation/) | C4 model architecture |
 | [API Reference](../api/generated/api_reference.md) | Complete API documentation |
 | [Security Guide](../security/) | Security implementation details |
-| [Deployment Guide](../../acgs2-infra/deploy/README.md) | Production deployment |
+| [Deployment Guide](../../src/infra/deploy/README.md) | Production deployment |
 
 ### Community & Support
 

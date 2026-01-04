@@ -2,6 +2,14 @@ node_modules/
 __pycache__/
 .venv/
 .claude-flow/
+
+# Terraform
+.terraform/
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+.terraform.lock.hcl
 repomix-output.txt
 *.pyc
 .DS_Store
