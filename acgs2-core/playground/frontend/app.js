@@ -30,6 +30,7 @@
         formatInputBtn: document.getElementById('formatInputBtn'),
         clearPolicyBtn: document.getElementById('clearPolicyBtn'),
         clearInputBtn: document.getElementById('clearInputBtn'),
+        helpBtn: document.getElementById('helpBtn'),
 
         // Dropdowns
         exampleSelect: document.getElementById('exampleSelect'),
@@ -42,7 +43,11 @@
 
         // Connection status
         connectionDot: document.getElementById('connectionDot'),
-        connectionText: document.getElementById('connectionText')
+        connectionText: document.getElementById('connectionText'),
+
+        // Help modal
+        helpModalOverlay: document.getElementById('helpModalOverlay'),
+        helpModalClose: document.getElementById('helpModalClose')
     };
 
     // State
@@ -78,23 +83,35 @@
             updateStatus('Input cleared');
         });
 
+        // Help modal
+        elements.helpBtn.addEventListener('click', toggleHelpModal);
+        elements.helpModalClose.addEventListener('click', hideHelpModal);
+        elements.helpModalOverlay.addEventListener('click', (e) => {
+            if (e.target === elements.helpModalOverlay) {
+                hideHelpModal();
+            }
+        });
+
         // Example selection
         elements.exampleSelect.addEventListener('change', handleExampleSelect);
 
         // Keyboard shortcuts
         document.addEventListener('keydown', (e) => {
-            // Ctrl/Cmd + Enter to evaluate
-            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+            // ? to toggle help modal
+            if (e.key === '?' && !e.ctrlKey && !e.metaKey && !e.shiftKey && !e.altKey) {
                 e.preventDefault();
-                handleEvaluate();
+                toggleHelpModal();
+                return;
             }
-            // Ctrl/Cmd + Shift + V to validate
-            if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'V') {
-                e.preventDefault();
-                handleValidate();
-            }
-            // Escape to clear focused editor and results
+
+            // Escape to close help modal (if open) or clear focused editor
             if (e.key === 'Escape') {
+                if (elements.helpModalOverlay.classList.contains('active')) {
+                    e.preventDefault();
+                    hideHelpModal();
+                    return;
+                }
+
                 const activeElement = document.activeElement;
 
                 if (activeElement === elements.policyEditor) {
@@ -112,6 +129,23 @@
                     elements.resultStatus.innerHTML = '';
                     updateStatus('Input cleared');
                 }
+                return;
+            }
+
+            // Don't process other shortcuts if help modal is open
+            if (elements.helpModalOverlay.classList.contains('active')) {
+                return;
+            }
+
+            // Ctrl/Cmd + Enter to evaluate
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                e.preventDefault();
+                handleEvaluate();
+            }
+            // Ctrl/Cmd + Shift + V to validate
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'V') {
+                e.preventDefault();
+                handleValidate();
             }
             // R to refresh connection and reload examples
             if (e.key === 'r' || e.key === 'R') {
@@ -539,6 +573,33 @@
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
+    }
+
+    /**
+     * Show help modal
+     */
+    function showHelpModal() {
+        elements.helpModalOverlay.classList.add('active');
+        updateStatus('Help modal opened');
+    }
+
+    /**
+     * Hide help modal
+     */
+    function hideHelpModal() {
+        elements.helpModalOverlay.classList.remove('active');
+        updateStatus('Help modal closed');
+    }
+
+    /**
+     * Toggle help modal
+     */
+    function toggleHelpModal() {
+        if (elements.helpModalOverlay.classList.contains('active')) {
+            hideHelpModal();
+        } else {
+            showHelpModal();
+        }
     }
 
     // Initialize when DOM is ready
