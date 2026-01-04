@@ -1,3 +1,14 @@
+/**
+ * Task Command Module
+ *
+ * This module provides CLI commands for managing task orchestration across ACGS-2 agent swarms, including:
+ * - Orchestrating complex tasks with various strategies (sequential, parallel, hierarchical, consensus)
+ * - Setting task priorities to control processing order
+ * - Coordinating work distribution across multiple agents
+ *
+ * @module task
+ */
+
 import { Command } from 'commander';
 import chalk from 'chalk';
 import ora from 'ora';
@@ -5,23 +16,84 @@ import { orchestrateTask } from '../services/taskService';
 import { getLogger } from '../../../sdk/typescript/src/utils/logger';
 const logger = getLogger('task');
 
-
-
+/**
+ * Main task command that provides subcommands for task orchestration management.
+ * Use this command to orchestrate complex tasks across the swarm with different strategies and priorities.
+ *
+ * Available subcommands:
+ * - orchestrate: Orchestrate a complex task across the swarm with specified strategy and priority
+ *
+ * @example
+ * ```bash
+ * # Orchestrate a task with parallel execution
+ * npx claude-flow task orchestrate --task "Implement authentication system" --strategy parallel
+ *
+ * # Orchestrate a critical task with sequential execution
+ * npx claude-flow task orchestrate --task "Fix production bug" --strategy sequential --priority critical
+ *
+ * # Orchestrate with hierarchical coordination
+ * npx claude-flow task orchestrate --task "Refactor user module" --strategy hierarchical --priority high
+ * ```
+ */
 export const taskCommand = new Command('task')
   .description('Manage task orchestration across the swarm');
 
 // Valid orchestration strategies
 const VALID_STRATEGIES = ['sequential', 'parallel', 'hierarchical', 'consensus'] as const;
+
+/**
+ * Valid orchestration strategy types.
+ *
+ * - sequential: Tasks executed one after another in order
+ * - parallel: Tasks executed simultaneously across multiple agents
+ * - hierarchical: Coordinator agent oversees specialized worker agents
+ * - consensus: Multiple agents collaborate and vote on the best approach
+ */
 type OrchestrationStrategy = typeof VALID_STRATEGIES[number];
 
 // Valid priority levels
 const VALID_PRIORITIES = ['low', 'medium', 'high', 'critical'] as const;
+
+/**
+ * Valid task priority levels.
+ *
+ * - low: Standard processing time, queued normally
+ * - medium: Moderate priority with default processing (default)
+ * - high: Expedited processing, prioritized in queue
+ * - critical: Immediate attention required, processed first
+ */
 type PriorityLevel = typeof VALID_PRIORITIES[number];
 
+/**
+ * Validates if a string is a valid orchestration strategy type.
+ *
+ * @param strategy - The strategy string to validate
+ * @returns True if the strategy is valid (sequential, parallel, hierarchical, or consensus)
+ *
+ * @example
+ * ```typescript
+ * if (validateStrategy('parallel')) {
+ *   console.log('Valid strategy');
+ * }
+ * ```
+ */
 function validateStrategy(strategy: string): strategy is OrchestrationStrategy {
   return VALID_STRATEGIES.includes(strategy as OrchestrationStrategy);
 }
 
+/**
+ * Validates if a string is a valid priority level.
+ *
+ * @param priority - The priority string to validate
+ * @returns True if the priority is valid (low, medium, high, or critical)
+ *
+ * @example
+ * ```typescript
+ * if (validatePriority('high')) {
+ *   console.log('Valid priority level');
+ * }
+ * ```
+ */
 function validatePriority(priority: string): priority is PriorityLevel {
   return VALID_PRIORITIES.includes(priority as PriorityLevel);
 }
