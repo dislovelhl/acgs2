@@ -9,6 +9,7 @@ import { BrowserRouter, Routes, Route, Link, useNavigate } from "react-router-do
 import { TemplateList } from "@components/TemplateList";
 import { TemplateDetail } from "@components/TemplateDetail";
 import { TemplateUpload } from "@components/TemplateUpload";
+import { SkipLink } from "@components/SkipLink";
 import type { TemplateListItem } from "@types/template";
 
 function Header(): JSX.Element {
@@ -51,8 +52,9 @@ function HomePage(): JSX.Element {
 
   return (
     <div className="min-h-screen bg-gray-100">
+      <SkipLink />
       <Header />
-      <main>
+      <main id="main-content">
         <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
           <div className="px-4 py-6 sm:px-0">
             <div className="border-4 border-dashed border-gray-200 rounded-lg p-8 text-center">
@@ -94,8 +96,9 @@ function TemplatesPage(): JSX.Element {
 
   return (
     <div className="min-h-screen bg-gray-100">
+      <SkipLink />
       <Header />
-      <main>
+      <main id="main-content">
         <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
           <TemplateList onTemplateSelect={handleTemplateSelect} />
         </div>
@@ -107,8 +110,9 @@ function TemplatesPage(): JSX.Element {
 function TemplateDetailPage(): JSX.Element {
   return (
     <div className="min-h-screen bg-gray-100">
+      <SkipLink />
       <Header />
-      <main>
+      <main id="main-content">
         <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
           <TemplateDetail />
         </div>
@@ -120,8 +124,9 @@ function TemplateDetailPage(): JSX.Element {
 function UploadPage(): JSX.Element {
   return (
     <div className="min-h-screen bg-gray-100">
+      <SkipLink />
       <Header />
-      <main>
+      <main id="main-content">
         <div className="max-w-3xl mx-auto py-6 sm:px-6 lg:px-8">
           <TemplateUpload />
         </div>
