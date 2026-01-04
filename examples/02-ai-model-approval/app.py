@@ -19,6 +19,10 @@ Usage:
 
 Environment Variables:
     OPA_URL: URL for OPA service (default: http://localhost:8181)
+    ENVIRONMENT: Deployment environment (default: development)
+    CORS_ORIGINS: Comma-separated list of allowed origins
+        Development: Defaults to localhost origins if not set
+        Production: Must be explicitly set, wildcards not allowed
 
 Constitutional Hash: cdd01ef066bc6cf2
 """
@@ -52,6 +56,69 @@ OPA_URL = os.environ.get("OPA_URL", "http://localhost:8181")
 # Policy paths for OPA queries
 POLICY_APPROVAL = "ai/model/approval"
 POLICY_RISK = "ai/model/risk"
+
+# Environment configuration
+ENVIRONMENT = os.getenv("ENVIRONMENT", os.getenv("APP_ENV", "development"))
+
+
+def get_cors_origins() -> list[str]:
+    """
+    Get CORS origins with environment-aware security defaults.
+
+    Development: Uses localhost origins
+    Production/Staging: Requires explicit CORS_ORIGINS env var, no wildcards allowed
+
+    Returns:
+        List of allowed CORS origins
+
+    Raises:
+        ValueError: If production environment uses wildcard or missing CORS_ORIGINS
+    """
+    cors_env_var = os.getenv("CORS_ORIGINS")
+
+    # Development environment defaults
+    if ENVIRONMENT.lower() in ("development", "dev"):
+        default_origins = (
+            "http://localhost:3000,http://localhost:8080,http://localhost:5173,"
+            "http://127.0.0.1:3000,http://127.0.0.1:8080,http://127.0.0.1:5173"
+        )
+        origins_str = cors_env_var or default_origins
+    else:
+        # Production/Staging: require explicit configuration
+        if not cors_env_var:
+            raise ValueError(
+                f"SECURITY ERROR: CORS_ORIGINS environment variable must be "
+                f"explicitly set in {ENVIRONMENT} environment. "
+                "Wildcard origins are not allowed in production."
+            )
+        origins_str = cors_env_var
+
+    # Parse and validate origins
+    origins = [
+        origin.strip() for origin in origins_str.split(",") if origin.strip()
+    ]
+
+    # Production wildcard validation
+    if ENVIRONMENT.lower() in ("production", "prod", "staging", "stage"):
+        if "*" in origins:
+            raise ValueError(
+                f"SECURITY ERROR: Wildcard CORS origins not allowed in "
+                f"{ENVIRONMENT} environment. This is a critical security "
+                "vulnerability. Specify explicit allowed origins."
+            )
+        # Validate HTTPS in production
+        for origin in origins:
+            is_production = ENVIRONMENT.lower() in ("production", "prod")
+            if is_production and not origin.startswith("https://"):
+                logger.warning(
+                    f"WARNING: Non-HTTPS origin '{origin}' in production "
+                    "environment. This may pose security risks."
+                )
+
+    logger.info(
+        f"CORS configured for {ENVIRONMENT}: {len(origins)} origins allowed"
+    )
+    return origins
 
 
 def check_opa_health() -> bool:
@@ -174,10 +241,10 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# Add CORS middleware for development
+# Add CORS middleware with environment-aware security
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, restrict to specific origins
+    allow_origins=get_cors_origins(),
     allow_credentials=True,
     allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],

@@ -189,7 +189,10 @@ services:
       - CONSTITUTIONAL_HASH=${CONSTITUTIONAL_HASH:-cdd01ef066bc6cf2}
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
       - JWT_SECRET=${JWT_SECRET:-dev-jwt-secret-min-32-chars-required}
-      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000,http://localhost:8080,*}
+      # CORS Security: Wildcards are prohibited. Use explicit origins for allowed domains.
+      # Development: Use localhost and 127.0.0.1 for common ports.
+      # Production: Must use exact domain URLs with HTTPS (e.g., https://acgs2.example.com)
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000,http://localhost:8080,http://localhost:5173,http://127.0.0.1:3000,http://127.0.0.1:8080,http://127.0.0.1:5173}
     depends_on:
       - agent-bus
     networks:
@@ -212,7 +215,10 @@ services:
       # Pass through centralized config
       - CONSTITUTIONAL_HASH=${CONSTITUTIONAL_HASH:-cdd01ef066bc6cf2}
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
-      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000,http://localhost:5173,*}
+      # CORS Security: Wildcards are prohibited. Use explicit origins for allowed domains.
+      # Development: Use localhost and 127.0.0.1 for common ports.
+      # Production: Must use exact domain URLs with HTTPS (e.g., https://acgs2.example.com)
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000,http://localhost:8080,http://localhost:5173,http://127.0.0.1:3000,http://127.0.0.1:8080,http://127.0.0.1:5173}
       - TENANT_ID=${TENANT_ID:-acgs-dev}
     volumes:
       - ./acgs2-core/services/analytics-api:/app

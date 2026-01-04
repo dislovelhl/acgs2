@@ -15,6 +15,7 @@ API Documentation:
 
 import asyncio
 import logging
+import os
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator, Optional
 
@@ -35,6 +36,69 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 logger = logging.getLogger(__name__)
+
+# Environment configuration
+ENVIRONMENT = os.getenv("ENVIRONMENT", os.getenv("APP_ENV", "development"))
+
+
+def get_cors_origins() -> list[str]:
+    """
+    Get CORS origins with environment-aware security defaults.
+
+    Development: Uses localhost origins
+    Production/Staging: Requires explicit CORS_ORIGINS env var, no wildcards allowed
+
+    Returns:
+        List of allowed CORS origins
+
+    Raises:
+        ValueError: If production environment uses wildcard or missing CORS_ORIGINS
+    """
+    cors_env_var = os.getenv("CORS_ORIGINS")
+
+    # Development environment defaults
+    if ENVIRONMENT.lower() in ("development", "dev"):
+        default_origins = (
+            "http://localhost:3000,http://localhost:8080,http://localhost:5173,"
+            "http://127.0.0.1:3000,http://127.0.0.1:8080,http://127.0.0.1:5173"
+        )
+        origins_str = cors_env_var or default_origins
+    else:
+        # Production/Staging: require explicit configuration
+        if not cors_env_var:
+            raise ValueError(
+                f"SECURITY ERROR: CORS_ORIGINS environment variable must be "
+                f"explicitly set in {ENVIRONMENT} environment. "
+                "Wildcard origins are not allowed in production."
+            )
+        origins_str = cors_env_var
+
+    # Parse and validate origins
+    origins = [
+        origin.strip() for origin in origins_str.split(",") if origin.strip()
+    ]
+
+    # Production wildcard validation
+    if ENVIRONMENT.lower() in ("production", "prod", "staging", "stage"):
+        if "*" in origins:
+            raise ValueError(
+                f"SECURITY ERROR: Wildcard CORS origins not allowed in "
+                f"{ENVIRONMENT} environment. This is a critical security "
+                "vulnerability. Specify explicit allowed origins."
+            )
+        # Validate HTTPS in production
+        for origin in origins:
+            is_production = ENVIRONMENT.lower() in ("production", "prod")
+            if is_production and not origin.startswith("https://"):
+                logger.warning(
+                    f"WARNING: Non-HTTPS origin '{origin}' in production "
+                    "environment. This may pose security risks."
+                )
+
+    logger.info(
+        f"CORS configured for {ENVIRONMENT}: {len(origins)} origins allowed"
+    )
+    return origins
 
 # Global state for service instances
 _model_manager: Optional[ModelManager] = None
@@ -220,10 +284,10 @@ app = FastAPI(
     openapi_url="/openapi.json",
 )
 
-# Add CORS middleware
+# Add CORS middleware with environment-aware security
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=get_cors_origins(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

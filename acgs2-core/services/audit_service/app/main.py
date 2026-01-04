@@ -16,18 +16,15 @@ from shared.logging_config import (
     instrument_fastapi,
     setup_opentelemetry,
 )
+from shared.metrics import track_request_metrics
 from shared.middleware.correlation_id import add_correlation_id_middleware
+from shared.security.cors_config import get_cors_config
 
 from ..core.audit_ledger import AuditLedger
 from .api.governance import router as governance_router
 from .api.reports import router as reports_router
 
-# Centralized settings
-try:
-    from shared.config import settings
-except ImportError:
-    # Fallback if shared not in path
-    from ....shared.config import settings
+# Note: CORS configuration is now handled by get_cors_config() from shared.security.cors_config
 
 # Configure structured logging with JSON output and correlation ID support
 configure_logging(service_name="audit_service")
@@ -70,13 +67,7 @@ instrument_fastapi(app)
 add_correlation_id_middleware(app, service_name="audit_service")
 
 # Add CORS middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=settings.security.cors_origins if settings else ["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+app.add_middleware(CORSMiddleware, **get_cors_config())
 
 # Include API routers
 app.include_router(

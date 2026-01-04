@@ -10,6 +10,8 @@ import structlog
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from shared.security.cors_config import get_cors_config
+
 from .api.approvals import router as approvals_router
 
 # Configure structured logging
@@ -40,14 +42,8 @@ app = FastAPI(
     version="1.0.0",
 )
 
-# Add CORS middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # Configure based on environment
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# Add CORS middleware (configured based on environment)
+app.add_middleware(CORSMiddleware, **get_cors_config())
 
 # Include API routers
 app.include_router(approvals_router, prefix="/api/v1")
