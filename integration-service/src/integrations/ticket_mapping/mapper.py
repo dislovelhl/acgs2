@@ -213,7 +213,10 @@ class TicketFieldMapper:
             else:
                 return None
 
-        return value
+        # Ensure we return a simple type
+        if isinstance(value, (str, int, float, bool, dict, list, type(None))):
+            return value  # type: ignore[return-value]
+        return str(value)
 
     def _apply_transform(
         self,
@@ -271,8 +274,8 @@ class TicketFieldMapper:
             Result from matching condition or default
         """
         for condition in conditions:
-            field = condition.get("field", "")
-            operator = condition.get("operator", "eq")
+            field = str(condition.get("field", ""))
+            operator = str(condition.get("operator", "eq"))
             expected = condition.get("value")
             result = condition.get("result")
 
@@ -293,17 +296,18 @@ class TicketFieldMapper:
         elif operator == "ne":
             return actual != expected
         elif operator == "gt":
-            return actual > expected
+            return actual > expected  # type: ignore[operator]
         elif operator == "gte":
-            return actual >= expected
+            return actual >= expected  # type: ignore[operator]
         elif operator == "lt":
-            return actual < expected
+            return actual < expected  # type: ignore[operator]
         elif operator == "lte":
-            return actual <= expected
+            return actual <= expected  # type: ignore[operator]
         elif operator == "in":
-            return actual in (expected or [])
+            expected_list = expected if isinstance(expected, list) else []
+            return actual in expected_list
         elif operator == "contains":
-            return expected in str(actual)
+            return str(expected) in str(actual)
         elif operator == "regex":
             return bool(re.match(str(expected), str(actual)))
 
