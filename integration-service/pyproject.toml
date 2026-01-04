@@ -13,6 +13,10 @@ select = ["E", "F", "B", "I"]
 # B008: Ignore function call in default argument - FastAPI standard pattern for Depends(), Query(), etc.
 ignore = ["B008"]
 
+[tool.ruff.lint.per-file-ignores]
+# Allow print statements in CLI verification scripts
+"verify_redis_job_tracking.py" = ["T201"]
+
 [tool.ruff.lint.isort]
 known-first-party = ["src"]
 
