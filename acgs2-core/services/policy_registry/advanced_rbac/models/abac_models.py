@@ -4,12 +4,28 @@ Attribute-Based Access Control (ABAC) Implementation
 Constitutional Hash: cdd01ef066bc6cf2
 """
 
+# Import type aliases from shared types
+import sys
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from pathlib import Path
+from typing import Dict, List, Optional
 
 from pydantic import BaseModel, Field, validator
+
+# Add acgs2-core/shared to path for type imports
+shared_path = Path(__file__).parent.parent.parent.parent.parent / "shared"
+if str(shared_path) not in sys.path:
+    sys.path.insert(0, str(shared_path))
+
+from types import (
+    AttributeMap,
+    ConfigDict,
+    JSONDict,
+    JSONValue,
+    MetadataDict,
+)
 
 
 class AttributeCategory(Enum):
@@ -82,10 +98,10 @@ class Attribute:
     """An attribute for ABAC"""
 
     name: str
-    value: Any
+    value: JSONValue
     attr_type: AttributeType
     category: AttributeCategory
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: MetadataDict = field(default_factory=dict)
     confidence: float = 1.0  # Confidence score for attribute value
     timestamp: datetime = field(default_factory=datetime.utcnow)
 
@@ -96,7 +112,7 @@ class AttributeCondition:
 
     attribute_name: str
     operator: ComparisonOperator
-    expected_value: Any
+    expected_value: JSONValue
     case_sensitive: bool = True
     weight: float = 1.0  # Weight for scoring
 
@@ -113,7 +129,7 @@ class ABACRule:
     logical_operator: LogicalOperator = LogicalOperator.AND
     priority: int = 0
     enabled: bool = True
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: MetadataDict = field(default_factory=dict)
     created_at: datetime = field(default_factory=datetime.utcnow)
     updated_at: datetime = field(default_factory=datetime.utcnow)
 
@@ -131,7 +147,7 @@ class ABACPolicy:
     )
     target_conditions: List[AttributeCondition] = field(default_factory=list)
     enabled: bool = True
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: MetadataDict = field(default_factory=dict)
     created_at: datetime = field(default_factory=datetime.utcnow)
     updated_at: datetime = field(default_factory=datetime.utcnow)
 
@@ -167,7 +183,7 @@ class PolicyDecision:
     confidence_score: float
     matched_rules: List[str]
     denied_rules: List[str]
-    obligations: List[Dict[str, Any]] = field(default_factory=list)
+    obligations: List[JSONDict] = field(default_factory=list)
     advice: List[str] = field(default_factory=list)
     evaluated_at: datetime = field(default_factory=datetime.utcnow)
     evaluation_time_ms: float = 0.0
@@ -184,11 +200,11 @@ class DelegationGrant:
     scope: DelegationScope
     permissions: List[str]
     conditions: List[AttributeCondition] = field(default_factory=list)
-    constraints: Dict[str, Any] = field(default_factory=dict)
+    constraints: JSONDict = field(default_factory=dict)
     expires_at: Optional[datetime] = None
     revocable: bool = True
     cascade_allowed: bool = False
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: MetadataDict = field(default_factory=dict)
     granted_at: datetime = field(default_factory=datetime.utcnow)
 
 
@@ -217,7 +233,7 @@ class AttributeSource:
     refresh_interval_seconds: int = 300
     cache_ttl_seconds: int = 300
     enabled: bool = True
-    config: Dict[str, Any] = field(default_factory=dict)
+    config: ConfigDict = field(default_factory=dict)
     last_updated: Optional[datetime] = None
 
 
@@ -249,7 +265,7 @@ class ABACAuditEvent:
     confidence_score: float
     matched_policies: List[str]
     matched_rules: List[str]
-    attributes_used: Dict[str, Any]
+    attributes_used: AttributeMap
     delegation_chain: Optional[str] = None
     evaluation_time_ms: float
     ip_address: Optional[str] = None
@@ -261,10 +277,10 @@ class ABACAuditEvent:
 # Pydantic models for API
 class AttributeModel(BaseModel):
     name: str
-    value: Any
+    value: JSONValue
     attr_type: AttributeType
     category: AttributeCategory
-    metadata: Dict[str, Any] = Field(default_factory=dict)
+    metadata: MetadataDict = Field(default_factory=dict)
     confidence: float = Field(default=1.0, ge=0.0, le=1.0)
 
     class Config:
@@ -274,7 +290,7 @@ class AttributeModel(BaseModel):
 class AttributeConditionModel(BaseModel):
     attribute_name: str
     operator: ComparisonOperator
-    expected_value: Any
+    expected_value: JSONValue
     case_sensitive: bool = True
     weight: float = Field(default=1.0, gt=0.0)
 
@@ -291,7 +307,7 @@ class ABACRuleModel(BaseModel):
     logical_operator: LogicalOperator = LogicalOperator.AND
     priority: int = 0
     enabled: bool = True
-    metadata: Dict[str, Any] = Field(default_factory=dict)
+    metadata: MetadataDict = Field(default_factory=dict)
 
     @validator("conditions")
     def validate_conditions(cls, v):
@@ -311,7 +327,7 @@ class ABACPolicyModel(BaseModel):
     combining_algorithm: str = "first-applicable"
     target_conditions: List[AttributeConditionModel] = Field(default_factory=list)
     enabled: bool = True
-    metadata: Dict[str, Any] = Field(default_factory=dict)
+    metadata: MetadataDict = Field(default_factory=dict)
 
     class Config:
         use_enum_values = True
@@ -337,11 +353,11 @@ class DelegationGrantModel(BaseModel):
     scope: DelegationScope
     permissions: List[str]
     conditions: List[AttributeConditionModel] = Field(default_factory=list)
-    constraints: Dict[str, Any] = Field(default_factory=dict)
+    constraints: JSONDict = Field(default_factory=dict)
     expires_at: Optional[datetime] = None
     revocable: bool = True
     cascade_allowed: bool = False
-    metadata: Dict[str, Any] = Field(default_factory=dict)
+    metadata: MetadataDict = Field(default_factory=dict)
 
     class Config:
         use_enum_values = True
@@ -355,7 +371,7 @@ class AttributeSourceModel(BaseModel):
     refresh_interval_seconds: int = Field(default=300, gt=0)
     cache_ttl_seconds: int = Field(default=300, gt=0)
     enabled: bool = True
-    config: Dict[str, Any] = Field(default_factory=dict)
+    config: ConfigDict = Field(default_factory=dict)
 
     class Config:
         use_enum_values = True

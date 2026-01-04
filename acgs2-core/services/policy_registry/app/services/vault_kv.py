@@ -7,9 +7,26 @@ and retrieval using HashiCorp Vault.
 """
 
 import logging
-from typing import Any, Dict, Optional
+import sys
+from pathlib import Path
+from typing import Optional, Protocol
+
+# Add acgs2-core/shared to path for type imports
+shared_path = Path(__file__).parent.parent.parent.parent.parent / "shared"
+if str(shared_path) not in sys.path:
+    sys.path.insert(0, str(shared_path))
+
+from types import JSONDict
 
 logger = logging.getLogger(__name__)
+
+
+class VaultHttpClient(Protocol):
+    """Protocol for Vault HTTP client."""
+
+    async def request(self, method: str, path: str, data: Optional[JSONDict] = None) -> JSONDict:
+        """Make HTTP request to Vault API."""
+        ...
 
 
 class VaultKVOperations:
@@ -22,7 +39,7 @@ class VaultKVOperations:
 
     def __init__(
         self,
-        http_client: Any,
+        http_client: VaultHttpClient,
         kv_mount: str = "secret",
         kv_version: int = 2,
     ):
@@ -41,8 +58,8 @@ class VaultKVOperations:
     async def put(
         self,
         path: str,
-        data: Dict[str, Any],
-        metadata: Optional[Dict[str, str]] = None,
+        data: JSONDict,
+        metadata: Optional[dict[str, str]] = None,
     ) -> None:
         """
         Store a secret in KV engine.
@@ -54,7 +71,7 @@ class VaultKVOperations:
         """
         if self._kv_version == 2:
             api_path = f"/v1/{self._kv_mount}/data/{path}"
-            payload: Dict[str, Any] = {"data": data}
+            payload: JSONDict = {"data": data}
             if metadata:
                 payload["options"] = {"cas": 0}  # Check-and-set
         else:
@@ -68,7 +85,7 @@ class VaultKVOperations:
         self,
         path: str,
         version: Optional[int] = None,
-    ) -> Dict[str, Any]:
+    ) -> JSONDict:
         """
         Get a secret from KV engine.
 
@@ -107,7 +124,7 @@ class VaultKVOperations:
         await self._http_client.request("DELETE", api_path)
         logger.debug(f"Deleted secret at: {path}")
 
-    async def list_secrets(self, path: str = "") -> Dict[str, Any]:
+    async def list_secrets(self, path: str = "") -> JSONDict:
         """
         List secrets at a path in KV engine.
 
@@ -127,7 +144,7 @@ class VaultKVOperations:
         response = await self._http_client.request("GET", api_path)
         return response.get("data", {})
 
-    async def get_metadata(self, path: str) -> Dict[str, Any]:
+    async def get_metadata(self, path: str) -> JSONDict:
         """
         Get secret metadata (KV v2 only).
 

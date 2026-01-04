@@ -11,7 +11,9 @@ import asyncio
 import logging
 import uuid
 from datetime import datetime, timezone
-from typing import Any, Callable, Dict, List, Optional
+from typing import Callable, Dict, List, Optional
+
+from acgs2_core.shared.types import ErrorDetails, JSONDict
 
 from app.config import settings
 from app.models import (
@@ -231,7 +233,7 @@ class NotificationManager:
 
         return health_status
 
-    def get_statistics(self) -> Dict[str, Any]:
+    def get_statistics(self) -> JSONDict:
         """
         Get statistics about the notification manager.
 
@@ -330,8 +332,8 @@ class ApprovalEngine:
         self,
         approval_chains: Optional[Dict[str, ApprovalChain]] = None,
         escalation_policies: Optional[Dict[str, EscalationPolicy]] = None,
-        notification_callback: Optional[Callable] = None,
-        audit_callback: Optional[Callable] = None,
+        notification_callback: Optional[Callable[[NotificationPayload], None]] = None,
+        audit_callback: Optional[Callable[[AuditEvent], None]] = None,
     ):
         """
         Initialize the Approval Engine.
@@ -453,7 +455,7 @@ class ApprovalEngine:
         self,
         chain_id: str,
         decision_type: str,
-        decision_context: Dict[str, Any],
+        decision_context: JSONDict,
         impact_level: str,
         requestor_id: str,
         requestor_service: Optional[str] = None,
@@ -982,7 +984,7 @@ class ApprovalEngine:
         event_type: str,
         actor_id: str,
         actor_role: Optional[str] = None,
-        details: Optional[Dict[str, Any]] = None,
+        details: Optional[ErrorDetails] = None,
         previous_state: Optional[str] = None,
         new_state: Optional[str] = None,
     ) -> None:
@@ -1022,7 +1024,7 @@ class ApprovalEngine:
     # Statistics and Monitoring
     # =========================================================================
 
-    def get_statistics(self) -> Dict[str, Any]:
+    def get_statistics(self) -> JSONDict:
         """
         Get statistics about the approval engine.
 

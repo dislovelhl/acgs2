@@ -4,9 +4,18 @@ Constitutional Hash: cdd01ef066bc6cf2
 """
 
 import re
+import sys
 import time
 from collections import defaultdict
-from typing import Any, Dict, List, Optional, Set, Tuple
+from pathlib import Path
+from typing import Dict, List, Optional, Set, Tuple
+
+# Add acgs2-core/shared to path for type imports
+shared_path = Path(__file__).parent.parent.parent.parent.parent / "shared"
+if str(shared_path) not in sys.path:
+    sys.path.insert(0, str(shared_path))
+
+from types import JSONDict, JSONValue
 
 from ..models.abac_models import (
     ABACPolicy,
@@ -263,7 +272,7 @@ class ABACPolicyEngine:
         except (ValueError, TypeError):
             return False
 
-    def _get_attribute_value(self, attribute_name: str, request: AccessRequest) -> Any:
+    def _get_attribute_value(self, attribute_name: str, request: AccessRequest) -> JSONValue:
         """Get attribute value from request"""
         # Check all attribute categories
         all_attributes = {}
@@ -305,13 +314,17 @@ class ABACPolicyEngine:
                 return False
         return True
 
-    def _equals_comparison(self, actual: Any, expected: Any, case_sensitive: bool) -> bool:
+    def _equals_comparison(
+        self, actual: JSONValue, expected: JSONValue, case_sensitive: bool
+    ) -> bool:
         """Compare values for equality"""
         if not case_sensitive and isinstance(actual, str) and isinstance(expected, str):
             return actual.lower() == expected.lower()
         return actual == expected
 
-    def _contains_comparison(self, actual: Any, expected: Any, case_sensitive: bool) -> bool:
+    def _contains_comparison(
+        self, actual: JSONValue, expected: JSONValue, case_sensitive: bool
+    ) -> bool:
         """Check if actual contains expected"""
         actual_str = str(actual)
         expected_str = str(expected)
@@ -338,14 +351,14 @@ class ABACPolicyEngine:
         """Clear the evaluation cache"""
         self.evaluation_cache.clear()
 
-    def get_cache_stats(self) -> Dict[str, Any]:
+    def get_cache_stats(self) -> JSONDict:
         """Get cache statistics"""
         return {
             "cache_size": len(self.evaluation_cache),
             "cache_ttl_seconds": self.cache_ttl_seconds,
         }
 
-    def get_policy_stats(self) -> Dict[str, Any]:
+    def get_policy_stats(self) -> JSONDict:
         """Get policy statistics"""
         total_policies = len(self.policies)
         enabled_policies = sum(1 for p in self.policies.values() if p.enabled)
@@ -421,6 +434,6 @@ def evaluate_access_request(request: AccessRequest) -> PolicyDecision:
     return abac_engine.evaluate_access(request)
 
 
-def get_policy_stats() -> Dict[str, Any]:
+def get_policy_stats() -> JSONDict:
     """Get policy engine statistics"""
     return abac_engine.get_policy_stats()

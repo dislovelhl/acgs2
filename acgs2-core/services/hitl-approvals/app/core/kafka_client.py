@@ -23,7 +23,9 @@ import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, Callable, Coroutine, Dict, List, Optional, Set
+from typing import Callable, Coroutine, Dict, List, Optional, Set
+
+from acgs2_core.shared.types import JSONDict, KwargsType
 
 from app.config import settings
 
@@ -105,7 +107,7 @@ class HITLEvent:
     topic: HITLTopic
     request_id: str
     timestamp: float  # Unix timestamp
-    payload: Dict[str, Any] = field(default_factory=dict)
+    payload: JSONDict = field(default_factory=dict)
 
     # Optional context
     user_id: Optional[str] = None
@@ -113,7 +115,7 @@ class HITLEvent:
     priority: Optional[str] = None
     escalation_level: int = 1
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> JSONDict:
         """Convert to dictionary for Kafka serialization."""
         return {
             "event_id": self.event_id,
@@ -130,7 +132,7 @@ class HITLEvent:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "HITLEvent":
+    def from_dict(cls, data: JSONDict) -> "HITLEvent":
         """Create from dictionary (Kafka deserialization)."""
         return cls(
             event_id=data["event_id"],
@@ -150,8 +152,8 @@ class HITLEvent:
         cls,
         event_type: HITLEventType,
         request_id: str,
-        payload: Optional[Dict[str, Any]] = None,
-        **kwargs: Any,
+        payload: Optional[JSONDict] = None,
+        **kwargs: KwargsType,
     ) -> "HITLEvent":
         """
         Create a new HITL event with auto-generated ID and timestamp.
@@ -189,6 +191,8 @@ class HITLEvent:
 
 
 # Type alias for event handlers
+from typing import Any
+
 EventHandler = Callable[[HITLEvent], Coroutine[Any, Any, None]]
 
 
@@ -381,7 +385,7 @@ class HITLKafkaClient:
                     # describe_cluster doesn't return topics directly
                     # We'll just try to create and handle the error
                     await admin.describe_cluster()
-                except Exception:
+                except Exception:  # nosec B110 - intentionally ignoring errors from describe_cluster
                     pass
 
                 # Create new topics
@@ -461,7 +465,7 @@ class HITLKafkaClient:
         decision_type: str,
         impact_level: str,
         requester_id: Optional[str] = None,
-        metadata: Optional[Dict[str, Any]] = None,
+        metadata: Optional[JSONDict] = None,
     ) -> HITLEvent:
         """
         Publish an approval requested event.
@@ -500,7 +504,7 @@ class HITLKafkaClient:
         from_level: int,
         to_level: int,
         timeout_minutes: Optional[int] = None,
-        metadata: Optional[Dict[str, Any]] = None,
+        metadata: Optional[JSONDict] = None,
     ) -> HITLEvent:
         """
         Publish an escalation event.
@@ -538,7 +542,7 @@ class HITLKafkaClient:
         approver_id: str,
         reasoning: Optional[str] = None,
         chain_id: Optional[str] = None,
-        metadata: Optional[Dict[str, Any]] = None,
+        metadata: Optional[JSONDict] = None,
     ) -> HITLEvent:
         """
         Publish an approval completed event.
@@ -582,7 +586,7 @@ class HITLKafkaClient:
         sla_timeout_minutes: int,
         actual_time_minutes: float,
         escalation_level: int,
-        metadata: Optional[Dict[str, Any]] = None,
+        metadata: Optional[JSONDict] = None,
     ) -> HITLEvent:
         """
         Publish an SLA breach event.
@@ -730,7 +734,7 @@ class HITLKafkaClient:
     # Serialization
     # =========================================================================
 
-    def _serialize_event(self, event_dict: Dict[str, Any]) -> bytes:
+    def _serialize_event(self, event_dict: JSONDict) -> bytes:
         """Serialize event to JSON bytes."""
         return json.dumps(event_dict, default=str).encode("utf-8")
 
