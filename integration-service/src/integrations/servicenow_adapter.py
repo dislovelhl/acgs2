@@ -24,16 +24,19 @@ from typing import Any, Dict, List, Optional
 import httpx
 from pydantic import Field, SecretStr, field_validator, model_validator
 
+# Import exceptions from centralized exceptions module
+from exceptions.auth import AuthenticationError
+from exceptions.delivery import DeliveryError
+from exceptions.integration import RateLimitError
+
+# Import base integration classes and models
 from .base import (
-    AuthenticationError,
     BaseIntegration,
-    DeliveryError,
     EventSeverity,
     IntegrationCredentials,
     IntegrationEvent,
     IntegrationResult,
     IntegrationType,
-    RateLimitError,
 )
 
 logger = logging.getLogger(__name__)
@@ -248,7 +251,7 @@ class ServiceNowAdapter(BaseIntegration):
     INCIDENT_TABLE = "incident"
 
     # OAuth token endpoint
-    OAUTH_TOKEN_PATH = "/oauth_token.do"
+    OAUTH_TOKEN_PATH = "/oauth_token.do"  # nosec B105 - URL path, not a password
 
     def __init__(
         self,

@@ -11,11 +11,19 @@ import hmac
 import json
 import logging
 import time
+import warnings
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Set
 from uuid import uuid4
 
 import httpx
+
+from exceptions.auth import AuthenticationError
+from exceptions.delivery import (
+    DeliveryConnectionError,
+    DeliveryError,
+    DeliveryTimeoutError,
+)
 
 from .config import WebhookFrameworkConfig, WebhookRetryPolicy
 from .models import (
@@ -39,37 +47,88 @@ from .retry import (
 logger = logging.getLogger(__name__)
 
 
-class WebhookDeliveryError(Exception):
-    """Base exception for webhook delivery errors."""
+# Backward compatibility aliases
+# These maintain API compatibility for existing code that imports from webhooks.delivery
+class WebhookDeliveryError(DeliveryError):
+    """
+    Deprecated: Use DeliveryError from exceptions.delivery instead.
 
-    def __init__(
-        self,
-        message: str,
-        delivery_id: Optional[str] = None,
-        status_code: Optional[int] = None,
-    ):
-        self.message = message
-        self.delivery_id = delivery_id
-        self.status_code = status_code
-        super().__init__(self.message)
+    This alias is maintained for backward compatibility but will be removed in a future version.
+    """
 
-
-class WebhookAuthenticationError(WebhookDeliveryError):
-    """Raised when webhook authentication fails."""
-
-    pass
+    def __init__(self, *args, **kwargs):
+        warnings.warn(
+            "WebhookDeliveryError is deprecated. "
+            "Use DeliveryError from exceptions.delivery instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        super().__init__(*args, **kwargs)
 
 
-class WebhookTimeoutError(WebhookDeliveryError):
-    """Raised when webhook delivery times out."""
+class WebhookAuthenticationError(AuthenticationError):
+    """
+    Deprecated: Use AuthenticationError from exceptions.auth instead.
 
-    pass
+    This alias is maintained for backward compatibility but will be removed in a future version.
+    """
+
+    def __init__(self, *args, **kwargs):
+        warnings.warn(
+            "WebhookAuthenticationError is deprecated. "
+            "Use AuthenticationError from exceptions.auth instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        super().__init__(*args, **kwargs)
 
 
-class WebhookConnectionError(WebhookDeliveryError):
-    """Raised when connection to webhook endpoint fails."""
+class WebhookTimeoutError(DeliveryTimeoutError):
+    """
+    Deprecated: Use DeliveryTimeoutError from exceptions.delivery instead.
 
-    pass
+    This alias is maintained for backward compatibility but will be removed in a future version.
+    """
+
+    def __init__(self, *args, **kwargs):
+        warnings.warn(
+            "WebhookTimeoutError is deprecated. "
+            "Use DeliveryTimeoutError from exceptions.delivery instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        super().__init__(*args, **kwargs)
+
+
+class WebhookConnectionError(DeliveryConnectionError):
+    """
+    Deprecated: Use DeliveryConnectionError from exceptions.delivery instead.
+
+    This alias is maintained for backward compatibility but will be removed in a future version.
+    """
+
+    def __init__(self, *args, **kwargs):
+        warnings.warn(
+            "WebhookConnectionError is deprecated. "
+            "Use DeliveryConnectionError from exceptions.delivery instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        super().__init__(*args, **kwargs)
+
+# Public API exports - make exceptions and classes available for import from this module
+__all__ = [
+    "WebhookDeliveryError",
+    "WebhookAuthenticationError",
+    "WebhookTimeoutError",
+    "WebhookConnectionError",
+    "DeliveryError",
+    "DeliveryTimeoutError",
+    "DeliveryConnectionError",
+    "AuthenticationError",
+    "DeadLetterQueue",
+    "WebhookDeliveryEngine",
+]
 
 
 class DeadLetterQueue:

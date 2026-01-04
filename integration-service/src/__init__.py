@@ -14,5 +14,12 @@ _acgs2_core_path = _repo_root / "acgs2-core"
 if _acgs2_core_path.exists() and str(_acgs2_core_path) not in sys.path:
     sys.path.insert(0, str(_acgs2_core_path))
 
+from . import exceptions
+
 __version__ = "1.0.0"
 __service__ = "integration-service"
+
+# Export exceptions module for easy access
+__all__ = [
+    "exceptions",
+]

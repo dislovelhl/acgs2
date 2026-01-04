@@ -17,17 +17,19 @@ from datetime import datetime, timedelta, timezone
 import pytest
 from pydantic import SecretStr
 
-from src.webhooks.auth import (
-    ApiKeyAuthHandler,
-    AuthResult,
-    HmacAuthHandler,
+from src.exceptions.auth import (
     InvalidApiKeyError,
     InvalidBearerTokenError,
     InvalidSignatureError,
     MissingAuthHeaderError,
+    SignatureTimestampError,
+)
+from src.webhooks.auth import (
+    ApiKeyAuthHandler,
+    AuthResult,
+    HmacAuthHandler,
     OAuthBearerAuthHandler,
     OAuthToken,
-    SignatureTimestampError,
     WebhookAuthRegistry,
     create_api_key_handler,
     create_default_registry,
@@ -35,7 +37,6 @@ from src.webhooks.auth import (
     create_oauth_handler,
 )
 from src.webhooks.models import WebhookAuthType
-
 
 # ============================================================================
 # Fixtures

@@ -8,6 +8,7 @@ and utilities for calculating backoff delays for webhook deliveries.
 import asyncio
 import logging
 import random
+import warnings
 from datetime import datetime, timedelta, timezone
 from functools import wraps
 from typing import Any, Callable, Optional, Set, TypeVar
@@ -21,6 +22,12 @@ from tenacity import (
     wait_exponential,
 )
 
+from exceptions.retry import (
+    MaxRetriesExceededError,
+    NonRetryableError,
+    RetryableError,
+)
+
 from .config import WebhookRetryPolicy
 
 logger = logging.getLogger(__name__)
@@ -30,49 +37,23 @@ logger = logging.getLogger(__name__)
 T = TypeVar("T")
 
 
-class WebhookRetryError(Exception):
-    """Raised when a webhook delivery fails after all retries."""
+# Backward compatibility aliases
+# These maintain API compatibility for existing code that imports from webhooks.retry
+class WebhookRetryError(MaxRetriesExceededError):
+    """
+    Deprecated: Use MaxRetriesExceededError from exceptions.retry instead.
 
-    def __init__(
-        self,
-        message: str,
-        attempts: int,
-        last_error: Optional[Exception] = None,
-        last_status_code: Optional[int] = None,
-    ):
-        self.message = message
-        self.attempts = attempts
-        self.last_error = last_error
-        self.last_status_code = last_status_code
-        super().__init__(self.message)
+    This alias is maintained for backward compatibility but will be removed in a future version.
+    """
 
-
-class RetryableError(Exception):
-    """Indicates an error that should trigger a retry."""
-
-    def __init__(
-        self,
-        message: str,
-        status_code: Optional[int] = None,
-        retry_after: Optional[float] = None,
-    ):
-        self.message = message
-        self.status_code = status_code
-        self.retry_after = retry_after
-        super().__init__(self.message)
-
-
-class NonRetryableError(Exception):
-    """Indicates an error that should NOT trigger a retry."""
-
-    def __init__(
-        self,
-        message: str,
-        status_code: Optional[int] = None,
-    ):
-        self.message = message
-        self.status_code = status_code
-        super().__init__(self.message)
+    def __init__(self, *args, **kwargs):
+        warnings.warn(
+            "WebhookRetryError is deprecated. "
+            "Use MaxRetriesExceededError from exceptions.retry instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        super().__init__(*args, **kwargs)
 
 
 class ExponentialBackoff:

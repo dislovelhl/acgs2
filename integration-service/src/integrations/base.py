@@ -23,56 +23,39 @@ from tenacity import (
     wait_exponential,
 )
 
+# Import exceptions from centralized exceptions module
+from exceptions.auth import AuthenticationError
+from exceptions.delivery import DeliveryError
+from exceptions.integration import (
+    IntegrationConnectionError,
+    IntegrationError,
+    RateLimitError,
+)
+from exceptions.validation import ValidationError
+
 logger = logging.getLogger(__name__)
 
 
-# Custom Exceptions
-class IntegrationError(Exception):
-    """Base exception for integration errors"""
-
-    def __init__(self, message: str, integration_name: str = "", details: Dict[str, Any] = None):
-        self.message = message
-        self.integration_name = integration_name
-        self.details = details or {}
-        super().__init__(self.message)
-
-
-class AuthenticationError(IntegrationError):
-    """Raised when authentication fails"""
-
-    pass
-
-
-class ValidationError(IntegrationError):
-    """Raised when validation fails"""
-
-    pass
-
-
-class DeliveryError(IntegrationError):
-    """Raised when event delivery fails"""
-
-    pass
-
-
-class RateLimitError(IntegrationError):
-    """Raised when rate limit is exceeded"""
-
-    def __init__(
-        self,
-        message: str,
-        integration_name: str = "",
-        retry_after: Optional[int] = None,
-        details: Dict[str, Any] = None,
-    ):
-        super().__init__(message, integration_name, details)
-        self.retry_after = retry_after
-
-
-class IntegrationConnectionError(IntegrationError):
-    """Raised when connection to external service fails"""
-
-    pass
+# Public API exports - make exceptions and classes available for import from this module
+__all__ = [
+    # Exceptions - imported from centralized exceptions module
+    "IntegrationError",
+    "AuthenticationError",
+    "ValidationError",
+    "DeliveryError",
+    "RateLimitError",
+    "IntegrationConnectionError",
+    # Enums
+    "IntegrationType",
+    "IntegrationStatus",
+    "EventSeverity",
+    # Models
+    "IntegrationCredentials",
+    "IntegrationEvent",
+    "IntegrationResult",
+    # Base class
+    "BaseIntegration",
+]
 
 
 # Enums

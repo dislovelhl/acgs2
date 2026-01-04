@@ -21,6 +21,7 @@ from unittest.mock import MagicMock, patch
 import httpx
 import pytest
 
+from src.exceptions.retry import RetryableError
 from src.webhooks.config import WebhookFrameworkConfig, WebhookRetryPolicy
 from src.webhooks.delivery import (
     DeadLetterQueue,
@@ -38,7 +39,6 @@ from src.webhooks.models import (
 )
 from src.webhooks.retry import (
     ExponentialBackoff,
-    RetryableError,
     RetryState,
     should_retry_status_code,
 )
