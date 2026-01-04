@@ -113,6 +113,12 @@
                     updateStatus('Input cleared');
                 }
             }
+            // R to refresh connection and reload examples
+            if (e.key === 'r' || e.key === 'R') {
+                e.preventDefault();
+                updateStatus('Refreshing...');
+                checkConnection().then(() => loadExamples());
+            }
         });
 
         // Tab support in editors
