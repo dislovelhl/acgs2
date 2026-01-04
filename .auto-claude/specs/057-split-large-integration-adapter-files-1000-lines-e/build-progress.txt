@@ -1,6 +1,72 @@
 # Build Progress Report
 
-## Completed Subtask: 3.3 - Create integrations/ticket_mapping/validators.py
+## Completed Subtask: 3.4 - Add PagerDuty support and complete transformers.py
+
+### Summary
+Successfully updated integrations/ticket_mapping/enums.py with PagerDuty support and added missing severity_to_pagerduty_urgency transformer function to transformers.py. The transformers.py file already existed with 10 transformer functions; added the 11th PagerDuty function to complete the full set from the original ticket_mapping.py file.
+
+### Implementation Details
+- **Files Updated**:
+  - integration-service/src/integrations/ticket_mapping/enums.py (added 28 lines)
+  - integration-service/src/integrations/ticket_mapping/transformers.py (added 12 lines)
+- **Commit**: aab44c426
+- **Date**: 2025-01-04
+
+### Components Added to enums.py
+
+**PagerDutyUrgency Enum:**
+- `HIGH = "high"` - High urgency for immediate notifications
+- `LOW = "low"` - Low urgency for standard processing
+
+**DEFAULT_PAGERDUTY_URGENCY_MAP Constant:**
+- Maps EventSeverity to PagerDutyUrgency
+- CRITICAL and HIGH → "high" urgency
+- MEDIUM, LOW, and INFO → "low" urgency
+- Follows PagerDuty's two-level urgency system
+
+### Components Added to transformers.py
+
+**severity_to_pagerduty_urgency Transform Function:**
+- Converts event severity to PagerDuty urgency value
+- Supports custom mapping via params
+- Falls back to DEFAULT_PAGERDUTY_URGENCY_MAP
+- Returns "low" as default if severity not found
+
+### All Transform Functions Now Present (11 total)
+1. `severity_to_jira_priority` - Convert severity to Jira priority
+2. `severity_to_servicenow_impact` - Convert severity to ServiceNow impact
+3. `severity_to_servicenow_urgency` - Convert severity to ServiceNow urgency
+4. `severity_to_pagerduty_urgency` - Convert severity to PagerDuty urgency ✨ NEW
+5. `format_timestamp` - Format timestamp to custom format
+6. `format_tags` - Format event tags as string
+7. `build_labels` - Build label list from event data
+8. `truncate` - Truncate field value to max length
+9. `json_details` - Format event details as JSON
+10. `concatenate` - Concatenate multiple event fields
+11. `map_value` - Map field value using lookup table
+
+### Dependencies
+- Standard library: `json`, `typing`
+- Local: `IntegrationEvent` from `..base`
+- Local: DEFAULT mappings, priority/urgency enums from `.enums`
+
+### Verification
+✅ All pre-commit hooks passed:
+- ruff (linting)
+- ruff-format (code formatting)
+- ruff-no-print (no debug statements)
+- bandit (security scanning)
+- check json
+- check for merge conflicts
+- check for added large files
+- check for case conflicts
+
+### Phase 3 Progress
+Phase 3 (Split integrations/ticket_mapping.py): **4/9 subtasks completed (44%)**
+
+---
+
+## Previous Subtask: 3.3 - Create integrations/ticket_mapping/validators.py
 
 ### Summary
 Successfully created integrations/ticket_mapping/validators.py with the FieldValidator class extracted from the original ticket_mapping.py file (lines 326-421).
