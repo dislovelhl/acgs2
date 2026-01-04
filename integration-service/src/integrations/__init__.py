@@ -25,6 +25,11 @@ from .jira_adapter import (
     JiraCredentials,
     JiraDeploymentType,
 )
+from .pagerduty_adapter import (
+    PagerDutyAdapter,
+    PagerDutyAuthType,
+    PagerDutyCredentials,
+)
 from .sentinel_adapter import (
     AzureCloud,
     SentinelAdapter,
@@ -71,4 +76,8 @@ __all__ = [
     "ServiceNowAdapter",
     "ServiceNowAuthType",
     "ServiceNowCredentials",
+    # PagerDuty incident management integration
+    "PagerDutyAdapter",
+    "PagerDutyAuthType",
+    "PagerDutyCredentials",
 ]
