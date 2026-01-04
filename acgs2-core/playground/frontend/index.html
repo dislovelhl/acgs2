@@ -424,6 +424,153 @@
             0%, 100% { opacity: 1; }
             50% { opacity: 0.5; }
         }
+
+        /* Help Modal */
+        .help-modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .help-modal-overlay.active {
+            display: flex;
+        }
+
+        .help-modal {
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+        }
+
+        .help-modal-header {
+            background-color: var(--bg-tertiary);
+            padding: 16px 24px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .help-modal-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--accent-blue);
+        }
+
+        .help-modal-close {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            transition: background-color 0.2s ease;
+        }
+
+        .help-modal-close:hover {
+            background-color: var(--bg-primary);
+        }
+
+        .help-modal-content {
+            padding: 24px;
+            overflow-y: auto;
+        }
+
+        .help-section {
+            margin-bottom: 24px;
+        }
+
+        .help-section-title {
+            font-size: 0.875rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--accent-green);
+            margin-bottom: 12px;
+        }
+
+        .shortcut-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .shortcut-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            background-color: var(--bg-primary);
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+        }
+
+        .shortcut-description {
+            color: var(--text-primary);
+            font-size: 0.875rem;
+        }
+
+        .shortcut-keys {
+            display: flex;
+            gap: 4px;
+            align-items: center;
+        }
+
+        .key-badge {
+            background-color: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 4px 8px;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            min-width: 24px;
+            text-align: center;
+        }
+
+        .key-separator {
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+        }
+
+        .help-btn {
+            background-color: var(--bg-tertiary);
+            color: var(--text-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 8px 12px;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .help-btn:hover {
+            background-color: var(--bg-primary);
+            color: var(--accent-blue);
+        }
     </style>
 </head>
 <body>
@@ -443,6 +590,10 @@
             </button>
             <button id="evaluateBtn" class="btn btn-primary">
                 <span>Evaluate</span>
+            </button>
+            <button id="helpBtn" class="help-btn" title="Keyboard Shortcuts (?)">
+                <span>?</span>
+                <span>Help</span>
             </button>
             <div class="connection-status">
                 <span class="connection-dot checking" id="connectionDot"></span>
@@ -548,6 +699,89 @@ allow {
         <span id="statusMessage">Ready</span>
         <span>ACGS-2 Policy Playground v1.0.0</span>
     </footer>
+
+    <!-- Help Modal -->
+    <div id="helpModalOverlay" class="help-modal-overlay">
+        <div class="help-modal">
+            <div class="help-modal-header">
+                <h2 class="help-modal-title">Keyboard Shortcuts</h2>
+                <button id="helpModalClose" class="help-modal-close" title="Close (Esc)">&times;</button>
+            </div>
+            <div class="help-modal-content">
+                <div class="help-section">
+                    <h3 class="help-section-title">Actions</h3>
+                    <div class="shortcut-list">
+                        <div class="shortcut-item">
+                            <span class="shortcut-description">Evaluate policy</span>
+                            <div class="shortcut-keys">
+                                <span class="key-badge">Ctrl</span>
+                                <span class="key-separator">+</span>
+                                <span class="key-badge">Enter</span>
+                            </div>
+                        </div>
+                        <div class="shortcut-item">
+                            <span class="shortcut-description">Validate policy</span>
+                            <div class="shortcut-keys">
+                                <span class="key-badge">Ctrl</span>
+                                <span class="key-separator">+</span>
+                                <span class="key-badge">Shift</span>
+                                <span class="key-separator">+</span>
+                                <span class="key-badge">V</span>
+                            </div>
+                        </div>
+                        <div class="shortcut-item">
+                            <span class="shortcut-description">Refresh connection & examples</span>
+                            <div class="shortcut-keys">
+                                <span class="key-badge">R</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="help-section">
+                    <h3 class="help-section-title">Editor</h3>
+                    <div class="shortcut-list">
+                        <div class="shortcut-item">
+                            <span class="shortcut-description">Clear focused editor & results</span>
+                            <div class="shortcut-keys">
+                                <span class="key-badge">Esc</span>
+                            </div>
+                        </div>
+                        <div class="shortcut-item">
+                            <span class="shortcut-description">Insert tab (2 spaces)</span>
+                            <div class="shortcut-keys">
+                                <span class="key-badge">Tab</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="help-section">
+                    <h3 class="help-section-title">Navigation</h3>
+                    <div class="shortcut-list">
+                        <div class="shortcut-item">
+                            <span class="shortcut-description">Show/hide this help</span>
+                            <div class="shortcut-keys">
+                                <span class="key-badge">?</span>
+                            </div>
+                        </div>
+                        <div class="shortcut-item">
+                            <span class="shortcut-description">Close help modal</span>
+                            <div class="shortcut-keys">
+                                <span class="key-badge">Esc</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="help-section" style="margin-bottom: 0;">
+                    <p style="color: var(--text-secondary); font-size: 0.75rem; font-style: italic;">
+                        Note: On Mac, use <span class="key-badge" style="display: inline;">Cmd</span> instead of <span class="key-badge" style="display: inline;">Ctrl</span>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Prism.js -->
     <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
