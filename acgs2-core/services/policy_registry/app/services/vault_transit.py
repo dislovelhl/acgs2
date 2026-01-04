@@ -9,9 +9,26 @@ encryption, and decryption using HashiCorp Vault.
 import base64
 import logging
 import re
-from typing import Any, Dict, Optional
+import sys
+from pathlib import Path
+from typing import Optional, Protocol
+
+# Add acgs2-core/shared to path for type imports
+shared_path = Path(__file__).parent.parent.parent.parent.parent / "shared"
+if str(shared_path) not in sys.path:
+    sys.path.insert(0, str(shared_path))
+
+from types import JSONDict
 
 logger = logging.getLogger(__name__)
+
+
+class VaultHttpClient(Protocol):
+    """Protocol for Vault HTTP client."""
+
+    async def request(self, method: str, path: str, data: Optional[JSONDict] = None) -> JSONDict:
+        """Make HTTP request to Vault API."""
+        ...
 
 
 class VaultTransitOperations:
@@ -22,7 +39,7 @@ class VaultTransitOperations:
     using the Vault Transit secrets engine.
     """
 
-    def __init__(self, http_client: Any, transit_mount: str = "transit"):
+    def __init__(self, http_client: VaultHttpClient, transit_mount: str = "transit"):
         """
         Initialize Transit operations.
 
@@ -228,7 +245,7 @@ class VaultTransitOperations:
 
         return public_key
 
-    async def get_key_info(self, key_name: str) -> Dict[str, Any]:
+    async def get_key_info(self, key_name: str) -> JSONDict:
         """
         Get key info from Transit engine.
 
