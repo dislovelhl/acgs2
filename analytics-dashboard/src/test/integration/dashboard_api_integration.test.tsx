@@ -19,10 +19,10 @@ import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import { server } from "../mocks/server";
 import App from "../../App";
+import { API_BASE_URL } from "../../lib";
 
 // localStorage key for layout persistence
 const LAYOUT_STORAGE_KEY = "acgs-analytics-dashboard-layout";
-const API_BASE_URL = "http://localhost:8080";
 
 // Mock recharts components for testing
 vi.mock("recharts", async () => {

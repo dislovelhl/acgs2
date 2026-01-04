@@ -17,8 +17,7 @@ import { http, HttpResponse } from "msw";
 import { server } from "../../../test/mocks/server";
 import { errorHandlers } from "../../../test/mocks/handlers";
 import { PredictionWidget } from "../PredictionWidget";
-
-const API_BASE_URL = "http://localhost:8080";
+import { API_BASE_URL } from "../../../lib";
 
 // Mock visx-based chart components to avoid rendering issues in tests
 vi.mock("../charts", () => ({

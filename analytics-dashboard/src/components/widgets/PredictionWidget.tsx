@@ -26,6 +26,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { LoadingState, API_BASE_URL } from "../../lib";
 
 /** Prediction point data structure from the API */
 interface PredictionPoint {
@@ -67,13 +68,6 @@ interface ChartDataPoint {
   upper: number;
   confidenceRange: [number, number];
 }
-
-/** Widget loading state */
-type LoadingState = "idle" | "loading" | "success" | "error";
-
-/** API URL from environment */
-const API_BASE_URL =
-  import.meta.env.VITE_ANALYTICS_API_URL || "http://localhost:8080";
 
 /**
  * Gets the trend direction icon based on trend direction

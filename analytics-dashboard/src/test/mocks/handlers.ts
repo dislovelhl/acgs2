@@ -6,8 +6,7 @@
  */
 
 import { http, HttpResponse } from "msw";
-
-const API_BASE_URL = "http://localhost:8080";
+import { API_BASE_URL } from "../../lib";
 
 /** Sample insight data */
 const mockInsightData = {

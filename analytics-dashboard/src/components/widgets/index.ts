@@ -4,9 +4,7 @@
  * Exports all widget components for the analytics dashboard
  */
 
-export { InsightWidget } from "./InsightWidget";
+export { AnomalyWidget } from "./AnomalyWidget";
 export { ComplianceWidget } from "./ComplianceWidget";
-
-// Additional widgets will be added as they are implemented:
-// export { AnomalyWidget } from "./AnomalyWidget";
-// export { PredictionWidget } from "./PredictionWidget";
+export { InsightWidget } from "./InsightWidget";
+export { PredictionWidget } from "./PredictionWidget";
