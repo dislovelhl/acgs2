@@ -1,10 +1,10 @@
 {
   "active": true,
-  "spec": "033-add-useanomalies-hook-to-analytics-dashboard",
+  "spec": "037-add-batch-event-processing-to-baseintegration",
   "state": "building",
   "subtasks": {
-    "completed": 0,
-    "total": 0,
+    "completed": 19,
+    "total": 20,
     "in_progress": 1,
     "failed": 0
   },
@@ -18,8 +18,8 @@
     "max": 1
   },
   "session": {
-    "number": 34,
-    "started_at": "2026-01-03T17:24:04.274620"
+    "number": 1,
+    "started_at": "2026-01-04T00:39:57.758124"
   },
-  "last_update": "2026-01-03T18:14:23.261674"
+  "last_update": "2026-01-04T00:39:57.761169"
 }
