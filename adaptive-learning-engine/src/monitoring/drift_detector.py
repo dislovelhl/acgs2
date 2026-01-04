@@ -399,10 +399,127 @@ class DriftDetector:
                 Safety threshold to prevent statistical tests from running on
                 insufficient data, which would yield unreliable results.
 
-                This is a conservative minimum; actual statistical validity requires
-                larger samples as documented above for reference_window_size and
-                current_window_size. Think of this as a "fail-fast" guard rather
-                than a guarantee of statistical rigor.
+                WHY min_samples_for_drift=10?
+                =============================
+                This is a "fail-fast" guard for cold start and low-traffic scenarios.
+                It prevents drift checks from running when there's clearly insufficient
+                data, but it does NOT guarantee statistical validity.
+
+                Relationship to statistical test requirements:
+                ----------------------------------------------
+                - K-S test: Needs 30-50 samples minimum (Central Limit Theorem)
+                - PSI test: Needs 5-10 per category (e.g., 50-100 for 10 categories)
+                - Chi-squared: Needs 5 per expected category minimum
+
+                So why allow checks with only 10 samples?
+                - Cold start scenario: System just started, waiting for 100+ samples
+                  would delay initial drift monitoring too long
+                - Low-traffic periods: Better to get a noisy signal than no signal
+                - Layered defense: This is the absolute minimum; the recommended
+                  window sizes (reference=1000, current=100) provide the real
+                  statistical rigor
+                - Graceful degradation: Return INSUFFICIENT_DATA status rather than
+                  throwing errors or blocking the system
+
+                STATISTICAL VALIDITY HIERARCHY
+                ==============================
+                Think of sample requirements as a three-tier system:
+
+                Tier 1: min_samples_for_drift (10)
+                  → "Survival threshold" - absolute minimum to attempt a check
+                  → Prevents crashes/errors from tests on nearly empty data
+                  → Returns INSUFFICIENT_DATA if not met
+                  → Not statistically rigorous
+
+                Tier 2: Recommended minimums (30-100)
+                  → Theoretical minimum for statistical tests to be valid
+                  → K-S: 30-50 samples per dataset
+                  → PSI/Chi-squared: depends on # categories (50-100 typical)
+                  → Tests may run but have low statistical power
+
+                Tier 3: Production recommended (100-1000+)
+                  → Default window sizes provide this
+                  → High statistical power to detect meaningful drift
+                  → Low false positive/negative rates
+                  → Robust to outliers and noise
+
+                PRACTICAL IMPLICATIONS
+                ======================
+                In practice, drift checks will rarely operate at Tier 1 (10 samples):
+
+                - Normal operation: reference=1000, current=100 (Tier 3)
+                  → Full statistical validity, high confidence in results
+
+                - Degraded operation: reference=50, current=15 (Tier 2)
+                  → Tests run but results are noisy, use with caution
+                  → May see in low-traffic periods or after system restart
+
+                - Failure mode: reference=8, current=7 (below Tier 1)
+                  → Drift check skipped entirely (INSUFFICIENT_DATA status)
+                  → System logs a warning but continues operating
+                  → Waits for more data accumulation
+
+                COMPARISON TO WINDOW SIZE RECOMMENDATIONS
+                ==========================================
+                The default window sizes (reference=1000, current=100) far exceed
+                min_samples_for_drift=10, ensuring all drift checks in normal
+                operation have sufficient statistical power:
+
+                - reference_window_size=1000 ≫ min_samples_for_drift=10
+                  → Reference always has high statistical validity
+
+                - current_window_size=100 ≫ min_samples_for_drift=10
+                  → Current window meets all statistical test requirements
+
+                - 10:1 ratio maintained even at minimum (100:10)
+                  → Asymmetric comparison preserved for stability
+
+                COLD START BEHAVIOR
+                ===================
+                During system initialization:
+
+                1. First 0-9 samples collected:
+                   - Status: INSUFFICIENT_DATA
+                   - No drift checks attempted
+                   - System accumulates baseline data
+
+                2. First 10-99 samples collected:
+                   - Status: Drift checks begin (if both windows have ≥10)
+                   - Statistical power: LOW (high noise, use with caution)
+                   - Purpose: Early warning system, not definitive
+
+                3. First 100+ samples collected:
+                   - Status: Normal operation begins
+                   - current_window fills up (if high traffic)
+                   - Statistical power: MODERATE to HIGH
+
+                4. First 1000+ samples collected:
+                   - Status: Full statistical validity achieved
+                   - reference_window fills up
+                   - Statistical power: HIGH (production-grade)
+
+                TUNING GUIDANCE
+                ===============
+                When to adjust min_samples_for_drift:
+
+                - Keep at 10 (default): For most applications
+                  → Balances early detection vs. statistical validity
+                  → Works well with default window sizes
+
+                - Increase to 30-50: For safety-critical applications
+                  → Ensures K-S test minimum is always met
+                  → Prevents any checks below theoretical minimums
+                  → Delays cold start monitoring by ~3-5x
+
+                - Decrease to 5: For extremely low-traffic applications
+                  → Accepts higher noise for faster cold start
+                  → Only if you understand the statistical risks
+                  → Not recommended for production
+
+                - Coordinate with window sizes:
+                  → min_samples_for_drift ≤ current_window_size ≤ reference_window_size
+                  → Violation of this ordering breaks the tier system
+                  → Example: Don't set min=100 with current=50 (illogical)
             check_interval_seconds: Interval between automatic checks.
             drift_share_threshold: Dataset-level drift threshold (default 0.5).
                 This threshold determines when the entire dataset is considered
