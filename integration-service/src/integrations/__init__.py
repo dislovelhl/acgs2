@@ -9,6 +9,7 @@ and CI/CD pipelines (GitHub Actions, GitLab CI).
 from .base import (
     AuthenticationError,
     BaseIntegration,
+    BatchIntegrationResult,
     DeliveryError,
     EventSeverity,
     IntegrationConnectionError,
@@ -50,6 +51,7 @@ __all__ = [
     # Base classes and models
     "AuthenticationError",
     "BaseIntegration",
+    "BatchIntegrationResult",
     "DeliveryError",
     "EventSeverity",
     "IntegrationConnectionError",

@@ -613,7 +613,12 @@ class TestSplunkBatchSubmission:
 
         assert len(results) == 5
         assert all(r.success for r in results)
+        # Verify event metrics
         assert splunk_adapter._events_sent == 5
+        # Verify batch-specific metrics
+        assert splunk_adapter._batches_sent == 1
+        assert splunk_adapter._batch_events_total == 5
+        assert splunk_adapter._batches_failed == 0
 
     @pytest.mark.asyncio
     async def test_batch_submission_requires_auth(
@@ -664,7 +669,165 @@ class TestSplunkBatchSubmission:
 
         assert len(results) == 3
         assert all(not r.success for r in results)
+        # Verify event metrics
         assert splunk_adapter._events_failed == 3
+        # Verify batch-specific metrics
+        assert splunk_adapter._batches_failed == 1
+        assert splunk_adapter._batches_sent == 0
+        assert splunk_adapter._batch_events_total == 0
+
+    @pytest.mark.asyncio
+    async def test_batch_submission_rate_limited(
+        self,
+        splunk_adapter: SplunkAdapter,
+        sample_event: IntegrationEvent,
+    ):
+        """Test batch submission handles rate limiting."""
+        splunk_adapter._authenticated = True
+        splunk_adapter._status = IntegrationStatus.ACTIVE
+
+        events = [sample_event for _ in range(3)]
+
+        mock_response = MagicMock(spec=httpx.Response)
+        mock_response.status_code = 429
+        mock_response.headers = {"Retry-After": "60"}
+
+        with patch.object(splunk_adapter, "get_http_client") as mock_client:
+
+            async def async_post(*args, **kwargs):
+                return mock_response
+
+            mock_client.return_value.post = async_post
+
+            with pytest.raises(RateLimitError) as exc_info:
+                await splunk_adapter.send_events_batch(events)
+
+            assert exc_info.value.retry_after == 60
+
+    @pytest.mark.asyncio
+    async def test_batch_metrics_accumulation(
+        self,
+        splunk_adapter: SplunkAdapter,
+        sample_event: IntegrationEvent,
+    ):
+        """Test that batch metrics accumulate across multiple batches."""
+        splunk_adapter._authenticated = True
+        splunk_adapter._status = IntegrationStatus.ACTIVE
+
+        mock_response = MagicMock(spec=httpx.Response)
+        mock_response.status_code = 200
+        mock_response.json.return_value = {"code": 0, "text": "Success"}
+
+        with patch.object(splunk_adapter, "get_http_client") as mock_client:
+
+            async def async_post(*args, **kwargs):
+                return mock_response
+
+            mock_client.return_value.post = async_post
+
+            # Send first batch of 3 events
+            await splunk_adapter.send_events_batch([sample_event for _ in range(3)])
+
+            # Send second batch of 5 events
+            await splunk_adapter.send_events_batch([sample_event for _ in range(5)])
+
+        # Verify accumulated metrics
+        assert splunk_adapter._batches_sent == 2
+        assert splunk_adapter._events_sent == 8
+        assert splunk_adapter._batch_events_total == 8
+        assert splunk_adapter._batches_failed == 0
+
+    @pytest.mark.asyncio
+    async def test_batch_submission_index_error(
+        self,
+        splunk_adapter: SplunkAdapter,
+        sample_event: IntegrationEvent,
+    ):
+        """Test batch submission handles index not found error."""
+        splunk_adapter._authenticated = True
+        splunk_adapter._status = IntegrationStatus.ACTIVE
+
+        events = [sample_event for _ in range(2)]
+
+        mock_response = MagicMock(spec=httpx.Response)
+        mock_response.status_code = 400
+        mock_response.json.return_value = {"code": 7, "text": "Index does not exist"}
+
+        with patch.object(splunk_adapter, "get_http_client") as mock_client:
+
+            async def async_post(*args, **kwargs):
+                return mock_response
+
+            mock_client.return_value.post = async_post
+
+            with pytest.raises(DeliveryError, match="not found"):
+                await splunk_adapter.send_events_batch(events)
+
+    @pytest.mark.asyncio
+    async def test_batch_submission_network_error_retry(
+        self,
+        splunk_adapter: SplunkAdapter,
+        sample_event: IntegrationEvent,
+    ):
+        """Test batch submission retries on network errors."""
+        splunk_adapter._authenticated = True
+        splunk_adapter._status = IntegrationStatus.ACTIVE
+
+        events = [sample_event for _ in range(2)]
+
+        # First two calls fail with network error, third succeeds
+        call_count = 0
+
+        async def async_post_with_retry(*args, **kwargs):
+            nonlocal call_count
+            call_count += 1
+            if call_count < 3:
+                raise httpx.NetworkError("Connection failed")
+            mock_response = MagicMock(spec=httpx.Response)
+            mock_response.status_code = 200
+            mock_response.json.return_value = {"code": 0, "text": "Success"}
+            return mock_response
+
+        with patch.object(splunk_adapter, "get_http_client") as mock_client:
+            mock_client.return_value.post = async_post_with_retry
+
+            results = await splunk_adapter.send_events_batch(events)
+
+        assert len(results) == 2
+        assert all(r.success for r in results)
+        assert call_count == 3  # Verify retry happened
+        assert splunk_adapter._batches_sent == 1
+
+    @pytest.mark.asyncio
+    async def test_batch_submission_external_id(
+        self,
+        splunk_adapter: SplunkAdapter,
+        sample_event: IntegrationEvent,
+    ):
+        """Test batch submission sets external_id correctly in results."""
+        splunk_adapter._authenticated = True
+        splunk_adapter._status = IntegrationStatus.ACTIVE
+
+        events = [sample_event for _ in range(3)]
+
+        mock_response = MagicMock(spec=httpx.Response)
+        mock_response.status_code = 200
+        mock_response.json.return_value = {"code": 0, "text": "Success"}
+
+        with patch.object(splunk_adapter, "get_http_client") as mock_client:
+
+            async def async_post(*args, **kwargs):
+                return mock_response
+
+            mock_client.return_value.post = async_post
+
+            results = await splunk_adapter.send_events_batch(events)
+
+        # Verify each result has external_id set to event_id
+        assert len(results) == 3
+        for event, result in zip(events, results, strict=True):
+            assert result.success is True
+            assert result.external_id == event.event_id
 
 
 # ============================================================================

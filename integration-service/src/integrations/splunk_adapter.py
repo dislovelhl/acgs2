@@ -6,11 +6,24 @@ for real-time governance event ingestion.
 
 Features:
 - HEC token authentication
-- Event batching for performance
+- High-performance batch event processing (newline-delimited JSON)
+- Single event and batch API support
 - Automatic event formatting for Splunk
 - Index validation
-- Rate limit handling
+- Rate limit handling with Retry-After support
 - SSL certificate verification options
+- Configurable batch size (default 100, max 1000 events per batch)
+
+Batch Processing:
+This adapter implements native batch processing using Splunk HEC's newline-delimited
+JSON format. Batches are sent as a single HTTP request, reducing API overhead and
+improving throughput for high-volume event ingestion. Use send_events_batch() for
+optimal performance when sending multiple events.
+
+Performance:
+- Batch processing can reduce API calls by up to 100x (for batch_size=100)
+- All-or-nothing batch semantics: entire batch succeeds or fails together
+- Automatic retry with exponential backoff for transient failures
 """
 
 import json
@@ -148,10 +161,11 @@ class SplunkAdapter(BaseIntegration):
     Splunk SIEM integration adapter using HTTP Event Collector (HEC).
 
     This adapter sends governance events to Splunk via the HEC endpoint,
-    supporting both single event submission and batch processing for
-    improved performance.
+    supporting both single event submission and high-performance batch processing.
+    Implements native Splunk HEC batch format (newline-delimited JSON) for
+    optimal throughput.
 
-    Usage:
+    Single Event Usage:
         credentials = SplunkCredentials(
             integration_name="Production Splunk",
             hec_url="https://splunk.example.com:8088",
@@ -162,12 +176,36 @@ class SplunkAdapter(BaseIntegration):
         await adapter.authenticate()
         result = await adapter.send_event(event)
 
+    Batch Processing Usage:
+        # Send multiple events in a single API call
+        events = [event1, event2, event3]
+        results = await adapter.send_events_batch(events)
+
+        # Check batch metrics
+        metrics = adapter.metrics
+        print(f"Batches sent: {metrics['batches_sent']}")
+        print(f"Events via batch: {metrics['batch_events_total']}")
+
     Features:
-        - Automatic event batching
-        - Rate limit handling with backoff
+        - Native HEC batch processing (newline-delimited JSON format)
+        - All-or-nothing batch semantics for data consistency
+        - Rate limit handling with Retry-After header support
         - Index existence validation
         - SSL certificate verification
-        - Detailed error reporting
+        - Comprehensive error reporting with Splunk-specific error codes
+        - Configurable batch size (default 100, max 1000)
+        - Automatic retry with exponential backoff
+
+    Batch Performance:
+        - Reduces API calls by batch_size factor (e.g., 100x for batch_size=100)
+        - Lower latency for high-volume event ingestion
+        - Maintains event order within batches
+        - Single authentication check per batch (vs per-event)
+
+    Note:
+        This adapter overrides _do_send_events_batch() to provide native Splunk
+        HEC batch support. The base class handles authentication, retry logic,
+        and metrics tracking.
     """
 
     # Splunk-specific constants
@@ -641,33 +679,61 @@ class SplunkAdapter(BaseIntegration):
 
         return splunk_payload
 
-    async def send_events_batch(
+    async def _do_send_events_batch(
         self,
         events: List[IntegrationEvent],
     ) -> List[IntegrationResult]:
         """
-        Send multiple events to Splunk in a batch.
+        Send multiple events to Splunk in a batch using HEC.
 
-        Optimizes delivery by sending multiple events in a single HEC request,
-        reducing network overhead and improving throughput.
+        Implements Splunk-specific batch delivery using newline-delimited JSON
+        format for the HEC endpoint. This is the recommended way to send multiple
+        events for optimal performance.
+
+        Batch Format:
+            Events are formatted as newline-delimited JSON objects, which is the
+            native batch format supported by Splunk HEC:
+            {"event": {...}, "time": 123, ...}
+            {"event": {...}, "time": 124, ...}
+            {"event": {...}, "time": 125, ...}
+
+        Batch Semantics:
+            All-or-nothing: If Splunk accepts the batch (HTTP 200 + code 0),
+            all events are considered successful. If the batch fails, all events
+            are marked as failed. There is no partial success in Splunk HEC batch
+            processing.
+
+        Performance:
+            - Sends all events in a single HTTP POST request
+            - Reduces authentication overhead (one token check vs N checks)
+            - Significantly lower latency for multiple events
+            - No rate limit advantage, but better throughput
 
         Args:
-            events: List of governance events to send
+            events: List of governance events to send (recommended: 10-100 events)
 
         Returns:
-            List of IntegrationResults for each event
+            List of IntegrationResults, one per event. All will have same success
+            status due to all-or-nothing semantics.
 
         Raises:
-            AuthenticationError: If not authenticated
-            DeliveryError: If batch delivery fails
-        """
-        if not self._authenticated:
-            raise AuthenticationError("Integration is not authenticated", self.name)
+            RateLimitError: If rate limited by Splunk (HTTP 429)
+            DeliveryError: If batch delivery fails (invalid data, permissions, etc.)
+            AuthenticationError: If HEC token is invalid (HTTP 401)
 
+        Note:
+            This method is called by BaseIntegration.send_events_batch() which
+            handles authentication checks, retry logic, and metrics tracking.
+            Do not call this method directly.
+
+        See Also:
+            - BaseIntegration.send_events_batch() - Public batch API
+            - BaseIntegration._do_send_events_batch() - Default implementation
+        """
         if not events:
             return []
 
-        logger.debug(f"Sending batch of {len(events)} events to Splunk")
+        logger.debug(f"Sending batch of {len(events)} events to Splunk HEC")
 
         try:
             client = await self.get_http_client()
@@ -695,11 +761,19 @@ class SplunkAdapter(BaseIntegration):
             except json.JSONDecodeError:
                 pass
 
+            # Handle rate limiting
+            if response.status_code == 429:
+                retry_after = int(response.headers.get("Retry-After", 60))
+                raise RateLimitError(
+                    "Splunk HEC rate limit exceeded",
+                    self.name,
+                    retry_after=retry_after,
+                )
+
+            # Handle success
             if response.status_code == 200 and response_data.get("code") == 0:
                 # All events succeeded
-                self._events_sent += len(events)
-                self._last_success = datetime.now(timezone.utc)
-
+                logger.debug(f"Batch of {len(events)} events sent to Splunk successfully")
                 return [
                     IntegrationResult(
                         success=True,
@@ -709,38 +783,89 @@ class SplunkAdapter(BaseIntegration):
                     )
                     for event in events
                 ]
-            else:
-                # Batch failed - return failures for all events
-                error_msg = response_data.get("text", "Batch delivery failed")
-                self._events_failed += len(events)
-                self._last_failure = datetime.now(timezone.utc)
 
-                return [
-                    IntegrationResult(
-                        success=False,
-                        integration_name=self.name,
-                        operation="send_event",
-                        error_code="BATCH_FAILED",
-                        error_message=error_msg,
+            # Handle errors
+            error_msg = response_data.get("text", "Batch delivery failed")
+            error_code = response_data.get("code", 0)
+
+            if response.status_code == 400:
+                if error_code == 7:
+                    raise DeliveryError(
+                        f"Index '{self.splunk_credentials.index}' not found",
+                        self.name,
+                        details={"splunk_code": error_code},
                     )
-                    for _ in events
-                ]
+                elif error_code == 6:
+                    raise DeliveryError(
+                        "Invalid event data format",
+                        self.name,
+                        details={"splunk_code": error_code},
+                    )
+                else:
+                    raise DeliveryError(
+                        f"HEC error: {error_msg}",
+                        self.name,
+                        details={"splunk_code": error_code, "text": error_msg},
+                    )
 
-        except Exception as e:
-            # Return failures for all events
-            self._events_failed += len(events)
-            self._last_failure = datetime.now(timezone.utc)
+            elif response.status_code == 401:
+                raise AuthenticationError(
+                    "HEC token authentication failed",
+                    self.name,
+                )
 
+            elif response.status_code == 403:
+                raise DeliveryError(
+                    "HEC token lacks write permission",
+                    self.name,
+                    details={"status_code": 403},
+                )
+
+            elif response.status_code == 503:
+                raise DeliveryError(
+                    "Splunk HEC is temporarily unavailable",
+                    self.name,
+                    details={"status_code": 503, "should_retry": True},
+                )
+
+            # Generic error case
+            logger.warning(
+                f"Splunk batch delivery failed with status {response.status_code}: {error_msg}"
+            )
             return [
                 IntegrationResult(
                     success=False,
                     integration_name=self.name,
                     operation="send_event",
-                    error_code="BATCH_ERROR",
-                    error_message=str(e),
+                    error_code="BATCH_FAILED",
+                    error_message=error_msg,
                 )
                 for _ in events
             ]
+
+        except (RateLimitError, AuthenticationError, DeliveryError):
+            # Re-raise these specific exceptions for retry logic
+            raise
+
+        except httpx.TimeoutException as e:
+            raise DeliveryError(
+                f"Request timed out: {str(e)}",
+                self.name,
+                details={"should_retry": True},
+            ) from e
+
+        except httpx.NetworkError as e:
+            raise DeliveryError(
+                f"Network error: {str(e)}",
+                self.name,
+                details={"should_retry": True},
+            ) from e
+
+        except Exception as e:
+            raise DeliveryError(
+                f"Unexpected error during batch delivery: {str(e)}",
+                self.name,
+            ) from e
 
     async def _do_test_connection(self) -> IntegrationResult:
         """
