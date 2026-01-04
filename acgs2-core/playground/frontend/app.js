@@ -93,6 +93,26 @@
                 e.preventDefault();
                 handleValidate();
             }
+            // Escape to clear focused editor and results
+            if (e.key === 'Escape') {
+                const activeElement = document.activeElement;
+
+                if (activeElement === elements.policyEditor) {
+                    e.preventDefault();
+                    elements.policyEditor.value = '';
+                    elements.resultsContainer.innerHTML = '';
+                    elements.explanationContainer.innerHTML = '';
+                    elements.resultStatus.innerHTML = '';
+                    updateStatus('Policy cleared');
+                } else if (activeElement === elements.inputEditor) {
+                    e.preventDefault();
+                    elements.inputEditor.value = '';
+                    elements.resultsContainer.innerHTML = '';
+                    elements.explanationContainer.innerHTML = '';
+                    elements.resultStatus.innerHTML = '';
+                    updateStatus('Input cleared');
+                }
+            }
         });
 
         // Tab support in editors
