@@ -341,15 +341,28 @@ export function DashboardGrid(): JSX.Element {
               )}
             </button>
           </Tooltip>
-          <button
-            onClick={handleResetLayout}
-            className="flex items-center gap-1.5 rounded-md bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-200"
-            title="Reset to default layout"
-            aria-label="Reset to default layout"
+          <Tooltip
+            content={
+              <div className="max-w-xs">
+                <strong>Reset Layout</strong>
+                <p className="mt-1 text-xs">
+                  Restore all widgets to their default positions and sizes.
+                  Custom arrangements will be lost.
+                </p>
+              </div>
+            }
+            position="bottom"
           >
-            <RotateCcw className="h-4 w-4" />
-            Reset Layout
-          </button>
+            <button
+              onClick={handleResetLayout}
+              className="flex items-center gap-1.5 rounded-md bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-200"
+              title="Reset to default layout"
+              aria-label="Reset to default layout"
+            >
+              <RotateCcw className="h-4 w-4" />
+              Reset Layout
+            </button>
+          </Tooltip>
         </div>
       </div>
 
