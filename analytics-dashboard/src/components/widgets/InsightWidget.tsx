@@ -180,7 +180,7 @@ export const InsightWidget = memo(function InsightWidget(): JSX.Element {
           </div>
           <button
             onClick={handleRefresh}
-            className="rounded p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+            className="rounded p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
             title="Retry"
             aria-label="Retry loading insights"
           >
@@ -192,7 +192,7 @@ export const InsightWidget = memo(function InsightWidget(): JSX.Element {
           <p className="mt-2 text-center text-sm text-red-600">{error}</p>
           <button
             onClick={handleRefresh}
-            className="mt-4 rounded-md bg-red-50 px-4 py-2 text-sm font-medium text-red-700 transition-colors hover:bg-red-100"
+            className="mt-4 rounded-md bg-red-50 px-4 py-2 text-sm font-medium text-red-700 transition-colors hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
           >
             Try Again
           </button>
@@ -223,7 +223,7 @@ export const InsightWidget = memo(function InsightWidget(): JSX.Element {
           <button
             onClick={handleRefresh}
             disabled={loadingState === "loading"}
-            className="rounded p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
             title="Refresh insights"
             aria-label="Refresh insights"
           >
