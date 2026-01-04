@@ -22,6 +22,7 @@ import { InsightWidget } from "../components/widgets/InsightWidget";
 import { AnomalyWidget } from "../components/widgets/AnomalyWidget";
 import { PredictionWidget } from "../components/widgets/PredictionWidget";
 import { ComplianceWidget } from "../components/widgets/ComplianceWidget";
+import { Tooltip } from "../components/common/Tooltip";
 
 // Create responsive grid layout component
 const ResponsiveGridLayout = WidthProvider(Responsive);
@@ -295,28 +296,51 @@ export function DashboardGrid(): JSX.Element {
           <span>Drag widgets to rearrange</span>
         </div>
         <div className="flex items-center gap-2">
-          <button
-            onClick={handleToggleLock}
-            className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-              isLocked
-                ? "bg-yellow-100 text-yellow-700 hover:bg-yellow-200"
-                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-            }`}
-            title={isLocked ? "Unlock layout" : "Lock layout"}
-            aria-label={isLocked ? "Unlock layout" : "Lock layout"}
+          <Tooltip
+            content={
+              isLocked ? (
+                <div className="max-w-xs">
+                  <strong>Layout Locked</strong>
+                  <p className="mt-1 text-xs">
+                    Widgets cannot be moved or resized. Click to unlock and
+                    enable rearranging.
+                  </p>
+                </div>
+              ) : (
+                <div className="max-w-xs">
+                  <strong>Layout Unlocked</strong>
+                  <p className="mt-1 text-xs">
+                    Widgets can be freely rearranged and resized. Click to lock
+                    and prevent changes.
+                  </p>
+                </div>
+              )
+            }
+            position="bottom"
           >
-            {isLocked ? (
-              <>
-                <Lock className="h-4 w-4" />
-                Locked
-              </>
-            ) : (
-              <>
-                <Unlock className="h-4 w-4" />
-                Unlocked
-              </>
-            )}
-          </button>
+            <button
+              onClick={handleToggleLock}
+              className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                isLocked
+                  ? "bg-yellow-100 text-yellow-700 hover:bg-yellow-200"
+                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              }`}
+              title={isLocked ? "Unlock layout" : "Lock layout"}
+              aria-label={isLocked ? "Unlock layout" : "Lock layout"}
+            >
+              {isLocked ? (
+                <>
+                  <Lock className="h-4 w-4" />
+                  Locked
+                </>
+              ) : (
+                <>
+                  <Unlock className="h-4 w-4" />
+                  Unlocked
+                </>
+              )}
+            </button>
+          </Tooltip>
           <button
             onClick={handleResetLayout}
             className="flex items-center gap-1.5 rounded-md bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-200"
