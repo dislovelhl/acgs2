@@ -13,9 +13,10 @@ import json
 import logging
 import re
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Dict, List, Optional, Union
 
 import httpx
+from acgs2_core.shared.types import JSONDict, JSONValue, KwargsType, PolicyData
 
 from app.config import settings
 
@@ -90,7 +91,7 @@ class OPAClient:
         self.fail_closed = fail_closed
 
         self._http_client: Optional[httpx.AsyncClient] = None
-        self._memory_cache: Dict[str, Dict[str, Any]] = {}
+        self._memory_cache: Dict[str, JSONDict] = {}
         self._initialized = False
 
         logger.info(f"OPAClient configured with URL: {self._sanitize_url(self.opa_url)}")
@@ -136,13 +137,13 @@ class OPAClient:
             return match.group(1)
         return "<url>"
 
-    def _generate_cache_key(self, policy_path: str, input_data: Dict[str, Any]) -> str:
+    def _generate_cache_key(self, policy_path: str, input_data: JSONDict) -> str:
         """Generate cache key from policy path and input data."""
         input_str = json.dumps(input_data, sort_keys=True)
         input_hash = hashlib.sha256(input_str.encode()).hexdigest()[:16]
         return f"opa:{policy_path}:{input_hash}"
 
-    def _get_from_cache(self, cache_key: str) -> Optional[Dict[str, Any]]:
+    def _get_from_cache(self, cache_key: str) -> Optional[JSONDict]:
         """Get result from memory cache."""
         if not self.enable_cache:
             return None
@@ -157,7 +158,7 @@ class OPAClient:
 
         return None
 
-    def _set_to_cache(self, cache_key: str, result: Dict[str, Any]) -> None:
+    def _set_to_cache(self, cache_key: str, result: JSONDict) -> None:
         """Set result in memory cache."""
         if not self.enable_cache:
             return
@@ -182,7 +183,7 @@ class OPAClient:
         if ".." in policy_path:
             raise ValueError(f"Path traversal detected in policy path: {policy_path}")
 
-    def _validate_input_data(self, input_data: Dict[str, Any]) -> None:
+    def _validate_input_data(self, input_data: JSONDict) -> None:
         """
         Validate input data size and structure.
 
@@ -206,8 +207,8 @@ class OPAClient:
         return error_msg
 
     async def evaluate_policy(
-        self, input_data: Dict[str, Any], policy_path: str = "data.hitl.routing.allow"
-    ) -> Dict[str, Any]:
+        self, input_data: JSONDict, policy_path: str = "data.hitl.routing.allow"
+    ) -> PolicyData:
         """
         Evaluate a policy against input data.
 
@@ -275,7 +276,9 @@ class OPAClient:
             logger.error(f"Policy evaluation error: {sanitized_error}")
             return self._handle_unavailable(policy_path, sanitized_error)
 
-    def _process_opa_result(self, opa_result: Any, policy_path: str) -> Dict[str, Any]:
+    def _process_opa_result(
+        self, opa_result: Union[bool, JSONDict, JSONValue, None], policy_path: str
+    ) -> PolicyData:
         """Process OPA result into standard format."""
         if opa_result is None:
             return {
@@ -312,7 +315,7 @@ class OPAClient:
             "metadata": {"policy_path": policy_path},
         }
 
-    def _handle_unavailable(self, policy_path: str, error: str) -> Dict[str, Any]:
+    def _handle_unavailable(self, policy_path: str, error: str) -> PolicyData:
         """
         Handle OPA unavailability with fail-closed behavior.
 
@@ -352,8 +355,8 @@ class OPAClient:
         decision_type: str,
         user_role: str,
         impact_level: str = "medium",
-        context: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        context: Optional[JSONDict] = None,
+    ) -> PolicyData:
         """
         Evaluate routing policy to determine approval chain.
 
@@ -393,7 +396,7 @@ class OPAClient:
         user_role: str,
         action: str,
         resource: str,
-        context: Optional[Dict[str, Any]] = None,
+        context: Optional[JSONDict] = None,
     ) -> bool:
         """
         Check if user is authorized to perform action on resource.
@@ -426,8 +429,8 @@ class OPAClient:
         current_level: int,
         escalation_count: int,
         priority: str,
-        context: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        context: Optional[JSONDict] = None,
+    ) -> PolicyData:
         """
         Evaluate escalation policy for a request.
 
@@ -504,7 +507,7 @@ class OPAClient:
     # Health Check and Status
     # =========================================================================
 
-    async def health_check(self) -> Dict[str, Any]:
+    async def health_check(self) -> JSONDict:
         """
         Check OPA service health.
 
@@ -535,7 +538,7 @@ class OPAClient:
                 "fail_closed": self.fail_closed,
             }
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> JSONDict:
         """Get client statistics."""
         return {
             "opa_url": self._sanitize_url(self.opa_url),
@@ -566,7 +569,7 @@ def get_opa_client() -> OPAClient:
 async def initialize_opa_client(
     opa_url: Optional[str] = None,
     timeout: float = 5.0,
-    **kwargs: Any,
+    **kwargs: KwargsType,
 ) -> OPAClient:
     """
     Initialize the global OPA client.

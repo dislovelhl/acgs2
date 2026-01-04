@@ -11,10 +11,16 @@ import random
 from dataclasses import dataclass, field
 from datetime import datetime
 from functools import wraps
-from typing import Any, Awaitable, Callable, Dict, List, Optional, TypeVar
+from typing import TYPE_CHECKING, Awaitable, Callable, Dict, List, Optional, TypeVar
+
+from acgs2_core.shared.types import ArgsType, JSONDict, KwargsType
 
 from app.models import NotificationPayload
 from app.notifications.base import NotificationResult, NotificationStatus
+
+# Avoid circular import by using TYPE_CHECKING
+if TYPE_CHECKING:
+    from app.notifications.base import NotificationProvider
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +56,7 @@ class FailedNotification:
     last_attempt_at: datetime
     results: List[NotificationResult] = field(default_factory=list)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> JSONDict:
         """Convert to dictionary for persistence."""
         return {
             "payload": self.payload.model_dump(),
@@ -357,10 +363,10 @@ def with_retry(
     ) -> Callable[..., Awaitable[NotificationResult]]:
         @wraps(func)
         async def wrapper(
-            self: Any,
+            self: "NotificationProvider",
             payload: NotificationPayload,
-            *args: Any,
-            **kwargs: Any,
+            *args: ArgsType,
+            **kwargs: KwargsType,
         ) -> NotificationResult:
             provider_name = getattr(self, "name", self.__class__.__name__)
 
@@ -405,7 +411,7 @@ class RetryableNotificationSender:
 
     async def send(
         self,
-        provider: Any,  # NotificationProvider, but avoiding circular import
+        provider: "NotificationProvider",
         payload: NotificationPayload,
     ) -> NotificationResult:
         """
@@ -428,7 +434,7 @@ class RetryableNotificationSender:
 
     async def send_to_multiple(
         self,
-        providers: List[Any],
+        providers: List["NotificationProvider"],
         payload: NotificationPayload,
     ) -> Dict[str, NotificationResult]:
         """
