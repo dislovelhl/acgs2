@@ -2,9 +2,9 @@
   "feature": "Create end-to-end governance workflow examples with working code",
   "description": "Create comprehensive examples demonstrating complete governance workflows from policy creation through enforcement to audit logging, targeting Enterprise DevOps/MLOps engineers deploying AI systems. The examples will show: defining constitutional policies, enforcing them on agent actions, handling HITL approvals, and auditing decisions.",
   "created_at": "2026-01-03T21:27:54.052Z",
-  "updated_at": "2026-01-03T21:27:54.052Z",
+  "updated_at": "2026-01-04T05:39:33.225Z",
   "status": "in_progress",
-  "planStatus": "complete",
+  "planStatus": "in_progress",
   "phases": [
     {
       "phase_id": "phase_1",
@@ -36,7 +36,9 @@
           "title": "Design end-to-end governance workflow architecture",
           "description": "Design a comprehensive example that demonstrates: policy creation, enforcement, HITL approvals, and audit logging in a realistic AI agent deployment scenario",
           "status": "completed",
-          "dependencies": ["1.1"],
+          "dependencies": [
+            "1.1"
+          ],
           "files": [
             "./.auto-claude/specs/061-create-end-to-end-governance-workflow-examples-wit/architecture-design.md"
           ],
@@ -54,7 +56,9 @@
           "title": "Define example scope and components",
           "description": "Define the specific components for Example 04: what services, policies, and workflows will be demonstrated",
           "status": "completed",
-          "dependencies": ["1.2"],
+          "dependencies": [
+            "1.2"
+          ],
           "files": [
             "./.auto-claude/specs/061-create-end-to-end-governance-workflow-examples-wit/component-specification.md"
           ],
@@ -79,7 +83,9 @@
           "title": "Create Example 04 directory structure",
           "description": "Set up the complete directory structure for the end-to-end governance workflow example following the pattern of existing examples",
           "status": "completed",
-          "dependencies": ["1.3"],
+          "dependencies": [
+            "1.3"
+          ],
           "files": [
             "./examples/04-end-to-end-governance-workflow/",
             "./examples/04-end-to-end-governance-workflow/policies/",
@@ -98,7 +104,9 @@
           "title": "Create Docker Compose configuration",
           "description": "Create compose.yaml for OPA and any other required services (e.g., PostgreSQL for audit logs, Redis for state)",
           "status": "completed",
-          "dependencies": ["2.1"],
+          "dependencies": [
+            "2.1"
+          ],
           "files": [
             "./examples/04-end-to-end-governance-workflow/compose.yaml"
           ],
@@ -116,7 +124,9 @@
           "title": "Create requirements.txt and Python project setup",
           "description": "Define Python dependencies and project configuration",
           "status": "completed",
-          "dependencies": ["2.1"],
+          "dependencies": [
+            "2.1"
+          ],
           "files": [
             "./examples/04-end-to-end-governance-workflow/requirements.txt",
             "./examples/04-end-to-end-governance-workflow/pyproject.toml"
@@ -141,7 +151,9 @@
           "title": "Create constitutional policy definition",
           "description": "Write Rego policy defining constitutional principles and constraints for AI agent actions",
           "status": "completed",
-          "dependencies": ["2.1"],
+          "dependencies": [
+            "2.1"
+          ],
           "files": [
             "./examples/04-end-to-end-governance-workflow/policies/constitutional.rego"
           ],
@@ -159,7 +171,9 @@
           "title": "Create agent action enforcement policy",
           "description": "Write Rego policy that evaluates agent actions against constitutional principles and risk thresholds",
           "status": "completed",
-          "dependencies": ["3.1"],
+          "dependencies": [
+            "3.1"
+          ],
           "files": [
             "./examples/04-end-to-end-governance-workflow/policies/agent_actions.rego"
           ],
@@ -177,7 +191,9 @@
           "title": "Create HITL approval policy",
           "description": "Write Rego policy that determines when human approval is required based on risk scores and action types",
           "status": "completed",
-          "dependencies": ["3.2"],
+          "dependencies": [
+            "3.2"
+          ],
           "files": [
             "./examples/04-end-to-end-governance-workflow/policies/hitl_approval.rego"
           ],
@@ -195,7 +211,9 @@
           "title": "Create audit logging policy",
           "description": "Write Rego policy that defines what should be logged and how decisions are recorded",
           "status": "completed",
-          "dependencies": ["3.2"],
+          "dependencies": [
+            "3.2"
+          ],
           "files": [
             "./examples/04-end-to-end-governance-workflow/policies/audit.rego"
           ],
@@ -220,7 +238,9 @@
           "title": "Create OPA client module",
           "description": "Build a reusable OPA client module for policy evaluation",
           "status": "completed",
-          "dependencies": ["2.3"],
+          "dependencies": [
+            "2.3"
+          ],
           "files": [
             "./examples/04-end-to-end-governance-workflow/src/opa_client.py"
           ],
@@ -237,8 +257,10 @@
           "subtask_id": "4.2",
           "title": "Create audit logger module",
           "description": "Build module for recording governance decisions to an audit trail",
-          "status": "pending",
-          "dependencies": ["4.1"],
+          "status": "completed",
+          "dependencies": [
+            "4.1"
+          ],
           "files": [
             "./examples/04-end-to-end-governance-workflow/src/audit_logger.py"
           ],
@@ -247,14 +269,18 @@
             "Timestamps and metadata included",
             "Immutable log format",
             "Query capabilities provided"
-          ]
+          ],
+          "completed_at": "2026-01-03T18:33:00Z",
+          "notes": "Completed comprehensive audit logging module implementation. Created audit_logger.py (604 lines) with: AuditEntry dataclass with full validation and timezone handling; DatabaseConfig dataclass for connection settings; AuditLogger class with connection pooling (psycopg2); Custom exceptions (AuditLoggerError, AuditDatabaseError, AuditConnectionError); Core methods: log_decision() (append-only), query_by_id(), query_by_requester(), query_by_decision(), query_recent(), get_statistics(), health_check(); Context manager support for automatic cleanup; Comprehensive error handling and logging throughout; Type hints using Python 3.11+ style. Also created scripts/init_db.sql (194 lines) with: audit_logs table with UUID primary keys, immutable append-only design with trigger enforcement, JSONB columns for flexible metadata, comprehensive indexes for query optimization, views for compliance reporting, CHECK constraints for data integrity. Follows patterns from existing examples: constitutional hash in header, connection pooling, health check pattern from OPA client, comprehensive docstrings and type hints, context manager support, custom exceptions, modern Python 3.11+ syntax. All acceptance criteria met: structured logging implemented, timestamps and metadata included, immutable log format (database trigger prevents updates/deletes), query capabilities provided (6 query methods + statistics). Committed to git (commit f91c7252f)."
         },
         {
           "subtask_id": "4.3",
           "title": "Create HITL approval handler",
           "description": "Build module that simulates human-in-the-loop approval workflow",
-          "status": "pending",
-          "dependencies": ["4.1"],
+          "status": "completed",
+          "dependencies": [
+            "4.1"
+          ],
           "files": [
             "./examples/04-end-to-end-governance-workflow/src/hitl_handler.py"
           ],
@@ -263,14 +289,20 @@
             "Reviewer assignment logic",
             "Timeout handling",
             "Decision recording"
-          ]
+          ],
+          "completed_at": "2026-01-03T23:42:15Z",
+          "notes": "Completed comprehensive HITL handler module implementation. Created hitl_handler.py (595 lines) with: HITLConfig dataclass for flexible configuration; ApprovalRequest dataclass with UUID, risk_score, required_expertise, timeout handling, priority; ReviewerDecision dataclass with approval status, reviewer details, escalation tracking; ReviewerProfile dataclass for simulated reviewer profiles. HITLHandler class features: create_approval_request(), assign_reviewer() with 4 reviewer profiles (ml_safety_specialist, data_protection_officer, security_lead, senior_devops), simulate_review() with risk-based approval simulation (90%/70%/40% approval for low/high/critical risk), wait_for_approval(), handle_timeout() with escalation logic, get_request_status(), get_queue_statistics(), clear_queue(). Custom exceptions: HITLHandlerError, HITLTimeoutError, HITLRequestNotFoundError. Context manager support. Python 3.11+ type hints. Follows patterns from opa_client.py and audit_logger.py. Constitutional hash: cdd01ef066bc6cf2. All acceptance criteria met: approval queue management, reviewer assignment logic, timeout handling with escalation, decision recording. Committed to git (commit 876b2fded)."
         },
         {
           "subtask_id": "4.4",
           "title": "Create governance workflow orchestrator",
           "description": "Build main orchestrator that coordinates policy evaluation, HITL approvals, and audit logging",
-          "status": "pending",
-          "dependencies": ["4.1", "4.2", "4.3"],
+          "status": "completed",
+          "dependencies": [
+            "4.1",
+            "4.2",
+            "4.3"
+          ],
           "files": [
             "./examples/04-end-to-end-governance-workflow/src/governance_workflow.py"
           ],
@@ -279,14 +311,18 @@
             "All components integrated",
             "Error handling comprehensive",
             "Observable execution flow"
-          ]
+          ],
+          "completed_at": "2026-01-04T06:15:00Z",
+          "notes": "Completed comprehensive governance workflow orchestrator implementation. Created governance_workflow.py (696 lines) with: GovernanceDecision dataclass for complete decision response structure; GovernanceWorkflow class orchestrating full end-to-end workflow; Custom exceptions (GovernanceWorkflowError, GovernanceValidationError, GovernanceEvaluationError); 6-step workflow implementation: (1) Constitutional validation via constitutional.rego, (2) Action evaluation and risk assessment via agent_actions.rego, (3) HITL determination via hitl_approval.rego, (4) Human approval workflow handling with HITLHandler, (5) Audit logging via audit.rego and AuditLogger, (6) Final decision response construction; Comprehensive error handling with try/except blocks, custom exceptions, and error logging to audit trail; Observable execution flow with 28 logging statements throughout all workflow steps; Python 3.11+ type hints; Integration with OPAClient, AuditLogger, and HITLHandler; Default-deny security model; Detailed docstrings for all methods; Constitutional hash: cdd01ef066bc6cf2. All acceptance criteria met: end-to-end workflow implemented, all components integrated, error handling comprehensive, observable execution flow."
         },
         {
           "subtask_id": "4.5",
           "title": "Create CLI and interactive demo",
           "description": "Build command-line interface and interactive demo script showing the workflow in action",
           "status": "pending",
-          "dependencies": ["4.4"],
+          "dependencies": [
+            "4.4"
+          ],
           "files": [
             "./examples/04-end-to-end-governance-workflow/run_demo.py",
             "./examples/04-end-to-end-governance-workflow/cli.py"
@@ -303,7 +339,9 @@
           "title": "Create FastAPI service (optional)",
           "description": "Build optional REST API service demonstrating production integration patterns",
           "status": "pending",
-          "dependencies": ["4.4"],
+          "dependencies": [
+            "4.4"
+          ],
           "files": [
             "./examples/04-end-to-end-governance-workflow/app.py",
             "./examples/04-end-to-end-governance-workflow/src/models.py"
@@ -327,7 +365,9 @@
           "title": "Create Example 04 README",
           "description": "Write detailed README for the end-to-end governance workflow example",
           "status": "pending",
-          "dependencies": ["4.5"],
+          "dependencies": [
+            "4.5"
+          ],
           "files": [
             "./examples/04-end-to-end-governance-workflow/README.md"
           ],
@@ -345,7 +385,9 @@
           "title": "Create workflow diagram and visuals",
           "description": "Create visual diagrams showing the governance workflow, decision trees, and component interactions",
           "status": "pending",
-          "dependencies": ["5.1"],
+          "dependencies": [
+            "5.1"
+          ],
           "files": [
             "./examples/04-end-to-end-governance-workflow/docs/workflow-diagram.md"
           ],
@@ -361,7 +403,9 @@
           "title": "Create scenario walkthrough documentation",
           "description": "Document specific scenarios with step-by-step walkthroughs showing the governance workflow in action",
           "status": "pending",
-          "dependencies": ["5.1"],
+          "dependencies": [
+            "5.1"
+          ],
           "files": [
             "./examples/04-end-to-end-governance-workflow/docs/scenarios.md"
           ],
@@ -377,7 +421,9 @@
           "title": "Update examples/README.md",
           "description": "Update the main examples README to include Example 04 in the catalog",
           "status": "pending",
-          "dependencies": ["5.1"],
+          "dependencies": [
+            "5.1"
+          ],
           "files": [
             "./examples/README.md"
           ],
@@ -400,7 +446,9 @@
           "title": "Create unit tests for Python modules",
           "description": "Write unit tests for all Python modules (OPA client, audit logger, HITL handler)",
           "status": "pending",
-          "dependencies": ["4.4"],
+          "dependencies": [
+            "4.4"
+          ],
           "files": [
             "./examples/04-end-to-end-governance-workflow/tests/test_opa_client.py",
             "./examples/04-end-to-end-governance-workflow/tests/test_audit_logger.py",
@@ -418,7 +466,10 @@
           "title": "Create integration tests",
           "description": "Write integration tests that verify the complete workflow with OPA running",
           "status": "pending",
-          "dependencies": ["4.4", "6.1"],
+          "dependencies": [
+            "4.4",
+            "6.1"
+          ],
           "files": [
             "./examples/04-end-to-end-governance-workflow/tests/test_integration.py"
           ],
@@ -434,7 +485,9 @@
           "title": "Create policy tests",
           "description": "Write OPA tests for all Rego policies using OPA testing framework",
           "status": "pending",
-          "dependencies": ["3.4"],
+          "dependencies": [
+            "3.4"
+          ],
           "files": [
             "./examples/04-end-to-end-governance-workflow/policies/constitutional_test.rego",
             "./examples/04-end-to-end-governance-workflow/policies/agent_actions_test.rego",
@@ -452,7 +505,11 @@
           "title": "Manual testing and validation",
           "description": "Perform manual end-to-end testing of all scenarios and validate documentation accuracy",
           "status": "pending",
-          "dependencies": ["4.5", "5.1", "6.2"],
+          "dependencies": [
+            "4.5",
+            "5.1",
+            "6.2"
+          ],
           "files": [],
           "acceptance_criteria": [
             "All scenarios run successfully",
@@ -473,7 +530,10 @@
           "title": "Code quality and style consistency",
           "description": "Ensure code follows project conventions, is properly formatted, and has consistent style with existing examples",
           "status": "pending",
-          "dependencies": ["4.6", "6.4"],
+          "dependencies": [
+            "4.6",
+            "6.4"
+          ],
           "files": [
             "./examples/04-end-to-end-governance-workflow/"
           ],
@@ -490,7 +550,9 @@
           "title": "Add example to main documentation",
           "description": "Reference the new example in main ACGS-2 documentation and getting-started guides",
           "status": "pending",
-          "dependencies": ["5.4"],
+          "dependencies": [
+            "5.4"
+          ],
           "files": [
             "./acgs2-core/docs/README.md",
             "./acgs2-core/docs/user-guides/README.md"
@@ -507,7 +569,9 @@
           "title": "Create CI/CD integration",
           "description": "Ensure the example is included in CI/CD pipelines for automated testing",
           "status": "pending",
-          "dependencies": ["6.3"],
+          "dependencies": [
+            "6.3"
+          ],
           "files": [
             "./.github/workflows/examples-ci.yml"
           ],
@@ -523,7 +587,11 @@
           "title": "Final review and cleanup",
           "description": "Final review of all components, remove any temporary files, ensure everything is production-ready",
           "status": "pending",
-          "dependencies": ["7.1", "7.2", "7.3"],
+          "dependencies": [
+            "7.1",
+            "7.2",
+            "7.3"
+          ],
           "files": [],
           "acceptance_criteria": [
             "No TODO comments remaining",
@@ -553,5 +621,6 @@
     "Documentation is comprehensive and accurate",
     "Target audience (Enterprise DevOps/MLOps) can understand and use the example"
   ],
-  "spec_file": "spec.md"
+  "spec_file": "spec.md",
+  "recoveryNote": "Task recovered from stuck state at 2026-01-04T05:39:33.225Z"
 }
