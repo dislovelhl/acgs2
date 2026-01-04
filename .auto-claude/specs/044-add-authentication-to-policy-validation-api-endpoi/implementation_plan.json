@@ -1,0 +1,324 @@
+{
+  "feature": "Add Authentication to Policy Validation API Endpoints",
+  "description": "Secure policy validation API endpoints with JWT-based authentication to prevent unauthorized access to governance policy information. The policy check API endpoints (/api/policy/validate, /api/policy/policies, /api/policy/policies/{policy_id}, /api/policy/health) in integration-service/src/api/policy_check.py are currently publicly accessible without authentication.",
+  "created_at": "2026-01-03T21:27:51.256Z",
+  "updated_at": "2026-01-04T05:39:48.711Z",
+  "status": "in_progress",
+  "planStatus": "in_progress",
+  "workflow_type": "development",
+  "services_involved": [
+    "integration-service",
+    "shared/security"
+  ],
+  "spec_file": "spec.md",
+  "phases": [
+    {
+      "phase_id": "1",
+      "phase_name": "Analysis and Design",
+      "description": "Understand current implementation and design authentication integration",
+      "subtasks": [
+        {
+          "subtask_id": "1.1",
+          "title": "Review current policy check API implementation",
+          "description": "Analyze integration-service/src/api/policy_check.py to understand endpoint structure, data models, and current access patterns",
+          "status": "completed",
+          "notes": "Reviewed policy_check.py - four endpoints need authentication: /api/policy/validate, /api/policy/policies, /api/policy/policies/{policy_id}, /api/policy/health"
+        },
+        {
+          "subtask_id": "1.2",
+          "title": "Review existing authentication patterns",
+          "description": "Study acgs2-core/shared/security/auth.py to understand JWT authentication implementation, user claims, and FastAPI dependency patterns",
+          "status": "completed",
+          "notes": "Found JWT-based auth with get_current_user dependency, tenant isolation, role/permission checks. Uses HTTPBearer security scheme."
+        },
+        {
+          "subtask_id": "1.3",
+          "title": "Design authentication strategy",
+          "description": "Determine which endpoints require authentication and what permissions are needed. Consider optional auth for health endpoint.",
+          "status": "completed",
+          "notes": "Decision: All policy endpoints require authentication with tenant isolation. Health endpoint will also require auth per spec to prevent reconnaissance."
+        }
+      ]
+    },
+    {
+      "phase_id": "2",
+      "phase_name": "Setup and Dependencies",
+      "description": "Prepare integration service for authentication integration",
+      "subtasks": [
+        {
+          "subtask_id": "2.1",
+          "title": "Verify shared auth module accessibility",
+          "description": "Ensure integration-service can import from acgs2-core/shared/security/auth.py",
+          "status": "completed",
+          "notes": "Verified import path is properly configured. integration-service/src/__init__.py, main.py, and tests/conftest.py all add acgs2-core to sys.path. Existing test file (test_shared_import.py) confirms all imports work correctly. integration-service/src/api/auth.py successfully imports and re-exports all authentication components from shared.security.auth."
+        },
+        {
+          "subtask_id": "2.2",
+          "title": "Add authentication dependencies",
+          "description": "Add python-jose[cryptography] to integration-service requirements.txt for JWT handling if not already present",
+          "status": "pending",
+          "notes": ""
+        },
+        {
+          "subtask_id": "2.3",
+          "title": "Configure JWT settings",
+          "description": "Ensure JWT_SECRET and related configuration is available in integration service environment",
+          "status": "pending",
+          "notes": ""
+        }
+      ]
+    },
+    {
+      "phase_id": "3",
+      "phase_name": "Implementation",
+      "description": "Add authentication to policy validation endpoints",
+      "subtasks": [
+        {
+          "subtask_id": "3.1",
+          "title": "Create authentication utilities module",
+          "description": "Create integration-service/src/api/auth.py that imports and re-exports shared authentication functions with service-specific adaptations if needed",
+          "status": "pending",
+          "notes": ""
+        },
+        {
+          "subtask_id": "3.2",
+          "title": "Add authentication to /api/policy/validate endpoint",
+          "description": "Update validate_policies endpoint to require authentication using Depends(get_current_user). Log authenticated user/tenant in audit trail.",
+          "status": "pending",
+          "notes": ""
+        },
+        {
+          "subtask_id": "3.3",
+          "title": "Add authentication to /api/policy/policies endpoint",
+          "description": "Update list_policies endpoint to require authentication. Consider filtering policies by tenant if tenant-specific policies exist.",
+          "status": "pending",
+          "notes": ""
+        },
+        {
+          "subtask_id": "3.4",
+          "title": "Add authentication to /api/policy/policies/{policy_id} endpoint",
+          "description": "Update get_policy endpoint to require authentication. Verify user has access to requested policy.",
+          "status": "pending",
+          "notes": ""
+        },
+        {
+          "subtask_id": "3.5",
+          "title": "Add authentication to /api/policy/health endpoint",
+          "description": "Update policy_health endpoint to require authentication to prevent system reconnaissance.",
+          "status": "pending",
+          "notes": ""
+        },
+        {
+          "subtask_id": "3.6",
+          "title": "Update response models for audit context",
+          "description": "Add authenticated user context to response metadata for audit trail purposes",
+          "status": "pending",
+          "notes": ""
+        },
+        {
+          "subtask_id": "3.7",
+          "title": "Update API documentation",
+          "description": "Update OpenAPI/Swagger documentation to reflect authentication requirements and security schemes",
+          "status": "pending",
+          "notes": ""
+        }
+      ]
+    },
+    {
+      "phase_id": "4",
+      "phase_name": "Testing",
+      "description": "Create comprehensive tests for authenticated endpoints",
+      "subtasks": [
+        {
+          "subtask_id": "4.1",
+          "title": "Create test fixtures",
+          "description": "Add pytest fixtures for creating test JWT tokens, authenticated clients, and mock user claims in integration-service/tests/conftest.py",
+          "status": "pending",
+          "notes": ""
+        },
+        {
+          "subtask_id": "4.2",
+          "title": "Create test file for authenticated policy endpoints",
+          "description": "Create integration-service/tests/api/test_policy_check_auth.py with comprehensive test coverage",
+          "status": "pending",
+          "notes": ""
+        },
+        {
+          "subtask_id": "4.3",
+          "title": "Test authentication enforcement",
+          "description": "Verify all endpoints reject requests without valid JWT tokens with 401 status",
+          "status": "pending",
+          "notes": ""
+        },
+        {
+          "subtask_id": "4.4",
+          "title": "Test authenticated access",
+          "description": "Verify endpoints work correctly with valid authentication tokens",
+          "status": "pending",
+          "notes": ""
+        },
+        {
+          "subtask_id": "4.5",
+          "title": "Test tenant isolation",
+          "description": "Verify users can only access policies appropriate for their tenant",
+          "status": "pending",
+          "notes": ""
+        },
+        {
+          "subtask_id": "4.6",
+          "title": "Test expired token handling",
+          "description": "Verify expired JWT tokens are properly rejected",
+          "status": "pending",
+          "notes": ""
+        },
+        {
+          "subtask_id": "4.7",
+          "title": "Test malformed token handling",
+          "description": "Verify malformed or invalid JWT tokens are properly rejected",
+          "status": "pending",
+          "notes": ""
+        },
+        {
+          "subtask_id": "4.8",
+          "title": "Run existing tests",
+          "description": "Ensure existing integration service tests still pass with authentication changes",
+          "status": "pending",
+          "notes": ""
+        }
+      ]
+    },
+    {
+      "phase_id": "5",
+      "phase_name": "Documentation and Deployment",
+      "description": "Update documentation and prepare for deployment",
+      "subtasks": [
+        {
+          "subtask_id": "5.1",
+          "title": "Update API documentation",
+          "description": "Document authentication requirements in API docs, including how to obtain and use JWT tokens",
+          "status": "pending",
+          "notes": ""
+        },
+        {
+          "subtask_id": "5.2",
+          "title": "Update CI/CD integration examples",
+          "description": "Update examples showing how CI/CD pipelines should authenticate when calling policy validation endpoints",
+          "status": "pending",
+          "notes": ""
+        },
+        {
+          "subtask_id": "5.3",
+          "title": "Create migration guide",
+          "description": "Document breaking changes and provide migration guide for existing API consumers",
+          "status": "pending",
+          "notes": ""
+        },
+        {
+          "subtask_id": "5.4",
+          "title": "Update environment configuration docs",
+          "description": "Document required JWT_SECRET and related environment variables for integration-service",
+          "status": "pending",
+          "notes": ""
+        },
+        {
+          "subtask_id": "5.5",
+          "title": "Create security audit log entry",
+          "description": "Document this security enhancement in the security audit log",
+          "status": "pending",
+          "notes": ""
+        }
+      ]
+    },
+    {
+      "phase_id": "6",
+      "phase_name": "QA and Validation",
+      "description": "Final quality assurance and validation",
+      "subtasks": [
+        {
+          "subtask_id": "6.1",
+          "title": "Manual security testing",
+          "description": "Manually test authentication bypass attempts and verify proper security headers",
+          "status": "pending",
+          "notes": ""
+        },
+        {
+          "subtask_id": "6.2",
+          "title": "Integration testing",
+          "description": "Test complete workflow with real JWT tokens and OPA integration",
+          "status": "pending",
+          "notes": ""
+        },
+        {
+          "subtask_id": "6.3",
+          "title": "Performance impact assessment",
+          "description": "Verify authentication doesn't introduce significant latency to policy validation",
+          "status": "pending",
+          "notes": ""
+        },
+        {
+          "subtask_id": "6.4",
+          "title": "Code review",
+          "description": "Conduct security-focused code review of authentication implementation",
+          "status": "pending",
+          "notes": ""
+        },
+        {
+          "subtask_id": "6.5",
+          "title": "Final test suite execution",
+          "description": "Run complete test suite and verify 100% pass rate",
+          "status": "pending",
+          "notes": ""
+        }
+      ]
+    }
+  ],
+  "final_acceptance": [
+    {
+      "criterion": "All four policy endpoints require valid JWT authentication",
+      "status": "pending"
+    },
+    {
+      "criterion": "Unauthenticated requests return 401 status with appropriate error message",
+      "status": "pending"
+    },
+    {
+      "criterion": "Authenticated requests work correctly and include user/tenant context",
+      "status": "pending"
+    },
+    {
+      "criterion": "Tenant isolation is properly enforced",
+      "status": "pending"
+    },
+    {
+      "criterion": "All tests pass with 100% coverage of authentication paths",
+      "status": "pending"
+    },
+    {
+      "criterion": "API documentation reflects authentication requirements",
+      "status": "pending"
+    },
+    {
+      "criterion": "Migration guide provided for existing API consumers",
+      "status": "pending"
+    }
+  ],
+  "qa_signoff": {
+    "status": "pending",
+    "tests_passed": "",
+    "issues": ""
+  },
+  "metadata": {
+    "estimated_effort_hours": 8,
+    "priority": "high",
+    "security_impact": "high",
+    "breaking_change": true,
+    "affected_files": [
+      "integration-service/src/api/policy_check.py",
+      "integration-service/src/api/auth.py",
+      "integration-service/requirements.txt",
+      "integration-service/tests/conftest.py",
+      "integration-service/tests/api/test_policy_check_auth.py"
+    ]
+  },
+  "recoveryNote": "Task recovered from stuck state at 2026-01-04T05:39:48.711Z"
+}

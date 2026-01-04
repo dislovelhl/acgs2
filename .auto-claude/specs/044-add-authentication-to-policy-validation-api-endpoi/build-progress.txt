@@ -1,0 +1,58 @@
+=============================================================================
+BUILD PROGRESS - Add Authentication to Policy Validation API Endpoints
+=============================================================================
+Started: 2026-01-04
+Status: IN PROGRESS
+
+Phase 2: Setup and Dependencies
+--------------------------------
+
+[COMPLETED] Subtask 2.1: Verify shared auth module accessibility
+-----------------------------------------------------------------
+Task: Ensure integration-service can import from acgs2-core/shared/security/auth.py
+
+Verification completed successfully:
+
+1. Python Path Setup ✓
+   - integration-service/src/__init__.py adds acgs2-core to sys.path (line 14)
+   - integration-service/src/main.py also adds acgs2-core to sys.path (line 17)
+   - integration-service/tests/conftest.py adds acgs2-core to sys.path (line 16)
+
+2. Existing Import Usage ✓
+   - integration-service/src/api/auth.py successfully imports from shared.security.auth
+   - integration-service/src/main.py imports from shared.security
+   - integration-service/tests/conftest.py imports from src.api.auth (which uses shared.security.auth)
+
+3. Test Coverage ✓
+   - integration-service/tests/test_shared_import.py exists with comprehensive tests:
+     * test_import_shared_auth_module() - verifies all auth module imports
+     * test_import_shared_config() - verifies config access
+     * test_jwt_configuration_accessible() - verifies JWT settings
+     * test_create_test_token() - verifies token creation works
+
+4. Verified Imports ✓
+   The following are successfully imported from shared.security.auth:
+   - UserClaims (model)
+   - TokenResponse (model)
+   - create_access_token (function)
+   - verify_token (function)
+   - get_current_user (FastAPI dependency)
+   - get_current_user_optional (FastAPI dependency)
+   - require_role (dependency factory)
+   - require_permission (dependency factory)
+   - require_tenant_access (dependency factory)
+   - AuthenticationMiddleware (middleware)
+   - create_test_token (utility)
+   - security (HTTPBearer scheme)
+
+5. Import Path Mechanism ✓
+   The import chain works as follows:
+   integration-service/src/__init__.py → adds acgs2-core to sys.path
+   → allows "from shared.security.auth import ..."
+   → acgs2-core/shared/security/auth.py provides all authentication components
+
+CONCLUSION: Integration-service CAN successfully import from acgs2-core/shared/security/auth.py
+The Python path is properly configured in multiple locations for runtime and test execution.
+
+Status: VERIFIED AND WORKING ✓
+Next: Proceed to subtask 2.2 - Add authentication dependencies
